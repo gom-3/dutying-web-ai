@@ -84,7 +84,7 @@ function ProfilePage() {
                 <div className="flex flex-col items-center gap-7.5">
                     <div className="self-start font-apple text-[1.25rem] text-sub-3">프로필 이미지</div>
                     <div className="h-35 w-35 rounded-full border-[.625rem] border-sub-4">
-                        <ProfileImage className="h-full w-full" profileImg={profileImg} />
+                        <ProfileImage className="h-full w-full" profileImg={profileImg ?? {profileImgUrl: accountMe?.profileImgUrl}} />
                     </div>
                     <div className="flex h-10.5 w-67.5 cursor-pointer">
                         <div
@@ -217,7 +217,8 @@ function ProfilePage() {
                         selectedNurse?.isWorker === writeNurse?.isWorker &&
                         selectedNurse?.isDutyManager === writeNurse?.isDutyManager &&
                         selectedNurse?.memo === writeNurse?.memo &&
-                        selectedNurse?.nurseShiftTypes.length === writeNurse?.nurseShiftTypes.length
+                        selectedNurse?.nurseShiftTypes.length === writeNurse?.nurseShiftTypes.length &&
+                        !profileImg
                     }
                 >
                     저장

@@ -9,7 +9,7 @@ type TEditProfileRequest = {
     defaultProfileImgId?: number;
 };
 
-const getAccount = async (accountId: number) => (await axiosInstance.get<Account>(`/accounts/v2${accountId}`)).data;
+const getAccount = async (accountId: number) => (await axiosInstance.get<Account>(`/accounts/v2/${accountId}`)).data;
 const getAccountMeWaiting = async () => (await axiosInstance.get<Ward>(`/accounts/waiting`)).data;
 const editAccount = async ({accountId, ...dto}: TEditProfileRequest) =>
     (await axiosInstance.put<Account>(`/accounts/v2/${accountId}`, dto)).data;

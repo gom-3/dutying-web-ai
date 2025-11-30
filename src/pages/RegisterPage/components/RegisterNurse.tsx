@@ -51,10 +51,6 @@ function RegisterNurse() {
         defaultValues: {
             gender: '여',
             isWorker: true,
-            profileImg: {
-                profileImgUrl: undefined,
-                defaultProfileImgId: undefined,
-            },
         },
         mode: 'onTouched',
         resolver: yupResolver(schema),
@@ -63,7 +59,7 @@ function RegisterNurse() {
         actions: {registerAccountAndNurse},
     } = useRegister();
     const watchIsWorker = watch('isWorker');
-    const {profileImg, setRandomImage, setPhotoImage} = useProfileImage();
+    const {profileImg, setRandomImage, setPhotoImage} = useProfileImage({defaultProfileImgId: 1});
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImgae = () => {
         imageInputRef.current?.click();
@@ -87,7 +83,9 @@ function RegisterNurse() {
     };
 
     useEffect(() => {
-        setValue('profileImg', profileImg);
+        if (profileImg) {
+            setValue('profileImg', profileImg);
+        }
     }, [profileImg, setValue]);
 
     return (
@@ -97,7 +95,7 @@ function RegisterNurse() {
                 <div className="flex flex-col items-center gap-7.5">
                     <div className="self-start font-apple text-[1.25rem] text-sub-3">프로필 이미지</div>
                     <div className="h-35 w-35 rounded-full border-[.625rem] border-sub-4">
-                        <ProfileImage profileImg={profileImg} className="h-full w-full" />
+                        <ProfileImage profileImg={profileImg!} className="h-full w-full" />
                     </div>
                     <div className="flex h-10.5 w-67.5 cursor-pointer">
                         <div

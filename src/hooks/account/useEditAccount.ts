@@ -23,7 +23,7 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            updateNurse(nurse.nurseId, nurse);
+            await updateNurse(nurse.nurseId, nurse);
             await AccountAPI.editAccount({
                 accountId: accountMe.accountId,
                 name: nurse.name,
