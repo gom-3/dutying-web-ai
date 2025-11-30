@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import {twMerge} from 'tailwind-merge';
 import {match} from 'ts-pattern';
 import {CancelIcon, CheckedIcon, MoreIcon, PersonIcon, SuccessCircleIcon, UncheckedIcon2, UnlinkedIcon} from '@/assets/svg';
+import {ProfileImage} from '@/components/ProfileImage';
 import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
 import useEditWard from '@/hooks/ward/useEditWard';
 import {type WaitingNurse} from '@/types/nurse';
@@ -72,10 +73,9 @@ function ConnectionManage({open, setOpen}: ConnectionManageProps) {
                                                   key={waitingNurse.waitingNurseId}
                                                   className="flex h-18 shrink-0 items-center rounded-[.625rem] border-[.0625rem] border-sub-4.5 bg-main-bg px-5"
                                               >
-                                                  <img
-                                                      className="h-8 w-8 rounded-full"
-                                                      src={'data:image/png;base64,' + waitingNurse.profileImgBase64}
-                                                      alt=""
+                                                  <ProfileImage
+                                                      className="h-8 w-8"
+                                                      profileImg={{profileImgUrl: waitingNurse.profileImgUrl}}
                                                   />
                                                   <p className="ml-[.625rem] font-apple text-[1.5rem] font-medium text-sub-1">
                                                       {waitingNurse.name}

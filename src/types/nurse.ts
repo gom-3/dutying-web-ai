@@ -55,5 +55,7 @@ export type WaitingNurse = {
     gender: string;
     phoneNum: string;
     employmentDate: boolean;
-    profileImgBase64: string;
+    /** @deprecated use profileImgUrl */
+    profileImgBase64?: string;
+    profileImgUrl: string;
 };

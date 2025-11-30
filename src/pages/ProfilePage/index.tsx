@@ -1,12 +1,13 @@
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
-import {profileImages} from '@/assets/profileImage';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/assets/svg';
 import Button from '@/components/Button';
+import {ProfileImage} from '@/components/ProfileImage';
 import Select from '@/components/Select';
 import TextField from '@/components/TextField';
 import useEditAccount from '@/hooks/account/useEditAccount';
 import useAuth from '@/hooks/auth/useAuth';
+import useProfileImage from '@/hooks/file/useProfileImage';
 import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
 import ROUTE from '@/libs/constant/path';
 import {type Nurse} from '@/types/nurse';
@@ -22,18 +23,16 @@ function ProfilePage() {
     } = useAuth();
     const {handleEditProfile, deleteAccount, quitWard} = useEditAccount();
     const [writeNurse, setWriteNurse] = useState<Nurse | null>(null);
-    // eslint-disable-next-line react-hooks/purity
-    const [profileImage, setProfileImage] = useState<string | null>(profileImages[Math.floor(Math.random() * 30)]);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleChange = (key: keyof Nurse, value: any) => {
+    const {profileImg, setRandomImage, setPhotoImage} = useProfileImage();
+    const handleChange = <T extends keyof Nurse>(key: T, value: Nurse[T]) => {
         if (!writeNurse) return;
 
         setWriteNurse({...writeNurse, [key]: value});
     };
     const save = () => {
-        if (!writeNurse || !profileImage) return;
+        if (!writeNurse || !profileImg) return;
 
-        handleEditProfile(writeNurse, profileImage);
+        handleEditProfile(writeNurse, profileImg);
     };
 
     useEffect(() => {
@@ -43,14 +42,11 @@ function ProfilePage() {
 
     useEffect(() => {
         if (selectedNurse && accountMe && selectedNurse?.accountId === accountMe?.accountId) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setWriteNurse(selectedNurse);
-            setProfileImage(accountMe.profileImgBase64);
         }
     }, [selectedNurse, accountMe]);
 
-    const handleRandomProfileImage = () => {
-        setProfileImage(profileImages[Math.floor(Math.random() * 30)]);
-    };
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImgae = () => {
         imageInputRef.current?.click();
@@ -66,25 +62,11 @@ function ProfilePage() {
 
         try {
             const compressedFile = await imageCompression(e.target.files[0], options);
-            const base64Image = await convertBase64(compressedFile);
 
-            setProfileImage(base64Image.replace(/data.*;base64,/, ''));
+            setPhotoImage(compressedFile);
         } catch (error) {
             console.log(error);
         }
-    };
-    const convertBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const fileReader = new FileReader();
-
-            fileReader.readAsDataURL(file);
-            fileReader.onload = () => {
-                resolve(fileReader.result as string);
-            };
-            fileReader.onerror = (error) => {
-                reject(error);
-            };
-        });
     };
 
     return (
@@ -102,15 +84,12 @@ function ProfilePage() {
                 <div className="flex flex-col items-center gap-7.5">
                     <div className="self-start font-apple text-[1.25rem] text-sub-3">프로필 이미지</div>
                     <div className="h-35 w-35 rounded-full border-[.625rem] border-sub-4">
-                        <img
-                            src={'data:image/png;base64,' + profileImage}
-                            className="h-full w-full rounded-full object-cover object-center"
-                        />
+                        <ProfileImage className="h-full w-full" profileImg={profileImg} />
                     </div>
                     <div className="flex h-10.5 w-67.5 cursor-pointer">
                         <div
                             className="flex flex-1 items-center justify-center gap-[.25rem] rounded-l-[.3125rem] border-[.0625rem] border-r-0 border-sub-3"
-                            onClick={handleRandomProfileImage}
+                            onClick={setRandomImage}
                         >
                             <RandomIcon className="h-5 w-5" />
                             <p className="font-apple text-[1.25rem] font-medium text-sub-2.5">랜덤 변경</p>

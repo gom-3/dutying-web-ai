@@ -4,13 +4,13 @@ import {type ChangeEvent, useEffect, useRef} from 'react';
 import {useForm} from 'react-hook-form';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
-import {profileImages} from '@/assets/profileImage';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/assets/svg';
 import Button from '@/components/Button';
+import {ProfileImage} from '@/components/ProfileImage';
 import Select from '@/components/Select';
 import TextField from '@/components/TextField';
-import useAuth from '@/hooks/auth/useAuth';
 import useRegister from '@/hooks/auth/useRegister';
+import useProfileImage from '@/hooks/file/useProfileImage';
 import {type CreateNurseDTO} from '@/libs/api/nurse';
 
 const schema = yup
@@ -26,7 +26,13 @@ const schema = yup
             .matches(/^01([0|1|6|7|8|9])([0-9]{3,4})([0-9]{4})$/),
         gender: yup.string().required(),
         isWorker: yup.boolean().required(),
-        profileImage: yup.string().required(),
+        profileImg: yup
+            .object()
+            .shape({
+                profileImgUrl: yup.string().optional(),
+                defaultProfileImgId: yup.number().optional(),
+            })
+            .required(),
         employmentDate: yup
             .string()
             .required()
@@ -41,11 +47,14 @@ function RegisterNurse() {
         setValue,
         register,
         handleSubmit,
-    } = useForm<CreateNurseDTO & {profileImage: string}>({
+    } = useForm<CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}>({
         defaultValues: {
             gender: '여',
             isWorker: true,
-            profileImage: '',
+            profileImg: {
+                profileImgUrl: undefined,
+                defaultProfileImgId: undefined,
+            },
         },
         mode: 'onTouched',
         resolver: yupResolver(schema),
@@ -53,30 +62,11 @@ function RegisterNurse() {
     const {
         actions: {registerAccountAndNurse},
     } = useRegister();
-    const {
-        state: {accountMe},
-    } = useAuth();
     const watchIsWorker = watch('isWorker');
-    const watchProfileImage = watch('profileImage');
-    const handleRandomProfileImage = () => {
-        setValue('profileImage', profileImages[Math.floor(Math.random() * 30)]);
-    };
+    const {profileImg, setRandomImage, setPhotoImage} = useProfileImage();
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImgae = () => {
         imageInputRef.current?.click();
-    };
-    const convertBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const fileReader = new FileReader();
-
-            fileReader.readAsDataURL(file);
-            fileReader.onload = () => {
-                resolve(fileReader.result as string);
-            };
-            fileReader.onerror = (error) => {
-                reject(error);
-            };
-        });
     };
     const handleChangeImage = async (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length < 1) return;
@@ -89,23 +79,16 @@ function RegisterNurse() {
 
         try {
             const compressedFile = await imageCompression(e.target.files[0], options);
-            const base64Image = await convertBase64(compressedFile);
 
-            setValue('profileImage', base64Image.replace(/data.*;base64,/, ''));
+            setPhotoImage(compressedFile);
         } catch (error) {
             console.log(error);
         }
     };
 
     useEffect(() => {
-        if (watchProfileImage == '') {
-            if (accountMe?.profileImgBase64) {
-                setValue('profileImage', accountMe.profileImgBase64);
-            } else {
-                handleRandomProfileImage();
-            }
-        }
-    }, [accountMe]);
+        setValue('profileImg', profileImg);
+    }, [profileImg, setValue]);
 
     return (
         <form onSubmit={handleSubmit(registerAccountAndNurse)} className="my-auto flex w-full flex-col items-center justify-center">
@@ -114,15 +97,12 @@ function RegisterNurse() {
                 <div className="flex flex-col items-center gap-7.5">
                     <div className="self-start font-apple text-[1.25rem] text-sub-3">프로필 이미지</div>
                     <div className="h-35 w-35 rounded-full border-[.625rem] border-sub-4">
-                        <img
-                            src={'data:image/png;base64,' + watchProfileImage}
-                            className="h-full w-full rounded-full object-cover object-center"
-                        />
+                        <ProfileImage profileImg={profileImg} className="h-full w-full" />
                     </div>
                     <div className="flex h-10.5 w-67.5 cursor-pointer">
                         <div
                             className="flex flex-1 items-center justify-center gap-[.25rem] rounded-l-[.3125rem] border-[.0625rem] border-r-0 border-sub-3"
-                            onClick={handleRandomProfileImage}
+                            onClick={setRandomImage}
                         >
                             <RandomIcon className="h-5 w-5" />
                             <p className="font-apple text-[1.25rem] font-medium text-sub-2.5">랜덤 변경</p>

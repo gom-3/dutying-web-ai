@@ -7,7 +7,9 @@ export type Account = {
     shiftTeamId: number | null;
     email: string;
     name: string;
-    profileImgBase64: string | null;
+    /** @deprecated use profileImgUrl */
+    profileImgBase64?: string;
+    profileImgUrl: string;
     isManager: boolean;
     /** 온보딩 중 상태 */
     status:

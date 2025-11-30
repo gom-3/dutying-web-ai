@@ -2,7 +2,7 @@ import {useMutation, useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
 import useLoading from '@/hooks/ui/useLoading';
 import useTutorial from '@/hooks/ui/useTutorial';
-import * as accountApi from '@/libs/api/account';
+import {AccountAPI} from '@/libs/api';
 import * as nurseApi from '@/libs/api/nurse';
 import * as wardApi from '@/libs/api/ward';
 import ROUTE from '@/libs/constant/path';
@@ -21,7 +21,7 @@ const useRegister = () => {
     const navigate = useNavigate();
     const {mutate: changeAccountStatusMutate} = useMutation({
         mutationFn: ({accountId, status}: {accountId: number; status: Account['status']}) =>
-            accountApi.eidtAccountStatus(accountId, status),
+            AccountAPI.eidtAccountStatus(accountId, status),
         onSuccess: ({status}) => {
             handleGetAccountMe();
 
@@ -70,22 +70,25 @@ const useRegister = () => {
     });
     const {data: accountWaitingWard} = useQuery({
         queryKey: ['accountWaitingWard'],
-        queryFn: () => accountApi.getAccountMeWaiting(),
+        queryFn: () => AccountAPI.getAccountMeWaiting(),
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
-    const registerAccountAndNurse = async (createNurseDTO: nurseApi.CreateNurseDTO & {profileImage: string}) => {
+    const registerAccountAndNurse = async (
+        createNurseDTO: nurseApi.CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
+    ) => {
         if (!accountId || !accountMe) return;
 
         setLoading(true);
 
         if (accountMe.status === 'NURSE_INFO_PENDING') {
             // 모바일에서 계정 초기 등록을 이미 마친 경우 계정 정보를 수정한다.
-            await accountApi.editAccount(accountId, {
+            await AccountAPI.editAccount({
+                accountId,
                 name: createNurseDTO.name,
-                profileImgBase64: createNurseDTO.profileImage,
+                ...createNurseDTO.profileImg,
             });
         } else if (accountMe.status === 'INITIAL') {
-            await accountApi.initAccount(accountId, createNurseDTO.name, createNurseDTO.profileImage);
+            await AccountAPI.initAccount({accountId, name: createNurseDTO.name, ...createNurseDTO.profileImg});
         }
 
         await nurseApi.createAccountNurse(accountId, createNurseDTO);

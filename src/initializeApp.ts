@@ -7,14 +7,14 @@ import ReactGA from 'react-ga4';
 export default function initializeApp() {
     enableMapSet();
 
-    Sentry.init({
-        dsn: 'https://5035f79c451043f4b6438a90817ff608@o4505477969084416.ingest.us.sentry.io/4505477970526208',
-        tracesSampleRate: import.meta.env.PROD ? 0.2 : 1.0,
-        attachStacktrace: true,
-        environment: import.meta.env.PROD ? 'production' : 'development',
-    });
-
     if (import.meta.env.PROD) {
+        Sentry.init({
+            dsn: 'https://5035f79c451043f4b6438a90817ff608@o4505477969084416.ingest.us.sentry.io/4505477970526208',
+            tracesSampleRate: 0.2,
+            attachStacktrace: true,
+            environment: 'production',
+        });
+
         // GA 관련 초기화
         ReactGA.initialize(import.meta.env.VITE_GA_TRACKING_ID, {gaOptions: {}});
 
