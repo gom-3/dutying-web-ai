@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 import useAuth from '@/hooks/auth/useAuth';
 import useLoading from '@/hooks/ui/useLoading';
 import useEditWard from '@/hooks/ward/useEditWard';
-import {editAccount, eidtAccountStatus, deleteAccount as deleteAccountApi} from '@/libs/api/account';
+import {AccountAPI} from '@/libs/api';
 import {updateNurse} from '@/libs/api/nurse';
 import {quitWard as quitWardApi} from '@/libs/api/ward';
 import {type Nurse} from '@/types/nurse';
@@ -18,15 +18,16 @@ const useEditAccount = () => {
     } = useEditWard();
     const {setLoading} = useLoading();
     const queryClient = useQueryClient();
-    const handleEditProfile = async (nurse: Nurse, profileImage: string) => {
+    const handleEditProfile = async (nurse: Nurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
         if (!accountMe) return;
 
         try {
             setLoading(true);
-            updateNurse(nurse.nurseId, nurse);
-            await editAccount(accountMe.accountId, {
+            await updateNurse(nurse.nurseId, nurse);
+            await AccountAPI.editAccount({
+                accountId: accountMe.accountId,
                 name: nurse.name,
-                profileImgBase64: profileImage,
+                ...profileImg,
             });
             await queryClient.invalidateQueries({queryKey: getWardQueryKey});
             await handleGetAccountMe();
@@ -45,7 +46,7 @@ const useEditAccount = () => {
         try {
             setLoading(true);
             await quitWardApi(accountMe.wardId);
-            await eidtAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
+            await AccountAPI.eidtAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
             await handleGetAccountMe();
         } catch (e) {
             console.error(e);
@@ -61,7 +62,7 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            deleteAccountApi(accountMe.accountId);
+            AccountAPI.deleteAccount(accountMe.accountId);
             handleLogout();
         } catch (e) {
             console.error(e);

@@ -5,6 +5,7 @@ import {BrowserRouter} from 'react-router-dom';
 import Loading from '@/components/Loading';
 import Tutorial from '@/components/Tutorial';
 import App from 'App';
+import {initializeProfileImageStore} from './hooks/file/store';
 import initializeApp from './initializeApp';
 import './index.css';
 
@@ -17,6 +18,7 @@ const queryClient = new QueryClient({
 });
 
 initializeApp();
+initializeProfileImageStore();
 
 const container = document.getElementById('root') as HTMLElement;
 const element = (

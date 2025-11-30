@@ -83,3 +83,13 @@ Apache License 2.0
   <a href="https://github.com/gom-3/dutying-web/graphs/contributors"><img src='https://img.shields.io/github/contributors/gom-3/dutying-web'></a>
   <a href='https://github.com/gom-3/dutying-web/blob/main/LICENSE'><img src='https://img.shields.io/github/license/gom-3/dutying-web'></a>
 </p>
+
+## deployment
+
+QA
+
+- develop -> release/{{version}} -> main <-> hotfix
+
+Complete
+
+- main -> develop

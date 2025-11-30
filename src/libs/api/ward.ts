@@ -24,7 +24,7 @@ const updateWardConstraint = async (wardId: number, shiftTeamId: number, constra
     (await axiosInstance.patch<WardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data;
 const getWardByCode = async (code: string) => (await axiosInstance.get<Ward>(`/wards/search?code=${code}`)).data;
 const getWatingNurses = async (wardId: number) =>
-    (await axiosInstance.get<{nurses: WaitingNurse[]}>(`/wards/${wardId}/waiting-nurses`)).data.nurses;
+    (await axiosInstance.get<{nurses: WaitingNurse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses;
 const addMeToWatingNurses = async (wardId: number) => (await axiosInstance.post(`/wards/${wardId}/waiting-nurses`)).data;
 const connectWatingNurses = async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
     (await axiosInstance.post(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`)).data;

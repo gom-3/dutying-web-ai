@@ -6,6 +6,7 @@ import useTutorial from '@/hooks/ui/useTutorial';
 import ROUTE from '@/libs/constant/path';
 import {events, sendEvent} from 'analytics';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
+import {ProfileImage} from '../ProfileImage';
 
 interface Props {
     isFold: boolean;
@@ -72,11 +73,7 @@ const NavigationBar = ({isFold, setIsFold}: Props) => {
                         <div className="mt-2 text-[1rem] text-sub-3">가이드</div>
                     </div>
                     <div className="flex cursor-pointer flex-col items-center" onClick={() => navigate(ROUTE.PROFILE)}>
-                        <img
-                            src={accountMe?.profileImgBase64 ? 'data:image/png;base64,' + accountMe?.profileImgBase64 : ''}
-                            alt=""
-                            className="h-12.5 w-12.5 rounded-full"
-                        />
+                        <ProfileImage className="h-12.5 w-12.5" profileImg={{profileImgUrl: accountMe?.profileImgUrl}} />
                         <div className="mt-2 text-[1rem] text-sub-3">{accountMe?.name}</div>
                     </div>
                 </div>
