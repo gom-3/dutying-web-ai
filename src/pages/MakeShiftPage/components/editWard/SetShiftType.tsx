@@ -1,8 +1,8 @@
 import {useState} from 'react';
-import {PenIcon, PlusIcon} from '@/assets/svg';
-import useEditWard from '@/hooks/ward/useEditWard';
-import {type CreateShiftTypeDTO} from '@/libs/api/shiftType';
-import {type WardShiftType} from '@/types/ward';
+import useEditWard from '@/features/ward/useEditWard';
+import {type CreateShiftTypeDTO} from '@/shared/api/shiftType';
+import {PenIcon, PlusIcon} from '@/shared/assets/svg';
+import {type WardShiftType} from '@/shared/types/ward';
 import {events, sendEvent} from 'analytics';
 import CreateShiftModal from './CreateShiftModal';
 

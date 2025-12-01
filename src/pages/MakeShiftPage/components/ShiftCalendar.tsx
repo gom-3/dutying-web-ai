@@ -1,11 +1,11 @@
 import {type RefObject, useEffect, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
-import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/assets/svg';
-import ShiftBadge from '@/components/ShiftBadge';
-import useEditShift from '@/hooks/shift/useEditShift';
-import useUIConfig from '@/hooks/ui/useUIConfig';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
+import useEditShift from '@/features/shift/useEditShift';
+import useUIConfig from '@/features/ui/useUIConfig';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
+import ShiftBadge from '@/shared/ui/ShiftBadge';
 import {events, sendEvent} from 'analytics';
 import FaultLayer from './FaultLayer';
 import RequestLayer from './RequestLayer';

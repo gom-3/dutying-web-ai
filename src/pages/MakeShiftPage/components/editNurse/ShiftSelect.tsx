@@ -1,4 +1,4 @@
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 
 interface Props {
     mode: 'isPreferred' | 'isPossible';

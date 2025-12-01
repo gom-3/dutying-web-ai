@@ -1,4 +1,4 @@
-import useRequestShift from '@/hooks/shift/useRequestShift';
+import useRequestShift from '@/features/shift/useRequestShift';
 import RequestCalendar from './components/RequestCalendar';
 import Toolbar from './components/Toolbar';
 

@@ -1,10 +1,10 @@
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {CancelIcon} from '@/assets/svg';
-import Button from '@/components/Button';
-import TextField from '@/components/TextField';
-import TimeInput from '@/components/TimeInput';
-import {type CreateShiftTypeDTO} from '@/libs/api/shiftType';
+import {type CreateShiftTypeDTO} from '@/shared/api/shiftType';
+import {CancelIcon} from '@/shared/assets/svg';
+import Button from '@/shared/ui/Button';
+import TextField from '@/shared/ui/TextField';
+import TimeInput from '@/shared/ui/TimeInput';
 
 interface Props {
     open: boolean;

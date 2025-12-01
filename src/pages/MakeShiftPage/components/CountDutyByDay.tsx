@@ -1,5 +1,5 @@
-import useEditShift from '@/hooks/shift/useEditShift';
-import useUIConfig from '@/hooks/ui/useUIConfig';
+import useEditShift from '@/features/shift/useEditShift';
+import useUIConfig from '@/features/ui/useUIConfig';
 
 function CountDutyByDay() {
     const {

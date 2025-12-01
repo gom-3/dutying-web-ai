@@ -5,15 +5,15 @@ import {useForm} from 'react-hook-form';
 import {useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
-import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/assets/svg';
-import Button from '@/components/Button';
-import TextField from '@/components/TextField';
-import useRegister from '@/hooks/auth/useRegister';
-import {type CreateShiftTypeDTO} from '@/libs/api/shiftType';
-import {type CreateWardDTO} from '@/libs/api/ward';
-import ROUTE from '@/libs/constant/path';
+import useRegister from '@/features/auth/useRegister';
 import CreateShiftModal from '@/pages/MakeShiftPage/components/editWard/CreateShiftModal';
-import {type WardShiftType} from '@/types/ward';
+import {type CreateShiftTypeDTO} from '@/shared/api/shiftType';
+import {type CreateWardDTO} from '@/shared/api/ward';
+import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
+import {type WardShiftType} from '@/shared/types/ward';
+import Button from '@/shared/ui/Button';
+import TextField from '@/shared/ui/TextField';
 
 const schema = yup.object().shape({
     name: yup

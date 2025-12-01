@@ -4,14 +4,14 @@ import {type ChangeEvent, useEffect, useRef} from 'react';
 import {useForm} from 'react-hook-form';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
-import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/assets/svg';
-import Button from '@/components/Button';
-import {ProfileImage} from '@/components/ProfileImage';
-import Select from '@/components/Select';
-import TextField from '@/components/TextField';
-import useRegister from '@/hooks/auth/useRegister';
-import useProfileImage from '@/hooks/file/useProfileImage';
-import {type CreateNurseDTO} from '@/libs/api/nurse';
+import useRegister from '@/features/auth/useRegister';
+import useProfileImage from '@/features/file/useProfileImage';
+import {type CreateNurseDTO} from '@/shared/api/nurse';
+import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
+import Button from '@/shared/ui/Button';
+import {ProfileImage} from '@/shared/ui/ProfileImage';
+import Select from '@/shared/ui/Select';
+import TextField from '@/shared/ui/TextField';
 
 const schema = yup
     .object()

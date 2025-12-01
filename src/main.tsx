@@ -2,10 +2,10 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
 import {Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
-import Loading from '@/components/Loading';
-import Tutorial from '@/components/Tutorial';
-import App from 'App';
-import {initializeProfileImageStore} from './hooks/file/store';
+import App from '@/app/App';
+import Loading from '@/shared/ui/Loading';
+import Tutorial from '@/shared/ui/Tutorial';
+import {initializeProfileImageStore} from './features/file/store';
 import initializeApp from './initializeApp';
 import './index.css';
 

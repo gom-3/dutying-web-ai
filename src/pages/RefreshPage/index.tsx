@@ -2,9 +2,9 @@ import {useCallback, useEffect} from 'react';
 import toast from 'react-hot-toast';
 import {TailSpin} from 'react-loader-spinner';
 import {useNavigate} from 'react-router';
-import useAuth from '@/hooks/auth/useAuth';
-import axiosInstance from '@/libs/api/client';
-import ROUTE from '@/libs/constant/path';
+import useAuth from '@/features/auth/useAuth';
+import axiosInstance from '@/shared/api/client';
+import ROUTE from '@/shared/constant/path';
 
 function RefreshPage() {
     const {

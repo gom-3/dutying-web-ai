@@ -2,12 +2,12 @@ import {type RefObject, useEffect, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {twMerge} from 'tailwind-merge';
-import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/assets/svg';
-import ShiftBadge from '@/components/ShiftBadge';
-import {type Focus} from '@/hooks/shift/useEditShift/types';
-import useRequestShift from '@/hooks/shift/useRequestShift';
-import useUIConfig from '@/hooks/ui/useUIConfig';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
+import {type Focus} from '@/features/shift/useEditShift/types';
+import useRequestShift from '@/features/shift/useRequestShift';
+import useUIConfig from '@/features/ui/useUIConfig';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
+import ShiftBadge from '@/shared/ui/ShiftBadge';
 import {events, sendEvent} from 'analytics';
 
 export default function ShiftCalendar() {

@@ -1,8 +1,8 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
-import {AppstoreGrayIcon, AppstoreIcon, Logo, LogoWithSymbol, PlaystoreGrayIcon, PlaystoreIcon} from '@/assets/svg';
-import useAuth from '@/hooks/auth/useAuth';
-import ROUTE from '@/libs/constant/path';
+import useAuth from '@/features/auth/useAuth';
+import {AppstoreGrayIcon, AppstoreIcon, Logo, LogoWithSymbol, PlaystoreGrayIcon, PlaystoreIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 import {events, sendEvent} from 'analytics';
 
 function WebLanding() {

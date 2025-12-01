@@ -1,4 +1,4 @@
-import useRegister from '@/hooks/auth/useRegister';
+import useRegister from '@/features/auth/useRegister';
 
 function PendingEnter() {
     const {

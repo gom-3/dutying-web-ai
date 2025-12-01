@@ -1,6 +1,6 @@
 import React from 'react';
-import {FaultDotIcon} from '@/assets/svg';
-import {type Fault} from '@/hooks/shift/useEditShift/types';
+import {type Fault} from '@/features/shift/useEditShift/types';
+import {FaultDotIcon} from '@/shared/assets/svg';
 
 interface Props {
     fault: Fault;

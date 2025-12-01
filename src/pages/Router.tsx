@@ -1,7 +1,7 @@
 import {Suspense, lazy} from 'react';
 import {Route, Routes} from 'react-router-dom';
-import {AuthzLayout, NotAuthzLayout, MainLayout} from '@/components/Layouts';
-import ROUTE from '@/libs/constant/path';
+import ROUTE from '@/shared/constant/path.ts';
+import {AuthzLayout, NotAuthzLayout, MainLayout} from '@/shared/ui/Layouts';
 
 const LandingPage = lazy(() => import('./LandingPage'));
 const RefreshPage = lazy(() => import('./RefreshPage'));

@@ -1,5 +1,5 @@
-import Toggle from '@/components/Toggle';
-import useUIConfig from '@/hooks/ui/useUIConfig';
+import useUIConfig from '@/features/ui/useUIConfig';
+import Toggle from '@/shared/ui/Toggle';
 
 const SetDesignTheme = () => {
     const {

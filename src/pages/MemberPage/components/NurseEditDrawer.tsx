@@ -1,10 +1,10 @@
 import {produce} from 'immer';
 import {useCallback, useEffect, useRef, useState} from 'react';
-import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/assets/svg';
-import Button from '@/components/Button';
-import TextField from '@/components/TextField';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
-import {type Nurse} from '@/types/nurse';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/shared/assets/svg';
+import {type Nurse} from '@/shared/types/nurse';
+import Button from '@/shared/ui/Button';
+import TextField from '@/shared/ui/TextField';
 import {events, sendEvent} from 'analytics';
 
 function NurseEditDrawer() {
