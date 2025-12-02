@@ -5,6 +5,7 @@ import {type TEditProfileRequest, type IAccountAPI} from './type';
 
 class AccountAPI implements IAccountAPI {
     getAccount = async (accountId: number) => (await axiosInstance.get<Account>(`/accounts/v2/${accountId}`)).data;
+    getAccountMe = async () => (await axiosInstance.get<Account>('/accounts/me')).data;
     getAccountMeWaiting = async () => (await axiosInstance.get<Ward>(`/accounts/waiting`)).data;
     getDefaultProfileImages = async (): Promise<string[]> =>
         (await axiosInstance.get<{id: number; url: string}[]>(`/accounts/default-images`)).data.map((image) => image.url);

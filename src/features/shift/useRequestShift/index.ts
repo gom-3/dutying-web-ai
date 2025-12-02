@@ -3,7 +3,7 @@ import {produce} from 'immer';
 import {useCallback, useEffect} from 'react';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth/useAuth';
-import {ShiftAPI, ShiftTeamAPI} from '@/shared/api';
+import {WardAPI} from '@/shared/api';
 import {type RequestShift} from '@/shared/types/shift';
 import {type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
 import {events, sendEvent} from 'analytics';
@@ -25,7 +25,7 @@ const useRequestShift = (activeEffect = false) => {
     const {data: shiftTeams} = useQuery({
         queryKey: shiftTeamQueryKey,
         queryFn: async () => {
-            const res = await ShiftTeamAPI.getShiftTeams(wardId!);
+            const res = await WardAPI.getShiftTeams(wardId!);
 
             if (currentShiftTeamId) {
                 if (res.every((x) => x.shiftTeamId !== currentShiftTeamId)) {
@@ -41,13 +41,13 @@ const useRequestShift = (activeEffect = false) => {
     });
     const {data: dutyRequestList} = useQuery({
         queryKey: dutyRequestQueryKey,
-        queryFn: () => ShiftAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
+        queryFn: () => WardAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const {data: requestShift, status: shiftStatus} = useQuery({
         queryKey: requestShiftQueryKey,
         queryFn: async () => {
-            const res = await ShiftAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
+            const res = await WardAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
 
             if (res === null) return;
 
@@ -65,7 +65,7 @@ const useRequestShift = (activeEffect = false) => {
     });
     const {mutate: mutateShift, status: changeStatus} = useMutation({
         mutationFn: ({wardId, focus, shiftTypeId}: {wardId: number; focus: Focus; shiftTypeId: number | null}) =>
-            ShiftAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
+            WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
         onMutate: async ({focus, shiftTypeId}) => {
             await queryClient.cancelQueries({queryKey: ['requestShift']});
 
@@ -112,7 +112,7 @@ const useRequestShift = (activeEffect = false) => {
     });
     const {mutate: acceptRequestMutate} = useMutation({
         mutationFn: ({wardId, reqShiftId, isAccepted}: {wardId: number; reqShiftId: number; isAccepted: boolean | null}) =>
-            ShiftAPI.acceptRequestShift(wardId, reqShiftId, isAccepted),
+            WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
             queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});

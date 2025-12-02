@@ -4,6 +4,7 @@ import {type Ward} from '@/shared/types/ward';
 export interface IAccountAPI {
     // GET
     getAccount: (accountId: number) => Promise<Account>;
+    getAccountMe: () => Promise<Account>;
     getAccountMeWaiting: () => Promise<Ward>;
     getDefaultProfileImages: () => Promise<string[]>;
     // PUT

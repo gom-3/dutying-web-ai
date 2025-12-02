@@ -2,8 +2,8 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import useAuth from '@/features/auth/useAuth';
 import useEditShift from '@/features/shift/useEditShift';
-import {ShiftTypeAPI, WardAPI} from '@/shared/api';
-import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
+import {WardAPI} from '@/shared/api';
+import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {type EditWardDTO} from '@/shared/api/ward/type';
 
 const useEditWard = () => {
@@ -37,7 +37,7 @@ const useEditWard = () => {
     });
     const {mutate: createShiftTypeMutate} = useMutation({
         mutationFn: ({wardId, createShiftTypeDTO}: {wardId: number; createShiftTypeDTO: CreateShiftTypeDTO}) =>
-            ShiftTypeAPI.createShiftType(wardId, createShiftTypeDTO),
+            WardAPI.createShiftType(wardId, createShiftTypeDTO),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: getWardQueryKey});
         },
@@ -51,14 +51,14 @@ const useEditWard = () => {
             wardId: number;
             shiftTypeId: number;
             createShiftTypeDTO: CreateShiftTypeDTO;
-        }) => ShiftTypeAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO),
+        }) => WardAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: getWardQueryKey});
             queryClient.invalidateQueries({queryKey: shiftQueryKey});
         },
     });
     const {mutate: deleteShiftTypeMutate} = useMutation({
-        mutationFn: ({wardId, shiftTypeId}: {wardId: number; shiftTypeId: number}) => ShiftTypeAPI.deleteShiftType(wardId, shiftTypeId),
+        mutationFn: ({wardId, shiftTypeId}: {wardId: number; shiftTypeId: number}) => WardAPI.deleteShiftType(wardId, shiftTypeId),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: getWardQueryKey});
         },

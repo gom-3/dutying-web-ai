@@ -4,9 +4,9 @@ import {useCallback} from 'react';
 import useAuth from '@/features/auth/useAuth';
 import useEditShift from '@/features/shift/useEditShift';
 import useRequestShift from '@/features/shift/useRequestShift';
-import {NurseAPI, ShiftTeamAPI, WardAPI} from '@/shared/api';
+import {NurseAPI, WardAPI} from '@/shared/api';
 import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
-import {type UpdateShiftTeamDTO} from '@/shared/api/shiftTeam/type';
+import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
 import {type Ward} from '@/shared/types/ward';
 import useEditNurseStore from './store';
@@ -43,7 +43,7 @@ const useEditShiftTeam = () => {
     });
     const {mutate: addNurseMutate} = useMutation({
         mutationFn: ({wardId, shiftTeamId}: {wardId: number; shiftTeamId: number}) =>
-            ShiftTeamAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
+            WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
                 name: `간호사${Math.floor(Math.random() * 10000)}`,
                 phoneNum: '01012345678',
                 gender: '여',
@@ -60,7 +60,7 @@ const useEditShiftTeam = () => {
     });
     const {mutate: deleteNurseMutate} = useMutation({
         mutationFn: ({wardId, nurseId, shiftTeamId}: {wardId: number; nurseId: number; shiftTeamId: number}) =>
-            ShiftTeamAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId),
+            WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId),
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: updateNurseShiftTypeMutate} = useMutation({
@@ -76,11 +76,11 @@ const useEditShiftTeam = () => {
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: createShiftTeamMutate} = useMutation({
-        mutationFn: (wardId: number) => ShiftTeamAPI.createShiftTeam(wardId),
+        mutationFn: (wardId: number) => WardAPI.createShiftTeam(wardId),
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: deleteShiftTeamMutate} = useMutation({
-        mutationFn: ({wardId, shiftTeamId}: {wardId: number; shiftTeamId: number}) => ShiftTeamAPI.deleteShiftTeam(wardId, shiftTeamId),
+        mutationFn: ({wardId, shiftTeamId}: {wardId: number; shiftTeamId: number}) => WardAPI.deleteShiftTeam(wardId, shiftTeamId),
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: editDivisionMutate} = useMutation({
@@ -244,7 +244,7 @@ const useEditShiftTeam = () => {
             wardId: number;
             shiftTeamId: number;
             updateShiftTeamDTO: UpdateShiftTeamDTO;
-        }) => ShiftTeamAPI.updateShiftTeam(wardId, shiftTeamId, updateShiftTeamDTO),
+        }) => WardAPI.updateShiftTeam(wardId, shiftTeamId, updateShiftTeamDTO),
         onMutate: ({shiftTeamId, updateShiftTeamDTO}) => {
             const oldWard = queryClient.getQueryData<Ward>(getWardQueryKey);
 
