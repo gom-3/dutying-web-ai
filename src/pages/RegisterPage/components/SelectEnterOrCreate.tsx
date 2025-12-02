@@ -1,7 +1,7 @@
 import {useNavigate} from 'react-router';
-import {EnterWardIcon, RegisterWardIcon} from '@/assets/svg';
-import useAuth from '@/hooks/auth/useAuth';
-import ROUTE from '@/libs/constant/path';
+import useAuth from '@/features/auth/useAuth';
+import {EnterWardIcon, RegisterWardIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 
 function SelectEnterOrCreate() {
     const {

@@ -1,9 +1,9 @@
 import {TailSpin} from 'react-loader-spinner';
 import {Navigate, useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
-import {FullLogo, LogoSymbolFill} from '@/assets/svg';
-import useAuth from '@/hooks/auth/useAuth';
-import ROUTE from '@/libs/constant/path';
+import useAuth from '@/features/auth/useAuth';
+import {FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 import PendingEnter from './components/PendingEnter';
 import RegisterNurse from './components/RegisterNurse';
 import SelectEnterOrCreate from './components/SelectEnterOrCreate';

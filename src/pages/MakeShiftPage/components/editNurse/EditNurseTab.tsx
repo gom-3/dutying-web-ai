@@ -1,6 +1,6 @@
 import {type ChangeEvent} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import ShiftSelect from './ShiftSelect';
 
 type Props = {

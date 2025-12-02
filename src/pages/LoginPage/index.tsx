@@ -1,7 +1,7 @@
 import {Carousel} from 'react-responsive-carousel';
 import {useNavigate} from 'react-router';
-import {AppleIcon, BackCircle, FullLogo, KakaoIcon, LogoSymbolFill, NextCircle} from '@/assets/svg';
-import ROUTE from '@/libs/constant/path';
+import {AppleIcon, BackCircle, FullLogo, KakaoIcon, LogoSymbolFill, NextCircle} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 import 'react-responsive-carousel/lib/styles/carousel.min.css'; // requires a loader
 import './index.css';
 

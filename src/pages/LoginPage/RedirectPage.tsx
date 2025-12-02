@@ -1,7 +1,7 @@
 import qs from 'qs';
 import {useEffect} from 'react';
 import {TailSpin} from 'react-loader-spinner';
-import useAuth from '@/hooks/auth/useAuth';
+import useAuth from '@/features/auth/useAuth';
 
 const RedirectPage = () => {
     const {

@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import toast from 'react-hot-toast';
-import {CopyIcon, LinkedIcon} from '@/assets/svg';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
-import useEditWard from '@/hooks/ward/useEditWard';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import useEditWard from '@/features/ward/useEditWard';
+import {CopyIcon, LinkedIcon} from '@/shared/assets/svg';
 import ConnectionManage from './ConnectionManage';
 
 function WardInfo() {

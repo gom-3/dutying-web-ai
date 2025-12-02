@@ -1,4 +1,4 @@
-import useEditShift from '@/hooks/shift/useEditShift';
+import useEditShift from '@/features/shift/useEditShift';
 import CountDutyByDay from './components/CountDutyByDay';
 import NurseEditModal from './components/NurseEditModal';
 import Panel from './components/Panel';

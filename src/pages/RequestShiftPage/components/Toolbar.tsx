@@ -1,7 +1,7 @@
-import {NextIcon, PenIcon, PrevIcon, SaveCompleteIcon, SavingIcon} from '@/assets/svg';
-import Button from '@/components/Button';
-import Select from '@/components/Select';
-import useRequestShift from '@/hooks/shift/useRequestShift';
+import useRequestShift from '@/features/shift/useRequestShift';
+import {NextIcon, PenIcon, PrevIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
+import Button from '@/shared/ui/Button';
+import Select from '@/shared/ui/Select';
 import {events, sendEvent} from 'analytics';
 
 function Toolbar() {

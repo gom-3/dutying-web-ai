@@ -1,6 +1,8 @@
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
+import useEditShift from '@/features/shift/useEditShift';
+import ShiftBadge from '@/features/ShiftBadge';
 import {
     CancelIcon,
     DutyIconSelected,
@@ -16,17 +18,15 @@ import {
     SaveCompleteIcon,
     SavingIcon,
     ShareIcon,
-} from '@/assets/svg';
-import Button from '@/components/Button';
-import Select from '@/components/Select';
-import ShiftBadge from '@/components/ShiftBadge';
-import useEditShift from '@/hooks/shift/useEditShift';
-import {shiftToExcel} from '@/libs/util/shiftToExcel';
+} from '@/shared/assets/svg';
+import Button from '@/shared/ui/Button';
+import Select from '@/shared/ui/Select';
+import {shiftToExcel} from '@/shared/util/shiftToExcel';
 import {events, sendEvent} from 'analytics';
 import SetConstraint from './editWard/SetConstraint';
 import SetDesignTheme from './editWard/SetDesignTheme';
 import SetShiftType from './editWard/SetShiftType';
-// import useCreateShift from '@/hooks/shift/useCreateShift/indes';
+// import useCreateShift from '@/features/shift/useCreateShift/indes';
 
 function Toolbar() {
     const {

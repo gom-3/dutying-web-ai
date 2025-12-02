@@ -58,6 +58,55 @@ export default [
             'no-constant-condition': 'warn', // 경고로 변경
 
             // Import 관련 규칙
+            // -------------------------------------------------
+            // FSD 레이어 규칙 + public API 규칙 (단일 선언)
+            // -------------------------------------------------
+            'import/no-restricted-paths': [
+                'error',
+                {
+                    zones: [
+                        // pages → app 금지
+                        {
+                            target: ['./src/pages'],
+                            from: ['./src/app'],
+                            message: 'pages는 app을 import할 수 없습니다.',
+                        },
+
+                        // widgets → pages/app 금지
+                        {
+                            target: ['./src/widgets'],
+                            from: ['./src/pages', './src/app'],
+                            message: 'widgets는 pages/app을 import할 수 없습니다.',
+                        },
+
+                        // features → widgets/pages/app 금지
+                        {
+                            target: ['./src/features'],
+                            from: ['./src/widgets', './src/pages', './src/app'],
+                            message: 'features는 widgets/pages/app을 import할 수 없습니다.',
+                        },
+
+                        // entities → features/widgets/pages/app 금지
+                        {
+                            target: ['./src/entities'],
+                            from: ['./src/features', './src/widgets', './src/pages', './src/app'],
+                            message: 'entities는 상위 레이어를 import할 수 없습니다.',
+                        },
+
+                        // shared → 모든 상위 레이어 import 금지
+                        {
+                            target: ['./src/shared'],
+                            from: ['./src/entities', './src/features', './src/widgets', './src/pages', './src/app'],
+                            message: 'shared는 상위 레이어를 import할 수 없습니다.',
+                        },
+                    ],
+                },
+            ],
+
+            // -------------------------------------------------
+            // 사이클 방지
+            // -------------------------------------------------
+            'import/no-cycle': ['error', {maxDepth: 3}],
             'import/no-named-as-default-member': 'off',
             'import/prefer-default-export': 'off',
             'import/no-unresolved': 'off',
@@ -66,17 +115,12 @@ export default [
             'import/order': [
                 'error',
                 {
-                    groups: [['builtin', 'external'], ['internal'], ['parent', 'sibling', 'index']],
+                    groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
                     pathGroups: [
                         {
-                            pattern: 'react*',
-                            group: 'external',
-                            position: 'before',
-                        },
-                        {
-                            pattern: '@/*',
+                            pattern: '@/**',
                             group: 'internal',
-                            position: 'after',
+                            position: 'before',
                         },
                     ],
                     'newlines-between': 'never',

@@ -1,0 +1,146 @@
+import {AppstoreIcon, PlaystoreIcon} from '@/shared/assets/svg';
+import {MobileFooter} from './mobile-footer';
+import MobileHeader from './mobile-header';
+
+function MobileLanding() {
+    return (
+        <div className="flex w-screen flex-col">
+            <MobileHeader />
+
+            {/* 모바일 메인 */}
+            <div className='h-real-screen min-h-[660px] w-screen bg-[url("/img/landing_mobile_1.webp")] bg-cover bg-center bg-no-repeat pt-[60px] pb-[6.25rem]'>
+                <div className="mx-auto flex h-full w-[85%] flex-col pt-[30px]">
+                    <h1 className="font-line text-[32px] leading-[42px] font-bold text-main-1">
+                        근무표,
+                        <br />
+                        이제 더 간편하게!
+                    </h1>
+
+                    <div className="mt-auto flex items-center gap-[8px]">
+                        <div className="flex h-[24px] items-center rounded-[5px] bg-main-4 px-[8px] font-poppins text-[16px] text-main-1">
+                            App
+                        </div>
+                        <p className="font-apple text-[14px] font-medium text-white">근무 일정 관리 (일반 간호사 용)</p>
+                    </div>
+
+                    <div className="mt-[15px] flex h-[38px] gap-[10px]">
+                        <a
+                            href="https://abr.ge/bv13wa"
+                            target="_blank"
+                            className="flex flex-1 cursor-pointer items-center justify-center gap-[9px] rounded-[8px] bg-white font-apple text-[16px] font-semibold"
+                            rel="noreferrer"
+                        >
+                            <PlaystoreIcon className="w-[17px]" />
+                            Google Play
+                        </a>
+                        <a
+                            href="https://abr.ge/bv13wa"
+                            target="_blank"
+                            className="flex flex-1 cursor-pointer items-center justify-center gap-[9px] rounded-[8px] bg-white font-apple text-[16px] font-semibold"
+                            rel="noreferrer"
+                        >
+                            <AppstoreIcon className="w-[17px]" />
+                            App Store
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* 모바일 앱 기능 소개 섹션들 */}
+            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_4.webp")] bg-cover bg-center bg-no-repeat'>
+                <div className="mx-auto flex h-full w-[85%] flex-col pt-[124px]">
+                    <div className="flex items-center gap-[8px]">
+                        <div className="flex h-[22px] items-center rounded-[5px] bg-white px-[6px] font-poppins text-[14px] text-main-2">
+                            App
+                        </div>
+                        <p className="font-apple text-[14px] font-medium text-main-1">홈</p>
+                    </div>
+
+                    <h1 className="mt-[34px] font-line text-[24px] leading-[38px] font-bold tracking-[0.36px] text-white">
+                        근무관리부터
+                        <br />
+                        개인 일정까지 한번에
+                    </h1>
+
+                    <p className="mt-[16px] font-apple text-[16px] leading-[24px] font-medium text-[#FDFCFEB2]">
+                        매월 근무 등록하고
+                        <br />
+                        개인 일정을 유형별로 관리해보세요.
+                    </p>
+                </div>
+            </div>
+
+            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_5.webp")] bg-cover bg-center bg-no-repeat'>
+                <div className="mx-auto flex h-full w-[85%] flex-col pt-[124px]">
+                    <div className="flex items-center gap-[8px]">
+                        <div className="flex h-[22px] items-center rounded-[5px] bg-main-4 px-[6px] font-poppins text-[14px] text-main-1">
+                            App
+                        </div>
+                        <p className="font-apple text-[14px] font-medium text-main-1">소셜 (친구 · 모임)</p>
+                    </div>
+
+                    <h1 className="mt-[34px] font-line text-[24px] leading-[38px] font-bold tracking-[0.36px] text-text-1">
+                        동료의 근무 일정을
+                        <br />
+                        한눈에
+                    </h1>
+
+                    <p className="mt-[16px] font-apple text-[16px] leading-[24px] font-medium text-sub-2">
+                        동료와 친구를 맺어
+                        <br />
+                        일정을 편하게 조율해보세요.
+                    </p>
+                </div>
+            </div>
+
+            {/* 웹 기능 소개 섹션들 */}
+            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_2.webp")] bg-cover bg-center bg-no-repeat'>
+                <div className="mx-auto mt-[124px] flex w-[85%] flex-col">
+                    <div className="flex items-center gap-[8px]">
+                        <div className="flex h-[22px] items-center rounded-[5px] bg-main-4 px-[6px] font-poppins text-[14px] text-main-1">
+                            Web
+                        </div>
+                        <p className="font-apple text-[14px] font-medium text-main-1">근무표 만들기</p>
+                    </div>
+
+                    <h1 className="mt-[34px] font-line text-[24px] leading-[38px] font-bold tracking-[0.36px] text-text-1">
+                        복잡한 근무표 작성을 <br /> 간편하게 자동으로!
+                    </h1>
+
+                    <p className="mt-[16px] font-apple text-[16px] leading-[24px] font-medium text-sub-2">
+                        직접 편집한 제약 조건들에 딱 맞는
+                        <br />
+                        근무표를 작성해드릴게요.
+                    </p>
+                </div>
+            </div>
+
+            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_3.webp")] bg-cover bg-center bg-no-repeat'>
+                <div className="mx-auto flex h-full w-[85%] flex-col pt-[64px]">
+                    <div className="flex items-center gap-[8px]">
+                        <div className="flex h-[22px] items-center rounded-[5px] bg-white px-[6px] font-poppins text-[14px] text-main-1">
+                            Web
+                        </div>
+                        <p className="font-apple text-[14px] font-medium text-main-1">근무표 만들기</p>
+                    </div>
+
+                    <h1 className="mt-[34px] font-line text-[24px] leading-[38px] font-bold tracking-[0.36px] text-text-1">
+                        더 꼼꼼하게,
+                        <br />
+                        하지만 더 편리하게
+                    </h1>
+
+                    <p className="mt-[16px] font-apple text-[16px] leading-[24px] font-medium text-sub-2">
+                        근무표 작성을 돕기 위한
+                        <br />
+                        여러 보조 기능들이 마련되어 있습니다.
+                    </p>
+                </div>
+            </div>
+
+            <MobileFooter />
+        </div>
+    );
+}
+
+export default MobileLanding;

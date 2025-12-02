@@ -1,5 +1,5 @@
-import ShiftBadge from '@/components/ShiftBadge';
-import {type DayInfo} from '@/hooks/shift/useEditShift/types';
+import {type DayInfo} from '@/features/shift/useEditShift/types';
+import ShiftBadge from '@/features/ShiftBadge';
 
 interface Props {
     focusedDayInfo: DayInfo;

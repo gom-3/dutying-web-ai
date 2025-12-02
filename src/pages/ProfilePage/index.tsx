@@ -1,16 +1,16 @@
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
-import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/assets/svg';
-import Button from '@/components/Button';
-import {ProfileImage} from '@/components/ProfileImage';
-import Select from '@/components/Select';
-import TextField from '@/components/TextField';
-import useEditAccount from '@/hooks/account/useEditAccount';
-import useAuth from '@/hooks/auth/useAuth';
-import useProfileImage from '@/hooks/file/useProfileImage';
-import useEditShiftTeam from '@/hooks/ward/useEditShiftTeam';
-import ROUTE from '@/libs/constant/path';
-import {type Nurse} from '@/types/nurse';
+import useEditAccount from '@/features/account/useEditAccount';
+import useAuth from '@/features/auth/useAuth';
+import useProfileImage from '@/features/file/useProfileImage';
+import {ProfileImage} from '@/features/ProfileImage';
+import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
+import {type Nurse} from '@/shared/types/nurse';
+import Button from '@/shared/ui/Button';
+import Select from '@/shared/ui/Select';
+import TextField from '@/shared/ui/TextField';
 
 function ProfilePage() {
     const {
