@@ -2,9 +2,9 @@ import {useMutation, useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
-import {AccountAPI} from '@/shared/api';
-import * as nurseApi from '@/shared/api/nurse';
-import * as wardApi from '@/shared/api/ward';
+import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
+import {type CreateNurseDTO} from '@/shared/api/nurse/type';
+import {type CreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
 import {type Account} from '@/shared/types/account';
 import useAuth from '../useAuth';
@@ -21,7 +21,7 @@ const useRegister = () => {
     const navigate = useNavigate();
     const {mutate: changeAccountStatusMutate} = useMutation({
         mutationFn: ({accountId, status}: {accountId: number; status: Account['status']}) =>
-            AccountAPI.eidtAccountStatus(accountId, status),
+            AccountAPI.editAccountStatus(accountId, status),
         onSuccess: ({status}) => {
             handleGetAccountMe();
 
@@ -29,7 +29,7 @@ const useRegister = () => {
         },
     });
     const {mutate: createWardMutate} = useMutation({
-        mutationFn: (createWardDTO: wardApi.CreateWardDTO) => wardApi.createWrad(createWardDTO),
+        mutationFn: (createWardDTO: CreateWardDTO) => WardAPI.createWard(createWardDTO),
         onMutate: () => {
             setLoading(true);
         },
@@ -45,7 +45,7 @@ const useRegister = () => {
         },
     });
     const {mutate: enterWardMutate} = useMutation({
-        mutationFn: (wardId: number) => wardApi.addMeToWatingNurses(wardId),
+        mutationFn: (wardId: number) => WardAPI.addMeToWatingNurses(wardId),
         onMutate: () => {
             setLoading(true);
         },
@@ -60,7 +60,7 @@ const useRegister = () => {
         },
     });
     const {mutate: cancelWaitingMutate} = useMutation({
-        mutationFn: ({wardId, nurseId}: {wardId: number; nurseId: number}) => wardApi.deleteWatingNurses(wardId, nurseId),
+        mutationFn: ({wardId, nurseId}: {wardId: number; nurseId: number}) => WardAPI.deleteWatingNurses(wardId, nurseId),
         onSuccess: () => {
             if (!accountId) return;
 
@@ -74,7 +74,7 @@ const useRegister = () => {
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
     const registerAccountAndNurse = async (
-        createNurseDTO: nurseApi.CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
+        createNurseDTO: CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
     ) => {
         if (!accountId || !accountMe) return;
 
@@ -91,7 +91,7 @@ const useRegister = () => {
             await AccountAPI.initAccount({accountId, name: createNurseDTO.name, ...createNurseDTO.profileImg});
         }
 
-        await nurseApi.createAccountNurse(accountId, createNurseDTO);
+        await NurseAPI.createAccountNurse(accountId, createNurseDTO);
         changeAccountStatusMutate({accountId, status: 'WARD_SELECT_PENDING'});
         setLoading(false);
     };

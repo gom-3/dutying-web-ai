@@ -3,9 +3,7 @@ import toast from 'react-hot-toast';
 import useAuth from '@/features/auth/useAuth';
 import useLoading from '@/features/ui/useLoading';
 import useEditWard from '@/features/ward/useEditWard';
-import {AccountAPI} from '@/shared/api';
-import {updateNurse} from '@/shared/api/nurse';
-import {quitWard as quitWardApi} from '@/shared/api/ward';
+import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
 import {type Nurse} from '@/shared/types/nurse';
 
 const useEditAccount = () => {
@@ -23,7 +21,7 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            await updateNurse(nurse.nurseId, nurse);
+            await NurseAPI.updateNurse(nurse.nurseId, nurse);
             await AccountAPI.editAccount({
                 accountId: accountMe.accountId,
                 name: nurse.name,
@@ -45,8 +43,8 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            await quitWardApi(accountMe.wardId);
-            await AccountAPI.eidtAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
+            await WardAPI.quitWard(accountMe.wardId);
+            await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
             await handleGetAccountMe();
         } catch (e) {
             console.error(e);

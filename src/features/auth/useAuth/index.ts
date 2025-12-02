@@ -4,7 +4,7 @@ import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
 import useInitStore from '@/features/useInitStore';
-import {demoStart, getAccountMe} from '@/shared/api/auth';
+import {AuthAPI} from '@/shared/api';
 import axiosInstance, {setAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
 import {events, sendEvent} from 'analytics';
@@ -44,7 +44,7 @@ const useAuth = (activeEffect = false) => {
         setLoading(true);
         initTutorial();
 
-        const data = await demoStart();
+        const data = await AuthAPI.demoStart();
 
         setState('accessToken', data.accessToken);
         setState('accountId', data.accountResDto.accountId);
@@ -56,7 +56,7 @@ const useAuth = (activeEffect = false) => {
         setLoading(false);
     };
     const handleGetAccountMe = async () => {
-        const account = await getAccountMe();
+        const account = await AuthAPI.getAccountMe();
 
         setState('accountMe', account);
         setState('wardId', account.wardId);

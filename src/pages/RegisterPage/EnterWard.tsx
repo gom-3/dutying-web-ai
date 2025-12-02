@@ -4,7 +4,7 @@ import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router';
 import {Pattern, match} from 'ts-pattern';
 import useRegister from '@/features/auth/useRegister';
-import {getWardByCode} from '@/shared/api/ward';
+import {WardAPI} from '@/shared/api';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {type Ward} from '@/shared/types/ward';
@@ -53,7 +53,7 @@ function EnterWard() {
     );
     const handleGetWard = async (code: string) => {
         try {
-            const ward = await getWardByCode(code);
+            const ward = await WardAPI.getWardByCode(code);
 
             setWard(ward);
             setError(false);

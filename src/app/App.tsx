@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
+import {Router} from '@/app/Router';
 import useAuth from '@/features/auth/useAuth';
-import {Router} from '@/pages/Router';
 
 function App() {
     useAuth(true);

@@ -6,10 +6,10 @@ import {match} from 'ts-pattern';
 import * as yup from 'yup';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
-import {type CreateNurseDTO} from '@/shared/api/nurse';
+import {ProfileImage} from '@/features/ProfileImage';
+import {type CreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
-import {ProfileImage} from '@/shared/ui/ProfileImage';
 import Select from '@/shared/ui/Select';
 import TextField from '@/shared/ui/TextField';
 

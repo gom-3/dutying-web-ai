@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {type CreateShiftTypeDTO} from '@/shared/api/shiftType';
+import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
 import {CancelIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';

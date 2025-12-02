@@ -3,12 +3,12 @@ import {type ChangeEvent, useEffect, useRef, useState} from 'react';
 import useEditAccount from '@/features/account/useEditAccount';
 import useAuth from '@/features/auth/useAuth';
 import useProfileImage from '@/features/file/useProfileImage';
+import {ProfileImage} from '@/features/ProfileImage';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {type Nurse} from '@/shared/types/nurse';
 import Button from '@/shared/ui/Button';
-import {ProfileImage} from '@/shared/ui/ProfileImage';
 import Select from '@/shared/ui/Select';
 import TextField from '@/shared/ui/TextField';
 

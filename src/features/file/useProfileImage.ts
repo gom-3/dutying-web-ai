@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import toast from 'react-hot-toast';
 import {FileAPI} from '@/shared/api';
-import {FILE_TYPE} from '@/shared/api/file';
+import {FILE_TYPE} from '@/shared/api/file/type';
 import {uploadImageToS3} from './uploadFile';
 
 export const DEFAULT_IMAGE_COUNT = 30;

@@ -3,8 +3,8 @@ import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth/useAuth';
 import useLoading from '@/features/ui/useLoading';
+import {ShiftAPI} from '@/shared/api';
 import axiosInstance from '@/shared/api/client';
-import {updateShifts} from '@/shared/api/shift';
 import useEditShift from '../useEditShift';
 
 function useCreateShift() {
@@ -102,7 +102,7 @@ function useCreateShift() {
                     });
                 }
 
-                updateShiftPromises.push(updateShifts(wardId, wardShiftsDTO));
+                updateShiftPromises.push(ShiftAPI.updateShifts(wardId, wardShiftsDTO));
             }
 
             await Promise.all(updateShiftPromises);

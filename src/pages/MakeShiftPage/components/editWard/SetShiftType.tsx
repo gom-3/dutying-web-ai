@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import useEditWard from '@/features/ward/useEditWard';
-import {type CreateShiftTypeDTO} from '@/shared/api/shiftType';
+import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
 import {type WardShiftType} from '@/shared/types/ward';
 import {events, sendEvent} from 'analytics';

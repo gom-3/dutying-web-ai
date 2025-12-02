@@ -5,10 +5,8 @@ import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth/useAuth';
 import useLoading from '@/features/ui/useLoading';
-import {updateNurseCarry} from '@/shared/api/nurse';
-import {type WardShiftsDTO, getShift, updateShift, updateShifts, postShift} from '@/shared/api/shift';
-import {getShiftTeams} from '@/shared/api/shiftTeam';
-import {getWardConstraint, updateWardConstraint} from '@/shared/api/ward';
+import {NurseAPI, ShiftAPI, ShiftTeamAPI, WardAPI} from '@/shared/api';
+import {type WardShiftsDTO} from '@/shared/api/shift/type';
 import {type Shift} from '@/shared/types/shift';
 import {type WardShiftType, type WardConstraint, type ShiftTeam} from '@/shared/types/ward';
 import {events, sendEvent} from 'analytics';
@@ -44,7 +42,7 @@ const useEditShift = (activeEffect = false) => {
     const {data: shiftTeams} = useQuery({
         queryKey: shiftTeamQueryKey,
         queryFn: async () => {
-            const res = await getShiftTeams(wardId!);
+            const res = await ShiftTeamAPI.getShiftTeams(wardId!);
 
             if (currentShiftTeamId) {
                 if (res.every((x) => x.shiftTeamId !== currentShiftTeamId)) {
@@ -58,12 +56,12 @@ const useEditShift = (activeEffect = false) => {
     });
     const {data: wardConstraint} = useQuery({
         queryKey: wardConstraintQueryKey,
-        queryFn: () => getWardConstraint(wardId!, currentShiftTeamId!),
+        queryFn: () => WardAPI.getWardConstraint(wardId!, currentShiftTeamId!),
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const {mutate: updateWardConstraintMutate} = useMutation({
         mutationFn: ({wardId, shiftTeamId, constraint}: {wardId: number; shiftTeamId: number; constraint: WardConstraint}) =>
-            updateWardConstraint(wardId, shiftTeamId, constraint),
+            WardAPI.updateWardConstraint(wardId, shiftTeamId, constraint),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: wardConstraintQueryKey});
         },
@@ -71,7 +69,7 @@ const useEditShift = (activeEffect = false) => {
     const {data: shift, status: shiftStatus} = useQuery({
         queryKey: shiftQueryKey,
         queryFn: async () => {
-            const res = await getShift(wardId!, currentShiftTeamId!, year, month);
+            const res = await ShiftAPI.getShift(wardId!, currentShiftTeamId!, year, month);
 
             if (res === null) return;
 
@@ -89,7 +87,7 @@ const useEditShift = (activeEffect = false) => {
     });
     const {mutate: mutateShift, status: changeStatus} = useMutation({
         mutationFn: ({wardId, focus, shiftTypeId}: {wardId: number; focus: Focus; shiftTypeId: number | null}) =>
-            updateShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
+            ShiftAPI.updateShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
         onMutate: async ({focus, shiftTypeId}) => {
             await queryClient.cancelQueries({queryKey: ['shift']});
 
@@ -156,7 +154,7 @@ const useEditShift = (activeEffect = false) => {
     });
     const {mutate: mutateShiftsAndHistory} = useMutation({
         mutationFn: ({wardId, wardShiftsDTO}: {wardId: number; wardShiftsDTO: WardShiftsDTO; lastFocus: Focus; diff: number}) =>
-            updateShifts(wardId, wardShiftsDTO),
+            ShiftAPI.updateShifts(wardId, wardShiftsDTO),
         onMutate: async ({wardShiftsDTO, lastFocus, diff}) => {
             await queryClient.cancelQueries({queryKey: ['shift']});
 
@@ -199,7 +197,7 @@ const useEditShift = (activeEffect = false) => {
         },
     });
     const {mutate: mutateCarry} = useMutation({
-        mutationFn: ({shiftNurseId, value}: {shiftNurseId: number; value: number}) => updateNurseCarry(shiftNurseId, value),
+        mutationFn: ({shiftNurseId, value}: {shiftNurseId: number; value: number}) => NurseAPI.updateNurseCarry(shiftNurseId, value),
         onMutate: async ({shiftNurseId, value}) => {
             await queryClient.cancelQueries({queryKey: ['shift']});
 
@@ -231,7 +229,7 @@ const useEditShift = (activeEffect = false) => {
     });
     const {mutate: postShiftMutate, isPending: postShiftLoading} = useMutation({
         mutationFn: ({wardId, shiftTeamId, year, month}: {wardId: number; shiftTeamId: number; year: number; month: number}) =>
-            postShift(wardId, shiftTeamId, year, month),
+            ShiftAPI.postShift(wardId, shiftTeamId, year, month),
     });
     const changeMonth = useCallback(
         (type: 'prev' | 'next') => {
@@ -386,7 +384,7 @@ const useEditShift = (activeEffect = false) => {
                     });
                 }
 
-                updateShiftPromises.push(updateShifts(wardId, wardShiftsDTO));
+                updateShiftPromises.push(ShiftAPI.updateShifts(wardId, wardShiftsDTO));
             }
 
             await Promise.all(updateShiftPromises);

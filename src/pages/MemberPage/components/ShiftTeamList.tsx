@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router';
 import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useTutorial from '@/features/ui/useTutorial';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
-import {type UpdateShiftTeamDTO} from '@/shared/api/shiftTeam';
+import {type UpdateShiftTeamDTO} from '@/shared/api/shiftTeam/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import TextField from '@/shared/ui/TextField';

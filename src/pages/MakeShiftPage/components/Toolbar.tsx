@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import useEditShift from '@/features/shift/useEditShift';
+import ShiftBadge from '@/features/ShiftBadge';
 import {
     CancelIcon,
     DutyIconSelected,
@@ -20,7 +21,6 @@ import {
 } from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
-import ShiftBadge from '@/shared/ui/ShiftBadge';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
 import {events, sendEvent} from 'analytics';
 import SetConstraint from './editWard/SetConstraint';
