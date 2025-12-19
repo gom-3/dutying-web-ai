@@ -6,6 +6,7 @@ import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {type RequestShift} from '@/shared/types/shift';
 import {type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
+import {DateUtil} from '@/shared/util/date';
 import {events, sendEvent} from 'analytics';
 import {findNurse, keydownEventMapper, moveFocus} from '../useEditShift/handlers';
 import {type Focus} from '../useEditShift/types';
@@ -81,7 +82,7 @@ const useRequestShift = (activeEffect = false) => {
                 focus,
                 prevShiftType: oldShiftTypeId ? wardShiftTypeMap.get(oldShiftTypeId) : null,
                 nextShiftType: shiftTypeId ? wardShiftTypeMap.get(shiftTypeId) : null,
-                dateString: new Date().toLocaleString(),
+                dateString: DateUtil.getDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'),
             };
 
             queryClient.setQueryData<RequestShift>(
