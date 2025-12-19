@@ -18,3 +18,7 @@ i18n.use(LanguageDetector)
         },
         debug: true,
     });
+
+i18n.on('languageChanged', (lng) => {
+    document.documentElement.lang = lng;
+});
