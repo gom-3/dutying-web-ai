@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
+import {events, sendEvent} from '@/analytics';
 import useEditShift from '@/features/shift/useEditShift';
 import ShiftBadge from '@/features/ShiftBadge';
 import {
@@ -22,7 +23,6 @@ import {
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
-import {events, sendEvent} from 'analytics';
 import SetConstraint from './editWard/SetConstraint';
 import SetDesignTheme from './editWard/SetDesignTheme';
 import SetShiftType from './editWard/SetShiftType';

@@ -1,9 +1,9 @@
 import React from 'react';
 import {match} from 'ts-pattern';
+import {events, sendEvent} from '@/analytics';
 import useEditShift from '@/features/shift/useEditShift';
 import {ArrowDownIcon} from '@/shared/assets/svg';
 import Toggle from '@/shared/ui/Toggle';
-import {events, sendEvent} from 'analytics';
 
 const Select = ({
     value,
