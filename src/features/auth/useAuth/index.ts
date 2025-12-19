@@ -7,7 +7,6 @@ import useInitStore from '@/features/useInitStore';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import axiosInstance, {setAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
-import {DateUtil} from '@/shared/util/date';
 import {events, sendEvent} from 'analytics';
 import useAuthStore from './store';
 
@@ -52,7 +51,7 @@ const useAuth = (activeEffect = false) => {
         setState('nurseId', data.accountResDto.nurseId);
         setState('wardId', data.accountResDto.wardId);
         setState('isAuth', true);
-        setState('demoStartDate', DateUtil.getDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'));
+        setState('demoStartDate', new Date().toISOString());
         navigate(ROUTE.MAKE);
         setLoading(false);
     };

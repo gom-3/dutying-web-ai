@@ -28,7 +28,7 @@ export function getDayName(date: Date) {
 export class DateUtil {
     public static locale: string = 'ko-KR';
 
-    set locale(locale: string) {
+    static setLocale(locale: string) {
         this.locale = locale;
     }
 
