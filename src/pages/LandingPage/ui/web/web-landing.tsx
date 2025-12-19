@@ -4,6 +4,8 @@ import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import {AppstoreIcon, Logo, PlaystoreIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {renderMultilineText} from '@/shared/util/string';
 import {WebFooter} from './web-footer';
 import WebHeader from './web-header';
 
@@ -19,8 +21,6 @@ function WebLanding() {
     const handleScroll = useCallback(() => {
         const webSectionTop = webSectionRef.current?.getBoundingClientRect().top;
         const mobileSectionTop = mobileSectionRef.current?.getBoundingClientRect().top;
-
-        console.log(mobileSectionTop, webSectionTop);
 
         if (webSectionTop && mobileSectionTop) {
             if (webSectionTop < 100) {
@@ -47,6 +47,8 @@ function WebLanding() {
         return () => document.removeEventListener('scroll', handleScroll);
     }, [handleScroll]);
 
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex w-screen flex-col">
             <WebHeader focus={focus} handleClickMobileAnchor={handleClickMobileAnchor} handleClickWebAnchor={handleClickWebAnchor} />
@@ -54,9 +56,7 @@ function WebLanding() {
             <div className='relative h-real-screen min-h-[660px] w-screen bg-[url("/img/landing_1.webp")] bg-cover bg-center bg-no-repeat py-0'>
                 <div className="relative top-1/2 container mx-auto h-fit -translate-y-1/2">
                     <h1 className="font-line text-[4rem] leading-[5.4375rem] font-bold text-white">
-                        근무표,
-                        <br />
-                        이제 더 간편하게!
+                        {renderMultilineText(t('landingPage.title'))}
                     </h1>
 
                     <div className="mt-[2.1875rem] flex items-center gap-[8px]">

@@ -8,6 +8,7 @@ import Tutorial from '@/features/Tutorial';
 import {initializeProfileImageStore} from './features/file/store';
 import initializeApp from './initializeApp';
 import './index.css';
+import './i18n';
 
 const queryClient = new QueryClient({
     defaultOptions: {
