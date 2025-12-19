@@ -3,6 +3,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
+import {events, sendEvent} from '@/analytics';
 import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useTutorial from '@/features/ui/useTutorial';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
@@ -11,7 +12,6 @@ import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2
 import ROUTE from '@/shared/constant/path';
 import TextField from '@/shared/ui/TextField';
 import {DateUtil} from '@/shared/util/date';
-import {events, sendEvent} from 'analytics';
 
 function ShiftTeamList() {
     const {

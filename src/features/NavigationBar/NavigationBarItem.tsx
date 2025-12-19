@@ -1,6 +1,6 @@
 import React from 'react';
 import {useLocation, useNavigate} from 'react-router';
-import {events, sendEvent} from 'analytics';
+import {events, sendEvent} from '@/analytics';
 
 interface Props {
     path: string;

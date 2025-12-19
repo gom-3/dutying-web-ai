@@ -1,9 +1,9 @@
 import {useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {match} from 'ts-pattern';
+import {events, sendEvent} from '@/analytics';
 import useEditShift from '@/features/shift/useEditShift';
 import {RestoreIcon, RestoreIconDisable} from '@/shared/assets/svg';
-import {events, sendEvent} from 'analytics';
 
 function Panel() {
     const {

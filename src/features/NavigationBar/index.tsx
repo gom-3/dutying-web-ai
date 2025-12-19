@@ -1,10 +1,10 @@
 import {useState, useEffect} from 'react';
 import {useNavigate} from 'react-router';
+import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import useTutorial from '@/features/ui/useTutorial';
 import {FoldIcon, HelpIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {events, sendEvent} from 'analytics';
 import {ProfileImage} from '../ProfileImage';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
 

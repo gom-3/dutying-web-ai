@@ -1,5 +1,5 @@
 import {defineConfig} from 'vitest/config';
-import react from '@vitejs/plugin-react-swc';
+import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
 import mkcert from 'vite-plugin-mkcert';
@@ -58,7 +58,7 @@ export default defineConfig({
             },
         },
     },
-    plugins: [react(), tsconfigPaths(), tailwindcss(), mkcert()],
+    plugins: [react({babel: {plugins: [['babel-plugin-react-compiler']]}}), tsconfigPaths(), tailwindcss(), mkcert()],
     server: {
         host: 'local.dutying.net',
         port: 3000,

@@ -1,5 +1,6 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
+import {events, sendEvent} from '@/analytics';
 import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
@@ -7,7 +8,6 @@ import useInitStore from '@/features/useInitStore';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import axiosInstance, {setAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
-import {events, sendEvent} from 'analytics';
 import useAuthStore from './store';
 
 const useAuth = (activeEffect = false) => {

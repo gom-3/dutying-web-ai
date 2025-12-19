@@ -1,12 +1,12 @@
 import {produce} from 'immer';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
+import {events, sendEvent} from '@/analytics';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CancelIcon, CheckedIcon, UncheckedIcon2} from '@/shared/assets/svg';
 import {type Nurse} from '@/shared/types/nurse';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
-import {events, sendEvent} from 'analytics';
 
 function NurseEditModal() {
     const {

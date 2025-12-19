@@ -1,9 +1,9 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
+import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import {AppstoreIcon, Logo, PlaystoreIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {events, sendEvent} from 'analytics';
 import {WebFooter} from './web-footer';
 import WebHeader from './web-header';
 
