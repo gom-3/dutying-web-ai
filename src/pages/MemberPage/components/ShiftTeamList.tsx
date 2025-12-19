@@ -10,6 +10,7 @@ import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import TextField from '@/shared/ui/TextField';
+import {DateUtil} from '@/shared/util/date';
 import {events, sendEvent} from 'analytics';
 
 function ShiftTeamList() {
@@ -102,7 +103,7 @@ function ShiftTeamList() {
                 destination.index === destinationNurses.length - 1
                     ? destinationNurses[destination.index].priority + 2024
                     : destinationNurses[destination.index + 1].priority,
-                `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+                DateUtil.getDateString(new Date(), 'yyyy-MM'),
             );
         } else {
             if (parseInt(destinationDivision) === 0) {
@@ -113,7 +114,7 @@ function ShiftTeamList() {
                     1,
                     0,
                     2024,
-                    `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+                    DateUtil.getDateString(new Date(), 'yyyy-MM'),
                 );
             } else {
                 moveNurseOrder(
@@ -125,7 +126,7 @@ function ShiftTeamList() {
                     destination.index === destinationNurses.length
                         ? destinationNurses[destination.index - 1].priority + 2024
                         : destinationNurses[destination.index].priority,
-                    `${new Date().getFullYear()}-${(new Date().getMonth() + 1).toString().padStart(2, '0')}`,
+                    DateUtil.getDateString(new Date(), 'yyyy-MM'),
                 );
             }
         }
@@ -333,9 +334,7 @@ function ShiftTeamList() {
                                                                                 shiftTeam.shiftTeamId,
                                                                                 nurse.priority,
                                                                                 1,
-                                                                                `${new Date().getFullYear()}-${(new Date().getMonth() + 1)
-                                                                                    .toString()
-                                                                                    .padStart(2, '0')}`,
+                                                                                DateUtil.getDateString(new Date(), 'yyyy-MM'),
                                                                             );
                                                                             sendEvent(events.memberPage.createDivision);
                                                                         }}
@@ -359,11 +358,7 @@ function ShiftTeamList() {
                                                                                     shiftTeam.shiftTeamId,
                                                                                     nurse.priority,
                                                                                     -1,
-                                                                                    `${new Date().getFullYear()}-${(
-                                                                                        new Date().getMonth() + 1
-                                                                                    )
-                                                                                        .toString()
-                                                                                        .padStart(2, '0')}`,
+                                                                                    DateUtil.getDateString(new Date(), 'yyyy-MM'),
                                                                                 );
                                                                                 sendEvent(events.memberPage.deleteDivision);
                                                                             }}
