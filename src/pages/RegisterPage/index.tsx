@@ -4,9 +4,9 @@ import {match} from 'ts-pattern';
 import useAuth from '@/features/auth/useAuth';
 import {FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import PendingEnter from './components/PendingEnter';
-import RegisterNurse from './components/RegisterNurse';
-import SelectEnterOrCreate from './components/SelectEnterOrCreate';
+import PendingEnter from './ui/PendingEnter';
+import RegisterNurse from './ui/RegisterNurse';
+import SelectEnterOrCreate from './ui/SelectEnterOrCreate';
 
 function RegisterPage() {
     const {

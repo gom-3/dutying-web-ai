@@ -1,10 +1,10 @@
 import {useState} from 'react';
 import {events, sendEvent} from '@/analytics';
+import CreateShiftModal from '@/features/ward/CreateShiftModal';
 import useEditWard from '@/features/ward/useEditWard';
-import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
+import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
 import {type WardShiftType} from '@/shared/types/ward';
-import CreateShiftModal from './CreateShiftModal';
 
 function SetShiftType() {
     const {

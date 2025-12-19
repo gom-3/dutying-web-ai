@@ -1,6 +1,6 @@
-import NurseEditDrawer from './components/NurseEditDrawer';
-import ShiftTeamList from './components/ShiftTeamList';
-import WardInfo from './components/WardInfo';
+import NurseEditDrawer from './ui/NurseEditDrawer';
+import ShiftTeamList from './ui/ShiftTeamList';
+import WardInfo from './ui/WardInfo';
 
 function MemberPage() {
     return (

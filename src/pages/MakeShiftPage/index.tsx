@@ -1,9 +1,9 @@
 import useEditShift from '@/features/shift/useEditShift';
-import CountDutyByDay from './components/CountDutyByDay';
-import NurseEditModal from './components/NurseEditModal';
-import Panel from './components/Panel';
-import ShiftCalendar from './components/ShiftCalendar';
-import Toolbar from './components/Toolbar';
+import CountDutyByDay from './ui/CountDutyByDay';
+import NurseEditModal from './ui/NurseEditModal';
+import Panel from './ui/Panel';
+import ShiftCalendar from './ui/ShiftCalendar';
+import Toolbar from './ui/Toolbar';
 
 const MakeShiftPage = () => {
     const {

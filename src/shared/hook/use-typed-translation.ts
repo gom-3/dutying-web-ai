@@ -1,22 +1,30 @@
 import type React from 'react';
 import {useTranslation} from 'react-i18next';
-import {type TLocale} from '../locales/ko';
+import {type ko} from '../locales/ko';
 
-type FirstDepth = keyof TLocale;
+type Join<K, P> = K extends string | number ? (P extends string | number ? `${K}.${P}` : never) : never;
 
-type SecondDepth<F extends FirstDepth> = keyof TLocale[F];
+type Paths<T> = T extends string
+    ? never
+    : {
+          [K in Extract<keyof T, string | number>]: T[K] extends string
+              ? `${K & (string | number)}`
+              : T[K] extends Record<string, unknown>
+                ? Join<K & (string | number), Paths<T[K]>>
+                : never;
+      }[Extract<keyof T, string | number>];
 
-type MessageByKey<K extends I18nKey> = K extends `${infer F}.${infer S}`
-    ? F extends keyof TLocale
-        ? S extends keyof TLocale[F]
-            ? TLocale[F][S]
-            : never
+type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
+    ? K extends keyof T
+        ? PathValue<T[K], Rest>
         : never
-    : never;
+    : P extends keyof T
+      ? T[P]
+      : never;
 
-export type I18nKey = {
-    [F in FirstDepth]: `${F & string}.${SecondDepth<F> & string}`;
-}[FirstDepth];
+type MessageByKey<K extends I18nKey> = PathValue<typeof ko, K>;
+
+export type I18nKey = Paths<typeof ko> & string;
 
 type ValueType = string | number | React.JSX.Element;
 
@@ -29,7 +37,7 @@ type InterpolationValues<T extends string> = [ExtractKeys<T>] extends [never] ? 
 export function useTypedTranslation() {
     const {t} = useTranslation();
 
-    function typedT<K extends I18nKey>(key: K, values?: InterpolationValues<MessageByKey<K>>): string {
+    function typedT<K extends I18nKey>(key: K, values?: InterpolationValues<Extract<MessageByKey<K>, string>>): string {
         return t(key, values) as string;
     }
 

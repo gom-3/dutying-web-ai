@@ -1,6 +1,6 @@
 import useRequestShift from '@/features/shift/useRequestShift';
-import RequestCalendar from './components/RequestCalendar';
-import Toolbar from './components/Toolbar';
+import RequestCalendar from './ui/RequestCalendar';
+import Toolbar from './ui/Toolbar';
 
 const RequestShiftPage = () => {
     useRequestShift(true);

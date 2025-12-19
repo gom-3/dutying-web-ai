@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
 import useRegister from '@/features/auth/useRegister';
-import CreateShiftModal from '@/pages/MakeShiftPage/components/editWard/CreateShiftModal';
+import CreateShiftModal from '@/features/ward/CreateShiftModal';
 import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
 import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
