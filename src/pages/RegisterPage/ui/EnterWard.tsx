@@ -4,7 +4,7 @@ import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router';
 import {Pattern, match} from 'ts-pattern';
 import useRegister from '@/features/auth/useRegister';
-import {WardAPI} from '@/shared/api';
+import useGetWardByCode from '@/features/ward/useGetWardByCode';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {type Ward} from '@/shared/types/ward';
@@ -19,6 +19,7 @@ function EnterWard() {
         state: {accountMe},
         actions: {enterWard},
     } = useRegister();
+    const {getWardByCode} = useGetWardByCode();
     const navigate = useNavigate();
     const clickAwayRef = useOnclickOutside(() => setFocusedIndex(-1));
     const handleKeyDown = useCallback(
@@ -53,7 +54,7 @@ function EnterWard() {
     );
     const handleGetWard = async (code: string) => {
         try {
-            const ward = await WardAPI.getWardByCode(code);
+            const ward = await getWardByCode(code);
 
             setWard(ward);
             setError(false);

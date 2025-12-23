@@ -56,7 +56,7 @@ function WebLanding() {
             <div className='relative h-real-screen min-h-[660px] w-screen bg-[url("/img/landing_1.webp")] bg-cover bg-center bg-no-repeat py-0'>
                 <div className="relative top-1/2 container mx-auto h-fit -translate-y-1/2">
                     <h1 className="font-line text-[4rem] leading-[5.4375rem] font-bold text-white">
-                        {renderMultilineText(t('landingPage.title'))}
+                        {renderMultilineText(t('page.landing.title'))}
                     </h1>
 
                     <div className="mt-[2.1875rem] flex items-center gap-[8px]">
