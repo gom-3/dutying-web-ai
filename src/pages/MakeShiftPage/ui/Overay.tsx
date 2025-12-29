@@ -1,4 +1,4 @@
-import {type DayInfo} from '@/features/shift/useEditShift/types';
+import {type DayInfo} from '@/features/shift/editDuty/faults';
 import ShiftBadge from '@/features/ShiftBadge';
 
 interface Props {

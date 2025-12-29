@@ -1,7 +1,6 @@
+import {observer} from 'mobx-react-lite';
 import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
-import useEditShift from '@/features/shift/useEditShift';
-import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useTutorial from '@/features/ui/useTutorial';
 import {type StepConfig, type StepsConfig, TutorialOverlay} from './TutorialOverlay';
 
@@ -10,10 +9,6 @@ const MakeTutorial = () => {
         state: {showMakeTutorial},
         actions: {setMakeTutorial},
     } = useTutorial();
-    const {
-        actions: {toggleEditMode},
-    } = useEditShift();
-    const {setState} = useEditShiftStore();
     const config: StepsConfig = {
         steps: new Map<number, StepConfig>(),
         infoBoxHeight: 150,
@@ -54,7 +49,7 @@ const MakeTutorial = () => {
         title: '근무표 만들기',
         info: '수정하기 버튼을 눌러서 근무표를 만들 수 있어요',
         infoBoxAlignment: 'center',
-        onNextStep: toggleEditMode,
+        // 편집 모드 전환은 페이지(store) 책임. 튜토리얼은 DI 밖에서도 렌더될 수 있어 직접 접근하지 않는다.
     });
 
     config.steps.set(6, {
@@ -62,15 +57,12 @@ const MakeTutorial = () => {
         title: '근무표 만들기',
         info: '셀을 클릭하시고 D E N O를 입력하시면 근무를 작성하실 수 있어요! \n더 자세한 가이드는 메뉴얼 문서를 참고해주세요!',
         infoBoxAlignment: 'center',
-        onPrevStep: toggleEditMode,
         ctaText: '메뉴얼 보러가기',
         ctaUrl: 'https://gom3.notion.site/68d3ad01e68d4d6a8b4cb8c2409353a3?pvs=4',
     });
 
     useEffect(() => {
-        if (showMakeTutorial) {
-            setState('readonly', true);
-        }
+        // no-op
     }, [showMakeTutorial]);
 
     return (
@@ -79,4 +71,4 @@ const MakeTutorial = () => {
     );
 };
 
-export default MakeTutorial;
+export default observer(MakeTutorial);

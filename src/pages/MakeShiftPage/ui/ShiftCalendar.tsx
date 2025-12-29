@@ -1,20 +1,21 @@
+import {observer} from 'mobx-react-lite';
 import {type RefObject, useEffect, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
-import useEditShift from '@/features/shift/useEditShift';
+import {keydownEventMapper} from '@/features/shift/editDuty/keyboard';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
 import ShiftBadge from '@/features/ShiftBadge';
 import useUIConfig from '@/features/ui/useUIConfig';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
+import {useDependency} from '@/shared/hook/use-dependency';
 import FaultLayer from './FaultLayer';
 import RequestLayer from './RequestLayer';
 
-export default function ShiftCalendar() {
-    const {
-        state: {readonly, year, month, shift, focus, faults, foldedLevels, wardShiftTypeMap, showLayer, currentShiftTeam},
-        actions: {changeFocus, foldLevel, updateCarry},
-    } = useEditShift();
+function ShiftCalendar() {
+    const store = useDependency(EditDutyStore);
+    const {readonly, year, month, shift, focus, faults, foldedLevels, wardShiftTypeMap, showLayer, currentShiftTeam} = store.viewState;
     const {
         state: {shiftTeams},
         actions: {selectNurse, moveNurseOrder, editDivision},
@@ -25,7 +26,7 @@ export default function ShiftCalendar() {
     const focusedCellRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const clickAwayRef = useOnclickOutside(() => {
-        changeFocus(null);
+        store.setSelection(null);
         selectNurse(null);
     });
     const onDragEnd = ({source, destination, draggableId}: DropResult) => {
@@ -98,6 +99,64 @@ export default function ShiftCalendar() {
             if (focusRect.y - container.offsetTop < 0) window.scroll({top: focusRect.top + window.scrollY - 132});
         }
     }, [focus]);
+
+    useEffect(() => {
+        if (readonly) return;
+
+        const handler = (e: KeyboardEvent) => {
+            e.preventDefault();
+
+            const ctrlKey = e.ctrlKey || e.metaKey;
+
+            if (ctrlKey && e.key === 'z') {
+                if (e.shiftKey) {
+                    store.redo();
+                    sendEvent(events.makePage.redoBykey);
+                } else {
+                    store.undo();
+                    sendEvent(events.makePage.undoBykey);
+                }
+            }
+
+            if (ctrlKey && e.key === 'v') {
+                void navigator.clipboard.readText().then((text) => store.pasteFromClipboardText(text));
+            }
+
+            if (!focus || !shift) return;
+
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                store.moveSelectionByArrow(e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down', ctrlKey);
+                sendEvent(ctrlKey ? events.makePage.moveCellFocus : events.makePage.moveCellFocus, e.key);
+            }
+
+            keydownEventMapper(
+                e,
+                ...shift.wardShiftTypes.map((shiftType) => ({
+                    keys: [shiftType.shortName],
+                    callback: () => {
+                        store.applyShiftTypeId(shiftType.wardShiftTypeId);
+                        store.moveSelectionByArrow('right', ctrlKey);
+                        sendEvent(ctrlKey ? events.makePage.moveCellFocus : events.makePage.moveCellFocus, e.key);
+                    },
+                })),
+                {
+                    keys: ['Backspace'],
+                    callback: () => {
+                        store.applyShiftTypeId(null);
+                        store.moveSelectionByArrow('left', ctrlKey);
+                        sendEvent(ctrlKey ? events.makePage.moveCellFocus : events.makePage.moveCellFocus, e.key);
+                    },
+                },
+                {keys: ['Delete'], callback: () => store.applyShiftTypeId(null)},
+            );
+        };
+
+        document.addEventListener('keydown', handler);
+
+        return () => {
+            document.removeEventListener('keydown', handler);
+        };
+    }, [readonly, store, shift, focus]);
 
     return shift && foldedLevels && wardShiftTypeMap && currentShiftTeam ? (
         <div id="calendar" ref={clickAwayRef} className="flex w-full flex-col overflow-hidden">
@@ -185,7 +244,7 @@ export default function ShiftCalendar() {
                                         className="ml-5 flex h-7.5 w-[calc(100%-1.25rem)] cursor-pointer items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem]"
                                         onClick={() => {
                                             sendEvent(events.makePage.calendar.foldDivision);
-                                            foldLevel(level);
+                                            store.foldLevel(level);
                                         }}
                                     >
                                         <FoldDutyIcon className="h-5.5 w-5.5 rotate-180" />
@@ -201,7 +260,7 @@ export default function ShiftCalendar() {
                                                                 className="absolute top-[50%] left-0 z-10 h-5.5 w-5.5 translate-x-[50%] translate-y-[-50%] cursor-pointer"
                                                                 onClick={() => {
                                                                     sendEvent(events.makePage.calendar.spreadDivision);
-                                                                    foldLevel(level);
+                                                                    store.foldLevel(level);
                                                                 }}
                                                             />
                                                         </div>
@@ -260,13 +319,13 @@ export default function ShiftCalendar() {
                                                                                     e.preventDefault();
 
                                                                                     if (e.key === 'ArrowUp')
-                                                                                        updateCarry(
+                                                                                        store.updateCarry(
                                                                                             row.shiftNurse.shiftNurseId,
                                                                                             row.shiftNurse.carried + 1,
                                                                                         );
 
                                                                                     if (e.key === 'ArrowDown')
-                                                                                        updateCarry(
+                                                                                        store.updateCarry(
                                                                                             row.shiftNurse.shiftNurseId,
                                                                                             row.shiftNurse.carried - 1,
                                                                                         );
@@ -335,10 +394,9 @@ export default function ShiftCalendar() {
                                                                                         onClick={() => {
                                                                                             if (readonly) return;
 
-                                                                                            changeFocus?.({
-                                                                                                shiftNurseName: row.shiftNurse.name,
-                                                                                                shiftNurseId: row.shiftNurse.shiftNurseId,
-                                                                                                day: j,
+                                                                                            store.setSelection({
+                                                                                                type: 'single',
+                                                                                                anchor: {row: rowIndex, col: j},
                                                                                             });
                                                                                             sendEvent(events.makePage.calendar.focusCell);
                                                                                         }}
@@ -459,3 +517,5 @@ export default function ShiftCalendar() {
         </div>
     ) : null;
 }
+
+export default observer(ShiftCalendar);

@@ -1,15 +1,13 @@
+import {observer} from 'mobx-react-lite';
 import {useState} from 'react';
 import {twMerge} from 'tailwind-merge';
-import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
-import useEditShift from '@/features/shift/useEditShift';
-import {RestoreIcon, RestoreIconDisable} from '@/shared/assets/svg';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
+import {useDependency} from '@/shared/hook/use-dependency';
 
 function Panel() {
-    const {
-        state: {readonly, faults, histories, shiftStatus, shift},
-        actions: {moveHistory, changeFocus},
-    } = useEditShift();
+    const store = useDependency(EditDutyStore);
+    const {readonly, faults, shiftStatus, shift} = store.viewState;
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');
 
@@ -55,47 +53,13 @@ function Panel() {
                               key={index}
                               className="cursor-pointer border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
                               onClick={() => {
-                                  changeFocus(fault.focus);
+                                  store.changeFocus(fault.focus);
                               }}
                           >
                               {fault.focus.shiftNurseName} / {fault.focus.day + 1}일: {fault.message}
                           </p>
                       ))
-                    : histories &&
-                      [...histories.history].reverse().map((history, index) => {
-                          const isPrev = histories.history.length - index - 1 > histories.current;
-
-                          return (
-                              <div
-                                  key={index}
-                                  className={`flex cursor-pointer items-center gap-[.625rem] border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] last:border-none ${
-                                      isPrev ? 'text-sub-3' : 'text-sub-2'
-                                  }`}
-                                  onClick={() => {
-                                      const diff = histories.history.length - index - 1 - histories.current;
-
-                                      sendEvent(diff > 0 ? events.makePage.panel.redoBypanel : events.makePage.panel.undoByPanel);
-                                      moveHistory(diff);
-                                  }}
-                              >
-                                  <p className="truncate">
-                                      {history.focus.shiftNurseName} / {history.focus.day + 1}일
-                                  </p>
-                                  <div className="h-full w-[.0313rem] bg-sub-3" />
-                                  <p className="shrink-0">
-                                      {match(history)
-                                          .with({prevShiftType: null}, () => `추가 → ${history.nextShiftType?.shortName}`)
-                                          .with({nextShiftType: null}, () => `${history.prevShiftType?.shortName} → 삭제`)
-                                          .otherwise(() => `${history.prevShiftType?.shortName} → ${history.nextShiftType?.shortName}`)}
-                                  </p>
-                                  {isPrev ? (
-                                      <RestoreIconDisable className="ml-auto h-4.5 w-4.5" />
-                                  ) : (
-                                      <RestoreIcon className="ml-auto h-4.5 w-4.5" />
-                                  )}
-                              </div>
-                          );
-                      })}
+                    : null}
             </div>
             <div
                 className="flex h-7.5 w-full cursor-pointer items-center justify-center font-apple text-[.625rem] text-main-3"
@@ -110,4 +74,4 @@ function Panel() {
     ) : null;
 }
 
-export default Panel;
+export default observer(Panel);

@@ -1,10 +1,11 @@
-import useEditShift from '@/features/shift/useEditShift';
+import {observer} from 'mobx-react-lite';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
 import useUIConfig from '@/features/ui/useUIConfig';
+import {useDependency} from '@/shared/hook/use-dependency';
 
 function CountDutyByDay() {
-    const {
-        state: {focus, shift},
-    } = useEditShift();
+    const store = useDependency(EditDutyStore);
+    const {focus, shift} = store.viewState;
     const {
         state: {shiftTypeColorStyle},
     } = useUIConfig();
@@ -54,4 +55,4 @@ function CountDutyByDay() {
     );
 }
 
-export default CountDutyByDay;
+export default observer(CountDutyByDay);

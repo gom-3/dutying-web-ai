@@ -1,4 +1,5 @@
 import {type ReactNode, Fragment} from 'react';
+import {v4 as uuidv4} from 'uuid';
 
 export function renderMultilineText(text: string): ReactNode {
     const lines = text.split('\n');
@@ -9,4 +10,8 @@ export function renderMultilineText(text: string): ReactNode {
             {index < lines.length - 1 && <br />}
         </Fragment>
     ));
+}
+
+export function generateId() {
+    return uuidv4();
 }
