@@ -1,0 +1,952 @@
+---
+alwaysApply: true
+---
+
+# 근무표 에디터 스펙 (v1.1)
+
+본 에디터는 Command 기반 Transactional Editing Architecture를 사용하며, 스프레드시트형 그리드 문서를 작업 단위(Transaction) 로 편집하고 되돌릴 수 있는 도메인 중립 에디터 코어와 근무표 전용 구현체로 구성된다.
+
+---
+
+## 1. 핵심 설계 원칙
+
+### 1.1 Core는 도메인 중립
+
+- `row`, `col`, `cell`만 존재
+- 간호사, 날짜, 근무 등의 개념 없음
+
+### 1.2 구현체가 row/col에 의미를 부여
+
+- Duty Editor:
+    - `row` -> 근무자
+    - `col` -> 날짜
+
+### 1.3 편집 파이프라인
+
+1. 모든 편집은 `Command → Transaction → State.apply → History 기록` 파이프라인으로만 이루어진다.
+2. Undo/Redo는 **Transaction 단위**
+3. AI 자동 채우기/수정은 **항상 Tx 1개**
+4. LocalStorage 기반 편집 복구 지원
+
+---
+
+## 2. 데이터 모델
+
+### 2.1 Core 관점
+
+```ts
+type CellValue = string | null;
+```
+
+- **ShiftCode는 자유로운 string**
+- **의도적인 빈 값은 반드시 `null`**
+
+---
+
+### 2.2 Duty Editor 문서 모델
+
+```ts
+type DateKey = string; // YYYY-MM-DD
+
+type DutyRow = {
+  workerId: string;
+  cells: CellValue[];
+};
+
+type DutyDoc = {
+  columns: DateKey[];        // 초기화 시 자동 계산 (year, month)
+  rows: DutyRow[];       // 정렬 가능하도록 배열로 관리
+  workerMeta: Record<WorkerId, { name: string }>;
+};
+```
+
+---
+
+## 3. Selection 정책
+
+### 3.1 Selection 타입
+
+```ts
+type CellPos = { row: number; col: number };
+
+type Selection =
+  | { type: "single"; anchor: CellPos }
+  | { type: "range"; from: CellPos; to: CellPos };
+```
+
+### 3.2 이동 규칙
+
+- 방향키 이동
+- Shift + 방향키 → range 확장
+- 경계 처리:
+    - `(row, lastCol) + right` → `(row+1, 0)`
+    - `(row, 0) + left` → `(row-1, lastCol)`
+    - bounds 초과 시 이동 없음
+
+---
+
+## 4. Command / Transaction / Operation
+
+### 4.1 Command의 정의
+
+- **사용자 의도 단위**
+- **Undo 단위**
+- 결과는 항상 `Transaction`
+
+```ts
+type Transaction<Op> = {
+  ops: Op[];
+  source: "user" | "ai" | "system";
+  timestamp: number;
+};
+```
+
+---
+
+### 4.2 Operation 모델
+
+#### 4.2.1 셀 값 변경
+
+```ts
+type SetCellsOp = {
+  kind: "setCells";
+  cells: Array<{
+    row: number;
+    col: number;
+    prev: CellValue;
+    next: CellValue;
+  }>;
+};
+```
+
+- 단일 셀 / 다중 셀 동일 구조
+- paste / autofill / autofix 모두 이 op 사용
+
+---
+
+#### 4.2.2 행 정렬
+
+```ts
+type ReorderRowsOp = {
+  kind: "reorderRows";
+  prevOrder: number[];
+  nextOrder: number[];
+};
+```
+
+---
+
+## 5. 히스토리 정책
+
+### 5.1 기본 정책
+
+- 병합 없음
+- Transaction 단위 undo/redo
+- redo 스택 유지
+- depth 제한 있음 (초과 시 FIFO 제거)
+- AI 변경도 undo 대상
+
+### 5.2 History Entry
+
+```ts
+type HistoryEntry<Op> = {
+  tx: Transaction<Op>;
+  inverseOps: Op[];
+};
+```
+
+---
+
+## 6. Clipboard (복사/붙여넣기) 정책
+
+### 6.1 Copy
+
+- selection을 **정규화된 직사각형**으로 변환
+- 결과는 2D payload
+
+```ts
+type ClipboardPayload = {
+  width: number;
+  height: number;
+  cells: CellValue[][];
+};
+```
+
+---
+
+### 6.2 Paste
+
+- 기준점: selection **좌상단**
+- 범위 초과: **자동으로 잘라서 적용**
+- 결과는 **SetCellsOp 하나**
+- 실패/에러 없음
+
+---
+
+## 7. Validation (제약 조건)
+
+### 7.1 기본 정책
+
+- 입력을 **절대 막지 않음**
+- 위반 정보만 계산
+- undo/redo 시 자동 갱신
+
+### 7.2 Violation 타입
+
+```ts
+type Violation = {
+  ruleId: string;
+  cells: CellPos[];
+  level: "warning" | "error";
+};
+```
+
+---
+
+## 8. Row 정렬
+
+### 8.1 위치
+
+- **정렬 기준은 Duty Editor 구현체에만 존재**
+- Core는 "행 재정렬" 능력만 제공
+
+### 8.2 정렬 기준
+
+- **근무자 이름순 정렬**
+
+```ts
+SortRowsCommand({
+  comparator: (rowA, rowB, doc) =>
+    doc.workerMeta[rowA.workerId].name
+      .localeCompare(doc.workerMeta[rowB.workerId].name),
+});
+```
+
+### 8.3 정렬 시 Selection 처리
+
+> **정렬이 수행되면 selection은 항상 해제된다.**
+
+정렬 후 selection 상태:
+
+```ts
+{ type: "single", anchor: { row: 0, col: 0 } }
+```
+
+또는
+
+```ts
+null (선택 없음)
+```
+
+> 어떤 값을 택할지는 UI 정책이지만
+> **기존 selection을 유지/보정하지 않는다.**
+
+---
+
+## 9. AI 자동 채우기 / 자동 수정
+
+### 9.1 기본 정책
+
+- AI 결과는 항상 **Tx 1개**
+- 내부적으로는 `SetCellsOp` 하나
+- source = `"ai"`
+- undo/redo에서 일반 편집과 동일하게 취급
+
+---
+
+## 10. Persistence (LocalStorage)
+
+### 10.1 저장 대상
+
+```ts
+type Persisted = {
+  doc: DutyDoc;
+  history: string; // history.serialize()
+  savedAt: number;
+};
+```
+
+### 10.2 동작
+
+- 편집 발생 시 저장 (또는 debounce)
+- 에디터 초기화 시:
+    - persisted 데이터 존재하면
+        - UI에 "이전 작업을 불러오겠습니까?" 표시
+    - 수락 시 hydrate
+    - 거절 시 새 문서 시작
+
+> 복구 UI는 **에디터 외부(UI) 책임**
+
+---
+
+## 11. Core vs Duty Editor 책임 분리
+
+### 11.1 Core가 제공하는 것
+
+- Selection 모델
+- Command 실행 파이프라인
+- Transaction / History / Undo/Redo
+- Clipboard 처리
+- Persistence hook
+- Validation hook
+
+### 11.2 Duty Editor가 구현하는 것
+
+- row = worker / col = date 매핑
+- ShiftCode 의미
+- 정렬 기준 (이름순)
+- 근무 규칙 검증
+- AI 결과를 Op로 변환
+- 서버 저장 포맷 변환
+
+---
+
+## 12. 구현 체크리스트
+
+### 12.1 구현해야 할 모듈 정리 (최종)
+
+> 기준: **FSD + `src/shared/editor/`**
+
+`src/shared/editor/`
+
+#### 1️⃣ Core (도메인 중립, React 비의존)
+
+에디터 엔진의 핵심. `row / col / cell / command / history`만 다룸.
+
+##### 1.1 `editor-core/state`
+
+- 역할: 문서 상태 보관(`doc`, `selection`, `violations`), transaction 적용
+- 구현물: `EditorState`(abstract class)
+    - `doc`
+    - `selection`
+    - `violations`
+    - `apply(tx)`
+    - `dispose()`
+
+##### 1.2 `editor-core/selection`
+
+- 역할: 커서/범위 선택 계산, 방향키 이동 규칙, 경계 처리
+- 구현물: `SelectionModel`(abstract), `CellPos`, `Selection`, range normalize 유틸, `dispose()`
+
+##### 1.3 `editor-core/command`
+
+- 역할: “사용자 의도” 단위 캡슐화, `Transaction` 생성
+- 구현물: `Command`(abstract), `CommandContext`, `CommandResult`, `dispose()`
+
+##### 1.4 `editor-core/operation`
+
+- 역할: 최소 변경 단위 정의(undo/redo 가능)
+- 구현물: `SetCellsOp`, `ReorderRowsOp`, `invertOp(s)` 유틸
+
+##### 1.5 `editor-core/history`
+
+- 역할: undo/redo 스택, transaction 단위 관리, depth 제한, 직렬화/복구
+- 구현물: `EditorHistory`(abstract), `HistoryEntry`, `serialize() / hydrate()`, `dispose()`
+
+##### 1.6 `editor-core/clipboard`
+
+- 역할: selection → 2D payload, payload → `SetCellsOp` 생성, 붙여넣기 자르기 규칙
+- 구현물: `ClipboardPayload`, `copy(selection, doc)`, `paste(payload, selection, doc)`
+
+##### 1.7 `editor-core/validation`
+
+- 역할: 입력을 막지 않고 위반 정보만 계산(Validation hook 구조)
+- 구현물: `Violation`, `Validator` 타입, validation hook 호출 구조
+
+---
+
+#### 2️⃣ Duty Editor 구현체 (도메인 매핑)
+
+`row = 근무자`, `col = 날짜`
+
+##### 2.1 `duty/doc`
+
+- 역할: 근무표 데이터 모델 정의
+- 구현물: `DutyDoc`, `DutyRow`, `WorkerMeta`, `year/month → columns` 생성 유틸
+
+##### 2.2 `duty/commands`
+
+- 역할: 근무표 전용 편집 동작 정의(결과는 항상 Tx 1개)
+- 구현물:
+    - `SetShiftCommand`
+    - `ClearShiftCommand`
+    - `PasteShiftCommand`
+    - `SortRowsByNameCommand`
+    - (AI) `AutoFillCommand`
+    - (AI) `AutoFixCommand`
+
+##### 2.3 `duty/validation`
+
+- 역할: 근무표 규칙 검증
+- 구현물: 연속 야간 근무 / 하루 1근무 / 인원 부족·초과 등 rule별 `Violation` 생성기
+
+---
+
+#### 3️⃣ Store (MobX, 상태 보관 전용)
+
+상태는 여기서만 mutable.
+
+##### 3.1 `editor-store`
+
+- 역할: `EditorState`/`History` 보관, transaction 적용, undo/redo, persistence 트리거, lifecycle 종료
+- 구현물: `EditorStore` (`applyTransaction`, `undo`, `redo`, `dispose`)
+
+---
+
+#### 4️⃣ UseCase (행동 정의)
+
+“무엇을 바꿀 것인가”만 정의. `command 실행 + store 위임`.
+
+##### 4.1 `editor-usecases`
+
+- 구현물: `SetShiftUseCase`, `PasteUseCase`, `SortRowsUseCase`, `UndoUseCase`, `RedoUseCase`, (AI) `AutoFillUseCase`, (AI) `AutoFixUseCase`
+
+---
+
+#### 5️⃣ Persistence (LocalStorage)
+
+##### 5.1 `editor-persistence`
+
+- 역할: 편집 중 draft 저장, 재진입 복구 판단, debounce/timer 관리
+- 구현물: `EditorPersistence` (`save`, `load`, `clear`, `dispose`)
+
+---
+
+#### 6️⃣ DI 구성
+
+##### 6.1 `editor-di`
+
+- 역할: 에디터 세션 단위 container 생성
+- 구현물: `createEditorContainer()`
+- 규칙: **container는 라우팅 단위에서 생성**
+
+---
+
+#### 7️⃣ React 어댑터 (UI 전용)
+
+여기부터 React 의존.
+
+##### 7.1 `react/withDependencies` + `react/useDependency`
+
+- 역할: DI 결과를 Context로 주입 + UI에서 의존성 꺼내기
+- 구현물:
+    - 권장: `src/shared/hoc/with-dependencies.tsx`의 `withDependencies`/`DependenciesContext` 재사용
+    - 권장: `src/shared/hook/use-injection.ts`의 `useInjection` 또는 (에디터 전용) `useDependency(token)` 래퍼 제공
+
+---
+
+#### 8️⃣ 페이지(라우팅) 레벨 책임
+
+에디터 세션이 시작/종료되는 위치.
+
+- 역할: `editorContainer` 생성, dispose 호출, HOC 적용
+- 예:
+    - `const container = createEditorContainer();`
+    - `useEffect(() => () => container.resolve(EditorStore).dispose(), []);`
+
+---
+
+## 13. 요약
+
+> 본 에디터는 **Command 기반 Transactional Editing Architecture**를 사용하며,
+> 스프레드시트형 그리드 문서를 **작업 단위(Transaction)** 로 편집하고 되돌릴 수 있는
+> **도메인 중립 에디터 코어와 근무표 전용 구현체**로 구성된다.
+
+---
+
+## 14. 구현 전략
+
+본 섹션은 **에디터 코어 및 구현체를 실제 애플리케이션에 통합하는 방법**을 정의한다.
+React를 즉시 사용하되, **Core/구현체는 React에 의존하지 않고**,
+**DI 컨테이너의 생명주기를 라우팅 단위(에디터 세션)로 관리**하는 것을 목표로 한다.
+
+---
+
+## 14.1 기본 원칙
+
+1. **Core 및 구현체는 React에 의존하지 않는다**
+2. **React는 UI 어댑터 레이어로만 사용한다**
+3. **상태는 Store(MobX)가 보관**
+4. **변경 정의는 UseCase가 담당**
+5. **의존성 생성/수명 관리는 DI 컨테이너가 담당**
+6. **DI 컨테이너는 라우팅(페이지) 단위로 생성된다**
+
+---
+
+## 14.2 DI 전략 (TSyringe)
+
+### 기본 규칙
+
+- 모든 객체는 TSyringe로 생성
+- `@singleton()` 데코레이터 사용
+- `new` 키워드 직접 사용 금지
+- **싱글톤의 범위는 container scope 기준**
+
+```ts
+@singleton()
+class EditorStore {}
+
+@singleton()
+class SetShiftUseCase {}
+```
+
+> `@singleton()`은 **컨테이너 단위 싱글톤**이며,
+> 앱 전역 싱글톤을 의미하지 않는다.
+
+---
+
+## 14.3 Container 생명주기 전략 (핵심)
+
+### 원칙
+
+> **에디터 하나 = 하나의 container (세션 단위)**
+
+- 에디터 페이지 진입 시 container 생성
+- 페이지 이탈 시 dispose 호출
+- 재진입 시 완전히 새로운 container 생성
+
+---
+
+### Container 생성 위치
+
+- ❌ 컴포넌트 render 내부
+- ❌ HOC 내부
+- ❌ 앱 전역
+- ✅ **라우팅(페이지) 컴포넌트 진입 시**
+
+```ts
+export function createEditorContainer() {
+  return container.createChildContainer();
+}
+```
+
+---
+
+## 14.4 Store 설계 전략 (MobX)
+
+### Store의 책임
+
+- 현재 `EditorState` 보관
+- `EditorHistory` 보관
+- Transaction 적용
+- undo / redo 수행
+- persistence 트리거
+- **lifecycle 종료 시 dispose 수행**
+
+---
+
+### EditorStore 예시
+
+```ts
+@singleton()
+class EditorStore {
+  state: EditorState;
+  history: EditorHistory;
+
+  constructor(
+    initialState: EditorState,
+    history: EditorHistory
+  ) {
+    makeAutoObservable(this);
+    this.state = initialState;
+    this.history = history;
+  }
+
+  applyTransaction(tx: Transaction) {
+    const inverseOps = invert(tx.ops);
+    this.history.push({ tx, inverseOps });
+    this.state = this.state.apply(tx);
+  }
+
+  undo() {
+    const entry = this.history.undo();
+    if (!entry) return;
+    this.state = this.state.apply({
+      ops: entry.inverseOps,
+      source: "system",
+      timestamp: Date.now(),
+    });
+  }
+
+  redo() {
+    const entry = this.history.redo();
+    if (!entry) return;
+    this.state = this.state.apply(entry.tx);
+  }
+
+  dispose() {
+    this.state.dispose();
+    this.history.dispose();
+  }
+}
+```
+
+---
+
+## 14.5 UseCase 설계 전략
+
+### UseCase의 역할
+
+- 에디터 상태 변경 동작 정의
+- Command 실행 → Transaction 생성
+- Store에 Transaction 적용 요청
+
+### UseCase는 하지 않는 것
+
+- 상태 보관
+- 렌더링
+- React / DOM 접근
+
+---
+
+### 예시: SetShiftUseCase
+
+```ts
+@singleton()
+class SetShiftUseCase {
+  constructor(
+    private store: EditorStore,
+    private setValueCommand: SetValueCommand
+  ) {}
+
+  execute(value: string) {
+    const result = this.setValueCommand.run({
+      doc: this.store.state.doc,
+      selection: this.store.state.selection,
+    });
+
+    if (!result.ok) return;
+    this.store.applyTransaction(result.tx);
+  }
+
+  dispose() {
+    // 기본 no-op
+  }
+}
+```
+
+---
+
+## 14.6 React 통합 전략
+
+### React의 역할
+
+- Store 상태를 관찰하여 UI 렌더링
+- UseCase를 호출하여 상태 변경
+- 에디터 세션 종료 시 dispose 호출
+
+---
+
+## 14.7 라우팅 단위 Container 생성
+
+```tsx
+function EditorPage() {
+  const editorContainer = useMemo(
+    () => createEditorContainer(),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      editorContainer.resolve(EditorStore).dispose();
+    };
+  }, [editorContainer]);
+
+  const View = withDependencies(
+    <EditorView />,
+    [EditorStore, SetShiftUseCase],
+    editorContainer
+  );
+
+  return <View />;
+}
+```
+
+### 동작
+
+- 페이지 진입 → 새 에디터 세션
+- 페이지 이탈 → dispose 호출
+- 재진입 → 완전히 새로운 상태
+
+---
+
+## 14.8 UI 어댑터: `withDependencies` HOC
+
+### 역할
+
+- DI 컨테이너에서 의존성 resolve
+- 결과를 Context로 주입
+- MobX `observer` 자동 적용
+
+```ts
+withDependencies(
+  <UI />,
+  [EditorStore, SomeUseCase],
+  container
+);
+```
+
+> HOC는 **의존성 바인딩만 담당**하며
+> 의존성의 생성/파기는 container 책임이다.
+
+---
+
+## 14.9 데이터 흐름 요약
+
+```txt
+[ React UI ]
+    │
+    │ (withDependencies / useDependency)
+    ▼
+[ UseCase ]
+    │
+    │ Transaction 생성
+    ▼
+[ EditorStore (MobX) ]
+    │
+    │ state.apply(tx)
+    ▼
+[ EditorState (core) ]
+```
+
+---
+
+## 14.10 금지 사항
+
+- UI → Store 직접 변경 ❌
+- UI → Core 직접 호출 ❌
+- 앱 전역 싱글톤 EditorStore ❌
+- container를 render/HOC 내부에서 생성 ❌
+
+---
+
+## 14.11 요약
+
+> 에디터는 라우팅 단위로 생성되는 DI 컨테이너를 통해
+> 세션 단위로 생명주기를 관리한다.
+> 상태는 Store(MobX), 변경 정의는 UseCase,
+> UI는 React 어댑터를 통해 이를 소비한다.
+
+---
+
+## 14.12 구현 순서 추천 (중요)
+
+- `editor-core` (state → selection → operation → history)
+- store
+- 기본 command (`SetCells`)
+- undo / redo
+- clipboard
+- duty-doc
+- duty-commands
+- validation
+- persistence
+- DI + React adapter
+- AI 확장
+
+## 15. Lifecycle & Cleanup 설계
+
+본 섹션은 에디터의 **명시적 생명주기 관리(lifecycle)** 와
+**클린업(cleanup) 전략**을 정의한다.
+
+---
+
+## 15.1 기본 원칙
+
+1. **모든 abstract class는 `dispose()` 메서드를 가진다.**
+2. `dispose()`는 기본적으로 **no-op** 이다.
+3. 외부 리소스(side-effect)를 사용하는 구현체는
+   반드시 `dispose()`에서 이를 해제한다.
+4. 에디터 세션 종료 시, **Store가 중심이 되어 dispose를 호출**한다.
+
+> 즉, dispose는 "항상 호출 가능해야 하지만,
+> 항상 구현할 필요는 없다".
+
+---
+
+## 15.2 왜 abstract class에 `dispose()`를 포함하는가
+
+### 의도
+
+- 라이프사이클을 **암묵적 관례가 아닌 명시적 계약(contract)** 으로 만든다.
+- “나중에 필요해질 수 있는 cleanup”을 설계 차원에서 열어둔다.
+- 상위 레이어(UI, Provider)가 **일관된 방식으로 종료 처리**를 할 수 있다.
+
+### 배제한 방식
+
+- 별도의 `Disposable` 인터페이스 ❌
+- 런타임 타입 체크 ❌
+- GC 의존 ❌
+
+---
+
+## 15.3 Core Abstract Class 변경 사항 (공통)
+
+### 공통 규칙
+
+- 모든 abstract class에 다음 시그니처를 추가한다.
+
+```ts
+dispose(): void;
+```
+
+- 기본 구현은 **빈 메서드**여도 무방하다.
+
+---
+
+## 15.4 Core 모듈별 dispose 책임
+
+### 15.4.1 EditorState (core)
+
+```ts
+abstract class EditorState<Doc, Sel, Op, Violation> {
+  abstract readonly doc: Doc;
+  abstract readonly selection: Sel;
+  abstract readonly violations: Violation[];
+
+  abstract apply(tx: Transaction<Op>): EditorState<Doc, Sel, Op, Violation>;
+
+  dispose(): void {
+    // 기본 no-op
+  }
+}
+```
+
+- 순수 상태 객체
+- 외부 리소스 없음
+- **기본적으로 dispose 구현 불필요**
+
+---
+
+### 15.4.2 SelectionModel (core)
+
+```ts
+abstract class SelectionModel {
+  abstract get(): Selection;
+  abstract move(...): Selection;
+
+  dispose(): void {
+    // 기본 no-op
+  }
+}
+```
+
+- 계산 로직만 담당
+- dispose 기본 구현 유지
+
+---
+
+### 15.4.3 EditorHistory (core)
+
+```ts
+abstract class EditorHistory<Op> {
+  abstract undo(): HistoryEntry<Op> | null;
+  abstract redo(): HistoryEntry<Op> | null;
+
+  abstract serialize(): string;
+  abstract hydrate(raw: string): void;
+
+  dispose(): void {
+    // 기본 no-op
+  }
+}
+```
+
+- 메모리 내 스택 관리
+- 타이머/리스너 추가 시 override 가능
+
+---
+
+### 15.4.4 Command / UseCase 계열
+
+```ts
+abstract class Command<Doc, Sel, Op> {
+  abstract run(...): CommandResult<Op>;
+
+  dispose(): void {
+    // 기본 no-op
+  }
+}
+```
+
+- 대부분 stateless
+- 기본적으로 dispose 불필요
+
+---
+
+## 15.5 Store의 dispose 책임 (핵심)
+
+### 역할
+
+- 에디터 세션에서 생성된 **모든 side-effect의 최종 소유자**
+- 내부에서 생성/주입받은 객체들의 `dispose()`를 호출
+
+### 예시
+
+```ts
+@singleton()
+class EditorStore {
+  constructor(
+    private state: EditorState,
+    private history: EditorHistory
+  ) {}
+
+  dispose() {
+    this.state.dispose();
+    this.history.dispose();
+    // 필요 시 다른 구성요소도 순차적으로 dispose
+  }
+}
+```
+
+### 규칙
+
+- **Store는 dispose 호출의 시작점**
+- 하위 객체가 실제로 무엇을 정리하는지는 Store가 알 필요 없음
+
+---
+
+## 15.6 React 통합 시 dispose 호출 타이밍
+
+### 원칙
+
+- 에디터 페이지(라우팅) 언마운트 = 에디터 세션 종료
+- dispose는 **반드시 1회 호출**
+- 구현 예시는 `14.7 라우팅 단위 Container 생성`을 따른다 (container 생성 + cleanup에서 `EditorStore.dispose()` 호출)
+
+---
+
+## 15.7 무엇을 dispose에서 정리해야 하는가
+
+### 반드시 정리해야 하는 것
+
+- MobX `autorun` / `reaction`
+- `setInterval`, `setTimeout`
+- `addEventListener`
+- WebSocket / Worker
+- AI 스트림 / AbortController
+- LocalStorage sync 타이머
+
+### 정리할 필요 없는 것
+
+- 단순 데이터
+- immutable state
+- 계산 함수
+- command 객체(보통)
+
+---
+
+## 15.8 요약
+
+> 모든 에디터 구성 요소는 `dispose()` 메서드를 통해
+> 명시적으로 종료될 수 있도록 설계된다.
+> 기본 구현은 no-op이며, 외부 리소스를 사용하는 구현체만
+> dispose를 override하여 정리 책임을 가진다.
+
+## 15.9 최종 정리
+
+- dispose는 **필수 구현이 아니라 필수 존재**
+- lifecycle은 **Store → 하위 객체** 방향으로 닫힌다
+- 이 설계로:
+    - 메모리 누수 방지
+    - 테스트 안정성
+    - 장기 확장성 확보

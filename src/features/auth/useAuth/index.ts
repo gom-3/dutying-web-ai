@@ -1,7 +1,6 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import useEditShiftStore from '@/features/shift/useEditShift/store';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
 import useInitStore from '@/features/useInitStore';
@@ -15,7 +14,6 @@ const useAuth = (activeEffect = false) => {
     const {pathname} = useLocation();
     const {setLoading} = useLoading();
     const initStore = useInitStore();
-    const {initState: initEditShiftStore} = useEditShiftStore();
     const {
         actions: {initTutorial},
     } = useTutorial();
@@ -29,7 +27,6 @@ const useAuth = (activeEffect = false) => {
     const handleLogin = (accessToken: string, nextPageUrl?: string) => {
         setState('isAuth', true);
         setState('accessToken', accessToken);
-        initEditShiftStore();
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
 
         if (nextPageUrl === 'back') {

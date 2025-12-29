@@ -2,7 +2,6 @@ import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
 import {useCallback} from 'react';
 import useAuth from '@/features/auth/useAuth';
-import useEditShift from '@/features/shift/useEditShift';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
 import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
@@ -18,9 +17,7 @@ const useEditShiftTeam = () => {
     } = useAuth();
     const queryClient = useQueryClient();
     const getWardQueryKey = ['ward', wardId];
-    const {
-        queryKey: {shiftQueryKey},
-    } = useEditShift();
+    const shiftQueryKey = ['shift'];
     const {
         queryKey: {requestShiftQueryKey},
     } = useRequestShift();

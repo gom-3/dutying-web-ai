@@ -5,11 +5,13 @@ import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
+import {moveSelection} from '@/shared/editor/editor-core/selection';
 import {type RequestShift} from '@/shared/types/shift';
 import {type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
 import {DateUtil} from '@/shared/util/date';
-import {findNurse, keydownEventMapper, moveFocus} from '../useEditShift/handlers';
-import {type Focus} from '../useEditShift/types';
+import {type Focus} from '../editDuty/faults';
+import {findNurse} from '../editDuty/find-nurse';
+import {keydownEventMapper} from '../editDuty/keyboard';
 import {useRequestShiftStore} from './store';
 
 const useRequestShift = (activeEffect = false) => {
@@ -197,13 +199,28 @@ const useRequestShift = (activeEffect = false) => {
             if (!focus || !requestShift) return;
 
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                moveFocus(
-                    e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down',
-                    ctrlKey,
-                    requestShift,
-                    focus,
-                    (focus: Focus | null) => setState('focus', focus),
+                const bounds = {rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length, colCount: requestShift.days.length};
+                const rowIndexByShiftNurseId = new Map(
+                    requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
                 );
+                const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
+                const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
+                const nextSel = moveSelection(
+                    currentSel,
+                    e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down',
+                    bounds,
+                    false,
+                    ctrlKey,
+                );
+
+                if (!nextSel) return;
+
+                const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
+                const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
+
+                if (!row) return;
+
+                setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
             }
 
             keydownEventMapper(
@@ -212,20 +229,55 @@ const useRequestShift = (activeEffect = false) => {
                     keys: [shiftType.shortName],
                     callback: () => {
                         changeFocusedShift(shiftType.wardShiftTypeId);
-                        moveFocus('right', ctrlKey, requestShift, focus, (focus: Focus | null) => {
-                            setState('focus', focus);
-                            sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
-                        });
+
+                        // 입력 후 우측 이동
+                        const bounds = {
+                            rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length,
+                            colCount: requestShift.days.length,
+                        };
+                        const rowIndexByShiftNurseId = new Map(
+                            requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
+                        );
+                        const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
+                        const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
+                        const nextSel = moveSelection(currentSel, 'right', bounds, false, ctrlKey);
+
+                        if (!nextSel) return;
+
+                        const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
+                        const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
+
+                        if (!row) return;
+
+                        setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
+                        sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
                     },
                 })),
                 {
                     keys: ['Backspace'],
                     callback: () => {
                         changeFocusedShift(null);
-                        moveFocus('left', ctrlKey, requestShift, focus, (focus: Focus | null) => {
-                            setState('focus', focus);
-                            sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
-                        });
+
+                        const bounds = {
+                            rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length,
+                            colCount: requestShift.days.length,
+                        };
+                        const rowIndexByShiftNurseId = new Map(
+                            requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
+                        );
+                        const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
+                        const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
+                        const nextSel = moveSelection(currentSel, 'left', bounds, false, ctrlKey);
+
+                        if (!nextSel) return;
+
+                        const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
+                        const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
+
+                        if (!row) return;
+
+                        setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
+                        sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
                     },
                 },
                 {keys: ['Delete'], callback: () => changeFocusedShift(null)},

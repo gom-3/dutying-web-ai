@@ -1,7 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import useAuth from '@/features/auth/useAuth';
-import useEditShift from '@/features/shift/useEditShift';
 import {WardAPI} from '@/shared/api';
 import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {type EditWardDTO} from '@/shared/api/ward/type';
@@ -13,9 +12,7 @@ const useEditWard = () => {
     const getWardQueryKey = ['ward', wardId];
     const getWardWaitingNursesQueryKey = ['waitingNurses', wardId];
     const queryClient = useQueryClient();
-    const {
-        queryKey: {shiftQueryKey},
-    } = useEditShift();
+    const shiftQueryKey = ['shift'];
     const {data: ward} = useQuery({
         queryKey: getWardQueryKey,
         queryFn: () => WardAPI.getWard(wardId!),

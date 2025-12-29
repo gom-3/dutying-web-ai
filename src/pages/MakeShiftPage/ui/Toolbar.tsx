@@ -1,8 +1,9 @@
+import {observer} from 'mobx-react-lite';
 import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import {events, sendEvent} from '@/analytics';
-import useEditShift from '@/features/shift/useEditShift';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
 import ShiftBadge from '@/features/ShiftBadge';
 import {
     CancelIcon,
@@ -20,6 +21,7 @@ import {
     SavingIcon,
     ShareIcon,
 } from '@/shared/assets/svg';
+import {useDependency} from '@/shared/hook/use-dependency';
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
@@ -29,10 +31,8 @@ import SetShiftType from './editWard/SetShiftType';
 // import useCreateShift from '@/features/shift/useCreateShift/indes';
 
 function Toolbar() {
-    const {
-        state: {year, month, shift, changeStatus, showLayer, currentShiftTeam, shiftTeams, readonly},
-        actions: {changeMonth, toggleLayer, changeShiftTeam, moveHistory, toggleEditMode, createNextMonthShift, postShift},
-    } = useEditShift();
+    const store = useDependency(EditDutyStore);
+    const {year, month, shift, showLayer, currentShiftTeam, shiftTeams, readonly, saveStatus} = store.viewState;
     // const { autoCompleteShift } = useCreateShift();
     const [openInfo, setOpenInfo] = useState(false);
     const [currentSetup, setCurrentSetup] = useState<'constraint' | 'shiftType' | 'designTheme' | null>(null);
@@ -49,7 +49,7 @@ function Toolbar() {
             <div className="absolute flex items-center">
                 <PrevIcon
                     onClick={() => {
-                        changeMonth('prev');
+                        store.changeMonth('prev');
                         sendEvent(events.makePage.toolbar.changeMonth);
                     }}
                     className="h-7.5 w-7.5 cursor-pointer"
@@ -57,7 +57,7 @@ function Toolbar() {
                 <p className="mx-[.625rem] font-poppins text-2xl text-main-1">{month}월</p>
                 <NextIcon
                     onClick={() => {
-                        changeMonth('next');
+                        store.changeMonth('next');
                         sendEvent(events.makePage.toolbar.changeMonth);
                     }}
                     className="h-7.5 w-7.5 cursor-pointer"
@@ -165,7 +165,7 @@ function Toolbar() {
                                 showLayer.fault ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                toggleLayer('fault');
+                                store.toggleLayer('fault');
                                 sendEvent(showLayer.fault ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'fault');
                             }}
                         >
@@ -183,7 +183,7 @@ function Toolbar() {
                                 showLayer.check ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                toggleLayer('check');
+                                store.toggleLayer('check');
                                 sendEvent(showLayer.check ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'check');
                             }}
                         >
@@ -201,7 +201,7 @@ function Toolbar() {
                                 showLayer.slash ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                toggleLayer('slash');
+                                store.toggleLayer('slash');
                                 sendEvent(showLayer.slash ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'slash');
                             }}
                         >
@@ -217,22 +217,22 @@ function Toolbar() {
                     </div>
 
                     <div className="ml-auto flex gap-[.3125rem] font-apple text-[.875rem] text-sub-2.5">
-                        {changeStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
-                        {changeStatus === 'pending' ? '저장중' : '저장 완료'}
+                        {saveStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
+                        {saveStatus === 'pending' ? '저장중' : '저장 완료'}
                     </div>
 
                     <div className="ml-7.5 flex gap-[.625rem]">
                         <HistoryBackIcon
                             className="h-6.5 w-6.5 cursor-pointer"
                             onClick={() => {
-                                moveHistory(-1);
+                                store.undo();
                                 sendEvent(events.makePage.toolbar.undoBytoolbar);
                             }}
                         />
                         <HistoryNextIcon
                             className="h-6.5 w-6.5 cursor-pointer"
                             onClick={() => {
-                                moveHistory(1);
+                                store.redo();
                                 sendEvent(events.makePage.toolbar.redoByToolbar);
                             }}
                         />
@@ -250,7 +250,7 @@ function Toolbar() {
                         }))}
                         className="ml-7.5 h-11.5 w-42 font-apple text-[1.25rem] font-semibold text-main-1"
                         selectClassName="outline-[.0938rem] outline-main-1"
-                        onChange={(e) => changeShiftTeam(parseInt(e.target.value))}
+                        onChange={(e) => void store.changeShiftTeam(parseInt(e.target.value))}
                     />
                 )}
             </div>
@@ -261,7 +261,7 @@ function Toolbar() {
                         type="fill"
                         className="flex h-10 items-center justify-center rounded-[.625rem] bg-main-2 px-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            postShift();
+                            void store.postShift();
                             sendEvent(events.makePage.toolbar.postShift);
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
@@ -273,7 +273,7 @@ function Toolbar() {
                         type="fill"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            toggleEditMode();
+                            void store.toggleEditModeAndMaybeSave();
                             sendEvent(events.makePage.toolbar.changeEditMode);
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
@@ -301,7 +301,7 @@ function Toolbar() {
                         type="outline"
                         className="flex h-10 w-59 items-center justify-center gap-[.5rem] rounded-[.625rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            createNextMonthShift();
+                            store.createNextMonthShift();
                             sendEvent(events.makePage.toolbar.editNextMonth);
                         }}
                     >
@@ -320,7 +320,7 @@ function Toolbar() {
                     </Button>
                     <Button
                         className="h-10 rounded-[3.125rem] border-main-1 bg-white px-5 text-[1.25rem] font-semibold text-main-1 transition-all hover:bg-main-1 hover:text-white"
-                        onClick={() => toggleEditMode()}
+                        onClick={() => void store.toggleEditModeAndMaybeSave()}
                     >
                         저장
                     </Button>
@@ -330,4 +330,4 @@ function Toolbar() {
     );
 }
 
-export default Toolbar;
+export default observer(Toolbar);

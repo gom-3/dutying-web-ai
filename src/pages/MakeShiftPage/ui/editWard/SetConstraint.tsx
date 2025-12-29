@@ -1,8 +1,10 @@
+import {observer} from 'mobx-react-lite';
 import React from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
-import useEditShift from '@/features/shift/useEditShift';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
 import {ArrowDownIcon} from '@/shared/assets/svg';
+import {useDependency} from '@/shared/hook/use-dependency';
 import Toggle from '@/shared/ui/Toggle';
 
 const Select = ({
@@ -28,10 +30,8 @@ const Select = ({
     </div>
 );
 const SetConstraint = () => {
-    const {
-        state: {wardConstraint, checkFaultOptions},
-        actions: {updateConstraint},
-    } = useEditShift();
+    const store = useDependency(EditDutyStore);
+    const {wardConstraint, checkFaultOptions} = store.viewState;
 
     return (
         checkFaultOptions &&
@@ -48,7 +48,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5, 6]}
                                         onChange={(e) => {
-                                            updateConstraint({
+                                            store.updateConstraint({
                                                 ...wardConstraint,
                                                 maxContinuousWorkVal: parseInt(e.target.value),
                                             });
@@ -67,7 +67,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5]}
                                         onChange={(e) => {
-                                            updateConstraint({
+                                            store.updateConstraint({
                                                 ...wardConstraint,
                                                 maxContinuousNightVal: parseInt(e.target.value),
                                             });
@@ -86,7 +86,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[2, 3, 4, 5]}
                                         onChange={(e) => {
-                                            updateConstraint({
+                                            store.updateConstraint({
                                                 ...wardConstraint,
                                                 minContinuousNightVal: parseInt(e.target.value),
                                             });
@@ -105,7 +105,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5, 6, 7]}
                                         onChange={(e) => {
-                                            updateConstraint({
+                                            store.updateConstraint({
                                                 ...wardConstraint,
                                                 minNightIntervalVal: parseInt(e.target.value),
                                             });
@@ -123,7 +123,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[2, 3]}
                                         onChange={(e) => {
-                                            updateConstraint({
+                                            store.updateConstraint({
                                                 ...wardConstraint,
                                                 minOffAssignAfterNightVal: parseInt(e.target.value),
                                             });
@@ -139,7 +139,7 @@ const SetConstraint = () => {
                             <Toggle
                                 isOn={isActive}
                                 setIsOn={() => {
-                                    updateConstraint({
+                                    store.updateConstraint({
                                         ...wardConstraint,
                                         [key]: isActive ? false : true,
                                     });
@@ -159,4 +159,4 @@ const SetConstraint = () => {
     );
 };
 
-export default SetConstraint;
+export default observer(SetConstraint);

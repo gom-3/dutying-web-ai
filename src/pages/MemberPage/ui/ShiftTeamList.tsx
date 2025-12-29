@@ -4,7 +4,7 @@ import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beau
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import useEditShiftStore from '@/features/shift/useEditShift/store';
+import {setPreferredShiftTeamId} from '@/features/shift/editDuty/prefs';
 import useTutorial from '@/features/ui/useTutorial';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
@@ -26,7 +26,6 @@ function ShiftTeamList() {
     const {
         state: {showMemberTutorial},
     } = useTutorial();
-    const setEditShiftStore = useEditShiftStore((state) => state.setState);
     const navigate = useNavigate();
     const clickAwayRef = useOnclickOutside(() => selectNurse(null));
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));
@@ -239,7 +238,7 @@ function ShiftTeamList() {
                                         <div
                                             className="flex flex-1 cursor-pointer items-center border-b-[.0625rem] border-main-3 px-6.25 font-apple text-[1.25rem] font-medium text-sub-2 last:border-none"
                                             onClick={() => {
-                                                setEditShiftStore('currentShiftTeamId', shiftTeam.shiftTeamId);
+                                                setPreferredShiftTeamId(shiftTeam.shiftTeamId);
                                                 navigate(ROUTE.MAKE);
                                             }}
                                         >
