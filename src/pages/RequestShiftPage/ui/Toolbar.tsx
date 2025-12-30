@@ -39,8 +39,8 @@ function Toolbar() {
             {!readonly && (
                 <>
                     <div className="ml-auto flex gap-[.3125rem] font-apple text-[.875rem] text-sub-2.5">
-                        {changeStatus === 'loading' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
-                        {changeStatus === 'loading' ? '저장중' : '저장 완료'}
+                        {changeStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
+                        {changeStatus === 'pending' ? '저장중' : '저장 완료'}
                     </div>
                 </>
             )}
@@ -67,7 +67,7 @@ function Toolbar() {
                 <div className="ml-auto flex gap-[10px]">
                     <Button
                         id="editButton"
-                        type="fill"
+                        variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 px-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => toggleEditMode()}
                     >
@@ -78,7 +78,7 @@ function Toolbar() {
             ) : (
                 <div className="ml-5 flex gap-[.875rem]">
                     <Button
-                        type="outline"
+                        variant="outline"
                         className="h-10 w-18.75 rounded-[3.125rem] text-[1.25rem] font-semibold"
                         onClick={() => toggleEditMode()}
                     >

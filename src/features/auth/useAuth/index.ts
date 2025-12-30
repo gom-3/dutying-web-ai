@@ -24,10 +24,17 @@ const useAuth = (activeEffect = false) => {
 
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
     };
-    const handleLogin = (accessToken: string, nextPageUrl?: string) => {
+    const handleLogin = (accessToken: string, nextPageUrl?: string | null) => {
         setState('isAuth', true);
         setState('accessToken', accessToken);
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+
+        // refresh 등 "상태만 세팅"이 필요할 때는 리다이렉트를 하지 않는다.
+        if (nextPageUrl === null) {
+            sendEvent(events.auth.login);
+
+            return;
+        }
 
         if (nextPageUrl === 'back') {
             window.history.back();

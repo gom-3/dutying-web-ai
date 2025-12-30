@@ -1,3 +1,5 @@
+export {default as LogoV2} from './LogoV2';
+export {default as LogoV2Black} from './LogoV2Black';
 export {default as AppstoreGrayIcon} from './AppstoreGrayIcon';
 export {default as AppstoreIcon} from './AppstoreIcon';
 export {default as ArrowDownIcon} from './ArrowDownIcon';

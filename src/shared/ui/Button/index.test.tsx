@@ -8,8 +8,8 @@ describe('Button 컴포넌트', () => {
         expect(screen.getByText('테스트 버튼')).toBeInTheDocument();
     });
 
-    it('type prop이 outline일 때 정상적으로 렌더링되어야 함', () => {
-        render(<Button type="outline">테스트 버튼</Button>);
+    it('variant prop이 outline일 때 정상적으로 렌더링되어야 함', () => {
+        render(<Button variant="outline">테스트 버튼</Button>);
 
         const button = screen.getByText('테스트 버튼');
 

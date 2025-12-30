@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {twMerge} from 'tailwind-merge';
+import {Input} from '@/shared/ui/shadcn/input';
+import {cn} from '@/shared/util/style';
 
 interface Props extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
     initTime?: string;
@@ -67,15 +68,14 @@ function TimeInput({initTime, onTimeChange, className, ...props}: Props) {
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (initTime) setTime(initTime);
     }, [initTime]);
 
     return (
-        <input
+        <Input
             value={time}
             onChange={HandleChange}
-            className={twMerge(
+            className={cn(
                 'rounded-[.625rem] px-6.25 font-poppins text-[2.25rem] outline-1 outline-sub-4 focus:text-main-1 focus:outline-main-1',
                 className,
             )}
