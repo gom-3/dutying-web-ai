@@ -17,17 +17,25 @@ axiosInstance.interceptors.response.use(
     (response) => response,
     // 에러가 발생하면 각 에러에 대한 처리
     (error) => {
-        match(error.response.status)
+        const status: number | undefined = error?.response?.status;
+        const message: string | undefined = error?.response?.data?.message;
+
+        match(status)
             .with(401, () => {
                 if (window.location.pathname !== ROUTE.REFRESH) {
-                    location.replace(ROUTE.REFRESH);
+                    const next = `${window.location.pathname}${window.location.search}`;
+
+                    location.replace(`${ROUTE.REFRESH}?next=${encodeURIComponent(next)}`);
                 }
             })
             .with(400, 404, () => {
-                toast.error(error.response.data.message ?? '에러가 발생했습니다. 다시 시도해주세요.');
+                toast.error(message ?? '에러가 발생했습니다. 다시 시도해주세요.');
+            })
+            .otherwise(() => {
+                // no-op
             });
 
-        return Promise.reject({code: error.response.status, message: error.response.data.message});
+        return Promise.reject({code: status ?? -1, message: message ?? '알 수 없는 오류가 발생했습니다.'});
     },
 );
 

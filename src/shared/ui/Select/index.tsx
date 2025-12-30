@@ -1,7 +1,7 @@
 import React, {forwardRef} from 'react';
 import {type UseFormRegisterReturn} from 'react-hook-form';
-import {twMerge} from 'tailwind-merge';
 import {ArrowDownIcon} from '@/shared/assets/svg';
+import {cn} from '@/shared/util/style';
 
 interface Props extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> {
     placeholder?: string;
@@ -11,16 +11,16 @@ interface Props extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLS
 }
 
 const Select = forwardRef(
-    ({placeholder, value, onChange, options, className, selectClassName, ...props}: Props, ref: React.LegacyRef<HTMLSelectElement>) => {
+    ({placeholder, value, onChange, options, className, selectClassName, ...props}: Props, ref: React.ForwardedRef<HTMLSelectElement>) => {
         return (
-            <div className={twMerge('relative h-8.75 w-45.75', className)}>
+            <div className={cn('relative h-8.75 w-45.75', className)}>
                 <ArrowDownIcon className="absolute top-[50%] right-[.625rem] h-6.25 w-6.25 translate-y-[-50%]" />
                 <select
                     ref={ref}
                     value={value}
                     onChange={onChange}
-                    className={twMerge(
-                        'relative z-10 h-full w-full appearance-none rounded-[.625rem] bg-transparent px-3.75 text-left font-apple outline outline-[.0625rem] outline-main-2',
+                    className={cn(
+                        'relative z-10 h-full w-full appearance-none rounded-[.625rem] bg-transparent px-3.75 text-left font-apple outline-[.0625rem] outline-main-2 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none',
                         selectClassName,
                     )}
                     {...props}

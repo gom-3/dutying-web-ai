@@ -1,28 +1,30 @@
 import {useCallback} from 'react';
 import toast from 'react-hot-toast';
-import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth/useAuth';
 import axiosInstance from '@/shared/api/client';
-import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export default function useRefresh() {
     const {
         actions: {handleLogout, handleLogin},
     } = useAuth();
-    const navigate = useNavigate();
+    const {t} = useTypedTranslation();
     const refresh = useCallback(async () => {
         try {
             axiosInstance.defaults.headers.common['Authorization'] = undefined;
 
             const accessToken = (await axiosInstance.post('/token/refresh')).data.accessToken;
 
-            handleLogin(accessToken, 'back');
+            // 여기서는 "세션만 갱신"하고, 이동은 호출자(RefreshPage)가 담당한다.
+            handleLogin(accessToken, null);
+
+            return accessToken as string;
         } catch {
-            toast.error('로그인이 만료되었습니다. 다시 로그인해주세요.');
-            handleLogout();
-            navigate(ROUTE.ROOT);
+            toast.error(t('feature.auth.sessionExpired'));
+            await handleLogout();
+            throw new Error('refresh_failed');
         }
-    }, [handleLogin, handleLogout, navigate]);
+    }, [handleLogin, handleLogout, t]);
 
     return {refresh};
 }

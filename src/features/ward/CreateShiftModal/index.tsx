@@ -54,13 +54,11 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: Props) {
 
     useEffect(() => {
         if (open === false) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setWriteShift(initialValue);
         }
     }, [open]);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (shiftType) setWriteShift(shiftType);
     }, [shiftType]);
 
@@ -165,7 +163,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: Props) {
                           {!shiftType?.isDefault && (
                               <Button
                                   className="absolute right-31.75 bottom-7.5 h-10 w-18.75 border-sub-2.5 text-[1.25rem] font-semibold text-sub-2.5"
-                                  type="outline"
+                                  variant="outline"
                                   onClick={() => {
                                       onDelete();
                                       close();
@@ -176,7 +174,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: Props) {
                           )}
                           <Button
                               className="absolute right-10.5 bottom-7.5 h-10 w-18.75 text-[1.25rem] font-semibold"
-                              type="outline"
+                              variant="outline"
                               onClick={handleSubmit}
                           >
                               저장

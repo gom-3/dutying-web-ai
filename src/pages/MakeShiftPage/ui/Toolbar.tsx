@@ -69,7 +69,7 @@ function Toolbar() {
 
             {!readonly && (
                 <Button
-                    type="outline"
+                    variant="outline"
                     className="mr-5 flex h-10 w-31.75 items-center justify-center rounded-[3.125rem] border-[.0313rem] border-main-2 bg-main-4 text-base font-normal"
                     onClick={() => {
                         if (currentSetup) {
@@ -258,7 +258,7 @@ function Toolbar() {
             {readonly ? (
                 <div className="ml-auto flex gap-[10px]">
                     <Button
-                        type="fill"
+                        variant="default"
                         className="flex h-10 items-center justify-center rounded-[.625rem] bg-main-2 px-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
                             void store.postShift();
@@ -270,7 +270,7 @@ function Toolbar() {
                     </Button>
                     <Button
                         id="editButton"
-                        type="fill"
+                        variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
                             void store.toggleEditModeAndMaybeSave();
@@ -284,7 +284,7 @@ function Toolbar() {
                     {/* @TODO 이미지 저장 구현 */}
                     <Button
                         id="El2"
-                        type="fill"
+                        variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
                             if (shift) {
@@ -298,7 +298,7 @@ function Toolbar() {
                         <ShareIcon className="h-6 w-6" />
                     </Button>
                     <Button
-                        type="outline"
+                        variant="outline"
                         className="flex h-10 w-59 items-center justify-center gap-[.5rem] rounded-[.625rem] text-[1.25rem] font-semibold"
                         onClick={() => {
                             store.createNextMonthShift();
@@ -312,7 +312,7 @@ function Toolbar() {
             ) : (
                 <div className="ml-5 flex gap-[.875rem]">
                     <Button
-                        type="fill"
+                        variant="default"
                         className="h-10 w-33 rounded-[3.125rem] border-none bg-[rgba(171,171,180,0.80)] text-[1.25rem] font-semibold text-white"
                         onClick={() => alert('아직 준비중인 기능입니다!')}
                     >
