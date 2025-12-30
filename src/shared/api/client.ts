@@ -35,7 +35,15 @@ axiosInstance.interceptors.response.use(
                 // no-op
             });
 
-        return Promise.reject({code: status ?? -1, message: message ?? '알 수 없는 오류가 발생했습니다.'});
+        const apiError = new Error(message ?? '알 수 없는 오류가 발생했습니다.') as Error & {
+            code: number;
+            originalError: unknown;
+        };
+
+        apiError.code = status ?? -1;
+        apiError.originalError = error;
+
+        return Promise.reject(apiError);
     },
 );
 

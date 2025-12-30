@@ -9,7 +9,8 @@ function RefreshPage() {
     const {refresh} = useRefresh();
     const {search} = useLocation();
     const {t} = useTypedTranslation();
-    const next = new URLSearchParams(search).get('next') ?? undefined;
+    const rawNext = new URLSearchParams(search).get('next');
+    const next = rawNext?.startsWith('/') && !rawNext.startsWith('//') ? rawNext : undefined;
 
     useEffect(() => {
         let cancelled = false;
