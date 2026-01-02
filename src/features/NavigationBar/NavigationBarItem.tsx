@@ -1,9 +1,10 @@
 import React from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
+import {type TRoute} from '@/shared/constant/path';
 
 interface Props {
-    path?: string;
+    path?: TRoute;
     SelectedIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     text: string;
@@ -30,7 +31,7 @@ const NavigationBarItem = ({path, SelectedIcon, Icon, text, disabled = false}: P
                 if (isDisabled) return;
 
                 navigate(path);
-                sendEvent(events.navigationBar.navigate, pathname);
+                sendEvent(events.navigationBar.navigate, path);
             }}
         >
             <CurrentIcon className={`h-[34px] w-[34px] ${isSelected ? 'text-main-1' : 'text-gray-5'}`} />

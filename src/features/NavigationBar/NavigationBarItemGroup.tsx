@@ -8,11 +8,11 @@ import {
     SettingIcon,
     SettingIconSelected,
 } from '@/shared/assets/svg';
-import ROUTE from '@/shared/constant/path';
+import ROUTE, {type TRoute} from '@/shared/constant/path';
 import NavigationBarItem from './NavigationBarItem';
 
 type NavItem = {
-    path?: string;
+    path?: TRoute;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     selectedIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     text: string;
