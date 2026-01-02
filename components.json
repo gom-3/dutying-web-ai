@@ -15,7 +15,7 @@
         "components": "@/shared",
         "utils": "@/shared/util/style",
         "ui": "@/shared/ui/shadcn",
-        "lib": "@/shared/util",
+        "lib": "@/shared/util/style",
         "hooks": "@/shared/hooks"
     },
     "registries": {}

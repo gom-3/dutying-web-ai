@@ -1,84 +1,80 @@
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
-import useTutorial from '@/features/ui/useTutorial';
-import {FoldIcon, HelpIcon} from '@/shared/assets/svg';
+import {ProfileImage} from '@/features/ProfileImage';
+import {FoldIcon, LogoV2} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {ProfileImage} from '../ProfileImage';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
 
-interface Props {
-    isFold: boolean;
-    setIsFold: (isFold: boolean) => void;
-}
-
-const NavigationBar = ({isFold, setIsFold}: Props) => {
+const NavigationBar = () => {
     const {
         state: {accountMe},
     } = useAuth();
-    const [canHover, setCanHover] = useState(true);
-    const {
-        actions: {setMakeTutorial, setMemberTutorial, setRequestTutorial},
-    } = useTutorial();
     const navigate = useNavigate();
-    const handleResetTutorial = () => {
-        switch (window.location.pathname) {
-            case ROUTE.MAKE:
-                setMakeTutorial(true);
-                break;
-            case ROUTE.MEMBER:
-                setMemberTutorial(true);
-                break;
-            case ROUTE.REQUEST:
-                setRequestTutorial(true);
-                break;
-            default:
-                break;
-        }
-    };
+    const [isFold, setIsFold] = useState(false);
 
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCanHover(false);
-        setTimeout(() => {
-            setCanHover(true);
-        }, 500);
-    }, [isFold]);
+    // 접힘 상태: 사이드바는 숨기고 좌상단 fixed 버튼만 남김
+    if (isFold) {
+        return (
+            <button
+                data-testid="navigation-bar-fold-trigger"
+                type="button"
+                aria-label="사이드바 펼치기"
+                className="fixed top-[7px] left-[14px] z-997 flex size-[42px] items-center justify-center rounded-[10px] border border-[#BFC7D4] bg-white p-[6px]"
+                onClick={() => {
+                    setIsFold(false);
+                    sendEvent(events.navigationBar.spreadNavigation);
+                }}
+            >
+                <FoldIcon className="h-[30px] w-[30px] rotate-180 text-gray-5" />
+            </button>
+        );
+    }
 
     return (
-        <div className="group fixed left-0 z-997">
-            <div
-                data-testid="navigation-bar"
-                className={`z-10 ${canHover && 'group-hover:translate-x-0'} ${!isFold ? 'sticky' : 'fixed'} top-0 duration-500 ease-out ${
-                    !isFold ? '' : '-translate-x-32'
-                } left-0 flex h-screen w-40.5 flex-col items-center border-r border-sub-4 bg-white font-apple text-base text-sub-3`}
-            >
-                <div
-                    onClick={() => {
-                        setIsFold(!isFold);
-                        sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
-                    }}
-                >
-                    <FoldIcon
-                        className={`${
-                            isFold && 'left-[.9375rem] scale-x-[-1]'
-                        } absolute top-[.8125rem] right-[.875rem] h-7.5 w-7.5 cursor-pointer duration-300`}
-                    />
+        <aside
+            data-testid="navigation-bar"
+            className="sticky top-0 z-997 h-screen w-[172px] shrink-0 border-r border-gray-6 bg-white font-apple transition-[width] duration-300 ease-out"
+        >
+            <div className="relative flex h-full w-full flex-col">
+                <div className="px-[20px]">
+                    <button
+                        type="button"
+                        aria-label="사이드바 접기"
+                        className="absolute top-[13px] right-[9px] flex size-[30px] items-center justify-center"
+                        onClick={() => {
+                            setIsFold(true);
+                            sendEvent(events.navigationBar.foldNavigation);
+                        }}
+                    >
+                        <FoldIcon className="h-[30px] w-[30px] text-gray-5" />
+                    </button>
+
+                    <LogoV2 className="mt-[85px] h-9 w-9" />
+
+                    <div className="mt-6 w-full">
+                        <button
+                            type="button"
+                            className="w-full rounded-[7px] border border-gray-6 bg-gray-7 py-[11px] text-[16px] font-medium text-gray-3"
+                        >
+                            근무표
+                        </button>
+                    </div>
                 </div>
+
                 <NavigationBarItemGroups />
-                <div className="mt-auto mb-12.5 flex flex-col items-center gap-8 pt-8">
-                    <div className="flex cursor-pointer flex-col items-center" onClick={handleResetTutorial}>
-                        <HelpIcon className="h-12.5 w-12.5 rounded-full" />
-                        <div className="mt-2 text-[1rem] text-sub-3">가이드</div>
-                    </div>
-                    <div className="flex cursor-pointer flex-col items-center" onClick={() => navigate(ROUTE.PROFILE)}>
-                        <ProfileImage className="h-12.5 w-12.5" profileImg={{profileImgUrl: accountMe?.profileImgUrl}} />
-                        <div className="mt-2 text-[1rem] text-sub-3">{accountMe?.name}</div>
-                    </div>
+
+                <div className="flex-1" />
+
+                <div className="pb-[52px]">
+                    <button type="button" className="mx-auto flex w-full flex-col items-center" onClick={() => navigate(ROUTE.PROFILE)}>
+                        <ProfileImage className="h-[50px] w-[50px]" profileImg={{profileImgUrl: accountMe?.profileImgUrl}} />
+                        <div className="text-[16px] text-gray-4">{accountMe?.name}</div>
+                    </button>
                 </div>
             </div>
-        </div>
+        </aside>
     );
 };
 

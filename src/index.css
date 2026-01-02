@@ -28,24 +28,6 @@
         flex-direction: column;
     }
 
-    @media screen and (max-width: 1800px) {
-        html {
-            font-size: 14px !important;
-        }
-    }
-
-    @media screen and (max-width: 1680px) {
-        html {
-            font-size: 12px !important;
-        }
-    }
-
-    @media screen and (max-width: 1440px) {
-        html {
-            font-size: 10px !important;
-        }
-    }
-
     .simplebar-track.simplebar-vertical {
         background-color: #d6d6de;
         border-radius: 20px;

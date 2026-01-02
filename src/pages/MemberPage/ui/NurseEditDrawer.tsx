@@ -56,7 +56,7 @@ function NurseEditDrawer() {
             }`}
         >
             <FoldIcon
-                className="absolute top-[.8125rem] left-5 h-7.5 w-7.5 scale-x-[-1] cursor-pointer"
+                className="absolute top-[.8125rem] left-5 h-7.5 w-7.5 scale-x-[-1] cursor-pointer text-sub-3"
                 onClick={() => selectNurse(null)}
             />
             <div className="mt-15 mb-5 flex h-10.5 w-full items-center px-10">
