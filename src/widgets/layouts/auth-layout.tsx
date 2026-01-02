@@ -5,7 +5,7 @@ import useAuth from '@/features/auth/useAuth';
 import ROUTE from '@/shared/constant/path';
 import useInterval from '@/shared/util/useInterval';
 
-function AuthzLayout() {
+export const AuthLayout = () => {
     const [demoRemainTime, setDemoRemainTime] = useState<string | null>(null);
     const navigate = useNavigate();
     const {
@@ -46,6 +46,4 @@ function AuthzLayout() {
             </div>
         )
     );
-}
-
-export default AuthzLayout;
+};

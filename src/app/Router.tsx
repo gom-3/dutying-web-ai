@@ -1,7 +1,7 @@
 import {Suspense, lazy} from 'react';
 import {Route, Routes} from 'react-router-dom';
-import {AuthzLayout, NotAuthzLayout, MainLayout} from '@/features/Layouts';
 import ROUTE from '@/shared/constant/path.ts';
+import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage/index.ts'));
 const RefreshPage = lazy(() => import('@/pages/RefreshPage/index.tsx'));
@@ -22,12 +22,12 @@ export const Router = () => {
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}
-                <Route element={<NotAuthzLayout />}>
+                <Route element={<NotAuthLayout />}>
                     <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
                     <Route path={ROUTE.LOGIN} element={<LoginPage />} />
                 </Route>
                 {/* 인증되지 않은 사용자가 접근할 수 없는 페이지 */}
-                <Route element={<AuthzLayout />}>
+                <Route element={<AuthLayout />}>
                     <Route path={ROUTE.REGISTER} element={<RegisterPage />} />
                     <Route path={ROUTE.ENTER_WARD} element={<EnterWard />} />
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />

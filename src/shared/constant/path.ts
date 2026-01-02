@@ -1,3 +1,5 @@
+import {type TValues} from '../types/util';
+
 const ROUTE = {
     ROOT: '/',
     REGISTER: '/register',
@@ -12,5 +14,7 @@ const ROUTE = {
     MEMBER: '/member',
     PROFILE: '/profile',
 };
+
+export type TRoute = TValues<typeof ROUTE>;
 
 export default ROUTE;

@@ -3,7 +3,7 @@ import {Outlet, useNavigate} from 'react-router';
 import useAuth from '@/features/auth/useAuth';
 import ROUTE from '@/shared/constant/path';
 
-function NotAuthzLayout() {
+export const NotAuthLayout = () => {
     const navigate = useNavigate();
     const {
         state: {isAuth},
@@ -14,6 +14,4 @@ function NotAuthzLayout() {
     }, [isAuth]);
 
     return !isAuth && <Outlet />;
-}
-
-export default NotAuthzLayout;
+};
