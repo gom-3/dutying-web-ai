@@ -1,28 +1,26 @@
-import {observer} from 'mobx-react-lite';
-import {useCallback, useContext} from 'react';
+import {useCallback} from 'react';
 import {createPortal} from 'react-dom';
-import {MakeShiftContext} from '../model/provider';
+import {useMakeShiftStore} from '../model/store';
+import {useMakeShiftUseCase} from '../model/use-case';
 
-export const RestoreDraftModal = observer(() => {
+export const RestoreDraftModal = () => {
     const root = document.getElementById('modal-root')!;
-    const {
-        store: {flowStore},
-        useCase: {flowUseCase},
-    } = useContext(MakeShiftContext);
+    const restoreDraftModalOpen = useMakeShiftStore((s) => s.restoreDraftModalOpen);
+    const useCase = useMakeShiftUseCase();
 
-    if (!flowStore.restoreDraftModalOpen) {
+    if (!restoreDraftModalOpen) {
         return null;
     }
 
     const handleClose = useCallback(() => {
-        flowUseCase.closeRestoreDraftModal();
-    }, [flowUseCase]);
+        useCase.closeRestoreDraftModal();
+    }, [useCase]);
     const handleConfirm = useCallback(() => {
-        flowUseCase.confirmRestoreDraft();
-    }, [flowUseCase]);
+        useCase.confirmRestoreDraft();
+    }, [useCase]);
     const handleDecline = useCallback(() => {
-        flowUseCase.declineRestoreDraft();
-    }, [flowUseCase]);
+        useCase.declineRestoreDraft();
+    }, [useCase]);
 
     return createPortal(
         <div className="fixed inset-0 z-1000 flex items-center justify-center bg-black/40 px-4" onClick={handleClose}>
@@ -43,4 +41,4 @@ export const RestoreDraftModal = observer(() => {
         </div>,
         root,
     );
-});
+};

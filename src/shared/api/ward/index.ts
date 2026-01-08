@@ -2,7 +2,7 @@ import qs from 'qs';
 import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
 import {type DutyRequest} from '@/shared/types/request';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type WardConstraint, type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
+import {type Ward, type TWardConstraint, type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
 import axiosInstance from '../client';
 import {type UpdateNurseDTO} from '../nurse/type';
 import {
@@ -20,9 +20,9 @@ class WardAPI implements IWardAPI {
     createWard = async (createWardDTO: CreateWardDTO) => (await axiosInstance.post<Ward>(`/wards`, createWardDTO)).data;
     editWard = async (wardId: number, ward: EditWardDTO) => (await axiosInstance.patch<Ward>(`/wards/${wardId}`, ward)).data;
     getWardConstraint = async (wardId: number, shiftTeamId: number) =>
-        (await axiosInstance.get<WardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data;
-    updateWardConstraint = async (wardId: number, shiftTeamId: number, constraint: WardConstraint) =>
-        (await axiosInstance.patch<WardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data;
+        (await axiosInstance.get<TWardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data;
+    updateWardConstraint = async (wardId: number, shiftTeamId: number, constraint: TWardConstraint) =>
+        (await axiosInstance.patch<TWardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data;
     getWardByCode = async (code: string) => (await axiosInstance.get<Ward>(`/wards/search?code=${code}`)).data;
     getWatingNurses = async (wardId: number) =>
         (await axiosInstance.get<{nurses: WaitingNurse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses;

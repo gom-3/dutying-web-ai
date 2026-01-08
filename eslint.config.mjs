@@ -193,9 +193,24 @@ export default [
                     varsIgnorePattern: '^_',
                     caughtErrorsIgnorePattern: '^_',
                 },
-            ], // 미사용 변수 체크
+            ],
+
+            // 미사용 변수 체크
             '@typescript-eslint/prefer-optional-chain': 'error', // 옵셔널 체이닝 권장
             '@typescript-eslint/prefer-nullish-coalescing': 'error', // ?? 연산자 권장
+            '@typescript-eslint/naming-convention': [
+                'error',
+                {
+                    selector: 'interface',
+                    format: ['PascalCase'],
+                    custom: {regex: '^I[A-Z]', match: true},
+                },
+                {
+                    selector: 'typeAlias',
+                    format: ['PascalCase'],
+                    custom: {regex: '^T[A-Z]', match: true},
+                },
+            ],
         },
         settings: {
             react: {

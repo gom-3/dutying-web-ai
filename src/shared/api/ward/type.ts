@@ -1,14 +1,14 @@
 import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
 import {type DutyRequest} from '@/shared/types/request';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type WardConstraint, type WardShiftType, type ShiftTeam} from '@/shared/types/ward';
+import {type Ward, type TWardConstraint, type WardShiftType, type ShiftTeam} from '@/shared/types/ward';
 import {type UpdateNurseDTO} from '../nurse/type';
 
 export interface IWardAPI {
     // Ward APIs
     // GET
     getWard: (wardId: number) => Promise<Ward>;
-    getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<WardConstraint>;
+    getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraint>;
     getWardByCode: (code: string) => Promise<Ward>;
     getWatingNurses: (wardId: number) => Promise<WaitingNurse[]>;
     // POST
@@ -18,7 +18,7 @@ export interface IWardAPI {
     approveWatingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
     // PATCH
     editWard: (wardId: number, ward: EditWardDTO) => Promise<Ward>;
-    updateWardConstraint: (wardId: number, shiftTeamId: number, constraint: WardConstraint) => Promise<WardConstraint>;
+    updateWardConstraint: (wardId: number, shiftTeamId: number, constraint: TWardConstraint) => Promise<TWardConstraint>;
     // DELETE
     deleteWatingNurses: (wardId: number, nurseId: number) => Promise<void>;
     quitWard: (wardId: number) => Promise<void>;

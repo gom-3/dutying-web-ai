@@ -1,0 +1,51 @@
+import {create} from 'zustand';
+import {devtools} from 'zustand/middleware';
+import type {TDutyDoc, TDutyValidationInput, THistoryState, TSelection, TViolation} from './types';
+
+export type TShiftEditorStore = {
+    // state (data only)
+    doc: TDutyDoc;
+    selection: TSelection | null;
+    violations: TViolation[];
+    history: THistoryState;
+    dutyValidationInput: TDutyValidationInput | null;
+
+    // primitive setters (no business rules here)
+    setDoc: (doc: TDutyDoc) => void;
+    setSelection: (selection: TSelection | null) => void;
+    setViolations: (violations: TViolation[]) => void;
+    setHistory: (history: THistoryState) => void;
+    setDutyValidationInput: (input: TDutyValidationInput | null) => void;
+
+    reset: (opts?: {maxHistoryDepth?: number}) => void;
+};
+
+const emptyDoc: TDutyDoc = {columns: [], rows: [], workerMeta: {}};
+const initialHistory: THistoryState = {past: [], future: [], maxDepth: 200};
+
+export const useShiftEditorStore = create<TShiftEditorStore>()(
+    devtools((set) => ({
+        doc: emptyDoc,
+        selection: null,
+        violations: [],
+        history: initialHistory,
+        dutyValidationInput: null,
+
+        setDoc: (doc) => set(() => ({doc})),
+        setSelection: (selection) => set(() => ({selection})),
+        setViolations: (violations) => set(() => ({violations})),
+        setHistory: (history) => set(() => ({history})),
+        setDutyValidationInput: (dutyValidationInput) => set(() => ({dutyValidationInput})),
+
+        reset: (opts) => {
+            const maxDepth = opts?.maxHistoryDepth ?? initialHistory.maxDepth;
+
+            set(() => ({
+                doc: emptyDoc,
+                selection: null,
+                violations: [],
+                history: {past: [], future: [], maxDepth},
+            }));
+        },
+    })),
+);

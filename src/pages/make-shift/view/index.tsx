@@ -1,6 +1,5 @@
-import {observer} from 'mobx-react-lite';
-import {useContext} from 'react';
-import {MakeShiftContext} from '../model/provider';
+import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/store';
+import {useMakeShiftUseCase} from '../model/use-case';
 import {RestoreDraftModal} from './restore-draft-modal';
 import {AiAutofill} from './steps/ai-auto-fill';
 import {Constraints} from './steps/constraints';
@@ -16,17 +15,15 @@ const STEP_LABELS: Record<1 | 2 | 3 | 4 | 5, string> = {
     5: 'AI 자동 채우기',
 };
 
-export const MakeShiftPageView = observer(() => {
-    const deps = useContext(MakeShiftContext);
-
-    if (!deps) throw new Error('MakeShiftContext is not provided.');
-
-    const {
-        store: {flowStore, editDutyStore},
-        useCase: {flowUseCase},
-    } = deps;
-    const isOverview = flowStore.phase === 'overview';
-    const {shiftStatus, shift} = editDutyStore;
+export const MakeShiftPageView = () => {
+    const useCase = useMakeShiftUseCase();
+    const phase = useMakeShiftStore((s) => s.phase);
+    const currentStep = useMakeShiftStore((s) => s.currentStep);
+    const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
+    const shiftExists = useMakeShiftStore((s) => s.shiftExists);
+    const canPrev = useMakeShiftStore((s) => canGoPrev(s));
+    const canNext = useMakeShiftStore((s) => canGoNext(s));
+    const isOverview = phase === 'overview';
 
     return (
         <div className="mx-auto flex min-h-screen w-full max-w-[1200px] flex-col px-6 py-6">
@@ -39,14 +36,14 @@ export const MakeShiftPageView = observer(() => {
                         </p>
                         <div className="mt-4 rounded-lg bg-main-bg p-4 font-apple text-sm text-sub-2.5">
                             {shiftStatus === 'pending' && '근무표를 불러오는 중입니다...'}
-                            {shiftStatus === 'success' && shift && '현재 월 근무표가 존재합니다. (상세 UI는 단계 진행 후 표시)'}
+                            {shiftStatus === 'success' && shiftExists && '현재 월 근무표가 존재합니다. (상세 UI는 단계 진행 후 표시)'}
                             {shiftStatus === 'error' && '현재 월 근무표가 없습니다.'}
                             {shiftStatus === 'idle' && '근무표 상태를 확인 중입니다.'}
                         </div>
                         <div className="mt-6 flex gap-3">
                             <button
                                 className="h-10 rounded-lg bg-main-2 px-4 font-apple text-base font-semibold text-white disabled:opacity-50"
-                                onClick={() => flowUseCase.start()}
+                                onClick={() => useCase.start()}
                                 disabled={shiftStatus === 'pending'}
                             >
                                 근무표 생성
@@ -59,8 +56,8 @@ export const MakeShiftPageView = observer(() => {
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             {([1, 2, 3, 4, 5] as const).map((step) => {
-                                const active = flowStore.currentStep === step;
-                                const clickable = step < flowStore.currentStep;
+                                const active = currentStep === step;
+                                const clickable = step < currentStep;
 
                                 return (
                                     <button
@@ -68,7 +65,7 @@ export const MakeShiftPageView = observer(() => {
                                         className={`rounded-full px-3 py-1 font-apple text-sm ${
                                             active ? 'bg-main-4 text-main-1' : 'bg-sub-5 text-sub-2.5'
                                         } ${clickable ? 'cursor-pointer' : 'cursor-default'}`}
-                                        onClick={() => clickable && flowUseCase.goToStep(step)}
+                                        onClick={() => clickable && useCase.goToStep(step)}
                                         type="button"
                                     >
                                         {step}. {STEP_LABELS[step]}
@@ -80,22 +77,22 @@ export const MakeShiftPageView = observer(() => {
                         <div className="flex items-center gap-2">
                             <button
                                 className="h-9 rounded-lg bg-sub-5 px-3 font-apple text-sm text-sub-2.5 disabled:opacity-50"
-                                onClick={() => flowUseCase.prev()}
-                                disabled={!flowStore.canGoPrev()}
+                                onClick={() => useCase.prev()}
+                                disabled={!canPrev}
                             >
                                 이전
                             </button>
                             <button
                                 className="h-9 rounded-lg bg-main-2 px-3 font-apple text-sm text-white disabled:opacity-50"
-                                onClick={() => flowUseCase.next()}
-                                disabled={!flowStore.canGoNext()}
+                                onClick={() => useCase.next()}
+                                disabled={!canNext}
                             >
                                 다음
                             </button>
-                            {flowStore.currentStep === 5 && (
+                            {currentStep === 5 && (
                                 <button
                                     className="h-9 rounded-lg bg-sub-3 px-3 font-apple text-sm text-white"
-                                    onClick={() => flowUseCase.complete()}
+                                    onClick={() => useCase.complete()}
                                     type="button"
                                 >
                                     완료
@@ -105,11 +102,11 @@ export const MakeShiftPageView = observer(() => {
                     </div>
 
                     <div className="mt-4 flex flex-1">
-                        {flowStore.currentStep === 1 && <Workers />}
-                        {flowStore.currentStep === 2 && <Constraints />}
-                        {flowStore.currentStep === 3 && <RequestsShifts />}
-                        {flowStore.currentStep === 4 && <FixedShifts />}
-                        {flowStore.currentStep === 5 && <AiAutofill />}
+                        {currentStep === 1 && <Workers />}
+                        {currentStep === 2 && <Constraints />}
+                        {currentStep === 3 && <RequestsShifts />}
+                        {currentStep === 4 && <FixedShifts />}
+                        {currentStep === 5 && <AiAutofill />}
                     </div>
                 </>
             )}
@@ -117,4 +114,4 @@ export const MakeShiftPageView = observer(() => {
             <RestoreDraftModal />
         </div>
     );
-});
+};

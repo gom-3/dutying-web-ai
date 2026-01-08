@@ -1,130 +1,94 @@
-import {computed, makeObservable, observable} from 'mobx';
-import type {EditDutyStore} from '@/features/shift/editDuty/model/store';
-import {AbstractStore} from '@/shared/abstract';
+import {create} from 'zustand';
+import {devtools} from 'zustand/middleware';
 
-export type MakeShiftStep = 1 | 2 | 3 | 4 | 5;
+export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
+export type TFlowPhase = 'overview' | 'stepping';
+export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
 
-type FlowPhase = 'overview' | 'stepping';
+export type TMakeShiftStore = {
+    // flow
+    phase: TFlowPhase;
+    currentStep: TMakeShiftStep;
+    restoreDraftModalOpen: boolean;
 
-/**
- * make-shift 플로우의 스텝 진행 상태만 담당한다.
- * - step1 진입 시 draft 존재하면 복구 모달을 띄우는 트리거 제공
- * - 실제 근무표 편집 로직은 Step5(에디터) 및 개별 step widget로 위임
- */
-export class MakeShiftFlowStore extends AbstractStore {
-    private _phase!: FlowPhase;
-    private _currentStep!: MakeShiftStep;
+    // overview status (MVP)
+    shiftStatus: TShiftStatus;
+    shiftExists: boolean;
 
-    // draft restore flow
-    private _restoreDraftModalOpen!: boolean;
-    private _shouldRestoreDraft!: boolean;
+    // actions (no business logic beyond state transitions)
+    startFromStep1: (opts: {openRestoreDraftModal: boolean}) => void;
+    closeRestoreDraftModal: () => void;
+    resetToOverview: () => void;
 
-    constructor(private readonly _editDutyStore: EditDutyStore) {
-        super();
+    goPrev: () => void;
+    goNext: () => void;
+    goToStep: (step: TMakeShiftStep) => void;
 
-        this.init();
+    setShiftStatus: (status: TShiftStatus) => void;
+    setShiftExists: (exists: boolean) => void;
+};
 
-        const observableMap = {
-            _phase: observable,
-            _currentStep: observable,
-            _restoreDraftModalOpen: observable,
-            _shouldRestoreDraft: observable,
-            phase: computed,
-            currentStep: computed,
-            restoreDraftModalOpen: computed,
-            draftExists: computed,
-            shouldRestoreDraft: computed,
-        };
+export const useMakeShiftStore = create<TMakeShiftStore>()(
+    devtools((set, get) => ({
+        phase: 'overview',
+        currentStep: 1,
+        restoreDraftModalOpen: false,
 
-        makeObservable(this, observableMap);
-    }
+        shiftStatus: 'idle',
+        shiftExists: false,
 
-    override init(): void {
-        this._phase = 'overview';
-        this._currentStep = 1;
-        this._restoreDraftModalOpen = false;
-        this._shouldRestoreDraft = false;
-    }
+        startFromStep1: ({openRestoreDraftModal}) => {
+            set(() => ({
+                phase: 'stepping',
+                currentStep: 1,
+                restoreDraftModalOpen: openRestoreDraftModal,
+            }));
+        },
+        closeRestoreDraftModal: () => set(() => ({restoreDraftModalOpen: false})),
+        resetToOverview: () =>
+            set(() => ({
+                phase: 'overview',
+                currentStep: 1,
+                restoreDraftModalOpen: false,
+            })),
 
-    get phase(): FlowPhase {
-        return this._phase;
-    }
+        goPrev: () => {
+            const {phase, currentStep} = get();
 
-    get currentStep(): MakeShiftStep {
-        return this._currentStep;
-    }
+            if (phase !== 'stepping') return;
 
-    get restoreDraftModalOpen(): boolean {
-        return this._restoreDraftModalOpen;
-    }
+            if (currentStep <= 1) return;
 
-    get draftExists(): boolean {
-        return this._editDutyStore.draftExists;
-    }
+            set(() => ({currentStep: (currentStep - 1) as TMakeShiftStep}));
+        },
+        goNext: () => {
+            const {phase, currentStep} = get();
 
-    get shouldRestoreDraft(): boolean {
-        return this._shouldRestoreDraft;
-    }
+            if (phase !== 'stepping') return;
 
-    /** "근무표 생성" 클릭 시 호출 */
-    startFromStep1(): void {
-        this._phase = 'stepping';
-        this._currentStep = 1;
-        this._shouldRestoreDraft = false;
+            if (currentStep >= 5) return;
 
-        if (this._editDutyStore.draftExists) this._restoreDraftModalOpen = true;
-    }
+            set(() => ({currentStep: (currentStep + 1) as TMakeShiftStep}));
+        },
+        goToStep: (step) => {
+            const {phase, currentStep} = get();
 
-    confirmRestoreDraft(): void {
-        this._restoreDraftModalOpen = false;
-        this._shouldRestoreDraft = true;
-    }
+            if (phase !== 'stepping') return;
 
-    declineRestoreDraft(): void {
-        this._restoreDraftModalOpen = false;
-        this._shouldRestoreDraft = false;
-    }
+            if (step > currentStep) return; // 선형 정책
 
-    closeRestoreDraftModal(): void {
-        this._restoreDraftModalOpen = false;
-    }
+            set(() => ({currentStep: step}));
+        },
 
-    canGoPrev(): boolean {
-        return this._phase === 'stepping' && this._currentStep > 1;
-    }
+        setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
+        setShiftExists: (shiftExists) => set(() => ({shiftExists})),
+    })),
+);
 
-    canGoNext(): boolean {
-        if (this._phase !== 'stepping') return false;
+export function canGoPrev(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>): boolean {
+    return state.phase === 'stepping' && state.currentStep > 1;
+}
 
-        // 준비 작업 단계: 상세 검증은 각 step widget에서 확장
-        return this._currentStep < 5;
-    }
-
-    goPrev(): void {
-        if (!this.canGoPrev()) return;
-
-        this._currentStep = (this._currentStep - 1) as MakeShiftStep;
-    }
-
-    goNext(): void {
-        if (!this.canGoNext()) return;
-
-        this._currentStep = (this._currentStep + 1) as MakeShiftStep;
-    }
-
-    goToStep(step: MakeShiftStep): void {
-        // 선형 정책: 현재보다 미래 step으로 점프는 막는다(향후 unlock 정책으로 확장)
-        if (this._phase !== 'stepping') return;
-
-        if (step > this._currentStep) return;
-
-        this._currentStep = step;
-    }
-
-    resetToOverview(): void {
-        this._phase = 'overview';
-        this._currentStep = 1;
-        this._restoreDraftModalOpen = false;
-        this._shouldRestoreDraft = false;
-    }
+export function canGoNext(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>): boolean {
+    return state.phase === 'stepping' && state.currentStep < 5;
 }

@@ -1,65 +1,74 @@
-import type {EditDutyUseCase} from '@/features/shift/editDuty/model/use-case';
-import {AbstractUseCase} from '@/shared/abstract/abstract-use-case';
-import type {MakeShiftStep} from './store';
-import type {MakeShiftFlowStore} from './store';
+import {useCallback} from 'react';
+import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {canGoNext, canGoPrev, useMakeShiftStore, type TMakeShiftStep} from './store';
 
-export class MakeShiftFlowUseCase extends AbstractUseCase {
-    constructor(
-        private readonly _store: MakeShiftFlowStore,
-        private readonly _editDutyUseCase: EditDutyUseCase,
-    ) {
-        super();
-    }
+export function useMakeShiftUseCase() {
+    const editor = useShiftEditorCommands();
+    const startFromStep1 = useMakeShiftStore((s) => s.startFromStep1);
+    const closeRestoreDraftModal = useMakeShiftStore((s) => s.closeRestoreDraftModal);
+    const resetToOverview = useMakeShiftStore((s) => s.resetToOverview);
+    const goPrev = useMakeShiftStore((s) => s.goPrev);
+    const goNext = useMakeShiftStore((s) => s.goNext);
+    const goToStep = useMakeShiftStore((s) => s.goToStep);
+    const start = useCallback(() => {
+        const persisted = editor.getPersisted();
 
-    start(): void {
-        this._doAction(() => {
-            this._store.startFromStep1();
-        });
-    }
+        startFromStep1({openRestoreDraftModal: persisted !== null});
+    }, [editor, startFromStep1]);
+    const confirmRestoreDraft = useCallback(() => {
+        const persisted = editor.getPersisted();
 
-    confirmRestoreDraft(): void {
-        this._doAction(() => {
-            this._store.confirmRestoreDraft();
-            this._editDutyUseCase.restoreDraftForWard();
-        });
-    }
+        if (persisted) editor.hydrate(persisted);
 
-    closeRestoreDraftModal(): void {
-        this._doAction(() => {
-            this._store.closeRestoreDraftModal();
-        });
-    }
+        closeRestoreDraftModal();
+    }, [closeRestoreDraftModal, editor]);
+    const declineRestoreDraft = useCallback(() => {
+        editor.discardPersisted();
+        closeRestoreDraftModal();
+    }, [closeRestoreDraftModal, editor]);
+    const complete = useCallback(() => {
+        editor.discardPersisted();
+        resetToOverview();
+    }, [editor, resetToOverview]);
+    const prev = useCallback(() => {
+        const s = useMakeShiftStore.getState();
 
-    declineRestoreDraft(): void {
-        this._doAction(() => {
-            this._store.declineRestoreDraft();
-            // "새로 시작"을 택한 경우 기존 draft는 제거한다.
-            this._editDutyUseCase.clearDraftForWard();
-        });
-    }
+        if (!canGoPrev(s)) return;
 
-    complete(): void {
-        this._doAction(() => {
-            this._editDutyUseCase.clearDraftForWard();
-            this._store.resetToOverview();
-        });
-    }
+        goPrev();
+    }, [goPrev]);
+    const next = useCallback(() => {
+        const s = useMakeShiftStore.getState();
 
-    prev(): void {
-        this._doAction(() => {
-            this._store.goPrev();
-        });
-    }
+        if (!canGoNext(s)) return;
 
-    next(): void {
-        this._doAction(() => {
-            this._store.goNext();
-        });
-    }
+        goNext();
+    }, [goNext]);
+    const jump = useCallback(
+        (step: TMakeShiftStep) => {
+            goToStep(step);
+        },
+        [goToStep],
+    );
+    const closeModal = useCallback(() => {
+        closeRestoreDraftModal();
+    }, [closeRestoreDraftModal]);
+    // make-shift 단계에서 에디터 state가 필요할 때 대비 (예: 완료 조건 체크)
+    const editorState = {
+        doc: useShiftEditorStore((s) => s.doc),
+        history: useShiftEditorStore((s) => s.history),
+        selection: useShiftEditorStore((s) => s.selection),
+    };
 
-    goToStep(step: MakeShiftStep): void {
-        this._doAction(() => {
-            this._store.goToStep(step);
-        });
-    }
+    return {
+        start,
+        confirmRestoreDraft,
+        declineRestoreDraft,
+        closeRestoreDraftModal: closeModal,
+        complete,
+        prev,
+        next,
+        goToStep: jump,
+        editorState,
+    };
 }

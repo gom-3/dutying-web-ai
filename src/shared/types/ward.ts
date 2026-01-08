@@ -15,7 +15,7 @@ export type Ward = {
     shiftTeams: ShiftTeam[];
 };
 
-export type WardConstraint = {
+export type TWardConstraint = {
     maxContinuousWork: boolean;
     maxContinuousWorkVal: number;
     minNightInterval: boolean;
