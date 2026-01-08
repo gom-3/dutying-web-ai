@@ -37,7 +37,6 @@ function ConnectionManage({open, setOpen}: ConnectionManageProps) {
 
     useEffect(() => {
         if (open === false) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             initialize();
         }
     }, [open]);

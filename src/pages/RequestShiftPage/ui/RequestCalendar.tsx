@@ -3,7 +3,7 @@ import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beau
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
-import {type Focus} from '@/features/shift/editDuty/faults';
+import {type Focus} from '@/features/shift/editDuty/model/utils/faults';
 import useRequestShift from '@/features/shift/useRequestShift';
 import ShiftBadge from '@/features/ShiftBadge';
 import useUIConfig from '@/features/ui/useUIConfig';

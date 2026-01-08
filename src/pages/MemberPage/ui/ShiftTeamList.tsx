@@ -4,7 +4,7 @@ import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beau
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import {setPreferredShiftTeamId} from '@/features/shift/editDuty/prefs';
+import {setPreferredShiftTeamId} from '@/features/shift/editDuty/model/utils/prefs';
 import useTutorial from '@/features/ui/useTutorial';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
@@ -31,6 +31,8 @@ function ShiftTeamList() {
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));
     const handleUpdateShiftTeam = () => {
         setEditShiftTeam(null);
+        console.log('?');
+        console.log(editShiftTeam);
         updateShiftTeam(editShiftTeam!.shiftTeamId, editShiftTeam!.updateShiftTeamDTO);
     };
     const clickAwayShiftTeamNameRef = useOnclickOutside(() => {

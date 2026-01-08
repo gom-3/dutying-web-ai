@@ -25,7 +25,7 @@ function NurseEditModal() {
     useEffect(() => {
         if (selectedNurse) {
             nameRef.current?.focus();
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+
             setWriteNurse(selectedNurse);
         }
     }, [selectedNurse]);

@@ -42,7 +42,6 @@ function ProfilePage() {
 
     useEffect(() => {
         if (selectedNurse && accountMe && selectedNurse?.accountId === accountMe?.accountId) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setWriteNurse(selectedNurse);
         }
     }, [selectedNurse, accountMe]);

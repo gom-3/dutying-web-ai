@@ -1,11 +1,10 @@
 import {observer} from 'mobx-react-lite';
-import React from 'react';
+import React, {useContext} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
-import {EditDutyStore} from '@/features/shift/editDuty/store';
 import {ArrowDownIcon} from '@/shared/assets/svg';
-import {useDependency} from '@/shared/hook/use-dependency';
 import Toggle from '@/shared/ui/Toggle';
+import {DutyEditorContext} from '../../model/provider';
 
 const Select = ({
     value,
@@ -19,7 +18,7 @@ const Select = ({
         <select
             value={value}
             onChange={onChange}
-            className="relative z-10 h-full w-full appearance-none rounded-[.3125rem] bg-transparent px-3.75 text-left font-apple outline outline-[.0625rem] outline-main-4"
+            className="relative z-10 h-full w-full appearance-none rounded-[.3125rem] bg-transparent px-3.75 text-left font-apple outline-[.0625rem] outline-main-4"
         >
             {options?.map((option, _) => (
                 <option key={_} value={option}>
@@ -30,8 +29,11 @@ const Select = ({
     </div>
 );
 const SetConstraint = () => {
-    const store = useDependency(EditDutyStore);
-    const {wardConstraint, checkFaultOptions} = store.viewState;
+    const {
+        store: {editDutyStore},
+        useCase: {editDutyUseCase},
+    } = useContext(DutyEditorContext);
+    const {wardConstraint, checkFaultOptions} = editDutyStore;
 
     return (
         checkFaultOptions &&
@@ -48,7 +50,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5, 6]}
                                         onChange={(e) => {
-                                            store.updateConstraint({
+                                            editDutyUseCase.updateConstraint({
                                                 ...wardConstraint,
                                                 maxContinuousWorkVal: parseInt(e.target.value),
                                             });
@@ -67,7 +69,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5]}
                                         onChange={(e) => {
-                                            store.updateConstraint({
+                                            editDutyUseCase.updateConstraint({
                                                 ...wardConstraint,
                                                 maxContinuousNightVal: parseInt(e.target.value),
                                             });
@@ -86,7 +88,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[2, 3, 4, 5]}
                                         onChange={(e) => {
-                                            store.updateConstraint({
+                                            editDutyUseCase.updateConstraint({
                                                 ...wardConstraint,
                                                 minContinuousNightVal: parseInt(e.target.value),
                                             });
@@ -105,7 +107,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[3, 4, 5, 6, 7]}
                                         onChange={(e) => {
-                                            store.updateConstraint({
+                                            editDutyUseCase.updateConstraint({
                                                 ...wardConstraint,
                                                 minNightIntervalVal: parseInt(e.target.value),
                                             });
@@ -123,7 +125,7 @@ const SetConstraint = () => {
                                         value={value!}
                                         options={[2, 3]}
                                         onChange={(e) => {
-                                            store.updateConstraint({
+                                            editDutyUseCase.updateConstraint({
                                                 ...wardConstraint,
                                                 minOffAssignAfterNightVal: parseInt(e.target.value),
                                             });
@@ -139,7 +141,7 @@ const SetConstraint = () => {
                             <Toggle
                                 isOn={isActive}
                                 setIsOn={() => {
-                                    store.updateConstraint({
+                                    editDutyUseCase.updateConstraint({
                                         ...wardConstraint,
                                         [key]: isActive ? false : true,
                                     });

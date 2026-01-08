@@ -1,0 +1,52 @@
+---
+alwaysApply: true
+---
+
+# 아키텍처
+
+변형된 FSD 기반 Mobx 상태관리 구조
+
+## 폴더 구조
+
+- store에서 데이터 관리, getter setter, mobx 사용하여 반응형 프록드래밍
+- use-case에서 store를 주입받아서 비즈니스 로직 수행 후 setter로 데이터 변경
+- view에서 store의 데이터로 ui 그리고 use-case를 호출해서 비즈니스 로직 수행
+
+## 네이밍 규칙
+
+- model 세그먼트 하위에 xxxStore.ts, xxxUseCase.ts 작성
+
+## Mobx + DI 시스템 구조
+
+반응형 상태 관리를 위해 Mobx를 사용한다.
+
+## Context 기반 의존성 주입(중요)
+
+- DI 컨테이너/토큰(tsyringe) 없이, **페이지(라우팅)에서 클래스 인스턴스를 생성**한다.
+- 생성한 인스턴스들을 **해당 슬라이스 전용 React Context**로 내려준다.
+- 하위 컴포넌트는 `useContext(Context)`로 객체를 받아서 필요한 의존성을 직접 꺼낸다.
+- UI 컴포넌트는 observer를 반드시 사용하여 store 상태를 반응형으로 렌더링한다.
+- UI 컴포넌트가 직접 store의 메서드를 절대 호출하면 안되고 use-case 메서드를 호출해야 함.
+- use-case는 this.\_doAction() 통해 store 상태를 업데이트 해야한다.
+
+### 규칙
+
+- Context와 타입은 슬라이스 내부에서 직접 제공한다.
+    - 예: `src/widgets/make-shift/model/context.ts`
+- 페이지 언마운트 시, 필요하면 `store.dispose()`를 호출해 side-effect를 정리한다.
+
+### 예시 (make-shift)
+
+```ts
+export type MakeShiftDependencies = {
+  editDutyStore: EditDutyStore;
+  flowStore: MakeShiftFlowStore;
+  flowUseCase: MakeShiftFlowUseCase;
+};
+
+export const MakeShiftContext = createContext<MakeShiftDependencies | null>(null);
+```
+
+## 마이그레이션
+
+- 기존 Hook 구조에서 점진적으로 Class(Store, UseCase)구조로 전환한다.

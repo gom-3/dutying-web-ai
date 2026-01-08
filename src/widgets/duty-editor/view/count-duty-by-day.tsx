@@ -1,11 +1,15 @@
 import {observer} from 'mobx-react-lite';
-import {EditDutyStore} from '@/features/shift/editDuty/store';
+import {useContext} from 'react';
 import useUIConfig from '@/features/ui/useUIConfig';
-import {useDependency} from '@/shared/hook/use-dependency';
+import {DutyEditorContext} from '../model/provider';
 
 function CountDutyByDay() {
-    const store = useDependency(EditDutyStore);
-    const {focus, shift} = store.viewState;
+    const deps = useContext(DutyEditorContext);
+
+    if (!deps) throw new Error('MakeShiftContext is not provided.');
+
+    const store = deps.store.editDutyStore;
+    const {focus, shift} = store;
     const {
         state: {shiftTypeColorStyle},
     } = useUIConfig();

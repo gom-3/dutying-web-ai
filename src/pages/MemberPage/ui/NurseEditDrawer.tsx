@@ -35,7 +35,6 @@ function NurseEditDrawer() {
     );
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (selectedNurse) setWriteNurse(selectedNurse);
 
         if (textInputRef) textInputRef.current?.focus();

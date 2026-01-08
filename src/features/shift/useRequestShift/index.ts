@@ -9,9 +9,9 @@ import {moveSelection} from '@/shared/editor/editor-core/selection';
 import {type RequestShift} from '@/shared/types/shift';
 import {type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
 import {DateUtil} from '@/shared/util/date';
-import {type Focus} from '../editDuty/faults';
-import {findNurse} from '../editDuty/find-nurse';
-import {keydownEventMapper} from '../editDuty/keyboard';
+import {type Focus} from '../editDuty/model/utils/faults';
+import {findNurse} from '../editDuty/model/utils/find-nurse';
+import {keydownEventMapper} from '../editDuty/model/utils/keyboard';
 import {useRequestShiftStore} from './store';
 
 const useRequestShift = (activeEffect = false) => {

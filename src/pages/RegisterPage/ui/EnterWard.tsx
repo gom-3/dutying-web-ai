@@ -74,7 +74,6 @@ function EnterWard() {
         if (codeList.every((code) => code !== null)) {
             const code = codeList.join('');
 
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             handleGetWard(code);
         } else {
             setError(false);

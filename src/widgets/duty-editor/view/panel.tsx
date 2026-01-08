@@ -1,13 +1,16 @@
 import {observer} from 'mobx-react-lite';
-import {useState} from 'react';
+import {useContext, useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
-import {EditDutyStore} from '@/features/shift/editDuty/store';
-import {useDependency} from '@/shared/hook/use-dependency';
+import {DutyEditorContext} from '../model/provider';
 
 function Panel() {
-    const store = useDependency(EditDutyStore);
-    const {readonly, faults, shiftStatus, shift} = store.viewState;
+    const deps = useContext(DutyEditorContext);
+
+    if (!deps) throw new Error('MakeShiftContext is not provided.');
+
+    const store = deps.store.editDutyStore;
+    const {readonly, faults, shiftStatus, shift} = store;
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');
 

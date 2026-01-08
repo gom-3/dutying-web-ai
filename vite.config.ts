@@ -61,12 +61,7 @@ export default defineConfig({
     plugins: [
         react({
             babel: {
-                plugins: [
-                    // tsconfig(app).experimentalDecorators/emitDecoratorMetadata 대응 (legacy decorators)
-                    ['@babel/plugin-proposal-decorators', {legacy: true}],
-                    ['@babel/plugin-proposal-class-properties', {loose: true}],
-                    ['babel-plugin-react-compiler'],
-                ],
+                plugins: [['babel-plugin-react-compiler']],
             },
         }),
         tsconfigPaths(),

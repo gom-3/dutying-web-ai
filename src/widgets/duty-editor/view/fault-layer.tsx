@@ -1,5 +1,5 @@
 import React from 'react';
-import {type Fault} from '@/features/shift/editDuty/faults';
+import {type Fault} from '@/features/shift/editDuty/model/utils/faults';
 import {FaultDotIcon} from '@/shared/assets/svg';
 
 interface Props {

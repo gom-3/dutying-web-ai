@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
 import {type TValues} from '@/shared/types/util';
 import {type WardShiftType} from '@/shared/types/ward';
-import {type Focus} from '../editDuty/faults';
+import {type Focus} from '../editDuty/model/utils/faults';
 
 interface State {
     year: number;

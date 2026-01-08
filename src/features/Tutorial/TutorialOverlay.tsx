@@ -197,7 +197,6 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHighlightedElementPositions();
     }, [setHighlightedElementPositions, step]);
 
