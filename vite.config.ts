@@ -61,7 +61,15 @@ export default defineConfig({
     plugins: [
         react({
             babel: {
-                plugins: [['babel-plugin-react-compiler']],
+                plugins: [
+                    ['babel-plugin-react-compiler'],
+                    [
+                        '@locator/babel-jsx/dist',
+                        {
+                            env: 'development',
+                        },
+                    ],
+                ],
             },
         }),
         tsconfigPaths(),

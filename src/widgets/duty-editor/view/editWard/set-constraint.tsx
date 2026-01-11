@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import React, {useContext} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
@@ -161,4 +160,4 @@ const SetConstraint = () => {
     );
 };
 
-export default observer(SetConstraint);
+export default SetConstraint;

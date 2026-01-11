@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {useContext} from 'react';
 import useUIConfig from '@/features/ui/useUIConfig';
 import {DutyEditorContext} from '../model/provider';
@@ -59,4 +58,4 @@ function CountDutyByDay() {
     );
 }
 
-export default observer(CountDutyByDay);
+export default CountDutyByDay;

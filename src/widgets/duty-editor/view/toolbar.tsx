@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {useContext, useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
@@ -330,4 +329,4 @@ function Toolbar() {
     );
 }
 
-export default observer(Toolbar);
+export default Toolbar;

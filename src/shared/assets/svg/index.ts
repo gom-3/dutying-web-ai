@@ -73,3 +73,5 @@ export {default as NextCircle} from './NextCircle';
 export {default as AppleIcon} from './AppleIcon';
 export {default as CopyIcon} from './CopyIcon';
 export {default as MinusIcon} from './MinusIcon';
+export {default as ChevronLeftIcon} from './ChevronLeftIcon';
+export {default as ChevronRightIcon} from './ChevronRightIcon';

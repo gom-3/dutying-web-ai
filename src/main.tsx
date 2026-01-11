@@ -2,6 +2,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
 import {Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
+import setupLocatorUI from '@locator/runtime';
 import App from '@/app/App';
 import Loading from '@/features/Loading';
 import Tutorial from '@/features/Tutorial';
@@ -17,6 +18,10 @@ const queryClient = new QueryClient({
         },
     },
 });
+
+if (import.meta.env.DEV) {
+    setupLocatorUI();
+}
 
 initializeApp();
 initializeProfileImageStore();

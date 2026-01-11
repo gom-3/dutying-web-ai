@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {useContext} from 'react';
 import {DutyEditorContext} from '../model/provider';
 import CountDutyByDay from './count-duty-by-day';
@@ -7,7 +6,7 @@ import Panel from './panel';
 import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
 
-export const MakeShiftEditorView = observer(() => {
+export const MakeShiftEditorView = () => {
     const deps = useContext(DutyEditorContext);
 
     if (!deps) throw new Error('MakeShiftContext is not provided.');

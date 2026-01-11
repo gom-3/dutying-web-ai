@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import useTutorial from '@/features/ui/useTutorial';
@@ -71,4 +70,4 @@ const MakeTutorial = () => {
     );
 };
 
-export default observer(MakeTutorial);
+export default MakeTutorial;

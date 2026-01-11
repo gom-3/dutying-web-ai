@@ -51,7 +51,7 @@ const NavigationBar = () => {
                         <FoldIcon className="h-[30px] w-[30px] text-gray-5" />
                     </button>
 
-                    <LogoV2 className="mt-[85px] h-9 w-9" />
+                    <LogoV2 className="mt-[85px] size-[28px]" />
 
                     <div className="mt-6 w-full">
                         <button

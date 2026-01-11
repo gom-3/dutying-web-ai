@@ -1,5 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
+import {type ShiftTeam} from '@/shared/types/ward';
 
 export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
@@ -10,6 +11,12 @@ export type TMakeShiftStore = {
     phase: TFlowPhase;
     currentStep: TMakeShiftStep;
     restoreDraftModalOpen: boolean;
+
+    // header (shared across overview / stepping)
+    year: number;
+    month: number; // 1~12
+    shiftTeams: ShiftTeam[];
+    currentShiftTeamId: number | null;
 
     // overview status (MVP)
     shiftStatus: TShiftStatus;
@@ -24,6 +31,12 @@ export type TMakeShiftStore = {
     goNext: () => void;
     goToStep: (step: TMakeShiftStep) => void;
 
+    setYearMonth: (payload: {year: number; month: number}) => void;
+    goPrevMonth: () => void;
+    goNextMonth: () => void;
+    setShiftTeams: (teams: ShiftTeam[]) => void;
+    setCurrentShiftTeamId: (shiftTeamId: number | null) => void;
+
     setShiftStatus: (status: TShiftStatus) => void;
     setShiftExists: (exists: boolean) => void;
 };
@@ -33,6 +46,11 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         phase: 'overview',
         currentStep: 1,
         restoreDraftModalOpen: false,
+
+        year: new Date().getFullYear(),
+        month: new Date().getMonth() + 1,
+        shiftTeams: [],
+        currentShiftTeamId: null,
 
         shiftStatus: 'idle',
         shiftExists: false,
@@ -79,6 +97,30 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             set(() => ({currentStep: step}));
         },
+
+        setYearMonth: ({year, month}) =>
+            set(() => ({
+                year,
+                month: Math.min(12, Math.max(1, month)),
+            })),
+        goPrevMonth: () => {
+            const {year, month} = get();
+            if (month <= 1) {
+                set(() => ({year: year - 1, month: 12}));
+                return;
+            }
+            set(() => ({month: month - 1}));
+        },
+        goNextMonth: () => {
+            const {year, month} = get();
+            if (month >= 12) {
+                set(() => ({year: year + 1, month: 1}));
+                return;
+            }
+            set(() => ({month: month + 1}));
+        },
+        setShiftTeams: (shiftTeams) => set(() => ({shiftTeams})),
+        setCurrentShiftTeamId: (currentShiftTeamId) => set(() => ({currentShiftTeamId})),
 
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
         setShiftExists: (shiftExists) => set(() => ({shiftExists})),

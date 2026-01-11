@@ -1,7 +1,7 @@
 import {useCallback} from 'react';
 import {createPortal} from 'react-dom';
-import {useMakeShiftStore} from '../model/store';
-import {useMakeShiftUseCase} from '../model/use-case';
+import {useMakeShiftStore} from '../model/make-shift-store';
+import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 
 export const RestoreDraftModal = () => {
     const root = document.getElementById('modal-root')!;

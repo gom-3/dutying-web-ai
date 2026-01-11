@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {useContext, useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
@@ -77,4 +76,4 @@ function Panel() {
     ) : null;
 }
 
-export default observer(Panel);
+export default Panel;

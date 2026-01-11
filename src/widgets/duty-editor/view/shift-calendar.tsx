@@ -1,4 +1,3 @@
-import {observer} from 'mobx-react-lite';
 import {type RefObject, useContext, useEffect, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
@@ -521,4 +520,4 @@ function ShiftCalendar() {
     ) : null;
 }
 
-export default observer(ShiftCalendar);
+export default ShiftCalendar;
