@@ -12,7 +12,7 @@ export const WebFooter = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="h-[31.25rem] w-screen">
+        <div className="h-[31.25rem] w-full">
             <div className="container mx-auto mt-[6.875rem] flex flex-row-reverse items-stretch px-[11.25rem]">
                 <div className="flex-1">
                     <h1 className="mt-0 font-apple text-[1.25rem] font-semibold text-sub-2">듀팅 다운로드</h1>

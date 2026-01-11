@@ -16,6 +16,7 @@
         scrollbar-width: none;
         -ms-overflow-style: none;
         font-display: swap;
+        min-width: 1440px;
     }
 
     body::-webkit-scrollbar {
