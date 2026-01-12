@@ -56,7 +56,7 @@ export const MakeShiftPageView = () => {
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
             <MakeShiftHeader />
 
-            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white shadow-banner">
+            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
                         <div className="text-center">
@@ -82,7 +82,7 @@ export const MakeShiftPageView = () => {
                     <>
                         <MakeShiftStepper currentStep={currentStep} onClickStep={useCase.goToStep} />
 
-                        <div className="flex flex-1 gap-10 px-10 py-12">
+                        <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
                             <div className="w-[440px] shrink-0">
                                 <p className="font-apple text-[32px] font-semibold text-sub-1">{STEP_INTRO[currentStep].title}</p>
                                 <div className="mt-4 font-apple text-xl leading-[1.72] font-medium text-gray-3">

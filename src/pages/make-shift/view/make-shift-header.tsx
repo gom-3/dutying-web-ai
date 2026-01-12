@@ -45,11 +45,11 @@ export function MakeShiftHeader() {
                                     key={team.shiftTeamId}
                                     type="button"
                                     onClick={() => setCurrentShiftTeamId(team.shiftTeamId)}
-                                    className={`flex items-center justify-center rounded-[10px] px-[16px] py-[6px] ${
+                                    className={`flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] ${
                                         selected ? 'bg-main-1 text-white' : 'text-gray-3'
                                     }`}
                                 >
-                                    <p className="h-[20px] font-apple text-base leading-normal font-medium">{team.name}</p>
+                                    <p className="font-apple text-base leading-normal font-medium">{team.name}</p>
                                 </button>
                             );
                         })}
