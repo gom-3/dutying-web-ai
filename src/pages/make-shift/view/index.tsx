@@ -85,13 +85,13 @@ export const MakeShiftPageView = () => {
                         <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
                             <div className="w-[440px] shrink-0">
                                 <p className="font-apple text-[32px] font-semibold text-sub-1">{STEP_INTRO[currentStep].title}</p>
-                                <div className="mt-4 font-apple text-xl leading-[1.72] font-medium text-gray-3">
+                                <div className="mt-6 font-apple text-xl leading-[1.72] font-medium text-gray-3">
                                     {STEP_INTRO[currentStep].desc.map((line) => (
                                         <p key={line}>{line}</p>
                                     ))}
                                 </div>
 
-                                <div className="mt-8 flex items-center gap-8">
+                                <div className="mt-[82px] flex items-center gap-8">
                                     <button
                                         className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
                                         onClick={() => useCase.prev()}

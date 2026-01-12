@@ -105,18 +105,24 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             })),
         goPrevMonth: () => {
             const {year, month} = get();
+
             if (month <= 1) {
                 set(() => ({year: year - 1, month: 12}));
+
                 return;
             }
+
             set(() => ({month: month - 1}));
         },
         goNextMonth: () => {
             const {year, month} = get();
+
             if (month >= 12) {
                 set(() => ({year: year + 1, month: 1}));
+
                 return;
             }
+
             set(() => ({month: month + 1}));
         },
         setShiftTeams: (shiftTeams) => set(() => ({shiftTeams})),

@@ -40,12 +40,13 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
                 // init year/month to "now" once per ward entry (store already has defaults, but keep in sync)
                 const now = new Date();
+
                 setYearMonth({year: now.getFullYear(), month: now.getMonth() + 1});
 
                 const firstTeamId = teams[0]?.shiftTeamId ?? null;
                 const prevSelectedId = useMakeShiftStore.getState().currentShiftTeamId;
-                const nextTeamId =
-                    prevSelectedId && teams.some((t) => t.shiftTeamId === prevSelectedId) ? prevSelectedId : firstTeamId;
+                const nextTeamId = prevSelectedId && teams.some((t) => t.shiftTeamId === prevSelectedId) ? prevSelectedId : firstTeamId;
+
                 setCurrentShiftTeamId(nextTeamId);
             } catch {
                 if (!cancelled) setShiftStatus('error');
@@ -57,14 +58,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [
-        setCurrentShiftTeamId,
-        setShiftExists,
-        setShiftStatus,
-        setShiftTeams,
-        setYearMonth,
-        wardId,
-    ]);
+    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setYearMonth, wardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -73,6 +67,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             if (!wardId || !currentShiftTeamId) {
                 setShiftStatus('idle');
                 setShiftExists(false);
+
                 return;
             }
 
@@ -81,6 +76,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
             try {
                 const shift = await WardAPI.getShift(wardId, currentShiftTeamId, year, month);
+
                 if (cancelled) return;
 
                 setShiftStatus(shift ? 'success' : 'error');
