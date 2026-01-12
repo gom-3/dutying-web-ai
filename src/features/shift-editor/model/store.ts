@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
-import type {TDutyDoc, TDutyValidationInput, THistoryState, TSelection, TViolation} from './types';
+import type {TDutyDoc, TDutyRuleBoard, TDutyValidationInput, THistoryState, TSelection, TViolation} from './types';
 
 export type TShiftEditorStore = {
     // state (data only)
@@ -9,6 +9,7 @@ export type TShiftEditorStore = {
     violations: TViolation[];
     history: THistoryState;
     dutyValidationInput: TDutyValidationInput | null;
+    dutyRuleBoard: TDutyRuleBoard | null;
 
     // primitive setters (no business rules here)
     setDoc: (doc: TDutyDoc) => void;
@@ -16,6 +17,7 @@ export type TShiftEditorStore = {
     setViolations: (violations: TViolation[]) => void;
     setHistory: (history: THistoryState) => void;
     setDutyValidationInput: (input: TDutyValidationInput | null) => void;
+    setDutyRuleBoard: (board: TDutyRuleBoard | null) => void;
 
     reset: (opts?: {maxHistoryDepth?: number}) => void;
 };
@@ -30,12 +32,14 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         violations: [],
         history: initialHistory,
         dutyValidationInput: null,
+        dutyRuleBoard: null,
 
         setDoc: (doc) => set(() => ({doc})),
         setSelection: (selection) => set(() => ({selection})),
         setViolations: (violations) => set(() => ({violations})),
         setHistory: (history) => set(() => ({history})),
         setDutyValidationInput: (dutyValidationInput) => set(() => ({dutyValidationInput})),
+        setDutyRuleBoard: (dutyRuleBoard) => set(() => ({dutyRuleBoard})),
 
         reset: (opts) => {
             const maxDepth = opts?.maxHistoryDepth ?? initialHistory.maxDepth;
@@ -45,6 +49,8 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
                 selection: null,
                 violations: [],
                 history: {past: [], future: [], maxDepth},
+                dutyValidationInput: null,
+                dutyRuleBoard: null,
             }));
         },
     })),

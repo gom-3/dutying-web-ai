@@ -4,6 +4,15 @@ export type TCellValue = string | null;
 
 export type TDateKey = string; // YYYY-MM-DD
 
+export type TDutyRuleKey =
+    | 'maxContinuousWork'
+    | 'minNightInterval'
+    | 'maxContinuousNight'
+    | 'minContinuousNight'
+    | 'minOffAssignAfterNight'
+    | 'excludeCertainWorkTypes'
+    | 'excludeNightBeforeReqOff';
+
 export type TDutyRow = {
     workerId: string;
     cells: TCellValue[];
@@ -59,6 +68,14 @@ export type TViolation = {
     level: 'warning' | 'error';
 };
 
+export type TDutyRuleLevel = TViolation['level'];
+
+export type TDutyRuleBoardBucket = 'error' | 'warning' | 'excluded';
+
+export type TDutyRuleBoard = Record<TDutyRuleBoardBucket, TDutyRuleKey[]>;
+
+export type TDutyRuleLevelByKey = Partial<Record<TDutyRuleKey, TDutyRuleLevel>>;
+
 export type TClipboardPayload = {
     width: number;
     height: number;
@@ -92,4 +109,9 @@ export type TDutyValidationMode = {
 export type TDutyValidationInput = {
     wardConstraint: TWardConstraint;
     mode?: TDutyValidationMode;
+    /**
+     * UI에서 "강/약"으로 분류(드래그)한 결과를 반영하기 위한 레벨 오버라이드.
+     * - 지정하지 않으면 기본 rule definition의 level을 따른다.
+     */
+    ruleLevelByKey?: TDutyRuleLevelByKey;
 };

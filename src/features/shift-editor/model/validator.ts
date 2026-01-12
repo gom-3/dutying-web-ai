@@ -1,13 +1,4 @@
-import {type TDutyDoc, type TValidator, type TDutyValidationInput, type TViolation, type TCellPos} from './types';
-
-export type TDutyRuleKey =
-    | 'maxContinuousWork'
-    | 'minNightInterval'
-    | 'maxContinuousNight'
-    | 'minContinuousNight'
-    | 'minOffAssignAfterNight'
-    | 'excludeCertainWorkTypes'
-    | 'excludeNightBeforeReqOff';
+import {type TDutyDoc, type TValidator, type TDutyValidationInput, type TViolation, type TCellPos, type TDutyRuleKey} from './types';
 
 export type TDutyRuleDefinition = {
     key: TDutyRuleKey;
@@ -63,6 +54,7 @@ export function createDutyValidator(input: TDutyValidationInput): TValidator<TDu
 
 export function getDutyRuleDefinitions(input: TDutyValidationInput): TDutyRuleDefinition[] {
     const c = input.wardConstraint;
+    const levelByKey = input.ruleLevelByKey;
 
     return [
         {
@@ -70,49 +62,49 @@ export function getDutyRuleDefinitions(input: TDutyValidationInput): TDutyRuleDe
             isActive: c.maxContinuousWork,
             regExp: new RegExp(`[den][den]{${c.maxContinuousWorkVal - 1},}[den]`, 'g'),
             message: `근무는 연속 ${c.maxContinuousWorkVal}일을 초과할 수 없습니다.`,
-            level: 'error',
+            level: levelByKey?.maxContinuousWork ?? 'error',
         },
         {
             key: 'minNightInterval',
             isActive: c.minNightInterval,
             regExp: new RegExp(`n[^n]{1,${c.minNightIntervalVal - 1}}n`, 'g'),
             message: `나이트 간격이 최소 ${c.minNightIntervalVal}일 이상이어야 합니다.`,
-            level: 'error',
+            level: levelByKey?.minNightInterval ?? 'error',
         },
         {
             key: 'maxContinuousNight',
             isActive: c.maxContinuousNight,
             regExp: new RegExp(`n{${c.maxContinuousNightVal + 1},}`, 'g'),
             message: `나이트 근무가 연속 ${c.maxContinuousNightVal}일을 초과했습니다`,
-            level: 'error',
+            level: levelByKey?.maxContinuousNight ?? 'error',
         },
         {
             key: 'minContinuousNight',
             isActive: c.minContinuousNight,
             regExp: new RegExp(`[^n-]n{1,${c.minContinuousNightVal - 1}}[^n-]`, 'g'),
             message: `나이트 근무는 최소 ${c.minContinuousNightVal}일 이상 배정해야 합니다.`,
-            level: 'warning',
+            level: levelByKey?.minContinuousNight ?? 'warning',
         },
         {
             key: 'minOffAssignAfterNight',
             isActive: c.minOffAssignAfterNight,
             regExp: new RegExp(`n([de]|o{1,${c.minOffAssignAfterNightVal - 1}}[den])`, 'g'),
             message: `나이트 근무 후 ${c.minOffAssignAfterNightVal}일 이상 OFF를 권장합니다.`,
-            level: 'warning',
+            level: levelByKey?.minOffAssignAfterNight ?? 'warning',
         },
         {
             key: 'excludeCertainWorkTypes',
             isActive: c.excludeCertainWorkTypes,
             regExp: new RegExp(`(ed|nd|ne|nod)`, 'g'),
             message: `ND/ED/NE/NOD 형태의 근무는 권장되지 않습니다.`,
-            level: 'warning',
+            level: levelByKey?.excludeCertainWorkTypes ?? 'warning',
         },
         {
             key: 'excludeNightBeforeReqOff',
             isActive: c.excludeNightBeforeReqOff,
             regExp: new RegExp(`nO`, 'g'),
             message: `신청 오프 전날에는 나이트 근무를 권장하지 않습니다.`,
-            level: 'warning',
+            level: levelByKey?.excludeNightBeforeReqOff ?? 'warning',
         },
     ];
 }

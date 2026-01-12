@@ -1,14 +1,14 @@
 import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
 import {type WardShiftType} from '@/shared/types/ward';
 
-interface Props {
+interface IProps {
     request: WardShiftType;
     isAccept: boolean;
     showCheck: boolean;
     showSlash: boolean;
 }
 
-function RequestLayer({isAccept, request, showCheck, showSlash}: Props) {
+function RequestLayer({isAccept, request, showCheck, showSlash}: IProps) {
     return isAccept
         ? showCheck && (
               <div

@@ -1,4 +1,6 @@
+import type {TWardConstraint} from '@/shared/types/ward';
 import {copySelection, pastePayload} from './clipboard';
+import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
 import {getCellsInSelection, makeSelectAllSelection, moveSelection as moveSelectionModel, moveSelectionToEdge} from './selection';
@@ -8,6 +10,7 @@ import type {
     TCellValue,
     TClipboardPayload,
     TDutyDoc,
+    TDutyRuleBoard,
     TDutyValidationInput,
     THistoryEntry,
     THistoryState,
@@ -61,6 +64,7 @@ function persistDoc(doc: TDutyDoc, history: THistoryState) {
  */
 export function useShiftEditorCommands() {
     const setDutyValidationInput = useShiftEditorStore((s) => s.setDutyValidationInput);
+    const setDutyRuleBoard = useShiftEditorStore((s) => s.setDutyRuleBoard);
     const setDoc = useShiftEditorStore((s) => s.setDoc);
     const setHistory = useShiftEditorStore((s) => s.setHistory);
     const setSelection = useShiftEditorStore((s) => s.setSelection);
@@ -151,6 +155,47 @@ export function useShiftEditorCommands() {
 
             setDutyValidationInput(input);
             setViolations(computeViolations(doc, input));
+
+            // constraints board는 input을 기반으로 UI에서 드래그/편집하기 쉽도록 별도로 유지한다.
+            // - 기존 board가 없을 때만 초기화 (사용자가 이미 정렬/제외를 바꾼 경우 유지)
+            const {dutyRuleBoard} = getState();
+
+            if (input && !dutyRuleBoard) {
+                setDutyRuleBoard(buildInitialDutyRuleBoard(input.wardConstraint, input.ruleLevelByKey));
+            }
+        },
+        setDutyRuleBoard: (board: TDutyRuleBoard) => {
+            const {dutyValidationInput} = getState();
+
+            setDutyRuleBoard(board);
+
+            if (!dutyValidationInput) return;
+
+            const nextWardConstraint = applyBoardToWardConstraint(board, dutyValidationInput.wardConstraint);
+            const nextRuleLevelByKey = buildRuleLevelByKeyFromBoard(board);
+            const nextInput: TDutyValidationInput = {
+                ...dutyValidationInput,
+                wardConstraint: nextWardConstraint,
+                ruleLevelByKey: nextRuleLevelByKey,
+            };
+            // validation도 즉시 재계산 (규칙 활성/레벨 변경 반영)
+            const {doc} = getState();
+
+            setDutyValidationInput(nextInput);
+            setViolations(computeViolations(doc, nextInput));
+        },
+        setWardConstraint: (wardConstraint: TWardConstraint) => {
+            const {dutyValidationInput, doc} = getState();
+
+            if (!dutyValidationInput) return;
+
+            const nextInput: TDutyValidationInput = {
+                ...dutyValidationInput,
+                wardConstraint,
+            };
+
+            setDutyValidationInput(nextInput);
+            setViolations(computeViolations(doc, nextInput));
         },
         select: (cell: TCellPos) => setSelection({type: 'single', anchor: cell}),
         clearSelection: () => setSelection(null),

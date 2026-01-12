@@ -17,6 +17,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
 
     useEffect(() => {
         let cancelled = false;
@@ -92,6 +93,35 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             cancelled = true;
         };
     }, [currentShiftTeamId, month, setShiftExists, setShiftStatus, wardId, year]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const run = async () => {
+            if (!wardId || !currentShiftTeamId) {
+                editorRef.current.setDutyValidationInput(null);
+
+                return;
+            }
+
+            try {
+                const wardConstraint = await WardAPI.getWardConstraint(wardId, currentShiftTeamId);
+
+                if (cancelled) return;
+
+                editorRef.current.setDutyValidationInput({wardConstraint});
+            } catch {
+                // constraint 로드는 실패해도 flow는 유지 (단, validator/constraints UI는 비활성화됨)
+                if (!cancelled && shiftStatus !== 'pending') editorRef.current.setDutyValidationInput(null);
+            }
+        };
+
+        run();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [currentShiftTeamId, shiftStatus, wardId]);
 
     useEffect(() => {
         // MVP: 에디터 초기 doc은 데모 데이터로 시작 (이후 real shift->doc 빌드로 교체)
