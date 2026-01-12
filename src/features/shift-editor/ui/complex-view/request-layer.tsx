@@ -1,8 +1,8 @@
 import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 
 interface IProps {
-    request: WardShiftType;
+    request: TWardShiftType;
     isAccept: boolean;
     showCheck: boolean;
     showSlash: boolean;

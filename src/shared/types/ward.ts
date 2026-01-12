@@ -1,6 +1,6 @@
 import {type Nurse} from './nurse';
 
-export type Ward = {
+export type TWard = {
     /** 병동 id */
     wardId: number;
     /** 병동 이름 */
@@ -11,8 +11,8 @@ export type Ward = {
     hospitalName: string;
     /** 간호사 수 */
     nurseCnt: number;
-    wardShiftTypes: WardShiftType[];
-    shiftTeams: ShiftTeam[];
+    wardShiftTypes: TWardShiftType[];
+    shiftTeams: TShiftTeam[];
 };
 
 export type TWardConstraint = {
@@ -31,7 +31,7 @@ export type TWardConstraint = {
 };
 
 /** 근무 형태 타입 */
-export type WardShiftType = {
+export type TWardShiftType = {
     /** 근무 타입 id */
     wardShiftTypeId: number;
     /** 근무 형태의 이름이다. @example 데이 */
@@ -53,7 +53,7 @@ export type WardShiftType = {
     classification: 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
 };
 
-export type ShiftNurse = {
+export type TShiftNurse = {
     shiftNurseId: number;
     name: string;
     carried: number;
@@ -65,7 +65,7 @@ export type ShiftNurse = {
     nurseId: number;
 };
 
-export type ShiftTeam = {
+export type TShiftTeam = {
     shiftTeamId: number;
     name: string;
     nurseCnt: number;

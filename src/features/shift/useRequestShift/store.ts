@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
 import {type TValues} from '@/shared/types/util';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 import {type TFocus} from './type';
 
 interface IState {
@@ -11,7 +11,7 @@ interface IState {
     foldedLevels: boolean[] | null;
     currentShiftTeamId: number | null;
     oldCurrentShiftTeamId: number | null;
-    wardShiftTypeMap: Map<number, WardShiftType> | null;
+    wardShiftTypeMap: Map<number, TWardShiftType> | null;
     readonly: boolean;
 }
 

@@ -1,18 +1,12 @@
-import {useContext} from 'react';
-import {DutyEditorContext} from '../model/provider';
 import CountDutyByDay from './count-duty-by-day';
 import NurseEditModal from './nurse-edit-modal';
 import Panel from './panel';
 import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
+import { useShiftEditorStore } from '@/features/shift-editor';
 
 export const MakeShiftEditorView = () => {
-    const deps = useContext(DutyEditorContext);
-
-    if (!deps) throw new Error('MakeShiftContext is not provided.');
-
-    const store = deps.store.editDutyStore;
-    const {shift} = store;
+    const shift = useShiftEditorStore((s) => s.doc);
 
     return (
         <div className="mx-auto flex h-full w-fit min-w-418.5 flex-col">

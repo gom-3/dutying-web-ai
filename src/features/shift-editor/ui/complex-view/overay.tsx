@@ -1,11 +1,11 @@
-import {type DayInfo} from '@/features/shift/editDuty/model/utils/faults';
+import {type TDayInfo} from '@/features/shift/useRequestShift/type';
 import ShiftBadge from '@/features/ShiftBadge';
 
-interface Props {
-    focusedDayInfo: DayInfo;
+interface IProps {
+    focusedDayInfo: TDayInfo;
 }
 
-function Overay({focusedDayInfo}: Props) {
+function Overay({focusedDayInfo}: IProps) {
     return (
         <div
             className="absolute z-20 flex flex-col items-center"

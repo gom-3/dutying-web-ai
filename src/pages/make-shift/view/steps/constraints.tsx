@@ -31,7 +31,6 @@ function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number | null,
                 {t('page.makeShift.constraints.phrase.max')}
                 {select}
                 {t('page.makeShift.constraints.phrase.day')}
-                <span className="underline">{t('page.makeShift.constraints.phrase.lte')}</span>
             </div>
         );
     }
@@ -42,7 +41,6 @@ function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number | null,
                 {t('page.makeShift.constraints.phrase.min')}
                 {select}
                 {t('page.makeShift.constraints.phrase.day')}
-                <span className="underline">{t('page.makeShift.constraints.phrase.gte')}</span>
             </div>
         );
     }
@@ -123,16 +121,12 @@ export function Constraints() {
         if (isCollapsed) return null;
 
         return (
-            <Droppable droppableId={bucket}>
+            <Droppable droppableId={bucket} isDropDisabled={false} isCombineEnabled={false}>
                 {(provided, snapshot) => (
                     <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={cn(
-                            'rounded-[12px] p-2',
-                            bucket === 'excluded' && 'min-h-[120px]',
-                            snapshot.isDraggingOver && 'bg-[#f0ecff]',
-                        )}
+                        className={cn(bucket === 'excluded' && 'min-h-[10px]', snapshot.isDraggingOver && 'bg-[#f0ecff]')}
                     >
                         <div className="flex flex-col gap-3">
                             {keys.map((key, index) => {
@@ -143,7 +137,7 @@ export function Constraints() {
                                     wardConstraint && meta.valueField ? (wardConstraint[meta.valueField] as unknown as number) : null;
 
                                 return (
-                                    <Draggable draggableId={key} index={index} key={key}>
+                                    <Draggable draggableId={key} index={index} key={key} isDragDisabled={false}>
                                         {(dragProvided, dragSnapshot) => (
                                             <div
                                                 ref={dragProvided.innerRef}
@@ -199,48 +193,55 @@ export function Constraints() {
     return (
         <DragDropContext onDragEnd={onDragEnd}>
             <div className="w-full">
-                <div className="rounded-[15px] bg-gray-7 px-8 py-8">
-                    <div className="flex items-center justify-between">
-                        <button
-                            type="button"
-                            className="flex items-center gap-2 font-apple text-[24px] font-bold text-sub-2 disabled:opacity-50"
-                            onClick={() => setOpen((s) => ({...s, error: !s.error}))}
-                            disabled={disabled}
-                        >
-                            {t('page.makeShift.constraints.section.strong')}
-                            <ChevronDown className={cn('h-6 w-6 transition-transform', open.error ? 'rotate-180' : 'rotate-0')} />
-                        </button>
-                        <p className="font-apple text-[20px] font-medium text-gray-4">
-                            {t('page.makeShift.constraints.count', {count: strongCount})}
-                        </p>
-                    </div>
+                <div className="flex items-center justify-between">
+                    <button
+                        type="button"
+                        className="flex items-center gap-2 font-apple text-[24px] font-bold text-sub-2 disabled:opacity-50"
+                        onClick={() => setOpen((s) => ({...s, error: !s.error}))}
+                        disabled={disabled}
+                    >
+                        {t('page.makeShift.constraints.section.strong')}
+                        <ChevronDown className={cn('h-6 w-6 transition-transform', open.error ? 'rotate-180' : 'rotate-0')} />
+                    </button>
+                    <p className="font-apple text-[20px] font-medium text-gray-4">
+                        {t('page.makeShift.constraints.count', {count: strongCount})}
+                    </p>
+                </div>
 
-                    <div className="mt-4">{renderBucket('error', !open.error)}</div>
-
-                    <div className="mt-6 flex items-center justify-between">
-                        <button
-                            type="button"
-                            className="flex items-center gap-2 font-apple text-[24px] font-bold text-sub-2 disabled:opacity-50"
-                            onClick={() => setOpen((s) => ({...s, warning: !s.warning}))}
-                            disabled={disabled}
-                        >
-                            {t('page.makeShift.constraints.section.weak')}
-                            <ChevronDown className={cn('h-6 w-6 transition-transform', open.warning ? 'rotate-180' : 'rotate-0')} />
-                        </button>
-                        <p className="font-apple text-[20px] font-medium text-gray-4">
-                            {t('page.makeShift.constraints.count', {count: weakCount})}
-                        </p>
-                    </div>
-
-                    {open.warning && (
-                        <div className="mt-6 flex items-center gap-2">
+                {open.error && (
+                    <div className="mt-4 rounded-[15px] bg-gray-7 p-[30px] pt-[20px]">
+                        <div className="mb-[18px] flex items-center gap-2">
                             <InfoIcon className="h-6 w-6" />
                             <p className="font-apple text-base font-semibold text-main-1">{t('page.makeShift.constraints.info')}</p>
                         </div>
-                    )}
+                        {renderBucket('error', !open.error)}
+                    </div>
+                )}
 
-                    <div className="mt-4">{renderBucket('warning', !open.warning)}</div>
+                <div className="mt-6 flex items-center justify-between">
+                    <button
+                        type="button"
+                        className="flex items-center gap-2 font-apple text-[24px] font-bold text-sub-2 disabled:opacity-50"
+                        onClick={() => setOpen((s) => ({...s, warning: !s.warning}))}
+                        disabled={disabled}
+                    >
+                        {t('page.makeShift.constraints.section.weak')}
+                        <ChevronDown className={cn('h-6 w-6 transition-transform', open.warning ? 'rotate-180' : 'rotate-0')} />
+                    </button>
+                    <p className="font-apple text-[20px] font-medium text-gray-4">
+                        {t('page.makeShift.constraints.count', {count: weakCount})}
+                    </p>
                 </div>
+
+                {open.warning && (
+                    <div className="mt-4 rounded-[15px] bg-gray-7 p-[30px]">
+                        <div className="mb-[18px] flex items-center gap-2">
+                            <InfoIcon className="h-6 w-6" />
+                            <p className="font-apple text-base font-semibold text-main-1">{t('page.makeShift.constraints.info')}</p>
+                        </div>
+                        {renderBucket('warning', !open.warning)}
+                    </div>
+                )}
 
                 <div className="mt-8 flex items-center justify-between">
                     <p className="font-apple text-[24px] font-bold text-gray-4">{t('page.makeShift.constraints.section.excluded')}</p>
@@ -249,7 +250,7 @@ export function Constraints() {
                     </p>
                 </div>
 
-                <div className="mt-4 rounded-[15px] bg-gray-7 p-6">{renderBucket('excluded', false)}</div>
+                <div className="mt-4 rounded-[15px] bg-gray-7 p-[30px]">{renderBucket('excluded', false)}</div>
             </div>
         </DragDropContext>
     );

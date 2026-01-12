@@ -1,5 +1,5 @@
 import {describe, vi, expect, beforeEach, it} from 'vitest';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 import {render, screen} from '@/shared/util/test-utils';
 import ShiftBadge from '.';
 
@@ -13,7 +13,7 @@ vi.mock('@/features/ui/useUIConfig', () => ({
     })),
 }));
 
-const mockShiftType: WardShiftType = {
+const mockShiftType: TWardShiftType = {
     color: 'red',
     shortName: 'A',
     wardShiftTypeId: 1,

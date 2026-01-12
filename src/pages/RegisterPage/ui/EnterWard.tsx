@@ -7,13 +7,13 @@ import useRegister from '@/features/auth/useRegister';
 import useGetWardByCode from '@/features/ward/useGetWardByCode';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type Ward} from '@/shared/types/ward';
+import {type TWard} from '@/shared/types/ward';
 
 function EnterWard() {
     const [codeList, setCodeList] = useState<(string | null)[]>([null, null, null, null, null, null]);
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const [open, setOpen] = useState<boolean>(false);
-    const [ward, setWard] = useState<Ward | null>(null);
+    const [ward, setWard] = useState<TWard | null>(null);
     const [error, setError] = useState<boolean>(false);
     const {
         state: {accountMe},

@@ -6,7 +6,7 @@ import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {type RequestShift} from '@/shared/types/shift';
-import {type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
+import {type TShiftTeam, type TWardShiftType} from '@/shared/types/ward';
 import {DateUtil} from '@/shared/util/date';
 import {useRequestShiftStore} from './store';
 import {type TFocus} from './type';
@@ -265,7 +265,7 @@ const useRequestShift = (activeEffect = false) => {
         if (activeEffect && requestShift) {
             window.dispatchEvent(new Event('resize'));
 
-            const wardShiftTypeMap = new Map<number, WardShiftType>();
+            const wardShiftTypeMap = new Map<number, TWardShiftType>();
 
             requestShift.wardShiftTypes.forEach((wardShiftType) => {
                 wardShiftTypeMap.set(wardShiftType.wardShiftTypeId, wardShiftType);
@@ -307,7 +307,7 @@ const useRequestShift = (activeEffect = false) => {
             shiftStatus,
             wardShiftTypeMap,
             readonly,
-            currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as ShiftTeam | null,
+            currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
         },
         actions: {
@@ -319,7 +319,7 @@ const useRequestShift = (activeEffect = false) => {
             foldLevel,
             changeMonth,
             changeFocus: (focus: TFocus | null) => setState('focus', focus),
-            changeShiftTeam: (shiftTeam: ShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
+            changeShiftTeam: (shiftTeam: TShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
         },
     };
 };

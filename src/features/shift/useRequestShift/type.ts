@@ -1,5 +1,5 @@
 import {type Nurse} from '@/shared/types/nurse';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 
 export type TFocus = {
     shiftNurseName: string;
@@ -8,7 +8,7 @@ export type TFocus = {
 };
 
 export type TDayInfo = {
-    countByShiftList: {count: number; shiftType: WardShiftType}[];
+    countByShiftList: {count: number; shiftType: TWardShiftType}[];
     month: number;
     day: number;
     nurse: Nurse;
@@ -22,8 +22,8 @@ export type TEditHistory = Map<
         history: {
             nurseName: string;
             focus: TFocus;
-            prevShiftType: WardShiftType | null;
-            nextShiftType: WardShiftType | null;
+            prevShiftType: TWardShiftType | null;
+            nextShiftType: TWardShiftType | null;
             dateString: string;
         }[];
     }

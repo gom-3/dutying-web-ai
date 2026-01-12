@@ -1,11 +1,11 @@
 import {type Account} from '@/shared/types/account';
-import {type Ward} from '@/shared/types/ward';
+import {type TWard} from '@/shared/types/ward';
 
 export interface IAccountAPI {
     // GET
     getAccount: (accountId: number) => Promise<Account>;
     getAccountMe: () => Promise<Account>;
-    getAccountMeWaiting: () => Promise<Ward>;
+    getAccountMeWaiting: () => Promise<TWard>;
     getDefaultProfileImages: () => Promise<string[]>;
     // PUT
     editAccount: (dto: TEditProfileRequest) => Promise<Account>;

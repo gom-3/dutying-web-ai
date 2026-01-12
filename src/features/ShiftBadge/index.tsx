@@ -1,10 +1,10 @@
 import React, {type Ref} from 'react';
 import {twMerge} from 'tailwind-merge';
 import useUIConfig from '@/features/ui/useUIConfig';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 
 interface Props extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
-    shiftType: WardShiftType | null | undefined;
+    shiftType: TWardShiftType | null | undefined;
     forwardRef?: Ref<HTMLDivElement>;
     isOnlyRequest?: boolean;
 }

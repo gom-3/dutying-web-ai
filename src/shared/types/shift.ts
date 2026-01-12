@@ -1,4 +1,4 @@
-import {type ShiftNurse, type WardShiftType} from './ward';
+import {type TShiftNurse, type TWardShiftType} from './ward';
 
 /** 근무표 타입 */
 export type Shift = {
@@ -7,7 +7,7 @@ export type Shift = {
     /** 이번달 근무표의 날짜들 */
     days: Array<Day>;
     /** 해당 근무표의 근무유형 리스트 */
-    wardShiftTypes: WardShiftType[];
+    wardShiftTypes: TWardShiftType[];
     /** 구분된 근무 데이터 */
     divisionShiftNurses: Row[][];
 };
@@ -17,7 +17,7 @@ export type Day = {day: number; dayType: 'saturday' | 'sunday' | 'holiday' | 'wo
 
 /** 근무표 한줄에 해당하는 데이터 */
 export type Row = {
-    shiftNurse: ShiftNurse;
+    shiftNurse: TShiftNurse;
     lastWardShiftList: (number | null)[];
     lastWardReqShiftList: (number | null)[];
     wardShiftList: (number | null)[];
@@ -29,10 +29,10 @@ export type RequestShift = {
     /** 이번달 근무표의 날짜들 */
     days: Array<Day>;
     /** 해당 근무표의 근무유형 리스트 */
-    wardShiftTypes: WardShiftType[];
+    wardShiftTypes: TWardShiftType[];
     /** 구분된 근무 데이터 */
     divisionShiftNurses: {
-        shiftNurse: ShiftNurse;
+        shiftNurse: TShiftNurse;
         /** 이월 @example 1 */
         carry: number;
         /** 이번달 근무 정보, 근무 유형의 index 배열 형식이다. */

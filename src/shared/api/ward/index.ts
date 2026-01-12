@@ -2,7 +2,7 @@ import qs from 'qs';
 import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
 import {type DutyRequest} from '@/shared/types/request';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type TWardConstraint, type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
+import {type TWard, type TWardConstraint, type TShiftTeam, type TWardShiftType} from '@/shared/types/ward';
 import axiosInstance from '../client';
 import {type UpdateNurseDTO} from '../nurse/type';
 import {
@@ -16,14 +16,14 @@ import {
 
 class WardAPI implements IWardAPI {
     // Ward APIs
-    getWard = async (wardId: number) => (await axiosInstance.get<Ward>(`/wards/${wardId}`)).data;
-    createWard = async (createWardDTO: CreateWardDTO) => (await axiosInstance.post<Ward>(`/wards`, createWardDTO)).data;
-    editWard = async (wardId: number, ward: EditWardDTO) => (await axiosInstance.patch<Ward>(`/wards/${wardId}`, ward)).data;
+    getWard = async (wardId: number) => (await axiosInstance.get<TWard>(`/wards/${wardId}`)).data;
+    createWard = async (createWardDTO: CreateWardDTO) => (await axiosInstance.post<TWard>(`/wards`, createWardDTO)).data;
+    editWard = async (wardId: number, ward: EditWardDTO) => (await axiosInstance.patch<TWard>(`/wards/${wardId}`, ward)).data;
     getWardConstraint = async (wardId: number, shiftTeamId: number) =>
         (await axiosInstance.get<TWardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data;
     updateWardConstraint = async (wardId: number, shiftTeamId: number, constraint: TWardConstraint) =>
         (await axiosInstance.patch<TWardConstraint>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data;
-    getWardByCode = async (code: string) => (await axiosInstance.get<Ward>(`/wards/search?code=${code}`)).data;
+    getWardByCode = async (code: string) => (await axiosInstance.get<TWard>(`/wards/search?code=${code}`)).data;
     getWatingNurses = async (wardId: number) =>
         (await axiosInstance.get<{nurses: WaitingNurse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses;
     addMeToWatingNurses = async (wardId: number) => (await axiosInstance.post(`/wards/${wardId}/waiting-nurses`)).data;
@@ -99,23 +99,23 @@ class WardAPI implements IWardAPI {
     removeNurseFromShiftTeam = async (wardId: number, shiftTeamId: number, nurseId: number) =>
         (await axiosInstance.delete<Nurse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/nurses/${nurseId}`)).data;
     getShiftTeams = async (wardId: number) =>
-        (await axiosInstance.get<{shiftTeams: ShiftTeam[]}>(`/wards/${wardId}/shift-teams`)).data.shiftTeams;
-    createShiftTeam = async (wardId: number) => (await axiosInstance.post<ShiftTeam>(`/wards/${wardId}/shift-teams`)).data;
+        (await axiosInstance.get<{shiftTeams: TShiftTeam[]}>(`/wards/${wardId}/shift-teams`)).data.shiftTeams;
+    createShiftTeam = async (wardId: number) => (await axiosInstance.post<TShiftTeam>(`/wards/${wardId}/shift-teams`)).data;
     buildShiftTeam = async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await axiosInstance.post<ShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}?${qs.stringify({year, month})}`)).data;
+        (await axiosInstance.post<TShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}?${qs.stringify({year, month})}`)).data;
     deleteShiftTeam = async (wardId: number, shiftTeamId: number) =>
-        (await axiosInstance.delete<ShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}`)).data;
+        (await axiosInstance.delete<TShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}`)).data;
     updateShiftTeam = async (wardId: number, shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) =>
-        (await axiosInstance.patch<ShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}`, updateShiftTeamDTO)).data;
+        (await axiosInstance.patch<TShiftTeam>(`/wards/${wardId}/shift-teams/${shiftTeamId}`, updateShiftTeamDTO)).data;
 
     // ShiftType APIs
-    getShiftTypes = async (wardId: number) => (await axiosInstance.get<WardShiftType[]>(`/wards/${wardId}/shift-types`)).data;
+    getShiftTypes = async (wardId: number) => (await axiosInstance.get<TWardShiftType[]>(`/wards/${wardId}/shift-types`)).data;
     createShiftType = async (wardId: number, createShiftTypeDTO: CreateShiftTypeDTO) =>
-        (await axiosInstance.post<WardShiftType>(`/wards/${wardId}/shift-types`, createShiftTypeDTO)).data;
+        (await axiosInstance.post<TWardShiftType>(`/wards/${wardId}/shift-types`, createShiftTypeDTO)).data;
     deleteShiftType = async (wardId: number, shiftTypeId: number) =>
         (await axiosInstance.delete(`/wards/${wardId}/shift-types/${shiftTypeId}`)).data;
     updateShiftType = async (wardId: number, shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) =>
-        (await axiosInstance.put<WardShiftType>(`/wards/${wardId}/shift-types/${shiftTypeId}`, createShiftTypeDTO)).data;
+        (await axiosInstance.put<TWardShiftType>(`/wards/${wardId}/shift-types/${shiftTypeId}`, createShiftTypeDTO)).data;
 }
 
 export default new WardAPI();

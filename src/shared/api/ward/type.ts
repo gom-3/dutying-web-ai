@@ -1,23 +1,23 @@
 import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
 import {type DutyRequest} from '@/shared/types/request';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type TWardConstraint, type WardShiftType, type ShiftTeam} from '@/shared/types/ward';
+import {type TWard, type TWardConstraint, type TWardShiftType, type TShiftTeam} from '@/shared/types/ward';
 import {type UpdateNurseDTO} from '../nurse/type';
 
 export interface IWardAPI {
     // Ward APIs
     // GET
-    getWard: (wardId: number) => Promise<Ward>;
+    getWard: (wardId: number) => Promise<TWard>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraint>;
-    getWardByCode: (code: string) => Promise<Ward>;
+    getWardByCode: (code: string) => Promise<TWard>;
     getWatingNurses: (wardId: number) => Promise<WaitingNurse[]>;
     // POST
-    createWard: (createWardDTO: CreateWardDTO) => Promise<Ward>;
+    createWard: (createWardDTO: CreateWardDTO) => Promise<TWard>;
     addMeToWatingNurses: (wardId: number) => Promise<void>;
     connectWatingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
     approveWatingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
     // PATCH
-    editWard: (wardId: number, ward: EditWardDTO) => Promise<Ward>;
+    editWard: (wardId: number, ward: EditWardDTO) => Promise<TWard>;
     updateWardConstraint: (wardId: number, shiftTeamId: number, constraint: TWardConstraint) => Promise<TWardConstraint>;
     // DELETE
     deleteWatingNurses: (wardId: number, nurseId: number) => Promise<void>;
@@ -53,24 +53,24 @@ export interface IWardAPI {
     // ShiftTeam APIs
     // GET
     getShiftTeamNurses: (wardId: number, shiftTeamId: number) => Promise<Nurse[]>;
-    getShiftTeams: (wardId: number) => Promise<ShiftTeam[]>;
+    getShiftTeams: (wardId: number) => Promise<TShiftTeam[]>;
     // POST
     addNurseIntoShiftTeam: (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO: UpdateNurseDTO) => Promise<Nurse>;
-    createShiftTeam: (wardId: number) => Promise<ShiftTeam>;
-    buildShiftTeam: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<ShiftTeam>;
+    createShiftTeam: (wardId: number) => Promise<TShiftTeam>;
+    buildShiftTeam: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftTeam>;
     // PATCH
-    updateShiftTeam: (wardId: number, shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => Promise<ShiftTeam>;
+    updateShiftTeam: (wardId: number, shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => Promise<TShiftTeam>;
     // DELETE
     removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<Nurse>;
-    deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<ShiftTeam>;
+    deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<TShiftTeam>;
 
     // ShiftType APIs
     // GET
-    getShiftTypes: (wardId: number) => Promise<WardShiftType[]>;
+    getShiftTypes: (wardId: number) => Promise<TWardShiftType[]>;
     // POST
-    createShiftType: (wardId: number, createShiftTypeDTO: CreateShiftTypeDTO) => Promise<WardShiftType>;
+    createShiftType: (wardId: number, createShiftTypeDTO: CreateShiftTypeDTO) => Promise<TWardShiftType>;
     // PUT
-    updateShiftType: (wardId: number, shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) => Promise<WardShiftType>;
+    updateShiftType: (wardId: number, shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) => Promise<TWardShiftType>;
     // DELETE
     deleteShiftType: (wardId: number, shiftTypeId: number) => Promise<void>;
 }
@@ -78,11 +78,11 @@ export interface IWardAPI {
 export type CreateWardDTO = {
     name: string;
     hospitalName: string;
-    wardShiftTypes: Omit<WardShiftType, 'wardShiftTypeId' | 'isCounted'>[];
+    wardShiftTypes: Omit<TWardShiftType, 'wardShiftTypeId' | 'isCounted'>[];
     shiftTeams: {nurseNames: string[]}[];
 };
 
-export type EditWardDTO = Pick<Ward, 'name' | 'hospitalName'>;
+export type EditWardDTO = Pick<TWard, 'name' | 'hospitalName'>;
 
 export type WardShiftsDTO = {
     shiftNurseId: number;
@@ -90,9 +90,9 @@ export type WardShiftsDTO = {
     wardShiftTypeId: number | null;
 }[];
 
-export type UpdateShiftTeamDTO = Pick<ShiftTeam, 'name'>;
+export type UpdateShiftTeamDTO = Pick<TShiftTeam, 'name'>;
 
 export type CreateShiftTypeDTO = Pick<
-    WardShiftType,
+    TWardShiftType,
     'name' | 'shortName' | 'color' | 'startTime' | 'endTime' | 'isOff' | 'isDefault' | 'isCounted' | 'classification'
 >;

@@ -11,7 +11,7 @@ import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
 import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 
@@ -83,7 +83,7 @@ function RegisterWard() {
         resolver: yupResolver(schema),
     });
     const [openModal, setOpenModal] = useState(false);
-    const [tempShiftType, setTempShiftType] = useState<WardShiftType | null>(null);
+    const [tempShiftType, setTempShiftType] = useState<TWardShiftType | null>(null);
     const {
         state: {accountMe},
         actions: {createWrad},

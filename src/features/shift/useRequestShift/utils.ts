@@ -1,5 +1,5 @@
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type TWardConstraint, type ShiftNurse, type WardShiftType} from '@/shared/types/ward';
+import {type TWardConstraint, type TShiftNurse, type TWardShiftType} from '@/shared/types/ward';
 import {koToEn} from '@/shared/util/koToEn';
 import {type TFault, type TCheckFaultOptions, type TFocus, type TFaultType} from './type';
 
@@ -10,7 +10,7 @@ export const moveFocus = (
     focus: TFocus,
     setFocus: (focus: TFocus) => void,
 ) => {
-    const flatNurses = shift.divisionShiftNurses.flatMap<{shiftNurse: ShiftNurse}>((x) => x).map((x) => x.shiftNurse);
+    const flatNurses = shift.divisionShiftNurses.flatMap<{shiftNurse: TShiftNurse}>((x) => x).map((x) => x.shiftNurse);
     const {day, shiftNurseId} = focus;
     const dayCnt = shift.days.length;
     const nurseIndex = flatNurses.findIndex((x) => x.shiftNurseId === shiftNurseId);
@@ -152,7 +152,7 @@ export const updateCheckFaultOption = (wardConstraint: TWardConstraint): TCheckF
     };
 };
 
-export const checkShift = (shift: Shift, checkFaultOptions: TCheckFaultOptions, wardShiftTypeMap: Map<number, WardShiftType>) => {
+export const checkShift = (shift: Shift, checkFaultOptions: TCheckFaultOptions, wardShiftTypeMap: Map<number, TWardShiftType>) => {
     const faults: Map<string, TFault> = new Map();
 
     for (let i = 0; i < shift.divisionShiftNurses.length; i++) {
@@ -208,7 +208,7 @@ export const checkShift = (shift: Shift, checkFaultOptions: TCheckFaultOptions, 
 
 export const findNurse = (shift: Shift | RequestShift, shiftNurseId: number) => {
     return (
-        shift.divisionShiftNurses.flatMap<{shiftNurse: ShiftNurse}>((x) => x).find((x) => x.shiftNurse.shiftNurseId === shiftNurseId)
+        shift.divisionShiftNurses.flatMap<{shiftNurse: TShiftNurse}>((x) => x).find((x) => x.shiftNurse.shiftNurseId === shiftNurseId)
             ?.shiftNurse ?? null
     );
 };

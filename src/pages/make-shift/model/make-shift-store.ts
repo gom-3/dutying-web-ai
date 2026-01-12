@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
-import {type ShiftTeam} from '@/shared/types/ward';
+import {type TShiftTeam} from '@/shared/types/ward';
 
 export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
@@ -15,7 +15,7 @@ export type TMakeShiftStore = {
     // header (shared across overview / stepping)
     year: number;
     month: number; // 1~12
-    shiftTeams: ShiftTeam[];
+    shiftTeams: TShiftTeam[];
     currentShiftTeamId: number | null;
 
     // overview status (MVP)
@@ -34,7 +34,7 @@ export type TMakeShiftStore = {
     setYearMonth: (payload: {year: number; month: number}) => void;
     goPrevMonth: () => void;
     goNextMonth: () => void;
-    setShiftTeams: (teams: ShiftTeam[]) => void;
+    setShiftTeams: (teams: TShiftTeam[]) => void;
     setCurrentShiftTeamId: (shiftTeamId: number | null) => void;
 
     setShiftStatus: (status: TShiftStatus) => void;

@@ -4,7 +4,7 @@ import CreateShiftModal from '@/features/ward/CreateShiftModal';
 import useEditWard from '@/features/ward/useEditWard';
 import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/shared/types/ward';
 
 function SetShiftType() {
     const {
@@ -12,7 +12,7 @@ function SetShiftType() {
         actions: {editShiftType, removeShiftType, addShiftType},
     } = useEditWard();
     const [openModal, setOpenModal] = useState(false);
-    const [tempShiftType, setTempShiftType] = useState<WardShiftType | null>(null);
+    const [tempShiftType, setTempShiftType] = useState<TWardShiftType | null>(null);
     const handleWriteShift = (shiftType: CreateShiftTypeDTO, shiftTypeId?: number) => {
         if (shiftTypeId) {
             editShiftType(shiftTypeId, shiftType);

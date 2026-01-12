@@ -7,7 +7,7 @@ import {NurseAPI, WardAPI} from '@/shared/api';
 import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward} from '@/shared/types/ward';
+import {type TWard} from '@/shared/types/ward';
 import useEditNurseStore from './store';
 
 const useEditShiftTeam = () => {
@@ -120,12 +120,12 @@ const useEditShiftTeam = () => {
             await queryClient.cancelQueries({queryKey: shiftQueryKey});
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
-            const oldWard = queryClient.getQueryData<Ward>(getWardQueryKey);
+            const oldWard = queryClient.getQueryData<TWard>(getWardQueryKey);
             const oldShift = queryClient.getQueryData<Shift>(shiftQueryKey);
             const oldReqShift = queryClient.getQueryData<RequestShift>(requestShiftQueryKey);
 
             if (oldWard) {
-                queryClient.setQueryData<Ward>(
+                queryClient.setQueryData<TWard>(
                     getWardQueryKey,
                     produce(oldWard, (draft) => {
                         const sourceNurses = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!.nurses;
@@ -242,11 +242,11 @@ const useEditShiftTeam = () => {
             updateShiftTeamDTO: UpdateShiftTeamDTO;
         }) => WardAPI.updateShiftTeam(wardId, shiftTeamId, updateShiftTeamDTO),
         onMutate: ({shiftTeamId, updateShiftTeamDTO}) => {
-            const oldWard = queryClient.getQueryData<Ward>(getWardQueryKey);
+            const oldWard = queryClient.getQueryData<TWard>(getWardQueryKey);
 
             if (!oldWard) return;
 
-            queryClient.setQueryData<Ward>(
+            queryClient.setQueryData<TWard>(
                 getWardQueryKey,
                 produce(oldWard, (draft) => {
                     const shiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!;
