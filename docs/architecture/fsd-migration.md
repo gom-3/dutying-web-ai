@@ -58,14 +58,51 @@
 - 특징
   - 상태를 반환하지 않고, **행동(핸들러)만 제공**.
   - 내부에서 `store` 상태를 조회하거나 `react-query`로 서버 상태를 조회 가능.
-  - view에서는 useCase를 **최상위에서 1회 호출**하는 패턴이 적합할지 검증 필요.
 
-### 3) 권장 호출 방식
-- view에서는 다음을 분리해서 사용
-  - `store`: 필요한 상태를 slice해서 사용
-  - `useCase`: 핸들러만 받아서 이벤트에 연결
-- useCase 호출 위치
-  - 페이지/feature root에서 1회 호출하는 것을 우선 권장하되, 실제 필요에 따라 검증 후 결정.
+#### 사용 패턴 예시
+- **store + useCase 분리 사용**
+  - store는 상태만 제공하고, useCase는 핸들러만 제공한다.
+
+```ts
+// entities/schedule/model/store.ts
+export const useScheduleStore = createStore((set) => ({
+  selectedDate: null,
+  setSelectedDate: (date) => set({ selectedDate: date }),
+}));
+
+// entities/schedule/model/useCase.ts
+export const useScheduleUseCase = () => {
+  const { selectedDate } = useScheduleStore.getState();
+  const { data: schedules } = useQuery(scheduleQueryOptions({ date: selectedDate }));
+
+  const refresh = () => queryClient.invalidateQueries(scheduleQueryOptions({ date: selectedDate }).queryKey);
+
+  return { refresh };
+};
+```
+
+- **view에서 분리 사용**
+
+```tsx
+// features/Schedule/ui/ScheduleView.tsx
+export const ScheduleView = () => {
+  const selectedDate = useScheduleStore((state) => state.selectedDate);
+  const setSelectedDate = useScheduleStore((state) => state.setSelectedDate);
+  const { refresh } = useScheduleUseCase();
+
+  return (
+    <SchedulePanel
+      selectedDate={selectedDate}
+      onSelectDate={setSelectedDate}
+      onRefresh={refresh}
+    />
+  );
+};
+```
+
+#### useCase 호출 위치 (실험 단계)
+- view에서 useCase를 **최상위 1회 호출**하는 패턴은 아직 검증되지 않았다.
+- 팀 합의 전까지는 **실험적 패턴**으로 취급하고, 실 서비스 적용 전 검증을 진행한다.
 
 ## 마이그레이션 전략 제안
 1) `queryOptions` 통합 먼저 완료
