@@ -51,6 +51,7 @@ export const MakeShiftPageView = () => {
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const isWideStep = currentStep === 3;
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -82,53 +83,59 @@ export const MakeShiftPageView = () => {
                     <>
                         <MakeShiftStepper currentStep={currentStep} onClickStep={useCase.goToStep} />
 
-                        <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
-                            <div className="w-[440px] shrink-0">
-                                <p className="font-apple text-[32px] font-semibold text-sub-1">{STEP_INTRO[currentStep].title}</p>
-                                <div className="mt-6 font-apple text-xl leading-[1.72] font-medium text-gray-3">
-                                    {STEP_INTRO[currentStep].desc.map((line) => (
-                                        <p key={line}>{line}</p>
-                                    ))}
-                                </div>
+                        {isWideStep ? (
+                            <div className="flex flex-1 flex-col px-10 pt-[42px] pb-10">
+                                <p className="sr-only">{STEP_LABELS[currentStep]}</p>
+                                <RequestsShifts />
+                            </div>
+                        ) : (
+                            <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
+                                <div className="w-[440px] shrink-0">
+                                    <p className="font-apple text-[32px] font-semibold text-sub-1">{STEP_INTRO[currentStep].title}</p>
+                                    <div className="mt-6 font-apple text-xl leading-[1.72] font-medium text-gray-3">
+                                        {STEP_INTRO[currentStep].desc.map((line) => (
+                                            <p key={line}>{line}</p>
+                                        ))}
+                                    </div>
 
-                                <div className="mt-[82px] flex items-center gap-8">
-                                    <button
-                                        className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
-                                        onClick={() => useCase.prev()}
-                                        disabled={!canPrev}
-                                        type="button"
-                                    >
-                                        이전
-                                    </button>
-                                    <button
-                                        className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                                        onClick={() => useCase.next()}
-                                        disabled={!canNext}
-                                        type="button"
-                                    >
-                                        다음
-                                    </button>
-                                    {currentStep === 5 && (
+                                    <div className="mt-[82px] flex items-center gap-8">
                                         <button
-                                            className="h-[42px] rounded-[10px] bg-sub-3 px-5 font-apple text-base font-semibold text-white"
-                                            onClick={() => useCase.complete()}
+                                            className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
+                                            onClick={() => useCase.prev()}
+                                            disabled={!canPrev}
                                             type="button"
                                         >
-                                            완료
+                                            이전
                                         </button>
-                                    )}
+                                        <button
+                                            className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
+                                            onClick={() => useCase.next()}
+                                            disabled={!canNext}
+                                            type="button"
+                                        >
+                                            다음
+                                        </button>
+                                        {currentStep === 5 && (
+                                            <button
+                                                className="h-[42px] rounded-[10px] bg-sub-3 px-5 font-apple text-base font-semibold text-white"
+                                                onClick={() => useCase.complete()}
+                                                type="button"
+                                            >
+                                                완료
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <p className="sr-only">{STEP_LABELS[currentStep]}</p>
+                                    {currentStep === 1 && <Workers />}
+                                    {currentStep === 2 && <Constraints />}
+                                    {currentStep === 4 && <FixedShifts />}
+                                    {currentStep === 5 && <AiAutofill />}
                                 </div>
                             </div>
-
-                            <div className="min-w-0 flex-1">
-                                <p className="sr-only">{STEP_LABELS[currentStep]}</p>
-                                {currentStep === 1 && <Workers />}
-                                {currentStep === 2 && <Constraints />}
-                                {currentStep === 3 && <RequestsShifts />}
-                                {currentStep === 4 && <FixedShifts />}
-                                {currentStep === 5 && <AiAutofill />}
-                            </div>
-                        </div>
+                        )}
                     </>
                 )}
             </div>
