@@ -14,9 +14,9 @@
 - [x] side-effect를 useCase 내부에서 조합
 
 ## 3. 상태관리 구조 확정 (store/useCase)
-- [ ] slice별 store 책임 범위 정의
-- [ ] useCase는 행동만 제공하도록 규칙 정립
-- [ ] useCase 호출 위치(최상위 1회 호출) **실험/검증** 세션 분리
+- [x] slice별 store 책임 범위 정의
+- [x] useCase는 행동만 제공하도록 규칙 정립
+- [x] useCase 호출 위치(최상위 1회 호출) **실험/검증** 세션 분리
 
 ## 4. FSD 구조 재정렬
 - [ ] widgets 분리 대상 선정 (페이지 단위 UI)

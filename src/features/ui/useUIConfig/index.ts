@@ -1,24 +1,20 @@
 import {useUIConfigStore} from './store';
 
-const useUIConfig = () => {
-    const {separateWeekendColor, shiftTypeColorStyle, setState} = useUIConfigStore();
+type ShiftTypeColorStyle = 'background' | 'text';
+
+const useUIConfigUseCase = () => {
+    const setState = useUIConfigStore((state) => state.setState);
     const handleChangeSeparateWeekendColor = (value: boolean) => {
         setState('separateWeekendColor', value);
     };
-    const handleShiftTypeColorStyle = (value: typeof shiftTypeColorStyle) => {
+    const handleShiftTypeColorStyle = (value: ShiftTypeColorStyle) => {
         setState('shiftTypeColorStyle', value);
     };
 
     return {
-        state: {
-            separateWeekendColor,
-            shiftTypeColorStyle,
-        },
-        actions: {
-            handleChangeSeparateWeekendColor,
-            handleShiftTypeColorStyle,
-        },
+        handleChangeSeparateWeekendColor,
+        handleShiftTypeColorStyle,
     };
 };
 
-export default useUIConfig;
+export default useUIConfigUseCase;

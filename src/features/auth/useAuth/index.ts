@@ -1,8 +1,8 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import useLoading from '@/features/ui/useLoading';
-import useTutorial from '@/features/ui/useTutorial';
+import useLoadingUseCase from '@/features/ui/useLoading';
+import useTutorialUseCase from '@/features/ui/useTutorial';
 import useInitStore from '@/features/useInitStore';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import axiosInstance, {setAccessToken} from '@/shared/api/client';
@@ -12,11 +12,9 @@ import useAuthStore from './store';
 const useAuth = (activeEffect = false) => {
     const {accountMe, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState} = useAuthStore();
     const {pathname} = useLocation();
-    const {setLoading} = useLoading();
+    const {setLoading} = useLoadingUseCase();
     const initStore = useInitStore();
-    const {
-        actions: {initTutorial},
-    } = useTutorial();
+    const {initTutorial} = useTutorialUseCase();
     const navigate = useNavigate();
     const handleLogout = async (fallBackPath?: string) => {
         initStore();

@@ -5,7 +5,7 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {setPreferredShiftTeamId} from '@/features/shift/editDuty/prefs';
-import useTutorial from '@/features/ui/useTutorial';
+import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
@@ -23,9 +23,7 @@ function ShiftTeamList() {
         shiftTeamId: number;
         updateShiftTeamDTO: UpdateShiftTeamDTO;
     } | null>(null);
-    const {
-        state: {showMemberTutorial},
-    } = useTutorial();
+    const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const navigate = useNavigate();
     const clickAwayRef = useOnclickOutside(() => selectNurse(null));
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));

@@ -2,14 +2,13 @@ import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {useRequestShiftStore} from '@/features/shift/useRequestShift/store';
-import useTutorial from '@/features/ui/useTutorial';
+import useTutorialUseCase from '@/features/ui/useTutorial';
+import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import {type StepConfig, type StepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const RequestTutorial = () => {
-    const {
-        state: {showRequestTutorial},
-        actions: {setRequestTutorial},
-    } = useTutorial();
+    const showRequestTutorial = useTutorialStore((state) => state.showRequestTutorial);
+    const {setRequestTutorial} = useTutorialUseCase();
     const {
         actions: {toggleEditMode},
     } = useRequestShift();

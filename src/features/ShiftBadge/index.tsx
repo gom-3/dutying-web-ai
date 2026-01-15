@@ -1,6 +1,6 @@
 import React, {type Ref} from 'react';
 import {twMerge} from 'tailwind-merge';
-import useUIConfig from '@/features/ui/useUIConfig';
+import {useUIConfigStore} from '@/features/ui/useUIConfig/store';
 import {type WardShiftType} from '@/shared/types/ward';
 
 interface Props extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
@@ -10,9 +10,7 @@ interface Props extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElem
 }
 
 function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}: Props) {
-    const {
-        state: {shiftTypeColorStyle},
-    } = useUIConfig();
+    const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
 
     return (
         <div

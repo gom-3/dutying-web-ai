@@ -1,9 +1,9 @@
 import Lottie from 'react-lottie';
-import useLoading from '@/features/ui/useLoading';
+import {useLoadingStore} from '@/features/ui/useLoading/store';
 import loadingLottie from '../shared/assets/animation/loading.json';
 
 const Loading = () => {
-    const {loading} = useLoading();
+    const loading = useLoadingStore((state) => state.loading);
 
     return (
         loading && (

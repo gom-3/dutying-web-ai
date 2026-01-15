@@ -2,8 +2,8 @@ import {useCallback} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
 import {accountQueryOptions} from '@/entities/account/model/queries';
-import useLoading from '@/features/ui/useLoading';
-import useTutorial from '@/features/ui/useTutorial';
+import useLoadingUseCase from '@/features/ui/useLoading';
+import useTutorialUseCase from '@/features/ui/useTutorial';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
 import {type CreateNurseDTO} from '@/shared/api/nurse/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
@@ -16,10 +16,8 @@ const useRegister = () => {
         state: {accountMe, accountId},
         actions: {handleGetAccountMe},
     } = useAuth();
-    const {
-        actions: {initTutorial},
-    } = useTutorial();
-    const {setLoading} = useLoading();
+    const {initTutorial} = useTutorialUseCase();
+    const {setLoading} = useLoadingUseCase();
     const navigate = useNavigate();
     const changeAccountStatus = useCallback(
         async ({accountId, status}: {accountId: number; status: Account['status']}) => {
