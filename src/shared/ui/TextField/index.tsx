@@ -1,5 +1,5 @@
 import React, {forwardRef} from 'react';
-import {Input} from '@/shared/ui/shadcn/input';
+import {Input} from '@/shared/ui/primitives/input';
 import {cn} from '@/shared/util/style';
 
 type Props = React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> & {

@@ -1,6 +1,6 @@
 import {getDutyRuleDefinitions, type DutyRuleKey} from '@/shared/editor/duty/validation/validator';
-import type {Nurse} from '@/shared/types/nurse';
-import type {WardShiftType, WardConstraint} from '@/shared/types/ward';
+import type {Nurse} from '@/entities/nurse';
+import type {WardShiftType, WardConstraint} from '@/entities/ward';
 
 export type Focus = {
     shiftNurseName: string;

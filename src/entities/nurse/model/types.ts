@@ -1,4 +1,4 @@
-import {type Day} from './shift';
+import type {Day} from '@/entities/shift';
 
 export type DayShift = {
     /** 날짜 */

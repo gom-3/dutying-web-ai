@@ -1,4 +1,4 @@
-import {type DutyRequest} from '@/shared/types/request';
+import {type DutyRequest} from '@/entities/shift';
 
 export const mockDutyRequestList: DutyRequest[] = [
     {

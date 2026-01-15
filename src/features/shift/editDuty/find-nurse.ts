@@ -1,4 +1,4 @@
-import type {RequestShift, Shift} from '@/shared/types/shift';
+import type {RequestShift, Shift} from '@/entities/shift';
 
 export function findNurse(shift: Shift | RequestShift, shiftNurseId: number) {
     return (

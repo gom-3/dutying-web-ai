@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {type Shift} from '@/shared/types/shift';
+import {type Shift} from '@/entities/shift';
 
 export const shiftToExcel = async (month: number, shift: Shift) => {
     const Excel = await import('exceljs');

@@ -1,5 +1,5 @@
-import {type Account} from '@/shared/types/account';
-import {type Ward} from '@/shared/types/ward';
+import {type Account} from '@/entities/account';
+import {type Ward} from '@/entities/ward';
 import axiosInstance from '../client';
 import {type IAuthAPI} from './type';
 

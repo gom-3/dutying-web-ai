@@ -1,4 +1,4 @@
-import {type Nurse} from '@/shared/types/nurse';
+import {type Nurse} from '@/entities/nurse';
 
 export interface INurseAPI {
     // GET

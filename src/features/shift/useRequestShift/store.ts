@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
 import {type TValues} from '@/shared/types/util';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type WardShiftType} from '@/entities/ward';
 import {type Focus} from '../editDuty/faults';
 
 interface State {

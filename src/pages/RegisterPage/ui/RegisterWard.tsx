@@ -11,7 +11,7 @@ import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
 import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type WardShiftType} from '@/entities/ward';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 

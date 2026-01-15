@@ -5,7 +5,7 @@ import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
 import {type Focus} from '@/features/shift/editDuty/faults';
 import useRequestShift from '@/features/shift/useRequestShift';
-import ShiftBadge from '@/features/ShiftBadge';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/features/ui/useUIConfig/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';

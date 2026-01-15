@@ -1,4 +1,4 @@
-import {type Nurse} from '@/shared/types/nurse';
+import {type Nurse} from '@/entities/nurse';
 import axiosInstance from '../client';
 import {type INurseAPI, type CreateNurseDTO, type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from './type';
 

@@ -7,8 +7,8 @@ import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
 import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
-import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward} from '@/shared/types/ward';
+import {type RequestShift, type Shift} from '@/entities/shift';
+import {type Ward} from '@/entities/ward';
 import useEditNurseStore from './store';
 
 const useEditShiftTeam = () => {

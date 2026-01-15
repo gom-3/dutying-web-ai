@@ -1,5 +1,5 @@
 import {type DayInfo} from '@/features/shift/editDuty/faults';
-import ShiftBadge from '@/features/ShiftBadge';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
 
 interface Props {
     focusedDayInfo: DayInfo;

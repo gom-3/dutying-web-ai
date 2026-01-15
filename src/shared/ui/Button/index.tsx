@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {Button as ShadcnButton} from '@/shared/ui/shadcn/button';
+import {Button as ShadcnButton} from '@/shared/ui/primitives/button';
 import {cn} from '@/shared/util/style';
 
 type Props = React.ComponentProps<typeof ShadcnButton>;

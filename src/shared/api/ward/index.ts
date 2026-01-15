@@ -1,8 +1,8 @@
 import qs from 'qs';
-import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
-import {type DutyRequest} from '@/shared/types/request';
-import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type WardConstraint, type ShiftTeam, type WardShiftType} from '@/shared/types/ward';
+import {type WaitingNurse, type Nurse} from '@/entities/nurse';
+import {type DutyRequest} from '@/entities/shift';
+import {type RequestShift, type Shift} from '@/entities/shift';
+import {type Ward, type WardConstraint, type ShiftTeam, type WardShiftType} from '@/entities/ward';
 import axiosInstance from '../client';
 import {type UpdateNurseDTO} from '../nurse/type';
 import {

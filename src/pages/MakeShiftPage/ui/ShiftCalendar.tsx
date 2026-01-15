@@ -5,7 +5,7 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
 import {keydownEventMapper} from '@/features/shift/editDuty/keyboard';
 import {EditDutyStore} from '@/features/shift/editDuty/store';
-import ShiftBadge from '@/features/ShiftBadge';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/features/ui/useUIConfig/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';

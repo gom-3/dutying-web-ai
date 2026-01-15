@@ -8,7 +8,7 @@ import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
 import {type CreateNurseDTO} from '@/shared/api/nurse/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
-import {type Account} from '@/shared/types/account';
+import {type Account} from '@/entities/account';
 import useAuth from '../useAuth';
 
 const useRegister = () => {

@@ -3,7 +3,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/shared/assets/svg';
-import {type Nurse} from '@/shared/types/nurse';
+import {type Nurse} from '@/entities/nurse';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 

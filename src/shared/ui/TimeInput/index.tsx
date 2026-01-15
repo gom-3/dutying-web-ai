@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {Input} from '@/shared/ui/shadcn/input';
+import {Input} from '@/shared/ui/primitives/input';
 import {cn} from '@/shared/util/style';
 
 interface Props extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {

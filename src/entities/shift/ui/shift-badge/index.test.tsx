@@ -1,5 +1,5 @@
 import {describe, vi, expect, beforeEach, it} from 'vitest';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type WardShiftType} from '@/entities/ward';
 import {render, screen} from '@/shared/util/test-utils';
 import ShiftBadge from '.';
 

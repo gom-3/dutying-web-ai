@@ -1,4 +1,4 @@
-import {type ShiftNurse, type WardShiftType} from './ward';
+import type {ShiftNurse, WardShiftType} from '@/entities/ward';
 
 /** 근무표 타입 */
 export type Shift = {
