@@ -86,7 +86,7 @@ function RegisterWard() {
     const [tempShiftType, setTempShiftType] = useState<WardShiftType | null>(null);
     const {
         state: {accountMe},
-        actions: {createWrad},
+        actions: {createWard},
     } = useRegister();
     const navigate = useNavigate();
     const appendClipboardTextToNurse = async (index: number) => {
@@ -135,7 +135,7 @@ function RegisterWard() {
                         return;
                     }
 
-                    createWrad({
+                    createWard({
                         name: d.name,
                         hospitalName: d.hospitalName,
                         shiftTeams: shiftTeams.map((shiftTeam) => ({nurseNames: shiftTeam})),

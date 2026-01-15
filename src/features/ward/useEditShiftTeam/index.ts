@@ -1,4 +1,4 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
 import {useCallback} from 'react';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
@@ -27,97 +27,101 @@ const useEditShiftTeam = () => {
         ...wardQueryOptionsValue,
         enabled: !!wardId,
     });
-    const {mutate: updateNurseMutate} = useMutation({
-        mutationFn: ({nurseId, updateNurseDTO}: {nurseId: number; updateNurseDTO: UpdateNurseDTO}) =>
-            NurseAPI.updateNurse(nurseId, updateNurseDTO),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: shiftQueryKey});
-            queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+    const invalidateWard = useCallback(async () => {
+        await queryClient.invalidateQueries({queryKey: wardQueryKey});
+    }, [queryClient, wardQueryKey]);
+    const invalidateWardShiftAndRequest = useCallback(async () => {
+        await queryClient.invalidateQueries({queryKey: wardQueryKey});
+        await queryClient.invalidateQueries({queryKey: shiftQueryKey});
+        await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+    }, [queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey]);
+    const addNurse = useCallback(
+        async (shiftTeamId: number) => {
+            if (!wardId) return;
+
+            try {
+                await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
+                    name: `간호사${Math.floor(Math.random() * 10000)}`,
+                    phoneNum: '01012345678',
+                    gender: '여',
+                    isWorker: true,
+                    employmentDate: '2021-08-01',
+                    isDutyManager: false,
+                    isWardManager: false,
+                    memo: '',
+                });
+                await invalidateWard();
+            } catch {
+                alert('간호사 추가에 실패했습니다.');
+            }
         },
-        onError: () => {
-            alert('간호사 정보 수정이 실패했습니다.');
+        [invalidateWard, wardId],
+    );
+    const deleteNurse = useCallback(
+        async (shiftTeamId: number, nurseId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
+            await invalidateWard();
         },
-    });
-    const {mutate: addNurseMutate} = useMutation({
-        mutationFn: ({wardId, shiftTeamId}: {wardId: number; shiftTeamId: number}) =>
-            WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
-                name: `간호사${Math.floor(Math.random() * 10000)}`,
-                phoneNum: '01012345678',
-                gender: '여',
-                isWorker: true,
-                employmentDate: '2021-08-01',
-                isDutyManager: false,
-                isWardManager: false,
-                memo: '',
-            }),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: wardQueryKey}),
-        onError: () => {
-            alert('간호사 추가에 실패했습니다.');
+        [invalidateWard, wardId],
+    );
+    const selectNurse = useCallback(
+        (nurseId: number | null) => {
+            setState('selectedNurseId', nurseId);
         },
-    });
-    const {mutate: deleteNurseMutate} = useMutation({
-        mutationFn: ({wardId, nurseId, shiftTeamId}: {wardId: number; nurseId: number; shiftTeamId: number}) =>
-            WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: wardQueryKey}),
-    });
-    const {mutate: updateNurseShiftTypeMutate} = useMutation({
-        mutationFn: ({
-            nurseId,
-            nurseShiftTypeId,
-            change,
-        }: {
-            nurseId: number;
-            nurseShiftTypeId: number;
-            change: UpdateNurseShiftTypeRequest;
-        }) => NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: wardQueryKey}),
-    });
-    const {mutate: createShiftTeamMutate} = useMutation({
-        mutationFn: (wardId: number) => WardAPI.createShiftTeam(wardId),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: wardQueryKey}),
-    });
-    const {mutate: deleteShiftTeamMutate} = useMutation({
-        mutationFn: ({wardId, shiftTeamId}: {wardId: number; shiftTeamId: number}) => WardAPI.deleteShiftTeam(wardId, shiftTeamId),
-        onSuccess: () => queryClient.invalidateQueries({queryKey: wardQueryKey}),
-    });
-    const {mutate: editDivisionMutate} = useMutation({
-        mutationFn: ({
-            shiftTeamId,
-            prevPriority,
-            changeValue,
-            patchYearMonth,
-        }: {
-            shiftTeamId: number;
-            prevPriority: number;
-            changeValue: number;
-            patchYearMonth: string;
-        }) => NurseAPI.updateShiftTeamDivision(shiftTeamId, prevPriority, changeValue, patchYearMonth),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: shiftQueryKey});
-            queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+        [setState],
+    );
+    const updateNurse = useCallback(
+        async (nurseId: number, updateNurseDTO: UpdateNurseDTO) => {
+            try {
+                await NurseAPI.updateNurse(nurseId, updateNurseDTO);
+                await invalidateWardShiftAndRequest();
+            } catch {
+                alert('간호사 정보 수정이 실패했습니다.');
+            }
         },
-    });
-    const {mutate: moveNurseOrderMutate} = useMutation({
-        mutationFn: ({
-            nurseId,
-            shiftTeamId,
-            nextShiftTeamId,
-            divisionNum,
-            prevPriority,
-            nextPriority,
-            patchYearMonth,
-        }: {
-            nurseId: number;
-            shiftTeamId: number;
-            nextShiftTeamId: number;
-            divisionNum: number;
-            prevPriority: number;
-            nextPriority: number;
-            patchYearMonth: string;
-        }) => NurseAPI.updateNurseOrder(nurseId, shiftTeamId, nextShiftTeamId, divisionNum, prevPriority, nextPriority, patchYearMonth),
-        onMutate: async ({nurseId, shiftTeamId, nextShiftTeamId, prevPriority, nextPriority, divisionNum}) => {
+        [invalidateWardShiftAndRequest],
+    );
+    const updateNurseShift = useCallback(
+        async (nurseId: number, nurseShiftTypeId: number, change: UpdateNurseShiftTypeRequest) => {
+            await NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change);
+            await invalidateWard();
+        },
+        [invalidateWard],
+    );
+    const createShiftTeam = useCallback(async () => {
+        if (!wardId) return;
+
+        await WardAPI.createShiftTeam(wardId);
+        await invalidateWard();
+    }, [invalidateWard, wardId]);
+    const deleteShiftTeam = useCallback(
+        async (shiftTeamId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.deleteShiftTeam(wardId, shiftTeamId);
+            await invalidateWard();
+        },
+        [invalidateWard, wardId],
+    );
+    const editDivision = useCallback(
+        async (shiftTeamId: number, prevPriority: number, changeValue: number, patchYearMonth: string) => {
+            await NurseAPI.updateShiftTeamDivision(shiftTeamId, prevPriority, changeValue, patchYearMonth);
+            await invalidateWardShiftAndRequest();
+        },
+        [invalidateWardShiftAndRequest],
+    );
+    const moveNurseOrder = useCallback(
+        async (
+            nurseId: number,
+            shiftTeamId: number,
+            nextShiftTeamId: number,
+            divisionNum: number,
+            prevPriority: number,
+            nextPriority: number,
+            patchYearMonth: string,
+        ) => {
             await queryClient.cancelQueries({queryKey: wardQueryKey});
             await queryClient.cancelQueries({queryKey: shiftQueryKey});
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
@@ -218,131 +222,51 @@ const useEditShiftTeam = () => {
                 );
             }
 
-            return {oldWard, oldShift, oldReqShift};
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: shiftQueryKey});
-            queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-        },
-        onError: (_, __, context) => {
-            if (context?.oldShift === undefined || context.oldReqShift === undefined || context.oldWard === undefined) return;
+            try {
+                await NurseAPI.updateNurseOrder(
+                    nurseId,
+                    shiftTeamId,
+                    nextShiftTeamId,
+                    divisionNum,
+                    prevPriority,
+                    nextPriority,
+                    patchYearMonth,
+                );
+                await invalidateWardShiftAndRequest();
+            } catch {
+                if (!oldShift || !oldReqShift || !oldWard) return;
 
-            queryClient.setQueryData(wardQueryKey, context.oldWard);
-            queryClient.setQueryData(shiftQueryKey, context.oldShift);
-            queryClient.setQueryData(requestShiftQueryKey, context.oldReqShift);
-        },
-    });
-    const {mutate: updateShiftTeamMutate} = useMutation({
-        mutationFn: ({
-            wardId,
-            shiftTeamId,
-            updateShiftTeamDTO,
-        }: {
-            wardId: number;
-            shiftTeamId: number;
-            updateShiftTeamDTO: UpdateShiftTeamDTO;
-        }) => WardAPI.updateShiftTeam(wardId, shiftTeamId, updateShiftTeamDTO),
-        onMutate: ({shiftTeamId, updateShiftTeamDTO}) => {
-            const oldWard = queryClient.getQueryData<Ward>(wardQueryKey);
-
-            if (!oldWard) return;
-
-            queryClient.setQueryData<Ward>(
-                wardQueryKey,
-                produce(oldWard, (draft) => {
-                    const shiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!;
-
-                    shiftTeam.name = updateShiftTeamDTO.name;
-                }),
-            );
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-        },
-    });
-    const addNurse = useCallback(
-        (shiftTeamId: number) => {
-            if (wardId) {
-                addNurseMutate({wardId, shiftTeamId});
+                queryClient.setQueryData(wardQueryKey, oldWard);
+                queryClient.setQueryData(shiftQueryKey, oldShift);
+                queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
             }
         },
-        [wardId, addNurseMutate],
-    );
-    const deleteNurse = useCallback(
-        (shiftTeamId: number, nurseId: number) => {
-            if (wardId) {
-                deleteNurseMutate({wardId, nurseId, shiftTeamId});
-            }
-        },
-        [wardId, deleteNurseMutate],
-    );
-    const selectNurse = useCallback(
-        (nurseId: number | null) => {
-            setState('selectedNurseId', nurseId);
-        },
-        [setState],
-    );
-    const updateNurse = useCallback(
-        (nurseId: number, updateNurseDTO: UpdateNurseDTO) => {
-            updateNurseMutate({nurseId, updateNurseDTO});
-        },
-        [updateNurseMutate],
-    );
-    const updateNurseShift = useCallback(
-        (nurseId: number, nurseShiftTypeId: number, change: UpdateNurseShiftTypeRequest) => {
-            updateNurseShiftTypeMutate({nurseId, nurseShiftTypeId, change});
-        },
-        [updateNurseShiftTypeMutate],
-    );
-    const createShiftTeam = useCallback(() => {
-        if (wardId) {
-            createShiftTeamMutate(wardId);
-        }
-    }, [wardId, createShiftTeamMutate]);
-    const deleteShiftTeam = useCallback(
-        (shiftTeamId: number) => {
-            if (wardId) {
-                deleteShiftTeamMutate({wardId, shiftTeamId});
-            }
-        },
-        [wardId, deleteShiftTeamMutate],
-    );
-    const editDivision = useCallback(
-        (shiftTeamId: number, prevPriority: number, changeValue: number, patchYearMonth: string) => {
-            editDivisionMutate({shiftTeamId, prevPriority, changeValue, patchYearMonth});
-        },
-        [editDivisionMutate],
-    );
-    const moveNurseOrder = useCallback(
-        (
-            nurseId: number,
-            shiftTeamId: number,
-            nextShiftTeamId: number,
-            divisionNum: number,
-            prevPriority: number,
-            nextPriority: number,
-            patchYearMonth: string,
-        ) => {
-            moveNurseOrderMutate({
-                nurseId,
-                shiftTeamId,
-                nextShiftTeamId,
-                divisionNum,
-                prevPriority,
-                nextPriority,
-                patchYearMonth,
-            });
-        },
-        [moveNurseOrderMutate],
+        [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey],
     );
     const updateShiftTeam = useCallback(
-        (shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => {
-            if (wardId) {
-                updateShiftTeamMutate({wardId, shiftTeamId, updateShiftTeamDTO});
+        async (shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => {
+            if (!wardId) return;
+
+            const oldWard = queryClient.getQueryData<Ward>(wardQueryKey);
+
+            if (oldWard) {
+                queryClient.setQueryData<Ward>(
+                    wardQueryKey,
+                    produce(oldWard, (draft) => {
+                        const shiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!;
+
+                        shiftTeam.name = updateShiftTeamDTO.name;
+                    }),
+                );
+            }
+
+            try {
+                await WardAPI.updateShiftTeam(wardId, shiftTeamId, updateShiftTeamDTO);
+            } finally {
+                await invalidateWard();
             }
         },
-        [updateShiftTeamMutate, wardId],
+        [invalidateWard, queryClient, wardId, wardQueryKey],
     );
 
     return {

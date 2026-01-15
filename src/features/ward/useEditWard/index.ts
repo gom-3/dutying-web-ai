@@ -1,5 +1,5 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
@@ -24,121 +24,76 @@ const useEditWard = () => {
         ...wardWaitingNursesQueryOptions,
         enabled: !!wardId,
     });
-    const {mutate: updateWardMutate} = useMutation({
-        mutationFn: ({wardId, editWardDTO}: {wardId: number; editWardDTO: EditWardDTO}) => WardAPI.editWard(wardId, editWardDTO),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-        },
-        onError: () => {
-            alert('근무 설정 수정에 실패하였습니다.');
-        },
-    });
-    const {mutate: createShiftTypeMutate} = useMutation({
-        mutationFn: ({wardId, createShiftTypeDTO}: {wardId: number; createShiftTypeDTO: CreateShiftTypeDTO}) =>
-            WardAPI.createShiftType(wardId, createShiftTypeDTO),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-        },
-    });
-    const {mutate: updateShiftTypeMutate} = useMutation({
-        mutationFn: ({
-            wardId,
-            shiftTypeId,
-            createShiftTypeDTO,
-        }: {
-            wardId: number;
-            shiftTypeId: number;
-            createShiftTypeDTO: CreateShiftTypeDTO;
-        }) => WardAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: shiftQueryKey});
-        },
-    });
-    const {mutate: deleteShiftTypeMutate} = useMutation({
-        mutationFn: ({wardId, shiftTypeId}: {wardId: number; shiftTypeId: number}) => WardAPI.deleteShiftType(wardId, shiftTypeId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-        },
-    });
-    const {mutate: approveWatingNursesMutate} = useMutation({
-        mutationFn: ({wardId, waitingNurseId, shiftTeamId}: {wardId: number; waitingNurseId: number; shiftTeamId: number}) =>
-            WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
-        },
-    });
-    const {mutate: connectWatingNursesMutate} = useMutation({
-        mutationFn: ({wardId, waitingNurseId, targetNurseId}: {wardId: number; waitingNurseId: number; targetNurseId: number}) =>
-            WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
-        },
-    });
-    const {mutate: cancelWaitingMutate} = useMutation({
-        mutationFn: ({wardId, nurseId}: {wardId: number; nurseId: number}) => WardAPI.deleteWatingNurses(wardId, nurseId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: wardQueryKey});
-            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
-        },
-    });
     const editWardSetting = useCallback(
-        (editWardDTO: EditWardDTO) => {
-            if (wardId) {
-                updateWardMutate({wardId, editWardDTO});
+        async (editWardDTO: EditWardDTO) => {
+            if (!wardId) return;
+
+            try {
+                await WardAPI.editWard(wardId, editWardDTO);
+                await queryClient.invalidateQueries({queryKey: wardQueryKey});
+            } catch {
+                alert('근무 설정 수정에 실패하였습니다.');
             }
         },
-        [updateWardMutate, wardId],
+        [queryClient, wardId, wardQueryKey],
     );
     const addShiftType = useCallback(
-        (createShiftTypeDTO: CreateShiftTypeDTO) => {
-            if (wardId) {
-                createShiftTypeMutate({wardId, createShiftTypeDTO});
-            }
+        async (createShiftTypeDTO: CreateShiftTypeDTO) => {
+            if (!wardId) return;
+
+            await WardAPI.createShiftType(wardId, createShiftTypeDTO);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
         },
-        [createShiftTypeMutate, wardId],
+        [queryClient, wardId, wardQueryKey],
     );
     const editShiftType = useCallback(
-        (shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) => {
-            if (wardId) {
-                updateShiftTypeMutate({wardId, shiftTypeId, createShiftTypeDTO});
-            }
+        async (shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) => {
+            if (!wardId) return;
+
+            await WardAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
+            await queryClient.invalidateQueries({queryKey: shiftQueryKey});
         },
-        [updateShiftTypeMutate, wardId],
+        [queryClient, shiftQueryKey, wardId, wardQueryKey],
     );
     const removeShiftType = useCallback(
-        (shiftTypeId: number) => {
-            if (wardId) {
-                deleteShiftTypeMutate({wardId, shiftTypeId});
-            }
+        async (shiftTypeId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.deleteShiftType(wardId, shiftTypeId);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
         },
-        [deleteShiftTypeMutate, wardId],
+        [queryClient, wardId, wardQueryKey],
     );
     const approveWatingNurses = useCallback(
-        (waitingNurseId: number, shiftTeamId: number) => {
-            if (wardId) {
-                approveWatingNursesMutate({wardId, waitingNurseId, shiftTeamId});
-            }
+        async (waitingNurseId: number, shiftTeamId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
+            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
-        [approveWatingNursesMutate, wardId],
+        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const connectWatingNurses = useCallback(
-        (waitingNurseId: number, targetNurseId: number) => {
-            if (wardId) {
-                connectWatingNursesMutate({wardId, waitingNurseId, targetNurseId});
-            }
+        async (waitingNurseId: number, targetNurseId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
+            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
-        [connectWatingNursesMutate, wardId],
+        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const cancelWaiting = useCallback(
-        (nurseId: number) => {
-            if (wardId) {
-                cancelWaitingMutate({wardId, nurseId});
-            }
+        async (nurseId: number) => {
+            if (!wardId) return;
+
+            await WardAPI.deleteWatingNurses(wardId, nurseId);
+            await queryClient.invalidateQueries({queryKey: wardQueryKey});
+            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
-        [cancelWaitingMutate, wardId],
+        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
 
     return {

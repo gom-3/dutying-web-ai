@@ -3,15 +3,15 @@
 > 본 문서는 현재 상태를 기준으로 우선순위 작업을 정리한 체크리스트이다.
 
 ## 1. queryOptions 정비
-- [ ] 기존 쿼리 선언 위치 조사 및 목록화
-- [ ] `entities/*/queryOptions`로 이관
-- [ ] query key 네이밍 규칙 확정 및 문서화
-- [ ] 모든 `useQuery`가 queryOptions를 사용하도록 변경
+- [x] 기존 쿼리 선언 위치 조사 및 목록화
+- [x] `entities/*/queryOptions`로 이관
+- [x] query key 네이밍 규칙 확정 및 문서화
+- [x] 모든 `useQuery`가 queryOptions를 사용하도록 변경
 
 ## 2. model hook 정리 (useMutation 미사용 정책 반영)
-- [ ] API 호출을 각 model hook으로 집중
-- [ ] 호출 결과 반환 범위 최소화 (필요 시 콜백 패턴 적용)
-- [ ] side-effect를 useCase 내부에서 조합
+- [x] API 호출을 각 model hook으로 집중
+- [x] 호출 결과 반환 범위 최소화 (필요 시 콜백 패턴 적용)
+- [x] side-effect를 useCase 내부에서 조합
 
 ## 3. 상태관리 구조 확정 (store/useCase)
 - [ ] slice별 store 책임 범위 정의
