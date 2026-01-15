@@ -116,11 +116,13 @@ const useRequestShift = (activeEffect = false) => {
             try {
                 await WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId);
                 setChangeStatus('success');
+                setTimeout(() => setChangeStatus('idle'), 0);
             } catch {
                 if (oldShift) {
                     queryClient.setQueryData(requestShiftQueryKey, oldShift);
                 }
                 setChangeStatus('error');
+                setTimeout(() => setChangeStatus('idle'), 0);
             }
         },
         [queryClient, requestShiftQueryKey, wardId, wardShiftTypeMap, year, month],
@@ -129,9 +131,13 @@ const useRequestShift = (activeEffect = false) => {
         async (reqShiftId: number, isAccepted: boolean | null) => {
             if (!wardId) return;
 
-            await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
-            await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-            await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+            try {
+                await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
+                await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+                await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+            } catch {
+                alert('신청 처리에 실패했습니다.');
+            }
         },
         [dutyRequestQueryKey, queryClient, requestShiftQueryKey, wardId],
     );

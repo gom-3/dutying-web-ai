@@ -23,12 +23,17 @@ const useRegister = () => {
     const navigate = useNavigate();
     const changeAccountStatus = useCallback(
         async ({accountId, status}: {accountId: number; status: Account['status']}) => {
-            const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
+            try {
+                const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
 
-            handleGetAccountMe();
+                handleGetAccountMe();
 
-            if (updatedAccount.status === 'LINKED') {
-                navigate(ROUTE.MAKE);
+                if (updatedAccount.status === 'LINKED') {
+                    navigate(ROUTE.MAKE);
+                }
+            } catch {
+                alert('계정 상태 변경에 실패했습니다.');
+                throw new Error('Failed to change account status.');
             }
         },
         [handleGetAccountMe, navigate],
@@ -112,7 +117,7 @@ const useRegister = () => {
         state: {accountMe, accountWaitingWard},
         actions: {
             registerAccountAndNurse,
-            createWrad: createWard,
+            createWard,
             enterWard,
             cancelWaiting,
         },
