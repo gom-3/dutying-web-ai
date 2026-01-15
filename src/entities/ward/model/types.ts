@@ -1,4 +1,4 @@
-import {type Nurse} from './nurse';
+import type {Nurse} from '@/entities/nurse';
 
 export type Ward = {
     /** 병동 id */

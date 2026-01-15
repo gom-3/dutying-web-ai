@@ -1,5 +1,5 @@
-import type {Shift} from '@/shared/types/shift';
-import type {WardShiftType, WardConstraint, ShiftTeam} from '@/shared/types/ward';
+import type {Shift} from '@/entities/shift';
+import type {WardShiftType, WardConstraint, ShiftTeam} from '@/entities/ward';
 import type {CheckFaultOptions, Faults, Focus} from './faults';
 
 export type ShiftStatus = 'idle' | 'pending' | 'success' | 'error';

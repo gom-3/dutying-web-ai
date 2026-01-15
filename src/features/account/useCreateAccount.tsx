@@ -1,5 +1,5 @@
 import {type JSX, useCallback, useEffect, useState} from 'react';
-import {type Nurse} from '@/shared/types/nurse';
+import {type Nurse} from '@/entities/nurse';
 
 export type Step = {
     name: string;

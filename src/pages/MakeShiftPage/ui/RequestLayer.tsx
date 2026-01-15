@@ -1,5 +1,5 @@
 import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
-import {type WardShiftType} from '@/shared/types/ward';
+import {type WardShiftType} from '@/entities/ward';
 
 interface Props {
     request: WardShiftType;

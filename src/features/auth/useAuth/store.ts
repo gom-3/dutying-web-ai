@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
 import {setAccessToken} from '@/shared/api/client';
-import {type Account} from '@/shared/types/account';
+import {type Account} from '@/entities/account';
 import {type TValues} from '@/shared/types/util';
 
 interface IState {

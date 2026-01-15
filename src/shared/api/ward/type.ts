@@ -1,7 +1,7 @@
-import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
-import {type DutyRequest} from '@/shared/types/request';
-import {type RequestShift, type Shift} from '@/shared/types/shift';
-import {type Ward, type WardConstraint, type WardShiftType, type ShiftTeam} from '@/shared/types/ward';
+import {type WaitingNurse, type Nurse} from '@/entities/nurse';
+import {type DutyRequest} from '@/entities/shift';
+import {type RequestShift, type Shift} from '@/entities/shift';
+import {type Ward, type WardConstraint, type WardShiftType, type ShiftTeam} from '@/entities/ward';
 import {type UpdateNurseDTO} from '../nurse/type';
 
 export interface IWardAPI {

@@ -1,4 +1,4 @@
-import {Switch} from '@/shared/ui/shadcn/switch';
+import {Switch} from '@/shared/ui/primitives/switch';
 import {cn} from '@/shared/util/style';
 
 interface ToggleProps {

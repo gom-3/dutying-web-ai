@@ -1,5 +1,5 @@
 import {Outlet} from 'react-router';
-import NavigationBar from '@/features/NavigationBar';
+import NavigationBar from '@/widgets/navigation-bar';
 
 export const MainLayout = () => {
     return (

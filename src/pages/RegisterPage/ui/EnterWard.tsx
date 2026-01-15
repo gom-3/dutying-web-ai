@@ -7,7 +7,7 @@ import useRegister from '@/features/auth/useRegister';
 import useGetWardByCode from '@/features/ward/useGetWardByCode';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type Ward} from '@/shared/types/ward';
+import {type Ward} from '@/entities/ward';
 
 function EnterWard() {
     const [codeList, setCodeList] = useState<(string | null)[]>([null, null, null, null, null, null]);

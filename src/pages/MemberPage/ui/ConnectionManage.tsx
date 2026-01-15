@@ -3,11 +3,11 @@ import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {twMerge} from 'tailwind-merge';
 import {match} from 'ts-pattern';
-import {ProfileImage} from '@/features/ProfileImage';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import useEditWard from '@/features/ward/useEditWard';
 import {CancelIcon, CheckedIcon, MoreIcon, PersonIcon, SuccessCircleIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
-import {type WaitingNurse} from '@/shared/types/nurse';
+import {type WaitingNurse} from '@/entities/nurse';
 
 interface ConnectionManageProps {
     open: boolean;

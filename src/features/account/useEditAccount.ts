@@ -4,7 +4,7 @@ import useAuth from '@/features/auth/useAuth';
 import useLoadingUseCase from '@/features/ui/useLoading';
 import useEditWard from '@/features/ward/useEditWard';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
-import {type Nurse} from '@/shared/types/nurse';
+import {type Nurse} from '@/entities/nurse';
 
 const useEditAccount = () => {
     const {
