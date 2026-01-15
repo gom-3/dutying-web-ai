@@ -6,7 +6,7 @@ import {events, sendEvent} from '@/analytics';
 import {keydownEventMapper} from '@/features/shift/editDuty/keyboard';
 import {EditDutyStore} from '@/features/shift/editDuty/store';
 import ShiftBadge from '@/features/ShiftBadge';
-import useUIConfig from '@/features/ui/useUIConfig';
+import {useUIConfigStore} from '@/features/ui/useUIConfig/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
 import {useDependency} from '@/shared/hook/use-dependency';
@@ -20,9 +20,8 @@ function ShiftCalendar() {
         state: {shiftTeams},
         actions: {selectNurse, moveNurseOrder, editDivision},
     } = useEditShiftTeam();
-    const {
-        state: {separateWeekendColor, shiftTypeColorStyle},
-    } = useUIConfig();
+    const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
+    const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
     const focusedCellRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const clickAwayRef = useOnclickOutside(() => {
