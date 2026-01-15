@@ -1,4 +1,5 @@
-import {useMutation, useQuery} from '@tanstack/react-query';
+import {useCallback} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
 import {accountQueryOptions} from '@/entities/account/model/queries';
 import useLoading from '@/features/ui/useLoading';
@@ -20,55 +21,63 @@ const useRegister = () => {
     } = useTutorial();
     const {setLoading} = useLoading();
     const navigate = useNavigate();
-    const {mutate: changeAccountStatusMutate} = useMutation({
-        mutationFn: ({accountId, status}: {accountId: number; status: Account['status']}) =>
-            AccountAPI.editAccountStatus(accountId, status),
-        onSuccess: ({status}) => {
+    const changeAccountStatus = useCallback(
+        async ({accountId, status}: {accountId: number; status: Account['status']}) => {
+            const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
+
             handleGetAccountMe();
 
-            if (status === 'LINKED') navigate(ROUTE.MAKE);
-        },
-    });
-    const {mutate: createWardMutate} = useMutation({
-        mutationFn: (createWardDTO: CreateWardDTO) => WardAPI.createWard(createWardDTO),
-        onMutate: () => {
-            setLoading(true);
-        },
-        onSettled: () => {
-            setLoading(false);
-        },
-        onSuccess: () => {
-            initTutorial();
-
-            if (accountMe) {
-                changeAccountStatusMutate({accountId: accountMe.accountId, status: 'LINKED'});
+            if (updatedAccount.status === 'LINKED') {
+                navigate(ROUTE.MAKE);
             }
         },
-    });
-    const {mutate: enterWardMutate} = useMutation({
-        mutationFn: (wardId: number) => WardAPI.addMeToWatingNurses(wardId),
-        onMutate: () => {
+        [handleGetAccountMe, navigate],
+    );
+    const createWard = useCallback(
+        async (createWardDTO: CreateWardDTO) => {
             setLoading(true);
+
+            try {
+                await WardAPI.createWard(createWardDTO);
+                initTutorial();
+
+                if (accountMe) {
+                    await changeAccountStatus({accountId: accountMe.accountId, status: 'LINKED'});
+                }
+            } finally {
+                setLoading(false);
+            }
         },
-        onSettled: () => {
-            setLoading(false);
+        [accountMe, changeAccountStatus, initTutorial, setLoading],
+    );
+    const enterWard = useCallback(
+        async (wardId: number) => {
+            setLoading(true);
+
+            try {
+                await WardAPI.addMeToWatingNurses(wardId);
+
+                if (!accountId) return;
+
+                await changeAccountStatus({accountId, status: 'WARD_ENTRY_PENDING'});
+                navigate(ROUTE.REGISTER);
+            } finally {
+                setLoading(false);
+            }
         },
-        onSuccess: () => {
+        [accountId, changeAccountStatus, navigate, setLoading],
+    );
+    const cancelWaiting = useCallback(
+        async (wardId: number, nurseId: number) => {
+            await WardAPI.deleteWatingNurses(wardId, nurseId);
+
             if (!accountId) return;
 
-            changeAccountStatusMutate({accountId, status: 'WARD_ENTRY_PENDING'});
+            await changeAccountStatus({accountId, status: 'WARD_SELECT_PENDING'});
             navigate(ROUTE.REGISTER);
         },
-    });
-    const {mutate: cancelWaitingMutate} = useMutation({
-        mutationFn: ({wardId, nurseId}: {wardId: number; nurseId: number}) => WardAPI.deleteWatingNurses(wardId, nurseId),
-        onSuccess: () => {
-            if (!accountId) return;
-
-            changeAccountStatusMutate({accountId, status: 'WARD_SELECT_PENDING'});
-            navigate(ROUTE.REGISTER);
-        },
-    });
+        [accountId, changeAccountStatus, navigate],
+    );
     const {data: accountWaitingWard} = useQuery({
         ...accountQueryOptions.waiting(),
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
@@ -80,29 +89,32 @@ const useRegister = () => {
 
         setLoading(true);
 
-        if (accountMe.status === 'NURSE_INFO_PENDING') {
-            // 모바일에서 계정 초기 등록을 이미 마친 경우 계정 정보를 수정한다.
-            await AccountAPI.editAccount({
-                accountId,
-                name: createNurseDTO.name,
-                ...createNurseDTO.profileImg,
-            });
-        } else if (accountMe.status === 'INITIAL') {
-            await AccountAPI.initAccount({accountId, name: createNurseDTO.name, ...createNurseDTO.profileImg});
-        }
+        try {
+            if (accountMe.status === 'NURSE_INFO_PENDING') {
+                // 모바일에서 계정 초기 등록을 이미 마친 경우 계정 정보를 수정한다.
+                await AccountAPI.editAccount({
+                    accountId,
+                    name: createNurseDTO.name,
+                    ...createNurseDTO.profileImg,
+                });
+            } else if (accountMe.status === 'INITIAL') {
+                await AccountAPI.initAccount({accountId, name: createNurseDTO.name, ...createNurseDTO.profileImg});
+            }
 
-        await NurseAPI.createAccountNurse(accountId, createNurseDTO);
-        changeAccountStatusMutate({accountId, status: 'WARD_SELECT_PENDING'});
-        setLoading(false);
+            await NurseAPI.createAccountNurse(accountId, createNurseDTO);
+            await changeAccountStatus({accountId, status: 'WARD_SELECT_PENDING'});
+        } finally {
+            setLoading(false);
+        }
     };
 
     return {
         state: {accountMe, accountWaitingWard},
         actions: {
             registerAccountAndNurse,
-            createWrad: createWardMutate,
-            enterWard: enterWardMutate,
-            cancelWaiting: (wardId: number, nurseId: number) => cancelWaitingMutate({wardId, nurseId}),
+            createWrad: createWard,
+            enterWard,
+            cancelWaiting,
         },
     };
 };
