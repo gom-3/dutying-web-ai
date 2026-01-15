@@ -3,6 +3,7 @@ import {produce} from 'immer';
 import {useCallback, useEffect} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
+import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {moveSelection} from '@/shared/editor/editor-core/selection';
@@ -21,12 +22,16 @@ const useRequestShift = (activeEffect = false) => {
         state: {wardId},
     } = useAuth();
     const queryClient = useQueryClient();
-    const requestShiftQueryKey = ['requestShift', wardId, year, month, currentShiftTeamId];
-    const shiftTeamQueryKey = ['shiftTeams', wardId];
-    const wardConstraintQueryKey = ['wardConstraint', currentShiftTeamId, wardId];
-    const dutyRequestQueryKey = ['dutyRequest', wardId, year, month, currentShiftTeamId];
+    const shiftTeamsQueryOptions = wardQueryOptions.shiftTeams(wardId ?? 0);
+    const requestListQueryOptions = wardQueryOptions.requestList(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
+    const requestShiftQueryOptions = wardQueryOptions.request(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
+    const wardConstraintQueryOptions = wardQueryOptions.constraint(wardId ?? 0, currentShiftTeamId ?? 0);
+    const requestShiftQueryKey = requestShiftQueryOptions.queryKey;
+    const shiftTeamQueryKey = shiftTeamsQueryOptions.queryKey;
+    const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
+    const dutyRequestQueryKey = requestListQueryOptions.queryKey;
     const {data: shiftTeams} = useQuery({
-        queryKey: shiftTeamQueryKey,
+        ...shiftTeamsQueryOptions,
         queryFn: async () => {
             const res = await WardAPI.getShiftTeams(wardId!);
 
@@ -43,12 +48,11 @@ const useRequestShift = (activeEffect = false) => {
         enabled: !!wardId,
     });
     const {data: dutyRequestList} = useQuery({
-        queryKey: dutyRequestQueryKey,
-        queryFn: () => WardAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
+        ...requestListQueryOptions,
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const {data: requestShift, status: shiftStatus} = useQuery({
-        queryKey: requestShiftQueryKey,
+        ...requestShiftQueryOptions,
         queryFn: async () => {
             const res = await WardAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
 
@@ -70,7 +74,7 @@ const useRequestShift = (activeEffect = false) => {
         mutationFn: ({wardId, focus, shiftTypeId}: {wardId: number; focus: Focus; shiftTypeId: number | null}) =>
             WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
         onMutate: async ({focus, shiftTypeId}) => {
-            await queryClient.cancelQueries({queryKey: ['requestShift']});
+            await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
             const {shiftNurseId, day} = focus;
             const oldShift = queryClient.getQueryData<RequestShift>(requestShiftQueryKey);

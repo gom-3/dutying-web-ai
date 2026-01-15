@@ -1,5 +1,6 @@
 import {useMutation, useQuery} from '@tanstack/react-query';
 import {useNavigate} from 'react-router';
+import {accountQueryOptions} from '@/entities/account/model/queries';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
@@ -69,8 +70,7 @@ const useRegister = () => {
         },
     });
     const {data: accountWaitingWard} = useQuery({
-        queryKey: ['accountWaitingWard'],
-        queryFn: () => AccountAPI.getAccountMeWaiting(),
+        ...accountQueryOptions.waiting(),
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
     const registerAccountAndNurse = async (

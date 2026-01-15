@@ -33,6 +33,7 @@ export const wardQueryKeys = {
         year,
         month,
     ],
+    shift: () => [...wardQueryKeys.all(), 'shift'],
     // ShiftTeam
     shiftTeams: (wardId: number) => [...wardQueryKeys.all(), 'shiftTeams', wardId],
     shiftTeamNurses: (wardId: number, shiftTeamId: number) => [...wardQueryKeys.all(), 'shiftTeamNurses', wardId, shiftTeamId],

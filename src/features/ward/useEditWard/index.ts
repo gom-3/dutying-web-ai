@@ -1,5 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
+import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
@@ -9,24 +10,24 @@ const useEditWard = () => {
     const {
         state: {wardId},
     } = useAuth();
-    const getWardQueryKey = ['ward', wardId];
-    const getWardWaitingNursesQueryKey = ['waitingNurses', wardId];
+    const wardQueryKey = wardQueryKeys.id(wardId ?? 0);
+    const wardWaitingNursesQueryKey = wardQueryKeys.waitingNurses(wardId ?? 0);
+    const wardQueryOptionsValue = wardQueryOptions.id(wardId ?? 0);
+    const wardWaitingNursesQueryOptions = wardQueryOptions.waitingNurses(wardId ?? 0);
     const queryClient = useQueryClient();
-    const shiftQueryKey = ['shift'];
+    const shiftQueryKey = wardQueryKeys.shift();
     const {data: ward} = useQuery({
-        queryKey: getWardQueryKey,
-        queryFn: () => WardAPI.getWard(wardId!),
+        ...wardQueryOptionsValue,
         enabled: !!wardId,
     });
     const {data: watingNurses} = useQuery({
-        queryKey: getWardWaitingNursesQueryKey,
-        queryFn: () => WardAPI.getWatingNurses(wardId!),
+        ...wardWaitingNursesQueryOptions,
         enabled: !!wardId,
     });
     const {mutate: updateWardMutate} = useMutation({
         mutationFn: ({wardId, editWardDTO}: {wardId: number; editWardDTO: EditWardDTO}) => WardAPI.editWard(wardId, editWardDTO),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
         },
         onError: () => {
             alert('근무 설정 수정에 실패하였습니다.');
@@ -36,7 +37,7 @@ const useEditWard = () => {
         mutationFn: ({wardId, createShiftTypeDTO}: {wardId: number; createShiftTypeDTO: CreateShiftTypeDTO}) =>
             WardAPI.createShiftType(wardId, createShiftTypeDTO),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
         },
     });
     const {mutate: updateShiftTypeMutate} = useMutation({
@@ -50,37 +51,37 @@ const useEditWard = () => {
             createShiftTypeDTO: CreateShiftTypeDTO;
         }) => WardAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
             queryClient.invalidateQueries({queryKey: shiftQueryKey});
         },
     });
     const {mutate: deleteShiftTypeMutate} = useMutation({
         mutationFn: ({wardId, shiftTypeId}: {wardId: number; shiftTypeId: number}) => WardAPI.deleteShiftType(wardId, shiftTypeId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
         },
     });
     const {mutate: approveWatingNursesMutate} = useMutation({
         mutationFn: ({wardId, waitingNurseId, shiftTeamId}: {wardId: number; waitingNurseId: number; shiftTeamId: number}) =>
             WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
-            queryClient.invalidateQueries({queryKey: getWardWaitingNursesQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
     });
     const {mutate: connectWatingNursesMutate} = useMutation({
         mutationFn: ({wardId, waitingNurseId, targetNurseId}: {wardId: number; waitingNurseId: number; targetNurseId: number}) =>
             WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
-            queryClient.invalidateQueries({queryKey: getWardWaitingNursesQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
     });
     const {mutate: cancelWaitingMutate} = useMutation({
         mutationFn: ({wardId, nurseId}: {wardId: number; nurseId: number}) => WardAPI.deleteWatingNurses(wardId, nurseId),
         onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: getWardQueryKey});
-            queryClient.invalidateQueries({queryKey: getWardWaitingNursesQueryKey});
+            queryClient.invalidateQueries({queryKey: wardQueryKey});
+            queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
     });
     const editWardSetting = useCallback(
@@ -142,8 +143,8 @@ const useEditWard = () => {
 
     return {
         queryKey: {
-            getWardQueryKey,
-            getWardWaitingNursesQueryKey,
+            getWardQueryKey: wardQueryKey,
+            getWardWaitingNursesQueryKey: wardWaitingNursesQueryKey,
         },
         state: {
             ward,
