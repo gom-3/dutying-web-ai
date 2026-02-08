@@ -22,7 +22,6 @@ import {
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
-import {DutyEditorContext} from '../model/provider';
 import SetConstraint from './editWard/set-constraint';
 import SetDesignTheme from './editWard/set-design-theme';
 import SetShiftType from './editWard/set-shift-type';

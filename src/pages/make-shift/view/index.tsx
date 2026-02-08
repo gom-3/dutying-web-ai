@@ -14,27 +14,33 @@ const STEP_INTRO: Record<
     {
         title: string;
         desc: string[];
+        isWideStep: boolean;
     }
 > = {
     1: {
         title: '근무자를 확정해 주세요',
         desc: ['근무표에 포함될 근무자를 확인해 주세요.'],
+        isWideStep: false,
     },
     2: {
         title: '제약 조건을 확정해 주세요',
         desc: ['모든 제약 조건을 적용하기 어려울 수 있어요', '우선순위를 정해 주시면, 더 정확하게 반영해 드릴게요'],
+        isWideStep: false,
     },
     3: {
         title: '신청 근무를 확정해 주세요',
         desc: ['제출된 신청 근무를 확인하고 확정해 주세요.'],
+        isWideStep: true,
     },
     4: {
         title: '고정 근무를 확인해 주세요',
         desc: ['고정 근무를 확인하고 반영해 주세요.'],
+        isWideStep: true,
     },
     5: {
         title: 'AI 자동 채우기를 진행해 주세요',
         desc: ['설정한 조건을 바탕으로 근무표를 자동으로 채워 드릴게요.'],
+        isWideStep: true,
     },
 };
 
@@ -51,7 +57,6 @@ export const MakeShiftPageView = () => {
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
-    const isWideStep = currentStep === 3;
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -83,10 +88,12 @@ export const MakeShiftPageView = () => {
                     <>
                         <MakeShiftStepper currentStep={currentStep} onClickStep={useCase.goToStep} />
 
-                        {isWideStep ? (
+                        {STEP_INTRO[currentStep].isWideStep ? (
                             <div className="flex flex-1 flex-col px-10 pt-[42px] pb-10">
                                 <p className="sr-only">{STEP_LABELS[currentStep]}</p>
-                                <RequestsShifts />
+                                {currentStep === 3 && <RequestsShifts />}
+                                {currentStep === 4 && <FixedShifts />}
+                                {currentStep === 5 && <AiAutofill />}
                             </div>
                         ) : (
                             <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
@@ -131,8 +138,6 @@ export const MakeShiftPageView = () => {
                                     <p className="sr-only">{STEP_LABELS[currentStep]}</p>
                                     {currentStep === 1 && <Workers />}
                                     {currentStep === 2 && <Constraints />}
-                                    {currentStep === 4 && <FixedShifts />}
-                                    {currentStep === 5 && <AiAutofill />}
                                 </div>
                             </div>
                         )}

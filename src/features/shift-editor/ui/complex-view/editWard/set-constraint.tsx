@@ -3,7 +3,6 @@ import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
 import {ArrowDownIcon} from '@/shared/assets/svg';
 import Toggle from '@/shared/ui/Toggle';
-import {DutyEditorContext} from '../../model/provider';
 
 const Select = ({
     value,

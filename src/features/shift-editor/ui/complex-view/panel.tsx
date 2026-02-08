@@ -1,7 +1,6 @@
 import {useContext, useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
-import {DutyEditorContext} from '../model/provider';
 
 function Panel() {
     const deps = useContext(DutyEditorContext);

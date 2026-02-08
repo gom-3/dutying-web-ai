@@ -27,7 +27,7 @@ function ShiftTeamList() {
         state: {showMemberTutorial},
     } = useTutorial();
     const navigate = useNavigate();
-    const clickAwayRef = useOnclickOutside(() => selectNurse(null));
+    const clickAwayListRef = useOnclickOutside(() => selectNurse(null));
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));
     const handleUpdateShiftTeam = () => {
         setEditShiftTeam(null);
@@ -159,11 +159,10 @@ function ShiftTeamList() {
                 </button>
             </div>
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="mb-8 flex items-start gap-10">
+                <div className="mb-8 flex items-start gap-10" ref={clickAwayListRef}>
                     {shiftTeams?.map((shiftTeam) => (
                         <div
                             id="shift_team_list"
-                            ref={clickAwayRef}
                             className="mt-5.5 flex w-75 flex-col rounded-[.9375rem] border-[.0625rem] border-sub-4.5 shadow-banner"
                             key={shiftTeam.shiftTeamId}
                         >

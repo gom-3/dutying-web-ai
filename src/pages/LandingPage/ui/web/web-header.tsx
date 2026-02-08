@@ -26,7 +26,7 @@ const WebHeader = ({focus, handleClickMobileAnchor, handleClickWebAnchor}: IWebH
                     <div className="mr-[3.75rem] ml-auto flex h-10 items-center gap-[2.8125rem] border-r-[.0625rem] border-sub-4 pr-[3.75rem]">
                         <p
                             className={cn(
-                                'cursor-pointer font-apple text-[1.125rem] font-medium underline',
+                                'shrink-0 cursor-pointer font-apple text-[1.125rem] font-medium underline',
                                 focus === 'mobile' ? 'text-main-1' : 'text-sub-2.5',
                             )}
                             onClick={handleClickMobileAnchor}
@@ -34,7 +34,7 @@ const WebHeader = ({focus, handleClickMobileAnchor, handleClickWebAnchor}: IWebH
                             모바일 앱 주요 기능
                         </p>
                         <p
-                            className={`cursor-pointer font-apple text-[1.125rem] font-medium underline ${
+                            className={`shrink-0 cursor-pointer font-apple text-[1.125rem] font-medium underline ${
                                 focus === 'web' ? 'text-main-1' : 'text-sub-2.5'
                             }`}
                             onClick={handleClickWebAnchor}
@@ -46,7 +46,7 @@ const WebHeader = ({focus, handleClickMobileAnchor, handleClickWebAnchor}: IWebH
                         <a
                             href="https://abr.ge/bv13wa"
                             target="_blank"
-                            className="cursor-pointer font-apple text-[1.125rem] font-medium text-sub-2.5 underline"
+                            className="shrink-0 cursor-pointer font-apple text-[1.125rem] font-medium text-sub-2.5 underline"
                             onClick={() => {
                                 sendEvent(events.landingPage.header.download);
                             }}
@@ -57,7 +57,7 @@ const WebHeader = ({focus, handleClickMobileAnchor, handleClickWebAnchor}: IWebH
                         <a
                             href="http://ye620.channel.io"
                             target="_blank"
-                            className="font-apple text-[1.125rem] font-medium text-sub-2.5"
+                            className="shrink-0 font-apple text-[1.125rem] font-medium text-sub-2.5"
                             onClick={() => {
                                 sendEvent(events.landingPage.header.ask);
                             }}
@@ -68,7 +68,7 @@ const WebHeader = ({focus, handleClickMobileAnchor, handleClickWebAnchor}: IWebH
                         {isAuth ? (
                             <button
                                 onClick={() => handleLogout()}
-                                className="cursor-pointer rounded-[1.875rem] border-[.0625rem] border-sub-2.5 px-4 py-[.25rem] font-apple text-[1.125rem] font-medium text-sub-2.5"
+                                className="shrink-0 cursor-pointer rounded-[1.875rem] border-[.0625rem] border-sub-2.5 px-4 py-[.25rem] font-apple text-[1.125rem] font-medium text-sub-2.5"
                             >
                                 {accountMe?.status === 'DEMO' ? '데모 종료하기' : '로그아웃'}
                             </button>
