@@ -156,7 +156,12 @@ export function AiAutofill() {
                         }}
                     >
                         <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col`}>
-                            <ShiftCalendar shift={dutyQuery.data} doc={editorDoc} onCellClick={() => editorRef.current?.focus()} />
+                            <ShiftCalendar
+                                shift={dutyQuery.data}
+                                doc={editorDoc}
+                                onCellClick={() => editorRef.current?.focus()}
+                                disableInitialSelection
+                            />
                             <div
                                 className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-63.75"
                                 style={{

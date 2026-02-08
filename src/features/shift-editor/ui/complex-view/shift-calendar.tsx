@@ -28,6 +28,7 @@ interface IShiftCalendarProps {
     doc: TDutyDoc;
     readonly?: boolean;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
+    disableInitialSelection?: boolean;
     focus?: TFocus | null;
     showLayer?: TLayerFlags;
     faults?: Map<string, TFault>;
@@ -47,6 +48,7 @@ function ShiftCalendar({
     doc,
     readonly = false,
     onCellClick,
+    disableInitialSelection = false,
     focus,
     showLayer,
     faults,
@@ -67,6 +69,7 @@ function ShiftCalendar({
     const selection = useShiftEditorStore((s) => s.selection);
     const focusedCellRef = useRef<HTMLElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const didClearInitialSelection = useRef(false);
     const clickAwayRef = useOnclickOutside(() => {
         if (!clearSelectionOnClickAway) return;
 
@@ -141,6 +144,15 @@ function ShiftCalendar({
         if (focusRect.y - container.offsetTop < 0) window.scroll({top: focusRect.top + window.scrollY - 132});
     }, [effectiveFocus]);
 
+    useEffect(() => {
+        if (!disableInitialSelection || didClearInitialSelection.current) return;
+
+        if (selection?.type === 'single' && selection.anchor.row === 0 && selection.anchor.col === 0) {
+            commands.clearSelection();
+            didClearInitialSelection.current = true;
+        }
+    }, [commands, disableInitialSelection, selection]);
+
     const handleDragEnd = (result: DropResult) => {
         if (!enableDragAndDrop || readonly) return;
 
@@ -162,7 +174,7 @@ function ShiftCalendar({
 
     return (
         <div id="calendar" ref={clickAwayRef} className="flex w-full flex-col overflow-hidden">
-            <div className="z-20 flex items-center gap-5 bg-[#FDFCFE] py-[.75rem] pr-4">
+            <div className="z-20 flex items-center gap-5 py-[.75rem] pr-4">
                 <div className="flex h-7.5 gap-5">
                     <div className="w-13.5 text-center font-apple text-[1rem] font-medium text-sub-3">{/* 구분 */}</div>
                     <div className="w-17.5 text-center font-apple text-[1rem] font-medium text-sub-3">이름</div>

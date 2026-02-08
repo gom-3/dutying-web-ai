@@ -106,9 +106,14 @@ export function FixedShifts() {
                         }}
                     >
                         <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col`}>
-                            <ShiftCalendar shift={dutyQuery.data} doc={editorDoc} onCellClick={() => editorRef.current?.focus()} />
+                            <ShiftCalendar
+                                shift={dutyQuery.data}
+                                doc={editorDoc}
+                                onCellClick={() => editorRef.current?.focus()}
+                                disableInitialSelection
+                            />
                             <div
-                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-63.75"
+                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-white py-5 pl-63.75"
                                 style={{
                                     height: dutyQuery.data
                                         ? `${dutyQuery.data.wardShiftTypes.filter((x) => x.isCounted).length * 2.5 + 2.5}rem`
