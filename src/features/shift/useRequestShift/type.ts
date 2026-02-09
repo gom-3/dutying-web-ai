@@ -1,4 +1,4 @@
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 import {type TWardShiftType} from '@/shared/types/ward';
 
 export type TFocus = {
@@ -11,7 +11,7 @@ export type TDayInfo = {
     countByShiftList: {count: number; shiftType: TWardShiftType}[];
     month: number;
     day: number;
-    nurse: Nurse;
+    nurse: TNurse;
     message: string;
 };
 

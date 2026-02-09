@@ -1,5 +1,5 @@
 import {type JSX, useCallback, useEffect, useState} from 'react';
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 
 export type Step = {
     name: string;
@@ -7,7 +7,7 @@ export type Step = {
     description: JSX.Element | null;
 };
 
-type CreateAccountRequestDTO = Pick<Nurse, 'name' | 'gender' | 'phoneNum' | 'employmentDate' | 'isWorker'>;
+type CreateAccountRequestDTO = Pick<TNurse, 'name' | 'gender' | 'phoneNum' | 'employmentDate' | 'isWorker'>;
 
 const useCreateAccount = () => {
     // 추후 server state로 변경

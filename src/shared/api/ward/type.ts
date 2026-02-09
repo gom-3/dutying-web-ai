@@ -1,8 +1,8 @@
-import {type WaitingNurse, type Nurse} from '@/shared/types/nurse';
+import {type TWaitingNurse, type TNurse} from '@/shared/types/nurse';
 import {type DutyRequest} from '@/shared/types/request';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
 import {type TWard, type TWardConstraint, type TWardShiftType, type TShiftTeam} from '@/shared/types/ward';
-import {type UpdateNurseDTO} from '../nurse/type';
+import {type TUpdateNurseDTO} from '../nurse/type';
 
 export interface IWardAPI {
     // Ward APIs
@@ -10,7 +10,7 @@ export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWard>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraint>;
     getWardByCode: (code: string) => Promise<TWard>;
-    getWatingNurses: (wardId: number) => Promise<WaitingNurse[]>;
+    getWatingNurses: (wardId: number) => Promise<TWaitingNurse[]>;
     // POST
     createWard: (createWardDTO: CreateWardDTO) => Promise<TWard>;
     addMeToWatingNurses: (wardId: number) => Promise<void>;
@@ -52,16 +52,16 @@ export interface IWardAPI {
 
     // ShiftTeam APIs
     // GET
-    getShiftTeamNurses: (wardId: number, shiftTeamId: number) => Promise<Nurse[]>;
+    getShiftTeamNurses: (wardId: number, shiftTeamId: number) => Promise<TNurse[]>;
     getShiftTeams: (wardId: number) => Promise<TShiftTeam[]>;
     // POST
-    addNurseIntoShiftTeam: (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO: UpdateNurseDTO) => Promise<Nurse>;
+    addNurseIntoShiftTeam: (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO: TUpdateNurseDTO) => Promise<TNurse>;
     createShiftTeam: (wardId: number) => Promise<TShiftTeam>;
     buildShiftTeam: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftTeam>;
     // PATCH
     updateShiftTeam: (wardId: number, shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => Promise<TShiftTeam>;
     // DELETE
-    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<Nurse>;
+    removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<TNurse>;
     deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<TShiftTeam>;
 
     // ShiftType APIs

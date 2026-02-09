@@ -1,4 +1,4 @@
-import {type Nurse} from './nurse';
+import {type TNurse} from './nurse';
 
 export type TWard = {
     /** 병동 id */
@@ -69,5 +69,5 @@ export type TShiftTeam = {
     shiftTeamId: number;
     name: string;
     nurseCnt: number;
-    nurses: Nurse[];
+    nurses: TNurse[];
 };

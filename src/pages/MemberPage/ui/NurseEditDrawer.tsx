@@ -3,7 +3,7 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/shared/assets/svg';
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 
@@ -12,10 +12,10 @@ function NurseEditDrawer() {
         state: {shiftTeams, selectedNurse},
         actions: {selectNurse, updateNurse, deleteNurse},
     } = useEditShiftTeam();
-    const [writeNurse, setWriteNurse] = useState<Nurse | null>(null);
+    const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const textInputRef = useRef<HTMLInputElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleChange = (key: keyof Nurse, value: any) => {
+    const handleChange = (key: keyof TNurse, value: any) => {
         if (!writeNurse) return;
 
         setWriteNurse({...writeNurse, [key]: value});
@@ -127,7 +127,7 @@ function NurseEditDrawer() {
                             onClick={() => {
                                 handleChange(
                                     'nurseShiftTypes',
-                                    produce(writeNurse.nurseShiftTypes, (draft: Nurse['nurseShiftTypes']) => {
+                                    produce(writeNurse.nurseShiftTypes, (draft: TNurse['nurseShiftTypes']) => {
                                         draft.find((x) => x.nurseShiftTypeId === nurseShiftTypeId)!.isPossible = !isPossible;
                                     }),
                                 );

@@ -7,7 +7,7 @@ import {ProfileImage} from '@/features/ProfileImage';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import useEditWard from '@/features/ward/useEditWard';
 import {CancelIcon, CheckedIcon, MoreIcon, PersonIcon, SuccessCircleIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
-import {type WaitingNurse} from '@/shared/types/nurse';
+import {type TWaitingNurse} from '@/shared/types/nurse';
 
 interface ConnectionManageProps {
     open: boolean;
@@ -23,7 +23,7 @@ function ConnectionManage({open, setOpen}: ConnectionManageProps) {
         state: {shiftTeams},
     } = useEditShiftTeam();
     const [step, setStep] = useState(0);
-    const [currentWaitingNurse, setCurrentWaitingNurse] = useState<WaitingNurse | null>(null);
+    const [currentWaitingNurse, setCurrentWaitingNurse] = useState<TWaitingNurse | null>(null);
     const [connectMode, setConnectMode] = useState<'link' | 'add'>('link');
     const [toLinkNurseId, setToLinkNurseId] = useState<number | null>(null);
     const [toAddShiftTeamId, setToAddShiftTeamId] = useState<number | null>(null);

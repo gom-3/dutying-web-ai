@@ -34,6 +34,17 @@ export const en: TLocale = {
                     excludeNightBeforeReqOff: {label: 'Avoid night before requested OFF'},
                 },
             },
+            workers: {
+                totalCount: 'Total {{count}}',
+                sortByLevel: 'Sort by level',
+                column: {
+                    name: 'Name',
+                    level: 'Level',
+                    shiftTypes: 'Available shifts',
+                    memo: 'Memo',
+                },
+                dragHandleAria: 'Drag to reorder',
+            },
         },
         refresh: {
             loading: 'Logging in...',

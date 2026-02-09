@@ -3,7 +3,7 @@ import {useNavigate} from 'react-router';
 import useLoading from '@/features/ui/useLoading';
 import useTutorial from '@/features/ui/useTutorial';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
-import {type CreateNurseDTO} from '@/shared/api/nurse/type';
+import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {type CreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
 import {type Account} from '@/shared/types/account';
@@ -74,7 +74,7 @@ const useRegister = () => {
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
     const registerAccountAndNurse = async (
-        createNurseDTO: CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
+        createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
     ) => {
         if (!accountId || !accountMe) return;
 

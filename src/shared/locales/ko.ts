@@ -32,6 +32,17 @@ export const ko = {
                     excludeNightBeforeReqOff: {label: '신청 오프 전날에는 나이트 근무 불가능'},
                 },
             },
+            workers: {
+                totalCount: '총 {{count}}명',
+                sortByLevel: '숙련도 순',
+                column: {
+                    name: '이름',
+                    level: '숙련도',
+                    shiftTypes: '가능 근무',
+                    memo: '비고',
+                },
+                dragHandleAria: '드래그하여 순서 변경',
+            },
         },
         refresh: {
             loading: '로그인중입니다.',

@@ -4,7 +4,7 @@ import useAuth from '@/features/auth/useAuth';
 import useLoading from '@/features/ui/useLoading';
 import useEditWard from '@/features/ward/useEditWard';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 
 const useEditAccount = () => {
     const {
@@ -16,7 +16,7 @@ const useEditAccount = () => {
     } = useEditWard();
     const {setLoading} = useLoading();
     const queryClient = useQueryClient();
-    const handleEditProfile = async (nurse: Nurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
+    const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
         if (!accountMe) return;
 
         try {

@@ -4,7 +4,7 @@ import {createPortal} from 'react-dom';
 import {events, sendEvent} from '@/analytics';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CancelIcon, CheckedIcon, UncheckedIcon2} from '@/shared/assets/svg';
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 
@@ -13,10 +13,10 @@ function NurseEditModal() {
         state: {selectedNurse},
         actions: {selectNurse, updateNurse},
     } = useEditShiftTeam();
-    const [writeNurse, setWriteNurse] = useState<Nurse | null>(null);
+    const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const nameRef = useRef<HTMLInputElement>(null);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleChange = (key: keyof Nurse, value: any) => {
+    const handleChange = (key: keyof TNurse, value: any) => {
         if (!writeNurse) return;
 
         setWriteNurse({...writeNurse, [key]: value});
@@ -128,7 +128,7 @@ function NurseEditModal() {
                                 onClick={() => {
                                     handleChange(
                                         'nurseShiftTypes',
-                                        produce(writeNurse.nurseShiftTypes, (draft: Nurse['nurseShiftTypes']) => {
+                                        produce(writeNurse.nurseShiftTypes, (draft: TNurse['nurseShiftTypes']) => {
                                             draft.find((x) => x.nurseShiftTypeId === nurseShiftTypeId)!.isPossible = !isPossible;
                                         }),
                                     );

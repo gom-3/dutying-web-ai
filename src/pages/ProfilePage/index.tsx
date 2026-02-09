@@ -7,7 +7,7 @@ import {ProfileImage} from '@/features/ProfileImage';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type Nurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/shared/types/nurse';
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
 import TextField from '@/shared/ui/TextField';
@@ -22,9 +22,9 @@ function ProfilePage() {
         actions: {handleLogout},
     } = useAuth();
     const {handleEditProfile, deleteAccount, quitWard} = useEditAccount();
-    const [writeNurse, setWriteNurse] = useState<Nurse | null>(null);
+    const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage();
-    const handleChange = <T extends keyof Nurse>(key: T, value: Nurse[T]) => {
+    const handleChange = <T extends keyof TNurse>(key: T, value: TNurse[T]) => {
         if (!writeNurse) return;
 
         setWriteNurse({...writeNurse, [key]: value});

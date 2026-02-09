@@ -4,7 +4,7 @@ import {useCallback} from 'react';
 import useAuth from '@/features/auth/useAuth';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
-import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
+import {type TUpdateNurseDTO, type T} from '@/shared/api/nurse/type';
 import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {type RequestShift, type Shift} from '@/shared/types/shift';
 import {type TWard} from '@/shared/types/ward';
@@ -27,7 +27,7 @@ const useEditShiftTeam = () => {
         enabled: !!wardId,
     });
     const {mutate: updateNurseMutate} = useMutation({
-        mutationFn: ({nurseId, updateNurseDTO}: {nurseId: number; updateNurseDTO: UpdateNurseDTO}) =>
+        mutationFn: ({nurseId, updateNurseDTO}: {nurseId: number; updateNurseDTO: TUpdateNurseDTO}) =>
             NurseAPI.updateNurse(nurseId, updateNurseDTO),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: getWardQueryKey});
@@ -60,15 +60,8 @@ const useEditShiftTeam = () => {
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: updateNurseShiftTypeMutate} = useMutation({
-        mutationFn: ({
-            nurseId,
-            nurseShiftTypeId,
-            change,
-        }: {
-            nurseId: number;
-            nurseShiftTypeId: number;
-            change: UpdateNurseShiftTypeRequest;
-        }) => NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change),
+        mutationFn: ({nurseId, nurseShiftTypeId, change}: {nurseId: number; nurseShiftTypeId: number; change: T}) =>
+            NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change),
         onSuccess: () => queryClient.invalidateQueries({queryKey: getWardQueryKey}),
     });
     const {mutate: createShiftTeamMutate} = useMutation({
@@ -282,13 +275,13 @@ const useEditShiftTeam = () => {
         [setState],
     );
     const updateNurse = useCallback(
-        (nurseId: number, updateNurseDTO: UpdateNurseDTO) => {
+        (nurseId: number, updateNurseDTO: TUpdateNurseDTO) => {
             updateNurseMutate({nurseId, updateNurseDTO});
         },
         [updateNurseMutate],
     );
     const updateNurseShift = useCallback(
-        (nurseId: number, nurseShiftTypeId: number, change: UpdateNurseShiftTypeRequest) => {
+        (nurseId: number, nurseShiftTypeId: number, change: T) => {
             updateNurseShiftTypeMutate({nurseId, nurseShiftTypeId, change});
         },
         [updateNurseShiftTypeMutate],
