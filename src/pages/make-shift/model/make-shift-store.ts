@@ -6,6 +6,26 @@ export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
 export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
 
+const STEP_STORAGE_KEY = 'make-shift:draft-step';
+
+function persistStep(step: TMakeShiftStep) {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(STEP_STORAGE_KEY, String(step));
+}
+
+export function loadPersistedStep(): TMakeShiftStep | null {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(STEP_STORAGE_KEY);
+    if (!raw) return null;
+    const n = Number(raw);
+    return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
+}
+
+export function clearPersistedStep() {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(STEP_STORAGE_KEY);
+}
+
 export type TMakeShiftStore = {
     // flow
     phase: TFlowPhase;
@@ -23,7 +43,7 @@ export type TMakeShiftStore = {
     shiftExists: boolean;
 
     // actions (no business logic beyond state transitions)
-    startFromStep1: (opts: {openRestoreDraftModal: boolean}) => void;
+    startFromStep: (opts: {step: TMakeShiftStep; openRestoreDraftModal: boolean}) => void;
     closeRestoreDraftModal: () => void;
     resetToOverview: () => void;
 
@@ -55,12 +75,13 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         shiftStatus: 'idle',
         shiftExists: false,
 
-        startFromStep1: ({openRestoreDraftModal}) => {
+        startFromStep: ({step, openRestoreDraftModal}) => {
             set(() => ({
                 phase: 'stepping',
-                currentStep: 1,
+                currentStep: step,
                 restoreDraftModalOpen: openRestoreDraftModal,
             }));
+            persistStep(step);
         },
         closeRestoreDraftModal: () => set(() => ({restoreDraftModalOpen: false})),
         resetToOverview: () =>
@@ -77,7 +98,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (currentStep <= 1) return;
 
-            set(() => ({currentStep: (currentStep - 1) as TMakeShiftStep}));
+            const nextStep = (currentStep - 1) as TMakeShiftStep;
+            set(() => ({currentStep: nextStep}));
+            persistStep(nextStep);
         },
         goNext: () => {
             const {phase, currentStep} = get();
@@ -86,7 +109,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (currentStep >= 5) return;
 
-            set(() => ({currentStep: (currentStep + 1) as TMakeShiftStep}));
+            const nextStep = (currentStep + 1) as TMakeShiftStep;
+            set(() => ({currentStep: nextStep}));
+            persistStep(nextStep);
         },
         goToStep: (step) => {
             const {phase, currentStep} = get();
@@ -96,6 +121,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             if (step > currentStep) return; // 선형 정책
 
             set(() => ({currentStep: step}));
+            persistStep(step);
         },
 
         setYearMonth: ({year, month}) =>

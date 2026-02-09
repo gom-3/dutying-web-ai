@@ -1,10 +1,17 @@
 import {useCallback} from 'react';
 import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
-import {canGoNext, canGoPrev, useMakeShiftStore, type TMakeShiftStep} from './make-shift-store';
+import {
+    canGoNext,
+    canGoPrev,
+    clearPersistedStep,
+    loadPersistedStep,
+    useMakeShiftStore,
+    type TMakeShiftStep,
+} from './make-shift-store';
 
 export function useMakeShiftUseCase() {
     const editor = useShiftEditorCommands();
-    const startFromStep1 = useMakeShiftStore((s) => s.startFromStep1);
+    const startFromStep = useMakeShiftStore((s) => s.startFromStep);
     const closeRestoreDraftModal = useMakeShiftStore((s) => s.closeRestoreDraftModal);
     const resetToOverview = useMakeShiftStore((s) => s.resetToOverview);
     const goPrev = useMakeShiftStore((s) => s.goPrev);
@@ -12,9 +19,10 @@ export function useMakeShiftUseCase() {
     const goToStep = useMakeShiftStore((s) => s.goToStep);
     const start = useCallback(() => {
         const persisted = editor.getPersisted();
+        const savedStep = loadPersistedStep();
 
-        startFromStep1({openRestoreDraftModal: persisted !== null});
-    }, [editor, startFromStep1]);
+        startFromStep({step: persisted ? (savedStep ?? 1) : 1, openRestoreDraftModal: persisted !== null});
+    }, [editor, startFromStep]);
     const confirmRestoreDraft = useCallback(() => {
         const persisted = editor.getPersisted();
 
@@ -24,10 +32,13 @@ export function useMakeShiftUseCase() {
     }, [closeRestoreDraftModal, editor]);
     const declineRestoreDraft = useCallback(() => {
         editor.discardPersisted();
+        clearPersistedStep();
+        goToStep(1);
         closeRestoreDraftModal();
-    }, [closeRestoreDraftModal, editor]);
+    }, [closeRestoreDraftModal, editor, goToStep]);
     const complete = useCallback(() => {
         editor.discardPersisted();
+        clearPersistedStep();
         resetToOverview();
     }, [editor, resetToOverview]);
     const prev = useCallback(() => {

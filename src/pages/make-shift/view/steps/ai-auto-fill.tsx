@@ -5,9 +5,12 @@ import useAuth from '@/features/auth/useAuth';
 import {type TDutyDoc, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
+import WardAPI from '@/shared/api/ward';
 import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
+import {generateMockAiSchedule} from '../../model/ai-schedule-mock';
 import {useMakeShiftStore} from '../../model/make-shift-store';
-import {buildWorkKeyMap, shiftToDoc} from '../../model/shift-editor-adapter';
+import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from '../../model/shift-editor-adapter';
 
 function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;
@@ -37,14 +40,36 @@ export function AiAutofill() {
     });
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const commands = useShiftEditorCommands();
+    const useCase = useMakeShiftUseCase();
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
     const editorRef = useRef<HTMLDivElement>(null);
     const [autoFillEnabled, setAutoFillEnabled] = useState(false);
     const [showFaults, setShowFaults] = useState(true);
-    const [isWorking] = useState(false);
+    const [isWorking, setIsWorking] = useState(false);
     const savingLabel = isWorking ? '저장 중' : '저장 완료';
     const SavingStatusIcon = isWorking ? SavingIcon : SaveCompleteIcon;
+    const handleConfirm = async () => {
+        if (!wardId || !dutyQuery.data) return;
+
+        setIsWorking(true);
+
+        try {
+            const dto = docToWardShiftsDTO(editorDoc, dutyQuery.data);
+
+            await WardAPI.updateShifts(wardId, dto);
+            useCase.complete();
+        } catch {
+            alert('저장에 실패했습니다.');
+        } finally {
+            setIsWorking(false);
+        }
+    };
+    const handleAiFill = () => {
+        const response = generateMockAiSchedule(editorDoc);
+
+        commands.applySchedule(response.schedule, 'ai');
+    };
 
     useEffect(() => {
         if (!dutyQuery.data) return;
@@ -62,9 +87,9 @@ export function AiAutofill() {
     }, [commands, dutyQuery.data, month, year]);
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
             <div className="flex flex-wrap items-start justify-between gap-6">
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex shrink-0 items-center gap-3">
                     <h1 className="font-apple text-[32px] font-semibold text-sub-1">AI가 채운 근무표를 수정해 보세요</h1>
                     <div className="flex items-center gap-4">
                         <button
@@ -90,46 +115,32 @@ export function AiAutofill() {
                             </div>
                             잘못된 근무 {showFaults ? 'ON' : 'OFF'}
                         </button>
-                        <button
-                            type="button"
-                            aria-label="잘못된 근무 안내"
-                            className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#BFC7D4] bg-white"
-                        >
-                            <InfoIcon className="h-4 w-4 text-sub-2.5" />
-                        </button>
+                        <InfoIcon className="h-[26px] w-[26px] text-sub-2.5" />
                     </div>
                     <div className="flex items-center gap-1 text-[12px] text-sub-2.5">
                         <SavingStatusIcon className="h-5 w-5" />
                         <span className="font-apple">{savingLabel}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            aria-label="이전"
-                            className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#BFC7D4] bg-white"
-                        >
-                            <HistoryBackIcon className="h-4 w-4 text-sub-2.5" />
+                        <button onClick={() => commands.undo()} type="button">
+                            <HistoryBackIcon className="h-[26px] w-[26px] text-sub-2.5" />
                         </button>
-                        <button
-                            type="button"
-                            aria-label="다음"
-                            className="flex h-[26px] w-[26px] items-center justify-center rounded-full border border-[#BFC7D4] bg-white"
-                        >
-                            <HistoryNextIcon className="h-4 w-4 text-sub-2.5" />
+                        <button onClick={() => commands.redo()} type="button">
+                            <HistoryNextIcon className="h-[26px] w-[26px] text-sub-2.5" />
                         </button>
                     </div>
                     <button
-                        className="ml-2 flex h-[42px] items-center gap-[6px] rounded-[10px] px-[20px] py-[8px] font-apple text-[24px] font-semibold text-white"
+                        className="ml-2 flex h-[42px] w-[208px] items-center justify-center gap-[6px] rounded-[10px] font-apple text-[24px] font-semibold text-white"
                         style={{backgroundImage: 'linear-gradient(105deg, #B53DFA 0%, #663DFA 100%)'}}
-                        onClick={() => alert('준비 중인 기능입니다')}
+                        onClick={handleAiFill}
                         type="button"
                     >
                         <PlusIcon className="h-6 w-6 stroke-white" />
                         AI 다시 채우기
                     </button>
                     <button
-                        className="h-[42px] rounded-[10px] bg-[#0A0F15] px-[20px] py-[8px] font-apple text-[24px] font-semibold text-white"
-                        onClick={() => alert('준비 중인 기능입니다')}
+                        className="flex h-[42px] items-center rounded-[10px] bg-[#0A0F15] px-[20px] py-[8px] font-apple text-[24px] font-semibold text-white"
+                        onClick={handleConfirm}
                         type="button"
                     >
                         확정하기
@@ -155,7 +166,7 @@ export function AiAutofill() {
                             editorRef.current?.focus();
                         }}
                     >
-                        <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col`}>
+                        <div className={`mx-auto flex w-fit min-w-418.5 flex-col`}>
                             <ShiftCalendar
                                 shift={dutyQuery.data}
                                 doc={editorDoc}

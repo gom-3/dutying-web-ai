@@ -60,11 +60,10 @@ export function FixedShifts() {
     }, [commands, dutyQuery.data, month, year]);
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
             <div className="flex flex-wrap items-start justify-between gap-6">
                 <div>
                     <p className="font-apple text-[32px] font-semibold text-sub-1">고정할 근무를 선택해 주세요</p>
-                    <p className="mt-2 font-apple text-xl font-medium text-gray-3">고정 근무를 확인하고 반영해 주세요.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -105,7 +104,7 @@ export function FixedShifts() {
                             editorRef.current?.focus();
                         }}
                     >
-                        <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col`}>
+                        <div className={`mx-auto flex w-fit min-w-418.5 flex-col`}>
                             <ShiftCalendar
                                 shift={dutyQuery.data}
                                 doc={editorDoc}

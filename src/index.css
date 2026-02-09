@@ -19,7 +19,7 @@
         min-width: 1440px;
     }
 
-    body::-webkit-scrollbar {
+    ::-webkit-scrollbar {
         display: none;
     }
 

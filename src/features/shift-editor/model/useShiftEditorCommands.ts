@@ -215,6 +215,45 @@ export function useShiftEditorCommands() {
         setCells: cmdSetCells,
         setSelectionValue: cmdSetSelectionValue,
         clearSelectionCells: (source?: TTxSource) => cmdSetSelectionValue(null, source),
+        applySchedule: (schedule: Record<string, TCellValue[]>, source: TTxSource = 'ai') => {
+            const {doc, history, dutyValidationInput, selection} = getState();
+            const changed: TSetCellsOp['cells'] = [];
+
+            for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
+                const row = doc.rows[rowIdx];
+                if (!row) continue;
+                const values = schedule[row.workerId];
+
+                if (!values) continue;
+
+                for (let col = 0; col < Math.min(values.length, doc.columns.length); col += 1) {
+                    const prev = row.cells[col] ?? null;
+                    const next = values[col] ?? null;
+
+                    if (prev === next) continue;
+
+                    changed.push({row: rowIdx, col, prev, next});
+                }
+            }
+
+            if (changed.length === 0) return;
+
+            const tx: TTransaction<TOperation> = {
+                ops: [{kind: 'setCells', cells: changed}],
+                source,
+                timestamp: Date.now(),
+            };
+            const inverseOps = invertOps(tx.ops);
+            const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+            const nextHistory = pushHistory(history, entry);
+
+            setDoc(nextDoc);
+            setHistory(nextHistory);
+            setViolations(computeViolations(nextDoc, dutyValidationInput));
+
+            persistDoc(nextDoc, nextHistory);
+        },
         reorderRowsByName: (source: TTxSource = 'user') => {
             const {doc, history, dutyValidationInput, selection} = getState();
 
