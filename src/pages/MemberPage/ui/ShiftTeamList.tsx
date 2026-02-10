@@ -1,6 +1,6 @@
 import {groupBy} from 'lodash-es';
 import {useCallback, useEffect, useState} from 'react';
-import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
+import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';

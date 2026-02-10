@@ -1,5 +1,5 @@
 import {type RefObject, useEffect, useRef} from 'react';
-import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
+import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';

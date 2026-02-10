@@ -5,14 +5,6 @@ import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-st
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';
 
-function StatusPill({label, count}: {label: string; count: number}) {
-    return (
-        <span className="rounded-full bg-main-light px-3 py-1 font-apple text-sm font-medium text-main-1">
-            {label} {count}개
-        </span>
-    );
-}
-
 export function RequestsShifts() {
     const useCase = useMakeShiftUseCase();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
@@ -29,13 +21,15 @@ export function RequestsShifts() {
     return (
         <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex flex-wrap items-start justify-between gap-6">
-                <div>
+                <div className="flex items-baseline gap-[20px]">
                     <p className="font-apple text-[32px] font-semibold text-sub-1">신청 근무를 확정해 주세요</p>
-                    <p className="mt-2 font-apple text-xl font-medium text-gray-3">제출된 신청 근무를 확인하고 확정해 주세요.</p>
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                    <p className="font-apple text-xl font-medium text-gray-3">
+                        반영된 스케줄은 <span className="text-main-1">근무표에 고정</span>됩니다.
+                    </p>
+                    {/* <div className="mt-4 flex flex-wrap items-center gap-2">
                         <StatusPill label="반영된 신청 근무" count={appliedRequests.length} />
                         <StatusPill label="반영 대기 신청" count={pendingRequests.length} />
-                    </div>
+                    </div> */}
                 </div>
 
                 <div className="flex items-center gap-3">

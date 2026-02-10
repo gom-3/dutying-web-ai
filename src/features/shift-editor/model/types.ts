@@ -64,6 +64,7 @@ export type TTransaction<Op> = {
 
 export type TViolation = {
     ruleId: string;
+    message: string;
     cells: TCellPos[];
     level: 'warning' | 'error';
 };

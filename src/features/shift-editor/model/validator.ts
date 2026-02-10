@@ -1,4 +1,12 @@
-import {type TDutyDoc, type TValidator, type TDutyValidationInput, type TViolation, type TCellPos, type TDutyRuleKey} from './types';
+import {
+    type TDutyDoc,
+    type TValidator,
+    type TDutyValidationInput,
+    type TViolation,
+    type TCellPos,
+    type TDutyRuleKey,
+    type TDutyRuleLevel,
+} from './types';
 
 export type TDutyRuleDefinition = {
     key: TDutyRuleKey;
@@ -41,6 +49,7 @@ export function createDutyValidator(input: TDutyValidationInput): TValidator<TDu
 
                     violations.push({
                         ruleId: `duty.${opt.key}`,
+                        message: opt.message,
                         level: opt.level,
                         cells,
                     });
@@ -143,4 +152,41 @@ function rangeToCells(row: number, startCol: number, endCol: number, colCount: n
     }
 
     return cells;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Violation[] → Map 변환                                             */
+/* ------------------------------------------------------------------ */
+
+const LEVEL_PRIORITY: Record<TDutyRuleLevel, number> = {error: 1, warning: 0};
+
+/**
+ * store의 `TViolation[]`을 ShiftCalendar가 기대하는
+ * `Map<string, TViolation>` (key: `${workerId},${col}`)으로 변환한다.
+ *
+ * ViolationLayer가 시작 셀에서 cells.length만큼 가로로 확장되므로,
+ * 각 violation의 **첫 번째 셀(시작 위치)**에만 엔트리를 생성한다.
+ * 같은 시작 셀에 여러 violation이 겹칠 경우 severity가 높은 것(error > warning)을 우선한다.
+ */
+export function buildViolationMap(violations: TViolation[], doc: TDutyDoc): Map<string, TViolation> {
+    const map = new Map<string, TViolation>();
+
+    for (const v of violations) {
+        const startCell = v.cells[0];
+
+        if (!startCell) continue;
+
+        const workerId = doc.rows[startCell.row]?.workerId;
+
+        if (!workerId) continue;
+
+        const key = `${workerId},${startCell.col}`;
+        const existing = map.get(key);
+
+        if (!existing || LEVEL_PRIORITY[v.level] > LEVEL_PRIORITY[existing.level]) {
+            map.set(key, v);
+        }
+    }
+
+    return map;
 }

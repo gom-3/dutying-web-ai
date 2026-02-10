@@ -31,7 +31,7 @@ const dependencies = {
     'lodash-es': 'lodash-es',
     qs: 'qs',
     react: 'react',
-    'react-beautiful-dnd': 'react-beautiful-dnd',
+    '@hello-pangea/dnd': '@hello-pangea/dnd',
     'react-cool-onclickoutside': 'react-cool-onclickoutside',
     'react-dom': 'react-dom',
     'react-draggable': 'react-draggable',

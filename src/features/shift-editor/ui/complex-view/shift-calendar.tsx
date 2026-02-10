@@ -1,5 +1,5 @@
 import {type ComponentProps, type RefObject, useEffect, useMemo, useRef} from 'react';
-import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
+import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {type TDutyDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
@@ -8,12 +8,12 @@ import useUIConfig from '@/features/ui/useUIConfig';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
 import {type Shift} from '@/shared/types/shift';
 import {type TWardShiftType} from '@/shared/types/ward';
-import FaultLayer from './fault-layer';
 import RequestLayer from './request-layer';
+import ViolationLayer from './violation-layer';
 
 type TFocus = {shiftNurseId: number; day: number};
 type TLayerFlags = {fault: boolean; check: boolean; slash: boolean};
-type TFault = ComponentProps<typeof FaultLayer>['fault'];
+type TViolationItem = ComponentProps<typeof ViolationLayer>['violation'];
 
 function getWeekendCellBg(dayType: Shift['days'][number]['dayType'], separateWeekendColor: boolean): string {
     if (dayType === 'sunday' || dayType === 'holiday') return 'bg-[#FFE1E680]';
@@ -31,7 +31,7 @@ interface IShiftCalendarProps {
     disableInitialSelection?: boolean;
     focus?: TFocus | null;
     showLayer?: TLayerFlags;
-    faults?: Map<string, TFault>;
+    violations?: Map<string, TViolationItem>;
     foldedLevels?: boolean[];
     onToggleFoldLevel?: (level: number) => void;
     onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
@@ -51,7 +51,7 @@ function ShiftCalendar({
     disableInitialSelection = false,
     focus,
     showLayer,
-    faults,
+    violations,
     foldedLevels,
     onToggleFoldLevel,
     onUpdateCarry,
@@ -320,13 +320,15 @@ function ShiftCalendar({
                                                                 {...provided.draggableProps}
                                                                 {...provided.dragHandleProps}
                                                             >
-                                                                <div className="relative w-8.5 shrink-0">
-                                                                    {!readonly && enableDragAndDrop && (
+                                                                {!readonly && enableDragAndDrop ? (
+                                                                    <div className="relative w-8.5 shrink-0">
                                                                         <DragIcon className="absolute top-[50%] -right-2.5 h-6 w-6 translate-y-[-50%]" />
-                                                                    )}
-                                                                </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div />
+                                                                )}
                                                                 <div
-                                                                    className="w-17.5 shrink-0 cursor-pointer truncate text-center font-apple text-[1.25rem] text-sub-1 hover:underline"
+                                                                    className="w-17.5 shrink-0 truncate text-center font-apple text-[1.25rem] text-sub-1"
                                                                     onClick={() => {
                                                                         onSelectNurse?.(row.shiftNurse.nurseId);
                                                                     }}
@@ -391,7 +393,9 @@ function ShiftCalendar({
                                                                             !readonly && (isSelected || isInRange)
                                                                                 ? 'outline-[.125rem] outline-main-1'
                                                                                 : undefined;
-                                                                        const fault = faults?.get(`${row.shiftNurse.shiftNurseId},${j}`);
+                                                                        const violation = violations?.get(
+                                                                            `${row.shiftNurse.shiftNurseId},${j}`,
+                                                                        );
 
                                                                         return (
                                                                             <div
@@ -401,8 +405,8 @@ function ShiftCalendar({
                                                                                 } ${effectiveFocus?.day === j ? 'bg-main-4' : ''}`}
                                                                                 onClick={() => handleCellClick(docRowIndex, j)}
                                                                             >
-                                                                                {!readonly && layerFlags.fault && fault && (
-                                                                                    <FaultLayer fault={fault} />
+                                                                                {!readonly && layerFlags.fault && violation && (
+                                                                                    <ViolationLayer violation={violation} />
                                                                                 )}
                                                                                 {!readonly && request !== null && shiftType && (
                                                                                     <RequestLayer

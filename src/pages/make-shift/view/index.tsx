@@ -2,7 +2,6 @@ import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepper, STEP_LABELS} from './make-shift-stepper';
-import {RestoreDraftModal} from './restore-draft-modal';
 import {AiAutofill} from './steps/ai-auto-fill';
 import {Constraints} from './steps/constraints';
 import {FixedShifts} from './steps/fixed-shifts';
@@ -144,8 +143,6 @@ export const MakeShiftPageView = () => {
                     </>
                 )}
             </div>
-
-            <RestoreDraftModal />
         </div>
     );
 };

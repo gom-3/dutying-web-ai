@@ -1,27 +1,20 @@
 import React from 'react';
-import {type Fault} from '@/features/shift/editDuty/model/utils/faults';
 import {FaultDotIcon} from '@/shared/assets/svg';
+import {type TViolation} from '../../model';
 
-interface Props {
-    fault: Fault;
+interface IViolationLayerProps {
+    violation: TViolation;
     children?: React.ReactNode;
 }
 
-function FaultLayer({fault, children}: Props) {
+function ViolationLayer({violation, children}: IViolationLayerProps) {
     return (
         <>
             <div
                 style={{
-                    width: `calc(2.125rem + 2.25rem * ${fault.length - 1})`,
+                    width: `calc(2.125rem + 2.25rem * ${violation.cells.length - 1})`,
                 }}
                 className={`group absolute left-[.0625rem] z-10 h-8.5 rounded-[.5625rem] border-[.125rem] border-[#FF0000] bg-[#ff000033]`}
-                // className={`group absolute left-[.0625rem] z-10 h-8.5 rounded-[.5625rem] border-[.125rem]
-                //   ${
-                //     fault.type === 'wrong'
-                //       ? 'border-[#FF0000] bg-[#ff000033]'
-                //       : 'border-[#F88600] bg-[#f8860033]'
-                //   }
-                // `}
             >
                 <FaultDotIcon className="absolute top-[-0.85rem] right-0 h-[.75rem] w-[.75rem]" />
                 {children}
@@ -36,10 +29,10 @@ function FaultLayer({fault, children}: Props) {
                         borderBottom: '.625rem solid white',
                     }}
                 />
-                {fault.message}
+                {violation.message}
             </div>
         </>
     );
 }
 
-export default FaultLayer;
+export default ViolationLayer;

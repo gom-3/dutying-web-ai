@@ -1,7 +1,7 @@
+import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
-import {DragDropContext, Draggable, Droppable, type DropResult} from 'react-beautiful-dnd';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {SixDotsIcon} from '@/shared/assets/svg';
@@ -18,7 +18,6 @@ const LEVEL_STYLE: Record<TLevel, {bg: string; text: string}> = {
     2: {bg: '#ffe195', text: '#de914b'},
     1: {bg: '#fff0b0', text: '#daab4c'},
 };
-
 const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     D: {bg: '#4dc2ad', text: '#ffffff'},
     E: {bg: '#ff8ba5', text: '#ffffff'},
@@ -105,17 +104,16 @@ export function Workers() {
             return next;
         });
     };
-
     const sortByLevel = () => {
-        setOrderedWorkers((prev) =>
-            prev.slice().sort((a, b) => getMockLevel(b.nurseId) - getMockLevel(a.nurseId)),
-        );
+        setOrderedWorkers((prev) => prev.slice().sort((a, b) => getMockLevel(b.nurseId) - getMockLevel(a.nurseId)));
     };
 
     return (
         <div className="rounded-[15px] bg-gray-7 p-[30px]">
             <div className="flex items-center justify-between">
-                <p className="font-apple text-[20px] font-semibold text-gray-2">{t('page.makeShift.workers.totalCount', {count: totalCount})}</p>
+                <p className="text-gray-2 font-apple text-[20px] font-semibold">
+                    {t('page.makeShift.workers.totalCount', {count: totalCount})}
+                </p>
                 <button
                     type="button"
                     className="flex items-center gap-1 rounded-[5px] px-2 py-1 font-apple text-base font-medium text-gray-3 hover:bg-white"
@@ -129,9 +127,9 @@ export function Workers() {
             <div className="mt-3 grid grid-cols-[24px_140px_80px_200px_1fr] items-center gap-6 px-3 text-[16px] text-gray-3">
                 <div />
                 <p className="font-apple">{t('page.makeShift.workers.column.name')}</p>
-                <p className="font-apple text-center">{t('page.makeShift.workers.column.level')}</p>
-                <p className="font-apple text-center">{t('page.makeShift.workers.column.shiftTypes')}</p>
-                <p className="font-apple text-center">{t('page.makeShift.workers.column.memo')}</p>
+                <p className="text-center font-apple">{t('page.makeShift.workers.column.level')}</p>
+                <p className="text-center font-apple">{t('page.makeShift.workers.column.shiftTypes')}</p>
+                <p className="text-center font-apple">{t('page.makeShift.workers.column.memo')}</p>
             </div>
 
             <DragDropContext onDragEnd={onDragEnd}>
@@ -165,7 +163,9 @@ export function Workers() {
                                                 </div>
                                                 <div className="flex items-center justify-center gap-1">
                                                     {shiftCodes.length > 0 ? (
-                                                        shiftCodes.map((code) => <ShiftTypeBadge key={`${nurse.nurseId}-${code}`} code={code} />)
+                                                        shiftCodes.map((code) => (
+                                                            <ShiftTypeBadge key={`${nurse.nurseId}-${code}`} code={code} />
+                                                        ))
                                                     ) : (
                                                         <span className="font-apple text-sm text-gray-4">-</span>
                                                     )}

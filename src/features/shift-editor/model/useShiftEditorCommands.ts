@@ -16,7 +16,7 @@ import type {
     THistoryState,
     TOperation,
     TPersisted,
-    TSelection,
+    TSetCellsOp,
     TTransaction,
     TTxSource,
     TViolation,
@@ -25,12 +25,6 @@ import {createDutyValidator} from './validator';
 
 const DEFAULT_STORAGE_KEY = 'shift-editor:draft';
 const persistence = createShiftEditorPersistence({storageKey: DEFAULT_STORAGE_KEY, saveDebounceMs: 400});
-
-function computeSelectionInit(doc: TDutyDoc): TSelection | null {
-    if (doc.rows.length === 0 || doc.columns.length === 0) return null;
-
-    return {type: 'single', anchor: {row: 0, col: 0}};
-}
 
 function computeViolations(doc: TDutyDoc, input: TDutyValidationInput | null): TViolation[] {
     if (!input) return [];
@@ -118,13 +112,18 @@ export function useShiftEditorCommands() {
 
     return {
         init: (doc: TDutyDoc, opts?: {maxHistoryDepth?: number}) => {
+            const {dutyValidationInput, dutyRuleBoard} = getState();
+
             reset(opts);
 
-            const {dutyValidationInput, history} = getState();
+            setDutyValidationInput(dutyValidationInput);
+            setDutyRuleBoard(dutyRuleBoard);
+
+            const {history} = getState();
             const nextHistory: THistoryState = {...history, past: [], future: [], maxDepth: opts?.maxHistoryDepth ?? history.maxDepth};
 
             setDoc(doc);
-            setSelection(computeSelectionInit(doc));
+            setSelection(null);
             setHistory(nextHistory);
             setViolations(computeViolations(doc, dutyValidationInput));
 
@@ -145,7 +144,7 @@ export function useShiftEditorCommands() {
             const appliedHistory = nextHistory ?? currentHistory;
 
             setDoc(persisted.doc);
-            setSelection(computeSelectionInit(persisted.doc));
+            setSelection(null);
             setHistory(appliedHistory);
             setViolations(computeViolations(persisted.doc, dutyValidationInput));
         },
@@ -221,7 +220,9 @@ export function useShiftEditorCommands() {
 
             for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
                 const row = doc.rows[rowIdx];
+
                 if (!row) continue;
+
                 const values = schedule[row.workerId];
 
                 if (!values) continue;

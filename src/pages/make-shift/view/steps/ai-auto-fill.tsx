@@ -2,7 +2,13 @@ import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
-import {type TDutyDoc, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
+import {
+    type TDutyDoc,
+    useShiftEditorCommands,
+    useShiftEditorKeyBindings,
+    useShiftEditorStore,
+    buildViolationMap,
+} from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import WardAPI from '@/shared/api/ward';
@@ -39,6 +45,7 @@ export function AiAutofill() {
         enabled,
     });
     const editorDoc = useShiftEditorStore((s) => s.doc);
+    const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
     const useCase = useMakeShiftUseCase();
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
@@ -46,6 +53,7 @@ export function AiAutofill() {
     const editorRef = useRef<HTMLDivElement>(null);
     const [autoFillEnabled, setAutoFillEnabled] = useState(false);
     const [showFaults, setShowFaults] = useState(true);
+    const violationMap = useMemo(() => buildViolationMap(violations, editorDoc), [violations, editorDoc]);
     const [isWorking, setIsWorking] = useState(false);
     const savingLabel = isWorking ? '저장 중' : '저장 완료';
     const SavingStatusIcon = isWorking ? SavingIcon : SaveCompleteIcon;
@@ -172,9 +180,11 @@ export function AiAutofill() {
                                 doc={editorDoc}
                                 onCellClick={() => editorRef.current?.focus()}
                                 disableInitialSelection
+                                violations={violationMap}
+                                showLayer={{fault: showFaults, check: false, slash: false}}
                             />
                             <div
-                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-63.75"
+                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-55.25"
                                 style={{
                                     height: dutyQuery.data
                                         ? `${dutyQuery.data.wardShiftTypes.filter((x) => x.isCounted).length * 2.5 + 2.5}rem`

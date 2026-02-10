@@ -2,7 +2,13 @@ import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
-import {type TDutyDoc, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
+import {
+    buildViolationMap,
+    type TDutyDoc,
+    useShiftEditorCommands,
+    useShiftEditorKeyBindings,
+    useShiftEditorStore,
+} from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
@@ -43,6 +49,8 @@ export function FixedShifts() {
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
+    const violations = useShiftEditorStore((s) => s.violations);
+    const violationMap = useMemo(() => buildViolationMap(violations, editorDoc), [violations, editorDoc]);
 
     useEffect(() => {
         if (!dutyQuery.data) return;
@@ -110,9 +118,11 @@ export function FixedShifts() {
                                 doc={editorDoc}
                                 onCellClick={() => editorRef.current?.focus()}
                                 disableInitialSelection
+                                violations={violationMap}
+                                showLayer={{fault: true, check: false, slash: false}}
                             />
                             <div
-                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-white py-5 pl-63.75"
+                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-55.25"
                                 style={{
                                     height: dutyQuery.data
                                         ? `${dutyQuery.data.wardShiftTypes.filter((x) => x.isCounted).length * 2.5 + 2.5}rem`
