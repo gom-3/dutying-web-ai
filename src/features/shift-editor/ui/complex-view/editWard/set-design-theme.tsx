@@ -1,11 +1,11 @@
-import useUIConfig from '@/features/ui/useUIConfig';
+import useUIConfigUseCase from '@/entities/ui/useUIConfig';
+import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import Toggle from '@/shared/ui/Toggle';
 
 const SetDesignTheme = () => {
-    const {
-        state: {separateWeekendColor, shiftTypeColorStyle},
-        actions: {handleChangeSeparateWeekendColor, handleShiftTypeColorStyle},
-    } = useUIConfig();
+    const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
+    const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
+    const {handleChangeSeparateWeekendColor, handleShiftTypeColorStyle} = useUIConfigUseCase();
 
     return (
         <div className="flex w-145 flex-col">

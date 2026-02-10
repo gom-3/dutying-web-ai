@@ -2,11 +2,12 @@ import {yupResolver} from '@hookform/resolvers/yup';
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef} from 'react';
 import {useForm} from 'react-hook-form';
+import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
-import {ProfileImage} from '@/features/ProfileImage';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
@@ -61,7 +62,7 @@ function RegisterNurse() {
     const watchIsWorker = watch('isWorker');
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage({defaultProfileImgId: 1});
     const imageInputRef = useRef<HTMLInputElement>(null);
-    const handleUploadImgae = () => {
+    const handleUploadImage = () => {
         imageInputRef.current?.click();
     };
     const handleChangeImage = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -78,7 +79,8 @@ function RegisterNurse() {
 
             setPhotoImage(compressedFile);
         } catch (error) {
-            console.log(error);
+            console.error(error);
+            toast.error('프로필 이미지 처리에 실패했습니다.');
         }
     };
 
@@ -107,7 +109,7 @@ function RegisterNurse() {
                         </div>
                         <div
                             className="flex flex-1 items-center justify-center gap-[.25rem] rounded-r-[.3125rem] border-[.0625rem] border-sub-3"
-                            onClick={handleUploadImgae}
+                            onClick={handleUploadImage}
                         >
                             <CameraIcon className="h-5" />
                             <p className="font-apple text-[1.25rem] font-medium text-sub-2.5">사진 등록</p>

@@ -2,7 +2,8 @@ import {useContext, useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import {events, sendEvent} from '@/analytics';
-import ShiftBadge from '@/features/ShiftBadge';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import {EditDutyStore} from '@/features/shift/editDuty/store';
 import {
     CancelIcon,
     DutyIconSelected,

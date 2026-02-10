@@ -1,13 +1,13 @@
+import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import {groupBy} from 'lodash-es';
 import {useCallback, useEffect, useState} from 'react';
-import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {setPreferredShiftTeamId} from '@/features/shift/editDuty/model/utils/prefs';
-import useTutorial from '@/features/ui/useTutorial';
+import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
-import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
+import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import TextField from '@/shared/ui/TextField';
@@ -21,11 +21,9 @@ function ShiftTeamList() {
     const [openMenu, setOpenMenu] = useState<number | null>(null);
     const [editShiftTeam, setEditShiftTeam] = useState<{
         shiftTeamId: number;
-        updateShiftTeamDTO: UpdateShiftTeamDTO;
+        updateShiftTeamDTO: TUpdateShiftTeamDTO;
     } | null>(null);
-    const {
-        state: {showMemberTutorial},
-    } = useTutorial();
+    const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const navigate = useNavigate();
     const clickAwayListRef = useOnclickOutside(() => selectNurse(null));
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));

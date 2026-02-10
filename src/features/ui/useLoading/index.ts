@@ -1,12 +1,11 @@
 import {useLoadingStore} from './store';
 
-const useLoading = () => {
-    const {loading, setState} = useLoadingStore();
+const useLoadingUseCase = () => {
+    const setState = useLoadingStore((state) => state.setState);
 
     return {
-        loading,
         setLoading: (loading: boolean) => setState('loading', loading),
     };
 };
 
-export default useLoading;
+export default useLoadingUseCase;

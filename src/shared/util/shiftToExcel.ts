@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import {type Shift} from '@/shared/types/shift';
+import {type TShift} from '@/entities/shift';
 
-export const shiftToExcel = async (month: number, shift: Shift) => {
+export const shiftToExcel = async (month: number, shift: TShift) => {
     const Excel = await import('exceljs');
     const flatRows = shift.divisionShiftNurses.flatMap((row) => row);
     const workbook = new Excel.Workbook();

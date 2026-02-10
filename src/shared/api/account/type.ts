@@ -1,17 +1,17 @@
-import {type Account} from '@/shared/types/account';
-import {type TWard} from '@/shared/types/ward';
+import {type TAccount} from '@/entities/account';
+import {type TWard} from '@/entities/ward';
 
 export interface IAccountAPI {
     // GET
-    getAccount: (accountId: number) => Promise<Account>;
-    getAccountMe: () => Promise<Account>;
+    getAccount: (accountId: number) => Promise<TAccount>;
+    getAccountMe: () => Promise<TAccount>;
     getAccountMeWaiting: () => Promise<TWard>;
     getDefaultProfileImages: () => Promise<string[]>;
     // PUT
-    editAccount: (dto: TEditProfileRequest) => Promise<Account>;
-    editAccountStatus: (accountId: number, status: Account['status']) => Promise<Account>;
+    editAccount: (dto: TEditProfileRequest) => Promise<TAccount>;
+    editAccountStatus: (accountId: number, status: TAccount['status']) => Promise<TAccount>;
     // PATCH
-    initAccount: (dto: TEditProfileRequest) => Promise<Account>;
+    initAccount: (dto: TEditProfileRequest) => Promise<TAccount>;
     // DELETE
     deleteAccount: (accountId: number) => Promise<void>;
 }

@@ -1,4 +1,4 @@
-export type Account = {
+export type TAccount = {
     accountId: number;
     /** 연동된 간호사 ID */
     nurseId: number | null;

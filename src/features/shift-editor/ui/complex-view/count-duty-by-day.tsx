@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor/model';
-import useUIConfig from '@/features/ui/useUIConfig';
+import useUIConfig from '@/entities/ui/useUIConfig';
 import {type Shift} from '@/shared/types/shift';
 import {type TWardShiftType} from '@/shared/types/ward';
 

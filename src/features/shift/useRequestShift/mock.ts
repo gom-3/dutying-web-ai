@@ -1,6 +1,6 @@
-import {type DutyRequest} from '@/shared/types/request';
+import {type TDutyRequest} from '@/entities/shift';
 
-export const mockDutyRequestList: DutyRequest[] = [
+export const mockDutyRequestList: TDutyRequest[] = [
     {
         wardReqShiftId: 1,
         nurseId: 1123,
@@ -39,7 +39,7 @@ export const mockDutyRequestList: DutyRequest[] = [
     },
 ];
 
-export const mockDutyRequestList2: DutyRequest[] = [
+export const mockDutyRequestList2: TDutyRequest[] = [
     {
         wardReqShiftId: 1,
         nurseId: 2188,

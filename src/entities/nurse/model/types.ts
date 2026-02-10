@@ -1,8 +1,8 @@
-import {type Day} from './shift';
+import type {TDay} from '@/entities/shift';
 
 export type TDayShift = {
     /** 날짜 */
-    day: Day;
+    day: TDay;
     /** 근무 형태종류 */
     shiftId: number;
 };

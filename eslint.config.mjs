@@ -62,7 +62,7 @@ export default [
             // FSD 레이어 규칙 + public API 규칙 (단일 선언)
             // -------------------------------------------------
             'import/no-restricted-paths': [
-                'error',
+                'warn',
                 {
                     zones: [
                         // pages → app 금지

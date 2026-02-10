@@ -1,22 +1,22 @@
-import {type TShiftNurse, type TWardShiftType} from './ward';
+import {type TShiftNurse, type TWardShiftType} from '@/entities/ward';
 
 /** 근무표 타입 */
-export type Shift = {
+export type TShift = {
     /** 지난달 근무표의 날짜들 */
-    lastDays: Array<Day>;
+    lastDays: Array<TDay>;
     /** 이번달 근무표의 날짜들 */
-    days: Array<Day>;
+    days: Array<TDay>;
     /** 해당 근무표의 근무유형 리스트 */
     wardShiftTypes: TWardShiftType[];
     /** 구분된 근무 데이터 */
-    divisionShiftNurses: Row[][];
+    divisionShiftNurses: TRow[][];
 };
 
 /** 근무표 날짜의 타입 | 평일, 주말, 공휴일 구분이 필요하다 */
-export type Day = {day: number; dayType: 'saturday' | 'sunday' | 'holiday' | 'workday'};
+export type TDay = {day: number; dayType: 'saturday' | 'sunday' | 'holiday' | 'workday'};
 
 /** 근무표 한줄에 해당하는 데이터 */
-export type Row = {
+export type TRow = {
     shiftNurse: TShiftNurse;
     lastWardShiftList: (number | null)[];
     lastWardReqShiftList: (number | null)[];
@@ -25,9 +25,9 @@ export type Row = {
 };
 
 /** 신청 근무표 타입 */
-export type RequestShift = {
+export type TRequestShift = {
     /** 이번달 근무표의 날짜들 */
-    days: Array<Day>;
+    days: Array<TDay>;
     /** 해당 근무표의 근무유형 리스트 */
     wardShiftTypes: TWardShiftType[];
     /** 구분된 근무 데이터 */

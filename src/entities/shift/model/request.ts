@@ -1,4 +1,4 @@
-export type DutyRequest = {
+export type TDutyRequest = {
     wardReqShiftId: number;
     nurseId: number;
     nurseName: string;

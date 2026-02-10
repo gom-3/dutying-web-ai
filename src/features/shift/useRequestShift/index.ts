@@ -1,12 +1,13 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
+import {type TRequestShift} from '@/entities/shift';
+import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
+import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {type RequestShift} from '@/shared/types/shift';
-import {type TShiftTeam, type TWardShiftType} from '@/shared/types/ward';
 import {DateUtil} from '@/shared/util/date';
 import {useRequestShiftStore} from './store';
 import {type TFocus} from './type';
@@ -19,12 +20,17 @@ const useRequestShift = (activeEffect = false) => {
         state: {wardId},
     } = useAuth();
     const queryClient = useQueryClient();
-    const requestShiftQueryKey = ['requestShift', wardId, year, month, currentShiftTeamId];
-    const shiftTeamQueryKey = ['shiftTeams', wardId];
-    const wardConstraintQueryKey = ['wardConstraint', currentShiftTeamId, wardId];
-    const dutyRequestQueryKey = ['dutyRequest', wardId, year, month, currentShiftTeamId];
+    const [changeStatus, setChangeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const shiftTeamsQueryOptions = wardQueryOptions.shiftTeams(wardId ?? 0);
+    const requestListQueryOptions = wardQueryOptions.requestList(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
+    const requestShiftQueryOptions = wardQueryOptions.request(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
+    const wardConstraintQueryOptions = wardQueryOptions.constraint(wardId ?? 0, currentShiftTeamId ?? 0);
+    const requestShiftQueryKey = requestShiftQueryOptions.queryKey;
+    const shiftTeamQueryKey = shiftTeamsQueryOptions.queryKey;
+    const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
+    const dutyRequestQueryKey = requestListQueryOptions.queryKey;
     const {data: shiftTeams} = useQuery({
-        queryKey: shiftTeamQueryKey,
+        ...shiftTeamsQueryOptions,
         queryFn: async () => {
             const res = await WardAPI.getShiftTeams(wardId!);
 
@@ -41,16 +47,15 @@ const useRequestShift = (activeEffect = false) => {
         enabled: !!wardId,
     });
     const {data: dutyRequestList} = useQuery({
-        queryKey: dutyRequestQueryKey,
-        queryFn: () => WardAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
+        ...requestListQueryOptions,
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const {data: requestShift, status: shiftStatus} = useQuery({
-        queryKey: requestShiftQueryKey,
-        queryFn: async () => {
+        ...requestShiftQueryOptions,
+        queryFn: async (): Promise<TRequestShift> => {
             const res = await WardAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
 
-            if (res === null) return;
+            if (res === null) return null as unknown as TRequestShift;
 
             if (!foldedLevels || !oldCurrentShiftTeamId || (oldCurrentShiftTeamId && oldCurrentShiftTeamId !== currentShiftTeamId)) {
                 setState(
@@ -64,61 +69,76 @@ const useRequestShift = (activeEffect = false) => {
         },
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
-    const {mutate: mutateShift, status: changeStatus} = useMutation({
-        mutationFn: ({wardId, focus, shiftTypeId}: {wardId: number; focus: TFocus; shiftTypeId: number | null}) =>
-            WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId),
-        onMutate: async ({focus, shiftTypeId}) => {
-            await queryClient.cancelQueries({queryKey: ['requestShift']});
+    const changeRequestShift = useCallback(
+        async (focus: TFocus, shiftTypeId: number | null) => {
+            if (!wardId) return;
+
+            setChangeStatus('loading');
+            await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
             const {shiftNurseId, day} = focus;
-            const oldShift = queryClient.getQueryData<RequestShift>(requestShiftQueryKey);
+            const oldShift = queryClient.getQueryData<TRequestShift>(requestShiftQueryKey);
 
-            if (!oldShift || !wardShiftTypeMap) return;
+            if (oldShift && wardShiftTypeMap) {
+                const oldShiftTypeId = oldShift.divisionShiftNurses
+                    .flatMap((x) => x)
+                    .find((x) => x.shiftNurse.shiftNurseId === shiftNurseId)!.wardReqShiftList[focus.day];
+                const edit = {
+                    nurseName: findNurse(oldShift, focus.shiftNurseId)!.name,
+                    focus,
+                    prevShiftType: oldShiftTypeId ? (wardShiftTypeMap.get(oldShiftTypeId) as TWardShiftType) : null,
+                    nextShiftType: shiftTypeId ? (wardShiftTypeMap.get(shiftTypeId) as TWardShiftType) : null,
+                    dateString: DateUtil.getDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+                };
 
-            const oldShiftTypeId = oldShift.divisionShiftNurses.flatMap((x) => x).find((x) => x.shiftNurse.shiftNurseId === shiftNurseId)!
-                .wardReqShiftList[focus.day];
-            const edit = {
-                nurseName: findNurse(oldShift, focus.shiftNurseId)!.name,
-                focus,
-                prevShiftType: oldShiftTypeId ? wardShiftTypeMap.get(oldShiftTypeId) : null,
-                nextShiftType: shiftTypeId ? wardShiftTypeMap.get(shiftTypeId) : null,
-                dateString: DateUtil.getDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-            };
+                queryClient.setQueryData<TRequestShift>(
+                    requestShiftQueryKey,
+                    produce(oldShift, (draft) => {
+                        draft.divisionShiftNurses
+                            .flatMap((x) => x)
+                            .find((x) => x.shiftNurse.shiftNurseId === focus.shiftNurseId)!.wardReqShiftList[focus.day] = shiftTypeId;
+                    }),
+                );
 
-            queryClient.setQueryData<RequestShift>(
-                requestShiftQueryKey,
-                produce(oldShift, (draft) => {
-                    draft.divisionShiftNurses
-                        .flatMap((x) => x)
-                        .find((x) => x.shiftNurse.shiftNurseId === focus.shiftNurseId)!.wardReqShiftList[focus.day] = shiftTypeId;
-                }),
-            );
+                sendEvent(
+                    events.requestPage.changeShift,
+                    `${focus.shiftNurseName} / ${day + 1}일 | ` +
+                        match(edit)
+                            .with({prevShiftType: null}, () => `추가 → ${edit.nextShiftType?.shortName}`)
+                            .with({nextShiftType: null}, () => `${edit.prevShiftType?.shortName} → 삭제`)
+                            .otherwise(() => `${edit.prevShiftType?.shortName} → ${edit.nextShiftType?.shortName}`),
+                );
+            }
 
-            sendEvent(
-                events.requestPage.changeShift,
-                `${focus.shiftNurseName} / ${day + 1}일 | ` +
-                    match(edit)
-                        .with({prevShiftType: null}, () => `추가 → ${edit.nextShiftType?.shortName}`)
-                        .with({nextShiftType: null}, () => `${edit.prevShiftType?.shortName} → 삭제`)
-                        .otherwise(() => `${edit.prevShiftType?.shortName} → ${edit.nextShiftType?.shortName}`),
-            );
+            try {
+                await WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId);
+                setChangeStatus('success');
+                setTimeout(() => setChangeStatus('idle'), 0);
+            } catch {
+                if (oldShift) {
+                    queryClient.setQueryData(requestShiftQueryKey, oldShift);
+                }
 
-            return {oldShift};
+                setChangeStatus('error');
+                setTimeout(() => setChangeStatus('idle'), 0);
+            }
         },
-        onError: (_, __, context) => {
-            if (context?.oldShift === undefined) return;
+        [queryClient, requestShiftQueryKey, wardId, wardShiftTypeMap, year, month],
+    );
+    const acceptRequest = useCallback(
+        async (reqShiftId: number, isAccepted: boolean | null) => {
+            if (!wardId) return;
 
-            queryClient.setQueryData(requestShiftQueryKey, context.oldShift);
+            try {
+                await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
+                await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+                await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+            } catch {
+                alert('신청 처리에 실패했습니다.');
+            }
         },
-    });
-    const {mutate: acceptRequestMutate} = useMutation({
-        mutationFn: ({wardId, reqShiftId, isAccepted}: {wardId: number; reqShiftId: number; isAccepted: boolean | null}) =>
-            WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-            queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
-        },
-    });
+        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, wardId],
+    );
     const changeMonth = (type: 'prev' | 'next') => {
         if (type === 'prev') {
             if (new Date(year, month, 1) <= new Date() && !readonly) {
@@ -167,16 +187,15 @@ const useRequestShift = (activeEffect = false) => {
             if (requestDutyRequest && requestDutyRequest.wardShiftTypeId !== shiftTypeId && !confirm('신청을 거절하시겠습니까?')) return;
 
             if (requestDutyRequest) {
-                acceptRequestMutate({
-                    wardId,
-                    reqShiftId: requestDutyRequest.wardReqShiftId,
-                    isAccepted: shiftTypeId === null ? null : requestDutyRequest.wardShiftTypeId === shiftTypeId,
-                });
+                acceptRequest(
+                    requestDutyRequest.wardReqShiftId,
+                    shiftTypeId === null ? null : requestDutyRequest.wardShiftTypeId === shiftTypeId,
+                );
             }
 
-            mutateShift({wardId, focus, shiftTypeId});
+            changeRequestShift(focus, shiftTypeId);
         },
-        [wardId, focus, requestShift, dutyRequestList, acceptRequestMutate, mutateShift],
+        [acceptRequest, changeRequestShift, dutyRequestList, focus, requestShift, wardId],
     );
     const foldLevel = (level: number) => {
         if (!requestShift || !foldedLevels) return;
@@ -311,11 +330,10 @@ const useRequestShift = (activeEffect = false) => {
             shiftTeams,
         },
         actions: {
-            changeRequestShift: (focus: TFocus, shiftTypeId: number | null) => wardId && mutateShift({wardId, focus, shiftTypeId}),
+            changeRequestShift: (focus: TFocus, shiftTypeId: number | null) => changeRequestShift(focus, shiftTypeId),
             toggleEditMode: handleToggleEditMode,
             createNextMonthShift: handleCreateNextMonthShift,
-            acceptRequest: (reqShiftId: number, isAccepted: boolean | null) =>
-                wardId && acceptRequestMutate({wardId, isAccepted, reqShiftId}),
+            acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => acceptRequest(reqShiftId, isAccepted),
             foldLevel,
             changeMonth,
             changeFocus: (focus: TFocus | null) => setState('focus', focus),

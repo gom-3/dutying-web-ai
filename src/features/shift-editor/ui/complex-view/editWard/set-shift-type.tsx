@@ -1,10 +1,10 @@
 import {useState} from 'react';
 import {events, sendEvent} from '@/analytics';
+import {type TWardShiftType} from '@/entities/ward';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
 import useEditWard from '@/features/ward/useEditWard';
-import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
-import {type TWardShiftType} from '@/shared/types/ward';
 
 function SetShiftType() {
     const {
@@ -13,7 +13,7 @@ function SetShiftType() {
     } = useEditWard();
     const [openModal, setOpenModal] = useState(false);
     const [tempShiftType, setTempShiftType] = useState<TWardShiftType | null>(null);
-    const handleWriteShift = (shiftType: CreateShiftTypeDTO, shiftTypeId?: number) => {
+    const handleWriteShift = (shiftType: TCreateShiftTypeDTO, shiftTypeId?: number) => {
         if (shiftTypeId) {
             editShiftType(shiftTypeId, shiftType);
             setTempShiftType(null);

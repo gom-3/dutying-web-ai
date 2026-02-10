@@ -1,4 +1,4 @@
-import {type TNurse} from './nurse';
+import type {TNurse} from '@/entities/nurse';
 
 export type TWard = {
     /** 병동 id */

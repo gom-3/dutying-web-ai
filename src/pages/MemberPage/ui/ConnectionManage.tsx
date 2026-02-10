@@ -3,18 +3,18 @@ import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {twMerge} from 'tailwind-merge';
 import {match} from 'ts-pattern';
-import {ProfileImage} from '@/features/ProfileImage';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
+import {type TWaitingNurse} from '@/entities/nurse';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import useEditWard from '@/features/ward/useEditWard';
 import {CancelIcon, CheckedIcon, MoreIcon, PersonIcon, SuccessCircleIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
-import {type TWaitingNurse} from '@/shared/types/nurse';
 
-interface ConnectionManageProps {
+interface IConnectionManageProps {
     open: boolean;
     setOpen: (open: boolean) => void;
 }
 
-function ConnectionManage({open, setOpen}: ConnectionManageProps) {
+function ConnectionManage({open, setOpen}: IConnectionManageProps) {
     const {
         state: {watingNurses},
         actions: {cancelWaiting, approveWatingNurses, connectWatingNurses},

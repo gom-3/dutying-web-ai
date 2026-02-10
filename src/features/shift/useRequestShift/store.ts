@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
+import {type TWardShiftType} from '@/entities/ward';
 import {type TValues} from '@/shared/types/util';
-import {type TWardShiftType} from '@/shared/types/ward';
 import {type TFocus} from './type';
 
 interface IState {

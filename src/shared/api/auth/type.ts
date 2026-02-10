@@ -1,8 +1,8 @@
-import {type Account} from '@/shared/types/account';
-import {type TWard} from '@/shared/types/ward';
+import {type TAccount} from '@/entities/account';
+import {type TWard} from '@/entities/ward';
 
 export interface IAuthAPI {
     // POST
-    demoStart: () => Promise<{wardResDto: TWard; accountResDto: Account; accessToken: string}>;
+    demoStart: () => Promise<{wardResDto: TWard; accountResDto: TAccount; accessToken: string}>;
     logout: (accessToken: string | null) => Promise<void>;
 }

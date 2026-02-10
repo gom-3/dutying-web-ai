@@ -1,14 +1,13 @@
 import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
-import useTutorial from '@/features/ui/useTutorial';
+import useTutorialUseCase from '@/features/ui/useTutorial';
+import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {type StepConfig, type StepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const MemberTutorial = () => {
-    const {
-        state: {showMemberTutorial},
-        actions: {setMemberTutorial},
-    } = useTutorial();
+    const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
+    const {setMemberTutorial} = useTutorialUseCase();
     const {
         state: {shiftTeams},
         actions: {selectNurse},

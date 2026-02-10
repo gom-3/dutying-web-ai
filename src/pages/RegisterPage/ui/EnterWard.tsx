@@ -3,11 +3,11 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router';
 import {Pattern, match} from 'ts-pattern';
+import {type TWard} from '@/entities/ward';
 import useRegister from '@/features/auth/useRegister';
 import useGetWardByCode from '@/features/ward/useGetWardByCode';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type TWard} from '@/shared/types/ward';
 
 function EnterWard() {
     const [codeList, setCodeList] = useState<(string | null)[]>([null, null, null, null, null, null]);

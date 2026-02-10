@@ -1,5 +1,5 @@
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TDayInfo} from '@/features/shift/useRequestShift/type';
-import ShiftBadge from '@/features/ShiftBadge';
 
 interface IProps {
     focusedDayInfo: TDayInfo;

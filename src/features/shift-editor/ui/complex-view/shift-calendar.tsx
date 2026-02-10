@@ -4,7 +4,7 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {type TDutyDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import ShiftBadge from '@/features/ShiftBadge';
-import useUIConfig from '@/features/ui/useUIConfig';
+import useUIConfig from '@/entities/ui/useUIConfig';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
 import {type Shift} from '@/shared/types/shift';
 import {type TWardShiftType} from '@/shared/types/ward';

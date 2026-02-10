@@ -1,16 +1,14 @@
 import {describe, vi, expect, beforeEach, it} from 'vitest';
-import {type TWardShiftType} from '@/shared/types/ward';
+import {type TWardShiftType} from '@/entities/ward';
 import {render, screen} from '@/shared/util/test-utils';
 import ShiftBadge from '.';
 
 let mockShiftTypeColorStyle = 'background';
 
-vi.mock('@/features/ui/useUIConfig', () => ({
-    default: vi.fn(() => ({
-        state: {
-            shiftTypeColorStyle: mockShiftTypeColorStyle,
-        },
-    })),
+vi.mock('@/features/ui/useUIConfig/store', () => ({
+    useUIConfigStore: vi.fn((selector: (state: {shiftTypeColorStyle: string}) => string) =>
+        selector({shiftTypeColorStyle: mockShiftTypeColorStyle}),
+    ),
 }));
 
 const mockShiftType: TWardShiftType = {

@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import ShiftBadge from '@/features/ShiftBadge';
-import useUIConfig from '@/features/ui/useUIConfig';
+import useUIConfig from '@/entities/ui/useUIConfig';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';

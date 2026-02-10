@@ -1,5 +1,5 @@
 import type {TCellValue, TDutyDoc, TWorkKeyMap} from '@/features/shift-editor';
-import type {WardShiftsDTO} from '@/shared/api/ward/type';
+import type {TWardShiftsDTO} from '@/shared/api/ward/type';
 import type {Shift} from '@/shared/types/shift';
 import type {TWardShiftType} from '@/shared/types/ward';
 
@@ -85,9 +85,9 @@ export function docToShift(doc: TDutyDoc, originalShift: Shift): Shift {
     return {...originalShift, divisionShiftNurses: nextDivisionShiftNurses};
 }
 
-export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: Shift): WardShiftsDTO {
+export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: Shift): TWardShiftsDTO {
     const maps = buildWardShiftTypeMaps(originalShift);
-    const dto: WardShiftsDTO = [];
+    const dto: TWardShiftsDTO = [];
 
     for (const row of doc.rows) {
         const shiftNurseId = Number(row.workerId);

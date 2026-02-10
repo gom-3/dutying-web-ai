@@ -1,10 +1,10 @@
 import {useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import {type TNurse} from '@/entities/nurse';
 import useAuth from '@/features/auth/useAuth';
-import useLoading from '@/features/ui/useLoading';
+import useLoadingUseCase from '@/features/ui/useLoading';
 import useEditWard from '@/features/ward/useEditWard';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
-import {type TNurse} from '@/shared/types/nurse';
 
 const useEditAccount = () => {
     const {
@@ -14,7 +14,7 @@ const useEditAccount = () => {
     const {
         queryKey: {getWardQueryKey},
     } = useEditWard();
-    const {setLoading} = useLoading();
+    const {setLoading} = useLoadingUseCase();
     const queryClient = useQueryClient();
     const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
         if (!accountMe) return;

@@ -1,6 +1,6 @@
-import {type TNurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/entities/nurse';
 import axiosInstance from '../client';
-import {type INurseAPI, type TCreateNurseDTO, type TUpdateNurseDTO, type T} from './type';
+import {type INurseAPI, type TCreateNurseDTO, type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from './type';
 
 class NurseAPI implements INurseAPI {
     createAccountNurse = async (accountId: number, createNurse: TCreateNurseDTO) =>
@@ -45,7 +45,7 @@ class NurseAPI implements INurseAPI {
                 patchYearMonth,
             })
         ).data;
-    updateNurseShiftType = async (nurseId: number, nurseShiftTypeId: number, change: T) =>
+    updateNurseShiftType = async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) =>
         (await axiosInstance.patch(`/nurses/${nurseId}/shift-types/${nurseShiftTypeId}`, change)).data;
     updateNurseCarry = async (shiftNurseId: number, value: number) =>
         (

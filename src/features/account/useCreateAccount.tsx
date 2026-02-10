@@ -1,17 +1,17 @@
 import {type JSX, useCallback, useEffect, useState} from 'react';
-import {type TNurse} from '@/shared/types/nurse';
+import {type TNurse} from '@/entities/nurse';
 
-export type Step = {
+export type TStep = {
     name: string;
     contents: JSX.Element;
     description: JSX.Element | null;
 };
 
-type CreateAccountRequestDTO = Pick<TNurse, 'name' | 'gender' | 'phoneNum' | 'employmentDate' | 'isWorker'>;
+type TCreateAccountRequestDTO = Pick<TNurse, 'name' | 'gender' | 'phoneNum' | 'employmentDate' | 'isWorker'>;
 
 const useCreateAccount = () => {
     // 추후 server state로 변경
-    const [account, setAccount] = useState<CreateAccountRequestDTO>({
+    const [account, setAccount] = useState<TCreateAccountRequestDTO>({
         name: '',
         gender: '여',
         phoneNum: '',
@@ -20,11 +20,11 @@ const useCreateAccount = () => {
     });
     const [isFilled, setIsFilled] = useState<boolean>(false);
     const [error, setError] = useState<{
-        key: keyof CreateAccountRequestDTO;
+        key: keyof TCreateAccountRequestDTO;
         message: string;
     } | null>(null);
     /** 인풋값이 상태에 반영될 수 있는지 체크하며 업데이트 합니다. */
-    const handleChangeAccount = (key: keyof CreateAccountRequestDTO, value: string | boolean) => {
+    const handleChangeAccount = (key: keyof TCreateAccountRequestDTO, value: string | boolean) => {
         if (key === 'gender' && value !== '여' && value !== '남') return;
 
         if (key === 'name') {

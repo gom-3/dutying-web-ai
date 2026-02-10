@@ -1,5 +1,5 @@
+import {type TWardShiftType} from '@/entities/ward';
 import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
-import {type TWardShiftType} from '@/shared/types/ward';
 
 interface IProps {
     request: TWardShiftType;
