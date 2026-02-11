@@ -1,7 +1,6 @@
+import type {TShift, TWardShiftType} from '@/entities';
 import type {TCellValue, TDutyDoc, TWorkKeyMap} from '@/features/shift-editor';
 import type {TWardShiftsDTO} from '@/shared/api/ward/type';
-import type {Shift} from '@/shared/types/shift';
-import type {TWardShiftType} from '@/shared/types/ward';
 
 type TWardShiftTypeMaps = {
     idToType: Map<number, TWardShiftType>;
@@ -16,7 +15,7 @@ function formatDateKey(year: number, month: number, day: number): string {
     return `${yyyy}-${mm}-${dd}`;
 }
 
-export function buildWardShiftTypeMaps(shift: Shift): TWardShiftTypeMaps {
+export function buildWardShiftTypeMaps(shift: TShift): TWardShiftTypeMaps {
     const idToType = new Map<number, TWardShiftType>();
     const shortNameToType = new Map<string, TWardShiftType>();
 
@@ -28,7 +27,7 @@ export function buildWardShiftTypeMaps(shift: Shift): TWardShiftTypeMaps {
     return {idToType, shortNameToType};
 }
 
-export function shiftToDoc(shift: Shift, year: number, month: number): TDutyDoc {
+export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc {
     const {idToType} = buildWardShiftTypeMaps(shift);
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));
     const workerMeta: TDutyDoc['workerMeta'] = {};
@@ -39,6 +38,7 @@ export function shiftToDoc(shift: Shift, year: number, month: number): TDutyDoc 
             const workerId = String(row.shiftNurse.shiftNurseId);
             const cells = row.wardShiftList.map((value) => {
                 if (value === null) return null;
+
                 const type = idToType.get(value);
 
                 return type?.shortName ?? null;
@@ -60,7 +60,7 @@ function cellToWardShiftTypeId(cell: TCellValue, maps: TWardShiftTypeMaps): numb
     return type?.wardShiftTypeId ?? null;
 }
 
-export function docToShift(doc: TDutyDoc, originalShift: Shift): Shift {
+export function docToShift(doc: TDutyDoc, originalShift: TShift): TShift {
     const maps = buildWardShiftTypeMaps(originalShift);
     const rowMap = new Map(doc.rows.map((row) => [row.workerId, row]));
     const nextDivisionShiftNurses = originalShift.divisionShiftNurses.map((division) =>
@@ -71,7 +71,7 @@ export function docToShift(doc: TDutyDoc, originalShift: Shift): Shift {
 
             if (!docRow) return row;
 
-            const nextWardShiftList = row.wardShiftList.map((current, index) => {
+            const nextWardShiftList = row.wardShiftList.map((_current, index) => {
                 const cell = docRow.cells[index] ?? null;
                 const nextId = cellToWardShiftTypeId(cell, maps);
 
@@ -85,7 +85,7 @@ export function docToShift(doc: TDutyDoc, originalShift: Shift): Shift {
     return {...originalShift, divisionShiftNurses: nextDivisionShiftNurses};
 }
 
-export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: Shift): TWardShiftsDTO {
+export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: TShift): TWardShiftsDTO {
     const maps = buildWardShiftTypeMaps(originalShift);
     const dto: TWardShiftsDTO = [];
 
@@ -104,7 +104,7 @@ export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: Shift): TWardSh
     return dto;
 }
 
-export function buildWorkKeyMap(shift?: Shift): TWorkKeyMap {
+export function buildWorkKeyMap(shift?: TShift): TWorkKeyMap {
     if (!shift) return {};
 
     return shift.wardShiftTypes.reduce<TWorkKeyMap>((acc, shiftType) => {

@@ -39,8 +39,8 @@ function Toolbar() {
             {!readonly && (
                 <>
                     <div className="ml-auto flex gap-[.3125rem] font-apple text-[.875rem] text-sub-2.5">
-                        {changeStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
-                        {changeStatus === 'pending' ? '저장중' : '저장 완료'}
+                        {changeStatus === 'loading' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
+                        {changeStatus === 'loading' ? '저장중' : '저장 완료'}
                     </div>
                 </>
             )}

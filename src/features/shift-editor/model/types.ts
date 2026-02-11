@@ -1,4 +1,4 @@
-import {type TWardConstraint} from '@/shared/types/ward';
+import {type TWardConstraint} from '@/entities';
 
 export type TCellValue = string | null;
 

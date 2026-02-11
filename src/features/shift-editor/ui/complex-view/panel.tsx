@@ -1,18 +1,20 @@
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
+import {type TShift} from '@/entities';
+import {useShiftEditorStore} from '@/features/shift-editor/model';
 
-function Panel() {
-    const deps = useContext(DutyEditorContext);
+interface IPanelProps {
+    shift: TShift;
+    readonly?: boolean;
+}
 
-    if (!deps) throw new Error('MakeShiftContext is not provided.');
-
-    const store = deps.store.editDutyStore;
-    const {readonly, faults, shiftStatus, shift} = store;
+function Panel({shift, readonly = false}: IPanelProps) {
+    const violations = useShiftEditorStore((s) => s.violations);
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');
 
-    return !readonly && shiftStatus === 'success' && shift ? (
+    return !readonly ? (
         <div
             className={twMerge(
                 'flex flex-col rounded-[1.25rem] bg-white shadow-banner',
@@ -42,22 +44,19 @@ function Panel() {
                     <p className="relative">
                         문제점
                         <span className="absolute top-0 right-0 flex h-[.875rem] w-[.875rem] translate-x-full items-center justify-center rounded-full bg-main-2 font-apple text-[.625rem] text-white">
-                            {[...faults.values()].length}
+                            {violations.length}
                         </span>
                     </p>
                 </div>
             </div>
             <div className="scrollbar-hide flex flex-1 flex-col overflow-y-scroll">
                 {currentTab === 'faults'
-                    ? [...faults.values()].map((fault, index) => (
+                    ? violations.map((violation, index) => (
                           <p
                               key={index}
                               className="cursor-pointer border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
-                              onClick={() => {
-                                  store.changeFocus(fault.focus);
-                              }}
                           >
-                              {fault.focus.shiftNurseName} / {fault.focus.day + 1}일: {fault.message}
+                              {violation.message}
                           </p>
                       ))
                     : null}

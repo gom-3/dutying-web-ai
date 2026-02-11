@@ -17,7 +17,8 @@
         "cypress:open": "cypress open",
         "e2e": "start-server-and-test dev http://localhost:3000 cypress:open",
         "changeset:add": "changeset",
-        "changeset:version": "changeset version"
+        "changeset:version": "changeset version",
+        "type-check": "tsc -b"
     },
     "dependencies": {
         "@hello-pangea/dnd": "^18.0.1",

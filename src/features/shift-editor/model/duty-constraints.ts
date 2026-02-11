@@ -1,5 +1,5 @@
+import {type TWardConstraint} from '@/entities';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
-import type {TWardConstraint} from '@/shared/types/ward';
 import type {TDutyRuleBoard, TDutyRuleKey, TDutyRuleLevel, TDutyRuleLevelByKey} from './types';
 
 type TConstraintBooleanKey = {

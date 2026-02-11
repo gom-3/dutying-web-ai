@@ -1,4 +1,4 @@
-import {type TWardShiftType} from '@/entities/ward';
+import {type TWardShiftType} from '@/entities';
 import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
 
 interface IProps {

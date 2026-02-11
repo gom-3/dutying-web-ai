@@ -1,12 +1,12 @@
-import {type RefObject, useEffect, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
+import {type RefObject, useEffect, useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
-import {type Focus} from '@/features/shift/editDuty/model/utils/faults';
-import useRequestShift from '@/features/shift/useRequestShift';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
+import useRequestShift from '@/features/shift/useRequestShift';
+import {type TFocus} from '@/features/shift/useRequestShift/type';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 
@@ -370,7 +370,7 @@ export default function ShiftCalendar() {
                 </div>
                 <div className="scrollbar-hide max-h-[calc(100vh-9rem)] overflow-scroll rounded-[1.25rem] bg-white py-[.0625rem]">
                     {dutyRequestList?.map((dutyRequest, i) => {
-                        const focus: Focus = {
+                        const focus: TFocus = {
                             shiftNurseName: dutyRequest.nurseName,
                             // eslint-disable-next-line @typescript-eslint/no-non-null-asserted-optional-chain
                             shiftNurseId: requestShift.divisionShiftNurses

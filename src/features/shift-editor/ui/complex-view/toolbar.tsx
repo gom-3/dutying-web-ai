@@ -1,9 +1,9 @@
-import {useContext, useState} from 'react';
+import {useState} from 'react';
 import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import {events, sendEvent} from '@/analytics';
+import {type TShift, type TWardConstraint, type TShiftTeam} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
-import {EditDutyStore} from '@/features/shift/editDuty/store';
 import {
     CancelIcon,
     DutyIconSelected,
@@ -27,12 +27,49 @@ import SetConstraint from './editWard/set-constraint';
 import SetDesignTheme from './editWard/set-design-theme';
 import SetShiftType from './editWard/set-shift-type';
 
-function Toolbar() {
-    const {
-        store: {editDutyStore},
-        useCase: {editDutyUseCase},
-    } = useContext(DutyEditorContext);
-    const {year, month, shift, showLayer, currentShiftTeam, shiftTeams, readonly, saveStatus} = editDutyStore;
+type TLayerFlags = {fault: boolean; check: boolean; slash: boolean};
+
+interface IToolbarProps {
+    year: number;
+    month: number;
+    shift: TShift | null;
+    showLayer: TLayerFlags;
+    currentShiftTeam: TShiftTeam | null;
+    shiftTeams: TShiftTeam[] | null;
+    readonly: boolean;
+    saveStatus: 'pending' | 'saved';
+    wardConstraint: TWardConstraint | null;
+    onChangeMonth: (direction: 'prev' | 'next') => void;
+    onToggleLayer: (layer: keyof TLayerFlags) => void;
+    onUndo: () => void;
+    onRedo: () => void;
+    onPostShift: () => void;
+    onToggleEditMode: () => void;
+    onCreateNextMonth: () => void;
+    onChangeShiftTeam: (shiftTeamId: number) => void;
+    onUpdateConstraint: (constraint: TWardConstraint) => void;
+}
+
+function Toolbar({
+    year,
+    month,
+    shift,
+    showLayer,
+    currentShiftTeam,
+    shiftTeams,
+    readonly,
+    saveStatus,
+    wardConstraint,
+    onChangeMonth,
+    onToggleLayer,
+    onUndo,
+    onRedo,
+    onPostShift,
+    onToggleEditMode,
+    onCreateNextMonth,
+    onChangeShiftTeam,
+    onUpdateConstraint,
+}: IToolbarProps) {
     const [openInfo, setOpenInfo] = useState(false);
     const [currentSetup, setCurrentSetup] = useState<'constraint' | 'shiftType' | 'designTheme' | null>(null);
 
@@ -48,7 +85,7 @@ function Toolbar() {
             <div className="absolute flex items-center">
                 <PrevIcon
                     onClick={() => {
-                        editDutyUseCase.changeMonth('prev');
+                        onChangeMonth('prev');
                         sendEvent(events.makePage.toolbar.changeMonth);
                     }}
                     className="h-7.5 w-7.5 cursor-pointer"
@@ -56,7 +93,7 @@ function Toolbar() {
                 <p className="mx-[.625rem] font-poppins text-2xl text-main-1">{month}월</p>
                 <NextIcon
                     onClick={() => {
-                        editDutyUseCase.changeMonth('next');
+                        onChangeMonth('next');
                         sendEvent(events.makePage.toolbar.changeMonth);
                     }}
                     className="h-7.5 w-7.5 cursor-pointer"
@@ -113,7 +150,9 @@ function Toolbar() {
                                     onClick={() => setCurrentSetup(null)}
                                 />
                             </div>
-                            {currentSetup === 'constraint' && <SetConstraint />}
+                            {currentSetup === 'constraint' && wardConstraint && (
+                                <SetConstraint wardConstraint={wardConstraint} onUpdateConstraint={onUpdateConstraint} />
+                            )}
                             {currentSetup === 'shiftType' && <SetShiftType />}
                             {currentSetup === 'designTheme' && <SetDesignTheme />}
                         </div>
@@ -164,7 +203,7 @@ function Toolbar() {
                                 showLayer.fault ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                editDutyUseCase.toggleLayer('fault');
+                                onToggleLayer('fault');
                                 sendEvent(showLayer.fault ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'fault');
                             }}
                         >
@@ -182,7 +221,7 @@ function Toolbar() {
                                 showLayer.check ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                editDutyUseCase.toggleLayer('check');
+                                onToggleLayer('check');
                                 sendEvent(showLayer.check ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'check');
                             }}
                         >
@@ -200,7 +239,7 @@ function Toolbar() {
                                 showLayer.slash ? 'white' : 'bg-sub-5'
                             }`}
                             onClick={() => {
-                                editDutyUseCase.toggleLayer('slash');
+                                onToggleLayer('slash');
                                 sendEvent(showLayer.slash ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'slash');
                             }}
                         >
@@ -224,14 +263,14 @@ function Toolbar() {
                         <HistoryBackIcon
                             className="h-6.5 w-6.5 cursor-pointer"
                             onClick={() => {
-                                editDutyUseCase.undo();
+                                onUndo();
                                 sendEvent(events.makePage.toolbar.undoBytoolbar);
                             }}
                         />
                         <HistoryNextIcon
                             className="h-6.5 w-6.5 cursor-pointer"
                             onClick={() => {
-                                editDutyUseCase.redo();
+                                onRedo();
                                 sendEvent(events.makePage.toolbar.redoByToolbar);
                             }}
                         />
@@ -249,7 +288,7 @@ function Toolbar() {
                         }))}
                         className="ml-7.5 h-11.5 w-42 font-apple text-[1.25rem] font-semibold text-main-1"
                         selectClassName="outline-[.0938rem] outline-main-1"
-                        onChange={(e) => editDutyUseCase.changeShiftTeam(parseInt(e.target.value))}
+                        onChange={(e) => onChangeShiftTeam(parseInt(e.target.value))}
                     />
                 )}
             </div>
@@ -260,7 +299,7 @@ function Toolbar() {
                         variant="default"
                         className="flex h-10 items-center justify-center rounded-[.625rem] bg-main-2 px-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            editDutyUseCase.postShift();
+                            onPostShift();
                             sendEvent(events.makePage.toolbar.postShift);
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
@@ -272,7 +311,7 @@ function Toolbar() {
                         variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            editDutyUseCase.toggleEditModeAndMaybeSave();
+                            onToggleEditMode();
                             sendEvent(events.makePage.toolbar.changeEditMode);
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
@@ -300,7 +339,7 @@ function Toolbar() {
                         variant="outline"
                         className="flex h-10 w-59 items-center justify-center gap-[.5rem] rounded-[.625rem] text-[1.25rem] font-semibold"
                         onClick={() => {
-                            editDutyUseCase.createNextMonthShift();
+                            onCreateNextMonth();
                             sendEvent(events.makePage.toolbar.editNextMonth);
                         }}
                     >
@@ -319,7 +358,7 @@ function Toolbar() {
                     </Button>
                     <Button
                         className="h-10 rounded-[3.125rem] border-main-1 bg-white px-5 text-[1.25rem] font-semibold text-main-1 transition-all hover:bg-main-1 hover:text-white"
-                        onClick={() => editDutyUseCase.toggleEditModeAndMaybeSave()}
+                        onClick={() => onToggleEditMode()}
                     >
                         저장
                     </Button>

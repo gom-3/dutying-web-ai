@@ -1,13 +1,12 @@
-import {type ComponentProps, type RefObject, useEffect, useMemo, useRef} from 'react';
 import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
+import {type ComponentProps, type RefObject, useEffect, useMemo, useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
+import {type TWardShiftType, type TShift} from '@/entities';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
-import ShiftBadge from '@/features/ShiftBadge';
-import useUIConfig from '@/entities/ui/useUIConfig';
 import {DragIcon, FoldDutyIcon, MinusIcon, PlusIcon2} from '@/shared/assets/svg';
-import {type Shift} from '@/shared/types/shift';
-import {type TWardShiftType} from '@/shared/types/ward';
 import RequestLayer from './request-layer';
 import ViolationLayer from './violation-layer';
 
@@ -15,7 +14,7 @@ type TFocus = {shiftNurseId: number; day: number};
 type TLayerFlags = {fault: boolean; check: boolean; slash: boolean};
 type TViolationItem = ComponentProps<typeof ViolationLayer>['violation'];
 
-function getWeekendCellBg(dayType: Shift['days'][number]['dayType'], separateWeekendColor: boolean): string {
+function getWeekendCellBg(dayType: TShift['days'][number]['dayType'], separateWeekendColor: boolean): string {
     if (dayType === 'sunday' || dayType === 'holiday') return 'bg-[#FFE1E680]';
 
     if (dayType === 'saturday') return separateWeekendColor ? 'bg-[#E1E5FF80]' : 'bg-[#FFE1E680]';
@@ -24,7 +23,7 @@ function getWeekendCellBg(dayType: Shift['days'][number]['dayType'], separateWee
 }
 
 interface IShiftCalendarProps {
-    shift: Shift;
+    shift: TShift;
     doc: TDutyDoc;
     readonly?: boolean;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
@@ -62,9 +61,7 @@ function ShiftCalendar({
     onEditDivision,
     clearSelectionOnClickAway = true,
 }: IShiftCalendarProps) {
-    const {
-        state: {separateWeekendColor, shiftTypeColorStyle},
-    } = useUIConfig();
+    const {separateWeekendColor, shiftTypeColorStyle} = useUIConfigStore();
     const commands = useShiftEditorCommands();
     const selection = useShiftEditorStore((s) => s.selection);
     const focusedCellRef = useRef<HTMLElement>(null);

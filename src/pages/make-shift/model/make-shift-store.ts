@@ -1,6 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
-import {type TShiftTeam} from '@/shared/types/ward';
+import {type TShiftTeam} from '@/entities';
 
 export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
@@ -10,19 +10,25 @@ const STEP_STORAGE_KEY = 'make-shift:draft-step';
 
 function persistStep(step: TMakeShiftStep) {
     if (typeof window === 'undefined') return;
+
     window.localStorage.setItem(STEP_STORAGE_KEY, String(step));
 }
 
 export function loadPersistedStep(): TMakeShiftStep | null {
     if (typeof window === 'undefined') return null;
+
     const raw = window.localStorage.getItem(STEP_STORAGE_KEY);
+
     if (!raw) return null;
+
     const n = Number(raw);
+
     return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
 }
 
 export function clearPersistedStep() {
     if (typeof window === 'undefined') return;
+
     window.localStorage.removeItem(STEP_STORAGE_KEY);
 }
 
@@ -99,6 +105,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             if (currentStep <= 1) return;
 
             const nextStep = (currentStep - 1) as TMakeShiftStep;
+
             set(() => ({currentStep: nextStep}));
             persistStep(nextStep);
         },
@@ -110,6 +117,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             if (currentStep >= 5) return;
 
             const nextStep = (currentStep + 1) as TMakeShiftStep;
+
             set(() => ({currentStep: nextStep}));
             persistStep(nextStep);
         },

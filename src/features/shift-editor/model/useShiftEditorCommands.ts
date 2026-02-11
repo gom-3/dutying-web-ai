@@ -1,4 +1,4 @@
-import type {TWardConstraint} from '@/shared/types/ward';
+import {type TWardConstraint} from '@/entities';
 import {copySelection, pastePayload} from './clipboard';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import {applyOperation, invertOperation} from './operation';

@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
-import ShiftBadge from '@/features/ShiftBadge';
-import useUIConfig from '@/entities/ui/useUIConfig';
+import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';
@@ -13,9 +13,7 @@ export function RequestsShifts() {
         state: {requestShift, requestList, wardShiftTypeMap, appliedRequests},
         status: {loading, error},
     } = useRequestsShiftsHook();
-    const {
-        state: {separateWeekendColor},
-    } = useUIConfig();
+    const {separateWeekendColor} = useUIConfigStore();
     const pendingRequests = useMemo(() => requestList?.filter((x) => x.isAccepted === null) ?? [], [requestList]);
 
     return (

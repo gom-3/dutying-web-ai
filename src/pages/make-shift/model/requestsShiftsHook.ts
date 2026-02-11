@@ -1,10 +1,8 @@
 import {useQuery} from '@tanstack/react-query';
 import {useMemo} from 'react';
+import {type TDutyRequest, type TRequestShift, type TWardShiftType} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
-import {type DutyRequest} from '@/shared/types/request';
-import {type RequestShift} from '@/shared/types/shift';
-import {type TWardShiftType} from '@/shared/types/ward';
 import {useMakeShiftStore} from './make-shift-store';
 
 export type TAppliedRequest = {
@@ -37,7 +35,7 @@ function normalizeShiftTypes(input: unknown): TWardShiftType[] | undefined {
     return undefined;
 }
 
-function buildAppliedRequests(requestShift: RequestShift | null | undefined): TAppliedRequest[] {
+function buildAppliedRequests(requestShift: TRequestShift | null | undefined): TAppliedRequest[] {
     if (!requestShift) return [];
 
     const out: TAppliedRequest[] = [];
@@ -101,8 +99,8 @@ export function useRequestsShiftsHook() {
             year,
             month,
             currentShiftTeamId,
-            requestShift: (requestQuery.data ?? null) as RequestShift | null,
-            requestList: (requestListQuery.data ?? null) as DutyRequest[] | null,
+            requestShift: (requestQuery.data ?? null) as TRequestShift | null,
+            requestList: (requestListQuery.data ?? null) as TDutyRequest[] | null,
             wardShiftTypeMap,
             appliedRequests,
         },

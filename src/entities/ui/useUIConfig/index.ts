@@ -1,13 +1,13 @@
 import {useUIConfigStore} from './store';
 
-type ShiftTypeColorStyle = 'background' | 'text';
+type TShiftTypeColorStyle = 'background' | 'text';
 
 const useUIConfigUseCase = () => {
     const setState = useUIConfigStore((state) => state.setState);
     const handleChangeSeparateWeekendColor = (value: boolean) => {
         setState('separateWeekendColor', value);
     };
-    const handleShiftTypeColorStyle = (value: ShiftTypeColorStyle) => {
+    const handleShiftTypeColorStyle = (value: TShiftTypeColorStyle) => {
         setState('shiftTypeColorStyle', value);
     };
 

@@ -1,5 +1,4 @@
-import {type TNurse} from '@/shared/types/nurse';
-import {type TWardShiftType} from '@/shared/types/ward';
+import type {TNurse, TWardShiftType} from '@/entities';
 
 export type TFocus = {
     shiftNurseName: string;

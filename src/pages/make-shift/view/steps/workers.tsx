@@ -2,11 +2,11 @@ import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pan
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
+import {type TNurse} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {type TNurse} from '@/shared/types/nurse';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 
 type TLevel = 1 | 2 | 3 | 4 | 5;

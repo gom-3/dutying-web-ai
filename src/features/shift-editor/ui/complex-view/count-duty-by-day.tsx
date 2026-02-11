@@ -1,11 +1,10 @@
 import {useMemo} from 'react';
+import {type TShift, type TWardShiftType} from '@/entities';
+import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor/model';
-import useUIConfig from '@/entities/ui/useUIConfig';
-import {type Shift} from '@/shared/types/shift';
-import {type TWardShiftType} from '@/shared/types/ward';
 
 interface ICountDutyByDayProps {
-    shift: Shift;
+    shift: TShift;
     doc: TDutyDoc;
     focusDay?: number | null;
     className?: string;
@@ -13,9 +12,7 @@ interface ICountDutyByDayProps {
 
 function CountDutyByDay({shift, doc, focusDay = null, className}: ICountDutyByDayProps) {
     const selection = useShiftEditorStore((s) => s.selection);
-    const {
-        state: {shiftTypeColorStyle},
-    } = useUIConfig();
+    const {shiftTypeColorStyle} = useUIConfigStore();
     const effectiveFocusDay = useMemo(() => {
         if (typeof focusDay === 'number') return focusDay;
 
