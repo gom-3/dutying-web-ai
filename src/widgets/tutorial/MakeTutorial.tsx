@@ -2,13 +2,13 @@ import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
-import {type StepConfig, type StepsConfig, TutorialOverlay} from './TutorialOverlay';
+import {type IStepConfig, type IStepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const MakeTutorial = () => {
     const showMakeTutorial = useTutorialStore((state) => state.showMakeTutorial);
     const {setMakeTutorial} = useTutorialUseCase();
-    const config: StepsConfig = {
-        steps: new Map<number, StepConfig>(),
+    const config: IStepsConfig = {
+        steps: new Map<number, IStepConfig>(),
         infoBoxHeight: 150,
         infoBoxMargin: 20,
         scrollLock: true,

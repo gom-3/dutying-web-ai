@@ -6,7 +6,7 @@ import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 import TimeInput from '@/shared/ui/TimeInput';
 
-interface Props {
+interface ICreateShiftModalProps {
     open: boolean;
     shiftType: TCreateShiftTypeDTO | null;
     close: () => void;
@@ -26,7 +26,7 @@ const initialValue: TCreateShiftTypeDTO = {
     classification: 'OTHER_WORK',
 };
 
-function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: Props) {
+function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
     const [writeShift, setWriteShift] = useState(initialValue);
     const modalRoot = document.querySelector('#modal-root');
     const handleSubmit = () => {

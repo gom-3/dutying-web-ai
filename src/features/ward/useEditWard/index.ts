@@ -1,5 +1,5 @@
-import {useCallback} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useCallback} from 'react';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';

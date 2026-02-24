@@ -3,7 +3,7 @@ import {createPortal} from 'react-dom';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
-import {type StepConfig, type StepsConfig, TutorialOverlay} from './TutorialOverlay';
+import {type IStepConfig, type IStepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const MemberTutorial = () => {
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
@@ -12,8 +12,8 @@ const MemberTutorial = () => {
         state: {shiftTeams},
         actions: {selectNurse},
     } = useEditShiftTeam();
-    const config: StepsConfig = {
-        steps: new Map<number, StepConfig>(),
+    const config: IStepsConfig = {
+        steps: new Map<number, IStepConfig>(),
         infoBoxHeight: 150,
         infoBoxMargin: 20,
         scrollLock: true,

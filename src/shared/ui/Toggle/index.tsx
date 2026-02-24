@@ -1,12 +1,12 @@
 import {Switch} from '@/shared/ui/primitives/switch';
 import {cn} from '@/shared/util/style';
 
-interface ToggleProps {
+interface IToggleProps {
     isOn: boolean;
     setIsOn: (isOn: boolean) => void;
 }
 
-const Toggle = ({isOn, setIsOn}: ToggleProps) => {
+const Toggle = ({isOn, setIsOn}: IToggleProps) => {
     return (
         <Switch
             data-testid="toggle"

@@ -11,7 +11,7 @@ import {
 import ROUTE, {type TRoute} from '@/shared/constant/path';
 import NavigationBarItem from './NavigationBarItem';
 
-type NavItem = {
+type TNavItem = {
     path?: TRoute;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     selectedIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -19,12 +19,12 @@ type NavItem = {
     disabled?: boolean;
 };
 
-type NavSection = {
+type TNavSection = {
     label: string;
-    items: NavItem[];
+    items: TNavItem[];
 };
 
-const sections: NavSection[] = [
+const sections: TNavSection[] = [
     {
         label: '근무표',
         items: [

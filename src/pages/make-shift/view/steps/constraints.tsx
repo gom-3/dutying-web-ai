@@ -1,6 +1,6 @@
+import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {ChevronDown} from 'lucide-react';
 import {useMemo, useState} from 'react';
-import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {DUTY_RULE_META, type TDutyRuleMeta} from '@/features/shift-editor/model/duty-constraints';
 import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';

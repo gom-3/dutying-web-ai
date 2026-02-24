@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import useAuth from '@/features/auth/useAuth';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import useAuth from '@/features/auth/useAuth';
 import {FoldIcon, LogoV2} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import NavigationBarItemGroups from './NavigationBarItemGroup';

@@ -1,7 +1,7 @@
 import ReactPixel from 'react-facebook-pixel';
 import ReactGA from 'react-ga4';
 
-interface Event {
+interface IEvent {
     category: string;
     action: string;
 }
@@ -409,7 +409,7 @@ export const events = {
     },
 };
 
-export const sendEvent = (event: Event, label?: string) => {
+export const sendEvent = (event: IEvent, label?: string) => {
     if (import.meta.env.PROD) {
         ReactGA.event({
             category: event.category,

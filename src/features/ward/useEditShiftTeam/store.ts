@@ -1,23 +1,11 @@
-import {create} from 'zustand';
-import {devtools} from 'zustand/middleware';
-import {type TValues} from '@/shared/types/util';
+import {createStore} from '@/shared/util/create-store';
 
-interface State {
-    selectedNurseId: number | null;
-}
-
-interface Store extends State {
-    setState: (key: keyof State, value: TValues<State>) => void;
-}
-
-const initialState: State = {
-    selectedNurseId: null,
+const initialState = {
+    selectedNurseId: null as number | null,
 };
-const useEditNurseStore = create<Store>()(
-    devtools((set) => ({
-        ...initialState,
-        setState: (state, value) => set((prev) => ({...prev, [state]: value})),
-    })),
-);
+const useEditNurseStore = createStore(initialState, {
+    name: 'useEditNurseStore',
+    persist: false,
+});
 
 export default useEditNurseStore;

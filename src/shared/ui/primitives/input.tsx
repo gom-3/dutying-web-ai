@@ -1,9 +1,9 @@
 import * as React from 'react';
 import {cn} from '@/shared/util/style';
 
-export type InputProps = React.ComponentProps<'input'>;
+export type TInputProps = React.ComponentProps<'input'>;
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(({className, type, ...props}, ref) => {
+const Input = React.forwardRef<HTMLInputElement, TInputProps>(({className, type, ...props}, ref) => {
     return (
         <input
             ref={ref}

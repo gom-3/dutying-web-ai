@@ -1,13 +1,6 @@
 import {useCallback} from 'react';
 import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
-import {
-    canGoNext,
-    canGoPrev,
-    clearPersistedStep,
-    loadPersistedStep,
-    useMakeShiftStore,
-    type TMakeShiftStep,
-} from './make-shift-store';
+import {canGoNext, canGoPrev, clearPersistedStep, loadPersistedStep, useMakeShiftStore, type TMakeShiftStep} from './make-shift-store';
 
 export function useMakeShiftUseCase() {
     const editor = useShiftEditorCommands();

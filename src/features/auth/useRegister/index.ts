@@ -1,6 +1,7 @@
-import {useCallback} from 'react';
 import {useQuery} from '@tanstack/react-query';
+import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
+import {type TAccount} from '@/entities/account';
 import {accountQueryOptions} from '@/entities/account/model/queries';
 import useLoadingUseCase from '@/features/ui/useLoading';
 import useTutorialUseCase from '@/features/ui/useTutorial';
@@ -8,7 +9,6 @@ import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
-import {type TAccount} from '@/entities/account';
 import useAuth from '../useAuth';
 
 const useRegister = () => {

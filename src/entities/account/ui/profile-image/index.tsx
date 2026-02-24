@@ -1,11 +1,11 @@
 import {useProfileImageStore} from '@/features/file/store';
 import {cn} from '@/shared/util/style';
 
-interface Props extends Omit<React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>, 'type'> {
+interface IProfileImageProps extends Omit<React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>, 'type'> {
     profileImg: {profileImgUrl?: string; defaultProfileImgId?: number};
 }
 
-export const ProfileImage = ({profileImg, ...props}: Props) => {
+export const ProfileImage = ({profileImg, ...props}: IProfileImageProps) => {
     const {imageBaseUrl} = useProfileImageStore();
 
     return (

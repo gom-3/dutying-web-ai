@@ -17,4 +17,3 @@ export function getPreferredShiftTeamId(): number | null {
 
     return Number.isFinite(parsed) ? parsed : null;
 }
-
