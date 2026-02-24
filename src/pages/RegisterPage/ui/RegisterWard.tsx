@@ -5,13 +5,12 @@ import {useForm} from 'react-hook-form';
 import {useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
+import {type TWardShiftType} from '@/entities/ward';
 import useRegister from '@/features/auth/useRegister';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
-import {type CreateShiftTypeDTO} from '@/shared/api/shiftType/type';
-import {type CreateWardDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO, type TCreateWardDTO} from '@/shared/api/ward/type';
 import {BackIcon, CancelIcon, EnterIcon, FullLogo, LogoSymbolFill, PenIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type WardShiftType} from '@/entities/ward';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 
@@ -28,7 +27,7 @@ const schema = yup.object().shape({
 
 function RegisterWard() {
     const [shiftTeams, setShiftTeams] = useState<string[][]>([[]]);
-    const [wardShiftTypes, setWardShiftTypes] = useState<CreateWardDTO['wardShiftTypes']>([
+    const [wardShiftTypes, setWardShiftTypes] = useState<TCreateWardDTO['wardShiftTypes']>([
         {
             name: '데이',
             shortName: 'D',
@@ -83,7 +82,7 @@ function RegisterWard() {
         resolver: yupResolver(schema),
     });
     const [openModal, setOpenModal] = useState(false);
-    const [tempShiftType, setTempShiftType] = useState<WardShiftType | null>(null);
+    const [tempShiftType, setTempShiftType] = useState<TWardShiftType | null>(null);
     const {
         state: {accountMe},
         actions: {createWard},
@@ -251,7 +250,7 @@ function RegisterWard() {
                                 setOpenModal(false);
                             }}
                             shiftType={tempShiftType}
-                            onSubmit={(shiftType: CreateShiftTypeDTO) => {
+                            onSubmit={(shiftType: TCreateShiftTypeDTO) => {
                                 if (tempShiftType && tempShiftType.wardShiftTypeId !== null) {
                                     setWardShiftTypes(
                                         produce(wardShiftTypes, (draft) => {

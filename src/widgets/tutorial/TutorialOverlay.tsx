@@ -1,12 +1,12 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 
-interface TutorialOverlayProps {
-    config: StepsConfig;
+interface ITutorialOverlayProps {
+    config: IStepsConfig;
     closeCallback: () => void;
 }
 
-interface ElementStyle {
+interface IElementStyle {
     id: string;
     left: number;
     top: number;
@@ -14,7 +14,7 @@ interface ElementStyle {
     height: number;
 }
 
-export interface StepConfig {
+export interface IStepConfig {
     highlightIds: string[];
     info?: string;
     title?: string;
@@ -25,16 +25,16 @@ export interface StepConfig {
     onNextStep?: () => void;
 }
 
-export interface StepsConfig {
-    steps: Map<number, StepConfig>;
+export interface IStepsConfig {
+    steps: Map<number, IStepConfig>;
     highLightPadding?: number;
     infoBoxHeight?: number;
     infoBoxMargin?: number;
     scrollLock?: boolean;
 }
 
-export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) => {
-    const [rectStyles, setRectStyles] = useState<ElementStyle[]>([]);
+export const TutorialOverlay = ({config, closeCallback}: ITutorialOverlayProps) => {
+    const [rectStyles, setRectStyles] = useState<IElementStyle[]>([]);
     const [step, setStep] = useState<number>(1);
     const stepRef = useRef<number>(1);
     const currentElements = useRef<{id: string; element: HTMLElement; initialColor: string}[]>([]);
@@ -51,7 +51,7 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
     }
 
     const calculateInfoBoxPosition = useCallback(
-        (position: ElementStyle, alignment?: 'center' | 'left' | 'right') => {
+        (position: IElementStyle, alignment?: 'center' | 'left' | 'right') => {
             const boxHeight = config.infoBoxHeight ?? 200;
             const margin = config.infoBoxMargin ?? 30;
 
@@ -109,7 +109,7 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
             return;
         }
 
-        const positions: ElementStyle[] = [];
+        const positions: IElementStyle[] = [];
         const elements: {id: string; element: HTMLElement; initialColor: string}[] = [];
         // Check if elements for current step are already set.
         const alreadyCalculated = elementIds[0] === currentElements.current[0]?.id;
@@ -144,7 +144,7 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
             const selectedElPosition: DOMRect = element.getBoundingClientRect();
 
             if (selectedElPosition) {
-                const position: ElementStyle = {
+                const position: IElementStyle = {
                     id: id,
                     left: selectedElPosition.left + window.scrollX - 1,
                     top: selectedElPosition.top + window.scrollY - 1,
@@ -197,7 +197,6 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
     };
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
         setHighlightedElementPositions();
     }, [setHighlightedElementPositions, step]);
 
@@ -292,7 +291,7 @@ export const TutorialOverlay = ({config, closeCallback}: TutorialOverlayProps) =
                     </div>
                 </div>
             </div>
-            {rectStyles.map((style: ElementStyle) => {
+            {rectStyles.map((style: IElementStyle) => {
                 return (
                     <div
                         style={style}

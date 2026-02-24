@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import useAuth from '@/features/auth/useAuth';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import useAuth from '@/features/auth/useAuth';
 import {FoldIcon, LogoV2} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
@@ -51,7 +51,7 @@ const NavigationBar = () => {
                         <FoldIcon className="h-[30px] w-[30px] text-gray-5" />
                     </button>
 
-                    <LogoV2 className="mt-[85px] h-9 w-9" />
+                    <LogoV2 className="mt-[85px] size-[28px]" />
 
                     <div className="mt-6 w-full">
                         <button

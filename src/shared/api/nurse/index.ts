@@ -1,20 +1,20 @@
-import {type Nurse} from '@/entities/nurse';
+import {type TNurse} from '@/entities/nurse';
 import axiosInstance from '../client';
-import {type INurseAPI, type CreateNurseDTO, type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from './type';
+import {type INurseAPI, type TCreateNurseDTO, type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from './type';
 
 class NurseAPI implements INurseAPI {
-    createAccountNurse = async (accountId: number, createNurse: CreateNurseDTO) =>
+    createAccountNurse = async (accountId: number, createNurse: TCreateNurseDTO) =>
         (
-            await axiosInstance.post<Nurse>(`/nurses?accountId=${accountId}`, {
+            await axiosInstance.post<TNurse>(`/nurses?accountId=${accountId}`, {
                 ...createNurse,
                 phoneNum: createNurse.phoneNum.replace(/-+/g, ''),
                 employmentDate: createNurse.employmentDate.replace(/-/g, ''),
             })
         ).data;
-    getNurse = async (nurseId: number) => (await axiosInstance.get<Nurse>(`/nurses/${nurseId}`)).data;
-    updateNurse = async (nurseId: number, updatedNurse: UpdateNurseDTO) =>
-        (await axiosInstance.patch<Nurse>(`/nurses/${nurseId}`, updatedNurse)).data;
-    updateNurseStatus = async (nurseId: number, status: string) => (await axiosInstance.patch<Nurse>(`/nurses/${nurseId}`, {status})).data;
+    getNurse = async (nurseId: number) => (await axiosInstance.get<TNurse>(`/nurses/${nurseId}`)).data;
+    updateNurse = async (nurseId: number, updatedNurse: TUpdateNurseDTO) =>
+        (await axiosInstance.patch<TNurse>(`/nurses/${nurseId}`, updatedNurse)).data;
+    updateNurseStatus = async (nurseId: number, status: string) => (await axiosInstance.patch<TNurse>(`/nurses/${nurseId}`, {status})).data;
     connectNurse = async (nurseId: number) => (await axiosInstance.post(`/nurses/${nurseId}/connect`)).data;
     unConnectNurse = async (nurseId: number) => (await axiosInstance.delete(`/nurses/${nurseId}/connect`)).data;
     updateNurseOrder = async (
@@ -45,7 +45,7 @@ class NurseAPI implements INurseAPI {
                 patchYearMonth,
             })
         ).data;
-    updateNurseShiftType = async (nurseId: number, nurseShiftTypeId: number, change: UpdateNurseShiftTypeRequest) =>
+    updateNurseShiftType = async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) =>
         (await axiosInstance.patch(`/nurses/${nurseId}/shift-types/${nurseShiftTypeId}`, change)).data;
     updateNurseCarry = async (shiftNurseId: number, value: number) =>
         (

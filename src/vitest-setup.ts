@@ -1,5 +1,4 @@
 import {afterAll, afterEach, beforeAll} from 'vitest';
-import 'reflect-metadata';
 import '@testing-library/jest-dom';
 
 // Start server before all tests

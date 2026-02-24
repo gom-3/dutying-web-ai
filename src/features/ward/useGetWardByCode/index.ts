@@ -1,9 +1,9 @@
 import {useCallback} from 'react';
+import {type TWard} from '@/entities/ward';
 import {WardAPI} from '@/shared/api';
-import {type Ward} from '@/entities/ward';
 
 export default function useGetWardByCode() {
-    const getWardByCode = useCallback((code: string): Promise<Ward> => {
+    const getWardByCode = useCallback((code: string): Promise<TWard> => {
         return WardAPI.getWardByCode(code);
     }, []);
 

@@ -1,13 +1,13 @@
-import type {Day} from '@/entities/shift';
+import type {TDay} from '@/entities/shift';
 
-export type DayShift = {
+export type TDayShift = {
     /** 날짜 */
-    day: Day;
+    day: TDay;
     /** 근무 형태종류 */
     shiftId: number;
 };
 
-export type Nurse = {
+export type TNurse = {
     /** 간호사 id */
     nurseId: number;
     /** 계정 id */
@@ -48,7 +48,7 @@ export type Nurse = {
     priority: number;
 };
 
-export type WaitingNurse = {
+export type TWaitingNurse = {
     waitingNurseId: number;
     nurseId: number;
     name: string;

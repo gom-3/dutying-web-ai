@@ -1,10 +1,10 @@
-import {useCallback} from 'react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useCallback} from 'react';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
-import {type EditWardDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TEditWardDTO} from '@/shared/api/ward/type';
 
 const useEditWard = () => {
     const {
@@ -25,7 +25,7 @@ const useEditWard = () => {
         enabled: !!wardId,
     });
     const editWardSetting = useCallback(
-        async (editWardDTO: EditWardDTO) => {
+        async (editWardDTO: TEditWardDTO) => {
             if (!wardId) return;
 
             try {
@@ -38,7 +38,7 @@ const useEditWard = () => {
         [queryClient, wardId, wardQueryKey],
     );
     const addShiftType = useCallback(
-        async (createShiftTypeDTO: CreateShiftTypeDTO) => {
+        async (createShiftTypeDTO: TCreateShiftTypeDTO) => {
             if (!wardId) return;
 
             await WardAPI.createShiftType(wardId, createShiftTypeDTO);
@@ -47,7 +47,7 @@ const useEditWard = () => {
         [queryClient, wardId, wardQueryKey],
     );
     const editShiftType = useCallback(
-        async (shiftTypeId: number, createShiftTypeDTO: CreateShiftTypeDTO) => {
+        async (shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => {
             if (!wardId) return;
 
             await WardAPI.updateShiftType(wardId, shiftTypeId, createShiftTypeDTO);

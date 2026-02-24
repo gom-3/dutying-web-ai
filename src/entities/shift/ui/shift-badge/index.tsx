@@ -1,15 +1,15 @@
 import React, {type Ref} from 'react';
 import {twMerge} from 'tailwind-merge';
-import {useUIConfigStore} from '@/features/ui/useUIConfig/store';
-import {type WardShiftType} from '@/entities/ward';
+import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
+import {type TWardShiftType} from '@/entities/ward';
 
-interface Props extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
-    shiftType: WardShiftType | null | undefined;
+interface IShiftBadgeProps extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLDivElement>, HTMLDivElement> {
+    shiftType: TWardShiftType | null | undefined;
     forwardRef?: Ref<HTMLDivElement>;
     isOnlyRequest?: boolean;
 }
 
-function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}: Props) {
+function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}: IShiftBadgeProps) {
     const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
 
     return (

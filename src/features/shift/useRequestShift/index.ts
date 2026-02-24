@@ -3,17 +3,15 @@ import {produce} from 'immer';
 import {useCallback, useEffect, useState} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
+import {type TRequestShift} from '@/entities/shift';
+import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {moveSelection} from '@/shared/editor/editor-core/selection';
-import {type RequestShift} from '@/entities/shift';
-import {type ShiftTeam, type WardShiftType} from '@/entities/ward';
 import {DateUtil} from '@/shared/util/date';
-import {type Focus} from '../editDuty/faults';
-import {findNurse} from '../editDuty/find-nurse';
-import {keydownEventMapper} from '../editDuty/keyboard';
 import {useRequestShiftStore} from './store';
+import {type TFocus} from './type';
+import {findNurse, keydownEventMapper, moveFocus} from './utils';
 
 const useRequestShift = (activeEffect = false) => {
     const {year, month, focus, foldedLevels, currentShiftTeamId, oldCurrentShiftTeamId, wardShiftTypeMap, readonly, setState} =
@@ -54,10 +52,10 @@ const useRequestShift = (activeEffect = false) => {
     });
     const {data: requestShift, status: shiftStatus} = useQuery({
         ...requestShiftQueryOptions,
-        queryFn: async () => {
+        queryFn: async (): Promise<TRequestShift> => {
             const res = await WardAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
 
-            if (res === null) return;
+            if (res === null) return null as unknown as TRequestShift;
 
             if (!foldedLevels || !oldCurrentShiftTeamId || (oldCurrentShiftTeamId && oldCurrentShiftTeamId !== currentShiftTeamId)) {
                 setState(
@@ -72,14 +70,14 @@ const useRequestShift = (activeEffect = false) => {
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const changeRequestShift = useCallback(
-        async (focus: Focus, shiftTypeId: number | null) => {
+        async (focus: TFocus, shiftTypeId: number | null) => {
             if (!wardId) return;
 
             setChangeStatus('loading');
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
             const {shiftNurseId, day} = focus;
-            const oldShift = queryClient.getQueryData<RequestShift>(requestShiftQueryKey);
+            const oldShift = queryClient.getQueryData<TRequestShift>(requestShiftQueryKey);
 
             if (oldShift && wardShiftTypeMap) {
                 const oldShiftTypeId = oldShift.divisionShiftNurses
@@ -88,18 +86,17 @@ const useRequestShift = (activeEffect = false) => {
                 const edit = {
                     nurseName: findNurse(oldShift, focus.shiftNurseId)!.name,
                     focus,
-                    prevShiftType: oldShiftTypeId ? wardShiftTypeMap.get(oldShiftTypeId) : null,
-                    nextShiftType: shiftTypeId ? wardShiftTypeMap.get(shiftTypeId) : null,
+                    prevShiftType: oldShiftTypeId ? (wardShiftTypeMap.get(oldShiftTypeId) as TWardShiftType) : null,
+                    nextShiftType: shiftTypeId ? (wardShiftTypeMap.get(shiftTypeId) as TWardShiftType) : null,
                     dateString: DateUtil.getDateString(new Date(), 'yyyy-MM-dd HH:mm:ss'),
                 };
 
-                queryClient.setQueryData<RequestShift>(
+                queryClient.setQueryData<TRequestShift>(
                     requestShiftQueryKey,
                     produce(oldShift, (draft) => {
                         draft.divisionShiftNurses
                             .flatMap((x) => x)
-                            .find((x) => x.shiftNurse.shiftNurseId === focus.shiftNurseId)!.wardReqShiftList[focus.day] =
-                            shiftTypeId;
+                            .find((x) => x.shiftNurse.shiftNurseId === focus.shiftNurseId)!.wardReqShiftList[focus.day] = shiftTypeId;
                     }),
                 );
 
@@ -121,6 +118,7 @@ const useRequestShift = (activeEffect = false) => {
                 if (oldShift) {
                     queryClient.setQueryData(requestShiftQueryKey, oldShift);
                 }
+
                 setChangeStatus('error');
                 setTimeout(() => setChangeStatus('idle'), 0);
             }
@@ -218,28 +216,13 @@ const useRequestShift = (activeEffect = false) => {
             if (!focus || !requestShift) return;
 
             if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-                const bounds = {rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length, colCount: requestShift.days.length};
-                const rowIndexByShiftNurseId = new Map(
-                    requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
-                );
-                const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
-                const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
-                const nextSel = moveSelection(
-                    currentSel,
+                moveFocus(
                     e.key.replace('Arrow', '').toLowerCase() as 'left' | 'right' | 'up' | 'down',
-                    bounds,
-                    false,
                     ctrlKey,
+                    requestShift,
+                    focus,
+                    (focus: TFocus | null) => setState('focus', focus),
                 );
-
-                if (!nextSel) return;
-
-                const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
-                const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
-
-                if (!row) return;
-
-                setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
             }
 
             keydownEventMapper(
@@ -248,55 +231,20 @@ const useRequestShift = (activeEffect = false) => {
                     keys: [shiftType.shortName],
                     callback: () => {
                         changeFocusedShift(shiftType.wardShiftTypeId);
-
-                        // 입력 후 우측 이동
-                        const bounds = {
-                            rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length,
-                            colCount: requestShift.days.length,
-                        };
-                        const rowIndexByShiftNurseId = new Map(
-                            requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
-                        );
-                        const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
-                        const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
-                        const nextSel = moveSelection(currentSel, 'right', bounds, false, ctrlKey);
-
-                        if (!nextSel) return;
-
-                        const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
-                        const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
-
-                        if (!row) return;
-
-                        setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
-                        sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
+                        moveFocus('right', ctrlKey, requestShift, focus, (focus: TFocus | null) => {
+                            setState('focus', focus);
+                            sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
+                        });
                     },
                 })),
                 {
                     keys: ['Backspace'],
                     callback: () => {
                         changeFocusedShift(null);
-
-                        const bounds = {
-                            rowCount: requestShift.divisionShiftNurses.flatMap((d) => d).length,
-                            colCount: requestShift.days.length,
-                        };
-                        const rowIndexByShiftNurseId = new Map(
-                            requestShift.divisionShiftNurses.flatMap((d) => d).map((r, idx) => [r.shiftNurse.shiftNurseId, idx] as const),
-                        );
-                        const currentRow = rowIndexByShiftNurseId.get(focus.shiftNurseId) ?? 0;
-                        const currentSel = {type: 'single' as const, anchor: {row: currentRow, col: focus.day}};
-                        const nextSel = moveSelection(currentSel, 'left', bounds, false, ctrlKey);
-
-                        if (!nextSel) return;
-
-                        const pos = nextSel.type === 'single' ? nextSel.anchor : nextSel.from;
-                        const row = requestShift.divisionShiftNurses.flatMap((d) => d)[pos.row];
-
-                        if (!row) return;
-
-                        setState('focus', {shiftNurseId: row.shiftNurse.shiftNurseId, shiftNurseName: row.shiftNurse.name, day: pos.col});
-                        sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
+                        moveFocus('left', ctrlKey, requestShift, focus, (focus: TFocus | null) => {
+                            setState('focus', focus);
+                            sendEvent(ctrlKey ? events.requestPage.moveCellFocus : events.requestPage.moveCellFocus, e.key);
+                        });
                     },
                 },
                 {keys: ['Delete'], callback: () => changeFocusedShift(null)},
@@ -336,7 +284,7 @@ const useRequestShift = (activeEffect = false) => {
         if (activeEffect && requestShift) {
             window.dispatchEvent(new Event('resize'));
 
-            const wardShiftTypeMap = new Map<number, WardShiftType>();
+            const wardShiftTypeMap = new Map<number, TWardShiftType>();
 
             requestShift.wardShiftTypes.forEach((wardShiftType) => {
                 wardShiftTypeMap.set(wardShiftType.wardShiftTypeId, wardShiftType);
@@ -378,18 +326,18 @@ const useRequestShift = (activeEffect = false) => {
             shiftStatus,
             wardShiftTypeMap,
             readonly,
-            currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as ShiftTeam | null,
+            currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
         },
         actions: {
-            changeRequestShift: (focus: Focus, shiftTypeId: number | null) => changeRequestShift(focus, shiftTypeId),
+            changeRequestShift: (focus: TFocus, shiftTypeId: number | null) => changeRequestShift(focus, shiftTypeId),
             toggleEditMode: handleToggleEditMode,
             createNextMonthShift: handleCreateNextMonthShift,
             acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => acceptRequest(reqShiftId, isAccepted),
             foldLevel,
             changeMonth,
-            changeFocus: (focus: Focus | null) => setState('focus', focus),
-            changeShiftTeam: (shiftTeam: ShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
+            changeFocus: (focus: TFocus | null) => setState('focus', focus),
+            changeShiftTeam: (shiftTeam: TShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
         },
     };
 };

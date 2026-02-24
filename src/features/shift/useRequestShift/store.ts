@@ -1,26 +1,26 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
+import {type TWardShiftType} from '@/entities/ward';
 import {type TValues} from '@/shared/types/util';
-import {type WardShiftType} from '@/entities/ward';
-import {type Focus} from '../editDuty/faults';
+import {type TFocus} from './type';
 
-interface State {
+interface IState {
     year: number;
     month: number;
-    focus: Focus | null;
+    focus: TFocus | null;
     foldedLevels: boolean[] | null;
     currentShiftTeamId: number | null;
     oldCurrentShiftTeamId: number | null;
-    wardShiftTypeMap: Map<number, WardShiftType> | null;
+    wardShiftTypeMap: Map<number, TWardShiftType> | null;
     readonly: boolean;
 }
 
-interface Store extends State {
-    setState: (key: keyof State, value: TValues<State>) => void;
+interface IStore extends IState {
+    setState: (key: keyof IState, value: TValues<IState>) => void;
     initState: () => void;
 }
 
-const initialState: State = {
+const initialState: IState = {
     year: new Date().getMonth() + 1 === 12 ? new Date().getFullYear() + 1 : new Date().getFullYear(),
     month: new Date().getMonth() + 1 === 12 ? 1 : new Date().getMonth() + 2,
     focus: null,
@@ -31,7 +31,7 @@ const initialState: State = {
     readonly: true,
 };
 
-export const useRequestShiftStore = create<Store>()(
+export const useRequestShiftStore = create<IStore>()(
     devtools(
         persist(
             (set) => ({
@@ -41,7 +41,7 @@ export const useRequestShiftStore = create<Store>()(
             }),
             {
                 name: 'useRequestShiftStore',
-                partialize: ({year, month, currentShiftTeamId, oldCurrentShiftTeamId}: Store) => ({
+                partialize: ({year, month, currentShiftTeamId, oldCurrentShiftTeamId}: IStore) => ({
                     year,
                     month,
                     currentShiftTeamId,

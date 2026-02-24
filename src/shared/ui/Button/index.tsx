@@ -2,9 +2,9 @@ import * as React from 'react';
 import {Button as ShadcnButton} from '@/shared/ui/primitives/button';
 import {cn} from '@/shared/util/style';
 
-type Props = React.ComponentProps<typeof ShadcnButton>;
+type TButtonProps = React.ComponentProps<typeof ShadcnButton>;
 
-function Button({children, className, variant = 'default', ...props}: Props) {
+function Button({children, className, variant = 'default', ...props}: TButtonProps) {
     return (
         <ShadcnButton
             variant={variant}

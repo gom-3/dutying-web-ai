@@ -1,14 +1,14 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
 import {useCallback} from 'react';
+import {type TRequestShift, type TShift} from '@/entities/shift';
+import {type TWard} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
-import {type UpdateNurseDTO, type UpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
-import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
-import {type RequestShift, type Shift} from '@/entities/shift';
-import {type Ward} from '@/entities/ward';
+import {type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
+import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import useEditNurseStore from './store';
 
 const useEditShiftTeam = () => {
@@ -73,7 +73,7 @@ const useEditShiftTeam = () => {
         [setState],
     );
     const updateNurse = useCallback(
-        async (nurseId: number, updateNurseDTO: UpdateNurseDTO) => {
+        async (nurseId: number, updateNurseDTO: TUpdateNurseDTO) => {
             try {
                 await NurseAPI.updateNurse(nurseId, updateNurseDTO);
                 await invalidateWardShiftAndRequest();
@@ -84,7 +84,7 @@ const useEditShiftTeam = () => {
         [invalidateWardShiftAndRequest],
     );
     const updateNurseShift = useCallback(
-        async (nurseId: number, nurseShiftTypeId: number, change: UpdateNurseShiftTypeRequest) => {
+        async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) => {
             await NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change);
             await invalidateWard();
         },
@@ -126,12 +126,12 @@ const useEditShiftTeam = () => {
             await queryClient.cancelQueries({queryKey: shiftQueryKey});
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
-            const oldWard = queryClient.getQueryData<Ward>(wardQueryKey);
-            const oldShift = queryClient.getQueryData<Shift>(shiftQueryKey);
-            const oldReqShift = queryClient.getQueryData<RequestShift>(requestShiftQueryKey);
+            const oldWard = queryClient.getQueryData<TWard>(wardQueryKey);
+            const oldShift = queryClient.getQueryData<TShift>(shiftQueryKey);
+            const oldReqShift = queryClient.getQueryData<TRequestShift>(requestShiftQueryKey);
 
             if (oldWard) {
-                queryClient.setQueryData<Ward>(
+                queryClient.setQueryData<TWard>(
                     wardQueryKey,
                     produce(oldWard, (draft) => {
                         const sourceNurses = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!.nurses;
@@ -155,7 +155,7 @@ const useEditShiftTeam = () => {
             }
 
             if (oldShift) {
-                queryClient.setQueryData<Shift>(
+                queryClient.setQueryData<TShift>(
                     shiftQueryKey,
                     produce(oldShift, (draft) => {
                         const sourceRows = draft.divisionShiftNurses.find((x) => x.some((y) => y.shiftNurse.nurseId === nurseId));
@@ -189,7 +189,7 @@ const useEditShiftTeam = () => {
             }
 
             if (oldReqShift) {
-                queryClient.setQueryData<RequestShift>(
+                queryClient.setQueryData<TRequestShift>(
                     requestShiftQueryKey,
                     produce(oldReqShift, (draft) => {
                         const sourceRows = draft.divisionShiftNurses.find((x) => x.some((y) => y.shiftNurse.nurseId === nurseId));
@@ -244,13 +244,13 @@ const useEditShiftTeam = () => {
         [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey],
     );
     const updateShiftTeam = useCallback(
-        async (shiftTeamId: number, updateShiftTeamDTO: UpdateShiftTeamDTO) => {
+        async (shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) => {
             if (!wardId) return;
 
-            const oldWard = queryClient.getQueryData<Ward>(wardQueryKey);
+            const oldWard = queryClient.getQueryData<TWard>(wardQueryKey);
 
             if (oldWard) {
-                queryClient.setQueryData<Ward>(
+                queryClient.setQueryData<TWard>(
                     wardQueryKey,
                     produce(oldWard, (draft) => {
                         const shiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!;

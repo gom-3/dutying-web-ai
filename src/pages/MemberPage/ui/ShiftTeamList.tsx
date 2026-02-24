@@ -1,13 +1,13 @@
+import {DragDropContext, type DropResult, Droppable, Draggable} from '@hello-pangea/dnd';
 import {groupBy} from 'lodash-es';
 import {useCallback, useEffect, useState} from 'react';
-import {DragDropContext, type DropResult, Droppable, Draggable} from 'react-beautiful-dnd';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import {setPreferredShiftTeamId} from '@/features/shift/editDuty/prefs';
+import {setPreferredShiftTeamId} from '@/features/shift/editDuty/model/utils/prefs';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
-import {type UpdateShiftTeamDTO} from '@/shared/api/ward/type';
+import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import TextField from '@/shared/ui/TextField';
@@ -21,14 +21,16 @@ function ShiftTeamList() {
     const [openMenu, setOpenMenu] = useState<number | null>(null);
     const [editShiftTeam, setEditShiftTeam] = useState<{
         shiftTeamId: number;
-        updateShiftTeamDTO: UpdateShiftTeamDTO;
+        updateShiftTeamDTO: TUpdateShiftTeamDTO;
     } | null>(null);
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const navigate = useNavigate();
-    const clickAwayRef = useOnclickOutside(() => selectNurse(null));
+    const clickAwayListRef = useOnclickOutside(() => selectNurse(null));
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenu(null));
     const handleUpdateShiftTeam = () => {
         setEditShiftTeam(null);
+        console.log('?');
+        console.log(editShiftTeam);
         updateShiftTeam(editShiftTeam!.shiftTeamId, editShiftTeam!.updateShiftTeamDTO);
     };
     const clickAwayShiftTeamNameRef = useOnclickOutside(() => {
@@ -155,11 +157,10 @@ function ShiftTeamList() {
                 </button>
             </div>
             <DragDropContext onDragEnd={onDragEnd}>
-                <div className="mb-8 flex items-start gap-10">
+                <div className="mb-8 flex items-start gap-10" ref={clickAwayListRef}>
                     {shiftTeams?.map((shiftTeam) => (
                         <div
                             id="shift_team_list"
-                            ref={clickAwayRef}
                             className="mt-5.5 flex w-75 flex-col rounded-[.9375rem] border-[.0625rem] border-sub-4.5 shadow-banner"
                             key={shiftTeam.shiftTeamId}
                         >

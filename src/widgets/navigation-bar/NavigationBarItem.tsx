@@ -3,7 +3,7 @@ import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {type TRoute} from '@/shared/constant/path';
 
-interface Props {
+interface INavigationBarItemProps {
     path?: TRoute;
     SelectedIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -11,7 +11,7 @@ interface Props {
     disabled?: boolean;
 }
 
-const NavigationBarItem = ({path, SelectedIcon, Icon, text, disabled = false}: Props) => {
+const NavigationBarItem = ({path, SelectedIcon, Icon, text, disabled = false}: INavigationBarItemProps) => {
     const navigate = useNavigate();
     const {pathname} = useLocation();
     const isSelected = Boolean(path) && path === pathname;

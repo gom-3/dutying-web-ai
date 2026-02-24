@@ -2,12 +2,12 @@ import React, {useEffect, useRef, useState} from 'react';
 import {Input} from '@/shared/ui/primitives/input';
 import {cn} from '@/shared/util/style';
 
-interface Props extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
+interface ITimeInputProps extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
     initTime?: string;
     onTimeChange?: (value: string) => void;
 }
 
-function TimeInput({initTime, onTimeChange, className, ...props}: Props) {
+function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProps) {
     const [time, setTime] = useState(initTime ?? '');
     const lastValue = useRef('');
     const isValid = (value: string) => {

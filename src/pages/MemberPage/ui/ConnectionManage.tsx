@@ -4,17 +4,17 @@ import {createPortal} from 'react-dom';
 import {twMerge} from 'tailwind-merge';
 import {match} from 'ts-pattern';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import {type TWaitingNurse} from '@/entities/nurse';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import useEditWard from '@/features/ward/useEditWard';
 import {CancelIcon, CheckedIcon, MoreIcon, PersonIcon, SuccessCircleIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
-import {type WaitingNurse} from '@/entities/nurse';
 
-interface ConnectionManageProps {
+interface IConnectionManageProps {
     open: boolean;
     setOpen: (open: boolean) => void;
 }
 
-function ConnectionManage({open, setOpen}: ConnectionManageProps) {
+function ConnectionManage({open, setOpen}: IConnectionManageProps) {
     const {
         state: {watingNurses},
         actions: {cancelWaiting, approveWatingNurses, connectWatingNurses},
@@ -23,7 +23,7 @@ function ConnectionManage({open, setOpen}: ConnectionManageProps) {
         state: {shiftTeams},
     } = useEditShiftTeam();
     const [step, setStep] = useState(0);
-    const [currentWaitingNurse, setCurrentWaitingNurse] = useState<WaitingNurse | null>(null);
+    const [currentWaitingNurse, setCurrentWaitingNurse] = useState<TWaitingNurse | null>(null);
     const [connectMode, setConnectMode] = useState<'link' | 'add'>('link');
     const [toLinkNurseId, setToLinkNurseId] = useState<number | null>(null);
     const [toAddShiftTeamId, setToAddShiftTeamId] = useState<number | null>(null);
@@ -37,7 +37,6 @@ function ConnectionManage({open, setOpen}: ConnectionManageProps) {
 
     useEffect(() => {
         if (open === false) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             initialize();
         }
     }, [open]);

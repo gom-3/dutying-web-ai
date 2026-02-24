@@ -3,17 +3,17 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router';
 import {Pattern, match} from 'ts-pattern';
+import {type TWard} from '@/entities/ward';
 import useRegister from '@/features/auth/useRegister';
 import useGetWardByCode from '@/features/ward/useGetWardByCode';
 import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type Ward} from '@/entities/ward';
 
 function EnterWard() {
     const [codeList, setCodeList] = useState<(string | null)[]>([null, null, null, null, null, null]);
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
     const [open, setOpen] = useState<boolean>(false);
-    const [ward, setWard] = useState<Ward | null>(null);
+    const [ward, setWard] = useState<TWard | null>(null);
     const [error, setError] = useState<boolean>(false);
     const {
         state: {accountMe},
@@ -74,7 +74,6 @@ function EnterWard() {
         if (codeList.every((code) => code !== null)) {
             const code = codeList.join('');
 
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             handleGetWard(code);
         } else {
             setError(false);

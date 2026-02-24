@@ -1,14 +1,14 @@
-import {useCallback} from 'react';
 import {useQuery} from '@tanstack/react-query';
+import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
+import {type TAccount} from '@/entities/account';
 import {accountQueryOptions} from '@/entities/account/model/queries';
 import useLoadingUseCase from '@/features/ui/useLoading';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
-import {type CreateNurseDTO} from '@/shared/api/nurse/type';
-import {type CreateWardDTO} from '@/shared/api/ward/type';
+import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
+import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
-import {type Account} from '@/entities/account';
 import useAuth from '../useAuth';
 
 const useRegister = () => {
@@ -20,7 +20,7 @@ const useRegister = () => {
     const {setLoading} = useLoadingUseCase();
     const navigate = useNavigate();
     const changeAccountStatus = useCallback(
-        async ({accountId, status}: {accountId: number; status: Account['status']}) => {
+        async ({accountId, status}: {accountId: number; status: TAccount['status']}) => {
             try {
                 const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
 
@@ -37,7 +37,7 @@ const useRegister = () => {
         [handleGetAccountMe, navigate],
     );
     const createWard = useCallback(
-        async (createWardDTO: CreateWardDTO) => {
+        async (createWardDTO: TCreateWardDTO) => {
             setLoading(true);
 
             try {
@@ -86,7 +86,7 @@ const useRegister = () => {
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
     const registerAccountAndNurse = async (
-        createNurseDTO: CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
+        createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
     ) => {
         if (!accountId || !accountMe) return;
 

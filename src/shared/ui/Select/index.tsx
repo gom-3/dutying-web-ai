@@ -3,7 +3,7 @@ import {type UseFormRegisterReturn} from 'react-hook-form';
 import {ArrowDownIcon} from '@/shared/assets/svg';
 import {cn} from '@/shared/util/style';
 
-interface Props extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> {
+interface ISelectProps extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> {
     placeholder?: string;
     options?: {value: string | number; label: React.ReactNode}[];
     selectClassName?: string;
@@ -11,7 +11,10 @@ interface Props extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLS
 }
 
 const Select = forwardRef(
-    ({placeholder, value, onChange, options, className, selectClassName, ...props}: Props, ref: React.ForwardedRef<HTMLSelectElement>) => {
+    (
+        {placeholder, value, onChange, options, className, selectClassName, ...props}: ISelectProps,
+        ref: React.ForwardedRef<HTMLSelectElement>,
+    ) => {
         return (
             <div className={cn('relative h-8.75 w-45.75', className)}>
                 <ArrowDownIcon className="absolute top-[50%] right-[.625rem] h-6.25 w-6.25 translate-y-[-50%]" />

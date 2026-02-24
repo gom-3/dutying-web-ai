@@ -1,20 +1,20 @@
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {type CreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {CancelIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
 import TextField from '@/shared/ui/TextField';
 import TimeInput from '@/shared/ui/TimeInput';
 
-interface Props {
+interface ICreateShiftModalProps {
     open: boolean;
-    shiftType: CreateShiftTypeDTO | null;
+    shiftType: TCreateShiftTypeDTO | null;
     close: () => void;
-    onSubmit: (shiftType: CreateShiftTypeDTO) => void;
+    onSubmit: (shiftType: TCreateShiftTypeDTO) => void;
     onDelete: () => void;
 }
 
-const initialValue: CreateShiftTypeDTO = {
+const initialValue: TCreateShiftTypeDTO = {
     name: '',
     startTime: '00:00',
     endTime: '00:00',
@@ -26,7 +26,7 @@ const initialValue: CreateShiftTypeDTO = {
     classification: 'OTHER_WORK',
 };
 
-function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: Props) {
+function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
     const [writeShift, setWriteShift] = useState(initialValue);
     const modalRoot = document.querySelector('#modal-root');
     const handleSubmit = () => {

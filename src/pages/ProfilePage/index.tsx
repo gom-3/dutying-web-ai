@@ -1,13 +1,13 @@
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
+import {type TNurse} from '@/entities/nurse';
 import useEditAccount from '@/features/account/useEditAccount';
 import useAuth from '@/features/auth/useAuth';
 import useProfileImage from '@/features/file/useProfileImage';
-import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {type Nurse} from '@/entities/nurse';
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
 import TextField from '@/shared/ui/TextField';
@@ -22,9 +22,9 @@ function ProfilePage() {
         actions: {handleLogout},
     } = useAuth();
     const {handleEditProfile, deleteAccount, quitWard} = useEditAccount();
-    const [writeNurse, setWriteNurse] = useState<Nurse | null>(null);
+    const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage();
-    const handleChange = <T extends keyof Nurse>(key: T, value: Nurse[T]) => {
+    const handleChange = <T extends keyof TNurse>(key: T, value: TNurse[T]) => {
         if (!writeNurse) return;
 
         setWriteNurse({...writeNurse, [key]: value});
@@ -42,7 +42,6 @@ function ProfilePage() {
 
     useEffect(() => {
         if (selectedNurse && accountMe && selectedNurse?.accountId === accountMe?.accountId) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
             setWriteNurse(selectedNurse);
         }
     }, [selectedNurse, accountMe]);

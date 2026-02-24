@@ -31,7 +31,7 @@ const dependencies = {
     'lodash-es': 'lodash-es',
     qs: 'qs',
     react: 'react',
-    'react-beautiful-dnd': 'react-beautiful-dnd',
+    '@hello-pangea/dnd': '@hello-pangea/dnd',
     'react-cool-onclickoutside': 'react-cool-onclickoutside',
     'react-dom': 'react-dom',
     'react-draggable': 'react-draggable',
@@ -62,10 +62,13 @@ export default defineConfig({
         react({
             babel: {
                 plugins: [
-                    // tsconfig(app).experimentalDecorators/emitDecoratorMetadata 대응 (legacy decorators)
-                    ['@babel/plugin-proposal-decorators', {legacy: true}],
-                    ['@babel/plugin-proposal-class-properties', {loose: true}],
                     ['babel-plugin-react-compiler'],
+                    [
+                        '@locator/babel-jsx/dist',
+                        {
+                            env: 'development',
+                        },
+                    ],
                 ],
             },
         }),

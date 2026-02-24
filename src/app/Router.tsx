@@ -10,7 +10,7 @@ const LoginPage = lazy(() => import('@/pages/LoginPage/index.tsx'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage/index.tsx'));
 const EnterWard = lazy(() => import('@/pages/RegisterPage/ui/EnterWard.tsx'));
 const RegisterWard = lazy(() => import('@/pages/RegisterPage/ui/RegisterWard.tsx'));
-const MakeShiftPage = lazy(() => import('@/pages/MakeShiftPage/index.tsx'));
+const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const RequestShiftPage = lazy(() => import('@/pages/RequestShiftPage/index.tsx'));
 const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));

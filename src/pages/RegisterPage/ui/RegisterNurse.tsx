@@ -5,10 +5,10 @@ import {useForm} from 'react-hook-form';
 import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
-import {ProfileImage} from '@/entities/account/ui/profile-image';
-import {type CreateNurseDTO} from '@/shared/api/nurse/type';
+import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/Button';
 import Select from '@/shared/ui/Select';
@@ -48,7 +48,7 @@ function RegisterNurse() {
         setValue,
         register,
         handleSubmit,
-    } = useForm<CreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}>({
+    } = useForm<TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}>({
         defaultValues: {
             gender: '여',
             isWorker: true,

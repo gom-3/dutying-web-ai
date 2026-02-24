@@ -1,11 +1,11 @@
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
+import {type TAccount} from '@/entities/account';
 import {setAccessToken} from '@/shared/api/client';
-import {type Account} from '@/entities/account';
 import {type TValues} from '@/shared/types/util';
 
 interface IState {
-    accountMe: Account | null;
+    accountMe: TAccount | null;
     isAuth: boolean;
     accessToken: string | null;
     accountId: number | null;
@@ -15,7 +15,7 @@ interface IState {
     _loaded: boolean;
 }
 
-interface Store extends IState {
+interface IStore extends IState {
     setState: (key: keyof IState, value: TValues<IState>) => void;
     initState: () => void;
 }
@@ -30,7 +30,7 @@ const initialState: IState = {
     demoStartDate: null,
     _loaded: false,
 };
-const useAuthStore = create<Store>()(
+const useAuthStore = create<IStore>()(
     devtools(
         persist(
             (set) => ({
@@ -40,7 +40,7 @@ const useAuthStore = create<Store>()(
             }),
             {
                 name: 'useAuthStore',
-                partialize: ({isAuth, accessToken, accountId, nurseId, wardId, demoStartDate}: Store) => {
+                partialize: ({isAuth, accessToken, accountId, nurseId, wardId, demoStartDate}: IStore) => {
                     if (accessToken) setAccessToken(accessToken);
 
                     return {

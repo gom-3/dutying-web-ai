@@ -4,11 +4,11 @@ import MobileHeader from './mobile-header';
 
 function MobileLanding() {
     return (
-        <div className="flex w-screen flex-col">
+        <div className="flex w-full flex-col">
             <MobileHeader />
 
             {/* 모바일 메인 */}
-            <div className='h-real-screen min-h-[660px] w-screen bg-[url("/img/landing_mobile_1.webp")] bg-cover bg-center bg-no-repeat pt-[60px] pb-[6.25rem]'>
+            <div className='h-real-screen min-h-[660px] w-full bg-[url("/img/landing_mobile_1.webp")] bg-cover bg-center bg-no-repeat pt-[60px] pb-[6.25rem]'>
                 <div className="mx-auto flex h-full w-[85%] flex-col pt-[30px]">
                     <h1 className="font-line text-[32px] leading-[42px] font-bold text-main-1">
                         근무표,
@@ -47,7 +47,7 @@ function MobileLanding() {
             </div>
 
             {/* 모바일 앱 기능 소개 섹션들 */}
-            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_4.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_mobile_4.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="mx-auto flex h-full w-[85%] flex-col pt-[124px]">
                     <div className="flex items-center gap-[8px]">
                         <div className="flex h-[22px] items-center rounded-[5px] bg-white px-[6px] font-poppins text-[14px] text-main-2">
@@ -70,7 +70,7 @@ function MobileLanding() {
                 </div>
             </div>
 
-            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_5.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_mobile_5.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="mx-auto flex h-full w-[85%] flex-col pt-[124px]">
                     <div className="flex items-center gap-[8px]">
                         <div className="flex h-[22px] items-center rounded-[5px] bg-main-4 px-[6px] font-poppins text-[14px] text-main-1">
@@ -94,7 +94,7 @@ function MobileLanding() {
             </div>
 
             {/* 웹 기능 소개 섹션들 */}
-            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_2.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_mobile_2.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="mx-auto mt-[124px] flex w-[85%] flex-col">
                     <div className="flex items-center gap-[8px]">
                         <div className="flex h-[22px] items-center rounded-[5px] bg-main-4 px-[6px] font-poppins text-[14px] text-main-1">
@@ -115,7 +115,7 @@ function MobileLanding() {
                 </div>
             </div>
 
-            <div className='h-real-screen w-screen bg-[url("/img/landing_mobile_3.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_mobile_3.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="mx-auto flex h-full w-[85%] flex-col pt-[64px]">
                     <div className="flex items-center gap-[8px]">
                         <div className="flex h-[22px] items-center rounded-[5px] bg-white px-[6px] font-poppins text-[14px] text-main-1">

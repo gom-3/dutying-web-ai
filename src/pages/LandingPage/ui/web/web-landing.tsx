@@ -50,10 +50,10 @@ function WebLanding() {
     const {t} = useTypedTranslation();
 
     return (
-        <div className="flex w-screen flex-col">
+        <div className="flex w-full flex-col">
             <WebHeader focus={focus} handleClickMobileAnchor={handleClickMobileAnchor} handleClickWebAnchor={handleClickWebAnchor} />
             {/* 웹 메인 */}
-            <div className='relative h-real-screen min-h-[660px] w-screen bg-[url("/img/landing_1.webp")] bg-cover bg-center bg-no-repeat py-0'>
+            <div className='relative h-real-screen min-h-[660px] w-full bg-[url("/img/landing_1.webp")] bg-cover bg-center bg-no-repeat py-0'>
                 <div className="relative top-1/2 container mx-auto h-fit -translate-y-1/2">
                     <h1 className="font-line text-[4rem] leading-[5.4375rem] font-bold text-white">
                         {renderMultilineText(t('page.landing.title'))}
@@ -153,7 +153,7 @@ function WebLanding() {
             <div
                 id="mobile"
                 ref={mobileSectionRef}
-                className='h-real-screen w-screen bg-[url("/img/landing_4.webp")] bg-cover bg-center bg-no-repeat'
+                className='h-real-screen w-full bg-[url("/img/landing_4.webp")] bg-cover bg-center bg-no-repeat'
             >
                 <div className="container mx-auto mt-[8.875rem] flex items-start">
                     <div className="w-[28.125rem]">
@@ -179,7 +179,7 @@ function WebLanding() {
                 </div>
             </div>
 
-            <div className='h-real-screen w-screen bg-[url("/img/landing_5.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_5.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="container mx-auto mt-[8.875rem] flex justify-end">
                     <div className="w-[28.125rem]">
                         <div className="flex items-center gap-[8px]">
@@ -208,7 +208,7 @@ function WebLanding() {
             <div
                 id="web"
                 ref={webSectionRef}
-                className='h-real-screen w-screen bg-[url("/img/landing_2.webp")] bg-cover bg-center bg-no-repeat'
+                className='h-real-screen w-full bg-[url("/img/landing_2.webp")] bg-cover bg-center bg-no-repeat'
             >
                 <div className="container mx-auto mt-[8.875rem] flex justify-end">
                     <div className="w-[28.125rem]">
@@ -232,7 +232,7 @@ function WebLanding() {
                 </div>
             </div>
 
-            <div className='h-real-screen w-screen bg-[url("/img/landing_3.webp")] bg-cover bg-center bg-no-repeat'>
+            <div className='h-real-screen w-full bg-[url("/img/landing_3.webp")] bg-cover bg-center bg-no-repeat'>
                 <div className="container mx-auto mt-[8.875rem] flex items-start">
                     <div className="w-[28.125rem]">
                         <div className="flex items-center gap-[8px]">
