@@ -11,6 +11,7 @@ const RegisterPage = lazy(() => import('@/pages/RegisterPage/index.tsx'));
 const EnterWard = lazy(() => import('@/pages/RegisterPage/ui/EnterWard.tsx'));
 const RegisterWard = lazy(() => import('@/pages/RegisterPage/ui/RegisterWard.tsx'));
 const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
+const DutyPage = lazy(() => import('@/pages/duty'));
 const RequestShiftPage = lazy(() => import('@/pages/RequestShiftPage/index.tsx'));
 const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));
@@ -33,6 +34,7 @@ export const Router = () => {
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />
                     <Route element={<MainLayout />}>
                         <Route path={ROUTE.MAKE} element={<MakeShiftPage />} />
+                        <Route path={ROUTE.DUTY} element={<DutyPage />} />
                         <Route path={ROUTE.REQUEST} element={<RequestShiftPage />} />
                         <Route path={ROUTE.MEMBER} element={<MemberPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />

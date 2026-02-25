@@ -55,8 +55,8 @@ const NavigationBar = () => {
 
                     <div className="mt-6 w-full">
                         <button
-                            type="button"
-                            className="w-full rounded-[7px] border border-gray-6 bg-gray-7 py-[11px] text-[16px] font-medium text-gray-3"
+                            className="w-full cursor-pointer rounded-[7px] border border-gray-6 bg-gray-7 py-[11px] text-[16px] font-medium text-gray-3"
+                            onClick={() => navigate(ROUTE.DUTY)}
                         >
                             근무표
                         </button>

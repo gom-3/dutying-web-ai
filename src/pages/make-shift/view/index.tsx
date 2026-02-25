@@ -1,3 +1,5 @@
+import {useNavigate} from 'react-router';
+import ROUTE from '@/shared/constant/path';
 import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -44,18 +46,40 @@ const STEP_INTRO: Record<
 };
 
 export const MakeShiftPageView = () => {
+    const navigate = useNavigate();
     const useCase = useMakeShiftUseCase();
     const phase = useMakeShiftStore((s) => s.phase);
     const currentStep = useMakeShiftStore((s) => s.currentStep);
+    const year = useMakeShiftStore((s) => s.year);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+    const handleGoDuty = () => {
+        const params = new URLSearchParams({
+            year: String(year),
+            month: String(month),
+            shiftTeamId: String(currentShiftTeamId ?? ''),
+        });
+
+        navigate(`${ROUTE.DUTY}?${params.toString()}`);
+    };
+    const handleCreateCurrentMonth = () => {
+        useCase.start();
+    };
+    const handleCreateNextMonth = () => {
+        setYearMonth({year: nextYear, month: nextMonth});
+        useCase.start();
+    };
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -72,15 +96,35 @@ export const MakeShiftPageView = () => {
                                 {shiftStatus === 'idle' && '근무표 상태를 확인 중입니다.'}
                             </p>
 
-                            <div className="mt-6 flex justify-center">
-                                <button
-                                    className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1 disabled:opacity-50"
-                                    onClick={() => useCase.start()}
-                                    disabled={shiftStatus === 'pending'}
-                                >
-                                    {month}월 근무표 생성하기
-                                </button>
-                            </div>
+                            {hasCurrentMonthShift ? (
+                                <div className="mt-6 flex items-center justify-center gap-8">
+                                    <button
+                                        className="rounded-[20px] bg-main-light px-[42px] py-[22px] font-apple text-2xl font-semibold text-main-1"
+                                        onClick={handleGoDuty}
+                                        type="button"
+                                    >
+                                        {month}월 근무표 보러가기
+                                    </button>
+                                    <button
+                                        className="rounded-[20px] bg-main-1 px-[42px] py-[22px] font-apple text-2xl font-semibold text-white"
+                                        onClick={handleCreateNextMonth}
+                                        type="button"
+                                    >
+                                        {nextMonth}월 근무표 생성하기
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="mt-6 flex justify-center">
+                                    <button
+                                        className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1 disabled:opacity-50"
+                                        onClick={handleCreateCurrentMonth}
+                                        disabled={shiftStatus === 'pending'}
+                                        type="button"
+                                    >
+                                        {month}월 근무표 생성하기
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (

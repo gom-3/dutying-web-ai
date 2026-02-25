@@ -40,12 +40,12 @@ export const MakeShiftEditorView = ({
     const bottomHeight = shift ? `${countedShiftTypeCount * 2.5 + 2.5}rem` : '0';
 
     return (
-        <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col ${className ?? ''}`}>
+        <div className={`mx-auto flex w-fit flex-col ${className ?? ''}`}>
             {showToolbar && toolbarProps && <Toolbar shift={shift} {...toolbarProps} />}
             {showCalendar && <ShiftCalendar shift={shift} doc={doc} {...calendarProps} />}
             {(showCountByDay || showPanel) && (
                 <div
-                    className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-63.75`}
+                    className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 py-5 pl-55.25`}
                     style={{
                         height: bottomHeight,
                     }}
