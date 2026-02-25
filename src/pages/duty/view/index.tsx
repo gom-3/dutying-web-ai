@@ -70,28 +70,48 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                     </div>
 
                     <div className="ml-auto flex items-center gap-3">
-                        <button
-                            type="button"
-                            className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
-                            onClick={handlers.postShift}
-                        >
-                            게시하기
-                        </button>
-                        <button
-                            type="button"
-                            className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
-                            onClick={handlers.exportExcel}
-                        >
-                            엑셀 내보내기
-                        </button>
-                        <button
-                            type="button"
-                            className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
-                            onClick={handlers.enableEdit}
-                            disabled={!state.readonly}
-                        >
-                            근무표 수정하기
-                        </button>
+                        {state.readonly ? (
+                            <>
+                                <button
+                                    type="button"
+                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
+                                    onClick={handlers.postShift}
+                                >
+                                    게시하기
+                                </button>
+                                <button
+                                    type="button"
+                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
+                                    onClick={handlers.exportExcel}
+                                >
+                                    엑셀 내보내기
+                                </button>
+                                <button
+                                    type="button"
+                                    className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
+                                    onClick={handlers.enableEdit}
+                                >
+                                    근무표 수정하기
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    type="button"
+                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
+                                    onClick={handlers.cancelEdit}
+                                >
+                                    취소하기
+                                </button>
+                                <button
+                                    type="button"
+                                    className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
+                                    onClick={handlers.saveEdit}
+                                >
+                                    저장하기
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 

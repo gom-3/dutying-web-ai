@@ -9,10 +9,27 @@ interface IPanelProps {
     readonly?: boolean;
 }
 
+function getHistoryLabel(index: number, source: 'user' | 'ai' | 'system', changedCellCount: number, changedRows: boolean) {
+    if (changedRows) return `${index + 1}. 근무자 순서를 변경했습니다`;
+
+    if (changedCellCount > 0) {
+        const sourceText = source === 'ai' ? 'AI' : source === 'system' ? '시스템' : '수동';
+
+        return `${index + 1}. ${sourceText} 입력으로 ${changedCellCount}개 셀을 수정했습니다`;
+    }
+
+    return `${index + 1}. 편집 내역`;
+}
+
+/**
+ * @deprecated 근무표 작성 기능 개편 중으로 인해 deprecated 예정
+ */
 function Panel({shift, readonly = false}: IPanelProps) {
     const violations = useShiftEditorStore((s) => s.violations);
+    const history = useShiftEditorStore((s) => s.history);
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');
+    const historyEntries = history.past.slice().reverse();
 
     return !readonly ? (
         <div
@@ -50,16 +67,39 @@ function Panel({shift, readonly = false}: IPanelProps) {
                 </div>
             </div>
             <div className="scrollbar-hide flex flex-1 flex-col overflow-y-scroll">
-                {currentTab === 'faults'
-                    ? violations.map((violation, index) => (
-                          <p
-                              key={index}
-                              className="cursor-pointer border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
-                          >
-                              {violation.message}
-                          </p>
-                      ))
-                    : null}
+                {currentTab === 'histories' ? (
+                    historyEntries.length > 0 ? (
+                        historyEntries.map((entry, index) => {
+                            const changedCellCount = entry.tx.ops.reduce(
+                                (count, op) => (op.kind === 'setCells' ? count + op.cells.length : count),
+                                0,
+                            );
+                            const changedRows = entry.tx.ops.some((op) => op.kind === 'reorderRows');
+
+                            return (
+                                <p
+                                    key={`${entry.tx.timestamp}-${index}`}
+                                    className="cursor-default border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
+                                >
+                                    {getHistoryLabel(index, entry.tx.source, changedCellCount, changedRows)}
+                                </p>
+                            );
+                        })
+                    ) : (
+                        <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">편집 기록이 없습니다.</p>
+                    )
+                ) : violations.length > 0 ? (
+                    violations.map((violation, index) => (
+                        <p
+                            key={index}
+                            className="cursor-pointer border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
+                        >
+                            {violation.message}
+                        </p>
+                    ))
+                ) : (
+                    <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">문제점이 없습니다.</p>
+                )}
             </div>
             <div
                 className="flex h-7.5 w-full cursor-pointer items-center justify-center font-apple text-[.625rem] text-main-3"

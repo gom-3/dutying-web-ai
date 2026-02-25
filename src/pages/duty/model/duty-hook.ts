@@ -3,12 +3,13 @@ import {useEffect, useMemo, useRef} from 'react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
-import {useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
+import {type TDutyDoc, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
+import useLoadingUseCase from '@/features/ui/useLoading';
+import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
+import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from '@/pages/make-shift/model/shift-editor-adapter';
+import WardAPI from '@/shared/api/ward';
 import ROUTE from '@/shared/constant/path';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
-import WardAPI from '@/shared/api/ward';
-import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
-import {buildWorkKeyMap, shiftToDoc} from '@/pages/make-shift/model/shift-editor-adapter';
 import {useDutyStore} from './duty-store';
 
 function parsePositiveInt(raw: string | null): number | null {
@@ -19,12 +20,24 @@ function parsePositiveInt(raw: string | null): number | null {
     return Number.isInteger(n) && n > 0 ? n : null;
 }
 
+function cloneDoc(doc: TDutyDoc): TDutyDoc {
+    return {
+        columns: [...doc.columns],
+        rows: doc.rows.map((row) => ({
+            workerId: row.workerId,
+            cells: [...row.cells],
+        })),
+        workerMeta: Object.fromEntries(Object.entries(doc.workerMeta).map(([workerId, meta]) => [workerId, {name: meta.name}])),
+    };
+}
+
 export function useDutyHook() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const {
         state: {wardId},
     } = useAuth();
+    const {setLoading} = useLoadingUseCase();
     const year = useDutyStore((s) => s.year);
     const month = useDutyStore((s) => s.month);
     const shiftTeams = useDutyStore((s) => s.shiftTeams);
@@ -45,6 +58,7 @@ export function useDutyHook() {
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
     const editorRef = useRef<HTMLDivElement>(null);
+    const snapshotRef = useRef<TDutyDoc | null>(null);
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
     const queryShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
@@ -57,6 +71,11 @@ export function useDutyHook() {
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled: wardId !== null && currentShiftTeamId !== null,
         refetchOnWindowFocus: false,
+    });
+    const constraintQuery = useQuery({
+        ...wardQueryOptions.constraint(wardId ?? -1, currentShiftTeamId ?? -1),
+        enabled: wardId !== null && currentShiftTeamId !== null,
+        staleTime: 1000 * 60 * 5,
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
@@ -72,10 +91,10 @@ export function useDutyHook() {
         if (!shiftTeamsQuery.data) return;
 
         setShiftTeams(shiftTeamsQuery.data);
+
         const prevSelectedId = useDutyStore.getState().currentShiftTeamId;
         const hasPrevSelected = prevSelectedId !== null && shiftTeamsQuery.data.some((team) => team.shiftTeamId === prevSelectedId);
-        const hasQuerySelected =
-            queryShiftTeamId !== null && shiftTeamsQuery.data.some((team) => team.shiftTeamId === queryShiftTeamId);
+        const hasQuerySelected = queryShiftTeamId !== null && shiftTeamsQuery.data.some((team) => team.shiftTeamId === queryShiftTeamId);
         const firstTeamId = shiftTeamsQuery.data[0]?.shiftTeamId ?? null;
         const nextTeamId = hasQuerySelected ? queryShiftTeamId : hasPrevSelected ? prevSelectedId : firstTeamId;
 
@@ -103,6 +122,15 @@ export function useDutyHook() {
         setShift(dutyQuery.data);
         commands.init(shiftToDoc(dutyQuery.data, year, month));
     }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, month, setShift, setStatus, year]);
+    useEffect(() => {
+        if (!constraintQuery.data) {
+            commands.setDutyValidationInput(null);
+
+            return;
+        }
+
+        commands.setDutyValidationInput({wardConstraint: constraintQuery.data});
+    }, [commands, constraintQuery.data]);
 
     const handleGoPrevMonth = () => {
         goPrevMonth();
@@ -117,8 +145,33 @@ export function useDutyHook() {
         setReadonly(true);
     };
     const handleEnableEdit = () => {
+        snapshotRef.current = cloneDoc(doc);
         setReadonly(false);
         editorRef.current?.focus();
+    };
+    const handleSaveEdit = async () => {
+        if (!wardId || !shift) return;
+
+        setLoading(true);
+
+        try {
+            const dto = docToWardShiftsDTO(doc, shift);
+
+            await WardAPI.updateShifts(wardId, dto);
+            snapshotRef.current = null;
+            setReadonly(true);
+            await dutyQuery.refetch();
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleCancelEdit = () => {
+        if (snapshotRef.current) {
+            commands.init(snapshotRef.current);
+        }
+
+        snapshotRef.current = null;
+        setReadonly(true);
     };
     const handleGoNextMonthMake = () => {
         const nextMonth = month === 12 ? 1 : month + 1;
@@ -159,6 +212,8 @@ export function useDutyHook() {
             goNextMonth: handleGoNextMonth,
             selectShiftTeam: handleSelectShiftTeam,
             enableEdit: handleEnableEdit,
+            saveEdit: handleSaveEdit,
+            cancelEdit: handleCancelEdit,
             goNextMonthMake: handleGoNextMonthMake,
             postShift: handlePostShift,
             exportExcel: handleExportExcel,

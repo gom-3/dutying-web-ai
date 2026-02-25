@@ -3,7 +3,6 @@ import {type TShift} from '@/entities';
 import {type TDutyDoc} from '@/features/shift-editor/model';
 import CountDutyByDay from './count-duty-by-day';
 import NurseEditModal from './nurse-edit-modal';
-import Panel from './panel';
 import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
 
@@ -25,7 +24,6 @@ interface IMakeShiftEditorViewProps {
 export const MakeShiftEditorView = ({
     shift,
     doc,
-    readonly = false,
     showToolbar = true,
     showCalendar = true,
     showCountByDay = true,
@@ -51,7 +49,7 @@ export const MakeShiftEditorView = ({
                     }}
                 >
                     {showCountByDay && <CountDutyByDay shift={shift} doc={doc} />}
-                    {showPanel && <Panel shift={shift} readonly={readonly} />}
+                    {/* {showPanel && <Panel shift={shift} readonly={readonly} />} @deprecated 근무표 작성 기능 개편 중으로 인해 deprecated 예정 */}
                 </div>
             )}
             {showNurseEditModal && <NurseEditModal />}
