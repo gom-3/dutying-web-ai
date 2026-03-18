@@ -5,6 +5,7 @@ const ROUTE = {
     REGISTER: '/register',
     ENTER_WARD: '/enter-ward',
     REGISTER_WARD: '/register-ward',
+    ONBOARDING_WARD_CREATE: '/onboarding/ward-create',
     LOGIN: '/login',
     REFRESH: '/refresh',
     REDIRECT: '/oauth2/redirect',
