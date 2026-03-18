@@ -1,9 +1,19 @@
 import {useEffect, useRef} from 'react';
+import {useSearchParams} from 'react-router';
 import {useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {useMakeShiftStore} from './make-shift-store';
 
+function parsePositiveInt(raw: string | null): number | null {
+    if (!raw) return null;
+
+    const n = Number(raw);
+
+    return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 export function useMakeShiftBootstrap(wardId: number | null) {
+    const [searchParams] = useSearchParams();
     const editor = useShiftEditorCommands();
     const editorRef = useRef(editor);
 
@@ -41,8 +51,13 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
                 // init year/month to "now" once per ward entry (store already has defaults, but keep in sync)
                 const now = new Date();
+                const queryYear = parsePositiveInt(searchParams.get('year'));
+                const queryMonth = parsePositiveInt(searchParams.get('month'));
+                const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
+                const nextYear = queryYear ?? now.getFullYear();
+                const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
 
-                setYearMonth({year: now.getFullYear(), month: now.getMonth() + 1});
+                setYearMonth({year: nextYear, month: nextMonth});
 
                 const firstTeamId = teams[0]?.shiftTeamId ?? null;
                 const prevSelectedId = useMakeShiftStore.getState().currentShiftTeamId;
@@ -59,7 +74,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setYearMonth, wardId]);
+    }, [searchParams, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setYearMonth, wardId]);
 
     useEffect(() => {
         let cancelled = false;

@@ -5,7 +5,7 @@ import ShiftBadge from '.';
 
 let mockShiftTypeColorStyle = 'background';
 
-vi.mock('@/features/ui/useUIConfig/store', () => ({
+vi.mock('@/entities/ui/useUIConfig/store', () => ({
     useUIConfigStore: vi.fn((selector: (state: {shiftTypeColorStyle: string}) => string) =>
         selector({shiftTypeColorStyle: mockShiftTypeColorStyle}),
     ),

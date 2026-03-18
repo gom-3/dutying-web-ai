@@ -70,6 +70,11 @@ export function createShiftEditorPersistence(opts: {storageKey: string; saveDebo
             }
         },
         clear: () => {
+            if (timer) {
+                window.clearTimeout(timer);
+                timer = null;
+            }
+
             window.localStorage.removeItem(storageKey);
         },
         dispose: () => {

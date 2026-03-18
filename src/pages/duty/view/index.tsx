@@ -1,6 +1,7 @@
 import {MakeShiftEditorView} from '@/features/shift-editor';
 import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
-import {type TDutyHook} from '../model/duty-hook';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {type TDutyHook} from '../model/dutyHook';
 
 type TDutyPageViewProps = {
     duty: TDutyHook;
@@ -8,6 +9,7 @@ type TDutyPageViewProps = {
 
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
+    const {t} = useTypedTranslation();
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -17,18 +19,18 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                         type="button"
                         className="grid size-6 place-items-center text-gray-5 hover:text-gray-4"
                         onClick={handlers.goPrevMonth}
-                        aria-label="이전 달"
+                        aria-label={t('page.duty.prevMonth')}
                     >
                         <ChevronLeftIcon />
                     </button>
                     <div className="font-apple text-2xl font-semibold text-main-1">
-                        {state.year}년 {state.month}월
+                        {t('page.duty.monthHeader', {year: state.year, month: state.month})}
                     </div>
                     <button
                         type="button"
                         className="grid size-6 place-items-center text-gray-5 hover:text-gray-4"
                         onClick={handlers.goNextMonth}
-                        aria-label="다음 달"
+                        aria-label={t('page.duty.nextMonth')}
                     >
                         <ChevronRightIcon />
                     </button>
@@ -59,13 +61,15 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white px-10 py-7">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-6">
-                        <h1 className="text-gray-1 font-apple text-[40px] font-semibold">{state.currentShiftTeamName} 확정 근무표</h1>
+                        <h1 className="text-gray-1 font-apple text-[40px] font-semibold">
+                            {state.currentShiftTeamName} {t('page.duty.confirmedShift')}
+                        </h1>
                         <button
                             type="button"
                             className="flex h-11 items-center rounded-[10px] border border-main-1 px-5 font-apple text-2xl font-semibold text-main-1"
                             onClick={handlers.goNextMonthMake}
                         >
-                            다음달 근무표 만들기
+                            {t('page.duty.createNextMonth')}
                         </button>
                     </div>
 
@@ -77,21 +81,21 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                     className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
                                     onClick={handlers.postShift}
                                 >
-                                    게시하기
+                                    {t('page.duty.publish')}
                                 </button>
                                 <button
                                     type="button"
                                     className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
                                     onClick={handlers.exportExcel}
                                 >
-                                    엑셀 내보내기
+                                    {t('page.duty.exportExcel')}
                                 </button>
                                 <button
                                     type="button"
                                     className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
                                     onClick={handlers.enableEdit}
                                 >
-                                    근무표 수정하기
+                                    {t('page.duty.editShift')}
                                 </button>
                             </>
                         ) : (
@@ -101,14 +105,14 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                     className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
                                     onClick={handlers.cancelEdit}
                                 >
-                                    취소하기
+                                    {t('page.duty.cancel')}
                                 </button>
                                 <button
                                     type="button"
                                     className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
                                     onClick={handlers.saveEdit}
                                 >
-                                    저장하기
+                                    {t('page.duty.save')}
                                 </button>
                             </>
                         )}
@@ -118,12 +122,12 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
                     {state.status === 'pending' && (
                         <div className="flex h-full min-h-[300px] items-center justify-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">근무표를 불러오는 중입니다...</p>
+                            <p className="font-apple text-2xl font-semibold text-gray-3">{t('page.duty.loading')}</p>
                         </div>
                     )}
                     {state.status === 'error' && (
                         <div className="flex h-full min-h-[300px] items-center justify-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">근무표를 불러오지 못했어요.</p>
+                            <p className="font-apple text-2xl font-semibold text-gray-3">{t('page.duty.error')}</p>
                         </div>
                     )}
                     {state.status === 'success' && state.shift && (
@@ -131,8 +135,8 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             ref={refs.editorRef}
                             className="outline-none"
                             tabIndex={0}
-                            onKeyDown={handlers.onKeyDown}
-                            onPaste={handlers.onPaste}
+                            onKeyDown={state.readonly ? undefined : handlers.onKeyDown}
+                            onPaste={state.readonly ? undefined : handlers.onPaste}
                         >
                             <MakeShiftEditorView
                                 shift={state.shift}

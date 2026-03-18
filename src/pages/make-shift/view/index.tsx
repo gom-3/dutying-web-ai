@@ -1,5 +1,6 @@
 import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -47,6 +48,7 @@ const STEP_INTRO: Record<
 
 export const MakeShiftPageView = () => {
     const navigate = useNavigate();
+    const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
     const phase = useMakeShiftStore((s) => s.phase);
     const currentStep = useMakeShiftStore((s) => s.currentStep);
@@ -90,10 +92,13 @@ export const MakeShiftPageView = () => {
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
                         <div className="text-center">
                             <p className="font-apple text-2xl font-semibold text-gray-3">
-                                {shiftStatus === 'pending' && '근무표를 불러오는 중입니다...'}
-                                {shiftStatus === 'success' && shiftExists && `${currentShiftTeamName}의 ${month}월 근무표가 존재합니다.`}
-                                {shiftStatus === 'error' && `${currentShiftTeamName}의 ${month}월 근무표가 비어있어요`}
-                                {shiftStatus === 'idle' && '근무표 상태를 확인 중입니다.'}
+                                {shiftStatus === 'pending' && t('page.makeShift.overview.loading')}
+                                {shiftStatus === 'success' &&
+                                    shiftExists &&
+                                    t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                {shiftStatus === 'error' &&
+                                    t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
+                                {shiftStatus === 'idle' && t('page.makeShift.overview.checking')}
                             </p>
 
                             {hasCurrentMonthShift ? (
@@ -103,14 +108,14 @@ export const MakeShiftPageView = () => {
                                         onClick={handleGoDuty}
                                         type="button"
                                     >
-                                        {month}월 근무표 보러가기
+                                        {t('page.makeShift.overview.viewShift', {month})}
                                     </button>
                                     <button
                                         className="rounded-[20px] bg-main-1 px-[42px] py-[22px] font-apple text-2xl font-semibold text-white"
                                         onClick={handleCreateNextMonth}
                                         type="button"
                                     >
-                                        {nextMonth}월 근무표 생성하기
+                                        {t('page.makeShift.overview.createShift', {month: nextMonth})}
                                     </button>
                                 </div>
                             ) : (
@@ -121,7 +126,7 @@ export const MakeShiftPageView = () => {
                                         disabled={shiftStatus === 'pending'}
                                         type="button"
                                     >
-                                        {month}월 근무표 생성하기
+                                        {t('page.makeShift.overview.createShift', {month})}
                                     </button>
                                 </div>
                             )}

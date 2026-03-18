@@ -3,28 +3,41 @@ import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
 import {type TShift} from '@/entities';
 import {useShiftEditorStore} from '@/features/shift-editor/model';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IPanelProps {
     shift: TShift;
     readonly?: boolean;
 }
 
-function getHistoryLabel(index: number, source: 'user' | 'ai' | 'system', changedCellCount: number, changedRows: boolean) {
-    if (changedRows) return `${index + 1}. 근무자 순서를 변경했습니다`;
+function getHistoryLabel(
+    t: ReturnType<typeof useTypedTranslation>['t'],
+    index: number,
+    source: 'user' | 'ai' | 'system',
+    changedCellCount: number,
+    changedRows: boolean,
+) {
+    if (changedRows) return `${index + 1}. ${t('feature.shiftEditor.panel.history.reordered')}`;
 
     if (changedCellCount > 0) {
-        const sourceText = source === 'ai' ? 'AI' : source === 'system' ? '시스템' : '수동';
+        const sourceText =
+            source === 'ai'
+                ? t('feature.shiftEditor.panel.history.sourceAi')
+                : source === 'system'
+                  ? t('feature.shiftEditor.panel.history.sourceSystem')
+                  : t('feature.shiftEditor.panel.history.sourceUser');
 
-        return `${index + 1}. ${sourceText} 입력으로 ${changedCellCount}개 셀을 수정했습니다`;
+        return `${index + 1}. ${t('feature.shiftEditor.panel.history.editedCells', {source: sourceText, count: changedCellCount})}`;
     }
 
-    return `${index + 1}. 편집 내역`;
+    return `${index + 1}. ${t('feature.shiftEditor.panel.history.defaultLabel')}`;
 }
 
 /**
  * @deprecated 근무표 작성 기능 개편 중으로 인해 deprecated 예정
  */
 function Panel({shift, readonly = false}: IPanelProps) {
+    const {t} = useTypedTranslation();
     const violations = useShiftEditorStore((s) => s.violations);
     const history = useShiftEditorStore((s) => s.history);
     const [open, setOpen] = useState(false);
@@ -49,7 +62,7 @@ function Panel({shift, readonly = false}: IPanelProps) {
                         sendEvent(events.makePage.panel.changePanelTab, 'histories');
                     }}
                 >
-                    기록
+                    {t('feature.shiftEditor.panel.histories')}
                 </div>
                 <div
                     className={`flex h-10 flex-1 cursor-pointer items-center justify-center rounded-tr-[1.25rem] ${currentTab === 'faults' ? 'bg-main-4 text-sub-1' : 'bg-sub-5 text-sub-2.5'}`}
@@ -59,7 +72,7 @@ function Panel({shift, readonly = false}: IPanelProps) {
                     }}
                 >
                     <p className="relative">
-                        문제점
+                        {t('feature.shiftEditor.panel.faults')}
                         <span className="absolute top-0 right-0 flex h-[.875rem] w-[.875rem] translate-x-full items-center justify-center rounded-full bg-main-2 font-apple text-[.625rem] text-white">
                             {violations.length}
                         </span>
@@ -81,12 +94,14 @@ function Panel({shift, readonly = false}: IPanelProps) {
                                     key={`${entry.tx.timestamp}-${index}`}
                                     className="cursor-default border-b-[.0313rem] border-sub-4 px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-2 last:border-none"
                                 >
-                                    {getHistoryLabel(index, entry.tx.source, changedCellCount, changedRows)}
+                                    {getHistoryLabel(t, index, entry.tx.source, changedCellCount, changedRows)}
                                 </p>
                             );
                         })
                     ) : (
-                        <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">편집 기록이 없습니다.</p>
+                        <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">
+                            {t('feature.shiftEditor.panel.history.empty')}
+                        </p>
                     )
                 ) : violations.length > 0 ? (
                     violations.map((violation, index) => (
@@ -98,7 +113,9 @@ function Panel({shift, readonly = false}: IPanelProps) {
                         </p>
                     ))
                 ) : (
-                    <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">문제점이 없습니다.</p>
+                    <p className="px-[.8125rem] py-[.625rem] font-apple text-[.75rem] text-sub-3">
+                        {t('feature.shiftEditor.panel.faultsEmpty')}
+                    </p>
                 )}
             </div>
             <div
@@ -108,7 +125,7 @@ function Panel({shift, readonly = false}: IPanelProps) {
                     sendEvent(open ? events.makePage.panel.foldPanel : events.makePage.panel.spreadPanel);
                 }}
             >
-                {open ? '닫기' : '펼치기'}
+                {open ? t('feature.shiftEditor.panel.fold') : t('feature.shiftEditor.panel.expand')}
             </div>
         </div>
     ) : null;

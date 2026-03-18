@@ -1,4 +1,4 @@
-import {useDutyHook} from './model/duty-hook';
+import {useDutyHook} from './model/dutyHook';
 import {DutyPageView} from './view';
 
 const DutyPage = () => {

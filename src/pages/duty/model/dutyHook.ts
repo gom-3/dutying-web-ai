@@ -1,4 +1,4 @@
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
@@ -10,7 +10,7 @@ import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from '@/pages/make-shif
 import WardAPI from '@/shared/api/ward';
 import ROUTE from '@/shared/constant/path';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
-import {useDutyStore} from './duty-store';
+import {useDutyStore} from './dutyStore';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -33,6 +33,7 @@ function cloneDoc(doc: TDutyDoc): TDutyDoc {
 
 export function useDutyHook() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [searchParams] = useSearchParams();
     const {
         state: {wardId},
@@ -53,12 +54,12 @@ export function useDutyHook() {
     const setReadonly = useDutyStore((s) => s.setReadonly);
     const setShift = useDutyStore((s) => s.setShift);
     const setStatus = useDutyStore((s) => s.setStatus);
-    const setMakeShiftYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const setMakeShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
     const editorRef = useRef<HTMLDivElement>(null);
     const snapshotRef = useRef<TDutyDoc | null>(null);
+    const dutyQueryKey = wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
     const queryShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
@@ -112,6 +113,7 @@ export function useDutyHook() {
             setStatus('error');
             setShift(null);
             commands.init({columns: [], rows: [], workerMeta: {}});
+            commands.discardPersisted();
 
             return;
         }
@@ -121,6 +123,7 @@ export function useDutyHook() {
         setStatus('success');
         setShift(dutyQuery.data);
         commands.init(shiftToDoc(dutyQuery.data, year, month));
+        commands.discardPersisted();
     }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, month, setShift, setStatus, year]);
     useEffect(() => {
         if (!constraintQuery.data) {
@@ -160,7 +163,8 @@ export function useDutyHook() {
             await WardAPI.updateShifts(wardId, dto);
             snapshotRef.current = null;
             setReadonly(true);
-            await dutyQuery.refetch();
+            commands.discardPersisted();
+            await queryClient.invalidateQueries({queryKey: dutyQueryKey});
         } finally {
             setLoading(false);
         }
@@ -170,21 +174,26 @@ export function useDutyHook() {
             commands.init(snapshotRef.current);
         }
 
+        commands.discardPersisted();
         snapshotRef.current = null;
         setReadonly(true);
     };
     const handleGoNextMonthMake = () => {
         const nextMonth = month === 12 ? 1 : month + 1;
         const nextYear = month === 12 ? year + 1 : year;
+        const params = new URLSearchParams({
+            year: String(nextYear),
+            month: String(nextMonth),
+        });
 
-        setMakeShiftYearMonth({year: nextYear, month: nextMonth});
         setMakeShiftTeamId(currentShiftTeamId);
-        navigate(ROUTE.MAKE);
+        navigate(`${ROUTE.MAKE}?${params.toString()}`);
     };
     const handlePostShift = async () => {
         if (!wardId || !currentShiftTeamId) return;
 
         await WardAPI.postShift(wardId, currentShiftTeamId, year, month);
+        await queryClient.invalidateQueries({queryKey: dutyQueryKey});
     };
     const handleExportExcel = () => {
         if (!shift) return;

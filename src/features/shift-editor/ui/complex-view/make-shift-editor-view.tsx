@@ -27,7 +27,6 @@ export const MakeShiftEditorView = ({
     showToolbar = true,
     showCalendar = true,
     showCountByDay = true,
-    showPanel = true,
     showNurseEditModal = true,
     stickyBottom = true,
     className,
@@ -41,7 +40,7 @@ export const MakeShiftEditorView = ({
         <div className={`mx-auto flex w-fit flex-col ${className ?? ''}`}>
             {showToolbar && toolbarProps && <Toolbar shift={shift} {...toolbarProps} />}
             {showCalendar && <ShiftCalendar shift={shift} doc={doc} {...calendarProps} />}
-            {(showCountByDay || showPanel) && (
+            {showCountByDay && (
                 <div
                     className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 py-5 pl-55.25`}
                     style={{

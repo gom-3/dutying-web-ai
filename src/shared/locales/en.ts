@@ -6,6 +6,14 @@ export const en: TLocale = {
             title: 'Duty Schedule\nNow Easier!',
         },
         makeShift: {
+            overview: {
+                loading: 'Loading duty schedule...',
+                shiftExists: '{{teamName}} has a schedule for {{month}}.',
+                shiftEmpty: "{{teamName}}'s {{month}} schedule is empty.",
+                checking: 'Checking schedule status.',
+                viewShift: 'View {{month}} duty schedule',
+                createShift: 'Create {{month}} duty schedule',
+            },
             constraints: {
                 section: {
                     strong: 'Hard constraints',
@@ -46,6 +54,20 @@ export const en: TLocale = {
                 dragHandleAria: 'Drag to reorder',
             },
         },
+        duty: {
+            prevMonth: 'Previous month',
+            nextMonth: 'Next month',
+            monthHeader: '{{year}}-{{month}}',
+            confirmedShift: 'Confirmed duty schedule',
+            createNextMonth: 'Create next month schedule',
+            publish: 'Publish',
+            exportExcel: 'Export Excel',
+            editShift: 'Edit duty schedule',
+            save: 'Save',
+            cancel: 'Cancel',
+            loading: 'Loading duty schedule...',
+            error: 'Failed to load duty schedule.',
+        },
         refresh: {
             loading: 'Logging in...',
         },
@@ -53,6 +75,24 @@ export const en: TLocale = {
     feature: {
         auth: {
             sessionExpired: 'Your login has expired. Please sign in again.',
+        },
+        shiftEditor: {
+            panel: {
+                histories: 'History',
+                faults: 'Violations',
+                history: {
+                    reordered: 'Reordered workers',
+                    editedCells: 'Edited {{count}} cells by {{source}}',
+                    defaultLabel: 'Edit history',
+                    empty: 'No edit history.',
+                    sourceAi: 'AI',
+                    sourceSystem: 'System',
+                    sourceUser: 'Manual',
+                },
+                faultsEmpty: 'No violations.',
+                fold: 'Close',
+                expand: 'Expand',
+            },
         },
     },
 };

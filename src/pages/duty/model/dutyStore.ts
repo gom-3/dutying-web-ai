@@ -22,10 +22,12 @@ type TDutyStore = {
     setStatus: (status: TDutyStatus) => void;
 };
 
+const now = new Date();
+
 export const useDutyStore = create<TDutyStore>()(
     devtools((set, get) => ({
-        year: new Date().getFullYear(),
-        month: new Date().getMonth() + 1,
+        year: now.getFullYear(),
+        month: now.getMonth() + 1,
         shiftTeams: [],
         currentShiftTeamId: null,
         readonly: true,
