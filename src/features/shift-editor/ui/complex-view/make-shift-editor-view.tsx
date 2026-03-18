@@ -3,7 +3,6 @@ import {type TShift} from '@/entities';
 import {type TDutyDoc} from '@/features/shift-editor/model';
 import CountDutyByDay from './count-duty-by-day';
 import NurseEditModal from './nurse-edit-modal';
-import Panel from './panel';
 import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
 
@@ -25,11 +24,9 @@ interface IMakeShiftEditorViewProps {
 export const MakeShiftEditorView = ({
     shift,
     doc,
-    readonly = false,
     showToolbar = true,
     showCalendar = true,
     showCountByDay = true,
-    showPanel = true,
     showNurseEditModal = true,
     stickyBottom = true,
     className,
@@ -40,18 +37,18 @@ export const MakeShiftEditorView = ({
     const bottomHeight = shift ? `${countedShiftTypeCount * 2.5 + 2.5}rem` : '0';
 
     return (
-        <div className={`mx-auto flex h-screen w-fit min-w-418.5 flex-col ${className ?? ''}`}>
+        <div className={`mx-auto flex w-fit flex-col ${className ?? ''}`}>
             {showToolbar && toolbarProps && <Toolbar shift={shift} {...toolbarProps} />}
             {showCalendar && <ShiftCalendar shift={shift} doc={doc} {...calendarProps} />}
-            {(showCountByDay || showPanel) && (
+            {showCountByDay && (
                 <div
-                    className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-63.75`}
+                    className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 py-5 pl-55.25`}
                     style={{
                         height: bottomHeight,
                     }}
                 >
                     {showCountByDay && <CountDutyByDay shift={shift} doc={doc} />}
-                    {showPanel && <Panel shift={shift} readonly={readonly} />}
+                    {/* {showPanel && <Panel shift={shift} readonly={readonly} />} @deprecated 근무표 작성 기능 개편 중으로 인해 deprecated 예정 */}
                 </div>
             )}
             {showNurseEditModal && <NurseEditModal />}

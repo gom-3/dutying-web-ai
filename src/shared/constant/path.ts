@@ -11,6 +11,7 @@ const ROUTE = {
     ONBOARDING: '/onboarding',
     MAKE: '/make',
     REQUEST: '/request',
+    DUTY: '/duty',
     MEMBER: '/member',
     PROFILE: '/profile',
 };

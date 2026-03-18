@@ -4,6 +4,14 @@ export const ko = {
             title: '근무표\n이제 더 간편하게!',
         },
         makeShift: {
+            overview: {
+                loading: '근무표를 불러오는 중입니다...',
+                shiftExists: '{{teamName}}의 {{month}}월 근무표가 존재합니다.',
+                shiftEmpty: '{{teamName}}의 {{month}}월 근무표가 비어있어요',
+                checking: '근무표 상태를 확인 중입니다.',
+                viewShift: '{{month}}월 근무표 보러가기',
+                createShift: '{{month}}월 근무표 생성하기',
+            },
             constraints: {
                 section: {
                     strong: '강 제약 조건',
@@ -44,6 +52,20 @@ export const ko = {
                 dragHandleAria: '드래그하여 순서 변경',
             },
         },
+        duty: {
+            prevMonth: '이전 달',
+            nextMonth: '다음 달',
+            monthHeader: '{{year}}년 {{month}}월',
+            confirmedShift: '확정 근무표',
+            createNextMonth: '다음달 근무표 만들기',
+            publish: '게시하기',
+            exportExcel: '엑셀 내보내기',
+            editShift: '근무표 수정하기',
+            save: '저장하기',
+            cancel: '취소하기',
+            loading: '근무표를 불러오는 중입니다...',
+            error: '근무표를 불러오지 못했어요.',
+        },
         refresh: {
             loading: '로그인중입니다.',
         },
@@ -51,6 +73,24 @@ export const ko = {
     feature: {
         auth: {
             sessionExpired: '로그인이 만료되었습니다. 다시 로그인해주세요.',
+        },
+        shiftEditor: {
+            panel: {
+                histories: '기록',
+                faults: '문제점',
+                history: {
+                    reordered: '근무자 순서를 변경했습니다',
+                    editedCells: '{{source}} 입력으로 {{count}}개 셀을 수정했습니다',
+                    defaultLabel: '편집 내역',
+                    empty: '편집 기록이 없습니다.',
+                    sourceAi: 'AI',
+                    sourceSystem: '시스템',
+                    sourceUser: '수동',
+                },
+                faultsEmpty: '문제점이 없습니다.',
+                fold: '닫기',
+                expand: '펼치기',
+            },
         },
     },
 };

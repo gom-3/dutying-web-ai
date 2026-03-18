@@ -184,7 +184,7 @@ export function AiAutofill() {
                                 showLayer={{fault: showFaults, check: false, slash: false}}
                             />
                             <div
-                                className="sticky bottom-0 z-20 flex items-stretch gap-5 bg-main-bg py-5 pl-55.25"
+                                className="sticky bottom-0 z-20 flex items-stretch gap-5 py-5 pl-55.25"
                                 style={{
                                     height: dutyQuery.data
                                         ? `${dutyQuery.data.wardShiftTypes.filter((x) => x.isCounted).length * 2.5 + 2.5}rem`
