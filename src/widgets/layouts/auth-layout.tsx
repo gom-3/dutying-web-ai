@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
-import {Outlet, useNavigate} from 'react-router';
+import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth/useAuth';
 import ROUTE from '@/shared/constant/path';
 import useInterval from '@/shared/util/useInterval';
@@ -8,6 +8,7 @@ import useInterval from '@/shared/util/useInterval';
 export const AuthLayout = () => {
     const [demoRemainTime, setDemoRemainTime] = useState<string | null>(null);
     const navigate = useNavigate();
+    const {pathname} = useLocation();
     const {
         state: {isAuth, accountMe, demoStartDate},
         actions: {handleLogout},
@@ -19,9 +20,9 @@ export const AuthLayout = () => {
         }
 
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
-            if (location.pathname !== ROUTE.REGISTER) navigate(ROUTE.REGISTER);
+            if (![ROUTE.REGISTER, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname)) navigate(ROUTE.REGISTER);
         }
-    }, [isAuth, accountMe]);
+    }, [accountMe, isAuth, navigate, pathname]);
 
     useInterval(
         () => {
