@@ -16,6 +16,8 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const [searchParams] = useSearchParams();
     const editor = useShiftEditorCommands();
     const editorRef = useRef(editor);
+    const initializedWardIdRef = useRef<number | null>(null);
+    const initialQueryShiftTeamIdRef = useRef<number | null>(null);
 
     editorRef.current = editor;
 
@@ -24,10 +26,35 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const setShiftTeams = useMakeShiftStore((s) => s.setShiftTeams);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
+    const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
+
+    useEffect(() => {
+        if (!wardId) {
+            initializedWardIdRef.current = null;
+            initialQueryShiftTeamIdRef.current = null;
+
+            return;
+        }
+
+        if (initializedWardIdRef.current === wardId) return;
+
+        initializedWardIdRef.current = wardId;
+
+        const now = new Date();
+        const queryYear = parsePositiveInt(searchParams.get('year'));
+        const queryMonth = parsePositiveInt(searchParams.get('month'));
+        const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
+        const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
+        const nextYear = queryYear ?? now.getFullYear();
+        const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
+
+        initialQueryShiftTeamIdRef.current = queryShiftTeamId;
+        setYearMonth({year: nextYear, month: nextMonth});
+    }, [searchParams, setYearMonth, wardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -48,22 +75,6 @@ export function useMakeShiftBootstrap(wardId: number | null) {
                 if (cancelled) return;
 
                 setShiftTeams(teams);
-
-                // init year/month to "now" once per ward entry (store already has defaults, but keep in sync)
-                const now = new Date();
-                const queryYear = parsePositiveInt(searchParams.get('year'));
-                const queryMonth = parsePositiveInt(searchParams.get('month'));
-                const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
-                const nextYear = queryYear ?? now.getFullYear();
-                const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
-
-                setYearMonth({year: nextYear, month: nextMonth});
-
-                const firstTeamId = teams[0]?.shiftTeamId ?? null;
-                const prevSelectedId = useMakeShiftStore.getState().currentShiftTeamId;
-                const nextTeamId = prevSelectedId && teams.some((t) => t.shiftTeamId === prevSelectedId) ? prevSelectedId : firstTeamId;
-
-                setCurrentShiftTeamId(nextTeamId);
             } catch {
                 if (!cancelled) setShiftStatus('error');
             }
@@ -74,7 +85,20 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [searchParams, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setYearMonth, wardId]);
+    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, wardId]);
+
+    useEffect(() => {
+        if (!wardId) return;
+
+        const firstTeamId = shiftTeams[0]?.shiftTeamId ?? null;
+        const prevSelectedId = useMakeShiftStore.getState().currentShiftTeamId;
+        const queryShiftTeamId = initialQueryShiftTeamIdRef.current;
+        const hasPrevSelected = prevSelectedId !== null && shiftTeams.some((team) => team.shiftTeamId === prevSelectedId);
+        const hasQuerySelected = queryShiftTeamId !== null && shiftTeams.some((team) => team.shiftTeamId === queryShiftTeamId);
+        const nextTeamId = hasQuerySelected ? queryShiftTeamId : hasPrevSelected ? prevSelectedId : firstTeamId;
+
+        setCurrentShiftTeamId(nextTeamId);
+    }, [setCurrentShiftTeamId, shiftTeams, wardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -95,7 +119,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
                 if (cancelled) return;
 
-                setShiftStatus(shift ? 'success' : 'error');
+                setShiftStatus('success');
                 setShiftExists(Boolean(shift));
             } catch {
                 if (!cancelled) setShiftStatus('error');

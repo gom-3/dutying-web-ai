@@ -96,7 +96,7 @@ export const MakeShiftPageView = () => {
                                 {shiftStatus === 'success' &&
                                     shiftExists &&
                                     t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                {shiftStatus === 'error' &&
+                                {((shiftStatus === 'success' && !shiftExists) || shiftStatus === 'error') &&
                                     t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
                                 {shiftStatus === 'idle' && t('page.makeShift.overview.checking')}
                             </p>
