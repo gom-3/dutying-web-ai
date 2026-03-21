@@ -62,6 +62,7 @@ export function useRequestsShiftsHook() {
     const requestList = useMemo(() => requestListQuery.data ?? [], [requestListQuery.data]);
     const acceptedRequests = useMemo(() => requestList.filter((item) => item.isAccepted === true), [requestList]);
     const pendingRequests = useMemo(() => requestList.filter((item) => item.isAccepted === null), [requestList]);
+    const rejectedRequests = useMemo(() => requestList.filter((item) => item.isAccepted === false), [requestList]);
     const decideRequest = useCallback(
         async (wardReqShiftId: number, isAccepted: boolean | null) => {
             if (wardId === null) return;
@@ -94,6 +95,7 @@ export function useRequestsShiftsHook() {
             wardShiftTypeMap,
             acceptedRequests,
             pendingRequests,
+            rejectedRequests,
         },
         status: {
             loading: requestQuery.isLoading || requestListQuery.isLoading || shiftTypesQuery.isLoading,

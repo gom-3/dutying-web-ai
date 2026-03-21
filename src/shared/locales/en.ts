@@ -13,6 +13,11 @@ export const en: TLocale = {
             title: 'Duty Schedule\nNow Easier!',
         },
         makeShift: {
+            navigation: {
+                previous: 'Previous',
+                next: 'Next',
+                complete: 'Complete',
+            },
             overview: {
                 loading: 'Loading duty schedule...',
                 shiftExists: '{{teamName}} has a schedule for {{month}}.',
@@ -21,8 +26,41 @@ export const en: TLocale = {
                 error: 'Failed to check the schedule status.',
                 viewShift: 'View {{month}} duty schedule',
                 createShift: 'Create {{month}} duty schedule',
+                noTeamsLabel: 'No shift teams',
                 noTeamsTitle: 'No shift teams found.',
                 noTeamsDescription: 'Create a shift team first or check ward settings.',
+            },
+            requests: {
+                title: 'Please confirm requested shifts',
+                descriptionPrefix: 'Accepted requests are',
+                descriptionHighlight: 'locked into the schedule',
+                descriptionSuffix: '.',
+                loading: 'Loading requested shift data',
+                error: 'Failed to load requested shift data',
+                empty: 'There is no requested shift schedule for this month yet',
+                panelTitle: 'Request list',
+                count: '{{count}}',
+                badge: {
+                    accepted: 'Accepted requests',
+                    pending: 'Pending requests',
+                    rejected: 'Rejected requests',
+                },
+                table: {
+                    name: 'Name',
+                },
+                section: {
+                    accepted: 'Accepted',
+                    pending: 'Pending',
+                    rejected: 'Rejected',
+                },
+                emptyAccepted: 'No accepted requests.',
+                emptyPending: 'No pending requests.',
+                emptyRejected: 'No rejected requests.',
+                action: {
+                    accept: 'Accept',
+                    reject: 'Reject',
+                    hold: 'Hold',
+                },
             },
             constraints: {
                 section: {
@@ -104,10 +142,12 @@ export const en: TLocale = {
             cancel: 'Cancel',
             loading: 'Loading duty schedule...',
             error: 'Failed to load duty schedule.',
+            teamsError: 'Failed to load shift teams.',
+            noTeamsLabel: 'No shift teams',
             noTeamsTitle: 'No shift teams found.',
             noTeamsDescription: 'Create a shift team and try again.',
-            emptyTitle: 'No {{month}} schedule for {{teamName}}.',
-            emptyDescription: 'Go to schedule creation to start the {{month}} schedule.',
+            emptyTitle: 'No duty schedule for {{teamName}} in month {{month}}.',
+            emptyDescription: 'Go to schedule creation to start the duty schedule for month {{month}}.',
         },
         refresh: {
             loading: 'Logging in...',

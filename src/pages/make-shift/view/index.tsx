@@ -182,10 +182,10 @@ export const MakeShiftPageView = () => {
                                             onClick={() => useCase.prev()}
                                             disabled={!canPrev}
                                         >
-                                            이전
+                                            {t('page.makeShift.navigation.previous')}
                                         </ManagementActionButton>
                                         <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
-                                            다음
+                                            {t('page.makeShift.navigation.next')}
                                         </ManagementActionButton>
                                         {currentStep === 5 && (
                                             <ManagementActionButton
@@ -193,7 +193,7 @@ export const MakeShiftPageView = () => {
                                                 size="sm"
                                                 onClick={() => useCase.complete()}
                                             >
-                                                완료
+                                                {t('page.makeShift.navigation.complete')}
                                             </ManagementActionButton>
                                         )}
                                     </div>

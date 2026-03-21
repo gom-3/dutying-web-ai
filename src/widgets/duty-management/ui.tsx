@@ -19,8 +19,8 @@ type TMonthTeamHeaderProps = {
     onPrevMonth: () => void;
     onNextMonth: () => void;
     onSelectShiftTeam: (shiftTeamId: number) => void;
-    emptyLabel?: string;
-    formatMonthLabel?: (year: number, month: number) => string;
+    emptyLabel: string;
+    formatMonthLabel: (year: number, month: number) => string;
 };
 
 const managementActionVariants = cva(
@@ -68,8 +68,8 @@ export function DutyManagementMonthTeamHeader({
     onPrevMonth,
     onNextMonth,
     onSelectShiftTeam,
-    emptyLabel = '근무팀 없음',
-    formatMonthLabel = (headerYear, headerMonth) => `${headerYear}년 ${headerMonth}월`,
+    emptyLabel,
+    formatMonthLabel,
 }: TMonthTeamHeaderProps) {
     return (
         <div className="flex flex-wrap items-center gap-4">

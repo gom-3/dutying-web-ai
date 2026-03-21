@@ -12,7 +12,10 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
     const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
-    const showLoadingState = state.shiftTeamsStatus !== 'success' || state.status === 'pending';
+    const showShiftTeamsErrorState = state.shiftTeamsStatus === 'error';
+    const showLoadingState =
+        state.shiftTeamsStatus === 'pending' ||
+        (state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'pending');
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -26,6 +29,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 onPrevMonth={handlers.goPrevMonth}
                 onNextMonth={handlers.goNextMonth}
                 onSelectShiftTeam={handlers.selectShiftTeam}
+                emptyLabel={t('page.duty.noTeamsLabel')}
                 formatMonthLabel={(year, month) => t('page.duty.monthHeader', {year, month})}
             />
 
@@ -72,6 +76,15 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             tone="empty"
                             title={t('page.duty.noTeamsTitle')}
                             description={t('page.duty.noTeamsDescription')}
+                            className="py-0"
+                        />
+                    )}
+                    {showShiftTeamsErrorState && (
+                        <PageState
+                            tone="error"
+                            title={t('page.duty.teamsError')}
+                            description={t('page.state.errorDescription')}
+                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
                             className="py-0"
                         />
                     )}

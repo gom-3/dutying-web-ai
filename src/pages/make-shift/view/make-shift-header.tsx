@@ -1,7 +1,9 @@
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../model/make-shift-store';
 
 export function MakeShiftHeader() {
+    const {t} = useTypedTranslation();
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
@@ -14,13 +16,15 @@ export function MakeShiftHeader() {
         <DutyManagementMonthTeamHeader
             year={year}
             month={month}
-            prevLabel="이전 달"
-            nextLabel="다음 달"
+            prevLabel={t('page.duty.prevMonth')}
+            nextLabel={t('page.duty.nextMonth')}
             shiftTeams={shiftTeams}
             currentShiftTeamId={currentShiftTeamId}
             onPrevMonth={goPrevMonth}
             onNextMonth={goNextMonth}
             onSelectShiftTeam={setCurrentShiftTeamId}
+            emptyLabel={t('page.makeShift.overview.noTeamsLabel')}
+            formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
         />
     );
 }
