@@ -1,109 +1,29 @@
+import type {
+    TDay,
+    TDutyRequest,
+    TRequestShift,
+    TShift,
+    TShiftNurse,
+    TShiftTeam,
+    TWaitingNurse,
+    TWard,
+    TWardConstraint,
+    TWardShiftClassification,
+    TWardShiftType,
+} from '@dutying/domain';
 import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
 import {type TNurseResponse, type TUpdateNurseDTO} from '../nurse/type';
 
-export type TWaitingNurseResponse = {
-    waitingNurseId: number;
-    nurseId: number;
-    name: string;
-    gender: string;
-    phoneNum: string;
-    employmentDate: string;
-    profileImgBase64?: string;
-    profileImgUrl: string;
-};
-
-export type TWardConstraintResponse = {
-    maxContinuousWork: boolean;
-    maxContinuousWorkVal: number;
-    minNightInterval: boolean;
-    minNightIntervalVal: number;
-    maxContinuousNight: boolean;
-    maxContinuousNightVal: number;
-    minContinuousNight: boolean;
-    minContinuousNightVal: number;
-    minOffAssignAfterNight: boolean;
-    minOffAssignAfterNightVal: number;
-    excludeCertainWorkTypes: boolean;
-    excludeNightBeforeReqOff: boolean;
-};
-
-export type TWardShiftTypeResponse = {
-    wardShiftTypeId: number;
-    name: string;
-    shortName: string;
-    startTime: string;
-    endTime: string;
-    color: string;
-    isDefault: boolean;
-    isOff: boolean;
-    isCounted: boolean;
-    classification: 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
-};
-
-export type TShiftTeamResponse = {
-    shiftTeamId: number;
-    name: string;
-    nurseCnt: number;
-    nurses: TNurseResponse[];
-};
-
-export type TWardResponse = {
-    wardId: number;
-    name: string;
-    code: string;
-    hospitalName: string;
-    nurseCnt: number;
-    wardShiftTypes: TWardShiftTypeResponse[];
-    shiftTeams: TShiftTeamResponse[];
-};
-
-export type TShiftNurseResponse = {
-    shiftNurseId: number;
-    name: string;
-    carried: number;
-    divisionNum: number;
-    priority: number;
-    isWorker: true;
-    nurseId: number;
-};
-
-export type TDayResponse = {day: number; dayType: 'saturday' | 'sunday' | 'holiday' | 'workday'};
-
-export type TShiftResponse = {
-    lastDays: Array<TDayResponse>;
-    days: Array<TDayResponse>;
-    wardShiftTypes: TWardShiftTypeResponse[];
-    divisionShiftNurses: {
-        shiftNurse: TShiftNurseResponse;
-        lastWardShiftList: (number | null)[];
-        lastWardReqShiftList: (number | null)[];
-        wardShiftList: (number | null)[];
-        wardReqShiftList: (number | null)[];
-    }[][];
-};
-
-export type TRequestShiftResponse = {
-    days: Array<TDayResponse>;
-    wardShiftTypes: TWardShiftTypeResponse[];
-    divisionShiftNurses: {
-        shiftNurse: TShiftNurseResponse;
-        carry: number;
-        wardReqShiftList: (number | null)[];
-    }[][];
-};
-
-export type TDutyRequestResponse = {
-    wardReqShiftId: number;
-    nurseId: number;
-    nurseName: string;
-    date: number;
-    requestDate: string;
-    wardShiftTypeId: number;
-    wardShiftTypeShortName: string;
-    wardShiftTypeColor: string;
-    isRead: boolean;
-    isAccepted: boolean | null;
-};
+export type TWaitingNurseResponse = TWaitingNurse;
+export type TWardConstraintResponse = TWardConstraint;
+export type TWardShiftTypeResponse = TWardShiftType;
+export type TShiftTeamResponse = TShiftTeam;
+export type TWardResponse = TWard;
+export type TShiftNurseResponse = TShiftNurse;
+export type TDayResponse = TDay;
+export type TShiftResponse = TShift;
+export type TRequestShiftResponse = TRequestShift;
+export type TDutyRequestResponse = TDutyRequest;
 
 export type TGenerateAiAutofillScheduleDTO = {
     year: number;
@@ -195,7 +115,7 @@ export type TCreateWardShiftTypeDTO = {
     endTime: string;
     isOff: boolean;
     isDefault: boolean;
-    classification: TWardShiftTypeResponse['classification'];
+    classification: TWardShiftClassification;
 };
 
 export type TCreateWardDTO = {
@@ -231,5 +151,5 @@ export type TCreateShiftTypeDTO = {
     isOff: boolean;
     isDefault: boolean;
     isCounted: boolean;
-    classification: TWardShiftTypeResponse['classification'];
+    classification: TWardShiftClassification;
 };

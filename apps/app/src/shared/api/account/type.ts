@@ -1,19 +1,9 @@
+import type {TAccount, TAccountStatus} from '@dutying/domain';
 import type {TWardResponse} from '../ward/type';
 
-export type TAccountStatus = 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED' | 'DEMO';
+export type {TAccountStatus};
 
-export type TAccountResponse = {
-    accountId: number;
-    nurseId: number | null;
-    wardId: number | null;
-    shiftTeamId: number | null;
-    email: string;
-    name: string;
-    profileImgBase64?: string;
-    profileImgUrl: string;
-    isManager: boolean;
-    status: TAccountStatus;
-};
+export type TAccountResponse = TAccount;
 
 export interface IAccountAPI {
     // GET
