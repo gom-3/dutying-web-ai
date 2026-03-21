@@ -70,7 +70,7 @@ export default function RequestDutyRequestPanel({
                     <PageState
                         tone="error"
                         title="신청 내역을 불러오지 못했어요"
-                        description="잠시 후 다시 시도해 주세요."
+                        description="잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요."
                         action={{label: '다시 시도', onClick: () => void retry()}}
                         className="px-0 py-0"
                     />
@@ -157,13 +157,12 @@ export default function RequestDutyRequestPanel({
                         })}
                     </div>
                 ) : (
-                    <div className="flex min-h-[220px] items-center justify-center rounded-[16px] bg-gray-7 px-6 text-center">
-                        <p className="font-apple text-sm leading-6 font-medium text-gray-4">
-                            아직 제출된 신청 근무가 없어요.
-                            <br />
-                            신청이 들어오면 이 패널에서 바로 확인할 수 있어요.
-                        </p>
-                    </div>
+                    <PageState
+                        tone="empty"
+                        title="아직 제출된 신청이 없어요"
+                        description="신청이 들어오면 이 패널에서 바로 확인하고 처리할 수 있어요."
+                        className="min-h-[220px] px-0 py-0"
+                    />
                 )}
             </div>
         </Card>
