@@ -36,6 +36,17 @@ General nurses can directly check the synchronized work schedules through the mo
 
 Despite the powerful framework that Next.js is, we chose Vite for our project because we needed to develop quickly within a set timeframe. The fast Hot Module Replacement (HMR) provided by Vite accelerated our development process. Additionally, our project primarily required developing interactive user experiences on the client-side, making Vite a more suitable choice for our needs.
 
+## Workspace Transition
+
+This repository now uses a `pnpm workspace` root so the current web app can move into `apps/*` and shared modules can be added under `packages/*` without changing the top-level repository layout again.
+
+Current transition rules:
+
+- The existing Vite web app still lives at the repository root during this stage.
+- `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test`, and `pnpm type-check` still work from the root exactly as before.
+- Root scripts now delegate through `*:root` aliases so a later ticket can retarget the top-level commands to `apps/app` without changing the developer entrypoints first.
+- New workspace packages should be created under `apps/*` or `packages/*`.
+
 ## Running Tests
 
 ### Unit Tests
