@@ -27,6 +27,25 @@ const DIVISION_PRIORITY_GAP = 2024;
 export const getGroupedDivisionNurses = (nurses: TNurse[]): TGroupedDivisionNurses =>
     Object.entries(groupBy(nurses, 'divisionNum')).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
 
+const getPreviousShiftTeamNurseId = (shiftTeams: TShiftTeam[], selectedShiftTeamIndex: number) => {
+    for (let teamIndex = selectedShiftTeamIndex - 1; teamIndex >= 0; teamIndex -= 1) {
+        const previousNurseId = shiftTeams[teamIndex].nurses[shiftTeams[teamIndex].nurses.length - 1]?.nurseId;
+
+        if (previousNurseId != null) return previousNurseId;
+    }
+
+    return null;
+};
+const getNextShiftTeamNurseId = (shiftTeams: TShiftTeam[], selectedShiftTeamIndex: number) => {
+    for (let teamIndex = selectedShiftTeamIndex + 1; teamIndex < shiftTeams.length; teamIndex += 1) {
+        const nextNurseId = shiftTeams[teamIndex].nurses[0]?.nurseId;
+
+        if (nextNurseId != null) return nextNurseId;
+    }
+
+    return null;
+};
+
 export const getNextSelectedNurseId = (shiftTeams: TShiftTeam[], selectedNurse: TNurse, direction: TKeyboardDirection): number | null => {
     const selectedShiftTeamIndex = shiftTeams.findIndex((shiftTeam) =>
         shiftTeam.nurses.some((nurse) => nurse.nurseId === selectedNurse.nurseId),
@@ -55,13 +74,7 @@ export const getNextSelectedNurseId = (shiftTeams: TShiftTeam[], selectedNurse: 
             return previousGroup[previousGroup.length - 1].nurseId;
         }
 
-        if (selectedShiftTeamIndex > 0) {
-            const previousShiftTeam = shiftTeams[selectedShiftTeamIndex - 1];
-
-            return previousShiftTeam.nurses[previousShiftTeam.nurses.length - 1]?.nurseId ?? null;
-        }
-
-        return null;
+        return getPreviousShiftTeamNurseId(shiftTeams, selectedShiftTeamIndex);
     }
 
     if (selectedNurseIndex < selectedGroup.length - 1) {
@@ -72,11 +85,7 @@ export const getNextSelectedNurseId = (shiftTeams: TShiftTeam[], selectedNurse: 
         return groupedNurses[selectedGroupIndex + 1][1][0]?.nurseId ?? null;
     }
 
-    if (selectedShiftTeamIndex < shiftTeams.length - 1) {
-        return shiftTeams[selectedShiftTeamIndex + 1].nurses[0]?.nurseId ?? null;
-    }
-
-    return null;
+    return getNextShiftTeamNurseId(shiftTeams, selectedShiftTeamIndex);
 };
 
 export const createMoveNurseOrderPayload = ({

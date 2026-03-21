@@ -1,9 +1,10 @@
 import {Droppable, Draggable} from '@hello-pangea/dnd';
-import type {RefCallback} from 'react';
+import type {KeyboardEvent as ReactKeyboardEvent, RefCallback} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TShiftTeam} from '@/entities/ward';
 import {setPreferredShiftTeamId} from '@/features/shift/editDuty/model/utils/prefs';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {DateUtil} from '@/shared/util/date';
 import {getGroupedDivisionNurses, type TEditShiftTeamState} from '../model/shiftTeamList';
@@ -46,6 +47,16 @@ function ShiftTeamCard({
     onMoveToMakePage,
 }: IShiftTeamCardProps) {
     const groupedDivisionNurses = getGroupedDivisionNurses(shiftTeam.nurses);
+    const {t} = useTypedTranslation();
+    const handleActionKeyDown = (event: ReactKeyboardEvent<HTMLElement>, action: () => void, options?: {preventDefault?: boolean}) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+
+        if (options?.preventDefault ?? true) {
+            event.preventDefault();
+        }
+
+        action();
+    };
 
     return (
         <div id="shift_team_list" className="mt-5.5 flex w-75 flex-col rounded-[.9375rem] border-[.0625rem] border-sub-4.5 shadow-banner">
@@ -61,12 +72,14 @@ function ShiftTeamCard({
                             autoFocus
                         />
                     ) : (
-                        <h2
+                        <button
+                            type="button"
                             onClick={() => onStartEditingShiftTeam(shiftTeam.shiftTeamId, shiftTeam.name)}
-                            className="font-apple text-[1.5rem] font-semibold text-white"
+                            className="w-fit rounded-[.3125rem] font-apple text-[1.5rem] font-semibold text-white focus-visible:outline-[.125rem] focus-visible:outline-white"
+                            aria-label={t('page.member.shiftTeamList.card.editTeamNameAria', {teamName: shiftTeam.name})}
                         >
                             {shiftTeam.name}
-                        </h2>
+                        </button>
                     )}
 
                     <div className="flex items-center">
@@ -74,26 +87,32 @@ function ShiftTeamCard({
                         <p className="font-poppins text-[.75rem] text-white">{shiftTeam.nurses.length}</p>
                     </div>
                 </div>
-                <MoreIcon
-                    className="h-7.5 w-7.5 cursor-pointer"
+                <button
+                    type="button"
+                    className="rounded-[.3125rem] focus-visible:outline-[.125rem] focus-visible:outline-white"
+                    aria-label={t('page.member.shiftTeamList.card.openMenuAria', {teamName: shiftTeam.name})}
                     onClick={() => {
                         onOpenMenu(shiftTeam.shiftTeamId);
                         sendEvent(events.memberPage.openShiftTeamMenu);
                     }}
-                />
+                >
+                    <MoreIcon className="h-7.5 w-7.5 cursor-pointer" />
+                </button>
                 {openMenuShiftTeamId === shiftTeam.shiftTeamId && (
                     <div
                         className="absolute top-15 right-0 z-30 flex h-56 w-57.5 flex-col rounded-[.625rem] bg-white shadow-[4px_4px_42px_0px_rgba(104,81,149,0.25)]"
                         ref={clickAwayMenuRef}
                     >
-                        <div
-                            className="relative flex flex-1 cursor-pointer items-center gap-[.3125rem] border-b-[.0625rem] border-main-3 px-6.25 font-apple text-[1.25rem] font-medium text-sub-2 last:border-none"
+                        <button
+                            type="button"
+                            className="relative flex flex-1 items-center gap-[.3125rem] border-b-[.0625rem] border-main-3 px-6.25 text-left font-apple text-[1.25rem] font-medium text-sub-2 last:border-none focus-visible:outline-[.125rem] focus-visible:outline-main-2"
                             onClick={() => {
                                 addNurse(shiftTeam.shiftTeamId);
                                 onCloseMenu();
                             }}
+                            aria-label={t('page.member.shiftTeamList.card.addNurse')}
                         >
-                            간호사 만들기
+                            {t('page.member.shiftTeamList.card.addNurse')}
                             <InfoIcon className="peer h-5 w-5" />
                             <div className="invisible absolute top-[50%] -right-86 z-30 flex w-91 translate-y-[-50%] items-center gap-[.5rem] rounded-[.3125rem] bg-white px-2 py-1 font-apple text-[.875rem] text-sub-2 shadow-shadow-2 peer-hover:visible">
                                 <div
@@ -105,24 +124,28 @@ function ShiftTeamCard({
                                         borderBottom: '.4375rem solid transparent',
                                     }}
                                 />
-                                초대하지 않아도, 가상의 간호사를 만들어 관리할 수 있어요! &nbsp; (언제든지 초대해서 연동 가능합니다.)
+                                {t('page.member.shiftTeamList.card.addNurseTooltip')}
                             </div>
-                        </div>
-                        <div
-                            className="flex flex-1 cursor-pointer items-center border-b-[.0625rem] border-main-3 px-6.25 font-apple text-[1.25rem] font-medium text-sub-2 last:border-none"
+                        </button>
+                        <button
+                            type="button"
+                            className="flex flex-1 items-center border-b-[.0625rem] border-main-3 px-6.25 text-left font-apple text-[1.25rem] font-medium text-sub-2 last:border-none focus-visible:outline-[.125rem] focus-visible:outline-main-2"
                             onClick={() => {
                                 setPreferredShiftTeamId(shiftTeam.shiftTeamId);
                                 onMoveToMakePage();
                             }}
+                            aria-label={t('page.member.shiftTeamList.card.viewShift')}
                         >
-                            근무표 보러가기
-                        </div>
-                        <div
-                            className="flex flex-1 cursor-pointer items-center border-b-[.0625rem] border-main-3 px-6.25 font-apple text-[1.25rem] font-medium text-sub-2 last:border-none"
+                            {t('page.member.shiftTeamList.card.viewShift')}
+                        </button>
+                        <button
+                            type="button"
+                            className="flex flex-1 items-center border-b-[.0625rem] border-main-3 px-6.25 text-left font-apple text-[1.25rem] font-medium text-sub-2 last:border-none focus-visible:outline-[.125rem] focus-visible:outline-main-2"
                             onClick={() => deleteShiftTeam(shiftTeam.shiftTeamId)}
+                            aria-label={t('page.member.shiftTeamList.card.deleteTeam')}
                         >
-                            팀 삭제하기
-                        </div>
+                            {t('page.member.shiftTeamList.card.deleteTeam')}
+                        </button>
                     </div>
                 )}
             </div>
@@ -134,7 +157,10 @@ function ShiftTeamCard({
                             {...provided.droppableProps}
                             className="flex h-14 w-full cursor-pointer items-center justify-center select-none"
                         >
-                            <h3 className="font-apple text-[1.25rem] font-semibold text-sub-2.5">아직 간호사가 없습니다!</h3>
+                            <h3 className="font-apple text-[1.25rem] font-semibold text-sub-2.5">
+                                {t('page.member.shiftTeamList.card.empty')}
+                            </h3>
+                            {provided.placeholder}
                         </div>
                     )}
                 </Droppable>
@@ -161,12 +187,21 @@ function ShiftTeamCard({
                                                 shiftTeam.nurses.length - 1
                                                     ? 'rounded-b-[.9375rem]'
                                                     : 'border-b-[.0313rem] border-b-sub-4.5'
-                                            }`}
+                                            } focus-visible:outline-[.125rem] focus-visible:outline-main-2`}
                                             ref={draggableProvided.innerRef}
                                             onClick={() => {
                                                 selectNurse(nurse.nurseId);
                                                 sendEvent(events.memberPage.focusNurse);
                                             }}
+                                            onKeyDown={(event) =>
+                                                handleActionKeyDown(event, () => {
+                                                    selectNurse(nurse.nurseId);
+                                                    sendEvent(events.memberPage.focusNurse);
+                                                })
+                                            }
+                                            tabIndex={0}
+                                            role="button"
+                                            aria-label={t('page.member.shiftTeamList.card.selectNurseAria', {nurseName: nurse.name})}
                                             {...draggableProvided.draggableProps}
                                             {...draggableProvided.dragHandleProps}
                                         >
@@ -187,12 +222,12 @@ function ShiftTeamCard({
                                                         borderBottom: '.625rem solid none',
                                                     }}
                                                 />
-                                                연동 되지 않은 가상의 간호사입니다.
+                                                {t('page.member.shiftTeamList.card.virtualNurseTooltip')}
                                                 <UnlinkedIcon className="h-5 w-5" />
                                             </div>
                                             {index !== divisionNurses.length - 1 ? (
                                                 <div
-                                                    className="absolute bottom-0 z-10 w-full"
+                                                    className="absolute bottom-0 z-10 w-full focus-visible:outline-[.125rem] focus-visible:outline-main-2"
                                                     onClick={(event) => {
                                                         event.stopPropagation();
                                                         editDivision(
@@ -203,18 +238,32 @@ function ShiftTeamCard({
                                                         );
                                                         sendEvent(events.memberPage.createDivision);
                                                     }}
+                                                    onKeyDown={(event) =>
+                                                        handleActionKeyDown(event, () => {
+                                                            editDivision(
+                                                                shiftTeam.shiftTeamId,
+                                                                nurse.priority,
+                                                                1,
+                                                                DateUtil.getDateString(new Date(), 'yyyy-MM'),
+                                                            );
+                                                            sendEvent(events.memberPage.createDivision);
+                                                        })
+                                                    }
+                                                    tabIndex={0}
+                                                    role="button"
+                                                    aria-label={t('page.member.shiftTeamList.card.addDividerAria', {nurseName: nurse.name})}
                                                 >
                                                     <div className="peer absolute bottom-0 z-30 h-[.8rem] w-full translate-y-[50%]" />
                                                     <div className="invisible absolute bottom-0 h-[.0938rem] w-full bg-sub-2.5 peer-hover:visible" />
                                                     <PlusIcon2 className="invisible absolute bottom-0 left-0 h-5 w-5 -translate-x-full translate-y-[50%] peer-hover:visible" />
                                                     <p className="invisible absolute bottom-0 left-0 translate-x-[calc(.625rem-100%)] translate-y-[-50%] font-apple text-[.75rem] text-sub-2.5 peer-hover:visible">
-                                                        구분선
+                                                        {t('page.member.shiftTeamList.card.divider')}
                                                     </p>
                                                 </div>
                                             ) : (
                                                 divisionIndex !== groupedDivisionNurses.length - 1 && (
                                                     <div
-                                                        className="absolute bottom-0 z-10 w-full"
+                                                        className="absolute bottom-0 z-10 w-full focus-visible:outline-[.125rem] focus-visible:outline-main-2"
                                                         onClick={(event) => {
                                                             event.stopPropagation();
                                                             editDivision(
@@ -225,6 +274,22 @@ function ShiftTeamCard({
                                                             );
                                                             sendEvent(events.memberPage.deleteDivision);
                                                         }}
+                                                        onKeyDown={(event) =>
+                                                            handleActionKeyDown(event, () => {
+                                                                editDivision(
+                                                                    shiftTeam.shiftTeamId,
+                                                                    nurse.priority,
+                                                                    -1,
+                                                                    DateUtil.getDateString(new Date(), 'yyyy-MM'),
+                                                                );
+                                                                sendEvent(events.memberPage.deleteDivision);
+                                                            })
+                                                        }
+                                                        tabIndex={0}
+                                                        role="button"
+                                                        aria-label={t('page.member.shiftTeamList.card.removeDividerAria', {
+                                                            nurseName: nurse.name,
+                                                        })}
                                                     >
                                                         <div className="peer absolute bottom-0 z-30 h-[.8rem] w-full translate-y-[50%]" />
                                                         <div className="invisible absolute bottom-0 h-[.0938rem] w-full translate-y-full bg-red peer-hover:visible" />

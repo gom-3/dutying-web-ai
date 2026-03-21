@@ -104,6 +104,28 @@ export const en: TLocale = {
         refresh: {
             loading: 'Logging in...',
         },
+        member: {
+            shiftTeamList: {
+                title: 'Team',
+                subtitle: 'You can create one duty schedule per team.',
+                addTeam: 'Add team',
+                card: {
+                    addNurse: 'Create nurse',
+                    addNurseTooltip:
+                        'You can manage a virtual nurse without sending an invite first. You can invite and connect them at any time.',
+                    viewShift: 'View duty schedule',
+                    deleteTeam: 'Delete team',
+                    empty: 'There are no nurses yet!',
+                    virtualNurseTooltip: 'This is a virtual nurse that is not connected.',
+                    divider: 'Divider',
+                    editTeamNameAria: 'Edit team name for {{teamName}}',
+                    openMenuAria: 'Open menu for {{teamName}}',
+                    selectNurseAria: 'Select nurse {{nurseName}}',
+                    addDividerAria: 'Add divider below {{nurseName}}',
+                    removeDividerAria: 'Remove divider below {{nurseName}}',
+                },
+            },
+        },
     },
     feature: {
         auth: {

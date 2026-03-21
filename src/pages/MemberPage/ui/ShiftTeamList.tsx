@@ -6,7 +6,8 @@ import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {PlusIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import useShiftTeamListController from '../model/useShiftTeamListController';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import useShiftTeamListController from '../model/useShiftTeamListControllerHook';
 import ShiftTeamCard from './ShiftTeamCard';
 
 function ShiftTeamList() {
@@ -16,6 +17,7 @@ function ShiftTeamList() {
     } = useEditShiftTeam();
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const navigate = useNavigate();
+    const {t} = useTypedTranslation();
     const {
         state: {openMenuShiftTeamId, editShiftTeam},
         refs: {clickAwayListRef, clickAwayMenuRef, clickAwayShiftTeamNameRef},
@@ -37,16 +39,18 @@ function ShiftTeamList() {
     return (
         <div>
             <div className="mt-7.5 flex items-end gap-[.625rem]">
-                <h1 className="font-apple text-[1.75rem] font-semibold text-text-1">팀</h1>
-                <p className="font-apple text-base text-sub-2.5">팀당 근무표 1개 생성 가능합니다.</p>
+                <h1 className="font-apple text-[1.75rem] font-semibold text-text-1">{t('page.member.shiftTeamList.title')}</h1>
+                <p className="font-apple text-base text-sub-2.5">{t('page.member.shiftTeamList.subtitle')}</p>
                 <button
+                    type="button"
                     className="ml-4.5 flex h-9 items-center gap-[.5rem] rounded-[.3125rem] border-[.0625rem] border-main-3 bg-white px-[.75rem] font-apple text-base text-main-2"
                     onClick={() => {
                         createShiftTeam();
                         sendEvent(events.memberPage.createShiftTeam);
                     }}
                 >
-                    <PlusIcon className="h-6 w-6 stroke-main-2" />팀 추가하기
+                    <PlusIcon className="h-6 w-6 stroke-main-2" />
+                    {t('page.member.shiftTeamList.addTeam')}
                 </button>
             </div>
             <DragDropContext onDragEnd={handleDragEnd}>

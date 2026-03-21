@@ -44,6 +44,11 @@ function useShiftTeamListController({
     const clickAwayShiftTeamNameRef = useOnclickOutside(() => {
         handleUpdateShiftTeam();
     });
+    const isEditingTarget = useCallback((target: EventTarget | null) => {
+        if (!(target instanceof HTMLElement)) return false;
+
+        return target.isContentEditable || !!target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""]');
+    }, []);
     const startEditingShiftTeam = useCallback((shiftTeamId: number, name: string) => {
         setEditShiftTeam({
             shiftTeamId,
@@ -62,16 +67,19 @@ function useShiftTeamListController({
     }, []);
     const handleListKeyDown = useCallback(
         (event: KeyboardEvent) => {
+            if (event.isComposing || isEditingTarget(event.target)) return;
+
             if (!shiftTeams || !selectedNurse || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return;
 
             const nextSelectedNurseId = getNextSelectedNurseId(shiftTeams, selectedNurse, event.key);
 
             if (!nextSelectedNurseId) return;
 
+            event.preventDefault();
             selectNurse(nextSelectedNurseId);
             sendEvent(events.memberPage.moveNurseFocus);
         },
-        [selectedNurse, selectNurse, shiftTeams],
+        [isEditingTarget, selectedNurse, selectNurse, shiftTeams],
     );
     const handleDragEnd = useCallback(
         ({source, destination, draggableId}: DropResult) => {
