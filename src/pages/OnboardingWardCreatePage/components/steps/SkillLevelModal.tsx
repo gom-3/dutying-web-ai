@@ -1,5 +1,6 @@
 import {Info, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {cn} from '@/shared/util/style';
 import {getSkillPalette, skillPalettes, type TSkillLevelConfig} from '../../model';
@@ -14,6 +15,7 @@ interface ISkillLevelModalProps {
 }
 
 function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps) {
+    const {t} = useTypedTranslation();
     const [localConfig, setLocalConfig] = useState(config);
 
     useEffect(() => {
@@ -32,8 +34,12 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
             <div role="dialog" aria-modal="true" className="w-full max-w-[710px] rounded-[20px] bg-white px-[42px] py-10">
                 <div className="flex items-start justify-between">
                     <div>
-                        <h2 className="font-apple text-[32px] font-semibold text-text-1">숙련도 단계 설정</h2>
-                        <p className="mt-2 font-apple text-[20px] font-medium text-gray-3">기준은 자유롭게 정할 수 있어요</p>
+                        <h2 className="font-apple text-[32px] font-semibold text-text-1">
+                            {t('page.onboardingWardCreate.skillLevelModal.title')}
+                        </h2>
+                        <p className="mt-2 font-apple text-[20px] font-medium text-gray-3">
+                            {t('page.onboardingWardCreate.skillLevelModal.description')}
+                        </p>
                     </div>
                     <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-4 hover:bg-gray-7">
                         <X className="h-5 w-5" />
@@ -48,7 +54,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                     >
                         {[2, 3, 4, 5].map((levelCount) => (
                             <option key={levelCount} value={levelCount}>
-                                {levelCount}단계
+                                {t('page.onboardingWardCreate.skillLevelModal.levelCountOption', {levelCount})}
                             </option>
                         ))}
                     </select>
@@ -73,7 +79,9 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                                 ))}
                             </button>
                         ))}
-                        <span className="font-apple text-[20px] font-medium text-sub-2">색상</span>
+                        <span className="font-apple text-[20px] font-medium text-sub-2">
+                            {t('page.onboardingWardCreate.skillLevelModal.colorLabel')}
+                        </span>
                     </div>
                 </div>
 
@@ -81,16 +89,16 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                     <div className="grid grid-cols-[72px_1fr]">
                         <div className="from-gray-2 rounded-l-[10px] bg-gradient-to-b to-gray-5 px-4 py-6 text-center font-apple text-[20px] font-semibold text-white">
                             <div className="h-[176px]">
-                                <p>높음</p>
+                                <p>{t('page.onboardingWardCreate.skillLevelModal.high')}</p>
                                 <div className="flex h-full items-end justify-center">
-                                    <p className="text-text-1">낮음</p>
+                                    <p className="text-text-1">{t('page.onboardingWardCreate.skillLevelModal.low')}</p>
                                 </div>
                             </div>
                         </div>
                         <div className="space-y-5 px-8 py-6">
                             <div className="grid grid-cols-[100px_1fr] text-center font-apple text-[16px] text-gray-3">
-                                <span>숙련도</span>
-                                <span>구분</span>
+                                <span>{t('page.onboardingWardCreate.skillLevelModal.levelLabel')}</span>
+                                <span>{t('page.onboardingWardCreate.skillLevelModal.categoryLabel')}</span>
                             </div>
                             {levelItems.map((level) => (
                                 <div key={level} className="grid grid-cols-[100px_1fr] items-center">
@@ -98,7 +106,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                                         <SkillBadge level={level} config={{...localConfig, paletteId: palette.id}} />
                                     </div>
                                     <div className="rounded-[5px] bg-gray-6/70 px-4 py-1.5 font-apple text-[16px] text-gray-3">
-                                        LV. {level}
+                                        {t('page.onboardingWardCreate.skillLevelModal.levelDisplay', {level})}
                                     </div>
                                 </div>
                             ))}
@@ -114,7 +122,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                         onChange={(event) => setLocalConfig((prev) => ({...prev, autoAssign: event.target.checked}))}
                     />
                     <label htmlFor="skill-auto-assign" className="font-apple text-[16px] text-gray-3">
-                        자동 배정
+                        {t('page.onboardingWardCreate.skillLevelModal.autoAssign')}
                     </label>
                     <TooltipProvider>
                         <Tooltip>
@@ -124,7 +132,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                                 </button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-[220px] bg-gray-6 text-sub-1">
-                                등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정합니다.
+                                {t('page.onboardingWardCreate.skillLevelModal.autoAssignTooltip')}
                             </TooltipContent>
                         </Tooltip>
                     </TooltipProvider>
@@ -132,7 +140,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
 
                 <div className="mt-10 flex items-center justify-between">
                     <button type="button" className="font-apple text-[20px] text-gray-4 underline underline-offset-2" onClick={onClose}>
-                        취소
+                        {t('page.onboardingWardCreate.skillLevelModal.cancel')}
                     </button>
                     <WizardButton
                         onClick={() => {
@@ -140,7 +148,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
                             onClose();
                         }}
                     >
-                        완료
+                        {t('page.onboardingWardCreate.skillLevelModal.complete')}
                     </WizardButton>
                 </div>
             </div>

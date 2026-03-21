@@ -150,6 +150,23 @@ export const ko = {
         refresh: {
             loading: '로그인중입니다.',
         },
+        onboardingWardCreate: {
+            skillLevelModal: {
+                title: '숙련도 단계 설정',
+                description: '기준은 자유롭게 정할 수 있어요',
+                levelCountOption: '{{levelCount}}단계',
+                colorLabel: '색상',
+                high: '높음',
+                low: '낮음',
+                levelLabel: '숙련도',
+                categoryLabel: '구분',
+                levelDisplay: 'LV. {{level}}',
+                autoAssign: '자동 배정',
+                autoAssignTooltip: '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정합니다.',
+                cancel: '취소',
+                complete: '완료',
+            },
+        },
     },
     feature: {
         auth: {
