@@ -377,8 +377,14 @@ const useRequestShift = (activeEffect = false) => {
         handleToggleEditMode();
     };
     const retry = useCallback(async () => {
-        await Promise.all([refetchShiftTeams(), refetchDutyRequestList(), refetchRequestShift()]);
-    }, [refetchDutyRequestList, refetchRequestShift, refetchShiftTeams]);
+        const retryTasks: Promise<unknown>[] = [refetchShiftTeams()];
+
+        if (currentShiftTeamId !== null) {
+            retryTasks.push(refetchDutyRequestList(), refetchRequestShift());
+        }
+
+        await Promise.all(retryTasks);
+    }, [currentShiftTeamId, refetchDutyRequestList, refetchRequestShift, refetchShiftTeams]);
 
     useEffect(() => {
         if (activeEffect && requestShift) {
