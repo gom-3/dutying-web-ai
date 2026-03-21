@@ -19,6 +19,14 @@ vi.mock('./ui/RequestCalendar', () => ({
 type TMockUseRequestShiftValue = {
     state: {
         readonly: boolean;
+        editAvailability: {
+            canEdit: boolean;
+            status: 'editable' | 'lockedPast' | 'lockedFuture';
+            validationMessage: string | null;
+            badgeLabel: string;
+            periodLabel: string;
+            description: string;
+        };
         requestShift: {shiftId: number} | null;
         shiftStatus: 'pending' | 'error' | 'success';
         shiftTeams: Array<{shiftTeamId: number; name: string}>;
@@ -54,6 +62,14 @@ function baseUseRequestShiftValue(): TMockUseRequestShiftValue {
     return {
         state: {
             readonly: true,
+            editAvailability: {
+                canEdit: true,
+                status: 'editable',
+                validationMessage: null,
+                badgeLabel: '수정 가능',
+                periodLabel: '수정 가능 범위: 지난달부터 다음 달까지',
+                description: '현재 달력 범위에서는 신청 근무를 수정할 수 있어요.',
+            },
             requestShift: {shiftId: 1},
             shiftStatus: 'success' as const,
             shiftTeams: [{shiftTeamId: 1, name: '중환자실 A팀'}],
@@ -139,7 +155,7 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        expect(screen.getByText('신청 근무를 확인해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('신청 근무를 검토해 주세요')).toBeInTheDocument();
         expect(screen.getByText('request-calendar')).toBeInTheDocument();
     });
 });
