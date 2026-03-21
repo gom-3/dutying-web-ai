@@ -53,7 +53,16 @@ export const ko = {
             },
             aiRefill: {
                 action: 'AI 다시 채우기',
+                retry: 'AI 다시 시도',
                 generating: 'AI 채우는 중...',
+                title: {
+                    idle: 'AI 자동 채우기를 시작할 준비가 됐어요',
+                    loading: 'AI가 근무표를 다시 계산하고 있어요',
+                    success: 'AI 결과를 반영했어요',
+                    error: 'AI 요청이 실패했어요',
+                },
+                previous: '이전 단계',
+                confirm: '확정하기',
             },
         },
         duty: {

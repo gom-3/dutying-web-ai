@@ -55,7 +55,16 @@ export const en: TLocale = {
             },
             aiRefill: {
                 action: 'Refill with AI',
+                retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
+                title: {
+                    idle: 'Ready to start AI autofill',
+                    loading: 'AI is recalculating the schedule',
+                    success: 'Applied the AI result',
+                    error: 'AI request failed',
+                },
+                previous: 'Previous step',
+                confirm: 'Confirm',
             },
         },
         duty: {
