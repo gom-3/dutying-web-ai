@@ -354,10 +354,12 @@ const useRequestShift = (activeEffect = false) => {
         },
         [focus, requestShift, setState, changeFocusedShift],
     );
-    const handleToggleEditMode = () => {
+    const handleToggleEditMode = (targetDate?: {year: number; month: number}) => {
+        const nextEditAvailability = targetDate ? getRequestShiftEditAvailability(targetDate.year, targetDate.month) : editAvailability;
+
         if (readonly) {
-            if (!editAvailability.canEdit && editAvailability.validationMessage) {
-                showValidationFeedback(editAvailability.validationMessage);
+            if (!nextEditAvailability.canEdit && nextEditAvailability.validationMessage) {
+                showValidationFeedback(nextEditAvailability.validationMessage);
 
                 return;
             }
@@ -377,6 +379,16 @@ const useRequestShift = (activeEffect = false) => {
     };
     const handleCreateNextMonthShift = () => {
         const nextMonth = new Date().getMonth() + 2;
+        const nextDate =
+            nextMonth > 12
+                ? {
+                      year: year + 1,
+                      month: 1,
+                  }
+                : {
+                      year,
+                      month: nextMonth,
+                  };
 
         if (nextMonth > 12) {
             setState('year', year + 1);
@@ -385,7 +397,7 @@ const useRequestShift = (activeEffect = false) => {
             setState('month', nextMonth);
         }
 
-        handleToggleEditMode();
+        handleToggleEditMode(nextDate);
     };
     const retry = useCallback(async () => {
         await Promise.all([refetchShiftTeams(), refetchDutyRequestList(), refetchRequestShift()]);
