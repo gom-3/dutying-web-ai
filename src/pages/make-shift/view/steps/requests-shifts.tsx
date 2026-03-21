@@ -2,7 +2,9 @@ import {useMemo} from 'react';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import Button from '@/shared/ui/Button';
 import PageState from '@/shared/ui/PageState';
+import StatusBadge from '@/shared/ui/StatusBadge';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';
@@ -28,29 +30,32 @@ export function RequestsShifts() {
                     <p className="font-apple text-xl font-medium text-gray-3">
                         반영된 스케줄은 <span className="text-main-1">근무표에 고정</span>됩니다.
                     </p>
-                    {/* <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <StatusPill label="반영된 신청 근무" count={appliedRequests.length} />
-                        <StatusPill label="반영 대기 신청" count={pendingRequests.length} />
-                    </div> */}
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <StatusBadge label="반영된 신청 근무" tone="success" count={appliedRequests.length} />
+                        <StatusBadge label="반영 대기 신청" tone="brand" count={pendingRequests.length} />
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
+                    <Button
+                        variant="secondary"
+                        size="md"
+                        className="h-[42px] rounded-[10px] px-5 font-semibold"
                         onClick={() => useCase.prev()}
                         disabled={!canPrev}
                         type="button"
                     >
                         이전
-                    </button>
-                    <button
-                        className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
+                    </Button>
+                    <Button
+                        size="md"
+                        className="h-[42px] rounded-[10px] px-5 font-semibold"
                         onClick={() => useCase.next()}
                         disabled={!canNext}
                         type="button"
                     >
                         다음
-                    </button>
+                    </Button>
                 </div>
             </div>
 

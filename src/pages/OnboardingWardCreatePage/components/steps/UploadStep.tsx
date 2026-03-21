@@ -1,7 +1,7 @@
 import {Upload} from 'lucide-react';
 import {useRef} from 'react';
 import Card from '@/shared/ui/Card';
-import {Button} from '@/shared/ui/primitives/button';
+import Button from '@/shared/ui/Button';
 import type {TOnboardingWardDraft} from '../../model';
 
 interface IUploadStepProps {
@@ -46,8 +46,9 @@ function UploadStep({draft, onUpload}: IUploadStepProps) {
                 />
                 <Button
                     type="button"
-                    variant="outline"
-                    className="mt-5 h-10 rounded-[10px] border-gray-4 bg-gray-6 px-4 font-apple text-[20px] font-medium text-gray-3 hover:bg-gray-5"
+                    variant="secondary"
+                    size="md"
+                    className="mt-5 h-10 rounded-[10px] border-gray-4 px-4 text-[20px] font-medium"
                     onClick={() => inputRef.current?.click()}
                 >
                     파일 업로드
