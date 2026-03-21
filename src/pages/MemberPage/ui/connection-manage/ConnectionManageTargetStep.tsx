@@ -1,10 +1,12 @@
 import {twMerge} from 'tailwind-merge';
+import {type TWaitingNurse} from '@/entities/nurse';
 import {type TShiftTeam} from '@/entities/ward';
 import {CheckedIcon, MoreIcon, PersonIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import type {TConnectMode} from '../../model/connectionManage';
-import {getGroupedDivisionNurses} from '../../model/connectionManage';
+import {getConnectionManageTargetLabel, getGroupedDivisionNurses} from '../../model/connectionManage';
 
 interface IConnectionManageTargetStepProps {
+    currentWaitingNurse: TWaitingNurse | null;
     shiftTeams: TShiftTeam[] | undefined;
     connectMode: TConnectMode;
     toLinkNurseId: number | null;
@@ -17,6 +19,7 @@ interface IConnectionManageTargetStepProps {
 }
 
 function ConnectionManageTargetStep({
+    currentWaitingNurse,
     shiftTeams,
     connectMode,
     toLinkNurseId,
@@ -27,6 +30,13 @@ function ConnectionManageTargetStep({
     onSelectLinkNurse,
     onSelectShiftTeam,
 }: IConnectionManageTargetStepProps) {
+    const targetLabel = getConnectionManageTargetLabel({
+        connectMode,
+        shiftTeams,
+        toLinkNurseId,
+        toAddShiftTeamId,
+    });
+
     return (
         <div
             className="h-[83%] min-h-225.75 w-[40%] min-w-190 rounded-[1.25rem] bg-white px-10.5 py-8.75"
@@ -57,8 +67,20 @@ function ConnectionManageTargetStep({
                     ? '미연동 상태인 간호사 목록 중에 일치하는 계정을 선택해주세요.'
                     : '팀을 선택해주시면 해당 팀에 계정이 추가됩니다.'}
             </p>
+            <div className="mt-6 rounded-[1rem] border border-main-3/40 bg-main-4/35 px-5 py-4">
+                <p className="font-apple text-[.9375rem] font-semibold text-main-1">선택 결과 미리보기</p>
+                <p className="mt-2 font-apple text-[1rem] leading-6 text-sub-1">
+                    {targetLabel
+                        ? connectMode === 'link'
+                            ? `${currentWaitingNurse?.name ?? '선택한 간호사'} 신청이 ${targetLabel} 계정에 연결됩니다.`
+                            : `${currentWaitingNurse?.name ?? '선택한 간호사'}님이 ${targetLabel} 팀에 추가됩니다.`
+                        : connectMode === 'link'
+                          ? '대상 계정을 선택하면 어떤 계정으로 연결되는지 바로 확인할 수 있어요.'
+                          : '팀을 선택하면 어느 팀으로 추가되는지 바로 확인할 수 있어요.'}
+                </p>
+            </div>
             <div
-                className={`mb-8 scrollbar-hide flex h-[calc(100%-5rem)] items-start gap-10 overflow-y-scroll ${
+                className={`mb-8 scrollbar-hide flex h-[calc(100%-9.5rem)] items-start gap-10 overflow-y-scroll ${
                     connectMode === 'add' ? 'pt-25.5' : ''
                 }`}
             >
