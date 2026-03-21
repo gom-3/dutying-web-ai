@@ -132,7 +132,7 @@ function SkillLevelModal({open, config, onClose, onSave}: ISkillLevelModalProps)
 
                 <div className="mt-10 flex items-center justify-between">
                     <button type="button" className="font-apple text-[20px] text-gray-4 underline underline-offset-2" onClick={onClose}>
-                        임시 저장
+                        취소
                     </button>
                     <WizardButton
                         onClick={() => {

@@ -1,11 +1,9 @@
 import type {TCreateWardDTO} from '@/shared/api/ward/type';
-import {buildCreateWardPayload, buildMockCreateWardPayload, type TMockCreateWardPayload} from './adapter';
+import {buildCreateWardPayload} from './adapter';
 import type {TOnboardingWardDraft} from './model';
 
 export type TOnboardingWardCreateSubmission = {
     mode: 'created';
-    wardCreatePayload: TCreateWardDTO;
-    previewPayload: TMockCreateWardPayload;
     successMessage: string;
 };
 
@@ -27,8 +25,6 @@ export const createOnboardingWardCreateExecutor =
 
         return {
             mode: 'created',
-            wardCreatePayload,
-            previewPayload: buildMockCreateWardPayload(draft),
             successMessage: '병동 생성을 완료했어요.',
         };
     };
