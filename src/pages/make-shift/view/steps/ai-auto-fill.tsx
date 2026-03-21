@@ -13,7 +13,7 @@ import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-b
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import WardAPI from '@/shared/api/ward';
 import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
-import {generateMockAiSchedule} from '../../model/ai-schedule-mock';
+import {requestAiSchedule} from '../../model/ai-schedule-provider';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from '../../model/shift-editor-adapter';
@@ -55,6 +55,7 @@ export function AiAutofill() {
     const [showFaults, setShowFaults] = useState(true);
     const violationMap = useMemo(() => buildViolationMap(violations, editorDoc), [violations, editorDoc]);
     const [isWorking, setIsWorking] = useState(false);
+    const [isAiGenerating, setIsAiGenerating] = useState(false);
     const savingLabel = isWorking ? '저장 중' : '저장 완료';
     const SavingStatusIcon = isWorking ? SavingIcon : SaveCompleteIcon;
     const handleConfirm = async () => {
@@ -73,10 +74,30 @@ export function AiAutofill() {
             setIsWorking(false);
         }
     };
-    const handleAiFill = () => {
-        const response = generateMockAiSchedule(editorDoc);
+    const handleAiFill = async () => {
+        if (!wardId || !currentShiftTeamId || isAiGenerating) return;
 
-        commands.applySchedule(response.schedule, 'ai');
+        setIsAiGenerating(true);
+
+        try {
+            const result = await requestAiSchedule({
+                wardId,
+                shiftTeamId: currentShiftTeamId,
+                year,
+                month,
+                doc: editorDoc,
+            });
+
+            if (!result.ok) {
+                alert(result.message);
+
+                return;
+            }
+
+            commands.applySchedule(result.response.schedule, 'ai');
+        } finally {
+            setIsAiGenerating(false);
+        }
     };
 
     useEffect(() => {
@@ -139,12 +160,13 @@ export function AiAutofill() {
                     </div>
                     <button
                         className="ml-2 flex h-[42px] w-[208px] items-center justify-center gap-[6px] rounded-[10px] font-apple text-[24px] font-semibold text-white"
+                        disabled={isAiGenerating}
                         style={{backgroundImage: 'linear-gradient(105deg, #B53DFA 0%, #663DFA 100%)'}}
                         onClick={handleAiFill}
                         type="button"
                     >
                         <PlusIcon className="h-6 w-6 stroke-white" />
-                        AI 다시 채우기
+                        {isAiGenerating ? 'AI 채우는 중...' : 'AI 다시 채우기'}
                     </button>
                     <button
                         className="flex h-[42px] items-center rounded-[10px] bg-[#0A0F15] px-[20px] py-[8px] font-apple text-[24px] font-semibold text-white"

@@ -1,0 +1,24 @@
+import type {TDutyDoc} from '@/features/shift-editor';
+import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+
+export type TAiScheduleRequest = {
+    wardId: number;
+    shiftTeamId: number;
+    year: number;
+    month: number;
+    doc: TDutyDoc;
+};
+
+export type TAiScheduleProvider = {
+    generate: (request: TAiScheduleRequest) => Promise<TAiScheduleResponse>;
+};
+
+export type TAiScheduleResult =
+    | {
+          ok: true;
+          response: TAiScheduleResponse;
+      }
+    | {
+          ok: false;
+          message: string;
+      };
