@@ -74,7 +74,7 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
     return (
         <Input
             value={time}
-            onChange={HandleChange}
+            onChange={handleChange}
             variant="foundation"
             fieldSize="md"
             className={cn(

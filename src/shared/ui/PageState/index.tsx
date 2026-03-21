@@ -1,6 +1,6 @@
 import {Inbox, RotateCcw, TriangleAlert} from 'lucide-react';
 import type {ButtonHTMLAttributes, ReactNode} from 'react';
-import Button from '@/shared/ui/Button';
+import Button from '@/shared/ui/form-controls/Button';
 import {cn} from '@/shared/util/style';
 
 type TPageStateTone = 'loading' | 'error' | 'empty';
