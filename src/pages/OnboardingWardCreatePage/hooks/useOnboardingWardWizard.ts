@@ -1,6 +1,7 @@
 import {type DropResult} from '@hello-pangea/dnd';
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
+import useRegister from '@/features/auth/useRegister';
 import {applyParsedWardData} from '../adapter';
 import {
     addNurseDraft,
@@ -21,17 +22,24 @@ import {
     updateNurseDraft,
     updateShiftTypeDraft,
 } from '../model';
-import {onboardingWardCreateExecutor} from '../submission';
+import {createOnboardingWardCreateExecutor} from '../submission';
 import type {TSortMode} from '../types';
 
 const MAX_STEP = 4;
 
+type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
+
 function useOnboardingWardWizard() {
+    const {
+        actions: {createWard},
+    } = useRegister();
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortMode] = useState<TSortMode>('manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
-    const [completedPayload, setCompletedPayload] = useState<string | null>(null);
+    const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const onboardingWardCreateExecutor = useMemo(() => createOnboardingWardCreateExecutor(createWard), [createWard]);
 
     useEffect(() => {
         if (!selectedTeamId && draft.teams[0]) {
@@ -82,20 +90,23 @@ function useOnboardingWardWizard() {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
     };
     const complete = async () => {
-        if (!canComplete(draft)) {
+        if (!canComplete(draft) || submissionStatus === 'submitting') {
             return;
         }
 
+        setSubmissionStatus('submitting');
+        setSubmissionError(null);
+
         try {
             const submission = await onboardingWardCreateExecutor(draft);
-            const stringified = JSON.stringify(submission.previewPayload, null, 2);
 
             console.info('createWardPayload', submission.wardCreatePayload);
-            console.info('mockCreateWardPayload', submission.previewPayload);
-            setCompletedPayload(stringified);
+            setSubmissionStatus('success');
             toast.success(submission.successMessage);
         } catch (error) {
             console.error('Failed to complete onboarding ward creation.', error);
+            setSubmissionStatus('error');
+            setSubmissionError(error instanceof Error ? error.message : '병동 생성에 실패했습니다. 다시 시도해주세요.');
         }
     };
     const skipOrComplete = () => {
@@ -116,7 +127,6 @@ function useOnboardingWardWizard() {
         setSortMode,
         showSkillModal,
         setShowSkillModal,
-        completedPayload,
         goNextStep,
         goPreviousStep,
         skipOrComplete,
@@ -130,6 +140,8 @@ function useOnboardingWardWizard() {
         applyUploadedFile,
         saveSkillConfig,
         complete,
+        submissionStatus,
+        submissionError,
         currentStepValidation: getStepValidation(draft),
         canGoPrev: canGoPrev(draft),
         canGoNext: canGoNext(draft),

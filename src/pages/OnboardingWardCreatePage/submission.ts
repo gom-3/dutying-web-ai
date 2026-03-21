@@ -3,19 +3,32 @@ import {buildCreateWardPayload, buildMockCreateWardPayload, type TMockCreateWard
 import type {TOnboardingWardDraft} from './model';
 
 export type TOnboardingWardCreateSubmission = {
-    mode: 'mock';
+    mode: 'created';
     wardCreatePayload: TCreateWardDTO;
     previewPayload: TMockCreateWardPayload;
     successMessage: string;
 };
 
+export type TOnboardingWardCreateAction = (
+    createWardDTO: TCreateWardDTO,
+    options?: {
+        navigateOnLinked?: boolean;
+    },
+) => Promise<unknown>;
+
 export type TOnboardingWardCreateExecutor = (draft: TOnboardingWardDraft) => Promise<TOnboardingWardCreateSubmission>;
 
-export const mockOnboardingWardCreateExecutor: TOnboardingWardCreateExecutor = async (draft) => ({
-    mode: 'mock',
-    wardCreatePayload: buildCreateWardPayload(draft),
-    previewPayload: buildMockCreateWardPayload(draft),
-    successMessage: 'mock 병동 생성 payload를 만들었습니다.',
-});
+export const createOnboardingWardCreateExecutor =
+    (createWard: TOnboardingWardCreateAction): TOnboardingWardCreateExecutor =>
+    async (draft) => {
+        const wardCreatePayload = buildCreateWardPayload(draft);
 
-export const onboardingWardCreateExecutor = mockOnboardingWardCreateExecutor;
+        await createWard(wardCreatePayload, {navigateOnLinked: false});
+
+        return {
+            mode: 'created',
+            wardCreatePayload,
+            previewPayload: buildMockCreateWardPayload(draft),
+            successMessage: '병동 생성을 완료했어요.',
+        };
+    };
