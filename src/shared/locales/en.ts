@@ -152,6 +152,23 @@ export const en: TLocale = {
         refresh: {
             loading: 'Logging in...',
         },
+        onboardingWardCreate: {
+            skillLevelModal: {
+                title: 'Set skill levels',
+                description: 'You can define the criteria freely.',
+                levelCountOption: '{{levelCount}} levels',
+                colorLabel: 'Color',
+                high: 'High',
+                low: 'Low',
+                levelLabel: 'Level',
+                categoryLabel: 'Category',
+                levelDisplay: 'LV. {{level}}',
+                autoAssign: 'Auto assign',
+                autoAssignTooltip: 'Automatically distributes registered nurses across levels for an initial assignment.',
+                cancel: 'Cancel',
+                complete: 'Complete',
+            },
+        },
         member: {
             shiftTeamList: {
                 title: 'Team',

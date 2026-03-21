@@ -3,12 +3,11 @@ import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {
     applyParsedWardData,
     buildCreateWardPayload,
-    buildMockCreateWardPayload,
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
 } from './adapter';
-import {createInitialDraft, saveSkillLevelConfig} from './model';
+import {createInitialDraft} from './model';
 
 describe('OnboardingWardCreatePage adapter', () => {
     it('builds create ward payload outside the UI draft layer', () => {
@@ -104,21 +103,6 @@ describe('OnboardingWardCreatePage adapter', () => {
         });
 
         expect(nextDraft.nurses[0]?.employmentDate).toBe(today);
-    });
-
-    it('builds a mock preview payload with parse-friendly nurse metadata', () => {
-        const draft = saveSkillLevelConfig(createInitialDraft(), {
-            levelCount: 3,
-            paletteId: 'warm',
-            autoAssign: true,
-        });
-        const payload = buildMockCreateWardPayload(draft);
-
-        expect(payload.nurses[0]).toMatchObject({
-            name: draft.nurses[0]?.name,
-            teamName: draft.teams[0]?.name,
-        });
-        expect(payload.skillLevelConfig.palette).toHaveLength(draft.skillLevelConfig.levelCount);
     });
 
     it('normalizes parse api responses into draft injection data', () => {

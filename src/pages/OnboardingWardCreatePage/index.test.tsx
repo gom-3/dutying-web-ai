@@ -9,6 +9,19 @@ const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+const typedTranslations = {
+    'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
+    'page.onboardingWardCreate.skillLevelModal.description': '기준은 자유롭게 정할 수 있어요',
+    'page.onboardingWardCreate.skillLevelModal.colorLabel': '색상',
+    'page.onboardingWardCreate.skillLevelModal.high': '높음',
+    'page.onboardingWardCreate.skillLevelModal.low': '낮음',
+    'page.onboardingWardCreate.skillLevelModal.levelLabel': '숙련도',
+    'page.onboardingWardCreate.skillLevelModal.categoryLabel': '구분',
+    'page.onboardingWardCreate.skillLevelModal.autoAssign': '자동 배정',
+    'page.onboardingWardCreate.skillLevelModal.autoAssignTooltip': '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정합니다.',
+    'page.onboardingWardCreate.skillLevelModal.cancel': '취소',
+    'page.onboardingWardCreate.skillLevelModal.complete': '완료',
+} as const;
 
 vi.mock('react-hot-toast', () => ({
     default: {
@@ -30,6 +43,22 @@ vi.mock('@/features/auth/useRegister', () => ({
     default: () => ({
         actions: {
             createWard: mockCreateWard,
+        },
+    }),
+}));
+
+vi.mock('@/shared/hook/use-typed-translation', () => ({
+    useTypedTranslation: () => ({
+        t: (key: string, values?: Record<string, string | number>) => {
+            if (key === 'page.onboardingWardCreate.skillLevelModal.levelCountOption') {
+                return `${values?.levelCount ?? ''}단계`;
+            }
+
+            if (key === 'page.onboardingWardCreate.skillLevelModal.levelDisplay') {
+                return `LV. ${values?.level ?? ''}`;
+            }
+
+            return typedTranslations[key as keyof typeof typedTranslations] ?? key;
         },
     }),
 }));

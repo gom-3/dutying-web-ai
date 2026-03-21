@@ -145,7 +145,6 @@ function useOnboardingWardWizard() {
         try {
             const submission = await onboardingWardCreateExecutor(draft);
 
-            console.info('createWardPayload', submission.wardCreatePayload);
             setSubmissionStatus('success');
             toast.success(submission.successMessage);
         } catch (error) {

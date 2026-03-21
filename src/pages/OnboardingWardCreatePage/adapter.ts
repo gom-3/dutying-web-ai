@@ -3,28 +3,12 @@ import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import {
     createEmptyShiftType,
-    getSkillPalette,
     type TOnboardingNurseDraft,
     type TOnboardingTeamDraft,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
     type TSkillLevelConfig,
 } from './model';
-
-export type TMockCreateWardPayload = TCreateWardDTO & {
-    nurses: Array<{
-        name: string;
-        memo: string;
-        isWorker: boolean;
-        employmentDate: string;
-        teamName: string;
-        level: number | null;
-        possibleShiftShortNames: string[];
-    }>;
-    skillLevelConfig: TSkillLevelConfig & {
-        palette: string[];
-    };
-};
 
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
     name?: string;
@@ -325,28 +309,3 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
         nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
     })),
 });
-
-export const buildMockCreateWardPayload = (draft: TOnboardingWardDraft): TMockCreateWardPayload => {
-    const teamById = new Map(draft.teams.map((team) => [team.id, team.name]));
-    const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
-    const palette = getSkillPalette(draft.skillLevelConfig.paletteId);
-
-    return {
-        ...buildCreateWardPayload(draft),
-        nurses: draft.nurses.map((nurse) => ({
-            name: nurse.name,
-            memo: nurse.memo,
-            isWorker: nurse.isWorker,
-            employmentDate: nurse.employmentDate,
-            teamName: teamById.get(nurse.teamId) ?? '',
-            level: nurse.level,
-            possibleShiftShortNames: nurse.possibleShiftTypeIds
-                .map((shiftTypeId) => shiftTypeById.get(shiftTypeId)?.shortName ?? '')
-                .filter(Boolean),
-        })),
-        skillLevelConfig: {
-            ...draft.skillLevelConfig,
-            palette: palette.colors.slice(0, draft.skillLevelConfig.levelCount),
-        },
-    };
-};
