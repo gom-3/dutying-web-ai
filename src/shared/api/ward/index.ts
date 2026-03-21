@@ -4,6 +4,7 @@ import {type TNurseResponse, type TUpdateNurseDTO} from '../nurse/type';
 import {
     type TDutyRequestResponse,
     type IWardAPI,
+    type TGenerateAiAutofillScheduleDTO,
     type TRequestShiftResponse,
     type TCreateWardDTO,
     type TEditWardDTO,
@@ -93,6 +94,8 @@ class WardAPI implements IWardAPI {
                 isAccepted,
             })
         ).data;
+    generateAiAutofillSchedule = async (wardId: number, shiftTeamId: number, payload: TGenerateAiAutofillScheduleDTO) =>
+        (await axiosInstance.post(`/wards/${wardId}/shift-teams/${shiftTeamId}/duty/ai-autofill`, payload)).data;
     postShift = async (wardId: number, shiftTeamId: number, year: number, month: number) =>
         (
             await axiosInstance.post(
