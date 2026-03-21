@@ -55,7 +55,28 @@ export const en: TLocale = {
             },
             aiRefill: {
                 action: 'Refill with AI',
+                retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
+                intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',
+                saveFailed: 'Failed to save. Please try again shortly.',
+                title: {
+                    idle: 'Ready to start AI autofill',
+                    loading: 'AI is recalculating the schedule',
+                    success: 'Applied the AI result',
+                    error: 'AI request failed',
+                },
+                description: {
+                    idle: 'You can start AI autofill with the conditions from the previous steps.',
+                    loading: 'While waiting for the response, confirm and retry are temporarily disabled.',
+                    success: 'The AI result has been applied. Review it, edit it, or confirm it right away.',
+                    error: 'The AI request failed. The current schedule stays as-is, and you can retry immediately.',
+                },
+                draft: {
+                    saved: 'Your current edits are preserved and autosaved.',
+                    none: 'You are viewing the base schedule without any saved edits yet.',
+                },
+                previous: 'Previous step',
+                confirm: 'Confirm',
             },
         },
         duty: {
