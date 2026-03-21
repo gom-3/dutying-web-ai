@@ -12,7 +12,7 @@ import ShiftTeamCard from './ShiftTeamCard';
 
 function ShiftTeamList() {
     const {
-        state: {shiftTeams, selectedNurse},
+        state: {shiftTeams, selectedNurse, isAddingNurse},
         actions: {selectNurse, createShiftTeam, moveNurseOrder, updateShiftTeam, addNurse, editDivision, deleteShiftTeam},
     } = useEditShiftTeam();
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
@@ -66,6 +66,7 @@ function ShiftTeamList() {
                             clickAwayShiftTeamNameRef={clickAwayShiftTeamNameRef}
                             selectNurse={selectNurse}
                             addNurse={addNurse}
+                            isAddingNurse={isAddingNurse}
                             editDivision={editDivision}
                             deleteShiftTeam={deleteShiftTeam}
                             onOpenMenu={setOpenMenuShiftTeamId}

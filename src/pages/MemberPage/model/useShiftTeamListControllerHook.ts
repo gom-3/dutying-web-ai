@@ -11,7 +11,7 @@ import {createMoveNurseOrderPayload, type TEditShiftTeamState, getNextSelectedNu
 interface IUseShiftTeamListControllerParams {
     shiftTeams: TShiftTeam[] | undefined;
     selectedNurse: TNurse | undefined;
-    selectNurse: (nurseId: number | null) => void;
+    selectNurse: (nurseId: number | null, mode?: 'create' | 'edit') => boolean;
     moveNurseOrder: (
         nurseId: number,
         shiftTeamId: number,
@@ -33,7 +33,9 @@ function useShiftTeamListController({
 }: IUseShiftTeamListControllerParams) {
     const [openMenuShiftTeamId, setOpenMenuShiftTeamId] = useState<number | null>(null);
     const [editShiftTeam, setEditShiftTeam] = useState<TEditShiftTeamState>(null);
-    const clickAwayListRef = useOnclickOutside(() => selectNurse(null));
+    const clickAwayListRef = useOnclickOutside(() => {
+        selectNurse(null);
+    });
     const clickAwayMenuRef = useOnclickOutside(() => setOpenMenuShiftTeamId(null));
     const handleUpdateShiftTeam = useCallback(() => {
         if (!editShiftTeam) return;
