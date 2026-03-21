@@ -31,6 +31,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
+    const reloadToken = useMakeShiftStore((s) => s.reloadToken);
 
     useEffect(() => {
         if (!wardId) {
@@ -85,7 +86,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, wardId]);
+    }, [reloadToken, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, wardId]);
 
     useEffect(() => {
         if (!wardId) return;
@@ -131,7 +132,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [currentShiftTeamId, month, setShiftExists, setShiftStatus, wardId, year]);
+    }, [currentShiftTeamId, month, reloadToken, setShiftExists, setShiftStatus, wardId, year]);
 
     useEffect(() => {
         let cancelled = false;
@@ -160,7 +161,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [currentShiftTeamId, shiftStatus, wardId]);
+    }, [currentShiftTeamId, reloadToken, shiftStatus, wardId]);
 
     useEffect(() => {
         // MVP: 에디터 초기 doc은 데모 데이터로 시작 (이후 real shift->doc 빌드로 교체)

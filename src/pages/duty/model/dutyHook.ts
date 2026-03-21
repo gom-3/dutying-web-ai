@@ -205,6 +205,9 @@ export function useDutyHook() {
 
         shiftToExcel(month, shift);
     };
+    const handleRetry = () => {
+        void dutyQuery.refetch();
+    };
 
     return {
         state: {
@@ -231,6 +234,7 @@ export function useDutyHook() {
             goNextMonthMake: handleGoNextMonthMake,
             postShift: handlePostShift,
             exportExcel: handleExportExcel,
+            retry: handleRetry,
             onKeyDown,
             onPaste,
         },

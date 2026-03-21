@@ -1,6 +1,7 @@
 import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -90,18 +91,29 @@ export const MakeShiftPageView = () => {
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
-                        <div className="text-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">
-                                {shiftStatus === 'pending' && t('page.makeShift.overview.loading')}
-                                {shiftStatus === 'success' &&
-                                    shiftExists &&
-                                    t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                {((shiftStatus === 'success' && !shiftExists) || shiftStatus === 'error') &&
-                                    t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
-                                {shiftStatus === 'idle' && t('page.makeShift.overview.checking')}
-                            </p>
+                        {shiftStatus === 'pending' || shiftStatus === 'idle' ? (
+                            <PageState
+                                tone="loading"
+                                title={
+                                    shiftStatus === 'pending' ? t('page.makeShift.overview.loading') : t('page.makeShift.overview.checking')
+                                }
+                                description={t('page.state.loadingDescription')}
+                                className="py-0"
+                            />
+                        ) : shiftStatus === 'error' ? (
+                            <PageState
+                                tone="error"
+                                title={t('page.makeShift.overview.error')}
+                                description={t('page.state.errorDescription')}
+                                action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
+                                className="py-0"
+                            />
+                        ) : hasCurrentMonthShift ? (
+                            <div className="text-center">
+                                <p className="font-apple text-2xl font-semibold text-gray-3">
+                                    {t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                </p>
 
-                            {hasCurrentMonthShift ? (
                                 <div className="mt-6 flex items-center justify-center gap-8">
                                     <button
                                         className="rounded-[20px] bg-main-light px-[42px] py-[22px] font-apple text-2xl font-semibold text-main-1"
@@ -118,19 +130,25 @@ export const MakeShiftPageView = () => {
                                         {t('page.makeShift.overview.createShift', {month: nextMonth})}
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="mt-6 flex justify-center">
+                            </div>
+                        ) : (
+                            <PageState
+                                tone="empty"
+                                title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
+                                description={t('page.state.emptyDescription')}
+                                className="py-0"
+                            >
+                                <div className="mt-1 flex justify-center">
                                     <button
-                                        className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1 disabled:opacity-50"
+                                        className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1"
                                         onClick={handleCreateCurrentMonth}
-                                        disabled={shiftStatus === 'pending'}
                                         type="button"
                                     >
                                         {t('page.makeShift.overview.createShift', {month})}
                                     </button>
                                 </div>
-                            )}
-                        </div>
+                            </PageState>
+                        )}
                     </div>
                 ) : (
                     <>

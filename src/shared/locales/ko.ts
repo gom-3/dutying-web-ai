@@ -1,5 +1,12 @@
 export const ko = {
     page: {
+        state: {
+            loadingTitle: '화면을 준비하고 있어요',
+            loadingDescription: '잠시만 기다려 주세요.',
+            emptyDescription: '조건이 충족되면 여기에 내용이 표시됩니다.',
+            errorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
+            retry: '다시 시도',
+        },
         landing: {
             title: '근무표\n이제 더 간편하게!',
         },
@@ -9,6 +16,7 @@ export const ko = {
                 shiftExists: '{{teamName}}의 {{month}}월 근무표가 존재합니다.',
                 shiftEmpty: '{{teamName}}의 {{month}}월 근무표가 비어있어요',
                 checking: '근무표 상태를 확인 중입니다.',
+                error: '근무표 상태를 확인하지 못했어요.',
                 viewShift: '{{month}}월 근무표 보러가기',
                 createShift: '{{month}}월 근무표 생성하기',
             },
