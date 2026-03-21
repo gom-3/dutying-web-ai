@@ -1,9 +1,9 @@
+import {cn} from '@dutying/utils/style';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import useAuth from '@/features/auth/useAuth';
 import {LogoWithSymbol} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import {cn} from '@/shared/util/style';
 
 interface IWebHeaderProps {
     focus: 'mobile' | 'web' | 'top';

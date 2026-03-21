@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {TriangleAlert} from 'lucide-react';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/shift/useRequestShift';
@@ -5,7 +6,6 @@ import {NextIcon, PenIcon, PrevIcon, SaveCompleteIcon, SavingIcon} from '@/share
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import StatusBadge from '@/shared/ui/StatusBadge';
-import {cn} from '@/shared/util/style';
 
 const SAVE_STATUS_LABEL: Record<'idle' | 'loading' | 'success' | 'error', string> = {
     idle: '변경하면 자동 저장돼요',

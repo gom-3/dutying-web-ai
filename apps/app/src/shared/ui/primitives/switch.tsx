@@ -1,6 +1,6 @@
+import {cn} from '@dutying/utils/style';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import * as React from 'react';
-import {cn} from '@/shared/util/style';
 
 const Switch = React.forwardRef<
     React.ComponentRef<typeof SwitchPrimitive.Root>,

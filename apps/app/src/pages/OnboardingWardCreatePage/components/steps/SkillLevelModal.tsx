@@ -1,8 +1,8 @@
+import {cn} from '@dutying/utils/style';
 import {Info, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
-import {cn} from '@/shared/util/style';
 import {getSkillPalette, skillPalettes, type TSkillLevelConfig} from '../../model';
 import WizardButton from '../WizardButton';
 import {SkillBadge} from './Badges';

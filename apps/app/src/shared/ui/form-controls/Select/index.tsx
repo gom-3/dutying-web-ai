@@ -1,7 +1,7 @@
+import {cn} from '@dutying/utils/style';
 import React, {forwardRef} from 'react';
 import {type UseFormRegisterReturn} from 'react-hook-form';
 import {ArrowDownIcon} from '@/shared/assets/svg';
-import {cn} from '@/shared/util/style';
 
 interface ISelectProps extends React.DetailedHTMLProps<React.SelectHTMLAttributes<HTMLSelectElement>, HTMLSelectElement> {
     placeholder?: string;

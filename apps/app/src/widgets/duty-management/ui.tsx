@@ -1,8 +1,8 @@
+import {cn} from '@dutying/utils/style';
 import {cva, type VariantProps} from 'class-variance-authority';
 import * as React from 'react';
 import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
 import {buttonVariants} from '@/shared/ui/primitives/button';
-import {cn} from '@/shared/util/style';
 
 type TTeam = {
     shiftTeamId: number;

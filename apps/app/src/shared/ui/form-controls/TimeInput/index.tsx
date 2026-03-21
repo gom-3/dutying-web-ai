@@ -1,6 +1,6 @@
+import {cn} from '@dutying/utils/style';
 import React, {useEffect, useRef, useState} from 'react';
 import {Input} from '@/shared/ui/primitives/input';
-import {cn} from '@/shared/util/style';
 
 interface ITimeInputProps extends React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement> {
     initTime?: string;

@@ -1,5 +1,5 @@
+import {cn} from '@dutying/utils/style';
 import {cva, type VariantProps} from 'class-variance-authority';
-import {cn} from '@/shared/util/style';
 
 const statusBadgeVariants = cva('inline-flex items-center gap-2 rounded-full border font-apple font-medium whitespace-nowrap', {
     variants: {

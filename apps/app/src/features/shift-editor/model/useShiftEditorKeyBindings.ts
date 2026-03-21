@@ -1,5 +1,5 @@
+import {koToEn} from '@dutying/utils/ko-to-en';
 import {useCallback, useMemo} from 'react';
-import {koToEn} from '@/shared/util/koToEn';
 import {useShiftEditorStore} from './store';
 import type {TClipboardPayload, TWorkKeyMap} from './types';
 import {useShiftEditorCommands} from './useShiftEditorCommands';
