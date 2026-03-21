@@ -76,7 +76,7 @@ export default defineConfig(({command}) => ({
                 ],
             },
         }),
-        tsconfigPaths(),
+        tsconfigPaths({projects: ['./tsconfig.app.json']}),
         tailwindcss(),
         ...(command === 'serve' ? [mkcert()] : []),
     ],

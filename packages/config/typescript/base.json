@@ -7,7 +7,7 @@
         "moduleResolution": "bundler",
         "allowImportingTsExtensions": true,
         "resolveJsonModule": true,
-        "isolatedModules": false,
+        "isolatedModules": true,
         "moduleDetection": "force",
         "strict": true,
         "noUnusedLocals": true,

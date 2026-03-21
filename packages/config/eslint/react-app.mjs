@@ -11,7 +11,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 const defaultFiles = ['src/**/*.{ts,tsx,js,jsx}', 'cypress/**/*.{ts,tsx,js,jsx}', '*.{ts,mjs}'];
-const defaultIgnores = ['coverage/**', 'dist/**', '**/*', '!src/**', '!cypress/**'];
+const defaultIgnores = ['coverage/**', 'dist/**', '**/*', '!src/**', '!cypress/**', '!*.{ts,mjs}'];
 
 export function createReactAppConfig({
     files = defaultFiles,
@@ -20,6 +20,10 @@ export function createReactAppConfig({
     tsconfigRootDir,
     additionalRules = {},
 } = {}) {
+    if (!project || !tsconfigRootDir) {
+        throw new Error('createReactAppConfig requires both "project" and "tsconfigRootDir".');
+    }
+
     return [
         js.configs.recommended,
         {
