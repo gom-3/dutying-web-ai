@@ -1,5 +1,5 @@
-import * as Sentry from '@sentry/react';
 import {type DropResult} from '@hello-pangea/dnd';
+import * as Sentry from '@sentry/react';
 import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/auth/useRegister';

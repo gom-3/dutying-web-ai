@@ -64,7 +64,7 @@ function ProfilePage() {
             const compressedFile = await imageCompression(e.target.files[0], options);
 
             setPhotoImage(compressedFile);
-        } catch (error) {
+        } catch (_error) {
             toast.error('프로필 이미지 처리에 실패했습니다.');
         }
     };
