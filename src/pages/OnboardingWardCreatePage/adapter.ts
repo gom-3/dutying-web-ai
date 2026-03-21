@@ -1,3 +1,4 @@
+import {v4 as uuidv4} from 'uuid';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import {
     createEmptyShiftType,
@@ -48,7 +49,12 @@ export type TOnboardingParsedWardData = {
     skillLevelConfig?: Partial<TSkillLevelConfig>;
 };
 
-const createLocalId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = {
+    D: {startTime: '07:00', endTime: '15:00'},
+    E: {startTime: '15:00', endTime: '23:00'},
+    N: {startTime: '23:00', endTime: '07:00'},
+};
+const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
 const inferClassificationFromShortName = (shortName: string, isOff: boolean): TOnboardingWardShiftType['classification'] => {
     if (isOff) return 'OFF';
 
@@ -60,21 +66,18 @@ const inferClassificationFromShortName = (shortName: string, isOff: boolean): TO
         case 'N':
             return 'NIGHT';
         case 'O':
+            // Parse payloads can contain an "O" short name before isOff is normalized.
             return 'OFF';
         default:
             return 'OTHER_WORK';
     }
 };
 const normalizeUploadedShiftTypes = (shiftTypes: TOnboardingWardShiftType[]): TOnboardingWardShiftType[] =>
-    shiftTypes.map((shiftType) =>
-        shiftType.shortName === 'D'
-            ? {...shiftType, startTime: '07:00', endTime: '15:00'}
-            : shiftType.shortName === 'E'
-              ? {...shiftType, startTime: '15:00', endTime: '23:00'}
-              : shiftType.shortName === 'N'
-                ? {...shiftType, startTime: '23:00', endTime: '07:00'}
-                : shiftType,
-    );
+    shiftTypes.map((shiftType) => {
+        const timeRange = SHIFT_TIME_RANGES[shiftType.shortName];
+
+        return timeRange ? {...shiftType, ...timeRange} : shiftType;
+    });
 const toDraftShiftType = (parsed: TOnboardingParsedShiftType): TOnboardingWardShiftType => {
     const base = createEmptyShiftType();
     const shortName = parsed.shortName ?? base.shortName;
@@ -229,7 +232,7 @@ export const buildMockCreateWardPayload = (draft: TOnboardingWardDraft): TMockCr
         })),
         skillLevelConfig: {
             ...draft.skillLevelConfig,
-            palette: palette.colors,
+            palette: palette.colors.slice(0, draft.skillLevelConfig.levelCount),
         },
     };
 };

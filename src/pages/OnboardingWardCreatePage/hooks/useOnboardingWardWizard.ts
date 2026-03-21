@@ -75,28 +75,32 @@ function useOnboardingWardWizard() {
 
         setDraft((prev) => reorderNursesWithinTeam(prev, activeTeamId, {destination, source}));
     };
-    const uploadMockFile = (fileName: string) => {
+    const applyUploadedFile = (fileName: string) => {
         setDraft((prev) => applyParsedWardData(prev, {fileName}));
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
     };
-    const complete = () => {
+    const complete = async () => {
         if (!canComplete(draft)) {
             return;
         }
 
-        const submission = onboardingWardCreateExecutor(draft);
-        const stringified = JSON.stringify(submission.previewPayload, null, 2);
+        try {
+            const submission = await onboardingWardCreateExecutor(draft);
+            const stringified = JSON.stringify(submission.previewPayload, null, 2);
 
-        console.info('createWardPayload', submission.wardCreatePayload);
-        console.info('mockCreateWardPayload', submission.previewPayload);
-        setCompletedPayload(stringified);
-        toast.success(submission.successMessage);
+            console.info('createWardPayload', submission.wardCreatePayload);
+            console.info('mockCreateWardPayload', submission.previewPayload);
+            setCompletedPayload(stringified);
+            toast.success(submission.successMessage);
+        } catch (error) {
+            console.error('Failed to complete onboarding ward creation.', error);
+        }
     };
     const skipOrComplete = () => {
         if (draft.currentStep === MAX_STEP) {
-            complete();
+            void complete();
 
             return;
         }
@@ -123,7 +127,7 @@ function useOnboardingWardWizard() {
         addNurse,
         updateNurse,
         handleNurseDragEnd,
-        uploadMockFile,
+        applyUploadedFile,
         saveSkillConfig,
         complete,
         currentStepValidation: getStepValidation(draft),

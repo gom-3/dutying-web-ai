@@ -9,9 +9,9 @@ export type TOnboardingWardCreateSubmission = {
     successMessage: string;
 };
 
-export type TOnboardingWardCreateExecutor = (draft: TOnboardingWardDraft) => TOnboardingWardCreateSubmission;
+export type TOnboardingWardCreateExecutor = (draft: TOnboardingWardDraft) => Promise<TOnboardingWardCreateSubmission>;
 
-export const mockOnboardingWardCreateExecutor: TOnboardingWardCreateExecutor = (draft) => ({
+export const mockOnboardingWardCreateExecutor: TOnboardingWardCreateExecutor = async (draft) => ({
     mode: 'mock',
     wardCreatePayload: buildCreateWardPayload(draft),
     previewPayload: buildMockCreateWardPayload(draft),

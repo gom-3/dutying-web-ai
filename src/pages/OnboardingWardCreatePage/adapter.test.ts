@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {applyParsedWardData, buildCreateWardPayload, buildMockCreateWardPayload} from './adapter';
-import {createInitialDraft} from './model';
+import {createInitialDraft, saveSkillLevelConfig} from './model';
 
 describe('OnboardingWardCreatePage adapter', () => {
     it('builds create ward payload outside the UI draft layer', () => {
@@ -84,7 +84,11 @@ describe('OnboardingWardCreatePage adapter', () => {
     });
 
     it('builds a mock preview payload with parse-friendly nurse metadata', () => {
-        const draft = createInitialDraft();
+        const draft = saveSkillLevelConfig(createInitialDraft(), {
+            levelCount: 3,
+            paletteId: 'warm',
+            autoAssign: true,
+        });
         const payload = buildMockCreateWardPayload(draft);
 
         expect(payload.nurses[0]).toMatchObject({
