@@ -32,7 +32,7 @@ const useRegister = () => {
             try {
                 const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
 
-                await handleGetAccountMe();
+                void handleGetAccountMe().catch(() => undefined);
 
                 if (updatedAccount.status === 'LINKED' && options?.navigateOnLinked !== false) {
                     navigate(ROUTE.MAKE);

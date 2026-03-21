@@ -881,7 +881,9 @@ function OnboardingWardCreatePage() {
                         <p className="font-apple text-[20px] font-semibold text-[#C55252]">병동 생성에 실패했어요</p>
                         <p className="mt-2 font-apple text-[16px] text-[#7A4F4F]">{submissionError ?? '잠시 후 다시 시도해주세요.'}</p>
                         <div className="mt-4">
-                            <WizardButton onClick={handleComplete}>다시 시도</WizardButton>
+                            <WizardButton disabled={isSubmitting} onClick={handleComplete}>
+                                다시 시도
+                            </WizardButton>
                         </div>
                     </div>
                 ) : null}
