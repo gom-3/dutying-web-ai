@@ -35,10 +35,3 @@ const wrapWithGAEvent =
 
         return fn(...args);
     };
-// 사용 예시
-const myFunction = (message: string) => {
-    console.log(message);
-};
-const wrappedFunction = wrapWithGAEvent(myFunction, EVENTS.LOGIN_PAGE.LOGIN);
-
-wrappedFunction('로그인 성공!');

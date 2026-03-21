@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import {useState} from 'react';
 import toast from 'react-hot-toast';
 import {FileAPI} from '@/shared/api';
@@ -23,7 +24,10 @@ const useProfileImage = (initialImg?: {profileImgUrl?: string; defaultProfileImg
             await uploadImageToS3(presignedUrl, photo);
             setProfileImg({profileImgUrl: fileUrl});
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e, {
+                tags: {feature: 'profile-image', action: 'upload'},
+                extra: {extension},
+            });
             toast.error('프로필 이미지 업로드에 실패했습니다.');
         } finally {
             setIsLoading(false);

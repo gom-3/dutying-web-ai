@@ -1,5 +1,6 @@
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
+import toast from 'react-hot-toast';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TNurse} from '@/entities/nurse';
 import useEditAccount from '@/features/account/useEditAccount';
@@ -63,8 +64,8 @@ function ProfilePage() {
             const compressedFile = await imageCompression(e.target.files[0], options);
 
             setPhotoImage(compressedFile);
-        } catch (error) {
-            console.log(error);
+        } catch (_error) {
+            toast.error('프로필 이미지 처리에 실패했습니다.');
         }
     };
 

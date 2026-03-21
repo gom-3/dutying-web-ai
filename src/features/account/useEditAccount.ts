@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import {useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {type TNurse} from '@/entities/nurse';
@@ -30,7 +31,10 @@ const useEditAccount = () => {
             await queryClient.invalidateQueries({queryKey: getWardQueryKey});
             await handleGetAccountMe();
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e, {
+                tags: {feature: 'account', action: 'edit-profile'},
+                extra: {nurseId: nurse.nurseId, accountId: accountMe.accountId},
+            });
             toast.error('프로필 업데이트에 실패했습니다..');
         } finally {
             setLoading(false);
@@ -47,7 +51,10 @@ const useEditAccount = () => {
             await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
             await handleGetAccountMe();
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e, {
+                tags: {feature: 'account', action: 'quit-ward'},
+                extra: {wardId: accountMe.wardId, accountId: accountMe.accountId},
+            });
             toast.error('병동 나가기에 실패했습니다..');
         } finally {
             setLoading(false);
@@ -60,10 +67,13 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            AccountAPI.deleteAccount(accountMe.accountId);
-            handleLogout();
+            await AccountAPI.deleteAccount(accountMe.accountId);
+            await handleLogout();
         } catch (e) {
-            console.error(e);
+            Sentry.captureException(e, {
+                tags: {feature: 'account', action: 'delete-account'},
+                extra: {accountId: accountMe.accountId},
+            });
             toast.error('계정 삭제에 실패했습니다..');
         } finally {
             setLoading(false);
