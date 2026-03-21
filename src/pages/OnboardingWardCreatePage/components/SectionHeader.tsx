@@ -1,3 +1,4 @@
+import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
 
 const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}> = {
@@ -22,16 +23,7 @@ const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}>
 function SectionHeader({step}: {step: TOnboardingStep}) {
     const label = STEP_LABELS[step];
 
-    return (
-        <div className="mb-10 flex items-start justify-between">
-            <div className="space-y-6">
-                <h1 className="max-w-[541px] font-apple text-[32px] leading-[1.18] font-semibold whitespace-pre-line text-text-1">
-                    {label.title}
-                </h1>
-                <p className="font-apple text-[20px] font-medium text-gray-3">{label.description}</p>
-            </div>
-        </div>
-    );
+    return <BaseSectionHeader className="mb-10 max-w-[541px]" title={label.title} description={label.description} />;
 }
 
 export default SectionHeader;

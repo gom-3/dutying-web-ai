@@ -75,6 +75,8 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
         <Input
             value={time}
             onChange={HandleChange}
+            variant="flush"
+            fieldSize="md"
             className={cn(
                 'rounded-[.625rem] px-6.25 font-poppins text-[2.25rem] outline-1 outline-sub-4 focus:text-main-1 focus:outline-main-1',
                 className,

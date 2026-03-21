@@ -14,6 +14,8 @@ const TextField = forwardRef(
                     ref={ref}
                     value={value}
                     onChange={onChange}
+                    variant="flush"
+                    fieldSize="md"
                     className={cn(
                         'w-full rounded-[.625rem] px-6.25 font-apple text-[2.25rem] outline-1 outline-sub-4 read-only:outline-sub-5 focus:outline-main-1',
                         error && 'outline-red focus:outline-red',

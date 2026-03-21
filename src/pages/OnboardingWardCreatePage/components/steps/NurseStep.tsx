@@ -138,7 +138,9 @@ function NurseStep({
                                             <Input
                                                 value={nurse.name}
                                                 onChange={(event) => onNurseChange(nurse.id, {name: event.target.value})}
-                                                className="h-10 border-none bg-transparent px-0 font-apple text-[20px] font-medium text-sub-1 shadow-none"
+                                                variant="flush"
+                                                fieldSize="md"
+                                                className="font-apple text-[20px] font-medium text-sub-1"
                                             />
                                             {step === 4 ? <SkillBadge level={nurse.level} config={draft.skillLevelConfig} /> : null}
                                             <div className="flex flex-wrap gap-2">
@@ -168,7 +170,9 @@ function NurseStep({
                                             <Input
                                                 value={nurse.memo}
                                                 onChange={(event) => onNurseChange(nurse.id, {memo: event.target.value})}
-                                                className="h-10 border-none bg-transparent px-0 font-apple text-[20px] font-medium text-sub-1 shadow-none"
+                                                variant="flush"
+                                                fieldSize="md"
+                                                className="font-apple text-[20px] font-medium text-sub-1"
                                                 placeholder="비고"
                                             />
                                             <div className="flex justify-center">

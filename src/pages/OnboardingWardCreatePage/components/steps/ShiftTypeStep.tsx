@@ -1,8 +1,7 @@
 import {Pencil, Plus, X} from 'lucide-react';
+import Card from '@/shared/ui/Card';
 import {Input} from '@/shared/ui/primitives/input';
 import type {TOnboardingWardShiftType} from '../../model';
-
-const STEP_CARD_BASE_CLASS = 'rounded-[20px] border border-gray-6 bg-white p-8 shadow-[0_4px_34px_0_rgba(237,233,245,1)]';
 
 interface IShiftTypeStepProps {
     shiftTypes: TOnboardingWardShiftType[];
@@ -13,7 +12,7 @@ interface IShiftTypeStepProps {
 
 function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepProps) {
     return (
-        <div className={STEP_CARD_BASE_CLASS}>
+        <Card variant="elevated" padding="lg">
             <div className="mb-6 flex items-center justify-between">
                 <p className="font-apple text-[20px] font-medium text-gray-3">근무 유형</p>
                 <button type="button" className="flex items-center gap-2 font-apple text-[16px] font-medium text-main-1" onClick={onAdd}>
@@ -38,14 +37,18 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                         <Input
                             value={shiftType.name}
                             onChange={(event) => onChange(shiftType.id, {name: event.target.value})}
-                            className="h-11 rounded-[10px] border-gray-5 font-apple text-[18px] text-sub-1"
+                            variant="foundation"
+                            fieldSize="lg"
+                            className="font-apple"
                             placeholder="근무명"
                         />
                         <Input
                             value={shiftType.shortName}
                             maxLength={2}
                             onChange={(event) => onChange(shiftType.id, {shortName: event.target.value.toUpperCase()})}
-                            className="h-11 rounded-[10px] border-gray-5 text-center font-poppins text-[18px] text-sub-1"
+                            variant="foundation"
+                            fieldSize="lg"
+                            className="text-center font-poppins"
                             placeholder="-"
                         />
                         <select
@@ -68,7 +71,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 value={shiftType.startTime}
                                 disabled={shiftType.isOff}
                                 onChange={(event) => onChange(shiftType.id, {startTime: event.target.value})}
-                                className="h-11 rounded-[10px] border-gray-5 text-center font-poppins text-[18px]"
+                                variant="foundation"
+                                fieldSize="lg"
+                                className="text-center font-poppins"
                                 placeholder="07:00"
                             />
                             <span className="font-poppins text-[18px] text-gray-3">~</span>
@@ -76,7 +81,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 value={shiftType.endTime}
                                 disabled={shiftType.isOff}
                                 onChange={(event) => onChange(shiftType.id, {endTime: event.target.value})}
-                                className="h-11 rounded-[10px] border-gray-5 text-center font-poppins text-[18px]"
+                                variant="foundation"
+                                fieldSize="lg"
+                                className="text-center font-poppins"
                                 placeholder="15:00"
                             />
                         </div>
@@ -101,7 +108,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                     </div>
                 ))}
             </div>
-        </div>
+        </Card>
     );
 }
 
