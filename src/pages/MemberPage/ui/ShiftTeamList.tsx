@@ -10,7 +10,7 @@ import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import TextField from '@/shared/ui/TextField';
+import TextField from '@/widgets/form-controls/TextField';
 import {DateUtil} from '@/shared/util/date';
 
 function ShiftTeamList() {

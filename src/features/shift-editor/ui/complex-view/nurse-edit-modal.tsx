@@ -5,8 +5,8 @@ import {events, sendEvent} from '@/analytics';
 import {type TNurse} from '@/entities/nurse';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CancelIcon, CheckedIcon, UncheckedIcon2} from '@/shared/assets/svg';
-import Button from '@/shared/ui/Button';
-import TextField from '@/shared/ui/TextField';
+import Button from '@/widgets/form-controls/Button';
+import TextField from '@/widgets/form-controls/TextField';
 
 function NurseEditModal() {
     const {

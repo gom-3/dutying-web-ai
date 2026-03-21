@@ -4,6 +4,7 @@ import Draggable from 'react-draggable';
 import {events, sendEvent} from '@/analytics';
 import {type TShift, type TWardConstraint, type TShiftTeam} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import {shiftToExcel} from '@/features/shift-editor/model/shift-to-excel';
 import {
     CancelIcon,
     DutyIconSelected,
@@ -20,9 +21,8 @@ import {
     SavingIcon,
     ShareIcon,
 } from '@/shared/assets/svg';
-import Button from '@/shared/ui/Button';
-import Select from '@/shared/ui/Select';
-import {shiftToExcel} from '@/shared/util/shiftToExcel';
+import Button from '@/widgets/form-controls/Button';
+import Select from '@/widgets/form-controls/Select';
 import SetConstraint from './editWard/set-constraint';
 import SetDesignTheme from './editWard/set-design-theme';
 import SetShiftType from './editWard/set-shift-type';

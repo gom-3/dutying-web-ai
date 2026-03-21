@@ -43,10 +43,10 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
 
         return true;
     };
-    const HandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value;
 
-        if (value == time) {
+        if (value === time) {
             return;
         }
 

@@ -7,6 +7,7 @@ import {
     buildWorkKeyMap,
     docToWardShiftsDTO,
     shiftToDoc,
+    shiftToExcel,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
@@ -15,7 +16,6 @@ import {
 import useLoadingUseCase from '@/features/ui/useLoading';
 import WardAPI from '@/shared/api/ward';
 import ROUTE from '@/shared/constant/path';
-import {shiftToExcel} from '@/shared/util/shiftToExcel';
 import {useDutyStore} from './dutyStore';
 
 function parsePositiveInt(raw: string | null): number | null {

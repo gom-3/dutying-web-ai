@@ -2,9 +2,9 @@ import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {CancelIcon} from '@/shared/assets/svg';
-import Button from '@/shared/ui/Button';
-import TextField from '@/shared/ui/TextField';
-import TimeInput from '@/shared/ui/TimeInput';
+import Button from '@/widgets/form-controls/Button';
+import TextField from '@/widgets/form-controls/TextField';
+import TimeInput from '@/widgets/form-controls/TimeInput';
 
 interface ICreateShiftModalProps {
     open: boolean;
