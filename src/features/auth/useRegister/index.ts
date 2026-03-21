@@ -11,6 +11,14 @@ import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
 import useAuth from '../useAuth';
 
+type TChangeAccountStatusOptions = {
+    navigateOnLinked?: boolean;
+};
+
+type TCreateWardOptions = {
+    navigateOnLinked?: boolean;
+};
+
 const useRegister = () => {
     const {
         state: {accountMe, accountId},
@@ -20,15 +28,17 @@ const useRegister = () => {
     const {setLoading} = useLoadingUseCase();
     const navigate = useNavigate();
     const changeAccountStatus = useCallback(
-        async ({accountId, status}: {accountId: number; status: TAccount['status']}) => {
+        async ({accountId, status, options}: {accountId: number; status: TAccount['status']; options?: TChangeAccountStatusOptions}) => {
             try {
                 const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
 
-                handleGetAccountMe();
+                await handleGetAccountMe();
 
-                if (updatedAccount.status === 'LINKED') {
+                if (updatedAccount.status === 'LINKED' && options?.navigateOnLinked !== false) {
                     navigate(ROUTE.MAKE);
                 }
+
+                return updatedAccount;
             } catch {
                 alert('계정 상태 변경에 실패했습니다.');
                 throw new Error('Failed to change account status.');
@@ -37,16 +47,23 @@ const useRegister = () => {
         [handleGetAccountMe, navigate],
     );
     const createWard = useCallback(
-        async (createWardDTO: TCreateWardDTO) => {
+        async (createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {
             setLoading(true);
 
             try {
-                await WardAPI.createWard(createWardDTO);
+                const createdWard = await WardAPI.createWard(createWardDTO);
+
                 initTutorial();
 
                 if (accountMe) {
-                    await changeAccountStatus({accountId: accountMe.accountId, status: 'LINKED'});
+                    await changeAccountStatus({
+                        accountId: accountMe.accountId,
+                        status: 'LINKED',
+                        options,
+                    });
                 }
+
+                return createdWard;
             } finally {
                 setLoading(false);
             }

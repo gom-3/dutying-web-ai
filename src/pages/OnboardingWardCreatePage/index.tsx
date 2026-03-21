@@ -2,6 +2,8 @@ import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pan
 import {Info, Upload, ChevronDown, Plus, Pencil, X} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState, type ButtonHTMLAttributes} from 'react';
 import toast from 'react-hot-toast';
+import {useNavigate} from 'react-router';
+import useRegister from '@/features/auth/useRegister';
 import {FullLogo, LogoSymbolFill, SixDotsIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {Button} from '@/shared/ui/primitives/button';
@@ -26,6 +28,7 @@ import {
 } from './model';
 
 type TSortMode = 'manual' | 'employmentDate';
+type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}> = {
     1: {
@@ -665,11 +668,18 @@ function NurseStep({
 }
 
 function OnboardingWardCreatePage() {
+    const navigate = useNavigate();
+    const {
+        actions: {createWard},
+    } = useRegister();
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortMode] = useState<TSortMode>('manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
-    const [completedPayload, setCompletedPayload] = useState<string | null>(null);
+    const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const isSubmitting = submissionStatus === 'submitting';
+    const isSuccess = submissionStatus === 'success';
 
     useEffect(() => {
         if (!selectedTeamId && draft.teams[0]) {
@@ -743,13 +753,22 @@ function OnboardingWardCreatePage() {
             nurses: applySkillLevels(prev.nurses, config),
         }));
     };
-    const handleComplete = () => {
+    const handleComplete = async () => {
         const payload = serializeDraft(draft);
-        const stringified = JSON.stringify(payload, null, 2);
 
-        console.info('mockCreateWardPayload', payload);
-        setCompletedPayload(stringified);
-        toast.success('mock 병동 생성 payload를 만들었습니다.');
+        setSubmissionStatus('submitting');
+        setSubmissionError(null);
+
+        try {
+            await createWard(payload, {navigateOnLinked: false});
+            setSubmissionStatus('success');
+            toast.success('병동 생성을 완료했어요.');
+        } catch (error) {
+            const message = error instanceof Error ? error.message : '병동 생성에 실패했습니다. 다시 시도해주세요.';
+
+            setSubmissionStatus('error');
+            setSubmissionError(message);
+        }
     };
     const stepContent = useMemo(() => {
         switch (draft.currentStep) {
@@ -820,6 +839,7 @@ function OnboardingWardCreatePage() {
                 <div className="mt-14 flex items-center justify-between">
                     <WizardButton
                         variant="link"
+                        disabled={isSubmitting || isSuccess}
                         onClick={() =>
                             draft.currentStep === 4 ? handleComplete() : goToStep(Math.min(4, draft.currentStep + 1) as TOnboardingStep)
                         }
@@ -828,26 +848,52 @@ function OnboardingWardCreatePage() {
                     </WizardButton>
                     <div className="flex items-center gap-[42px]">
                         {draft.currentStep > 1 ? (
-                            <WizardButton variant="secondary" onClick={() => goToStep((draft.currentStep - 1) as TOnboardingStep)}>
+                            <WizardButton
+                                variant="secondary"
+                                disabled={isSubmitting || isSuccess}
+                                onClick={() => goToStep((draft.currentStep - 1) as TOnboardingStep)}
+                            >
                                 이전
                             </WizardButton>
                         ) : null}
                         {draft.currentStep < 4 ? (
-                            <WizardButton onClick={() => goToStep((draft.currentStep + 1) as TOnboardingStep)}>다음</WizardButton>
+                            <WizardButton
+                                disabled={isSubmitting || isSuccess}
+                                onClick={() => goToStep((draft.currentStep + 1) as TOnboardingStep)}
+                            >
+                                다음
+                            </WizardButton>
                         ) : (
-                            <WizardButton onClick={handleComplete}>완료</WizardButton>
+                            <WizardButton disabled={isSubmitting || isSuccess} onClick={handleComplete}>
+                                {isSubmitting ? '생성 중...' : isSuccess ? '생성 완료' : '완료'}
+                            </WizardButton>
                         )}
                     </div>
                 </div>
-                {completedPayload ? (
-                    <div className="mt-10 rounded-[20px] border border-gray-6 bg-white p-6">
-                        <p className="mb-4 font-apple text-[20px] font-semibold text-text-1">Mock CreateWard Payload</p>
-                        <pre
-                            data-testid="mock-create-ward-payload"
-                            className="overflow-auto rounded-[10px] bg-gray-7 p-4 text-sm text-sub-1"
-                        >
-                            {completedPayload}
-                        </pre>
+                {isSubmitting ? (
+                    <div data-testid="ward-create-submitting" className="mt-10 rounded-[20px] border border-main-3 bg-main-light px-6 py-5">
+                        <p className="font-apple text-[20px] font-semibold text-main-1">병동을 생성하고 있어요</p>
+                        <p className="mt-2 font-apple text-[16px] text-gray-3">완료되면 바로 다음 단계로 안내해드릴게요.</p>
+                    </div>
+                ) : null}
+                {submissionStatus === 'error' ? (
+                    <div data-testid="ward-create-error" className="mt-10 rounded-[20px] border border-[#F3C6C6] bg-[#FFF5F5] px-6 py-5">
+                        <p className="font-apple text-[20px] font-semibold text-[#C55252]">병동 생성에 실패했어요</p>
+                        <p className="mt-2 font-apple text-[16px] text-[#7A4F4F]">{submissionError ?? '잠시 후 다시 시도해주세요.'}</p>
+                        <div className="mt-4">
+                            <WizardButton onClick={handleComplete}>다시 시도</WizardButton>
+                        </div>
+                    </div>
+                ) : null}
+                {isSuccess ? (
+                    <div data-testid="ward-create-success" className="mt-10 rounded-[20px] border border-[#BDE7D5] bg-[#F2FFF8] px-6 py-5">
+                        <p className="font-apple text-[20px] font-semibold text-[#237A4B]">병동 생성이 완료됐어요</p>
+                        <p className="mt-2 font-apple text-[16px] text-[#3A5F4C]">
+                            이제 근무표를 만들 수 있도록 다음 화면으로 이동해 주세요.
+                        </p>
+                        <div className="mt-4">
+                            <WizardButton onClick={() => navigate(ROUTE.MAKE)}>근무표 만들러 가기</WizardButton>
+                        </div>
                     </div>
                 ) : null}
             </div>
