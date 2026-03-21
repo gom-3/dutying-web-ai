@@ -6,7 +6,7 @@ export type TWaitingNurseResponse = {
     name: string;
     gender: string;
     phoneNum: string;
-    employmentDate: boolean;
+    employmentDate: string;
     profileImgBase64?: string;
     profileImgUrl: string;
 };
