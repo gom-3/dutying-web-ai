@@ -95,9 +95,9 @@ export const getMoveNurseOrderPayload = ({
     draggableId,
     requestShift,
     source,
-}: DropResult & {
+}: Pick<DropResult, 'destination' | 'draggableId' | 'source'> & {
     requestShift: TRequestShift;
-}): TMoveNurseOrderPayload | null => {
+} & Partial<Omit<DropResult, 'destination' | 'draggableId' | 'source'>>): TMoveNurseOrderPayload | null => {
     if (!destination) return null;
 
     const sourceDivision = Number.parseInt(source.droppableId, 10);

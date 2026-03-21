@@ -14,6 +14,7 @@ interface IState {
     wardShiftTypeMap: Map<number, TWardShiftType> | null;
     readonly: boolean;
     changeStatus: 'idle' | 'loading' | 'success' | 'error';
+    updatingRequestId: number | null;
 }
 
 interface IStore extends IState {
@@ -31,6 +32,7 @@ const initialState: IState = {
     wardShiftTypeMap: null,
     readonly: true,
     changeStatus: 'idle',
+    updatingRequestId: null,
 };
 
 export const useRequestShiftStore = create<IStore>()(

@@ -1,4 +1,5 @@
-import {type DropResult, useRef} from 'react';
+import {type DropResult} from '@hello-pangea/dnd';
+import {useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
@@ -27,6 +28,7 @@ export default function ShiftCalendar() {
             requestShift,
             dutyRequestList,
             dutyRequestStatus,
+            updatingRequestId,
             focus,
             foldedLevels,
             wardShiftTypeMap,
@@ -119,6 +121,7 @@ export default function ShiftCalendar() {
                 wardShiftTypeMap={wardShiftTypeMap}
                 unresolvedRequestCount={unresolvedRequestCount}
                 readonly={readonly}
+                updatingRequestId={updatingRequestId}
                 shiftNurseIdByNurseId={shiftNurseIdByNurseId}
                 changeFocus={changeFocus}
                 acceptRequest={acceptRequest}
