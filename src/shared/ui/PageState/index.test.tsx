@@ -17,7 +17,11 @@ describe('PageState 컴포넌트', () => {
 
         render(<PageState tone="error" title="오류가 발생했어요" action={{label: '다시 시도', onClick}} />);
 
-        await user.click(screen.getByRole('button', {name: '다시 시도'}));
+        const button = screen.getByRole('button', {name: '다시 시도'});
+
+        expect(button).toHaveClass('h-11', 'rounded-[14px]');
+
+        await user.click(button);
 
         expect(onClick).toHaveBeenCalledTimes(1);
     });

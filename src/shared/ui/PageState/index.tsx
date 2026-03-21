@@ -75,7 +75,7 @@ function PageState({tone, title, description, action, layout = 'panel', classNam
                             onClick={action.onClick}
                             type="button"
                             size="md"
-                            className="rounded-[14px] px-5 font-semibold"
+                            className="h-11 rounded-[14px] px-5 font-semibold"
                             disabled={isLoading}
                         >
                             <RotateCcw className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
