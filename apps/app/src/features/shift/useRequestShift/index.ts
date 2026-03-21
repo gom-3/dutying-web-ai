@@ -1,3 +1,4 @@
+import {DateUtil} from '@dutying/utils/date';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
 import {useCallback, useEffect, useRef} from 'react';
@@ -8,7 +9,6 @@ import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {DateUtil} from '@/shared/util/date';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import {useRequestShiftStore} from './store';
 import {type TFocus} from './type';

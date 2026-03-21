@@ -1,3 +1,4 @@
+import {DateUtil} from '@dutying/utils/date';
 import {Droppable, Draggable} from '@hello-pangea/dnd';
 import type {KeyboardEvent as ReactKeyboardEvent, RefCallback} from 'react';
 import {events, sendEvent} from '@/analytics';
@@ -6,7 +7,6 @@ import {setPreferredShiftTeamId} from '@/features/shift/editDuty/model/utils/pre
 import {DragIcon, InfoIcon, MinusIcon, MoreIcon, PersonIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import TextField from '@/shared/ui/form-controls/TextField';
-import {DateUtil} from '@/shared/util/date';
 import {getGroupedDivisionNurses, type TEditShiftTeamState} from '../model/shiftTeamList';
 
 interface IShiftTeamCardProps {

@@ -1,5 +1,5 @@
+import {koToEn} from '@dutying/utils/ko-to-en';
 import type {TRequestShift, TWardConstraint, TShiftNurse, TWardShiftType, TShift} from '@/entities';
-import {koToEn} from '@/shared/util/koToEn';
 import {type TFault, type TCheckFaultOptions, type TFocus, type TFaultType, type TRequestShiftEditAvailability} from './type';
 
 const REQUEST_SHIFT_EDITABLE_PERIOD_LABEL = '수정 가능 범위: 지난달부터 다음 달까지';

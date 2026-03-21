@@ -1,6 +1,6 @@
+import {cn} from '@dutying/utils/style';
 import {type ButtonHTMLAttributes} from 'react';
 import Button from '@/shared/ui/form-controls/Button';
-import {cn} from '@/shared/util/style';
 
 type TVariant = 'solid' | 'secondary' | 'link';
 

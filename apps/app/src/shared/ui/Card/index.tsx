@@ -1,6 +1,6 @@
+import {cn} from '@dutying/utils/style';
 import {cva, type VariantProps} from 'class-variance-authority';
 import type {HTMLAttributes, ReactNode} from 'react';
-import {cn} from '@/shared/util/style';
 
 const cardVariants = cva('rounded-[20px] border', {
     variants: {

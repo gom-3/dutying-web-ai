@@ -1,5 +1,5 @@
+import {cn} from '@dutying/utils/style';
 import {Plus} from 'lucide-react';
-import {cn} from '@/shared/util/style';
 import type {TOnboardingNurseDraft, TOnboardingTeamDraft} from '../../model';
 
 interface ITeamTabsProps {

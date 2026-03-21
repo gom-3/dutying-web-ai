@@ -1,5 +1,5 @@
+import {cn} from '@dutying/utils/style';
 import type {HTMLAttributes, ReactNode} from 'react';
-import {cn} from '@/shared/util/style';
 
 interface ISectionHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'title'> {
     title: ReactNode;

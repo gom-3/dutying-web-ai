@@ -1,8 +1,8 @@
+import {cn} from '@dutying/utils/style';
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {ChevronDown, Pencil, Plus} from 'lucide-react';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {Input} from '@/shared/ui/primitives/input';
-import {cn} from '@/shared/util/style';
 import type {TOnboardingNurseDraft, TOnboardingStep, TOnboardingWardDraft} from '../../model';
 import type {TSortMode} from '../../types';
 import {ShiftBadge, SkillBadge} from './Badges';

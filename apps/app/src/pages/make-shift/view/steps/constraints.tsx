@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {ChevronDown} from 'lucide-react';
 import {useMemo, useState} from 'react';
@@ -6,7 +7,6 @@ import {DUTY_RULE_META, type TDutyRuleMeta} from '@/features/shift-editor/model/
 import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';
-import {cn} from '@/shared/util/style';
 
 type TBucket = 'error' | 'warning' | 'excluded';
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];

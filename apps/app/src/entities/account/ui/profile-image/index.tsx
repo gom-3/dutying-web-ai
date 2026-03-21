@@ -1,5 +1,5 @@
+import {cn} from '@dutying/utils/style';
 import {useProfileImageStore} from '@/features/file/store';
-import {cn} from '@/shared/util/style';
 
 interface IProfileImageProps extends Omit<React.DetailedHTMLProps<React.ImgHTMLAttributes<HTMLImageElement>, HTMLImageElement>, 'type'> {
     profileImg: {profileImgUrl?: string; defaultProfileImgId?: number};

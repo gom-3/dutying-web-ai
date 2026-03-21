@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -20,7 +21,6 @@ import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, 
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {renderMultilineText} from '@/shared/util/string';
-import {cn} from '@/shared/util/style';
 import {
     canConfirmAiAutofill,
     getAiAutofillActionLabel,

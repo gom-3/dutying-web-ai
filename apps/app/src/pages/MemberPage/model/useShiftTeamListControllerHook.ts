@@ -1,3 +1,4 @@
+import {DateUtil} from '@dutying/utils/date';
 import {type DropResult} from '@hello-pangea/dnd';
 import {useCallback, useEffect, useState} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
@@ -5,7 +6,6 @@ import {events, sendEvent} from '@/analytics';
 import type {TNurse} from '@/entities/nurse';
 import type {TShiftTeam} from '@/entities/ward';
 import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
-import {DateUtil} from '@/shared/util/date';
 import {createMoveNurseOrderPayload, type TEditShiftTeamState, getNextSelectedNurseId} from './shiftTeamList';
 
 interface IUseShiftTeamListControllerParams {

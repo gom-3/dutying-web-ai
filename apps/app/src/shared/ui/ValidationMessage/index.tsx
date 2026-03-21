@@ -1,4 +1,4 @@
-import {cn} from '@/shared/util/style';
+import {cn} from '@dutying/utils/style';
 
 type TValidationMessageProps = {
     message?: string | null;

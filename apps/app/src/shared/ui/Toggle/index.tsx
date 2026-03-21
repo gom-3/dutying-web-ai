@@ -1,5 +1,5 @@
+import {cn} from '@dutying/utils/style';
 import {Switch} from '@/shared/ui/primitives/switch';
-import {cn} from '@/shared/util/style';
 
 interface IToggleProps {
     isOn: boolean;

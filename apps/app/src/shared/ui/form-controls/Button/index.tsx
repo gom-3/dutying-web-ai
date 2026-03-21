@@ -1,6 +1,6 @@
+import {cn} from '@dutying/utils/style';
 import * as React from 'react';
 import {Button as ShadcnButton} from '@/shared/ui/primitives/button';
-import {cn} from '@/shared/util/style';
 
 type TButtonVariant = 'default' | 'outline' | 'secondary' | 'link';
 type TButtonSize = 'hero' | 'pill' | 'md' | 'sm';
