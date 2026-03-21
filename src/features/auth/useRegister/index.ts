@@ -40,8 +40,8 @@ const useRegister = () => {
                 }
 
                 return updatedAccount;
-            } catch {
-                showActionErrorFeedback('계정 상태 변경에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '계정 상태 변경에 실패했습니다.');
                 throw new Error('Failed to change account status.');
             }
         },

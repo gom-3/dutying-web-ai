@@ -32,8 +32,8 @@ const useEditWard = () => {
             try {
                 await WardAPI.editWard(wardId, editWardDTO);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
-            } catch {
-                showActionErrorFeedback('근무 설정 수정에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '근무 설정 수정에 실패했습니다.');
             }
         },
         [queryClient, wardId, wardQueryKey],

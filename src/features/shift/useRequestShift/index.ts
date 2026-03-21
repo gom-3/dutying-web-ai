@@ -161,8 +161,8 @@ const useRequestShift = (activeEffect = false) => {
                 await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
                 await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
                 await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
-            } catch {
-                showActionErrorFeedback('신청 처리에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '신청 처리에 실패했습니다.');
             }
         },
         [dutyRequestQueryKey, queryClient, requestShiftQueryKey, wardId],

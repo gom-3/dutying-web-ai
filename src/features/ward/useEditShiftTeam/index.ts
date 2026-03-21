@@ -52,8 +52,8 @@ const useEditShiftTeam = () => {
                     memo: '',
                 });
                 await invalidateWard();
-            } catch {
-                showActionErrorFeedback('간호사 추가에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '간호사 추가에 실패했습니다.');
             }
         },
         [invalidateWard, wardId],
@@ -78,8 +78,8 @@ const useEditShiftTeam = () => {
             try {
                 await NurseAPI.updateNurse(nurseId, updateNurseDTO);
                 await invalidateWardShiftAndRequest();
-            } catch {
-                showActionErrorFeedback('간호사 정보 수정에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '간호사 정보 수정에 실패했습니다.');
             }
         },
         [invalidateWardShiftAndRequest],
