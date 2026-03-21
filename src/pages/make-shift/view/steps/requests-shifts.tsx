@@ -1,6 +1,7 @@
 import {useMemo} from 'react';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
+import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';
@@ -10,11 +11,21 @@ export function RequestsShifts() {
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const {
-        state: {requestShift, requestList, wardShiftTypeMap, appliedRequests},
-        status: {loading, error},
+        state: {requestShift, acceptedRequests, pendingRequests, wardShiftTypeMap},
+        status: {loading, error, updatingRequestId},
+        actions: {decideRequest},
     } = useRequestsShiftsHook();
     const {separateWeekendColor} = useUIConfigStore();
-    const pendingRequests = useMemo(() => requestList?.filter((x) => x.isAccepted === null) ?? [], [requestList]);
+    const acceptedRequestSummaries = useMemo(
+        () =>
+            acceptedRequests.map((item) => ({
+                id: item.wardReqShiftId,
+                nurseName: item.nurseName,
+                date: item.date,
+                wardShiftTypeId: item.wardShiftTypeId,
+            })),
+        [acceptedRequests],
+    );
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
@@ -31,36 +42,28 @@ export function RequestsShifts() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
-                        onClick={() => useCase.prev()}
-                        disabled={!canPrev}
-                        type="button"
-                    >
+                    <ManagementActionButton variant="neutral" size="sm" onClick={() => useCase.prev()} disabled={!canPrev}>
                         이전
-                    </button>
-                    <button
-                        className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                        onClick={() => useCase.next()}
-                        disabled={!canNext}
-                        type="button"
-                    >
+                    </ManagementActionButton>
+                    <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
                         다음
-                    </button>
+                    </ManagementActionButton>
                 </div>
             </div>
 
             <div className="mt-6 flex min-h-0 flex-1 gap-6">
                 {/* 캘린더 */}
                 <div className="min-w-0 flex-1">
-                    {loading && <div className="p-6 font-apple text-base font-medium text-gray-4">신청 근무 데이터를 불러오는 중...</div>}
+                    {loading && <DutyManagementStatusCard title="신청 근무 데이터를 불러오는 중입니다..." className="min-h-[420px]" />}
                     {!loading && error && (
-                        <div className="p-6 font-apple text-base font-medium text-gray-4">
-                            데이터를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
-                        </div>
+                        <DutyManagementStatusCard
+                            title="신청 근무 데이터를 불러오지 못했어요."
+                            description="잠시 후 다시 시도해 주세요."
+                            className="min-h-[420px]"
+                        />
                     )}
                     {!loading && !error && !requestShift && (
-                        <div className="p-6 font-apple text-base font-medium text-gray-4">이번 달 신청 근무표가 없어요.</div>
+                        <DutyManagementStatusCard title="이번 달 신청 근무표가 없어요." className="min-h-[420px]" />
                     )}
 
                     {!loading && !error && requestShift && (
@@ -158,17 +161,17 @@ export function RequestsShifts() {
                         <div>
                             <div className="flex items-center justify-between">
                                 <p className="font-apple text-base font-semibold text-sub-1">반영된 신청</p>
-                                <p className="font-apple text-sm font-medium text-gray-4">{appliedRequests.length}개</p>
+                                <p className="font-apple text-sm font-medium text-gray-4">{acceptedRequestSummaries.length}개</p>
                             </div>
 
                             <div className="mt-3 space-y-2">
-                                {appliedRequests.length === 0 ? (
+                                {acceptedRequestSummaries.length === 0 ? (
                                     <p className="font-apple text-sm font-medium text-gray-4">반영된 신청이 없어요.</p>
                                 ) : (
-                                    appliedRequests.map((item, idx) => (
+                                    acceptedRequestSummaries.map((item) => (
                                         <div
-                                            key={`${item.nurseName}-${item.date}-${item.wardShiftTypeId}-${idx}`}
-                                            className="flex items-center gap-3"
+                                            key={item.id}
+                                            className="flex items-center gap-3 rounded-[10px] border border-gray-6 px-3 py-2"
                                         >
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-apple text-sm font-medium text-sub-1">
@@ -176,6 +179,15 @@ export function RequestsShifts() {
                                                 </p>
                                             </div>
                                             <ShiftBadge shiftType={wardShiftTypeMap.get(item.wardShiftTypeId)} />
+                                            <ManagementActionButton
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 px-3 text-sm"
+                                                onClick={() => decideRequest(item.id, null)}
+                                                disabled={updatingRequestId === item.id}
+                                            >
+                                                보류
+                                            </ManagementActionButton>
                                         </div>
                                     ))
                                 )}
@@ -193,13 +205,35 @@ export function RequestsShifts() {
                                     <p className="font-apple text-sm font-medium text-gray-4">반영 대기 신청이 없어요.</p>
                                 ) : (
                                     pendingRequests.map((dutyRequest) => (
-                                        <div key={dutyRequest.wardReqShiftId} className="flex items-center gap-3">
+                                        <div
+                                            key={dutyRequest.wardReqShiftId}
+                                            className="flex items-center gap-3 rounded-[10px] border border-gray-6 px-3 py-2"
+                                        >
                                             <div className="min-w-0 flex-1">
                                                 <p className="truncate font-apple text-sm font-medium text-sub-1">
                                                     {dutyRequest.nurseName} / {dutyRequest.date}일
                                                 </p>
                                             </div>
                                             <ShiftBadge shiftType={wardShiftTypeMap.get(dutyRequest.wardShiftTypeId)} isOnlyRequest />
+                                            <div className="flex items-center gap-1">
+                                                <ManagementActionButton
+                                                    size="sm"
+                                                    className="h-8 px-3 text-sm"
+                                                    onClick={() => decideRequest(dutyRequest.wardReqShiftId, true)}
+                                                    disabled={updatingRequestId === dutyRequest.wardReqShiftId}
+                                                >
+                                                    반영
+                                                </ManagementActionButton>
+                                                <ManagementActionButton
+                                                    variant="neutral"
+                                                    size="sm"
+                                                    className="h-8 px-3 text-sm"
+                                                    onClick={() => decideRequest(dutyRequest.wardReqShiftId, false)}
+                                                    disabled={updatingRequestId === dutyRequest.wardReqShiftId}
+                                                >
+                                                    거절
+                                                </ManagementActionButton>
+                                            </div>
                                         </div>
                                     ))
                                 )}

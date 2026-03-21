@@ -13,6 +13,8 @@ export const en: TLocale = {
                 checking: 'Checking schedule status.',
                 viewShift: 'View {{month}} duty schedule',
                 createShift: 'Create {{month}} duty schedule',
+                noTeamsTitle: 'No shift teams found.',
+                noTeamsDescription: 'Create a shift team first or check ward settings.',
             },
             constraints: {
                 section: {
@@ -58,7 +60,9 @@ export const en: TLocale = {
             prevMonth: 'Previous month',
             nextMonth: 'Next month',
             monthHeader: '{{year}}-{{month}}',
+            title: 'Duty management',
             confirmedShift: 'Confirmed duty schedule',
+            createCurrentMonth: 'Create this month schedule',
             createNextMonth: 'Create next month schedule',
             publish: 'Publish',
             exportExcel: 'Export Excel',
@@ -67,6 +71,10 @@ export const en: TLocale = {
             cancel: 'Cancel',
             loading: 'Loading duty schedule...',
             error: 'Failed to load duty schedule.',
+            noTeamsTitle: 'No shift teams found.',
+            noTeamsDescription: 'Create a shift team and try again.',
+            emptyTitle: 'No {{month}} schedule for {{teamName}}.',
+            emptyDescription: 'Go to schedule creation to start the {{month}} schedule.',
         },
         refresh: {
             loading: 'Logging in...',

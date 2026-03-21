@@ -31,6 +31,12 @@ function cloneDoc(doc: TDutyDoc): TDutyDoc {
     };
 }
 
+const EMPTY_DUTY_DOC: TDutyDoc = {
+    columns: [],
+    rows: [],
+    workerMeta: {},
+};
+
 export function useDutyHook() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -118,13 +124,23 @@ export function useDutyHook() {
             return;
         }
 
-        if (!dutyQuery.data) return;
-
         setStatus('success');
-        setShift(dutyQuery.data);
-        commands.init(shiftToDoc(dutyQuery.data, year, month));
+
+        const nextShift = dutyQuery.data ?? null;
+
+        setShift(nextShift);
+
+        if (!nextShift) {
+            commands.init(EMPTY_DUTY_DOC);
+            commands.discardPersisted();
+
+            return;
+        }
+
+        commands.init(shiftToDoc(nextShift, year, month));
         commands.discardPersisted();
     }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, month, setShift, setStatus, year]);
+
     useEffect(() => {
         if (!constraintQuery.data) {
             commands.setDutyValidationInput(null);
@@ -178,16 +194,27 @@ export function useDutyHook() {
         snapshotRef.current = null;
         setReadonly(true);
     };
-    const handleGoNextMonthMake = () => {
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
+    const navigateToMakeShift = (targetYear: number, targetMonth: number) => {
         const params = new URLSearchParams({
-            year: String(nextYear),
-            month: String(nextMonth),
+            year: String(targetYear),
+            month: String(targetMonth),
         });
+
+        if (currentShiftTeamId !== null) {
+            params.set('shiftTeamId', String(currentShiftTeamId));
+        }
 
         setMakeShiftTeamId(currentShiftTeamId);
         navigate(`${ROUTE.MAKE}?${params.toString()}`);
+    };
+    const handleGoCurrentMonthMake = () => {
+        navigateToMakeShift(year, month);
+    };
+    const handleGoNextMonthMake = () => {
+        const nextMonth = month === 12 ? 1 : month + 1;
+        const nextYear = month === 12 ? year + 1 : year;
+
+        navigateToMakeShift(nextYear, nextMonth);
     };
     const handlePostShift = async () => {
         if (!wardId || !currentShiftTeamId) return;
@@ -223,6 +250,7 @@ export function useDutyHook() {
             enableEdit: handleEnableEdit,
             saveEdit: handleSaveEdit,
             cancelEdit: handleCancelEdit,
+            goCurrentMonthMake: handleGoCurrentMonthMake,
             goNextMonthMake: handleGoNextMonthMake,
             postShift: handlePostShift,
             exportExcel: handleExportExcel,

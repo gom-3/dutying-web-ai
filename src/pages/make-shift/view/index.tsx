@@ -1,6 +1,7 @@
 import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -62,6 +63,7 @@ export const MakeShiftPageView = () => {
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
+    const hasShiftTeams = shiftTeams.length > 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
     const nextMonth = month === 12 ? 1 : month + 1;
@@ -90,47 +92,45 @@ export const MakeShiftPageView = () => {
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
-                        <div className="text-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">
-                                {shiftStatus === 'pending' && t('page.makeShift.overview.loading')}
-                                {shiftStatus === 'success' &&
-                                    shiftExists &&
-                                    t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                {((shiftStatus === 'success' && !shiftExists) || shiftStatus === 'error') &&
-                                    t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
-                                {shiftStatus === 'idle' && t('page.makeShift.overview.checking')}
-                            </p>
-
-                            {hasCurrentMonthShift ? (
-                                <div className="mt-6 flex items-center justify-center gap-8">
-                                    <button
-                                        className="rounded-[20px] bg-main-light px-[42px] py-[22px] font-apple text-2xl font-semibold text-main-1"
-                                        onClick={handleGoDuty}
-                                        type="button"
-                                    >
-                                        {t('page.makeShift.overview.viewShift', {month})}
-                                    </button>
-                                    <button
-                                        className="rounded-[20px] bg-main-1 px-[42px] py-[22px] font-apple text-2xl font-semibold text-white"
-                                        onClick={handleCreateNextMonth}
-                                        type="button"
-                                    >
-                                        {t('page.makeShift.overview.createShift', {month: nextMonth})}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="mt-6 flex justify-center">
-                                    <button
-                                        className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1 disabled:opacity-50"
-                                        onClick={handleCreateCurrentMonth}
-                                        disabled={shiftStatus === 'pending'}
-                                        type="button"
-                                    >
-                                        {t('page.makeShift.overview.createShift', {month})}
-                                    </button>
-                                </div>
-                            )}
-                        </div>
+                        {!hasShiftTeams ? (
+                            <DutyManagementStatusCard
+                                title={t('page.makeShift.overview.noTeamsTitle')}
+                                description={t('page.makeShift.overview.noTeamsDescription')}
+                            />
+                        ) : (
+                            <DutyManagementStatusCard
+                                title={
+                                    shiftStatus === 'pending'
+                                        ? t('page.makeShift.overview.loading')
+                                        : hasCurrentMonthShift
+                                          ? t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})
+                                          : shiftStatus === 'idle'
+                                            ? t('page.makeShift.overview.checking')
+                                            : t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})
+                                }
+                                actions={
+                                    hasCurrentMonthShift ? (
+                                        <>
+                                            <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
+                                                {t('page.makeShift.overview.viewShift', {month})}
+                                            </ManagementActionButton>
+                                            <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
+                                                {t('page.makeShift.overview.createShift', {month: nextMonth})}
+                                            </ManagementActionButton>
+                                        </>
+                                    ) : (
+                                        <ManagementActionButton
+                                            variant="secondary"
+                                            size="lg"
+                                            onClick={handleCreateCurrentMonth}
+                                            disabled={shiftStatus === 'pending' || currentShiftTeamId === null}
+                                        >
+                                            {t('page.makeShift.overview.createShift', {month})}
+                                        </ManagementActionButton>
+                                    )
+                                }
+                            />
+                        )}
                     </div>
                 ) : (
                     <>
@@ -154,30 +154,25 @@ export const MakeShiftPageView = () => {
                                     </div>
 
                                     <div className="mt-[82px] flex items-center gap-8">
-                                        <button
-                                            className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
+                                        <ManagementActionButton
+                                            variant="neutral"
+                                            size="sm"
                                             onClick={() => useCase.prev()}
                                             disabled={!canPrev}
-                                            type="button"
                                         >
                                             이전
-                                        </button>
-                                        <button
-                                            className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                                            onClick={() => useCase.next()}
-                                            disabled={!canNext}
-                                            type="button"
-                                        >
+                                        </ManagementActionButton>
+                                        <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
                                             다음
-                                        </button>
+                                        </ManagementActionButton>
                                         {currentStep === 5 && (
-                                            <button
-                                                className="h-[42px] rounded-[10px] bg-sub-3 px-5 font-apple text-base font-semibold text-white"
+                                            <ManagementActionButton
+                                                className="bg-sub-3 hover:bg-sub-2"
+                                                size="sm"
                                                 onClick={() => useCase.complete()}
-                                                type="button"
                                             >
                                                 완료
-                                            </button>
+                                            </ManagementActionButton>
                                         )}
                                     </div>
                                 </div>

@@ -11,6 +11,8 @@ export const ko = {
                 checking: '근무표 상태를 확인 중입니다.',
                 viewShift: '{{month}}월 근무표 보러가기',
                 createShift: '{{month}}월 근무표 생성하기',
+                noTeamsTitle: '생성된 근무팀이 없어요.',
+                noTeamsDescription: '근무팀을 먼저 만들거나 병동 설정을 확인해 주세요.',
             },
             constraints: {
                 section: {
@@ -56,7 +58,9 @@ export const ko = {
             prevMonth: '이전 달',
             nextMonth: '다음 달',
             monthHeader: '{{year}}년 {{month}}월',
+            title: '근무 관리',
             confirmedShift: '확정 근무표',
+            createCurrentMonth: '이번달 근무표 만들기',
             createNextMonth: '다음달 근무표 만들기',
             publish: '게시하기',
             exportExcel: '엑셀 내보내기',
@@ -65,6 +69,10 @@ export const ko = {
             cancel: '취소하기',
             loading: '근무표를 불러오는 중입니다...',
             error: '근무표를 불러오지 못했어요.',
+            noTeamsTitle: '생성된 근무팀이 없어요.',
+            noTeamsDescription: '근무팀을 만든 뒤 다시 확인해 주세요.',
+            emptyTitle: '{{teamName}}의 {{month}}월 근무표가 없어요.',
+            emptyDescription: '{{month}}월 근무표 생성 화면으로 이동해 일정을 시작할 수 있어요.',
         },
         refresh: {
             loading: '로그인중입니다.',

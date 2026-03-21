@@ -1,15 +1,10 @@
-import {useQuery} from '@tanstack/react-query';
-import {useMemo} from 'react';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useCallback, useMemo, useState} from 'react';
 import {type TDutyRequest, type TRequestShift, type TWardShiftType} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
+import WardAPI from '@/shared/api/ward';
 import {useMakeShiftStore} from './make-shift-store';
-
-export type TAppliedRequest = {
-    nurseName: string;
-    date: number; // 1~31
-    wardShiftTypeId: number;
-};
 
 function buildShiftTypeMap(shiftTypes: TWardShiftType[] | undefined): Map<number, TWardShiftType> {
     const map = new Map<number, TWardShiftType>();
@@ -35,35 +30,6 @@ function normalizeShiftTypes(input: unknown): TWardShiftType[] | undefined {
     return undefined;
 }
 
-function buildAppliedRequests(requestShift: TRequestShift | null | undefined): TAppliedRequest[] {
-    if (!requestShift) return [];
-
-    const out: TAppliedRequest[] = [];
-
-    for (const division of requestShift.divisionShiftNurses) {
-        for (const row of division) {
-            for (let i = 0; i < row.wardReqShiftList.length; i += 1) {
-                const wardShiftTypeId = row.wardReqShiftList[i];
-
-                if (wardShiftTypeId === null) continue;
-
-                const date = requestShift.days[i]?.day ?? i + 1;
-
-                out.push({
-                    nurseName: row.shiftNurse.name,
-                    date,
-                    wardShiftTypeId,
-                });
-            }
-        }
-    }
-
-    // 날짜 우선, 그다음 이름
-    out.sort((a, b) => (a.date !== b.date ? a.date - b.date : a.nurseName.localeCompare(b.nurseName)));
-
-    return out;
-}
-
 export function useRequestsShiftsHook() {
     const {
         state: {wardId},
@@ -71,16 +37,20 @@ export function useRequestsShiftsHook() {
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const queryClient = useQueryClient();
+    const [updatingRequestId, setUpdatingRequestId] = useState<number | null>(null);
     const requestEnabled = wardId !== null && currentShiftTeamId !== null;
     const shiftTypesEnabled = wardId !== null;
     const requestQuery = useQuery({
         ...wardQueryOptions.request(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled: requestEnabled,
     });
+    const requestQueryKey = wardQueryOptions.request(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const requestListQuery = useQuery({
         ...wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled: requestEnabled,
     });
+    const requestListQueryKey = wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const shiftTypesQuery = useQuery({
         ...wardQueryOptions.shiftTypes(wardId ?? -1),
         enabled: shiftTypesEnabled,
@@ -90,8 +60,28 @@ export function useRequestsShiftsHook() {
     const shiftTypeSourceRaw = shiftTypesQuery.data ?? requestQuery.data?.wardShiftTypes ?? undefined;
     const shiftTypeSource = useMemo(() => normalizeShiftTypes(shiftTypeSourceRaw), [shiftTypeSourceRaw]);
     const wardShiftTypeMap = useMemo(() => buildShiftTypeMap(shiftTypeSource), [shiftTypeSource]);
-    const appliedRequests = useMemo(() => buildAppliedRequests(requestQuery.data ?? null), [requestQuery.data]);
+    const requestList = useMemo(() => requestListQuery.data ?? [], [requestListQuery.data]);
+    const acceptedRequests = useMemo(() => requestList.filter((item) => item.isAccepted === true), [requestList]);
+    const pendingRequests = useMemo(() => requestList.filter((item) => item.isAccepted === null), [requestList]);
     const queryError = requestQuery.error ?? requestListQuery.error ?? shiftTypesQuery.error;
+    const decideRequest = useCallback(
+        async (wardReqShiftId: number, isAccepted: boolean | null) => {
+            if (wardId === null) return;
+
+            setUpdatingRequestId(wardReqShiftId);
+
+            try {
+                await WardAPI.acceptRequestShift(wardId, wardReqShiftId, isAccepted);
+                await Promise.all([
+                    queryClient.invalidateQueries({queryKey: requestQueryKey}),
+                    queryClient.invalidateQueries({queryKey: requestListQueryKey}),
+                ]);
+            } finally {
+                setUpdatingRequestId((prev) => (prev === wardReqShiftId ? null : prev));
+            }
+        },
+        [queryClient, requestListQueryKey, requestQueryKey, wardId],
+    );
 
     return {
         state: {
@@ -100,13 +90,18 @@ export function useRequestsShiftsHook() {
             month,
             currentShiftTeamId,
             requestShift: (requestQuery.data ?? null) as TRequestShift | null,
-            requestList: (requestListQuery.data ?? null) as TDutyRequest[] | null,
+            requestList: requestList as TDutyRequest[],
             wardShiftTypeMap,
-            appliedRequests,
+            acceptedRequests,
+            pendingRequests,
         },
         status: {
             loading: requestQuery.isLoading || requestListQuery.isLoading || shiftTypesQuery.isLoading,
             error: Boolean(queryError),
+            updatingRequestId,
+        },
+        actions: {
+            decideRequest,
         },
     };
 }

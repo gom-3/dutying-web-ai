@@ -11,6 +11,7 @@ import {
 } from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
+import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {buildWorkKeyMap, shiftToDoc} from '../../model/shift-editor-adapter';
@@ -75,36 +76,18 @@ export function FixedShifts() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
-                        onClick={() => useCase.prev()}
-                        disabled={!canPrev}
-                        type="button"
-                    >
+                    <ManagementActionButton variant="neutral" size="sm" onClick={() => useCase.prev()} disabled={!canPrev}>
                         이전
-                    </button>
-                    <button
-                        className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                        onClick={() => useCase.next()}
-                        disabled={!canNext}
-                        type="button"
-                    >
+                    </ManagementActionButton>
+                    <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
                         다음
-                    </button>
+                    </ManagementActionButton>
                 </div>
             </div>
 
             <div className="mt-8 flex min-h-0 flex-1 outline-none" onKeyDown={onKeyDown} onPaste={onPaste} ref={editorRef} tabIndex={0}>
-                {dutyQuery.isLoading && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오는 중입니다...</p>
-                    </div>
-                )}
-                {dutyQuery.isError && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오지 못했어요.</p>
-                    </div>
-                )}
+                {dutyQuery.isLoading && <DutyManagementStatusCard title="근무표를 불러오는 중입니다..." className="w-full shadow-banner" />}
+                {dutyQuery.isError && <DutyManagementStatusCard title="근무표를 불러오지 못했어요." className="w-full shadow-banner" />}
                 {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
                     <div
                         className="flex min-h-0 flex-1"

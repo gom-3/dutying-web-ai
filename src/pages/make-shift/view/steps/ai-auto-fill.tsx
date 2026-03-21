@@ -13,6 +13,7 @@ import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-b
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import WardAPI from '@/shared/api/ward';
 import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
+import {DutyManagementStatusCard} from '@/widgets/duty-management/ui';
 import {generateMockAiSchedule} from '../../model/ai-schedule-mock';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
@@ -157,16 +158,8 @@ export function AiAutofill() {
             </div>
 
             <div className="mt-8 flex min-h-0 flex-1 outline-none" onKeyDown={onKeyDown} onPaste={onPaste} ref={editorRef} tabIndex={0}>
-                {dutyQuery.isLoading && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오는 중입니다...</p>
-                    </div>
-                )}
-                {dutyQuery.isError && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오지 못했어요.</p>
-                    </div>
-                )}
+                {dutyQuery.isLoading && <DutyManagementStatusCard title="근무표를 불러오는 중입니다..." className="w-full shadow-banner" />}
+                {dutyQuery.isError && <DutyManagementStatusCard title="근무표를 불러오지 못했어요." className="w-full shadow-banner" />}
                 {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
                     <div
                         className="flex min-h-0 flex-1"
