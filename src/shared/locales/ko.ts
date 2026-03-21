@@ -1,5 +1,12 @@
 export const ko = {
     page: {
+        state: {
+            loadingTitle: '화면을 준비하고 있어요',
+            loadingDescription: '잠시만 기다려 주세요.',
+            emptyDescription: '조건이 충족되면 여기에 내용이 표시됩니다.',
+            errorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
+            retry: '다시 시도',
+        },
         landing: {
             title: '근무표\n이제 더 간편하게!',
         },
@@ -9,6 +16,7 @@ export const ko = {
                 shiftExists: '{{teamName}}의 {{month}}월 근무표가 존재합니다.',
                 shiftEmpty: '{{teamName}}의 {{month}}월 근무표가 비어있어요',
                 checking: '근무표 상태를 확인 중입니다.',
+                error: '근무표 상태를 확인하지 못했어요.',
                 viewShift: '{{month}}월 근무표 보러가기',
                 createShift: '{{month}}월 근무표 생성하기',
                 noTeamsTitle: '생성된 근무팀이 없어요.',
@@ -53,6 +61,31 @@ export const ko = {
                 },
                 dragHandleAria: '드래그하여 순서 변경',
             },
+            aiRefill: {
+                action: 'AI 다시 채우기',
+                retry: 'AI 다시 시도',
+                generating: 'AI 채우는 중...',
+                intro: '실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.',
+                saveFailed: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+                title: {
+                    idle: 'AI 자동 채우기를 시작할 준비가 됐어요',
+                    loading: 'AI가 근무표를 다시 계산하고 있어요',
+                    success: 'AI 결과를 반영했어요',
+                    error: 'AI 요청이 실패했어요',
+                },
+                description: {
+                    idle: '이전 단계에서 정리한 조건으로 AI 자동 채우기를 시작할 수 있어요.',
+                    loading: '응답을 기다리는 동안에는 확정과 재요청을 잠시 막아둘게요.',
+                    success: 'AI가 새 근무표를 반영했어요. 검토 후 직접 수정하거나 바로 확정할 수 있어요.',
+                    error: 'AI 요청이 실패했어요. 현재 화면의 근무표는 그대로 유지되며 바로 다시 시도할 수 있어요.',
+                },
+                draft: {
+                    saved: '현재 편집본은 유지되고 자동 저장돼요.',
+                    none: '아직 저장된 편집본 없이 기본 근무표를 보고 있어요.',
+                },
+                previous: '이전 단계',
+                confirm: '확정하기',
+            },
         },
         duty: {
             prevMonth: '이전 달',
@@ -81,6 +114,30 @@ export const ko = {
     feature: {
         auth: {
             sessionExpired: '로그인이 만료되었습니다. 다시 로그인해주세요.',
+        },
+        registerWard: {
+            shiftTypes: {
+                title: '근무 유형',
+                addAction: '근무 •휴가 추가하기',
+                leave: '휴가',
+                work: '근무',
+                column: {
+                    name: '근무 명',
+                    shortName: '약자',
+                    workTime: '근무 시간',
+                    color: '색상',
+                    category: '유형',
+                    edit: '수정',
+                },
+            },
+            shiftTeams: {
+                title: '병동내 간호사',
+                excludeMe: '* 본인은 제외해주세요',
+                addTeam: '팀 추가하기',
+                teamName: '간호사 {{index}}팀',
+                count: '{{count}}명',
+                addNamePlaceholder: '이름 추가',
+            },
         },
         shiftEditor: {
             panel: {

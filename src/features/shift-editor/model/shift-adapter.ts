@@ -1,6 +1,6 @@
 import type {TShift, TWardShiftType} from '@/entities';
-import type {TCellValue, TDutyDoc, TWorkKeyMap} from '@/features/shift-editor';
 import type {TWardShiftsDTO} from '@/shared/api/ward/type';
+import type {TCellValue, TDutyDoc, TWorkKeyMap} from './types';
 
 type TWardShiftTypeMaps = {
     idToType: Map<number, TWardShiftType>;

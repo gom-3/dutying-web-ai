@@ -41,29 +41,27 @@ export function useRequestsShiftsHook() {
     const [updatingRequestId, setUpdatingRequestId] = useState<number | null>(null);
     const requestEnabled = wardId !== null && currentShiftTeamId !== null;
     const shiftTypesEnabled = wardId !== null;
+    const requestQueryKey = wardQueryOptions.request(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
+    const requestListQueryKey = wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const requestQuery = useQuery({
         ...wardQueryOptions.request(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled: requestEnabled,
     });
-    const requestQueryKey = wardQueryOptions.request(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const requestListQuery = useQuery({
         ...wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled: requestEnabled,
     });
-    const requestListQueryKey = wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const shiftTypesQuery = useQuery({
         ...wardQueryOptions.shiftTypes(wardId ?? -1),
         enabled: shiftTypesEnabled,
         staleTime: 1000 * 60 * 5,
     });
-    // requestShift API가 wardShiftTypes를 포함하는 경우가 많아서, shiftTypes가 아직 없으면 requestShift의 값을 fallback으로 씁니다.
     const shiftTypeSourceRaw = shiftTypesQuery.data ?? requestQuery.data?.wardShiftTypes ?? undefined;
     const shiftTypeSource = useMemo(() => normalizeShiftTypes(shiftTypeSourceRaw), [shiftTypeSourceRaw]);
     const wardShiftTypeMap = useMemo(() => buildShiftTypeMap(shiftTypeSource), [shiftTypeSource]);
     const requestList = useMemo(() => requestListQuery.data ?? [], [requestListQuery.data]);
     const acceptedRequests = useMemo(() => requestList.filter((item) => item.isAccepted === true), [requestList]);
     const pendingRequests = useMemo(() => requestList.filter((item) => item.isAccepted === null), [requestList]);
-    const queryError = requestQuery.error ?? requestListQuery.error ?? shiftTypesQuery.error;
     const decideRequest = useCallback(
         async (wardReqShiftId: number, isAccepted: boolean | null) => {
             if (wardId === null) return;
@@ -82,6 +80,8 @@ export function useRequestsShiftsHook() {
         },
         [queryClient, requestListQueryKey, requestQueryKey, wardId],
     );
+    const retry = () => Promise.all([requestQuery.refetch(), requestListQuery.refetch(), shiftTypesQuery.refetch()]);
+    const queryError = requestQuery.error ?? requestListQuery.error ?? shiftTypesQuery.error;
 
     return {
         state: {
@@ -102,6 +102,7 @@ export function useRequestsShiftsHook() {
         },
         actions: {
             decideRequest,
+            retry,
         },
     };
 }

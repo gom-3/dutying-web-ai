@@ -1,23 +1,28 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
+import {useRequestShiftStore} from '@/features/shift/useRequestShift/store';
 import useLoadingUseCase from '@/features/ui/useLoading';
 import useTutorialUseCase from '@/features/ui/useTutorial';
-import useInitStore from '@/features/useInitStore';
 import {AccountAPI, AuthAPI} from '@/shared/api';
-import axiosInstance, {setAccessToken} from '@/shared/api/client';
+import {setAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
 import useAuthStore from './store';
 
 const useAuth = (activeEffect = false) => {
-    const {accountMe, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState} = useAuthStore();
+    const {accountMe, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState, resetState} = useAuthStore();
+    const resetRequestShiftState = useRequestShiftStore((state) => state.resetState);
     const {pathname} = useLocation();
     const {setLoading} = useLoadingUseCase();
-    const initStore = useInitStore();
     const {initTutorial} = useTutorialUseCase();
     const navigate = useNavigate();
+    const resetSessionState = () => {
+        resetRequestShiftState();
+        resetState();
+        setAccessToken('');
+    };
     const handleLogout = async (fallBackPath?: string) => {
-        initStore();
+        resetSessionState();
         sendEvent(events.auth.logut);
 
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
@@ -25,7 +30,7 @@ const useAuth = (activeEffect = false) => {
     const handleLogin = (accessToken: string, nextPageUrl?: string | null) => {
         setState('isAuth', true);
         setState('accessToken', accessToken);
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+        setAccessToken(accessToken);
 
         // refresh 등 "상태만 세팅"이 필요할 때는 리다이렉트를 하지 않는다.
         if (nextPageUrl === null) {
@@ -74,11 +79,11 @@ const useAuth = (activeEffect = false) => {
     }, [accessToken]);
 
     useEffect(() => {
-        if (_loaded && activeEffect) {
+        if (_loaded && activeEffect && accessToken) {
             if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() <= 0) handleLogout();
             else handleGetAccountMe();
         }
-    }, [activeEffect, accessToken, _loaded]);
+    }, [accessToken, activeEffect, demoStartDate, _loaded]);
 
     return {
         state: {

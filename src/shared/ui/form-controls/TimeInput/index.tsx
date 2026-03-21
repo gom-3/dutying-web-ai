@@ -43,10 +43,10 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
 
         return true;
     };
-    const HandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         let value = e.target.value;
 
-        if (value == time) {
+        if (value === time) {
             return;
         }
 
@@ -74,7 +74,9 @@ function TimeInput({initTime, onTimeChange, className, ...props}: ITimeInputProp
     return (
         <Input
             value={time}
-            onChange={HandleChange}
+            onChange={handleChange}
+            variant="foundation"
+            fieldSize="md"
             className={cn(
                 'rounded-[.625rem] px-6.25 font-poppins text-[2.25rem] outline-1 outline-sub-4 focus:text-main-1 focus:outline-main-1',
                 className,

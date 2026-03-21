@@ -1,6 +1,7 @@
 import {MakeShiftEditorView} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {DutyManagementMonthTeamHeader, DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import PageState from '@/shared/ui/PageState';
+import {DutyManagementMonthTeamHeader, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {type TDutyHook} from '../model/dutyHook';
 
 type TDutyPageViewProps = {
@@ -10,6 +11,8 @@ type TDutyPageViewProps = {
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
+    const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
+    const showLoadingState = state.shiftTeamsStatus !== 'success' || state.status === 'pending';
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
@@ -64,24 +67,44 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 </div>
 
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
-                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0 && (
-                        <DutyManagementStatusCard title={t('page.duty.noTeamsTitle')} description={t('page.duty.noTeamsDescription')} />
+                    {showNoTeamsState && (
+                        <PageState
+                            tone="empty"
+                            title={t('page.duty.noTeamsTitle')}
+                            description={t('page.duty.noTeamsDescription')}
+                            className="py-0"
+                        />
                     )}
-                    {state.shiftTeamsStatus !== 'success' && <DutyManagementStatusCard title={t('page.duty.loading')} />}
-                    {state.shiftTeamsStatus === 'success' && state.status === 'pending' && (
-                        <DutyManagementStatusCard title={t('page.duty.loading')} />
+                    {showLoadingState && (
+                        <PageState
+                            tone="loading"
+                            title={t('page.duty.loading')}
+                            description={t('page.state.loadingDescription')}
+                            className="py-0"
+                        />
                     )}
-                    {state.shiftTeams.length > 0 && state.status === 'error' && <DutyManagementStatusCard title={t('page.duty.error')} />}
-                    {state.shiftTeams.length > 0 && state.status === 'success' && !state.shift && (
-                        <DutyManagementStatusCard
+                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'error' && (
+                        <PageState
+                            tone="error"
+                            title={t('page.duty.error')}
+                            description={t('page.state.errorDescription')}
+                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                            className="py-0"
+                        />
+                    )}
+                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'success' && !state.shift && (
+                        <PageState
+                            tone="empty"
                             title={t('page.duty.emptyTitle', {teamName: state.currentShiftTeamName, month: state.month})}
                             description={t('page.duty.emptyDescription', {month: state.month})}
-                            actions={
+                            className="py-0"
+                        >
+                            <div className="mt-1 flex justify-center">
                                 <ManagementActionButton variant="secondary" size="lg" onClick={handlers.goCurrentMonthMake}>
                                     {t('page.duty.createCurrentMonth')}
                                 </ManagementActionButton>
-                            }
-                        />
+                            </div>
+                        </PageState>
                     )}
                     {state.status === 'success' && state.shift && (
                         <div

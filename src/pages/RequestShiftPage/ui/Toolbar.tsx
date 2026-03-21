@@ -1,8 +1,8 @@
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NextIcon, PenIcon, PrevIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
-import Button from '@/shared/ui/Button';
-import Select from '@/shared/ui/Select';
+import Button from '@/shared/ui/form-controls/Button';
+import Select from '@/shared/ui/form-controls/Select';
 
 function Toolbar() {
     const {

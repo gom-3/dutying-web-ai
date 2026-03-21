@@ -48,7 +48,13 @@ axiosInstance.interceptors.response.use(
 );
 
 export const setAccessToken = (token: string) => {
-    axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    if (token) {
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        return;
+    }
+
+    delete axiosInstance.defaults.headers.common['Authorization'];
 };
 
 export default axiosInstance;

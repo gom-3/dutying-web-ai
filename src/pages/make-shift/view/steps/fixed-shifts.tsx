@@ -3,7 +3,9 @@ import {useEffect, useMemo, useRef} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {
+    buildWorkKeyMap,
     buildViolationMap,
+    shiftToDoc,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
@@ -11,10 +13,11 @@ import {
 } from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
-import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
+import {ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
-import {buildWorkKeyMap, shiftToDoc} from '../../model/shift-editor-adapter';
 
 function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;
@@ -32,6 +35,7 @@ function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
 
 export function FixedShifts() {
     const useCase = useMakeShiftUseCase();
+    const {t} = useTypedTranslation();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const editorDoc = useShiftEditorStore((s) => s.doc);
@@ -86,8 +90,17 @@ export function FixedShifts() {
             </div>
 
             <div className="mt-8 flex min-h-0 flex-1 outline-none" onKeyDown={onKeyDown} onPaste={onPaste} ref={editorRef} tabIndex={0}>
-                {dutyQuery.isLoading && <DutyManagementStatusCard title="근무표를 불러오는 중입니다..." className="w-full shadow-banner" />}
-                {dutyQuery.isError && <DutyManagementStatusCard title="근무표를 불러오지 못했어요." className="w-full shadow-banner" />}
+                {dutyQuery.isLoading && (
+                    <PageState tone="loading" title="근무표를 불러오는 중이에요" description={t('page.state.loadingDescription')} />
+                )}
+                {dutyQuery.isError && (
+                    <PageState
+                        tone="error"
+                        title="고정 근무 데이터를 불러오지 못했어요"
+                        description={t('page.state.errorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                    />
+                )}
                 {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
                     <div
                         className="flex min-h-0 flex-1"
@@ -95,7 +108,7 @@ export function FixedShifts() {
                             editorRef.current?.focus();
                         }}
                     >
-                        <div className={`mx-auto flex w-fit min-w-418.5 flex-col`}>
+                        <div className="mx-auto flex w-fit min-w-418.5 flex-col">
                             <ShiftCalendar
                                 shift={dutyQuery.data}
                                 doc={editorDoc}

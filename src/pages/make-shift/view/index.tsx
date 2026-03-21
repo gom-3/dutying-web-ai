@@ -1,8 +1,9 @@
 import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
+import PageState from '@/shared/ui/PageState';
+import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepper, STEP_LABELS} from './make-shift-stepper';
@@ -64,8 +65,7 @@ export const MakeShiftPageView = () => {
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
-    const hasShiftTeams = shiftTeams.length > 0;
-    const showNoTeamsState = shiftTeamsStatus === 'success' && !hasShiftTeams;
+    const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
     const nextMonth = month === 12 ? 1 : month + 1;
@@ -95,43 +95,63 @@ export const MakeShiftPageView = () => {
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
                         {showNoTeamsState ? (
-                            <DutyManagementStatusCard
+                            <PageState
+                                tone="empty"
                                 title={t('page.makeShift.overview.noTeamsTitle')}
                                 description={t('page.makeShift.overview.noTeamsDescription')}
+                                className="py-0"
                             />
-                        ) : (
-                            <DutyManagementStatusCard
+                        ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
+                            <PageState
+                                tone="loading"
                                 title={
-                                    shiftStatus === 'pending'
-                                        ? t('page.makeShift.overview.loading')
-                                        : hasCurrentMonthShift
-                                          ? t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})
-                                          : shiftStatus === 'idle'
-                                            ? t('page.makeShift.overview.checking')
-                                            : t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})
+                                    shiftStatus === 'pending' ? t('page.makeShift.overview.loading') : t('page.makeShift.overview.checking')
                                 }
-                                actions={
-                                    hasCurrentMonthShift ? (
-                                        <>
-                                            <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
-                                                {t('page.makeShift.overview.viewShift', {month})}
-                                            </ManagementActionButton>
-                                            <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
-                                                {t('page.makeShift.overview.createShift', {month: nextMonth})}
-                                            </ManagementActionButton>
-                                        </>
-                                    ) : (
-                                        <ManagementActionButton
-                                            variant="secondary"
-                                            size="lg"
-                                            onClick={handleCreateCurrentMonth}
-                                            disabled={shiftStatus === 'pending' || currentShiftTeamId === null}
-                                        >
-                                            {t('page.makeShift.overview.createShift', {month})}
-                                        </ManagementActionButton>
-                                    )
-                                }
+                                description={t('page.state.loadingDescription')}
+                                className="py-0"
                             />
+                        ) : shiftStatus === 'error' ? (
+                            <PageState
+                                tone="error"
+                                title={t('page.makeShift.overview.error')}
+                                description={t('page.state.errorDescription')}
+                                action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
+                                className="py-0"
+                            />
+                        ) : hasCurrentMonthShift ? (
+                            <PageState
+                                tone="empty"
+                                title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                description={t('page.state.emptyDescription')}
+                                className="py-0"
+                            >
+                                <div className="mt-1 flex flex-wrap justify-center gap-4">
+                                    <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
+                                        {t('page.makeShift.overview.viewShift', {month})}
+                                    </ManagementActionButton>
+                                    <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
+                                        {t('page.makeShift.overview.createShift', {month: nextMonth})}
+                                    </ManagementActionButton>
+                                </div>
+                            </PageState>
+                        ) : (
+                            <PageState
+                                tone="empty"
+                                title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
+                                description={t('page.state.emptyDescription')}
+                                className="py-0"
+                            >
+                                <div className="mt-1 flex justify-center">
+                                    <ManagementActionButton
+                                        variant="secondary"
+                                        size="lg"
+                                        onClick={handleCreateCurrentMonth}
+                                        disabled={currentShiftTeamId === null}
+                                    >
+                                        {t('page.makeShift.overview.createShift', {month})}
+                                    </ManagementActionButton>
+                                </div>
+                            </PageState>
                         )}
                     </div>
                 ) : (

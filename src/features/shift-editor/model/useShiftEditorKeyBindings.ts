@@ -1,10 +1,8 @@
 import {useCallback, useMemo} from 'react';
 import {koToEn} from '@/shared/util/koToEn';
 import {useShiftEditorStore} from './store';
-import type {TCellValue, TClipboardPayload} from './types';
+import type {TClipboardPayload, TWorkKeyMap} from './types';
 import {useShiftEditorCommands} from './useShiftEditorCommands';
-
-export type TWorkKeyMap = Record<string, TCellValue>;
 
 export type TShiftEditorKeyBindingsOptions = {
     /**
