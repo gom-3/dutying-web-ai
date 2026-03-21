@@ -6,7 +6,7 @@ import Toolbar from './ui/Toolbar';
 
 const RequestShiftPage = () => {
     const {
-        state: {readonly, requestShift, shiftStatus, shiftTeams, shiftTeamsStatus},
+        state: {readonly, requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, editAvailability},
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
@@ -16,6 +16,16 @@ const RequestShiftPage = () => {
     const showErrorState =
         shiftTeamsStatus === 'error' || (shiftTeamsStatus === 'success' && shiftTeamCount > 0 && shiftStatus === 'error');
     const showEmptyState = shiftTeamsStatus === 'success' && shiftTeamCount > 0 && shiftStatus === 'success' && !requestShift;
+    const sectionTitle = readonly
+        ? editAvailability.canEdit
+            ? '신청 근무를 검토해 주세요'
+            : '신청 근무를 확인해 주세요'
+        : '신청 근무를 확정해 주세요';
+    const sectionDescription = readonly
+        ? editAvailability.canEdit
+            ? '제출된 신청과 팀별 배치를 먼저 확인한 뒤, 필요하면 수정하기로 바로 편집할 수 있어요.'
+            : editAvailability.description
+        : '셀을 선택한 뒤 단축키로 근무를 입력할 수 있고, 변경 내용은 자동 저장돼요.';
 
     return (
         <div className="flex min-h-screen w-full flex-col px-5 py-5 md:px-10 md:py-10">
@@ -64,12 +74,8 @@ const RequestShiftPage = () => {
                 ) : (
                     <>
                         <SectionHeader
-                            title={readonly ? '신청 근무를 확인해 주세요' : '신청 근무를 확정해 주세요'}
-                            description={
-                                readonly
-                                    ? '제출된 신청 근무와 팀별 배치를 한 화면에서 검토할 수 있어요.'
-                                    : '셀을 선택한 뒤 단축키로 근무를 입력하거나 간호사 신청을 바로 반영할 수 있어요.'
-                            }
+                            title={sectionTitle}
+                            description={sectionDescription}
                             className="mb-8"
                             titleClassName="text-[28px] md:text-[32px]"
                             descriptionClassName="text-base md:text-[20px]"

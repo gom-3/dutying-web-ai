@@ -33,6 +33,34 @@ export const getDutyRequestStatusLabel = (isAccepted: boolean | null) => {
     return '확인 필요';
 };
 
+export const getDutyRequestStatusDescription = ({
+    isAccepted,
+    readonly,
+    requestFocus,
+}: {
+    isAccepted: boolean | null;
+    readonly: boolean;
+    requestFocus: TFocus | null;
+}) => {
+    if (isAccepted === true) {
+        return '현재 신청한 근무가 반영되어 있어요.';
+    }
+
+    if (isAccepted === false) {
+        return '현재 근무표에는 다른 근무로 확정되어 있어요.';
+    }
+
+    if (requestFocus === null) {
+        return '현재 팀에 연결된 간호사 정보가 없어 달력 위치로는 바로 이동할 수 없어요.';
+    }
+
+    if (readonly) {
+        return '패널에서는 바로 처리할 수 있고, 수정하기를 누르면 해당 날짜 위치도 함께 확인할 수 있어요.';
+    }
+
+    return '이름을 누르면 해당 날짜로 이동해 검토할 수 있어요.';
+};
+
 export const getRequestFocus = (dutyRequest: TDutyRequest, shiftNurseIdByNurseId: Map<number, number>): TFocus | null => {
     const matchedShiftNurseId = shiftNurseIdByNurseId.get(dutyRequest.nurseId);
 

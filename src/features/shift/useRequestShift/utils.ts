@@ -1,6 +1,45 @@
 import type {TRequestShift, TWardConstraint, TShiftNurse, TWardShiftType, TShift} from '@/entities';
 import {koToEn} from '@/shared/util/koToEn';
-import {type TFault, type TCheckFaultOptions, type TFocus, type TFaultType} from './type';
+import {type TFault, type TCheckFaultOptions, type TFocus, type TFaultType, type TRequestShiftEditAvailability} from './type';
+
+const REQUEST_SHIFT_EDITABLE_PERIOD_LABEL = '수정 가능 범위: 지난달부터 다음 달까지';
+const getMonthIndex = (year: number, month: number) => year * 12 + month;
+
+export const getRequestShiftEditAvailability = (year: number, month: number, now: Date = new Date()): TRequestShiftEditAvailability => {
+    const currentMonthIndex = getMonthIndex(now.getFullYear(), now.getMonth() + 1);
+    const targetMonthIndex = getMonthIndex(year, month);
+
+    if (targetMonthIndex < currentMonthIndex - 1) {
+        return {
+            canEdit: false,
+            status: 'lockedPast',
+            validationMessage: '두 달 전 신청 근무는 수정할 수 없습니다.',
+            badgeLabel: '조회 전용',
+            periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
+            description: '이 달은 조회만 가능해요. 제출된 신청과 현재 배치만 확인할 수 있어요.',
+        };
+    }
+
+    if (targetMonthIndex > currentMonthIndex + 1) {
+        return {
+            canEdit: false,
+            status: 'lockedFuture',
+            validationMessage: '두 달 뒤 신청 근무는 아직 수정할 수 없습니다.',
+            badgeLabel: '작성 대기',
+            periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
+            description: '다음 달 신청 근무까지만 작성할 수 있어요. 아직 열리지 않은 달은 수정할 수 없어요.',
+        };
+    }
+
+    return {
+        canEdit: true,
+        status: 'editable',
+        validationMessage: null,
+        badgeLabel: '수정 가능',
+        periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
+        description: '현재 달력 범위에서는 신청 근무를 수정할 수 있어요.',
+    };
+};
 
 export const moveFocus = (
     direction: 'left' | 'right' | 'up' | 'down',
