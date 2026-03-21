@@ -30,6 +30,8 @@ function OnboardingWardCreatePage() {
         uploadMockFile,
         saveSkillConfig,
         complete,
+        canGoNext,
+        canComplete,
     } = useOnboardingWardWizard();
     const stepContent = (() => {
         switch (draft.currentStep) {
@@ -80,6 +82,7 @@ function OnboardingWardCreatePage() {
                     onSkip={skipOrComplete}
                     onPrev={goPreviousStep}
                     onNext={draft.currentStep < 4 ? goNextStep : complete}
+                    nextDisabled={draft.currentStep < 4 ? !canGoNext : !canComplete}
                 >
                     {stepContent}
                 </OnboardingStepLayout>

@@ -3,29 +3,28 @@ import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
 import {
     applyMockUpload,
-    applySkillLevels,
-    createEmptyNurse,
-    createEmptyShiftType,
+    addNurseDraft,
+    addShiftTypeDraft,
+    addTeamDraft,
+    canComplete,
+    canGoNext,
+    canGoPrev,
     createInitialDraft,
+    deleteShiftTypeDraft,
+    getStepValidation,
+    goNextStep as goNextStepDraft,
+    goPreviousStep as goPreviousStepDraft,
     serializeDraft,
-    type TOnboardingNurseDraft,
-    type TOnboardingStep,
+    reorderNursesWithinTeam,
+    saveSkillLevelConfig,
     type TOnboardingWardDraft,
-    type TOnboardingWardShiftType,
     type TSkillLevelConfig,
+    updateNurseDraft,
+    updateShiftTypeDraft,
 } from '../model';
 import type {TSortMode} from '../types';
 
-const MIN_STEP = 1;
 const MAX_STEP = 4;
-
-function getNextStep(step: TOnboardingStep): TOnboardingStep {
-    return Math.min(MAX_STEP, step + 1) as TOnboardingStep;
-}
-
-function getPreviousStep(step: TOnboardingStep): TOnboardingStep {
-    return Math.max(MIN_STEP, step - 1) as TOnboardingStep;
-}
 
 function useOnboardingWardWizard() {
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
@@ -42,96 +41,51 @@ function useOnboardingWardWizard() {
 
     const selectedTeamExists = draft.teams.some((team) => team.id === selectedTeamId);
     const activeTeamId = selectedTeamExists ? selectedTeamId : (draft.teams[0]?.id ?? '');
-    const goToStep = (step: TOnboardingStep) => {
-        setDraft((prev) => ({...prev, currentStep: step}));
-    };
     const goNextStep = () => {
-        setDraft((prev) => ({...prev, currentStep: getNextStep(prev.currentStep)}));
+        setDraft((prev) => goNextStepDraft(prev));
     };
     const goPreviousStep = () => {
-        setDraft((prev) => ({...prev, currentStep: getPreviousStep(prev.currentStep)}));
+        setDraft((prev) => goPreviousStepDraft(prev));
     };
-    const updateShiftType = (shiftTypeId: string, updater: Partial<TOnboardingWardShiftType>) => {
-        setDraft((prev) => ({
-            ...prev,
-            shiftTypes: prev.shiftTypes.map((shiftType) => (shiftType.id === shiftTypeId ? {...shiftType, ...updater} : shiftType)),
-        }));
+    const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
+        setDraft((prev) => updateShiftTypeDraft(prev, shiftTypeId, updater));
     };
     const addShiftType = () => {
-        setDraft((prev) => ({
-            ...prev,
-            shiftTypes: [...prev.shiftTypes, createEmptyShiftType()],
-        }));
+        setDraft((prev) => addShiftTypeDraft(prev));
     };
     const deleteShiftType = (shiftTypeId: string) => {
-        setDraft((prev) => ({
-            ...prev,
-            shiftTypes: prev.shiftTypes.filter((shiftType) => shiftType.id !== shiftTypeId),
-            nurses: prev.nurses.map((nurse) => ({
-                ...nurse,
-                possibleShiftTypeIds: nurse.possibleShiftTypeIds.filter((value) => value !== shiftTypeId),
-            })),
-        }));
+        setDraft((prev) => deleteShiftTypeDraft(prev, shiftTypeId));
     };
-    const updateNurse = (nurseId: string, updater: Partial<TOnboardingNurseDraft>) => {
-        setDraft((prev) => ({
-            ...prev,
-            nurses: prev.nurses.map((nurse) => (nurse.id === nurseId ? {...nurse, ...updater} : nurse)),
-        }));
+    const updateNurse = (nurseId: string, updater: Parameters<typeof updateNurseDraft>[2]) => {
+        setDraft((prev) => updateNurseDraft(prev, nurseId, updater));
     };
     const addTeam = () => {
-        const team = {
-            id: `team-new-${draft.teams.length + 1}`,
-            name: `간호사 ${draft.teams.length + 1}팀`,
-        };
+        const {draft: nextDraft, addedTeamId} = addTeamDraft(draft);
 
-        setDraft((prev) => ({...prev, teams: [...prev.teams, team]}));
-        setSelectedTeamId(team.id);
+        setDraft(nextDraft);
+        setSelectedTeamId(addedTeamId);
     };
     const addNurse = () => {
-        if (!activeTeamId) {
-            return;
-        }
-
-        setDraft((prev) => ({
-            ...prev,
-            nurses: [...prev.nurses, createEmptyNurse(activeTeamId, prev.shiftTypes)],
-        }));
+        setDraft((prev) => addNurseDraft(prev, activeTeamId));
     };
     const handleNurseDragEnd = ({destination, source}: DropResult) => {
         if (!destination || !activeTeamId || destination.index === source.index || sortMode !== 'manual') {
             return;
         }
 
-        setDraft((prev) => {
-            const teamNurses = prev.nurses.filter((nurse) => nurse.teamId === activeTeamId);
-            const otherNurses = prev.nurses.filter((nurse) => nurse.teamId !== activeTeamId);
-            const nextNurses = [...teamNurses];
-            const [moved] = nextNurses.splice(source.index, 1);
-
-            if (!moved) {
-                return prev;
-            }
-
-            nextNurses.splice(destination.index, 0, moved);
-
-            return {
-                ...prev,
-                nurses: [...otherNurses, ...nextNurses],
-            };
-        });
+        setDraft((prev) => reorderNursesWithinTeam(prev, activeTeamId, {destination, source}));
     };
     const uploadMockFile = (fileName: string) => {
         setDraft((prev) => applyMockUpload(prev, fileName));
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
-        setDraft((prev) => ({
-            ...prev,
-            skillLevelConfig: config,
-            nurses: applySkillLevels(prev.nurses, config),
-        }));
+        setDraft((prev) => saveSkillLevelConfig(prev, config));
     };
     const complete = () => {
+        if (!canComplete(draft)) {
+            return;
+        }
+
         const payload = serializeDraft(draft);
         const stringified = JSON.stringify(payload, null, 2);
 
@@ -152,14 +106,12 @@ function useOnboardingWardWizard() {
     return {
         draft,
         activeTeamId,
-        selectedTeamId,
         setSelectedTeamId,
         sortMode,
         setSortMode,
         showSkillModal,
         setShowSkillModal,
         completedPayload,
-        goToStep,
         goNextStep,
         goPreviousStep,
         skipOrComplete,
@@ -173,6 +125,10 @@ function useOnboardingWardWizard() {
         uploadMockFile,
         saveSkillConfig,
         complete,
+        currentStepValidation: getStepValidation(draft),
+        canGoPrev: canGoPrev(draft),
+        canGoNext: canGoNext(draft),
+        canComplete: canComplete(draft),
     };
 }
 

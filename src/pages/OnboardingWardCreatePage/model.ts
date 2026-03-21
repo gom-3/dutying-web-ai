@@ -1,3 +1,4 @@
+import {type DropResult} from '@hello-pangea/dnd';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 
 export type TOnboardingStep = 1 | 2 | 3 | 4;
@@ -59,6 +60,33 @@ export type TMockCreateWardPayload = TCreateWardDTO & {
     };
 };
 
+export type TOnboardingValidationIssueCode =
+    | 'empty-shift-types'
+    | 'missing-shift-name'
+    | 'missing-shift-short-name'
+    | 'missing-shift-time'
+    | 'empty-team'
+    | 'empty-team-nurses'
+    | 'missing-nurse-name';
+
+export type TOnboardingValidationIssue = {
+    code: TOnboardingValidationIssueCode;
+    step: TOnboardingStep;
+    targetId?: string;
+};
+
+export type TOnboardingStepValidation = {
+    step: TOnboardingStep;
+    isValid: boolean;
+    issues: TOnboardingValidationIssue[];
+};
+
+export type TOnboardingActionState = {
+    canGoPrev: boolean;
+    canGoNext: boolean;
+    canComplete: boolean;
+};
+
 const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'warm', colors: ['#FFA395', '#FFC0B6', '#FFC795', '#FFE195', '#FFF0B0']},
     {id: 'cool', colors: ['#9EC5FF', '#B7D6FF', '#CFE4FF', '#DFF0FF', '#ECF8FF']},
@@ -69,6 +97,8 @@ const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
     paletteId: 'warm',
     autoAssign: true,
 };
+const MIN_STEP = 1;
+const MAX_STEP = 4;
 
 let nextId = 0;
 
@@ -136,6 +166,7 @@ const BASE_TEAMS: TOnboardingTeamDraft[] = [
     {id: createId('team'), name: '간호사 2팀'},
     {id: createId('team'), name: '간호사 3팀'},
 ];
+
 const createBaseNurses = (shiftTypes: TOnboardingWardShiftType[], teams: TOnboardingTeamDraft[]) => {
     const shiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
     const firstTeamId = teams[0]?.id ?? '';
@@ -265,6 +296,198 @@ export const applySkillLevels = (nurses: TOnboardingNurseDraft[], config: TSkill
         level: levelById.get(nurse.id) ?? levelCount,
     }));
 };
+
+export const goToStep = (draft: TOnboardingWardDraft, step: TOnboardingStep): TOnboardingWardDraft => ({
+    ...draft,
+    currentStep: step,
+});
+
+export const goNextStep = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
+    ...draft,
+    currentStep: Math.min(MAX_STEP, draft.currentStep + 1) as TOnboardingStep,
+});
+
+export const goPreviousStep = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
+    ...draft,
+    currentStep: Math.max(MIN_STEP, draft.currentStep - 1) as TOnboardingStep,
+});
+
+export const updateShiftTypeDraft = (
+    draft: TOnboardingWardDraft,
+    shiftTypeId: string,
+    updater: Partial<TOnboardingWardShiftType>,
+): TOnboardingWardDraft => ({
+    ...draft,
+    shiftTypes: draft.shiftTypes.map((shiftType) => (shiftType.id === shiftTypeId ? {...shiftType, ...updater} : shiftType)),
+});
+
+export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
+    ...draft,
+    shiftTypes: [...draft.shiftTypes, createEmptyShiftType()],
+});
+
+export const deleteShiftTypeDraft = (draft: TOnboardingWardDraft, shiftTypeId: string): TOnboardingWardDraft => ({
+    ...draft,
+    shiftTypes: draft.shiftTypes.filter((shiftType) => shiftType.id !== shiftTypeId),
+    nurses: draft.nurses.map((nurse) => ({
+        ...nurse,
+        possibleShiftTypeIds: nurse.possibleShiftTypeIds.filter((value) => value !== shiftTypeId),
+    })),
+});
+
+export const updateNurseDraft = (
+    draft: TOnboardingWardDraft,
+    nurseId: string,
+    updater: Partial<TOnboardingNurseDraft>,
+): TOnboardingWardDraft => ({
+    ...draft,
+    nurses: draft.nurses.map((nurse) => (nurse.id === nurseId ? {...nurse, ...updater} : nurse)),
+});
+
+export const addTeamDraft = (draft: TOnboardingWardDraft) => {
+    const team = {
+        id: `team-new-${draft.teams.length + 1}`,
+        name: `간호사 ${draft.teams.length + 1}팀`,
+    };
+
+    return {
+        draft: {
+            ...draft,
+            teams: [...draft.teams, team],
+        },
+        addedTeamId: team.id,
+    };
+};
+
+export const addNurseDraft = (draft: TOnboardingWardDraft, teamId: string): TOnboardingWardDraft => {
+    if (!teamId) {
+        return draft;
+    }
+
+    return {
+        ...draft,
+        nurses: [...draft.nurses, createEmptyNurse(teamId, draft.shiftTypes)],
+    };
+};
+
+export const reorderNursesWithinTeam = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    result: Pick<DropResult, 'destination' | 'source'>,
+): TOnboardingWardDraft => {
+    const {destination, source} = result;
+
+    if (!destination || !teamId || destination.index === source.index) {
+        return draft;
+    }
+
+    const teamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
+    const otherNurses = draft.nurses.filter((nurse) => nurse.teamId !== teamId);
+    const nextNurses = [...teamNurses];
+    const [moved] = nextNurses.splice(source.index, 1);
+
+    if (!moved) {
+        return draft;
+    }
+
+    nextNurses.splice(destination.index, 0, moved);
+
+    return {
+        ...draft,
+        nurses: [...otherNurses, ...nextNurses],
+    };
+};
+
+export const saveSkillLevelConfig = (draft: TOnboardingWardDraft, config: TSkillLevelConfig): TOnboardingWardDraft => ({
+    ...draft,
+    skillLevelConfig: config,
+    nurses: applySkillLevels(draft.nurses, config),
+});
+
+const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationIssue[] => {
+    const issues: TOnboardingValidationIssue[] = [];
+
+    if (draft.shiftTypes.length === 0) {
+        issues.push({code: 'empty-shift-types', step: 2});
+    }
+
+    draft.shiftTypes.forEach((shiftType) => {
+        if (!shiftType.name.trim()) {
+            issues.push({code: 'missing-shift-name', step: 2, targetId: shiftType.id});
+        }
+
+        if (!shiftType.shortName.trim()) {
+            issues.push({code: 'missing-shift-short-name', step: 2, targetId: shiftType.id});
+        }
+
+        if (!shiftType.isOff && (!shiftType.startTime.trim() || !shiftType.endTime.trim())) {
+            issues.push({code: 'missing-shift-time', step: 2, targetId: shiftType.id});
+        }
+    });
+
+    return issues;
+};
+
+const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 3 | 4): TOnboardingValidationIssue[] => {
+    const issues: TOnboardingValidationIssue[] = [];
+
+    if (draft.teams.length === 0) {
+        issues.push({code: 'empty-team', step});
+    }
+
+    draft.teams.forEach((team) => {
+        const nurses = draft.nurses.filter((nurse) => nurse.teamId === team.id);
+
+        if (nurses.length === 0) {
+            issues.push({code: 'empty-team-nurses', step, targetId: team.id});
+        }
+
+        nurses.forEach((nurse) => {
+            if (!nurse.name.trim()) {
+                issues.push({code: 'missing-nurse-name', step, targetId: nurse.id});
+            }
+        });
+    });
+
+    return issues;
+};
+
+export const getStepValidation = (draft: TOnboardingWardDraft, step = draft.currentStep): TOnboardingStepValidation => {
+    let issues: TOnboardingValidationIssue[] = [];
+
+    switch (step) {
+        case 1:
+            issues = [];
+            break;
+        case 2:
+            issues = validateShiftTypes(draft);
+            break;
+        case 3:
+        case 4:
+            issues = validateTeamsAndNurses(draft, step);
+            break;
+    }
+
+    return {
+        step,
+        isValid: issues.length === 0,
+        issues,
+    };
+};
+
+export const canGoPrev = (draft: Pick<TOnboardingWardDraft, 'currentStep'>): boolean => draft.currentStep > MIN_STEP;
+
+export const canGoNext = (draft: TOnboardingWardDraft): boolean =>
+    draft.currentStep < MAX_STEP && getStepValidation(draft).isValid;
+
+export const canComplete = (draft: TOnboardingWardDraft): boolean =>
+    draft.currentStep === MAX_STEP && getStepValidation(draft, MAX_STEP).isValid;
+
+export const getActionState = (draft: TOnboardingWardDraft): TOnboardingActionState => ({
+    canGoPrev: canGoPrev(draft),
+    canGoNext: canGoNext(draft),
+    canComplete: canComplete(draft),
+});
 
 export const serializeDraft = (draft: TOnboardingWardDraft): TMockCreateWardPayload => {
     const teamById = new Map(draft.teams.map((team) => [team.id, team.name]));
