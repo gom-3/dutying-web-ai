@@ -17,7 +17,7 @@ interface IConnectionManageProps {
 function ConnectionManage({open, setOpen}: IConnectionManageProps) {
     const {
         state: {watingNurses},
-        actions: {cancelWaiting, approveWatingNurses, connectWatingNurses},
+        actions: {cancelWaiting, approveWaitingNurses, connectWaitingNurses},
     } = useEditWard();
     const {
         state: {shiftTeams},
@@ -38,8 +38,8 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         },
     } = useConnectionManageController({
         open,
-        approveWaitingNurses: approveWatingNurses,
-        connectWaitingNurses: connectWatingNurses,
+        approveWaitingNurses,
+        connectWaitingNurses,
     });
     const handleClose = () => setOpen(false);
     const targetLabel = getConnectionManageTargetLabel({

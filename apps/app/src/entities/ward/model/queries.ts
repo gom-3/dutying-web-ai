@@ -56,7 +56,7 @@ export const wardQueryOptions = {
     waitingNurses: (wardId: number) =>
         queryOptions({
             queryKey: wardQueryKeys.waitingNurses(wardId),
-            queryFn: () => WardAPI.getWatingNurses(wardId),
+            queryFn: () => WardAPI.getWaitingNurses(wardId),
         }),
     constraint: (wardId: number, shiftTeamId: number) =>
         queryOptions({

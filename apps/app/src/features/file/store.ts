@@ -14,11 +14,15 @@ const initialState: IState = {
 
 export const useProfileImageStore = createStore<IState>(initialState, {name: 'useProfileImageStore'});
 
+const getImageUrls = (images: Awaited<ReturnType<typeof AccountAPI.getDefaultProfileImages>>) => images.map((image) => image.url);
+
 AccountAPI.getDefaultProfileImages().then((images) => {
+    const imageUrls = getImageUrls(images);
+
     useProfileImageStore.setState({
-        defaultProfileImages: images,
+        defaultProfileImages: imageUrls,
         imageBaseUrl: (() => {
-            const match = images[0]?.match(/^(https:\/\/[^/]+)\//);
+            const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
 
             return match ? match[1] : 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com';
         })(),
@@ -30,10 +34,11 @@ const DEFAULT_IMAGE_BASE_URL = 'https://dutying-prod.s3.ap-northeast-2.amazonaws
 export const initializeProfileImageStore = async () => {
     try {
         const images = await AccountAPI.getDefaultProfileImages();
-        const match = images[0]?.match(/^(https:\/\/[^/]+)\//);
+        const imageUrls = getImageUrls(images);
+        const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
 
         useProfileImageStore.setState({
-            defaultProfileImages: images,
+            defaultProfileImages: imageUrls,
             imageBaseUrl: match ? match[1] : DEFAULT_IMAGE_BASE_URL,
         });
     } catch (error) {

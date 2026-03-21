@@ -76,7 +76,7 @@ const useRegister = () => {
             setLoading(true);
 
             try {
-                await WardAPI.addMeToWatingNurses(wardId);
+                await WardAPI.addMeToWaitingNurses(wardId);
 
                 if (!accountId) return;
 
@@ -90,7 +90,7 @@ const useRegister = () => {
     );
     const cancelWaiting = useCallback(
         async (wardId: number, nurseId: number) => {
-            await WardAPI.deleteWatingNurses(wardId, nurseId);
+            await WardAPI.deleteWaitingNurses(wardId, nurseId);
 
             if (!accountId) return;
 

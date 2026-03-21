@@ -19,6 +19,7 @@
         "type-check": "tsc -b"
     },
     "dependencies": {
+        "@dutying/api": "workspace:*",
         "@dutying/domain": "workspace:*",
         "@dutying/utils": "workspace:*",
         "@hello-pangea/dnd": "^18.0.1",
