@@ -51,6 +51,10 @@ export const ko = {
                 },
                 dragHandleAria: '드래그하여 순서 변경',
             },
+            aiRefill: {
+                action: 'AI 다시 채우기',
+                generating: 'AI 채우는 중...',
+            },
         },
         duty: {
             prevMonth: '이전 달',
