@@ -1,28 +1,6 @@
-export type TNurseResponse = {
-    nurseId: number;
-    accountId: number | null;
-    shiftTeamId: number | null;
-    wardId: number;
-    name: string;
-    phoneNum: string;
-    isConnected: boolean;
-    nurseShiftTypes: {
-        nurseShiftTypeId: number;
-        name: string;
-        shortName: string;
-        isPossible: boolean;
-        isPreferred: boolean;
-    }[];
-    isWorker: boolean;
-    isDutyManager: boolean;
-    isWardManager: boolean;
-    gender: string;
-    employmentDate: string;
-    memo: string;
-    isDeleted: boolean;
-    divisionNum: number;
-    priority: number;
-};
+import type {TNurse} from '@dutying/domain';
+
+export type TNurseResponse = TNurse;
 
 export interface INurseAPI {
     // GET

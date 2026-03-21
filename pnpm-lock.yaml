@@ -23,6 +23,9 @@ importers:
 
   apps/app:
     dependencies:
+      '@dutying/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@dutying/utils':
         specifier: workspace:*
         version: link:../../packages/utils
@@ -348,6 +351,8 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+
+  packages/domain: {}
 
   packages/utils:
     dependencies:
