@@ -9,11 +9,23 @@ import useRequestShift from '@/features/shift/useRequestShift';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
 import Card from '@/shared/ui/Card';
+import PageState from '@/shared/ui/PageState';
 
 export default function ShiftCalendar() {
     const {
-        state: {readonly, year, month, requestShift, dutyRequestList, focus, foldedLevels, wardShiftTypeMap, currentShiftTeam},
-        actions: {changeFocus, foldLevel, acceptRequest},
+        state: {
+            readonly,
+            year,
+            month,
+            requestShift,
+            dutyRequestList,
+            dutyRequestStatus,
+            focus,
+            foldedLevels,
+            wardShiftTypeMap,
+            currentShiftTeam,
+        },
+        actions: {changeFocus, foldLevel, acceptRequest, retry},
     } = useRequestShift();
     const {
         state: {shiftTeams},
@@ -97,7 +109,8 @@ export default function ShiftCalendar() {
         }
     }, [focus]);
 
-    const unresolvedRequestCount = dutyRequestList?.filter((x) => x.isAccepted === null).length ?? 0;
+    const unresolvedRequestCount =
+        dutyRequestStatus === 'success' ? (dutyRequestList?.filter((x) => x.isAccepted === null).length ?? 0) : 0;
 
     return requestShift && foldedLevels && wardShiftTypeMap && currentShiftTeam ? (
         <div id="calendar" className="flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
@@ -385,7 +398,22 @@ export default function ShiftCalendar() {
                 </div>
 
                 <div className="scrollbar-hide max-h-[calc(100vh-18rem)] overflow-y-auto px-5 py-4">
-                    {dutyRequestList && dutyRequestList.length > 0 ? (
+                    {dutyRequestStatus === 'pending' ? (
+                        <PageState
+                            tone="loading"
+                            title="신청 내역을 불러오는 중이에요"
+                            description="제출된 신청 근무를 확인하고 있어요."
+                            className="px-0 py-0"
+                        />
+                    ) : dutyRequestStatus === 'error' ? (
+                        <PageState
+                            tone="error"
+                            title="신청 내역을 불러오지 못했어요"
+                            description="잠시 후 다시 시도해 주세요."
+                            action={{label: '다시 시도', onClick: () => void retry()}}
+                            className="px-0 py-0"
+                        />
+                    ) : dutyRequestList && dutyRequestList.length > 0 ? (
                         <div className="space-y-3">
                             {dutyRequestList.map((dutyRequest) => {
                                 const matchedShiftNurseId =
