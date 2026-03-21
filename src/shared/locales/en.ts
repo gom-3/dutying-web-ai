@@ -101,6 +101,30 @@ export const en: TLocale = {
         auth: {
             sessionExpired: 'Your login has expired. Please sign in again.',
         },
+        registerWard: {
+            shiftTypes: {
+                title: 'Shift types',
+                addAction: 'Add work/leave type',
+                leave: 'Leave',
+                work: 'Work',
+                column: {
+                    name: 'Shift name',
+                    shortName: 'Abbr.',
+                    workTime: 'Work hours',
+                    color: 'Color',
+                    category: 'Category',
+                    edit: 'Edit',
+                },
+            },
+            shiftTeams: {
+                title: 'Nurses in ward',
+                excludeMe: '* Exclude yourself',
+                addTeam: 'Add team',
+                teamName: 'Nurse Team {{index}}',
+                count: '{{count}}',
+                addNamePlaceholder: 'Add name',
+            },
+        },
         shiftEditor: {
             panel: {
                 histories: 'History',

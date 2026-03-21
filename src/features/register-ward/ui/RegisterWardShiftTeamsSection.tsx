@@ -1,6 +1,7 @@
 import {produce} from 'immer';
 import {type Dispatch, type SetStateAction} from 'react';
 import {CancelIcon, EnterIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IRegisterWardShiftTeamsSectionProps {
     shiftTeams: string[][];
@@ -8,6 +9,7 @@ interface IRegisterWardShiftTeamsSectionProps {
 }
 
 function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWardShiftTeamsSectionProps) {
+    const {t} = useTypedTranslation();
     const appendClipboardTextToNurse = async (index: number) => {
         const nurses = (await navigator.clipboard.readText()).split('\n').map((x) => x.replace(/\r/g, ''));
 
@@ -21,8 +23,8 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
     return (
         <div className="mt-5 w-full shrink-0 rounded-[1.25rem] bg-white px-11.25 py-7.5 shadow-banner">
             <div className="mb-6.25 flex items-center">
-                <p className="font-apple text-[1.25rem] font-medium text-sub-3">병동내 간호사</p>
-                <p className="ml-6 font-apple text-[1rem] text-main-2">* 본인은 제외해주세요</p>
+                <p className="font-apple text-[1.25rem] font-medium text-sub-3">{t('feature.registerWard.shiftTeams.title')}</p>
+                <p className="ml-6 font-apple text-[1rem] text-main-2">{t('feature.registerWard.shiftTeams.excludeMe')}</p>
                 <div
                     className="ml-auto flex cursor-pointer gap-[.625rem]"
                     onClick={() => {
@@ -34,7 +36,7 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                     }}
                 >
                     <PlusIcon className="h-6 w-6 stroke-main-2" />
-                    <p className="font-apple text-[1rem] font-medium text-main-2">팀 추가하기</p>
+                    <p className="font-apple text-[1rem] font-medium text-main-2">{t('feature.registerWard.shiftTeams.addTeam')}</p>
                 </div>
             </div>
             {shiftTeams.map((shiftTeam, index) => (
@@ -42,8 +44,10 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                     <div className="flex justify-between">
                         <div className="flex">
                             <div className="flex h-9 w-45 items-center justify-center gap-[.75rem] rounded-t-[.625rem] bg-sub-2 font-apple text-white">
-                                <p className="text-[1.25rem] font-medium">간호사 {index + 1}팀</p>
-                                <p className="text-[.875rem]">{shiftTeam.length}명</p>
+                                <p className="text-[1.25rem] font-medium">
+                                    {t('feature.registerWard.shiftTeams.teamName', {index: index + 1})}
+                                </p>
+                                <p className="text-[.875rem]">{t('feature.registerWard.shiftTeams.count', {count: shiftTeam.length})}</p>
                             </div>
                         </div>
                         <CancelIcon
@@ -78,7 +82,7 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                         ))}
                         <p className="flex h-7 w-27 items-center justify-center rounded-[.3125rem] border-[.0625rem] border-main-1 bg-white font-apple text-[1rem] text-sub-1">
                             <input
-                                placeholder="이름 추가"
+                                placeholder={t('feature.registerWard.shiftTeams.addNamePlaceholder')}
                                 className="w-[70%] focus:outline-none"
                                 onKeyDown={(e) => {
                                     if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
@@ -94,10 +98,13 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
 
                                     if (e.key === 'Enter') {
                                         e.preventDefault();
+
+                                        const value = e.currentTarget.value;
+
+                                        e.currentTarget.value = '';
                                         setShiftTeams(
                                             produce(shiftTeams, (draft) => {
-                                                draft[index].push(e.currentTarget.value);
-                                                e.currentTarget.value = '';
+                                                draft[index].push(value);
                                             }),
                                         );
                                     }

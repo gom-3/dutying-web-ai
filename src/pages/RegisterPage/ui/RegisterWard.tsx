@@ -37,7 +37,7 @@ function RegisterWard() {
 
     useEffect(() => {
         if (accountMe?.status !== 'WARD_SELECT_PENDING') navigate(ROUTE.REGISTER);
-    }, [accountMe]);
+    }, [accountMe, navigate]);
 
     return (
         <div className="relative mx-auto mt-30.75 flex h-[calc(100%-7.6875rem)] w-[52%] flex-col items-center bg-[#FDFCFE]">
