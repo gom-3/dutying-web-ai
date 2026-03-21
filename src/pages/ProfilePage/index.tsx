@@ -8,9 +8,9 @@ import useProfileImage from '@/features/file/useProfileImage';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import Button from '@/widgets/form-controls/Button';
-import Select from '@/widgets/form-controls/Select';
-import TextField from '@/widgets/form-controls/TextField';
+import Button from '@/shared/ui/form-controls/Button';
+import Select from '@/shared/ui/form-controls/Select';
+import TextField from '@/shared/ui/form-controls/TextField';
 
 function ProfilePage() {
     const {

@@ -17,7 +17,7 @@
 
 ## 이번 정리 기준
 - `shiftToExcel`은 근무표 도메인과 엑셀 내보내기 플로우를 함께 알아야 하므로 `features/shift-editor/model`로 이동
-- `Button`, `Select`, `TextField`, `TimeInput` preset은 primitive 조합에 가깝고 범용성이 낮아 `widgets/form-controls`로 이동
+- `Button`, `Select`, `TextField`, `TimeInput`은 도메인 UI는 아니지만 primitive와 역할이 다르므로 `shared/ui/form-controls`로 분리
 - `shared/ui/primitives/*`는 도메인 비특화 기반 컴포넌트이므로 유지
 
 ## 이후 체크리스트

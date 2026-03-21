@@ -21,8 +21,8 @@ import {
     SavingIcon,
     ShareIcon,
 } from '@/shared/assets/svg';
-import Button from '@/widgets/form-controls/Button';
-import Select from '@/widgets/form-controls/Select';
+import Button from '@/shared/ui/form-controls/Button';
+import Select from '@/shared/ui/form-controls/Select';
 import SetConstraint from './editWard/set-constraint';
 import SetDesignTheme from './editWard/set-design-theme';
 import SetShiftType from './editWard/set-shift-type';

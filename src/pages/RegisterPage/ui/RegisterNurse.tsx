@@ -10,9 +10,9 @@ import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
-import Button from '@/widgets/form-controls/Button';
-import Select from '@/widgets/form-controls/Select';
-import TextField from '@/widgets/form-controls/TextField';
+import Button from '@/shared/ui/form-controls/Button';
+import Select from '@/shared/ui/form-controls/Select';
+import TextField from '@/shared/ui/form-controls/TextField';
 
 const schema = yup
     .object()
