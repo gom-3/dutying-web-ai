@@ -1,4 +1,4 @@
-import {expect, vi, describe, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import Select from '.';
 

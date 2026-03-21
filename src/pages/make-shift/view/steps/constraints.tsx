@@ -5,7 +5,7 @@ import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-edit
 import {DUTY_RULE_META, type TDutyRuleMeta} from '@/features/shift-editor/model/duty-constraints';
 import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import Select from '@/shared/ui/Select';
+import Select from '@/shared/ui/form-controls/Select';
 import {cn} from '@/shared/util/style';
 
 type TBucket = 'error' | 'warning' | 'excluded';

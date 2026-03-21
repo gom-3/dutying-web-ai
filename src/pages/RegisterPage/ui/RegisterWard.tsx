@@ -11,8 +11,8 @@ import RegisterWardShiftTypesSection from '@/features/register-ward/ui/RegisterW
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import {BackIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
-import Button from '@/shared/ui/Button';
-import TextField from '@/shared/ui/TextField';
+import Button from '@/shared/ui/form-controls/Button';
+import TextField from '@/shared/ui/form-controls/TextField';
 
 function RegisterWard() {
     const [shiftTeams, setShiftTeams] = useState<string[][]>([[]]);

@@ -2,7 +2,7 @@ import {useMemo} from 'react';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import Button from '@/shared/ui/Button';
+import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import StatusBadge from '@/shared/ui/StatusBadge';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';

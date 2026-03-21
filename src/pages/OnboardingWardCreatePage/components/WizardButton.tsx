@@ -1,5 +1,5 @@
 import {type ButtonHTMLAttributes} from 'react';
-import Button from '@/shared/ui/Button';
+import Button from '@/shared/ui/form-controls/Button';
 import {cn} from '@/shared/util/style';
 
 type TVariant = 'solid' | 'secondary' | 'link';

@@ -1,7 +1,7 @@
 import {Upload} from 'lucide-react';
 import {useRef} from 'react';
 import Card from '@/shared/ui/Card';
-import Button from '@/shared/ui/Button';
+import Button from '@/shared/ui/form-controls/Button';
 import type {TOnboardingWardDraft} from '../../model';
 
 interface IUploadStepProps {

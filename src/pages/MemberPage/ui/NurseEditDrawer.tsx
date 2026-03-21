@@ -4,8 +4,8 @@ import {events, sendEvent} from '@/analytics';
 import {type TNurse} from '@/entities/nurse';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/shared/assets/svg';
-import Button from '@/shared/ui/Button';
-import TextField from '@/shared/ui/TextField';
+import Button from '@/shared/ui/form-controls/Button';
+import TextField from '@/shared/ui/form-controls/TextField';
 
 function NurseEditDrawer() {
     const {
