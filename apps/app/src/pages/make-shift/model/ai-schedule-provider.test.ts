@@ -30,7 +30,6 @@ const request: TAiScheduleRequest = {
         workerMeta: {1: {name: '간호사 1'}},
     },
 };
-
 const response = {
     generation_id: 1,
     schedule: {1: ['D']},

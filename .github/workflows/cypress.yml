@@ -17,9 +17,13 @@ jobs:
       - name: npm ci
         run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
       - name: Install Cypress binary
-        run: pnpm exec cypress install
+        run: pnpm --dir ./apps/app exec cypress install
       - name: Cypress run
         uses: cypress-io/github-action@v6
+        with:
+          install: false
+          working-directory: apps/app
+          command: pnpm exec cypress run
         env:
           CYPRESS_id: ${{ secrets.TESTING_ID }}
           CYPRESS_pw: ${{ secrets.TESTING_PW }}

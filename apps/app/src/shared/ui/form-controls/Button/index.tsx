@@ -16,7 +16,6 @@ const primitiveVariantMap: Record<TButtonVariant, React.ComponentProps<typeof Sh
     secondary: 'soft',
     link: 'link',
 };
-
 const primitiveSizeMap: Record<TButtonSize, React.ComponentProps<typeof ShadcnButton>['size']> = {
     hero: 'hero',
     pill: 'pill',
