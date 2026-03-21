@@ -2,7 +2,8 @@ import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {useMakeShiftStore, canGoNext, canGoPrev} from '../model/make-shift-store';
+import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepper, STEP_LABELS} from './make-shift-stepper';
@@ -58,11 +59,13 @@ export const MakeShiftPageView = () => {
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
+    const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
     const nextMonth = month === 12 ? 1 : month + 1;
@@ -91,7 +94,14 @@ export const MakeShiftPageView = () => {
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
-                        {shiftStatus === 'pending' || shiftStatus === 'idle' ? (
+                        {showNoTeamsState ? (
+                            <PageState
+                                tone="empty"
+                                title={t('page.makeShift.overview.noTeamsTitle')}
+                                description={t('page.makeShift.overview.noTeamsDescription')}
+                                className="py-0"
+                            />
+                        ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
                             <PageState
                                 tone="loading"
                                 title={
@@ -109,28 +119,21 @@ export const MakeShiftPageView = () => {
                                 className="py-0"
                             />
                         ) : hasCurrentMonthShift ? (
-                            <div className="text-center">
-                                <p className="font-apple text-2xl font-semibold text-gray-3">
-                                    {t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                </p>
-
-                                <div className="mt-6 flex items-center justify-center gap-8">
-                                    <button
-                                        className="rounded-[20px] bg-main-light px-[42px] py-[22px] font-apple text-2xl font-semibold text-main-1"
-                                        onClick={handleGoDuty}
-                                        type="button"
-                                    >
+                            <PageState
+                                tone="empty"
+                                title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                description={t('page.state.emptyDescription')}
+                                className="py-0"
+                            >
+                                <div className="mt-1 flex flex-wrap justify-center gap-4">
+                                    <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
                                         {t('page.makeShift.overview.viewShift', {month})}
-                                    </button>
-                                    <button
-                                        className="rounded-[20px] bg-main-1 px-[42px] py-[22px] font-apple text-2xl font-semibold text-white"
-                                        onClick={handleCreateNextMonth}
-                                        type="button"
-                                    >
+                                    </ManagementActionButton>
+                                    <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
                                         {t('page.makeShift.overview.createShift', {month: nextMonth})}
-                                    </button>
+                                    </ManagementActionButton>
                                 </div>
-                            </div>
+                            </PageState>
                         ) : (
                             <PageState
                                 tone="empty"
@@ -139,13 +142,14 @@ export const MakeShiftPageView = () => {
                                 className="py-0"
                             >
                                 <div className="mt-1 flex justify-center">
-                                    <button
-                                        className="rounded-[20px] bg-main-light px-10 py-4 font-apple text-xl font-semibold text-main-1"
+                                    <ManagementActionButton
+                                        variant="secondary"
+                                        size="lg"
                                         onClick={handleCreateCurrentMonth}
-                                        type="button"
+                                        disabled={currentShiftTeamId === null}
                                     >
                                         {t('page.makeShift.overview.createShift', {month})}
-                                    </button>
+                                    </ManagementActionButton>
                                 </div>
                             </PageState>
                         )}
@@ -172,30 +176,25 @@ export const MakeShiftPageView = () => {
                                     </div>
 
                                     <div className="mt-[82px] flex items-center gap-8">
-                                        <button
-                                            className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
+                                        <ManagementActionButton
+                                            variant="neutral"
+                                            size="sm"
                                             onClick={() => useCase.prev()}
                                             disabled={!canPrev}
-                                            type="button"
                                         >
-                                            이전
-                                        </button>
-                                        <button
-                                            className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                                            onClick={() => useCase.next()}
-                                            disabled={!canNext}
-                                            type="button"
-                                        >
-                                            다음
-                                        </button>
+                                            {t('page.makeShift.navigation.previous')}
+                                        </ManagementActionButton>
+                                        <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
+                                            {t('page.makeShift.navigation.next')}
+                                        </ManagementActionButton>
                                         {currentStep === 5 && (
-                                            <button
-                                                className="h-[42px] rounded-[10px] bg-sub-3 px-5 font-apple text-base font-semibold text-white"
+                                            <ManagementActionButton
+                                                className="bg-sub-3 hover:bg-sub-2"
+                                                size="sm"
                                                 onClick={() => useCase.complete()}
-                                                type="button"
                                             >
-                                                완료
-                                            </button>
+                                                {t('page.makeShift.navigation.complete')}
+                                            </ManagementActionButton>
                                         )}
                                     </div>
                                 </div>

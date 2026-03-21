@@ -18,6 +18,7 @@ import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calenda
 import WardAPI from '@/shared/api/ward';
 import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {renderMultilineText} from '@/shared/util/string';
 import {cn} from '@/shared/util/style';
 import {
@@ -304,14 +305,15 @@ export function AiAutofill() {
 
             <div className="mt-8 flex min-h-0 flex-1 outline-none" onKeyDown={onKeyDown} onPaste={onPaste} ref={editorRef} tabIndex={0}>
                 {dutyQuery.isLoading && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오는 중입니다...</p>
-                    </div>
+                    <PageState tone="loading" title="근무표를 불러오는 중이에요" description={t('page.state.loadingDescription')} />
                 )}
                 {dutyQuery.isError && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오지 못했어요.</p>
-                    </div>
+                    <PageState
+                        tone="error"
+                        title="근무표를 불러오지 못했어요"
+                        description={t('page.state.errorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                    />
                 )}
                 {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
                     <div
@@ -320,7 +322,7 @@ export function AiAutofill() {
                             editorRef.current?.focus();
                         }}
                     >
-                        <div className={`mx-auto flex w-fit min-w-418.5 flex-col`}>
+                        <div className="mx-auto flex w-fit min-w-418.5 flex-col">
                             <ShiftCalendar
                                 shift={dutyQuery.data}
                                 doc={editorDoc}

@@ -5,6 +5,7 @@ import {type TShiftTeam} from '@/entities';
 export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
 export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
+export type TShiftTeamsStatus = 'idle' | 'pending' | 'success' | 'error';
 
 const STEP_STORAGE_KEY = 'make-shift:draft-step';
 
@@ -42,6 +43,7 @@ export type TMakeShiftStore = {
     year: number;
     month: number; // 1~12
     shiftTeams: TShiftTeam[];
+    shiftTeamsStatus: TShiftTeamsStatus;
     currentShiftTeamId: number | null;
 
     // overview status (MVP)
@@ -62,6 +64,7 @@ export type TMakeShiftStore = {
     goPrevMonth: () => void;
     goNextMonth: () => void;
     setShiftTeams: (teams: TShiftTeam[]) => void;
+    setShiftTeamsStatus: (status: TShiftTeamsStatus) => void;
     setCurrentShiftTeamId: (shiftTeamId: number | null) => void;
 
     setShiftStatus: (status: TShiftStatus) => void;
@@ -78,6 +81,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
         shiftTeams: [],
+        shiftTeamsStatus: 'idle',
         currentShiftTeamId: null,
 
         shiftStatus: 'idle',
@@ -163,6 +167,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({month: month + 1}));
         },
         setShiftTeams: (shiftTeams) => set(() => ({shiftTeams})),
+        setShiftTeamsStatus: (shiftTeamsStatus) => set(() => ({shiftTeamsStatus})),
         setCurrentShiftTeamId: (currentShiftTeamId) => set(() => ({currentShiftTeamId})),
 
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),

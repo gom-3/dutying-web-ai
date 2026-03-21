@@ -1,7 +1,7 @@
 import {MakeShiftEditorView} from '@/features/shift-editor';
-import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import {DutyManagementMonthTeamHeader, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {type TDutyHook} from '../model/dutyHook';
 
 type TDutyPageViewProps = {
@@ -11,126 +11,113 @@ type TDutyPageViewProps = {
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
+    const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
+    const showShiftTeamsErrorState = state.shiftTeamsStatus === 'error';
+    const showLoadingState =
+        state.shiftTeamsStatus === 'pending' ||
+        (state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'pending');
 
     return (
         <div className="flex min-h-screen w-full flex-col px-10 py-10">
-            <div className="flex flex-wrap items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        className="grid size-6 place-items-center text-gray-5 hover:text-gray-4"
-                        onClick={handlers.goPrevMonth}
-                        aria-label={t('page.duty.prevMonth')}
-                    >
-                        <ChevronLeftIcon />
-                    </button>
-                    <div className="font-apple text-2xl font-semibold text-main-1">
-                        {t('page.duty.monthHeader', {year: state.year, month: state.month})}
-                    </div>
-                    <button
-                        type="button"
-                        className="grid size-6 place-items-center text-gray-5 hover:text-gray-4"
-                        onClick={handlers.goNextMonth}
-                        aria-label={t('page.duty.nextMonth')}
-                    >
-                        <ChevronRightIcon />
-                    </button>
-                </div>
-
-                <div className="max-w-full rounded-[10px] bg-main-light px-[10px] py-[7px]">
-                    <div className="scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap">
-                        {state.shiftTeams.map((team) => {
-                            const selected = team.shiftTeamId === state.currentShiftTeamId;
-
-                            return (
-                                <button
-                                    key={team.shiftTeamId}
-                                    type="button"
-                                    onClick={() => handlers.selectShiftTeam(team.shiftTeamId)}
-                                    className={`flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] ${
-                                        selected ? 'bg-main-1 text-white' : 'text-gray-3'
-                                    }`}
-                                >
-                                    <p className="font-apple text-base leading-normal font-medium">{team.name}</p>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
+            <DutyManagementMonthTeamHeader
+                year={state.year}
+                month={state.month}
+                prevLabel={t('page.duty.prevMonth')}
+                nextLabel={t('page.duty.nextMonth')}
+                shiftTeams={state.shiftTeams}
+                currentShiftTeamId={state.currentShiftTeamId}
+                onPrevMonth={handlers.goPrevMonth}
+                onNextMonth={handlers.goNextMonth}
+                onSelectShiftTeam={handlers.selectShiftTeam}
+                emptyLabel={t('page.duty.noTeamsLabel')}
+                formatMonthLabel={(year, month) => t('page.duty.monthHeader', {year, month})}
+            />
 
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white px-10 py-7">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-6">
                         <h1 className="text-gray-1 font-apple text-[40px] font-semibold">
-                            {state.currentShiftTeamName} {t('page.duty.confirmedShift')}
+                            {state.currentShiftTeamId
+                                ? `${state.currentShiftTeamName} ${t('page.duty.confirmedShift')}`
+                                : t('page.duty.title')}
                         </h1>
-                        <button
-                            type="button"
-                            className="flex h-11 items-center rounded-[10px] border border-main-1 px-5 font-apple text-2xl font-semibold text-main-1"
-                            onClick={handlers.goNextMonthMake}
-                        >
+                        <ManagementActionButton variant="outline" className="h-11 px-5 text-2xl" onClick={handlers.goNextMonthMake}>
                             {t('page.duty.createNextMonth')}
-                        </button>
+                        </ManagementActionButton>
                     </div>
 
                     <div className="ml-auto flex items-center gap-3">
                         {state.readonly ? (
                             <>
-                                <button
-                                    type="button"
-                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
-                                    onClick={handlers.postShift}
-                                >
+                                <ManagementActionButton variant="neutral" onClick={handlers.postShift} disabled={!state.shift}>
                                     {t('page.duty.publish')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
-                                    onClick={handlers.exportExcel}
-                                >
+                                </ManagementActionButton>
+                                <ManagementActionButton variant="neutral" onClick={handlers.exportExcel} disabled={!state.shift}>
                                     {t('page.duty.exportExcel')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
-                                    onClick={handlers.enableEdit}
-                                >
+                                </ManagementActionButton>
+                                <ManagementActionButton onClick={handlers.enableEdit} disabled={!state.shift}>
                                     {t('page.duty.editShift')}
-                                </button>
+                                </ManagementActionButton>
                             </>
                         ) : (
                             <>
-                                <button
-                                    type="button"
-                                    className="h-10 rounded-[10px] bg-gray-6 px-4 font-apple text-xl font-medium text-gray-3"
-                                    onClick={handlers.cancelEdit}
-                                >
+                                <ManagementActionButton variant="neutral" onClick={handlers.cancelEdit}>
                                     {t('page.duty.cancel')}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="h-10 rounded-[10px] bg-main-1 px-4 font-apple text-xl font-medium text-white"
-                                    onClick={handlers.saveEdit}
-                                >
-                                    {t('page.duty.save')}
-                                </button>
+                                </ManagementActionButton>
+                                <ManagementActionButton onClick={handlers.saveEdit}>{t('page.duty.save')}</ManagementActionButton>
                             </>
                         )}
                     </div>
                 </div>
 
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
-                    {state.status === 'pending' && (
-                        <PageState tone="loading" title={t('page.duty.loading')} description={t('page.state.loadingDescription')} />
+                    {showNoTeamsState && (
+                        <PageState
+                            tone="empty"
+                            title={t('page.duty.noTeamsTitle')}
+                            description={t('page.duty.noTeamsDescription')}
+                            className="py-0"
+                        />
                     )}
-                    {state.status === 'error' && (
+                    {showShiftTeamsErrorState && (
+                        <PageState
+                            tone="error"
+                            title={t('page.duty.teamsError')}
+                            description={t('page.state.errorDescription')}
+                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                            className="py-0"
+                        />
+                    )}
+                    {showLoadingState && (
+                        <PageState
+                            tone="loading"
+                            title={t('page.duty.loading')}
+                            description={t('page.state.loadingDescription')}
+                            className="py-0"
+                        />
+                    )}
+                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'error' && (
                         <PageState
                             tone="error"
                             title={t('page.duty.error')}
                             description={t('page.state.errorDescription')}
                             action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                            className="py-0"
                         />
+                    )}
+                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'success' && !state.shift && (
+                        <PageState
+                            tone="empty"
+                            title={t('page.duty.emptyTitle', {teamName: state.currentShiftTeamName, month: state.month})}
+                            description={t('page.duty.emptyDescription', {month: state.month})}
+                            className="py-0"
+                        >
+                            <div className="mt-1 flex justify-center">
+                                <ManagementActionButton variant="secondary" size="lg" onClick={handlers.goCurrentMonthMake}>
+                                    {t('page.duty.createCurrentMonth')}
+                                </ManagementActionButton>
+                            </div>
+                        </PageState>
                     )}
                     {state.status === 'success' && state.shift && (
                         <div

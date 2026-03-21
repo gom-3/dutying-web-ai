@@ -24,6 +24,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const setShiftStatus = useMakeShiftStore((s) => s.setShiftStatus);
     const setShiftExists = useMakeShiftStore((s) => s.setShiftExists);
     const setShiftTeams = useMakeShiftStore((s) => s.setShiftTeams);
+    const setShiftTeamsStatus = useMakeShiftStore((s) => s.setShiftTeamsStatus);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
@@ -62,6 +63,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
         const run = async () => {
             if (!wardId) {
+                setShiftTeamsStatus('idle');
                 setShiftStatus('idle');
                 setShiftExists(false);
                 setShiftTeams([]);
@@ -71,22 +73,28 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             }
 
             try {
+                setShiftTeamsStatus('pending');
+
                 const teams = await WardAPI.getShiftTeams(wardId);
 
                 if (cancelled) return;
 
                 setShiftTeams(teams);
+                setShiftTeamsStatus('success');
             } catch {
-                if (!cancelled) setShiftStatus('error');
+                if (!cancelled) {
+                    setShiftTeamsStatus('error');
+                    setShiftStatus('error');
+                }
             }
         };
 
-        run();
+        void run();
 
         return () => {
             cancelled = true;
         };
-    }, [reloadToken, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, wardId]);
+    }, [reloadToken, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setShiftTeamsStatus, wardId]);
 
     useEffect(() => {
         if (!wardId) return;
@@ -127,7 +135,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             }
         };
 
-        run();
+        void run();
 
         return () => {
             cancelled = true;
@@ -151,12 +159,11 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
                 editorRef.current.setDutyValidationInput({wardConstraint});
             } catch {
-                // constraint 로드는 실패해도 flow는 유지 (단, validator/constraints UI는 비활성화됨)
                 if (!cancelled && shiftStatus !== 'pending') editorRef.current.setDutyValidationInput(null);
             }
         };
 
-        run();
+        void run();
 
         return () => {
             cancelled = true;
@@ -164,16 +171,15 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     }, [currentShiftTeamId, reloadToken, shiftStatus, wardId]);
 
     useEffect(() => {
-        // MVP: 에디터 초기 doc은 데모 데이터로 시작 (이후 real shift->doc 빌드로 교체)
         const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1;
-        const daysInMonth = new Date(year, month, 0).getDate();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
         const columns = Array.from({length: daysInMonth}, (_, i) => {
             const d = String(i + 1).padStart(2, '0');
-            const m = String(month).padStart(2, '0');
+            const m = String(currentMonth).padStart(2, '0');
 
-            return `${year}-${m}-${d}`;
+            return `${currentYear}-${m}-${d}`;
         });
         const rows = Array.from({length: 8}, (_, idx) => ({
             workerId: String(idx + 1),
@@ -184,6 +190,5 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         for (const r of rows) workerMeta[r.workerId] = {name: `간호사 ${r.workerId}`};
 
         editorRef.current.init({columns, rows, workerMeta});
-        // validation input은 실제 wardConstraint 연결 시 editor.setDutyValidationInput(...)으로 주입
     }, [wardId]);
 }

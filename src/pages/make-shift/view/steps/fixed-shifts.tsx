@@ -15,6 +15,7 @@ import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-b
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import {ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 
@@ -79,22 +80,12 @@ export function FixedShifts() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        className="h-[42px] rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
-                        onClick={() => useCase.prev()}
-                        disabled={!canPrev}
-                        type="button"
-                    >
+                    <ManagementActionButton variant="neutral" size="sm" onClick={() => useCase.prev()} disabled={!canPrev}>
                         이전
-                    </button>
-                    <button
-                        className="h-[42px] rounded-[10px] bg-main-1 px-5 font-apple text-base font-semibold text-white disabled:opacity-50"
-                        onClick={() => useCase.next()}
-                        disabled={!canNext}
-                        type="button"
-                    >
+                    </ManagementActionButton>
+                    <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
                         다음
-                    </button>
+                    </ManagementActionButton>
                 </div>
             </div>
 
@@ -117,7 +108,7 @@ export function FixedShifts() {
                             editorRef.current?.focus();
                         }}
                     >
-                        <div className={`mx-auto flex w-fit min-w-418.5 flex-col`}>
+                        <div className="mx-auto flex w-fit min-w-418.5 flex-col">
                             <ShiftCalendar
                                 shift={dutyQuery.data}
                                 doc={editorDoc}

@@ -7,6 +7,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {DutyManagementStatusCard} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 
 type TLevel = 1 | 2 | 3 | 4 | 5;
@@ -136,6 +137,13 @@ export function Workers() {
                 <Droppable droppableId="workers">
                     {(provided) => (
                         <div ref={provided.innerRef} {...provided.droppableProps} className="mt-4 flex flex-col gap-3">
+                            {orderedWorkers.length === 0 && (
+                                <DutyManagementStatusCard
+                                    title="근무자로 확정된 인력이 없어요."
+                                    description="근무 투입이 설정된 인원을 먼저 확인해 주세요."
+                                    className="min-h-[220px] border-solid"
+                                />
+                            )}
                             {orderedWorkers.map((nurse, index) => {
                                 const level = getMockLevel(nurse.nurseId);
                                 const shiftCodes = buildShiftCodes(nurse);
