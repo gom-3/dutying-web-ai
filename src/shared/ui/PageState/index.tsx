@@ -1,5 +1,6 @@
 import {Inbox, RotateCcw, TriangleAlert} from 'lucide-react';
 import type {ButtonHTMLAttributes, ReactNode} from 'react';
+import Button from '@/shared/ui/Button';
 import {cn} from '@/shared/util/style';
 
 type TPageStateTone = 'loading' | 'error' | 'empty';
@@ -70,15 +71,16 @@ function PageState({tone, title, description, action, layout = 'panel', classNam
 
                 {action ? (
                     <div className="mt-6 flex justify-center">
-                        <button
-                            type="button"
+                        <Button
                             onClick={action.onClick}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-main-1 px-5 font-apple text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                            type="button"
+                            size="md"
+                            className="rounded-[14px] px-5 font-semibold"
                             disabled={isLoading}
                         >
                             <RotateCcw className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
                             {action.label}
-                        </button>
+                        </Button>
                     </div>
                 ) : null}
 

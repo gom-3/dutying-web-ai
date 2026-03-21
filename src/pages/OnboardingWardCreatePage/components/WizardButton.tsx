@@ -1,5 +1,5 @@
 import {type ButtonHTMLAttributes} from 'react';
-import {Button} from '@/shared/ui/primitives/button';
+import Button from '@/shared/ui/Button';
 import {cn} from '@/shared/util/style';
 
 type TVariant = 'solid' | 'secondary' | 'link';
@@ -12,8 +12,8 @@ function WizardButton({children, variant = 'solid', className, ...props}: IWizar
     return (
         <Button
             type="button"
-            variant={variant === 'solid' ? 'brand' : variant === 'secondary' ? 'soft' : 'link'}
-            size={variant === 'link' ? undefined : 'pill'}
+            variant={variant === 'solid' ? 'default' : variant === 'secondary' ? 'secondary' : 'link'}
+            size={variant === 'link' ? 'md' : 'pill'}
             className={cn(variant === 'link' && 'px-0 text-gray-3 underline underline-offset-2 hover:bg-transparent', className)}
             {...props}
         >
