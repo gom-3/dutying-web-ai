@@ -12,6 +12,9 @@ const createRequestShift = (): TRequestShift =>
                     shiftNurse: {
                         shiftNurseId: 11,
                         nurseId: 101,
+                        name: '간호사 1',
+                        carried: false,
+                        isWorker: true,
                         divisionNum: 1,
                         priority: 100,
                     },
@@ -22,6 +25,9 @@ const createRequestShift = (): TRequestShift =>
                     shiftNurse: {
                         shiftNurseId: 12,
                         nurseId: 102,
+                        name: '간호사 2',
+                        carried: false,
+                        isWorker: true,
                         divisionNum: 1,
                         priority: 200,
                     },
@@ -32,6 +38,9 @@ const createRequestShift = (): TRequestShift =>
                     shiftNurse: {
                         shiftNurseId: 13,
                         nurseId: 103,
+                        name: '간호사 3',
+                        carried: false,
+                        isWorker: true,
                         divisionNum: 1,
                         priority: 300,
                     },
@@ -44,6 +53,9 @@ const createRequestShift = (): TRequestShift =>
                     shiftNurse: {
                         shiftNurseId: 21,
                         nurseId: 201,
+                        name: '간호사 4',
+                        carried: false,
+                        isWorker: true,
                         divisionNum: 2,
                         priority: 400,
                     },
@@ -54,6 +66,9 @@ const createRequestShift = (): TRequestShift =>
                     shiftNurse: {
                         shiftNurseId: 22,
                         nurseId: 202,
+                        name: '간호사 5',
+                        carried: false,
+                        isWorker: true,
                         divisionNum: 2,
                         priority: 500,
                     },
@@ -62,7 +77,7 @@ const createRequestShift = (): TRequestShift =>
                 },
             ],
         ],
-    }) as TRequestShift;
+    }) as unknown as TRequestShift;
 
 describe('request-calendar utils', () => {
     it('같은 division 안에서 아래로 이동할 때 다음 우선순위를 기준으로 계산한다', () => {

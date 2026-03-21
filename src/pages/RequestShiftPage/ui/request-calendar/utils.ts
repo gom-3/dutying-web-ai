@@ -95,7 +95,11 @@ export const getMoveNurseOrderPayload = ({
     draggableId,
     requestShift,
     source,
-}: DropResult & {
+}: Pick<DropResult, 'destination' | 'draggableId' | 'source'> & {
+    type?: DropResult['type'];
+    reason?: DropResult['reason'];
+    mode?: DropResult['mode'];
+    combine?: DropResult['combine'];
     requestShift: TRequestShift;
 }): TMoveNurseOrderPayload | null => {
     if (!destination) return null;

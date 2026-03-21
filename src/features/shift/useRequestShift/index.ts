@@ -1,6 +1,6 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useRef} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
 import {type TRequestShift} from '@/entities/shift';
@@ -25,6 +25,7 @@ const useRequestShift = (activeEffect = false) => {
         wardShiftTypeMap,
         readonly,
         changeStatus,
+        updatingRequestId,
         setState,
     } = useRequestShiftStore();
     const {
@@ -39,6 +40,27 @@ const useRequestShift = (activeEffect = false) => {
     const shiftTeamQueryKey = shiftTeamsQueryOptions.queryKey;
     const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
     const dutyRequestQueryKey = requestListQueryOptions.queryKey;
+    const changeStatusResetTimerRef = useRef<number | null>(null);
+    const clearChangeStatusResetTimer = useCallback(() => {
+        if (changeStatusResetTimerRef.current !== null) {
+            window.clearTimeout(changeStatusResetTimerRef.current);
+            changeStatusResetTimerRef.current = null;
+        }
+    }, []);
+    const setChangeStatusWithAutoReset = useCallback(
+        (status: 'idle' | 'loading' | 'success' | 'error') => {
+            clearChangeStatusResetTimer();
+            setState('changeStatus', status);
+
+            if (status === 'loading' || status === 'idle') return;
+
+            changeStatusResetTimerRef.current = window.setTimeout(() => {
+                setState('changeStatus', 'idle');
+                changeStatusResetTimerRef.current = null;
+            }, 2400);
+        },
+        [clearChangeStatusResetTimer, setState],
+    );
     const {
         data: shiftTeams,
         status: shiftTeamsStatus,
@@ -101,7 +123,9 @@ const useRequestShift = (activeEffect = false) => {
         async (focus: TFocus, shiftTypeId: number | null) => {
             if (!wardId) return;
 
-            setState('changeStatus', 'loading');
+            if (useRequestShiftStore.getState().changeStatus === 'loading') return;
+
+            setChangeStatusWithAutoReset('loading');
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
             const {shiftNurseId, day} = focus;
@@ -140,22 +164,24 @@ const useRequestShift = (activeEffect = false) => {
 
             try {
                 await WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId);
-                setState('changeStatus', 'success');
-                setTimeout(() => setState('changeStatus', 'idle'), 0);
+                setChangeStatusWithAutoReset('success');
             } catch {
                 if (oldShift) {
                     queryClient.setQueryData(requestShiftQueryKey, oldShift);
                 }
 
-                setState('changeStatus', 'error');
-                setTimeout(() => setState('changeStatus', 'idle'), 0);
+                setChangeStatusWithAutoReset('error');
             }
         },
-        [queryClient, requestShiftQueryKey, setState, wardId, wardShiftTypeMap, year, month],
+        [queryClient, requestShiftQueryKey, setChangeStatusWithAutoReset, wardId, wardShiftTypeMap, year, month],
     );
     const acceptRequest = useCallback(
         async (reqShiftId: number, isAccepted: boolean | null) => {
             if (!wardId) return;
+
+            if (useRequestShiftStore.getState().updatingRequestId !== null) return;
+
+            setState('updatingRequestId', reqShiftId);
 
             try {
                 await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
@@ -163,9 +189,11 @@ const useRequestShift = (activeEffect = false) => {
                 await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
             } catch (error) {
                 showActionErrorFeedback(error, '신청 처리에 실패했습니다.');
+            } finally {
+                setState('updatingRequestId', null);
             }
         },
-        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, wardId],
+        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, wardId],
     );
     const changeMonth = (type: 'prev' | 'next') => {
         if (type === 'prev') {
@@ -340,6 +368,13 @@ const useRequestShift = (activeEffect = false) => {
         };
     }, [activeEffect, focus, requestShift, handleKeyDown]);
 
+    useEffect(
+        () => () => {
+            clearChangeStatusResetTimer();
+        },
+        [clearChangeStatusResetTimer],
+    );
+
     return {
         queryKey: {
             requestShiftQueryKey,
@@ -359,6 +394,7 @@ const useRequestShift = (activeEffect = false) => {
             dutyRequestStatus,
             wardShiftTypeMap,
             readonly,
+            updatingRequestId,
             currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
         },

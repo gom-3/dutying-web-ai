@@ -13,6 +13,7 @@ interface IRequestDutyRequestPanelProps {
     wardShiftTypeMap: Map<number, TWardShiftType>;
     unresolvedRequestCount: number;
     readonly: boolean;
+    updatingRequestId: number | null;
     shiftNurseIdByNurseId: Map<number, number>;
     changeFocus: (focus: TFocus | null) => void;
     acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => void;
@@ -26,6 +27,7 @@ export default function RequestDutyRequestPanel({
     wardShiftTypeMap,
     unresolvedRequestCount,
     readonly,
+    updatingRequestId,
     shiftNurseIdByNurseId,
     changeFocus,
     acceptRequest,
@@ -68,6 +70,7 @@ export default function RequestDutyRequestPanel({
                     <div className="space-y-3">
                         {dutyRequestList.map((dutyRequest) => {
                             const requestFocus = getRequestFocus(dutyRequest, shiftNurseIdByNurseId);
+                            const isUpdating = updatingRequestId === dutyRequest.wardReqShiftId;
 
                             return (
                                 <div key={dutyRequest.wardReqShiftId} className="rounded-[16px] border border-gray-6 px-4 py-3">
@@ -91,7 +94,7 @@ export default function RequestDutyRequestPanel({
                                             <div className="mt-2 flex items-center gap-2">
                                                 <ShiftBadge shiftType={wardShiftTypeMap.get(dutyRequest.wardShiftTypeId)} />
                                                 <p className="font-apple text-sm font-medium text-gray-4">
-                                                    {getDutyRequestStatusLabel(dutyRequest.isAccepted)}
+                                                    {isUpdating ? '처리 중...' : getDutyRequestStatusLabel(dutyRequest.isAccepted)}
                                                 </p>
                                             </div>
                                         </div>
@@ -102,8 +105,10 @@ export default function RequestDutyRequestPanel({
                                             type="button"
                                             className={twMerge(
                                                 'flex h-9 flex-1 items-center justify-center rounded-[10px] font-apple text-sm font-semibold text-gray-3 transition-colors',
+                                                isUpdating && 'cursor-wait opacity-60',
                                                 dutyRequest.isAccepted === true && 'bg-main-1 text-white',
                                             )}
+                                            disabled={isUpdating}
                                             onClick={() => {
                                                 acceptRequest(dutyRequest.wardReqShiftId, true);
                                                 onAcceptAnalytics(true);
@@ -115,8 +120,10 @@ export default function RequestDutyRequestPanel({
                                             type="button"
                                             className={twMerge(
                                                 'flex h-9 flex-1 items-center justify-center rounded-[10px] font-apple text-sm font-semibold text-gray-3 transition-colors',
+                                                isUpdating && 'cursor-wait opacity-60',
                                                 dutyRequest.isAccepted === false && 'bg-sub-2 text-white',
                                             )}
+                                            disabled={isUpdating}
                                             onClick={() => {
                                                 acceptRequest(dutyRequest.wardReqShiftId, false);
                                                 onAcceptAnalytics(false);
