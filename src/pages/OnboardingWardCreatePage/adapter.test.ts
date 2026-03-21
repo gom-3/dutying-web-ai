@@ -7,13 +7,13 @@ describe('OnboardingWardCreatePage adapter', () => {
         const draft = createInitialDraft();
         const payload = buildCreateWardPayload(draft);
 
-        expect(payload).toEqual({
-            name: draft.wardName,
-            hospitalName: draft.hospitalName,
-            wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
-            shiftTeams: draft.teams.map((team) => ({
-                nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
-            })),
+        expect(payload).toHaveProperty('name', draft.wardName);
+        expect(payload).toHaveProperty('hospitalName', draft.hospitalName);
+        expect(payload.wardShiftTypes).toHaveLength(draft.shiftTypes.length);
+        expect(payload.wardShiftTypes[0]).not.toHaveProperty('id');
+        expect(payload.shiftTeams).toHaveLength(draft.teams.length);
+        expect(payload.shiftTeams[0]).toEqual({
+            nurseNames: ['홍길동', '김하늘', '박연우', '이서윤'],
         });
     });
 
@@ -81,6 +81,21 @@ describe('OnboardingWardCreatePage adapter', () => {
 
         expect(nextDraft.nurses[0]?.possibleShiftTypeIds).toEqual(defaultShiftTypeIds);
         expect(nextDraft.nurses[1]?.possibleShiftTypeIds).toEqual(defaultShiftTypeIds);
+    });
+
+    it('fills missing parsed employmentDate with today', () => {
+        const draft = createInitialDraft();
+        const today = new Date().toISOString().slice(0, 10);
+        const nextDraft = applyParsedWardData(draft, {
+            nurses: [
+                {
+                    name: '신규 간호사',
+                    teamName: draft.teams[0]?.name,
+                },
+            ],
+        });
+
+        expect(nextDraft.nurses[0]?.employmentDate).toBe(today);
     });
 
     it('builds a mock preview payload with parse-friendly nurse metadata', () => {

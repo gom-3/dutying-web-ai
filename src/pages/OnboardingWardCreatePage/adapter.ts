@@ -55,6 +55,16 @@ const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = 
     N: {startTime: '23:00', endTime: '07:00'},
 };
 const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+const requireFirstTeamId = (teams: TOnboardingTeamDraft[]) => {
+    const firstTeamId = teams[0]?.id;
+
+    if (!firstTeamId) {
+        throw new Error('Onboarding draft invariant violated: empty-team');
+    }
+
+    return firstTeamId;
+};
 const inferClassificationFromShortName = (shortName: string, isOff: boolean): TOnboardingWardShiftType['classification'] => {
     if (isOff) return 'OFF';
 
@@ -129,7 +139,7 @@ const remapTeamIds = (
 ): TOnboardingNurseDraft[] => {
     const prevTeamNameById = new Map(prevTeams.map((team) => [team.id, team.name]));
     const nextTeamIdByName = new Map(nextTeams.map((team) => [team.name, team.id]));
-    const fallbackTeamId = nextTeams[0]?.id ?? '';
+    const fallbackTeamId = requireFirstTeamId(nextTeams);
 
     return nurses.map((nurse) => ({
         ...nurse,
@@ -161,7 +171,7 @@ const buildParsedNurses = (
     const teamIdByName = new Map(teams.map((team) => [team.name, team.id]));
     const shiftIdByShortName = new Map(shiftTypes.map((shiftType) => [shiftType.shortName, shiftType.id]));
     const defaultShiftTypeIds = shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
-    const fallbackTeamId = teams[0]?.id ?? '';
+    const fallbackTeamId = requireFirstTeamId(teams);
 
     return parsedNurses.map((nurse, index) => {
         const possibleShiftTypeIds =
@@ -175,7 +185,7 @@ const buildParsedNurses = (
             name: nurse.name ?? '',
             memo: nurse.memo ?? '',
             isWorker: nurse.isWorker ?? true,
-            employmentDate: nurse.employmentDate ?? '2024-01-01',
+            employmentDate: nurse.employmentDate ?? getTodayDate(),
             possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : defaultShiftTypeIds,
             level: nurse.level ?? null,
         };
