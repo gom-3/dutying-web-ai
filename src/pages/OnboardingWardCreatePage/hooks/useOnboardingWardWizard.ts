@@ -2,7 +2,13 @@ import {type DropResult} from '@hello-pangea/dnd';
 import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/auth/useRegister';
-import {applyParsedWardData} from '../adapter';
+import {FileAPI} from '@/shared/api';
+import {
+    applyParsedWardData,
+    buildOnboardingParseDraftInjection,
+    getOnboardingUploadFailureMessage,
+    isSupportedOnboardingUploadFile,
+} from '../adapter';
 import {
     addNurseDraft,
     addShiftTypeDraft,
@@ -28,6 +34,7 @@ import type {TSortMode} from '../types';
 const MAX_STEP = 4;
 
 type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
+type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 
 function useOnboardingWardWizard() {
     const {
@@ -39,6 +46,9 @@ function useOnboardingWardWizard() {
     const [showSkillModal, setShowSkillModal] = useState(false);
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
+    const [uploadError, setUploadError] = useState<string | null>(null);
+    const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
     const onboardingWardCreateExecutor = useMemo(() => createOnboardingWardCreateExecutor(createWard), [createWard]);
 
     useEffect(() => {
@@ -83,8 +93,43 @@ function useOnboardingWardWizard() {
 
         setDraft((prev) => reorderNursesWithinTeam(prev, activeTeamId, {destination, source}));
     };
-    const applyUploadedFile = (fileName: string) => {
-        setDraft((prev) => applyParsedWardData(prev, {fileName}));
+    const applyUploadedFile = async (file: File) => {
+        if (!isSupportedOnboardingUploadFile(file.name)) {
+            const message = '엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있어요.';
+
+            setUploadStatus('error');
+            setUploadError(message);
+            setUploadWarnings([]);
+            toast.error(message);
+
+            return;
+        }
+
+        setUploadStatus('uploading');
+        setUploadError(null);
+        setUploadWarnings([]);
+
+        try {
+            const response = await FileAPI.parseOnboardingWardExcel(file);
+            const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name);
+
+            setDraft((prev) => applyParsedWardData(prev, parsedWardData));
+            setUploadWarnings(warnings);
+            setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
+
+            if (warnings.length > 0) {
+                toast.error('일부 데이터만 반영했어요. 누락된 항목을 확인해 주세요.');
+            } else {
+                toast.success('엑셀 데이터를 불러왔어요.');
+            }
+        } catch (error) {
+            const message = getOnboardingUploadFailureMessage(error);
+
+            setUploadStatus('error');
+            setUploadError(message);
+            setUploadWarnings([]);
+            toast.error(message);
+        }
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
@@ -138,6 +183,9 @@ function useOnboardingWardWizard() {
         updateNurse,
         handleNurseDragEnd,
         applyUploadedFile,
+        uploadStatus,
+        uploadError,
+        uploadWarnings,
         saveSkillConfig,
         complete,
         submissionStatus,
