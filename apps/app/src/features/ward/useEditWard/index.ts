@@ -67,12 +67,12 @@ const useEditWard = () => {
         },
         [queryClient, wardId, wardQueryKey],
     );
-    const approveWatingNurses = useCallback(
+    const approveWaitingNurses = useCallback(
         async (waitingNurseId: number, shiftTeamId: number) => {
             if (!wardId) return;
 
             try {
-                await WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId);
+                await WardAPI.approveWaitingNurses(wardId, waitingNurseId, shiftTeamId);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
@@ -87,12 +87,12 @@ const useEditWard = () => {
         },
         [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
-    const connectWatingNurses = useCallback(
+    const connectWaitingNurses = useCallback(
         async (waitingNurseId: number, targetNurseId: number) => {
             if (!wardId) return;
 
             try {
-                await WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId);
+                await WardAPI.connectWaitingNurses(wardId, waitingNurseId, targetNurseId);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
@@ -111,7 +111,7 @@ const useEditWard = () => {
         async (nurseId: number) => {
             if (!wardId) return;
 
-            await WardAPI.deleteWatingNurses(wardId, nurseId);
+            await WardAPI.deleteWaitingNurses(wardId, nurseId);
             await queryClient.invalidateQueries({queryKey: wardQueryKey});
             await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
         },
@@ -132,8 +132,8 @@ const useEditWard = () => {
             removeShiftType,
             editShiftType,
             addShiftType,
-            approveWatingNurses,
-            connectWatingNurses,
+            approveWaitingNurses,
+            connectWaitingNurses,
             cancelWaiting,
         },
     };

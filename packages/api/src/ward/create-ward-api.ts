@@ -24,6 +24,12 @@ const toYearMonthQuery = (year: number, month: number) =>
         month: String(month),
     }).toString();
 
+const toPostShiftQuery = (year: number, month: number) =>
+    new URLSearchParams({
+        year: String(year),
+        month: month.toString().padStart(2, '0'),
+    }).toString();
+
 const toIsoDate = (year: number, month: number, day: number) =>
     `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
@@ -35,15 +41,15 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
         (await client.get<TWardConstraintResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data,
     updateWardConstraint: async (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) =>
         (await client.patch<TWardConstraintResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data,
-    getWardByCode: async (code: string) => (await client.get<TWardResponse>(`/wards/search?code=${code}`)).data,
-    getWatingNurses: async (wardId: number) =>
+    getWardByCode: async (code: string) => (await client.get<TWardResponse>(`/wards/search?${new URLSearchParams({code}).toString()}`)).data,
+    getWaitingNurses: async (wardId: number) =>
         (await client.get<{nurses: TWaitingNurseResponse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses,
-    addMeToWatingNurses: async (wardId: number) => (await client.post<void>(`/wards/${wardId}/waiting-nurses`)).data,
-    connectWatingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
+    addMeToWaitingNurses: async (wardId: number) => (await client.post<void>(`/wards/${wardId}/waiting-nurses`)).data,
+    connectWaitingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
         (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`)).data,
-    approveWatingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
+    approveWaitingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
         (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
-    deleteWatingNurses: async (wardId: number, nurseId: number) =>
+    deleteWaitingNurses: async (wardId: number, nurseId: number) =>
         (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
     quitWard: async (wardId: number) => (await client.delete<void>(`/wards/${wardId}/quit`)).data,
     getReqShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
@@ -88,7 +94,7 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
             })
         ).data,
     postShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.post<void>(`/wards/${wardId}/shift-teams/${shiftTeamId}/post?${toYearMonthQuery(year, month)}`)).data,
+        (await client.post<void>(`/wards/${wardId}/shift-teams/${shiftTeamId}/post?${toPostShiftQuery(year, month)}`)).data,
     getShiftTeamNurses: async (wardId: number, shiftTeamId: number) =>
         (await client.get<{nurses: TShiftTeamResponse['nurses']}>(`/wards/${wardId}/shift-teams/${shiftTeamId}/nurses`)).data.nurses,
     addNurseIntoShiftTeam: async (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO) =>
@@ -109,4 +115,13 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
     deleteShiftType: async (wardId: number, shiftTypeId: number) => (await client.delete<void>(`/wards/${wardId}/shift-types/${shiftTypeId}`)).data,
     updateShiftType: async (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
         (await client.put<TWardShiftTypeResponse>(`/wards/${wardId}/shift-types/${shiftTypeId}`, createShiftTypeDTO)).data,
+    getWatingNurses: async (wardId: number) =>
+        (await client.get<{nurses: TWaitingNurseResponse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses,
+    addMeToWatingNurses: async (wardId: number) => (await client.post<void>(`/wards/${wardId}/waiting-nurses`)).data,
+    connectWatingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
+        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`)).data,
+    approveWatingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
+        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
+    deleteWatingNurses: async (wardId: number, nurseId: number) =>
+        (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
 });

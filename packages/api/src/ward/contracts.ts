@@ -28,14 +28,14 @@ export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getWardByCode: (code: string) => Promise<TWardResponse>;
-    getWatingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;
+    getWaitingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;
     createWard: (createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
-    addMeToWatingNurses: (wardId: number) => Promise<void>;
-    connectWatingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
-    approveWatingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
+    addMeToWaitingNurses: (wardId: number) => Promise<void>;
+    connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
+    approveWaitingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
     editWard: (wardId: number, ward: TEditWardDTO) => Promise<TWardResponse>;
     updateWardConstraint: (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) => Promise<TWardConstraintResponse>;
-    deleteWatingNurses: (wardId: number, nurseId: number) => Promise<void>;
+    deleteWaitingNurses: (wardId: number, nurseId: number) => Promise<void>;
     quitWard: (wardId: number) => Promise<void>;
     getReqShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TRequestShiftResponse>;
     getShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftResponse>;
@@ -71,6 +71,17 @@ export interface IWardAPI {
     createShiftType: (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;
     updateShiftType: (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;
     deleteShiftType: (wardId: number, shiftTypeId: number) => Promise<void>;
+
+    /** @deprecated use getWaitingNurses */
+    getWatingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;
+    /** @deprecated use addMeToWaitingNurses */
+    addMeToWatingNurses: (wardId: number) => Promise<void>;
+    /** @deprecated use connectWaitingNurses */
+    connectWatingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
+    /** @deprecated use approveWaitingNurses */
+    approveWatingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
+    /** @deprecated use deleteWaitingNurses */
+    deleteWatingNurses: (wardId: number, nurseId: number) => Promise<void>;
 }
 
 export type TCreateWardShiftTypeDTO = {

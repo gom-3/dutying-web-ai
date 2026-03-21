@@ -7,7 +7,7 @@ export const createNurseApi = (client: IApiClient): INurseAPI => ({
             await client.post<TNurseResponse>(`/nurses?accountId=${accountId}`, {
                 ...createNurse,
                 phoneNum: createNurse.phoneNum.replace(/-+/g, ''),
-                employmentDate: createNurse.employmentDate.replace(/-/g, ''),
+                employmentDate: createNurse.employmentDate.replace(/-+/g, ''),
             })
         ).data,
     getNurse: async (nurseId: number) => (await client.get<TNurseResponse>(`/nurses/${nurseId}`)).data,
@@ -48,7 +48,7 @@ export const createNurseApi = (client: IApiClient): INurseAPI => ({
         (await client.patch<void>(`/nurses/${nurseId}/shift-types/${nurseShiftTypeId}`, change)).data,
     updateNurseCarry: async (shiftNurseId: number, value: number) =>
         (
-            await client.patch<null>(`/shift-nurses/${shiftNurseId}/carried`, {
+            await client.patch<void>(`/shift-nurses/${shiftNurseId}/carried`, {
                 value,
             })
         ).data,

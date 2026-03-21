@@ -19,7 +19,7 @@ export interface INurseAPI {
     ) => Promise<void>;
     updateShiftTeamDivision: (shiftTeamId: number, prevPriority: number, changeValue: number, patchYearMonth: string) => Promise<void>;
     updateNurseShiftType: (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) => Promise<void>;
-    updateNurseCarry: (shiftNurseId: number, value: number) => Promise<null>;
+    updateNurseCarry: (shiftNurseId: number, value: number) => Promise<void>;
     unConnectNurse: (nurseId: number) => Promise<void>;
 }
 
