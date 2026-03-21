@@ -1,4 +1,5 @@
 import {v4 as uuidv4} from 'uuid';
+import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import {
     createEmptyShiftType,
@@ -49,13 +50,24 @@ export type TOnboardingParsedWardData = {
     skillLevelConfig?: Partial<TSkillLevelConfig>;
 };
 
+export type TOnboardingParseDraftInjection = {
+    parsedWardData: TOnboardingParsedWardData;
+    warnings: string[];
+};
+
 const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = {
     D: {startTime: '07:00', endTime: '15:00'},
     E: {startTime: '15:00', endTime: '23:00'},
     N: {startTime: '23:00', endTime: '07:00'},
 };
+const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls', 'csv'] as const;
 const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
+const trimToUndefined = (value?: string | null) => {
+    const trimmed = value?.trim();
+
+    return trimmed ?? undefined;
+};
 const requireFirstTeamId = (teams: TOnboardingTeamDraft[]) => {
     const firstTeamId = teams[0]?.id;
 
@@ -191,6 +203,98 @@ const buildParsedNurses = (
         };
     });
 };
+const collectWarnings = (response: TOnboardingWardParseApiResponse) =>
+    [
+        ...(response.warnings ?? []),
+        ...(response.failedSheets ?? []).map((sheetName) => `시트 "${sheetName}" 데이터를 불러오지 못했어요.`),
+        ...(response.failedRows ?? []).map((rowLabel) => `일부 행(${rowLabel})을 해석하지 못해 제외했어요.`),
+    ].filter((warning): warning is string => Boolean(warning?.trim()));
+const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): TOnboardingParsedShiftType[] | undefined => {
+    const rawShiftTypes = response.shiftTypes ?? response.wardShiftTypes;
+
+    if (!rawShiftTypes) {
+        return undefined;
+    }
+
+    return rawShiftTypes
+        .map((shiftType) => ({
+            name: trimToUndefined(shiftType.name),
+            shortName: trimToUndefined(shiftType.shortName)?.toUpperCase(),
+            startTime: trimToUndefined(shiftType.startTime),
+            endTime: trimToUndefined(shiftType.endTime),
+            color: trimToUndefined(shiftType.color),
+            isDefault: shiftType.isDefault ?? undefined,
+            isOff: shiftType.isOff ?? undefined,
+            classification: shiftType.classification ?? undefined,
+        }))
+        .filter((shiftType) => Boolean(shiftType.name ?? shiftType.shortName));
+};
+const normalizeParsedTeams = (response: TOnboardingWardParseApiResponse): TOnboardingParsedTeam[] | undefined => {
+    const rawTeams = response.teams ?? response.shiftTeams;
+
+    if (!rawTeams) {
+        return undefined;
+    }
+
+    return rawTeams.map((team) => ({name: trimToUndefined(team.name) ?? ''})).filter((team) => Boolean(team.name));
+};
+const normalizeParsedNurses = (response: TOnboardingWardParseApiResponse): TOnboardingParsedNurse[] | undefined => {
+    if (!response.nurses) {
+        return undefined;
+    }
+
+    return response.nurses
+        .map((nurse) => ({
+            name: trimToUndefined(nurse.name),
+            memo: nurse.memo ?? undefined,
+            isWorker: nurse.isWorker ?? undefined,
+            employmentDate: trimToUndefined(nurse.employmentDate),
+            level: nurse.level ?? undefined,
+            teamName: trimToUndefined(nurse.teamName),
+            possibleShiftShortNames:
+                nurse.possibleShiftShortNames
+                    ?.map((shortName) => trimToUndefined(shortName)?.toUpperCase())
+                    .filter((shortName): shortName is string => Boolean(shortName)) ?? undefined,
+        }))
+        .filter((nurse) => Boolean(nurse.name ?? nurse.teamName));
+};
+
+export const getOnboardingUploadExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() ?? '';
+
+export const isSupportedOnboardingUploadFile = (fileName: string) =>
+    SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS.includes(
+        getOnboardingUploadExtension(fileName) as (typeof SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS)[number],
+    );
+
+export const getOnboardingUploadFailureMessage = (error: unknown) => {
+    const defaultMessage = '파일을 해석하지 못했어요. 엑셀 양식을 확인한 뒤 다시 업로드해 주세요.';
+    const message = error instanceof Error ? error.message.trim() : '';
+
+    if (!message) {
+        return defaultMessage;
+    }
+
+    if (message.includes('Network Error')) {
+        return '파싱 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
+    }
+
+    return message;
+};
+
+export const buildOnboardingParseDraftInjection = (
+    response: TOnboardingWardParseApiResponse,
+    uploadedFileName: string,
+): TOnboardingParseDraftInjection => ({
+    parsedWardData: {
+        fileName: trimToUndefined(response.fileName) ?? uploadedFileName,
+        wardName: trimToUndefined(response.wardName),
+        hospitalName: trimToUndefined(response.hospitalName),
+        shiftTypes: normalizeParsedShiftTypes(response),
+        teams: normalizeParsedTeams(response),
+        nurses: normalizeParsedNurses(response),
+    },
+    warnings: collectWarnings(response),
+});
 
 export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboardingParsedWardData): TOnboardingWardDraft => {
     const nextShiftTypes = parsed.shiftTypes

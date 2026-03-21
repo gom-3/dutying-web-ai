@@ -32,6 +32,9 @@ function OnboardingWardCreatePage() {
         updateNurse,
         handleNurseDragEnd,
         applyUploadedFile,
+        uploadStatus,
+        uploadError,
+        uploadWarnings,
         saveSkillConfig,
         complete,
         canGoNext,
@@ -44,7 +47,15 @@ function OnboardingWardCreatePage() {
     const stepContent = (() => {
         switch (draft.currentStep) {
             case 1:
-                return <UploadStep draft={draft} onUpload={(file) => applyUploadedFile(file.name)} />;
+                return (
+                    <UploadStep
+                        draft={draft}
+                        onUpload={(file) => void applyUploadedFile(file)}
+                        isUploading={uploadStatus === 'uploading'}
+                        uploadError={uploadError}
+                        uploadWarnings={uploadWarnings}
+                    />
+                );
             case 2:
                 return (
                     <ShiftTypeStep

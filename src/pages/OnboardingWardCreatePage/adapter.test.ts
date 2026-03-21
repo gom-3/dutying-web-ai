@@ -1,5 +1,13 @@
 import {describe, expect, it} from 'vitest';
-import {applyParsedWardData, buildCreateWardPayload, buildMockCreateWardPayload} from './adapter';
+import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
+import {
+    applyParsedWardData,
+    buildCreateWardPayload,
+    buildMockCreateWardPayload,
+    buildOnboardingParseDraftInjection,
+    getOnboardingUploadFailureMessage,
+    isSupportedOnboardingUploadFile,
+} from './adapter';
 import {createInitialDraft, saveSkillLevelConfig} from './model';
 
 describe('OnboardingWardCreatePage adapter', () => {
@@ -111,5 +119,48 @@ describe('OnboardingWardCreatePage adapter', () => {
             teamName: draft.teams[0]?.name,
         });
         expect(payload.skillLevelConfig.palette).toHaveLength(draft.skillLevelConfig.levelCount);
+    });
+
+    it('normalizes parse api responses into draft injection data', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            wardName: '중환자실',
+            hospitalName: '듀팅병원',
+            wardShiftTypes: [
+                {name: '데이', shortName: 'd'},
+                {name: '오프', shortName: 'o', isOff: true},
+            ],
+            shiftTeams: [{name: 'A팀'}],
+            nurses: [
+                {
+                    name: '신규 간호사',
+                    teamName: 'A팀',
+                    possibleShiftShortNames: ['d', null],
+                },
+            ],
+            warnings: ['근속 연수가 없는 간호사는 오늘 날짜로 반영되었어요.'],
+        };
+        const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+
+        expect(parsedWardData).toMatchObject({
+            fileName: 'ward.xlsx',
+            wardName: '중환자실',
+            hospitalName: '듀팅병원',
+        });
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
+        expect(parsedWardData.teams).toEqual([{name: 'A팀'}]);
+        expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D']);
+        expect(warnings).toEqual(['근속 연수가 없는 간호사는 오늘 날짜로 반영되었어요.']);
+    });
+
+    it('detects supported upload file extensions', () => {
+        expect(isSupportedOnboardingUploadFile('march-duty.xlsx')).toBe(true);
+        expect(isSupportedOnboardingUploadFile('march-duty.csv')).toBe(true);
+        expect(isSupportedOnboardingUploadFile('march-duty.pdf')).toBe(false);
+    });
+
+    it('maps network upload failures to a user guidance message', () => {
+        expect(getOnboardingUploadFailureMessage(new Error('Network Error'))).toBe(
+            '파싱 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.',
+        );
     });
 });

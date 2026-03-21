@@ -1,15 +1,19 @@
 import {screen, waitFor, within} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type * as SharedApiModule from '@/shared/api';
 import {render, userEvent} from '@/shared/util/test-utils';
 import OnboardingWardCreatePage from './index';
 
 const toastSuccess = vi.fn();
+const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockNavigate = vi.fn();
+const mockParseOnboardingWardExcel = vi.fn();
 
 vi.mock('react-hot-toast', () => ({
     default: {
         success: (...args: unknown[]) => toastSuccess(...args),
+        error: (...args: unknown[]) => toastError(...args),
     },
 }));
 
@@ -30,6 +34,18 @@ vi.mock('@/features/auth/useRegister', () => ({
     }),
 }));
 
+vi.mock('@/shared/api', async () => {
+    const actual = (await vi.importActual('@/shared/api')) as typeof SharedApiModule;
+
+    return {
+        ...actual,
+        FileAPI: {
+            ...actual.FileAPI,
+            parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+        },
+    };
+});
+
 const prepareValidFinalStep = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.click(screen.getByRole('button', {name: '건너뛰기'}));
     await user.click(screen.getByRole('button', {name: '다음'}));
@@ -47,24 +63,89 @@ describe('OnboardingWardCreatePage', () => {
         mockCreateWard.mockReset();
         mockNavigate.mockReset();
         toastSuccess.mockReset();
+        toastError.mockReset();
+        mockParseOnboardingWardExcel.mockReset();
     });
 
-    it('uploads a mock file and moves through onboarding steps', async () => {
+    it('uploads a file, injects parsed data, and moves through onboarding steps', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            wardName: '중환자실',
+            hospitalName: '듀팅병원',
+            shiftTypes: [
+                {name: '데이', shortName: 'D'},
+                {name: '오프', shortName: 'O', isOff: true},
+            ],
+            teams: [{name: 'A팀'}],
+            nurses: [
+                {
+                    name: '신규 간호사',
+                    teamName: 'A팀',
+                    possibleShiftShortNames: ['D'],
+                    employmentDate: '2025-01-01',
+                },
+            ],
+        });
+
         await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
-        expect(screen.getByText('업로드됨: march-duty.xlsx')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText('업로드됨: march-duty.xlsx')).toBeInTheDocument();
+        });
+
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalledTimes(1);
+        expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         expect(screen.getByText('근무 유형')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('데이')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('오프')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
+        expect(screen.getByDisplayValue('신규 간호사')).toBeInTheDocument();
+    });
+
+    it('shows upload warnings when the parse api partially succeeds', async () => {
+        const user = userEvent.setup();
+        const {container} = render(<OnboardingWardCreatePage />);
+        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurses: [{name: '신규 간호사', teamName: 'A팀'}],
+            warnings: ['2행 데이터를 해석하지 못했어요.'],
+        });
+
+        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('upload-warning')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('2행 데이터를 해석하지 못했어요.')).toBeInTheDocument();
+        expect(toastError).toHaveBeenCalledWith('일부 데이터만 반영했어요. 누락된 항목을 확인해 주세요.');
+    });
+
+    it('shows upload error guidance when the parse api fails', async () => {
+        const user = userEvent.setup();
+        const {container} = render(<OnboardingWardCreatePage />);
+        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+        mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
+
+        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('upload-error')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('업로드한 파일 형식이 올바르지 않습니다.')).toBeInTheDocument();
+        expect(toastError).toHaveBeenCalledWith('업로드한 파일 형식이 올바르지 않습니다.');
     });
 
     it('disables next in step 2 when a shift type is invalid', async () => {
