@@ -2,82 +2,81 @@ import {describe, expect, it} from 'vitest';
 import {type TRequestShift} from '@/entities/shift';
 import {getMoveNurseOrderPayload, getRequestFocus} from './utils';
 
-const createRequestShift = (): TRequestShift =>
-    ({
-        days: [],
-        wardShiftTypes: [],
-        divisionShiftNurses: [
-            [
-                {
-                    shiftNurse: {
-                        shiftNurseId: 11,
-                        nurseId: 101,
-                        name: '간호사 1',
-                        carried: false,
-                        isWorker: true,
-                        divisionNum: 1,
-                        priority: 100,
-                    },
-                    carry: 0,
-                    wardReqShiftList: [],
+const createRequestShift = (): TRequestShift => ({
+    days: [],
+    wardShiftTypes: [],
+    divisionShiftNurses: [
+        [
+            {
+                shiftNurse: {
+                    shiftNurseId: 11,
+                    nurseId: 101,
+                    name: '간호사 1',
+                    carried: 0,
+                    isWorker: true,
+                    divisionNum: 1,
+                    priority: 100,
                 },
-                {
-                    shiftNurse: {
-                        shiftNurseId: 12,
-                        nurseId: 102,
-                        name: '간호사 2',
-                        carried: false,
-                        isWorker: true,
-                        divisionNum: 1,
-                        priority: 200,
-                    },
-                    carry: 0,
-                    wardReqShiftList: [],
+                carry: 0,
+                wardReqShiftList: [],
+            },
+            {
+                shiftNurse: {
+                    shiftNurseId: 12,
+                    nurseId: 102,
+                    name: '간호사 2',
+                    carried: 0,
+                    isWorker: true,
+                    divisionNum: 1,
+                    priority: 200,
                 },
-                {
-                    shiftNurse: {
-                        shiftNurseId: 13,
-                        nurseId: 103,
-                        name: '간호사 3',
-                        carried: false,
-                        isWorker: true,
-                        divisionNum: 1,
-                        priority: 300,
-                    },
-                    carry: 0,
-                    wardReqShiftList: [],
+                carry: 0,
+                wardReqShiftList: [],
+            },
+            {
+                shiftNurse: {
+                    shiftNurseId: 13,
+                    nurseId: 103,
+                    name: '간호사 3',
+                    carried: 0,
+                    isWorker: true,
+                    divisionNum: 1,
+                    priority: 300,
                 },
-            ],
-            [
-                {
-                    shiftNurse: {
-                        shiftNurseId: 21,
-                        nurseId: 201,
-                        name: '간호사 4',
-                        carried: false,
-                        isWorker: true,
-                        divisionNum: 2,
-                        priority: 400,
-                    },
-                    carry: 0,
-                    wardReqShiftList: [],
-                },
-                {
-                    shiftNurse: {
-                        shiftNurseId: 22,
-                        nurseId: 202,
-                        name: '간호사 5',
-                        carried: false,
-                        isWorker: true,
-                        divisionNum: 2,
-                        priority: 500,
-                    },
-                    carry: 0,
-                    wardReqShiftList: [],
-                },
-            ],
+                carry: 0,
+                wardReqShiftList: [],
+            },
         ],
-    }) as unknown as TRequestShift;
+        [
+            {
+                shiftNurse: {
+                    shiftNurseId: 21,
+                    nurseId: 201,
+                    name: '간호사 4',
+                    carried: 0,
+                    isWorker: true,
+                    divisionNum: 2,
+                    priority: 400,
+                },
+                carry: 0,
+                wardReqShiftList: [],
+            },
+            {
+                shiftNurse: {
+                    shiftNurseId: 22,
+                    nurseId: 202,
+                    name: '간호사 5',
+                    carried: 0,
+                    isWorker: true,
+                    divisionNum: 2,
+                    priority: 500,
+                },
+                carry: 0,
+                wardReqShiftList: [],
+            },
+        ],
+    ],
+});
 
 describe('request-calendar utils', () => {
     it('같은 division 안에서 아래로 이동할 때 다음 우선순위를 기준으로 계산한다', () => {

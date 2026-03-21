@@ -1,3 +1,4 @@
+import {TriangleAlert} from 'lucide-react';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NextIcon, PenIcon, PrevIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
@@ -86,7 +87,13 @@ function Toolbar() {
                         )}
                         aria-live="polite"
                     >
-                        {isSaving ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
+                        {changeStatus === 'loading' ? (
+                            <SavingIcon className="h-5 w-5" />
+                        ) : changeStatus === 'error' ? (
+                            <TriangleAlert className="h-5 w-5" strokeWidth={2.2} />
+                        ) : (
+                            <SaveCompleteIcon className="h-5 w-5" />
+                        )}
                         {SAVE_STATUS_LABEL[changeStatus]}
                     </div>
                 ) : null}

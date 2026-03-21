@@ -34,6 +34,8 @@ export default function RequestDutyRequestPanel({
     retry,
     onAcceptAnalytics,
 }: IRequestDutyRequestPanelProps) {
+    const isRequestActionLocked = updatingRequestId !== null;
+
     return (
         <Card
             id="nurse_request_list"
@@ -105,11 +107,13 @@ export default function RequestDutyRequestPanel({
                                             type="button"
                                             className={twMerge(
                                                 'flex h-9 flex-1 items-center justify-center rounded-[10px] font-apple text-sm font-semibold text-gray-3 transition-colors',
-                                                isUpdating && 'cursor-wait opacity-60',
+                                                isRequestActionLocked && 'cursor-wait opacity-60',
                                                 dutyRequest.isAccepted === true && 'bg-main-1 text-white',
                                             )}
-                                            disabled={isUpdating}
+                                            disabled={isRequestActionLocked}
                                             onClick={() => {
+                                                if (isRequestActionLocked) return;
+
                                                 acceptRequest(dutyRequest.wardReqShiftId, true);
                                                 onAcceptAnalytics(true);
                                             }}
@@ -120,11 +124,13 @@ export default function RequestDutyRequestPanel({
                                             type="button"
                                             className={twMerge(
                                                 'flex h-9 flex-1 items-center justify-center rounded-[10px] font-apple text-sm font-semibold text-gray-3 transition-colors',
-                                                isUpdating && 'cursor-wait opacity-60',
+                                                isRequestActionLocked && 'cursor-wait opacity-60',
                                                 dutyRequest.isAccepted === false && 'bg-sub-2 text-white',
                                             )}
-                                            disabled={isUpdating}
+                                            disabled={isRequestActionLocked}
                                             onClick={() => {
+                                                if (isRequestActionLocked) return;
+
                                                 acceptRequest(dutyRequest.wardReqShiftId, false);
                                                 onAcceptAnalytics(false);
                                             }}
