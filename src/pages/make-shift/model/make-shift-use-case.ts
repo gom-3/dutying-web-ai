@@ -10,6 +10,7 @@ export function useMakeShiftUseCase() {
     const goPrev = useMakeShiftStore((s) => s.goPrev);
     const goNext = useMakeShiftStore((s) => s.goNext);
     const goToStep = useMakeShiftStore((s) => s.goToStep);
+    const requestReload = useMakeShiftStore((s) => s.requestReload);
     const start = useCallback(() => {
         const persisted = editor.getPersisted();
         const savedStep = loadPersistedStep();
@@ -57,6 +58,9 @@ export function useMakeShiftUseCase() {
     const closeModal = useCallback(() => {
         closeRestoreDraftModal();
     }, [closeRestoreDraftModal]);
+    const retryOverview = useCallback(() => {
+        requestReload();
+    }, [requestReload]);
     // make-shift 단계에서 에디터 state가 필요할 때 대비 (예: 완료 조건 체크)
     const editorState = {
         doc: useShiftEditorStore((s) => s.doc),
@@ -74,5 +78,6 @@ export function useMakeShiftUseCase() {
         next,
         goToStep: jump,
         editorState,
+        retryOverview,
     };
 }

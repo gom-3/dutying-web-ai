@@ -1,5 +1,6 @@
 import type {TDutyDoc} from '@/features/shift-editor';
 import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+import type {TAiScheduleProvider} from './ai-schedule-contract';
 
 export function generateMockAiSchedule(doc: TDutyDoc): TAiScheduleResponse {
     const patterns = ['D', 'D', 'E', 'E', 'N', 'N', 'O', 'O'];
@@ -33,3 +34,7 @@ export function generateMockAiSchedule(doc: TDutyDoc): TAiScheduleResponse {
         created_at: new Date().toISOString(),
     };
 }
+
+export const mockAiScheduleProvider: TAiScheduleProvider = {
+    generate: async ({doc}) => generateMockAiSchedule(doc),
+};

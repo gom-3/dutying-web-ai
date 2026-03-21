@@ -1,6 +1,7 @@
 import {type TWardConstraint} from '@/entities';
 
 export type TCellValue = string | null;
+export type TWorkKeyMap = Record<string, TCellValue>;
 
 export type TDateKey = string; // YYYY-MM-DD
 

@@ -1,9 +1,9 @@
 import {useEffect} from 'react';
-import {TailSpin} from 'react-loader-spinner';
 import {useLocation} from 'react-router-dom';
 import useRefresh from '@/features/auth/useRefresh';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 
 function RefreshPage() {
     const {refresh} = useRefresh();
@@ -34,12 +34,7 @@ function RefreshPage() {
         };
     }, [refresh, next]);
 
-    return (
-        <div className="flex h-screen w-screen flex-col items-center justify-center">
-            {t('page.refresh.loading')}
-            <TailSpin color="#844AFF" />
-        </div>
-    );
+    return <PageState tone="loading" layout="screen" title={t('page.refresh.loading')} description={t('page.state.loadingDescription')} />;
 }
 
 export default RefreshPage;

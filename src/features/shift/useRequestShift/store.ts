@@ -17,7 +17,7 @@ interface IState {
 
 interface IStore extends IState {
     setState: (key: keyof IState, value: TValues<IState>) => void;
-    initState: () => void;
+    resetState: () => void;
 }
 
 const initialState: IState = {
@@ -37,7 +37,7 @@ export const useRequestShiftStore = create<IStore>()(
             (set) => ({
                 ...initialState,
                 setState: (state, value) => set((prev) => ({...prev, [state]: value})),
-                initState: () => set(initialState),
+                resetState: () => set(initialState),
             }),
             {
                 name: 'useRequestShiftStore',

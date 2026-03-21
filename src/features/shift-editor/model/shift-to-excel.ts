@@ -60,7 +60,6 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
         WO: 'WO',
     });
 
-    // 토요일 일요일 공휴일 표시
     shift.days.map((day) => {
         header.getCell(day.day.toString()).font = {
             color: {
@@ -121,7 +120,6 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
         const anchor = document.createElement('a');
 
         anchor.href = url;
-        // 파일명
         anchor.download = `${month}월 근무표.xlsx`;
         anchor.click();
         window.URL.revokeObjectURL(url);

@@ -1,20 +1,20 @@
-import {type TNurse} from '@/entities/nurse';
 import axiosInstance from '../client';
-import {type INurseAPI, type TCreateNurseDTO, type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from './type';
+import {type INurseAPI, type TNurseResponse, type TCreateNurseDTO, type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from './type';
 
 class NurseAPI implements INurseAPI {
     createAccountNurse = async (accountId: number, createNurse: TCreateNurseDTO) =>
         (
-            await axiosInstance.post<TNurse>(`/nurses?accountId=${accountId}`, {
+            await axiosInstance.post<TNurseResponse>(`/nurses?accountId=${accountId}`, {
                 ...createNurse,
                 phoneNum: createNurse.phoneNum.replace(/-+/g, ''),
                 employmentDate: createNurse.employmentDate.replace(/-/g, ''),
             })
         ).data;
-    getNurse = async (nurseId: number) => (await axiosInstance.get<TNurse>(`/nurses/${nurseId}`)).data;
+    getNurse = async (nurseId: number) => (await axiosInstance.get<TNurseResponse>(`/nurses/${nurseId}`)).data;
     updateNurse = async (nurseId: number, updatedNurse: TUpdateNurseDTO) =>
-        (await axiosInstance.patch<TNurse>(`/nurses/${nurseId}`, updatedNurse)).data;
-    updateNurseStatus = async (nurseId: number, status: string) => (await axiosInstance.patch<TNurse>(`/nurses/${nurseId}`, {status})).data;
+        (await axiosInstance.patch<TNurseResponse>(`/nurses/${nurseId}`, updatedNurse)).data;
+    updateNurseStatus = async (nurseId: number, status: string) =>
+        (await axiosInstance.patch<TNurseResponse>(`/nurses/${nurseId}`, {status})).data;
     connectNurse = async (nurseId: number) => (await axiosInstance.post(`/nurses/${nurseId}/connect`)).data;
     unConnectNurse = async (nurseId: number) => (await axiosInstance.delete(`/nurses/${nurseId}/connect`)).data;
     updateNurseOrder = async (

@@ -1,5 +1,5 @@
 import {screen, waitFor, within} from '@testing-library/react';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, userEvent} from '@/shared/util/test-utils';
 import OnboardingWardCreatePage from './index';
 
@@ -13,9 +13,14 @@ vi.mock('react-hot-toast', () => ({
     },
 }));
 
-vi.mock('react-router', () => ({
-    useNavigate: () => mockNavigate,
-}));
+vi.mock('react-router', async () => {
+    const actual = await vi.importActual('react-router');
+
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
 vi.mock('@/features/auth/useRegister', () => ({
     default: () => ({
@@ -25,9 +30,15 @@ vi.mock('@/features/auth/useRegister', () => ({
     }),
 }));
 
-const moveToFinalStep = async (user: ReturnType<typeof userEvent.setup>) => {
+const prepareValidFinalStep = async (user: ReturnType<typeof userEvent.setup>) => {
     await user.click(screen.getByRole('button', {name: '건너뛰기'}));
     await user.click(screen.getByRole('button', {name: '다음'}));
+
+    await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+    await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+    await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
+    await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+    await user.click(screen.getByRole('button', {name: /간호사 1팀/}));
     await user.click(screen.getByRole('button', {name: '다음'}));
 };
 
@@ -56,6 +67,78 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
     });
 
+    it('disables next in step 2 when a shift type is invalid', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+    });
+
+    it('disables next in step 3 when any team has no nurses', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: /팀 추가하기/}));
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+    });
+
+    it('disables next in step 3 when a nurse name is empty', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        const nurseInputs = screen.getAllByDisplayValue(/홍길동|김하늘|박연우|이서윤/);
+
+        await user.clear(nurseInputs[0] as HTMLInputElement);
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+    });
+
+    it('allows skip to bypass validation and move to the next step', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+
+        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+
+        expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
+    });
+
+    it('disables completion when step 2 remains invalid after skipping ahead', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+
+        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+        await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(screen.getByRole('button', {name: '완료'})).toBeDisabled();
+    });
+
     it('shows submitting and success UI when ward creation succeeds', async () => {
         const user = userEvent.setup();
 
@@ -70,10 +153,13 @@ describe('OnboardingWardCreatePage', () => {
 
         render(<OnboardingWardCreatePage />);
 
-        await moveToFinalStep(user);
+        await prepareValidFinalStep(user);
         await user.click(screen.getByRole('button', {name: '숙련도 설정'}));
         await user.selectOptions(screen.getByDisplayValue('5단계'), '3');
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '완료'}));
+
+        expect(screen.getAllByText((content) => content.includes('LV. 3')).length).toBeGreaterThan(0);
+
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         expect(screen.getByTestId('ward-create-submitting')).toBeInTheDocument();
@@ -109,7 +195,7 @@ describe('OnboardingWardCreatePage', () => {
 
         render(<OnboardingWardCreatePage />);
 
-        await moveToFinalStep(user);
+        await prepareValidFinalStep(user);
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         await waitFor(() => {

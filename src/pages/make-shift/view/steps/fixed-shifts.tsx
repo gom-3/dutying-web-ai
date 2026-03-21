@@ -3,7 +3,9 @@ import {useEffect, useMemo, useRef} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {
+    buildWorkKeyMap,
     buildViolationMap,
+    shiftToDoc,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
@@ -11,9 +13,10 @@ import {
 } from '@/features/shift-editor';
 import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
-import {buildWorkKeyMap, shiftToDoc} from '../../model/shift-editor-adapter';
 
 function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;
@@ -31,6 +34,7 @@ function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
 
 export function FixedShifts() {
     const useCase = useMakeShiftUseCase();
+    const {t} = useTypedTranslation();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const editorDoc = useShiftEditorStore((s) => s.doc);
@@ -96,14 +100,15 @@ export function FixedShifts() {
 
             <div className="mt-8 flex min-h-0 flex-1 outline-none" onKeyDown={onKeyDown} onPaste={onPaste} ref={editorRef} tabIndex={0}>
                 {dutyQuery.isLoading && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오는 중입니다...</p>
-                    </div>
+                    <PageState tone="loading" title="근무표를 불러오는 중이에요" description={t('page.state.loadingDescription')} />
                 )}
                 {dutyQuery.isError && (
-                    <div className="flex flex-1 items-center justify-center rounded-[20px] bg-white shadow-banner">
-                        <p className="font-apple text-base text-gray-3">근무표를 불러오지 못했어요.</p>
-                    </div>
+                    <PageState
+                        tone="error"
+                        title="고정 근무 데이터를 불러오지 못했어요"
+                        description={t('page.state.errorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                    />
                 )}
                 {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
                     <div

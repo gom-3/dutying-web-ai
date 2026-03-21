@@ -1,6 +1,8 @@
 import {Suspense, lazy} from 'react';
 import {Route, Routes} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path.ts';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage/index.ts'));
@@ -8,8 +10,8 @@ const RefreshPage = lazy(() => import('@/pages/RefreshPage/index.tsx'));
 const RedirectPage = lazy(() => import('@/pages/LoginPage/RedirectPage.tsx'));
 const LoginPage = lazy(() => import('@/pages/LoginPage/index.tsx'));
 const RegisterPage = lazy(() => import('@/pages/RegisterPage/index.tsx'));
-const EnterWard = lazy(() => import('@/pages/RegisterPage/ui/EnterWard.tsx'));
-const RegisterWard = lazy(() => import('@/pages/RegisterPage/ui/RegisterWard.tsx'));
+const EnterWard = lazy(() => import('@/pages/RegisterPage/EnterWardPage.tsx'));
+const RegisterWard = lazy(() => import('@/pages/RegisterPage/RegisterWardPage.tsx'));
 const OnboardingWardCreatePage = lazy(() => import('@/pages/OnboardingWardCreatePage/index.tsx'));
 const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const DutyPage = lazy(() => import('@/pages/duty'));
@@ -18,8 +20,19 @@ const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));
 
 export const Router = () => {
+    const {t} = useTypedTranslation();
+
     return (
-        <Suspense fallback={<div></div>}>
+        <Suspense
+            fallback={
+                <PageState
+                    tone="loading"
+                    layout="screen"
+                    title={t('page.state.loadingTitle')}
+                    description={t('page.state.loadingDescription')}
+                />
+            }
+        >
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />

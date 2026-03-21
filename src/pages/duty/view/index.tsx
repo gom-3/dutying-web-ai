@@ -1,6 +1,7 @@
 import {MakeShiftEditorView} from '@/features/shift-editor';
 import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {type TDutyHook} from '../model/dutyHook';
 
 type TDutyPageViewProps = {
@@ -121,14 +122,15 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
 
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
                     {state.status === 'pending' && (
-                        <div className="flex h-full min-h-[300px] items-center justify-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">{t('page.duty.loading')}</p>
-                        </div>
+                        <PageState tone="loading" title={t('page.duty.loading')} description={t('page.state.loadingDescription')} />
                     )}
                     {state.status === 'error' && (
-                        <div className="flex h-full min-h-[300px] items-center justify-center">
-                            <p className="font-apple text-2xl font-semibold text-gray-3">{t('page.duty.error')}</p>
-                        </div>
+                        <PageState
+                            tone="error"
+                            title={t('page.duty.error')}
+                            description={t('page.state.errorDescription')}
+                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                        />
                     )}
                     {state.status === 'success' && state.shift && (
                         <div
