@@ -46,7 +46,7 @@ const dependencies = {
     zustand: 'zustand',
 };
 
-export default defineConfig({
+export default defineConfig(({command}) => ({
     build: {
         sourcemap: true,
         rollupOptions: {
@@ -74,7 +74,7 @@ export default defineConfig({
         }),
         tsconfigPaths(),
         tailwindcss(),
-        mkcert(),
+        ...(command === 'serve' ? [mkcert()] : []),
     ],
     server: {
         host: 'local.dutying.net',
@@ -88,4 +88,4 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./src/vitest-setup.ts'],
     },
-});
+}));
