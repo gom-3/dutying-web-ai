@@ -1,8 +1,8 @@
 import {type DropResult} from '@hello-pangea/dnd';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
+import {applyParsedWardData} from '../adapter';
 import {
-    applyMockUpload,
     addNurseDraft,
     addShiftTypeDraft,
     addTeamDraft,
@@ -14,7 +14,6 @@ import {
     getStepValidation,
     goNextStep as goNextStepDraft,
     goPreviousStep as goPreviousStepDraft,
-    serializeDraft,
     reorderNursesWithinTeam,
     saveSkillLevelConfig,
     type TOnboardingWardDraft,
@@ -22,6 +21,7 @@ import {
     updateNurseDraft,
     updateShiftTypeDraft,
 } from '../model';
+import {onboardingWardCreateExecutor} from '../submission';
 import type {TSortMode} from '../types';
 
 const MAX_STEP = 4;
@@ -75,27 +75,32 @@ function useOnboardingWardWizard() {
 
         setDraft((prev) => reorderNursesWithinTeam(prev, activeTeamId, {destination, source}));
     };
-    const uploadMockFile = (fileName: string) => {
-        setDraft((prev) => applyMockUpload(prev, fileName));
+    const applyUploadedFile = (fileName: string) => {
+        setDraft((prev) => applyParsedWardData(prev, {fileName}));
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
     };
-    const complete = () => {
+    const complete = async () => {
         if (!canComplete(draft)) {
             return;
         }
 
-        const payload = serializeDraft(draft);
-        const stringified = JSON.stringify(payload, null, 2);
+        try {
+            const submission = await onboardingWardCreateExecutor(draft);
+            const stringified = JSON.stringify(submission.previewPayload, null, 2);
 
-        console.info('mockCreateWardPayload', payload);
-        setCompletedPayload(stringified);
-        toast.success('mock 병동 생성 payload를 만들었습니다.');
+            console.info('createWardPayload', submission.wardCreatePayload);
+            console.info('mockCreateWardPayload', submission.previewPayload);
+            setCompletedPayload(stringified);
+            toast.success(submission.successMessage);
+        } catch (error) {
+            console.error('Failed to complete onboarding ward creation.', error);
+        }
     };
     const skipOrComplete = () => {
         if (draft.currentStep === MAX_STEP) {
-            complete();
+            void complete();
 
             return;
         }
@@ -122,7 +127,7 @@ function useOnboardingWardWizard() {
         addNurse,
         updateNurse,
         handleNurseDragEnd,
-        uploadMockFile,
+        applyUploadedFile,
         saveSkillConfig,
         complete,
         currentStepValidation: getStepValidation(draft),

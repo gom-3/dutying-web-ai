@@ -28,7 +28,7 @@ function OnboardingWardCreatePage() {
         addNurse,
         updateNurse,
         handleNurseDragEnd,
-        uploadMockFile,
+        applyUploadedFile,
         saveSkillConfig,
         complete,
         canGoNext,
@@ -37,7 +37,7 @@ function OnboardingWardCreatePage() {
     const stepContent = (() => {
         switch (draft.currentStep) {
             case 1:
-                return <UploadStep draft={draft} onUpload={(file) => uploadMockFile(file.name)} />;
+                return <UploadStep draft={draft} onUpload={(file) => applyUploadedFile(file.name)} />;
             case 2:
                 return (
                     <ShiftTypeStep
@@ -82,7 +82,7 @@ function OnboardingWardCreatePage() {
                     step={draft.currentStep}
                     onSkip={skipOrComplete}
                     onPrev={goPreviousStep}
-                    onNext={draft.currentStep < 4 ? goNextStep : complete}
+                    onNext={draft.currentStep < 4 ? goNextStep : () => void complete()}
                     nextDisabled={draft.currentStep < 4 ? !canGoNext : !canComplete}
                 >
                     {stepContent}

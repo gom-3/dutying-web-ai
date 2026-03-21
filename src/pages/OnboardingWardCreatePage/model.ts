@@ -45,21 +45,6 @@ export type TOnboardingWardDraft = {
     skillLevelConfig: TSkillLevelConfig;
 };
 
-export type TMockCreateWardPayload = TCreateWardDTO & {
-    nurses: Array<{
-        name: string;
-        memo: string;
-        isWorker: boolean;
-        employmentDate: string;
-        teamName: string;
-        level: number | null;
-        possibleShiftShortNames: string[];
-    }>;
-    skillLevelConfig: TSkillLevelConfig & {
-        palette: string[];
-    };
-};
-
 export type TOnboardingValidationIssueCode =
     | 'empty-shift-types'
     | 'missing-shift-name'
@@ -167,7 +152,6 @@ const BASE_TEAMS: TOnboardingTeamDraft[] = [
     {id: createId('team'), name: '간호사 2팀'},
     {id: createId('team'), name: '간호사 3팀'},
 ];
-
 const createBaseNurses = (shiftTypes: TOnboardingWardShiftType[], teams: TOnboardingTeamDraft[]) => {
     const shiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
     const firstTeamId = teams[0]?.id ?? '';
@@ -255,20 +239,6 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
         skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
 };
-
-export const applyMockUpload = (draft: TOnboardingWardDraft, fileName: string): TOnboardingWardDraft => ({
-    ...draft,
-    uploadedFileName: fileName,
-    shiftTypes: draft.shiftTypes.map((shiftType) =>
-        shiftType.shortName === 'D'
-            ? {...shiftType, startTime: '07:00', endTime: '15:00'}
-            : shiftType.shortName === 'E'
-              ? {...shiftType, startTime: '15:00', endTime: '23:00'}
-              : shiftType.shortName === 'N'
-                ? {...shiftType, startTime: '23:00', endTime: '07:00'}
-                : shiftType,
-    ),
-});
 
 export const applySkillLevels = (nurses: TOnboardingNurseDraft[], config: TSkillLevelConfig): TOnboardingNurseDraft[] => {
     const levelCount = Math.min(Math.max(config.levelCount, 2), 5);
@@ -428,7 +398,6 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
 
     return issues;
 };
-
 const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 3 | 4): TOnboardingValidationIssue[] => {
     const issues: TOnboardingValidationIssue[] = [];
 
@@ -478,8 +447,7 @@ export const getStepValidation = (draft: TOnboardingWardDraft, step = draft.curr
 
 export const canGoPrev = (draft: Pick<TOnboardingWardDraft, 'currentStep'>): boolean => draft.currentStep > MIN_STEP;
 
-export const canGoNext = (draft: TOnboardingWardDraft): boolean =>
-    draft.currentStep < MAX_STEP && getStepValidation(draft).isValid;
+export const canGoNext = (draft: TOnboardingWardDraft): boolean => draft.currentStep < MAX_STEP && getStepValidation(draft).isValid;
 
 export const canComplete = (draft: TOnboardingWardDraft): boolean =>
     draft.currentStep === MAX_STEP && REQUIRED_COMPLETION_STEPS.every((step) => getStepValidation(draft, step).isValid);
@@ -489,33 +457,3 @@ export const getActionState = (draft: TOnboardingWardDraft): TOnboardingActionSt
     canGoNext: canGoNext(draft),
     canComplete: canComplete(draft),
 });
-
-export const serializeDraft = (draft: TOnboardingWardDraft): TMockCreateWardPayload => {
-    const teamById = new Map(draft.teams.map((team) => [team.id, team.name]));
-    const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
-    const palette = getSkillPalette(draft.skillLevelConfig.paletteId);
-
-    return {
-        name: draft.wardName,
-        hospitalName: draft.hospitalName,
-        wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
-        shiftTeams: draft.teams.map((team) => ({
-            nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
-        })),
-        nurses: draft.nurses.map((nurse) => ({
-            name: nurse.name,
-            memo: nurse.memo,
-            isWorker: nurse.isWorker,
-            employmentDate: nurse.employmentDate,
-            teamName: teamById.get(nurse.teamId) ?? '',
-            level: nurse.level,
-            possibleShiftShortNames: nurse.possibleShiftTypeIds
-                .map((shiftTypeId) => shiftTypeById.get(shiftTypeId)?.shortName ?? '')
-                .filter(Boolean),
-        })),
-        skillLevelConfig: {
-            ...draft.skillLevelConfig,
-            palette: palette.colors,
-        },
-    };
-};
