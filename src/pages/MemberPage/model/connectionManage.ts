@@ -1,9 +1,11 @@
 import {groupBy} from 'lodash-es';
 import type {TNurse, TWaitingNurse} from '@/entities/nurse';
+import type {TShiftTeam} from '@/entities/ward';
 
 export type TConnectionManageStep = 0 | 1 | 2 | 3;
 
 export type TConnectMode = 'link' | 'add';
+export type TConnectionManageSubmitStatus = 'idle' | 'loading' | 'success' | 'error';
 
 export const getFormattedPhoneNumber = (phoneNumber: string) =>
     `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 7)}-${phoneNumber.slice(7, 11)}`;
@@ -15,3 +17,75 @@ export const getWaitingNurseSummary = (waitingNurse: TWaitingNurse) => ({
 
 export const getGroupedDivisionNurses = (nurses: TNurse[]) =>
     Object.entries(groupBy(nurses, 'divisionNum')).sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+
+interface IGetConnectionManageTargetLabelParams {
+    connectMode: TConnectMode;
+    shiftTeams: TShiftTeam[] | undefined;
+    toLinkNurseId: number | null;
+    toAddShiftTeamId: number | null;
+}
+
+export function getConnectionManageTargetLabel({
+    connectMode,
+    shiftTeams,
+    toLinkNurseId,
+    toAddShiftTeamId,
+}: IGetConnectionManageTargetLabelParams) {
+    if (!shiftTeams) return null;
+
+    if (connectMode === 'link') {
+        const targetShiftTeam = shiftTeams.find((shiftTeam) => shiftTeam.nurses.some((nurse) => nurse.nurseId === toLinkNurseId));
+        const targetNurse = targetShiftTeam?.nurses.find((nurse) => nurse.nurseId === toLinkNurseId);
+
+        if (!targetShiftTeam || !targetNurse) return null;
+
+        return `${targetNurse.name} · ${targetShiftTeam.name}`;
+    }
+
+    return shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === toAddShiftTeamId)?.name ?? null;
+}
+
+interface IGetConnectionManageResultCopyParams {
+    submitStatus: Exclude<TConnectionManageSubmitStatus, 'idle'>;
+    connectMode: TConnectMode;
+    waitingNurseName?: string;
+    targetLabel?: string | null;
+}
+
+export function getConnectionManageResultCopy({
+    submitStatus,
+    connectMode,
+    waitingNurseName,
+    targetLabel,
+}: IGetConnectionManageResultCopyParams) {
+    const safeWaitingNurseName = waitingNurseName ?? '선택한 간호사';
+    const safeTargetLabel = targetLabel ?? (connectMode === 'link' ? '선택한 간호사 계정' : '선택한 팀');
+
+    if (submitStatus === 'loading') {
+        return {
+            title: connectMode === 'link' ? '기존 계정과 연결하고 있어요' : '선택한 팀으로 이동을 반영하고 있어요',
+            description:
+                connectMode === 'link'
+                    ? `${safeWaitingNurseName} 신청 정보를 ${safeTargetLabel} 계정에 연결하고 있습니다. 잠시만 기다려 주세요.`
+                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가하고 있습니다. 팀과 관계 변경이 반영될 때까지 잠시만 기다려 주세요.`,
+        };
+    }
+
+    if (submitStatus === 'success') {
+        return {
+            title: connectMode === 'link' ? '기존 계정과 연결했어요' : '팀 추가를 완료했어요',
+            description:
+                connectMode === 'link'
+                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했습니다. 이제 기존 계정에서 팀과 관계 정보를 이어서 확인할 수 있어요.`
+                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가했습니다. 근무자 관리에서 새 관계와 팀 배치를 바로 확인할 수 있어요.`,
+        };
+    }
+
+    return {
+        title: connectMode === 'link' ? '기존 계정과 연결하지 못했어요' : '팀 추가를 완료하지 못했어요',
+        description:
+            connectMode === 'link'
+                ? `${safeTargetLabel} 계정과 연결하지 못했습니다. 다시 시도하거나 이전 단계로 돌아가 다른 계정을 선택해 주세요.`
+                : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가하지 못했습니다. 다시 시도하거나 이전 단계로 돌아가 다른 팀을 선택해 주세요.`,
+    };
+}

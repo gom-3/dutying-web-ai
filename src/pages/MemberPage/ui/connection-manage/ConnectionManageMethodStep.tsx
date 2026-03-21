@@ -74,12 +74,13 @@ function ConnectionManageMethodStep({
                     )}
                     onClick={() => onChangeConnectMode('add')}
                 >
-                    새로 추가하기
+                    팀에 추가하기
                 </button>
             </div>
-            <p className="mt-[.625rem] font-apple text-[.875rem] text-main-2">
-                *기존 간호사와 연동 시, 미연동 상태인 간호사 목록에서 일치하는 계정을 연결시킬 수 있어요.
-            </p>
+            <div className="mt-[.625rem] space-y-1 font-apple text-[.875rem] text-main-2">
+                <p>*기존 간호사와 연동 시, 미연동 상태인 간호사 목록에서 일치하는 계정을 연결할 수 있어요.</p>
+                <p>*팀에 추가 시, 선택한 팀에 새 간호사 관계가 생성돼요.</p>
+            </div>
         </div>
     );
 }

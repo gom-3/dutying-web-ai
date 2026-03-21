@@ -2,6 +2,7 @@ import {createPortal} from 'react-dom';
 import {match} from 'ts-pattern';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import useEditWard from '@/features/ward/useEditWard';
+import {getConnectionManageTargetLabel} from '../model/connectionManage';
 import useConnectionManageController from '../model/useConnectionManageController';
 import ConnectionManageCompleteStep from './connection-manage/ConnectionManageCompleteStep';
 import ConnectionManageMethodStep from './connection-manage/ConnectionManageMethodStep';
@@ -22,7 +23,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         state: {shiftTeams},
     } = useEditShiftTeam();
     const {
-        state: {step, currentWaitingNurse, connectMode, toLinkNurseId, toAddShiftTeamId, isNextDisabled},
+        state: {step, currentWaitingNurse, connectMode, toLinkNurseId, toAddShiftTeamId, isNextDisabled, submitStatus},
         actions: {
             setConnectMode,
             setToLinkNurseId,
@@ -33,6 +34,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
             goToTargetSelection,
             handleSelectWaitingNurse,
             handleCompleteSelection,
+            retryCompleteSelection,
         },
     } = useConnectionManageController({
         open,
@@ -40,6 +42,12 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         connectWaitingNurses: connectWatingNurses,
     });
     const handleClose = () => setOpen(false);
+    const targetLabel = getConnectionManageTargetLabel({
+        connectMode,
+        shiftTeams,
+        toLinkNurseId,
+        toAddShiftTeamId,
+    });
 
     return open
         ? createPortal(
@@ -67,6 +75,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
                       ))
                       .with(2, () => (
                           <ConnectionManageTargetStep
+                              currentWaitingNurse={currentWaitingNurse}
                               shiftTeams={shiftTeams}
                               connectMode={connectMode}
                               toLinkNurseId={toLinkNurseId}
@@ -78,7 +87,18 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
                               onSelectShiftTeam={setToAddShiftTeamId}
                           />
                       ))
-                      .with(3, () => <ConnectionManageCompleteStep onRestart={initialize} onClose={handleClose} />)
+                      .with(3, () => (
+                          <ConnectionManageCompleteStep
+                              submitStatus={submitStatus}
+                              connectMode={connectMode}
+                              waitingNurseName={currentWaitingNurse?.name}
+                              targetLabel={targetLabel}
+                              onRestart={initialize}
+                              onBack={goToMethodSelection}
+                              onRetry={retryCompleteSelection}
+                              onClose={handleClose}
+                          />
+                      ))
                       .otherwise(() => null)}
               </div>,
               document.getElementById('modal-root')!,

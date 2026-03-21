@@ -1,5 +1,6 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
+import toast from 'react-hot-toast';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
@@ -70,9 +71,19 @@ const useEditWard = () => {
         async (waitingNurseId: number, shiftTeamId: number) => {
             if (!wardId) return;
 
-            await WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId);
-            await queryClient.invalidateQueries({queryKey: wardQueryKey});
-            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+            try {
+                await WardAPI.approveWatingNurses(wardId, waitingNurseId, shiftTeamId);
+                await queryClient.invalidateQueries({queryKey: wardQueryKey});
+                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+
+                toast.success('선택한 팀에 간호사를 추가했어요.');
+
+                return true;
+            } catch (error) {
+                showActionErrorFeedback(error, '팀 추가에 실패했습니다.');
+
+                return false;
+            }
         },
         [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
@@ -80,9 +91,19 @@ const useEditWard = () => {
         async (waitingNurseId: number, targetNurseId: number) => {
             if (!wardId) return;
 
-            await WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId);
-            await queryClient.invalidateQueries({queryKey: wardQueryKey});
-            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+            try {
+                await WardAPI.connectWatingNurses(wardId, waitingNurseId, targetNurseId);
+                await queryClient.invalidateQueries({queryKey: wardQueryKey});
+                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+
+                toast.success('기존 간호사 계정과 연결했어요.');
+
+                return true;
+            } catch (error) {
+                showActionErrorFeedback(error, '기존 간호사 계정 연결에 실패했습니다.');
+
+                return false;
+            }
         },
         [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
