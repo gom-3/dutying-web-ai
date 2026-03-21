@@ -18,6 +18,7 @@ import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calenda
 import WardAPI from '@/shared/api/ward';
 import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {renderMultilineText} from '@/shared/util/string';
 import {cn} from '@/shared/util/style';
 import {
     canConfirmAiAutofill,
@@ -75,18 +76,25 @@ export function AiAutofill() {
     const [lastErrorMessage, setLastErrorMessage] = useState<string | null>(null);
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
+    const hydratedContextKeyRef = useRef<string | null>(null);
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
     const savingLabel = isWorking ? '저장 중' : '저장 완료';
     const SavingStatusIcon = isWorking ? SavingIcon : SaveCompleteIcon;
     const canConfirm =
-        !isWorking && !dutyQuery.isLoading && !dutyQuery.isError && Boolean(dutyQuery.data) && canConfirmAiAutofill(aiStatus);
+        !isWorking &&
+        !isAiGenerating &&
+        !dutyQuery.isLoading &&
+        !dutyQuery.isError &&
+        Boolean(dutyQuery.data) &&
+        canConfirmAiAutofill(aiStatus);
     const hasDraftChanges = history.past.length > 0;
     const statusTone = getAiAutofillStatusTone(aiStatus);
     const statusDescription = getAiAutofillStatusDescription(aiStatus, hasDraftChanges);
     const aiActionLabel = getAiAutofillActionLabel(aiStatus);
     const statusTitle = t(`page.makeShift.aiRefill.title.${aiStatus}`);
+    const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
     const handleConfirm = async () => {
         if (!wardId || !dutyQuery.data || !canConfirm) return;
 
@@ -98,7 +106,7 @@ export function AiAutofill() {
             await WardAPI.updateShifts(wardId, dto);
             useCase.complete();
         } catch {
-            toast.error('저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+            toast.error(t('page.makeShift.aiRefill.saveFailed'));
         } finally {
             setIsWorking(false);
         }
@@ -133,6 +141,9 @@ export function AiAutofill() {
                 currentContext.year !== requestContext.year ||
                 currentContext.month !== requestContext.month
             ) {
+                setAiStatus('idle');
+                setLastErrorMessage(null);
+
                 return;
             }
 
@@ -157,29 +168,37 @@ export function AiAutofill() {
 
         const nextDoc = shiftToDoc(dutyQuery.data, year, month);
         const persisted = commands.getPersisted();
+        const hasContextChanged = hydratedContextKeyRef.current !== currentContextKey;
 
         if (persisted && isSameDocShape(persisted.doc, nextDoc)) {
             commands.hydrate(persisted);
-            setAiStatus('idle');
-            setLastErrorMessage(null);
+
+            if (hasContextChanged) {
+                setAiStatus('idle');
+                setLastErrorMessage(null);
+            }
+
+            hydratedContextKeyRef.current = currentContextKey;
 
             return;
         }
 
         commands.init(nextDoc);
-        setAiStatus('idle');
-        setLastErrorMessage(null);
-    }, [commands, dutyQuery.data, month, year]);
+
+        if (hasContextChanged) {
+            setAiStatus('idle');
+            setLastErrorMessage(null);
+        }
+
+        hydratedContextKeyRef.current = currentContextKey;
+    }, [commands, currentContextKey, dutyQuery.data, month, year]);
 
     return (
         <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
             <div className="flex flex-wrap items-start justify-between gap-6">
                 <div>
                     <h1 className="font-apple text-[32px] font-semibold text-sub-1">AI가 채운 근무표를 수정해 보세요</h1>
-                    <p className="mt-3 font-apple text-lg text-gray-3">
-                        실패해도 현재 편집본은 유지돼요. 이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수
-                        있어요.
-                    </p>
+                    <p className="mt-3 font-apple text-lg text-gray-3">{renderMultilineText(t('page.makeShift.aiRefill.intro'))}</p>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center gap-3">
                     <div className="flex items-center gap-4">
@@ -222,7 +241,7 @@ export function AiAutofill() {
                     </div>
                     <button
                         className="flex h-[42px] items-center rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
-                        disabled={!canPrev || isAiGenerating}
+                        disabled={!canPrev || isAiGenerating || isWorking}
                         onClick={() => useCase.prev()}
                         type="button"
                     >
@@ -250,6 +269,9 @@ export function AiAutofill() {
             </div>
 
             <div
+                aria-atomic="true"
+                aria-live={aiStatus === 'error' ? 'assertive' : 'polite'}
+                role={aiStatus === 'error' ? 'alert' : 'status'}
                 className={cn(
                     'mt-6 rounded-[20px] border px-6 py-5 shadow-banner',
                     statusTone === 'neutral' && 'border-sub-4.5 bg-[#F7F9FC]',
@@ -262,9 +284,8 @@ export function AiAutofill() {
                     <div>
                         <p className="font-apple text-xl font-semibold text-sub-1">{statusTitle}</p>
                         <div className="mt-2 space-y-1 font-apple text-base text-gray-3">
-                            {statusDescription.map((line) => (
-                                <p key={line}>{line}</p>
-                            ))}
+                            <p>{renderMultilineText(t(statusDescription.primaryKey))}</p>
+                            <p>{renderMultilineText(t(statusDescription.draftKey))}</p>
                         </div>
                         {lastErrorMessage ? <p className="mt-3 font-apple text-sm font-medium text-red">{lastErrorMessage}</p> : null}
                     </div>

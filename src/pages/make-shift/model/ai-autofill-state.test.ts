@@ -3,6 +3,7 @@ import {canConfirmAiAutofill, getAiAutofillActionLabel, getAiAutofillStatusDescr
 
 describe('ai-autofill-state', () => {
     it('loading 동안에는 확정을 막아야 한다', () => {
+        expect(canConfirmAiAutofill('idle')).toBe(true);
         expect(canConfirmAiAutofill('loading')).toBe(false);
         expect(canConfirmAiAutofill('error')).toBe(true);
         expect(canConfirmAiAutofill('success')).toBe(true);
@@ -12,6 +13,7 @@ describe('ai-autofill-state', () => {
         expect(getAiAutofillActionLabel('idle')).toBe('action');
         expect(getAiAutofillActionLabel('loading')).toBe('generating');
         expect(getAiAutofillActionLabel('error')).toBe('retry');
+        expect(getAiAutofillActionLabel('success')).toBe('action');
     });
 
     it('상태별 톤을 구분해야 한다', () => {
@@ -24,7 +26,7 @@ describe('ai-autofill-state', () => {
     it('실패 상태 문구는 현재 편집본 유지와 재시도 가능성을 포함해야 한다', () => {
         const description = getAiAutofillStatusDescription('error', true);
 
-        expect(description[0]).toContain('현재 화면의 근무표는 그대로 유지');
-        expect(description[1]).toContain('자동 저장');
+        expect(description.primaryKey).toBe('page.makeShift.aiRefill.description.error');
+        expect(description.draftKey).toBe('page.makeShift.aiRefill.draft.saved');
     });
 });
