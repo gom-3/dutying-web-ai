@@ -23,6 +23,7 @@ import {
 } from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
+import {showValidationFeedback} from '@/shared/util/feedback';
 import SetConstraint from './editWard/set-constraint';
 import SetDesignTheme from './editWard/set-design-theme';
 import SetShiftType from './editWard/set-shift-type';
@@ -352,7 +353,7 @@ function Toolbar({
                     <Button
                         variant="default"
                         className="h-10 w-33 rounded-[3.125rem] border-none bg-[rgba(171,171,180,0.80)] text-[1.25rem] font-semibold text-white"
-                        onClick={() => alert('아직 준비중인 기능입니다!')}
+                        onClick={() => showValidationFeedback('아직 준비 중인 기능입니다.')}
                     >
                         자동 채우기
                     </Button>
