@@ -1,6 +1,6 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect} from 'react';
 import {match} from 'ts-pattern';
 import {events, sendEvent} from '@/analytics';
 import {type TRequestShift} from '@/entities/shift';
@@ -14,13 +14,22 @@ import {type TFocus} from './type';
 import {findNurse, keydownEventMapper, moveFocus} from './utils';
 
 const useRequestShift = (activeEffect = false) => {
-    const {year, month, focus, foldedLevels, currentShiftTeamId, oldCurrentShiftTeamId, wardShiftTypeMap, readonly, setState} =
-        useRequestShiftStore();
+    const {
+        year,
+        month,
+        focus,
+        foldedLevels,
+        currentShiftTeamId,
+        oldCurrentShiftTeamId,
+        wardShiftTypeMap,
+        readonly,
+        changeStatus,
+        setState,
+    } = useRequestShiftStore();
     const {
         state: {wardId},
     } = useAuth();
     const queryClient = useQueryClient();
-    const [changeStatus, setChangeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const shiftTeamsQueryOptions = wardQueryOptions.shiftTeams(wardId ?? 0);
     const requestListQueryOptions = wardQueryOptions.requestList(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
     const requestShiftQueryOptions = wardQueryOptions.request(wardId ?? 0, currentShiftTeamId ?? 0, year, month);
@@ -29,10 +38,20 @@ const useRequestShift = (activeEffect = false) => {
     const shiftTeamQueryKey = shiftTeamsQueryOptions.queryKey;
     const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
     const dutyRequestQueryKey = requestListQueryOptions.queryKey;
-    const {data: shiftTeams} = useQuery({
+    const {
+        data: shiftTeams,
+        status: shiftTeamsStatus,
+        refetch: refetchShiftTeams,
+    } = useQuery({
         ...shiftTeamsQueryOptions,
         queryFn: async () => {
             const res = await WardAPI.getShiftTeams(wardId!);
+
+            if (res.length === 0) {
+                setState('currentShiftTeamId', null);
+
+                return res;
+            }
 
             if (currentShiftTeamId) {
                 if (res.every((x) => x.shiftTeamId !== currentShiftTeamId)) {
@@ -46,11 +65,19 @@ const useRequestShift = (activeEffect = false) => {
         },
         enabled: !!wardId,
     });
-    const {data: dutyRequestList} = useQuery({
+    const {
+        data: dutyRequestList,
+        status: dutyRequestStatus,
+        refetch: refetchDutyRequestList,
+    } = useQuery({
         ...requestListQueryOptions,
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
-    const {data: requestShift, status: shiftStatus} = useQuery({
+    const {
+        data: requestShift,
+        status: shiftStatus,
+        refetch: refetchRequestShift,
+    } = useQuery({
         ...requestShiftQueryOptions,
         queryFn: async (): Promise<TRequestShift> => {
             const res = await WardAPI.getReqShift(wardId!, currentShiftTeamId!, year, month);
@@ -73,7 +100,7 @@ const useRequestShift = (activeEffect = false) => {
         async (focus: TFocus, shiftTypeId: number | null) => {
             if (!wardId) return;
 
-            setChangeStatus('loading');
+            setState('changeStatus', 'loading');
             await queryClient.cancelQueries({queryKey: requestShiftQueryKey});
 
             const {shiftNurseId, day} = focus;
@@ -112,18 +139,18 @@ const useRequestShift = (activeEffect = false) => {
 
             try {
                 await WardAPI.updateReqShift(wardId, year, month, focus.day + 1, focus.shiftNurseId, shiftTypeId);
-                setChangeStatus('success');
-                setTimeout(() => setChangeStatus('idle'), 0);
+                setState('changeStatus', 'success');
+                setTimeout(() => setState('changeStatus', 'idle'), 0);
             } catch {
                 if (oldShift) {
                     queryClient.setQueryData(requestShiftQueryKey, oldShift);
                 }
 
-                setChangeStatus('error');
-                setTimeout(() => setChangeStatus('idle'), 0);
+                setState('changeStatus', 'error');
+                setTimeout(() => setState('changeStatus', 'idle'), 0);
             }
         },
-        [queryClient, requestShiftQueryKey, wardId, wardShiftTypeMap, year, month],
+        [queryClient, requestShiftQueryKey, setState, wardId, wardShiftTypeMap, year, month],
     );
     const acceptRequest = useCallback(
         async (reqShiftId: number, isAccepted: boolean | null) => {
@@ -279,6 +306,9 @@ const useRequestShift = (activeEffect = false) => {
 
         handleToggleEditMode();
     };
+    const retry = useCallback(async () => {
+        await Promise.all([refetchShiftTeams(), refetchDutyRequestList(), refetchRequestShift()]);
+    }, [refetchDutyRequestList, refetchRequestShift, refetchShiftTeams]);
 
     useEffect(() => {
         if (activeEffect && requestShift) {
@@ -324,6 +354,8 @@ const useRequestShift = (activeEffect = false) => {
             foldedLevels,
             changeStatus,
             shiftStatus,
+            shiftTeamsStatus,
+            dutyRequestStatus,
             wardShiftTypeMap,
             readonly,
             currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
@@ -336,6 +368,7 @@ const useRequestShift = (activeEffect = false) => {
             acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => acceptRequest(reqShiftId, isAccepted),
             foldLevel,
             changeMonth,
+            retry,
             changeFocus: (focus: TFocus | null) => setState('focus', focus),
             changeShiftTeam: (shiftTeam: TShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
         },
