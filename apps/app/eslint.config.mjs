@@ -13,10 +13,10 @@ import globals from 'globals';
 export default [
     js.configs.recommended,
     {
-        ignores: ['coverage/**', 'dist/**', '**/*', '!src/**'],
+        ignores: ['coverage/**', 'dist/**', '**/*', '!src/**', '!cypress/**'],
     },
     {
-        files: ['src/**/*.{ts,tsx,js,jsx}'],
+        files: ['src/**/*.{ts,tsx,js,jsx}', 'cypress/**/*.{ts,tsx,js,jsx}', '*.{ts,mjs}'],
         languageOptions: {
             parser: typescriptParser,
             parserOptions: {

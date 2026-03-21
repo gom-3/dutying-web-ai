@@ -1,4 +1,5 @@
 import {defineConfig} from 'vitest/config';
+import {fileURLToPath} from 'node:url';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
@@ -46,7 +47,10 @@ const dependencies = {
     zustand: 'zustand',
 };
 
+const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
+
 export default defineConfig(({command}) => ({
+    envDir: workspaceRoot,
     build: {
         sourcemap: true,
         rollupOptions: {

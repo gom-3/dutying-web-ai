@@ -1,5 +1,5 @@
-import {type TNurseResponse, type TUpdateNurseDTO} from '../nurse/type';
 import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+import {type TNurseResponse, type TUpdateNurseDTO} from '../nurse/type';
 
 export type TWaitingNurseResponse = {
     waitingNurseId: number;
