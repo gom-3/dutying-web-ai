@@ -1,7 +1,7 @@
 import axios from 'axios';
-import {toast} from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import ROUTE from '@/shared/constant/path';
+import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 const axiosInstance = axios.create({
     baseURL: import.meta.env.VITE_SERVER_URL,
@@ -29,7 +29,7 @@ axiosInstance.interceptors.response.use(
                 }
             })
             .with(400, 404, () => {
-                toast.error(message ?? '에러가 발생했습니다. 다시 시도해주세요.');
+                showActionErrorFeedback(message ?? '에러가 발생했습니다. 다시 시도해주세요.');
             })
             .otherwise(() => {
                 // no-op

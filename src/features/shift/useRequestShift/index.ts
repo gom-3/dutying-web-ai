@@ -9,6 +9,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {DateUtil} from '@/shared/util/date';
+import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import {useRequestShiftStore} from './store';
 import {type TFocus} from './type';
 import {findNurse, keydownEventMapper, moveFocus} from './utils';
@@ -161,7 +162,7 @@ const useRequestShift = (activeEffect = false) => {
                 await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
                 await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
             } catch {
-                alert('신청 처리에 실패했습니다.');
+                showActionErrorFeedback('신청 처리에 실패했습니다.');
             }
         },
         [dutyRequestQueryKey, queryClient, requestShiftQueryKey, wardId],
@@ -169,7 +170,7 @@ const useRequestShift = (activeEffect = false) => {
     const changeMonth = (type: 'prev' | 'next') => {
         if (type === 'prev') {
             if (new Date(year, month, 1) <= new Date() && !readonly) {
-                alert('두달 전 신청 근무는 수정하실 수 없습니다');
+                showValidationFeedback('두 달 전 신청 근무는 수정할 수 없습니다.');
                 setState('readonly', true);
             }
 
@@ -181,7 +182,7 @@ const useRequestShift = (activeEffect = false) => {
             }
         } else if (type === 'next') {
             if (new Date(year, month - 1, 1) > new Date()) {
-                alert('두달 뒤 신청 근무는 아직 수정하실  수 없습니다.');
+                showValidationFeedback('두 달 뒤 신청 근무는 아직 수정할 수 없습니다.');
 
                 return;
             }
