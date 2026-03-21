@@ -49,6 +49,22 @@ export type TOnboardingParsedWardData = {
 };
 
 const createLocalId = (prefix: string) => `${prefix}-${crypto.randomUUID()}`;
+const inferClassificationFromShortName = (shortName: string, isOff: boolean): TOnboardingWardShiftType['classification'] => {
+    if (isOff) return 'OFF';
+
+    switch (shortName.toUpperCase()) {
+        case 'D':
+            return 'DAY';
+        case 'E':
+            return 'EVENING';
+        case 'N':
+            return 'NIGHT';
+        case 'O':
+            return 'OFF';
+        default:
+            return 'OTHER_WORK';
+    }
+};
 const normalizeUploadedShiftTypes = (shiftTypes: TOnboardingWardShiftType[]): TOnboardingWardShiftType[] =>
     shiftTypes.map((shiftType) =>
         shiftType.shortName === 'D'
@@ -61,18 +77,20 @@ const normalizeUploadedShiftTypes = (shiftTypes: TOnboardingWardShiftType[]): TO
     );
 const toDraftShiftType = (parsed: TOnboardingParsedShiftType): TOnboardingWardShiftType => {
     const base = createEmptyShiftType();
+    const shortName = parsed.shortName ?? base.shortName;
+    const isOff = parsed.isOff ?? false;
 
     return {
         ...base,
         id: createLocalId('shift'),
         name: parsed.name ?? base.name,
-        shortName: parsed.shortName ?? base.shortName,
+        shortName,
         startTime: parsed.startTime ?? base.startTime,
         endTime: parsed.endTime ?? base.endTime,
         color: parsed.color ?? base.color,
         isDefault: parsed.isDefault ?? false,
-        isOff: parsed.isOff ?? false,
-        classification: parsed.classification ?? (parsed.isOff ? 'OFF' : base.classification),
+        isOff,
+        classification: parsed.classification ?? inferClassificationFromShortName(shortName, isOff),
     };
 };
 const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
@@ -142,19 +160,23 @@ const buildParsedNurses = (
     const defaultShiftTypeIds = shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
     const fallbackTeamId = teams[0]?.id ?? '';
 
-    return parsedNurses.map((nurse, index) => ({
-        id: createLocalId(`nurse-${index + 1}`),
-        teamId: teamIdByName.get(nurse.teamName?.trim() ?? '') ?? fallbackTeamId,
-        name: nurse.name ?? '',
-        memo: nurse.memo ?? '',
-        isWorker: nurse.isWorker ?? true,
-        employmentDate: nurse.employmentDate ?? '2024-01-01',
-        possibleShiftTypeIds:
+    return parsedNurses.map((nurse, index) => {
+        const possibleShiftTypeIds =
             nurse.possibleShiftShortNames
                 ?.map((shortName) => shiftIdByShortName.get(shortName))
-                .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId)) ?? defaultShiftTypeIds,
-        level: nurse.level ?? null,
-    }));
+                .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId)) ?? defaultShiftTypeIds;
+
+        return {
+            id: createLocalId(`nurse-${index + 1}`),
+            teamId: teamIdByName.get(nurse.teamName?.trim() ?? '') ?? fallbackTeamId,
+            name: nurse.name ?? '',
+            memo: nurse.memo ?? '',
+            isWorker: nurse.isWorker ?? true,
+            employmentDate: nurse.employmentDate ?? '2024-01-01',
+            possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : defaultShiftTypeIds,
+            level: nurse.level ?? null,
+        };
+    });
 };
 
 export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboardingParsedWardData): TOnboardingWardDraft => {
