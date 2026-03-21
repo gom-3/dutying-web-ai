@@ -30,6 +30,80 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
     });
 
+    it('disables next in step 2 when a shift type is invalid', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+
+        const nextButton = screen.getByRole('button', {name: '다음'});
+
+        expect(nextButton).toBeDisabled();
+    });
+
+    it('disables next in step 3 when any team has no nurses', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: /팀 추가하기/ }));
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+    });
+
+    it('disables next in step 3 when a nurse name is empty', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        const nurseInputs = screen.getAllByDisplayValue(/홍길동|김하늘|박연우|이서윤/);
+
+        await user.clear(nurseInputs[0] as HTMLInputElement);
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+    });
+
+    it('allows skip to bypass validation and move to the next step', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+
+        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+
+        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+
+        expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
+    });
+
+    it('disables completion when step 2 remains invalid after skipping ahead', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+
+        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+        await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(screen.getByRole('button', {name: '완료'})).toBeDisabled();
+    });
+
     it('updates skill level config and creates a mock payload on completion', async () => {
         const user = userEvent.setup();
 
@@ -37,7 +111,13 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('button', {name: '건너뛰기'}));
         await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+        await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+        await user.click(screen.getByRole('button', {name: /간호사 1팀/}));
+
         await user.click(screen.getByRole('button', {name: '숙련도 설정'}));
 
         expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -45,7 +125,9 @@ describe('OnboardingWardCreatePage', () => {
         await user.selectOptions(screen.getByDisplayValue('5단계'), '3');
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '완료'}));
 
-        expect(screen.getAllByText('LV. 3').length).toBeGreaterThan(0);
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(screen.getAllByText((content) => content.includes('LV. 3')).length).toBeGreaterThan(0);
 
         await user.click(screen.getByRole('button', {name: '완료'}));
 

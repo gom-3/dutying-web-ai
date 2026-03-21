@@ -7,10 +7,11 @@ interface IOnboardingStepLayoutProps {
     onSkip: () => void;
     onPrev: () => void;
     onNext: () => void;
+    nextDisabled?: boolean;
     children: ReactNode;
 }
 
-function OnboardingStepLayout({step, onSkip, onPrev, onNext, children}: IOnboardingStepLayoutProps) {
+function OnboardingStepLayout({step, onSkip, onPrev, onNext, nextDisabled = false, children}: IOnboardingStepLayoutProps) {
     return (
         <>
             {children}
@@ -24,7 +25,9 @@ function OnboardingStepLayout({step, onSkip, onPrev, onNext, children}: IOnboard
                             이전
                         </WizardButton>
                     ) : null}
-                    <WizardButton onClick={onNext}>{step < 4 ? '다음' : '완료'}</WizardButton>
+                    <WizardButton onClick={onNext} disabled={nextDisabled}>
+                        {step < 4 ? '다음' : '완료'}
+                    </WizardButton>
                 </div>
             </div>
         </>
