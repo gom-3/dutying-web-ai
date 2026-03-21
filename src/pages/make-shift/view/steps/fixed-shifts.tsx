@@ -3,7 +3,9 @@ import {useEffect, useMemo, useRef} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {
+    buildWorkKeyMap,
     buildViolationMap,
+    shiftToDoc,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
@@ -13,7 +15,6 @@ import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-b
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
-import {buildWorkKeyMap, shiftToDoc} from '../../model/shift-editor-adapter';
 
 function isSameDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;

@@ -3,10 +3,16 @@ import {useEffect, useMemo, useRef} from 'react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
-import {type TDutyDoc, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '@/features/shift-editor';
+import {
+    buildWorkKeyMap,
+    docToWardShiftsDTO,
+    shiftToDoc,
+    type TDutyDoc,
+    useShiftEditorCommands,
+    useShiftEditorKeyBindings,
+    useShiftEditorStore,
+} from '@/features/shift-editor';
 import useLoadingUseCase from '@/features/ui/useLoading';
-import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
-import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from '@/pages/make-shift/model/shift-editor-adapter';
 import WardAPI from '@/shared/api/ward';
 import ROUTE from '@/shared/constant/path';
 import {shiftToExcel} from '@/shared/util/shiftToExcel';
@@ -54,7 +60,6 @@ export function useDutyHook() {
     const setReadonly = useDutyStore((s) => s.setReadonly);
     const setShift = useDutyStore((s) => s.setShift);
     const setStatus = useDutyStore((s) => s.setStatus);
-    const setMakeShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const commands = useShiftEditorCommands();
     const doc = useShiftEditorStore((s) => s.doc);
     const editorRef = useRef<HTMLDivElement>(null);
@@ -184,9 +189,9 @@ export function useDutyHook() {
         const params = new URLSearchParams({
             year: String(nextYear),
             month: String(nextMonth),
+            shiftTeamId: String(currentShiftTeamId ?? ''),
         });
 
-        setMakeShiftTeamId(currentShiftTeamId);
         navigate(`${ROUTE.MAKE}?${params.toString()}`);
     };
     const handlePostShift = async () => {
