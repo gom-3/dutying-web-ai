@@ -1,6 +1,8 @@
 import {Suspense, lazy} from 'react';
 import {Route, Routes} from 'react-router-dom';
 import ROUTE from '@/shared/constant/path.ts';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/LandingPage/index.ts'));
@@ -18,8 +20,19 @@ const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));
 
 export const Router = () => {
+    const {t} = useTypedTranslation();
+
     return (
-        <Suspense fallback={<div></div>}>
+        <Suspense
+            fallback={
+                <PageState
+                    tone="loading"
+                    layout="screen"
+                    title={t('page.state.loadingTitle')}
+                    description={t('page.state.loadingDescription')}
+                />
+            }
+        >
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />

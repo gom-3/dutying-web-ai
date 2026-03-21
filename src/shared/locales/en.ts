@@ -2,6 +2,13 @@ import {type TLocale} from './ko';
 
 export const en: TLocale = {
     page: {
+        state: {
+            loadingTitle: 'Preparing the screen',
+            loadingDescription: 'Please wait a moment.',
+            emptyDescription: 'Content will appear here once it becomes available.',
+            errorDescription: 'Please try again shortly. If the issue continues, refresh and check again.',
+            retry: 'Retry',
+        },
         landing: {
             title: 'Duty Schedule\nNow Easier!',
         },
@@ -11,6 +18,7 @@ export const en: TLocale = {
                 shiftExists: '{{teamName}} has a schedule for {{month}}.',
                 shiftEmpty: "{{teamName}}'s {{month}} schedule is empty.",
                 checking: 'Checking schedule status.',
+                error: 'Failed to check the schedule status.',
                 viewShift: 'View {{month}} duty schedule',
                 createShift: 'Create {{month}} duty schedule',
             },

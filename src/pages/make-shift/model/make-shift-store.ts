@@ -47,6 +47,7 @@ export type TMakeShiftStore = {
     // overview status (MVP)
     shiftStatus: TShiftStatus;
     shiftExists: boolean;
+    reloadToken: number;
 
     // actions (no business logic beyond state transitions)
     startFromStep: (opts: {step: TMakeShiftStep; openRestoreDraftModal: boolean}) => void;
@@ -65,6 +66,7 @@ export type TMakeShiftStore = {
 
     setShiftStatus: (status: TShiftStatus) => void;
     setShiftExists: (exists: boolean) => void;
+    requestReload: () => void;
 };
 
 export const useMakeShiftStore = create<TMakeShiftStore>()(
@@ -80,6 +82,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         shiftStatus: 'idle',
         shiftExists: false,
+        reloadToken: 0,
 
         startFromStep: ({step, openRestoreDraftModal}) => {
             set(() => ({
@@ -164,6 +167,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
         setShiftExists: (shiftExists) => set(() => ({shiftExists})),
+        requestReload: () => set((state) => ({reloadToken: state.reloadToken + 1})),
     })),
 );
 

@@ -92,6 +92,7 @@ export function useRequestsShiftsHook() {
     const wardShiftTypeMap = useMemo(() => buildShiftTypeMap(shiftTypeSource), [shiftTypeSource]);
     const appliedRequests = useMemo(() => buildAppliedRequests(requestQuery.data ?? null), [requestQuery.data]);
     const queryError = requestQuery.error ?? requestListQuery.error ?? shiftTypesQuery.error;
+    const retry = () => Promise.all([requestQuery.refetch(), requestListQuery.refetch(), shiftTypesQuery.refetch()]);
 
     return {
         state: {
@@ -107,6 +108,9 @@ export function useRequestsShiftsHook() {
         status: {
             loading: requestQuery.isLoading || requestListQuery.isLoading || shiftTypesQuery.isLoading,
             error: Boolean(queryError),
+        },
+        actions: {
+            retry,
         },
     };
 }
