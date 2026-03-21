@@ -54,7 +54,7 @@ export type TWaitingNurse = {
     name: string;
     gender: string;
     phoneNum: string;
-    employmentDate: boolean;
+    employmentDate: string;
     /** @deprecated use profileImgUrl */
     profileImgBase64?: string;
     profileImgUrl: string;
