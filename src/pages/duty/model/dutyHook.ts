@@ -87,6 +87,7 @@ export function useDutyHook() {
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
     const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const shiftTeamsStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
 
     useEffect(() => {
         if (!queryYear || !queryMonth) return;
@@ -235,6 +236,7 @@ export function useDutyHook() {
             shiftTeams,
             currentShiftTeamId,
             currentShiftTeamName,
+            shiftTeamsStatus,
             readonly,
             shift,
             status,

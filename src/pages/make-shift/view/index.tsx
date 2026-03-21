@@ -58,12 +58,14 @@ export const MakeShiftPageView = () => {
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const hasShiftTeams = shiftTeams.length > 0;
+    const showNoTeamsState = shiftTeamsStatus === 'success' && !hasShiftTeams;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
     const nextMonth = month === 12 ? 1 : month + 1;
@@ -92,7 +94,7 @@ export const MakeShiftPageView = () => {
             <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
                 {isOverview ? (
                     <div className="flex flex-1 items-center justify-center px-10 py-16">
-                        {!hasShiftTeams ? (
+                        {showNoTeamsState ? (
                             <DutyManagementStatusCard
                                 title={t('page.makeShift.overview.noTeamsTitle')}
                                 description={t('page.makeShift.overview.noTeamsDescription')}

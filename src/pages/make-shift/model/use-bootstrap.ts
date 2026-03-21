@@ -24,6 +24,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const setShiftStatus = useMakeShiftStore((s) => s.setShiftStatus);
     const setShiftExists = useMakeShiftStore((s) => s.setShiftExists);
     const setShiftTeams = useMakeShiftStore((s) => s.setShiftTeams);
+    const setShiftTeamsStatus = useMakeShiftStore((s) => s.setShiftTeamsStatus);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
@@ -61,6 +62,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
         const run = async () => {
             if (!wardId) {
+                setShiftTeamsStatus('idle');
                 setShiftStatus('idle');
                 setShiftExists(false);
                 setShiftTeams([]);
@@ -70,13 +72,19 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             }
 
             try {
+                setShiftTeamsStatus('pending');
+
                 const teams = await WardAPI.getShiftTeams(wardId);
 
                 if (cancelled) return;
 
                 setShiftTeams(teams);
+                setShiftTeamsStatus('success');
             } catch {
-                if (!cancelled) setShiftStatus('error');
+                if (!cancelled) {
+                    setShiftTeamsStatus('error');
+                    setShiftStatus('error');
+                }
             }
         };
 
@@ -85,7 +93,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, wardId]);
+    }, [setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setShiftTeamsStatus, wardId]);
 
     useEffect(() => {
         if (!wardId) return;

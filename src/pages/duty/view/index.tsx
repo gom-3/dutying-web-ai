@@ -64,10 +64,13 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 </div>
 
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
-                    {state.shiftTeams.length === 0 && (
+                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0 && (
                         <DutyManagementStatusCard title={t('page.duty.noTeamsTitle')} description={t('page.duty.noTeamsDescription')} />
                     )}
-                    {state.status === 'pending' && <DutyManagementStatusCard title={t('page.duty.loading')} />}
+                    {state.shiftTeamsStatus !== 'success' && <DutyManagementStatusCard title={t('page.duty.loading')} />}
+                    {state.shiftTeamsStatus === 'success' && state.status === 'pending' && (
+                        <DutyManagementStatusCard title={t('page.duty.loading')} />
+                    )}
                     {state.shiftTeams.length > 0 && state.status === 'error' && <DutyManagementStatusCard title={t('page.duty.error')} />}
                     {state.shiftTeams.length > 0 && state.status === 'success' && !state.shift && (
                         <DutyManagementStatusCard
