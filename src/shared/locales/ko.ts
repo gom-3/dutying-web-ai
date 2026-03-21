@@ -150,6 +150,27 @@ export const ko = {
         refresh: {
             loading: '로그인중입니다.',
         },
+        member: {
+            shiftTeamList: {
+                title: '팀',
+                subtitle: '팀당 근무표 1개 생성 가능합니다.',
+                addTeam: '팀 추가하기',
+                card: {
+                    addNurse: '간호사 만들기',
+                    addNurseTooltip: '초대하지 않아도, 가상의 간호사를 만들어 관리할 수 있어요! (언제든지 초대해서 연동 가능합니다.)',
+                    viewShift: '근무표 보러가기',
+                    deleteTeam: '팀 삭제하기',
+                    empty: '아직 간호사가 없습니다!',
+                    virtualNurseTooltip: '연동 되지 않은 가상의 간호사입니다.',
+                    divider: '구분선',
+                    editTeamNameAria: '{{teamName}} 팀 이름 수정',
+                    openMenuAria: '{{teamName}} 팀 메뉴 열기',
+                    selectNurseAria: '{{nurseName}} 간호사 선택',
+                    addDividerAria: '{{nurseName}} 아래에 구분선 추가',
+                    removeDividerAria: '{{nurseName}} 아래 구분선 제거',
+                },
+            },
+        },
     },
     feature: {
         auth: {
