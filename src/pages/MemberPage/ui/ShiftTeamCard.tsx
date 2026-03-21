@@ -16,8 +16,9 @@ interface IShiftTeamCardProps {
     editShiftTeam: TEditShiftTeamState;
     clickAwayMenuRef: RefCallback<HTMLDivElement>;
     clickAwayShiftTeamNameRef: RefCallback<HTMLInputElement>;
-    selectNurse: (nurseId: number) => void;
+    selectNurse: (nurseId: number, mode?: 'create' | 'edit') => boolean;
     addNurse: (shiftTeamId: number) => void;
+    isAddingNurse: boolean;
     editDivision: (shiftTeamId: number, prevPriority: number, changeValue: number, patchYearMonth: string) => void;
     deleteShiftTeam: (shiftTeamId: number) => void;
     onOpenMenu: (shiftTeamId: number) => void;
@@ -37,6 +38,7 @@ function ShiftTeamCard({
     clickAwayShiftTeamNameRef,
     selectNurse,
     addNurse,
+    isAddingNurse,
     editDivision,
     deleteShiftTeam,
     onOpenMenu,
@@ -105,14 +107,15 @@ function ShiftTeamCard({
                     >
                         <button
                             type="button"
-                            className="relative flex flex-1 items-center gap-[.3125rem] border-b-[.0625rem] border-main-3 px-6.25 text-left font-apple text-[1.25rem] font-medium text-sub-2 last:border-none focus-visible:outline-[.125rem] focus-visible:outline-main-2"
+                            className="relative flex flex-1 items-center gap-[.3125rem] border-b-[.0625rem] border-main-3 px-6.25 text-left font-apple text-[1.25rem] font-medium text-sub-2 last:border-none focus-visible:outline-[.125rem] focus-visible:outline-main-2 disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={isAddingNurse}
                             onClick={() => {
                                 addNurse(shiftTeam.shiftTeamId);
                                 onCloseMenu();
                             }}
                             aria-label={t('page.member.shiftTeamList.card.addNurse')}
                         >
-                            {t('page.member.shiftTeamList.card.addNurse')}
+                            {isAddingNurse ? '간호사 추가 중...' : t('page.member.shiftTeamList.card.addNurse')}
                             <InfoIcon className="peer h-5 w-5" />
                             <div className="invisible absolute top-[50%] -right-86 z-30 flex w-91 translate-y-[-50%] items-center gap-[.5rem] rounded-[.3125rem] bg-white px-2 py-1 font-apple text-[.875rem] text-sub-2 shadow-shadow-2 peer-hover:visible">
                                 <div
