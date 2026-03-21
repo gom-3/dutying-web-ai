@@ -9,6 +9,7 @@ import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {type TCreateWardDTO} from '@/shared/api/ward/type';
 import ROUTE from '@/shared/constant/path';
+import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useAuth from '../useAuth';
 
 type TChangeAccountStatusOptions = {
@@ -39,8 +40,8 @@ const useRegister = () => {
                 }
 
                 return updatedAccount;
-            } catch {
-                alert('계정 상태 변경에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '계정 상태 변경에 실패했습니다.');
                 throw new Error('Failed to change account status.');
             }
         },

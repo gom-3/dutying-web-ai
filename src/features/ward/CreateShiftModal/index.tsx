@@ -5,6 +5,7 @@ import {CancelIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import TimeInput from '@/shared/ui/form-controls/TimeInput';
+import ValidationMessage from '@/shared/ui/ValidationMessage';
 
 interface ICreateShiftModalProps {
     open: boolean;
@@ -28,26 +29,28 @@ const initialValue: TCreateShiftTypeDTO = {
 
 function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
     const [writeShift, setWriteShift] = useState(initialValue);
+    const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const modalRoot = document.querySelector('#modal-root');
     const handleSubmit = () => {
         if (writeShift.name === '') {
-            alert('근무 이름을 입력해주세요.');
+            setValidationMessage('근무 이름을 입력해주세요.');
 
             return;
         }
 
         if (!writeShift.isOff && (writeShift.startTime === '' || writeShift.endTime === '')) {
-            alert('근무 시간을 입력해주세요.');
+            setValidationMessage('근무 시간을 입력해주세요.');
 
             return;
         }
 
         if (writeShift.shortName === '') {
-            alert('근무 약자를 입력해주세요.');
+            setValidationMessage('근무 약자를 입력해주세요.');
 
             return;
         }
 
+        setValidationMessage(null);
         onSubmit(writeShift);
         close();
     };
@@ -55,11 +58,16 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
     useEffect(() => {
         if (open === false) {
             setWriteShift(initialValue);
+            setValidationMessage(null);
         }
     }, [open]);
 
     useEffect(() => {
-        if (shiftType) setWriteShift(shiftType);
+        if (shiftType) {
+            setWriteShift(shiftType);
+        }
+
+        setValidationMessage(null);
     }, [shiftType]);
 
     return open
@@ -83,6 +91,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               onClick={() => {
                                   if (writeShift.isDefault) return;
 
+                                  setValidationMessage(null);
                                   setWriteShift({...writeShift, isOff: false, classification: 'OTHER_WORK'});
                               }}
                           >
@@ -95,6 +104,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               onClick={() => {
                                   if (writeShift.isDefault) return;
 
+                                  setValidationMessage(null);
                                   setWriteShift({...writeShift, isOff: true, classification: 'OTHER_LEAVE'});
                               }}
                           >
@@ -107,7 +117,10 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               className="h-13.5 font-apple text-[1.5rem] font-medium text-sub-1"
                               placeholder={writeShift.isOff ? '휴가 명을 작성하세요.' : '근무 명을 작성하세요.'}
                               value={writeShift.name}
-                              onChange={(e) => setWriteShift({...writeShift, name: e.target.value})}
+                              onChange={(e) => {
+                                  setWriteShift({...writeShift, name: e.target.value});
+                                  setValidationMessage(null);
+                              }}
                           />
                       </div>
                       <div className="">
@@ -121,7 +134,10 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               className="h-13.5 w-13.5 px-0 text-center font-apple text-[1.5rem] font-medium text-sub-1"
                               value={writeShift.shortName}
                               readOnly={writeShift.isDefault}
-                              onChange={(e) => setWriteShift({...writeShift, shortName: e.target.value})}
+                              onChange={(e) => {
+                                  setWriteShift({...writeShift, shortName: e.target.value});
+                                  setValidationMessage(null);
+                              }}
                           />
                       </div>
                       {!writeShift.isOff && (
@@ -131,17 +147,25 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                                   <TimeInput
                                       className="h-13.5 w-35 text-center text-[1.5rem]"
                                       initTime={writeShift.startTime}
-                                      onTimeChange={(time) => setWriteShift({...writeShift, startTime: time})}
+                                      onTimeChange={(time) => {
+                                          setWriteShift({...writeShift, startTime: time});
+                                          setValidationMessage(null);
+                                      }}
                                   />
                                   <p className="font-poppins text-[1.5rem] text-sub-3">~</p>
                                   <TimeInput
                                       className="h-13.5 w-35 text-center text-[1.5rem]"
                                       initTime={writeShift.endTime}
-                                      onTimeChange={(time) => setWriteShift({...writeShift, endTime: time})}
+                                      onTimeChange={(time) => {
+                                          setWriteShift({...writeShift, endTime: time});
+                                          setValidationMessage(null);
+                                      }}
                                   />
                               </div>
+                              <ValidationMessage message={validationMessage} className="mt-3" />
                           </div>
                       )}
+                      {writeShift.isOff ? <ValidationMessage message={validationMessage} className="mt-4" /> : null}
                       <div className="flex flex-col items-start">
                           <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">배경 색</p>
                           <div className="flex flex-1 items-center gap-17.5">

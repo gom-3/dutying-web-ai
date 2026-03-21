@@ -13,10 +13,12 @@ import {BackIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
+import ValidationMessage from '@/shared/ui/ValidationMessage';
 
 function RegisterWard() {
     const [shiftTeams, setShiftTeams] = useState<string[][]>([[]]);
     const [wardShiftTypes, setWardShiftTypes] = useState<TCreateWardDTO['wardShiftTypes']>(DEFAULT_WARD_SHIFT_TYPES);
+    const [wardShiftError, setWardShiftError] = useState<string | null>(null);
     const {
         formState: {errors, isValid},
         register,
@@ -39,6 +41,10 @@ function RegisterWard() {
         if (accountMe?.status !== 'WARD_SELECT_PENDING') navigate(ROUTE.REGISTER);
     }, [accountMe, navigate]);
 
+    useEffect(() => {
+        setWardShiftError(null);
+    }, [wardShiftTypes]);
+
     return (
         <div className="relative mx-auto mt-30.75 flex h-[calc(100%-7.6875rem)] w-[52%] flex-col items-center bg-[#FDFCFE]">
             <div className="fixed top-7.5 left-12.5 flex cursor-pointer gap-5" onClick={() => navigate(ROUTE.ROOT)}>
@@ -50,11 +56,12 @@ function RegisterWard() {
                     const validationMessage = getWardShiftValidationMessage(wardShiftTypes);
 
                     if (validationMessage) {
-                        alert(validationMessage);
+                        setWardShiftError(validationMessage);
 
                         return;
                     }
 
+                    setWardShiftError(null);
                     createWard({
                         name: d.name,
                         hospitalName: d.hospitalName,
@@ -95,6 +102,7 @@ function RegisterWard() {
                     </div>
                 </div>
                 <RegisterWardShiftTypesSection wardShiftTypes={wardShiftTypes} setWardShiftTypes={setWardShiftTypes} />
+                <ValidationMessage message={wardShiftError} className="mt-3 self-start" />
                 <RegisterWardShiftTeamsSection shiftTeams={shiftTeams} setShiftTeams={setShiftTeams} />
                 <Button type="submit" disabled={!isValid} className="mt-10 h-15 w-30 self-end text-center text-[2rem] font-semibold">
                     저장

@@ -9,6 +9,7 @@ import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
 import {type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
 import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
+import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './store';
 
 const useEditShiftTeam = () => {
@@ -51,8 +52,8 @@ const useEditShiftTeam = () => {
                     memo: '',
                 });
                 await invalidateWard();
-            } catch {
-                alert('간호사 추가에 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '간호사 추가에 실패했습니다.');
             }
         },
         [invalidateWard, wardId],
@@ -77,8 +78,8 @@ const useEditShiftTeam = () => {
             try {
                 await NurseAPI.updateNurse(nurseId, updateNurseDTO);
                 await invalidateWardShiftAndRequest();
-            } catch {
-                alert('간호사 정보 수정이 실패했습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '간호사 정보 수정에 실패했습니다.');
             }
         },
         [invalidateWardShiftAndRequest],

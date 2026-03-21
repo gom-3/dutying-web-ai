@@ -5,6 +5,7 @@ import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
 import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
 import {type TEditWardDTO} from '@/shared/api/ward/type';
+import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 const useEditWard = () => {
     const {
@@ -31,8 +32,8 @@ const useEditWard = () => {
             try {
                 await WardAPI.editWard(wardId, editWardDTO);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
-            } catch {
-                alert('근무 설정 수정에 실패하였습니다.');
+            } catch (error) {
+                showActionErrorFeedback(error, '근무 설정 수정에 실패했습니다.');
             }
         },
         [queryClient, wardId, wardQueryKey],
