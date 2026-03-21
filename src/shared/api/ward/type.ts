@@ -1,4 +1,5 @@
 import {type TNurseResponse, type TUpdateNurseDTO} from '../nurse/type';
+import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
 
 export type TWaitingNurseResponse = {
     waitingNurseId: number;
@@ -104,6 +105,12 @@ export type TDutyRequestResponse = {
     isAccepted: boolean | null;
 };
 
+export type TGenerateAiAutofillScheduleDTO = {
+    year: number;
+    month: number;
+    schedule: Record<string, string[]>;
+};
+
 export interface IWardAPI {
     // Ward APIs
     // GET
@@ -147,6 +154,11 @@ export interface IWardAPI {
         wardShiftTypeId: number | null,
     ) => Promise<void>;
     acceptRequestShift: (wardId: number, reqShiftId: number, isAccepted: boolean | null) => Promise<void>;
+    generateAiAutofillSchedule: (
+        wardId: number,
+        shiftTeamId: number,
+        payload: TGenerateAiAutofillScheduleDTO,
+    ) => Promise<TAiScheduleResponse>;
     // POST
     postShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<void>;
 

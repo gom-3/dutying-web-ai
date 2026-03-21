@@ -1,23 +1,16 @@
-import axiosInstance from '@/shared/api/client';
-import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+import {WardAPI} from '@/shared/api';
+import type {TGenerateAiAutofillScheduleDTO} from '@/shared/api/ward/type';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
-
-type TAiScheduleApiPayload = {
-    year: number;
-    month: number;
-    schedule: Record<string, string[]>;
-};
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
     generate: async ({wardId, shiftTeamId, year, month, doc}) => {
         const schedule = Object.fromEntries(doc.rows.map((row) => [row.workerId, row.cells.map((cell) => cell ?? '')]));
-        const payload: TAiScheduleApiPayload = {
+        const payload: TGenerateAiAutofillScheduleDTO = {
             year,
             month,
             schedule,
         };
 
-        return (await axiosInstance.post<TAiScheduleResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/duty/ai-autofill`, payload))
-            .data;
+        return WardAPI.generateAiAutofillSchedule(wardId, shiftTeamId, payload);
     },
 };

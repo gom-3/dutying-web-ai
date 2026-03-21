@@ -5,11 +5,7 @@ import {mockAiScheduleProvider} from './ai-schedule-mock';
 type TProviderName = 'mock' | 'api';
 
 function getProviderName(): TProviderName {
-    const mode = (import.meta.env.VITE_AI_SCHEDULE_PROVIDER ?? 'mock').toLowerCase();
-
-    if (mode === 'api') return 'api';
-
-    return 'mock';
+    return (import.meta.env.VITE_AI_SCHEDULE_PROVIDER ?? 'api').toLowerCase() === 'mock' ? 'mock' : 'api';
 }
 
 function getAiScheduleProvider(): TAiScheduleProvider {
