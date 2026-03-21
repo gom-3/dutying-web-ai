@@ -22,10 +22,7 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
         setToAddShiftTeamId(null);
     }, []);
     const goToWaitingList = () => {
-        setStep(0);
-        setCurrentWaitingNurse(null);
-        setToLinkNurseId(null);
-        setToAddShiftTeamId(null);
+        initialize();
     };
     const goToMethodSelection = () => {
         setToLinkNurseId(null);
@@ -34,6 +31,9 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
     };
     const goToTargetSelection = () => setStep(2);
     const handleSelectWaitingNurse = (waitingNurse: TWaitingNurse) => {
+        setConnectMode('link');
+        setToLinkNurseId(null);
+        setToAddShiftTeamId(null);
         setCurrentWaitingNurse(waitingNurse);
         setStep(1);
     };
