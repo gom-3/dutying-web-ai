@@ -13,6 +13,14 @@ describe('Button 컴포넌트', () => {
 
         const button = screen.getByText('테스트 버튼');
 
-        expect(button).toHaveClass('border-main-1 text-main-1 transition-all');
+        expect(button).toHaveClass('border-main-1', 'bg-transparent', 'text-main-1');
+    });
+
+    it('디자인 2.0 기본 버튼 스타일을 사용해야 함', () => {
+        render(<Button>테스트 버튼</Button>);
+
+        const button = screen.getByText('테스트 버튼');
+
+        expect(button).toHaveClass('rounded-[50px]', 'font-apple', 'text-[2.25rem]', 'bg-main-1');
     });
 });

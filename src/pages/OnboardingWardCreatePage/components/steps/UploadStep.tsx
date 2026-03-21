@@ -1,5 +1,6 @@
 import {Upload} from 'lucide-react';
 import {useRef} from 'react';
+import Card from '@/shared/ui/Card';
 import {Button} from '@/shared/ui/primitives/button';
 import type {TOnboardingWardDraft} from '../../model';
 
@@ -13,8 +14,10 @@ function UploadStep({draft, onUpload}: IUploadStepProps) {
 
     return (
         <div className="space-y-6">
-            <div
-                className="flex min-h-[204px] flex-col items-center justify-center rounded-[20px] border border-dashed border-gray-5 bg-gray-7 px-10 py-[60px]"
+            <Card
+                variant="muted"
+                padding="none"
+                className="flex min-h-[204px] flex-col items-center justify-center px-10 py-[60px]"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
                     event.preventDefault();
@@ -50,11 +53,11 @@ function UploadStep({draft, onUpload}: IUploadStepProps) {
                     파일 업로드
                     <Upload className="h-5 w-5" />
                 </Button>
-            </div>
+            </Card>
             {draft.uploadedFileName ? (
-                <div className="rounded-[10px] border border-main-3 bg-main-light px-5 py-4 font-apple text-[18px] text-main-1">
+                <Card variant="success" padding="none" className="rounded-[10px] px-5 py-4 font-apple text-[18px]">
                     업로드됨: {draft.uploadedFileName}
-                </div>
+                </Card>
             ) : null}
         </div>
     );

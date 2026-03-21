@@ -7,14 +7,9 @@ type TButtonProps = React.ComponentProps<typeof ShadcnButton>;
 function Button({children, className, variant = 'default', ...props}: TButtonProps) {
     return (
         <ShadcnButton
-            variant={variant}
-            className={cn(
-                'rounded-[50px] border-[.125rem] font-apple text-[2.25rem] font-semibold disabled:bg-main-3',
-                variant === 'outline'
-                    ? 'border-main-1 bg-transparent text-main-1 transition-all hover:bg-main-4'
-                    : 'bg-main-1 text-white hover:bg-main-2',
-                className,
-            )}
+            variant={variant === 'outline' ? 'brandOutline' : 'brand'}
+            size="hero"
+            className={cn('disabled:bg-main-3', className)}
             {...props}
         >
             {children}

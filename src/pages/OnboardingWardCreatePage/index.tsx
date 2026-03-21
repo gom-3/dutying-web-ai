@@ -1,3 +1,4 @@
+import Card from '@/shared/ui/Card';
 import HeaderLogo from './components/HeaderLogo';
 import OnboardingStepLayout from './components/OnboardingStepLayout';
 import SectionHeader from './components/SectionHeader';
@@ -87,7 +88,7 @@ function OnboardingWardCreatePage() {
                     {stepContent}
                 </OnboardingStepLayout>
                 {completedPayload ? (
-                    <div className="mt-10 rounded-[20px] border border-gray-6 bg-white p-6">
+                    <Card className="mt-10">
                         <p className="mb-4 font-apple text-[20px] font-semibold text-text-1">Mock CreateWard Payload</p>
                         <pre
                             data-testid="mock-create-ward-payload"
@@ -95,7 +96,7 @@ function OnboardingWardCreatePage() {
                         >
                             {completedPayload}
                         </pre>
-                    </div>
+                    </Card>
                 ) : null}
             </div>
         </div>
