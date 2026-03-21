@@ -59,3 +59,12 @@ export type TFault = {
 };
 
 export type TFaults = Map<string, TFault>;
+
+export type TRequestShiftEditAvailability = {
+    canEdit: boolean;
+    status: 'editable' | 'lockedPast' | 'lockedFuture';
+    validationMessage: string | null;
+    badgeLabel: string;
+    periodLabel: string;
+    description: string;
+};

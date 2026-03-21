@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {type TRequestShift} from '@/entities/shift';
-import {getMoveNurseOrderPayload, getRequestFocus} from './utils';
+import {getDutyRequestStatusDescription, getMoveNurseOrderPayload, getRequestFocus} from './utils';
 
 const createRequestShift = (): TRequestShift => ({
     days: [],
@@ -163,5 +163,29 @@ describe('request-calendar utils', () => {
         );
 
         expect(focus).toBeNull();
+    });
+
+    it('미확인 신청은 수정 모드에서 달력 이동 안내를 보여준다', () => {
+        const description = getDutyRequestStatusDescription({
+            isAccepted: null,
+            readonly: false,
+            requestFocus: {
+                shiftNurseName: '김간호',
+                shiftNurseId: 11,
+                day: 2,
+            },
+        });
+
+        expect(description).toBe('이름을 누르면 해당 날짜로 이동해 검토할 수 있어요.');
+    });
+
+    it('달력 위치를 찾을 수 없는 신청은 예외 안내를 보여준다', () => {
+        const description = getDutyRequestStatusDescription({
+            isAccepted: null,
+            readonly: true,
+            requestFocus: null,
+        });
+
+        expect(description).toBe('현재 팀에 연결된 간호사 정보가 없어 달력 위치로는 바로 이동할 수 없어요.');
     });
 });

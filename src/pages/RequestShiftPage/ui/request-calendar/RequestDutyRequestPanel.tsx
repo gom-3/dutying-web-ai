@@ -5,7 +5,7 @@ import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/shift/useRequestShift/type';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
-import {getDutyRequestStatusLabel, getRequestFocus} from './utils';
+import {getDutyRequestStatusDescription, getDutyRequestStatusLabel, getRequestFocus} from './utils';
 
 interface IRequestDutyRequestPanelProps {
     dutyRequestList: TDutyRequest[] | undefined;
@@ -53,6 +53,12 @@ export default function RequestDutyRequestPanel({
             </div>
 
             <div className="scrollbar-hide max-h-[calc(100vh-18rem)] overflow-y-auto px-5 py-4">
+                <div className="mb-4 rounded-[14px] bg-gray-7 px-4 py-3">
+                    <p className="font-apple text-sm leading-6 font-medium text-gray-3">
+                        신청은 이 패널에서 바로 수락하거나 거절할 수 있어요. 달력에서 다른 근무를 입력하면 해당 신청은 자동으로 거절돼요.
+                    </p>
+                </div>
+
                 {dutyRequestStatus === 'pending' ? (
                     <PageState
                         tone="loading"
@@ -73,6 +79,11 @@ export default function RequestDutyRequestPanel({
                         {dutyRequestList.map((dutyRequest) => {
                             const requestFocus = getRequestFocus(dutyRequest, shiftNurseIdByNurseId);
                             const isUpdating = updatingRequestId === dutyRequest.wardReqShiftId;
+                            const requestStatusDescription = getDutyRequestStatusDescription({
+                                isAccepted: dutyRequest.isAccepted,
+                                readonly,
+                                requestFocus,
+                            });
 
                             return (
                                 <div key={dutyRequest.wardReqShiftId} className="rounded-[16px] border border-gray-6 px-4 py-3">
@@ -99,6 +110,9 @@ export default function RequestDutyRequestPanel({
                                                     {isUpdating ? '처리 중...' : getDutyRequestStatusLabel(dutyRequest.isAccepted)}
                                                 </p>
                                             </div>
+                                            <p className="mt-2 font-apple text-sm leading-6 font-medium text-gray-3">
+                                                {isUpdating ? '신청 상태를 반영하고 있어요.' : requestStatusDescription}
+                                            </p>
                                         </div>
                                     </div>
 

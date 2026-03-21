@@ -12,7 +12,7 @@ import {DateUtil} from '@/shared/util/date';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import {useRequestShiftStore} from './store';
 import {type TFocus} from './type';
-import {findNurse, keydownEventMapper, moveFocus} from './utils';
+import {findNurse, getRequestShiftEditAvailability, keydownEventMapper, moveFocus} from './utils';
 
 const useRequestShift = (activeEffect = false) => {
     const {
@@ -40,6 +40,7 @@ const useRequestShift = (activeEffect = false) => {
     const shiftTeamQueryKey = shiftTeamsQueryOptions.queryKey;
     const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
     const dutyRequestQueryKey = requestListQueryOptions.queryKey;
+    const editAvailability = getRequestShiftEditAvailability(year, month);
     const changeStatusResetTimerRef = useRef<number | null>(null);
     const requestShiftChangeQueueRef = useRef<Array<{focus: TFocus; shiftTypeId: number | null}>>([]);
     const isProcessingRequestShiftQueueRef = useRef(false);
@@ -237,9 +238,13 @@ const useRequestShift = (activeEffect = false) => {
         [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, wardId],
     );
     const changeMonth = (type: 'prev' | 'next') => {
+        const targetYear = type === 'prev' ? (month === 1 ? year - 1 : year) : month === 12 ? year + 1 : year;
+        const targetMonth = type === 'prev' ? (month === 1 ? 12 : month - 1) : month === 12 ? 1 : month + 1;
+        const targetAvailability = getRequestShiftEditAvailability(targetYear, targetMonth);
+
         if (type === 'prev') {
-            if (new Date(year, month, 1) <= new Date() && !readonly) {
-                showValidationFeedback('두 달 전 신청 근무는 수정할 수 없습니다.');
+            if (!readonly && targetAvailability.status === 'lockedPast' && targetAvailability.validationMessage) {
+                showValidationFeedback(targetAvailability.validationMessage);
                 setState('readonly', true);
             }
 
@@ -250,8 +255,8 @@ const useRequestShift = (activeEffect = false) => {
                 setState('month', month - 1);
             }
         } else if (type === 'next') {
-            if (new Date(year, month - 1, 1) > new Date()) {
-                showValidationFeedback('두 달 뒤 신청 근무는 아직 수정할 수 없습니다.');
+            if (targetAvailability.status === 'lockedFuture' && targetAvailability.validationMessage) {
+                showValidationFeedback(targetAvailability.validationMessage);
 
                 return;
             }
@@ -349,8 +354,16 @@ const useRequestShift = (activeEffect = false) => {
         },
         [focus, requestShift, setState, changeFocusedShift],
     );
-    const handleToggleEditMode = () => {
+    const handleToggleEditMode = (targetDate?: {year: number; month: number}) => {
+        const nextEditAvailability = targetDate ? getRequestShiftEditAvailability(targetDate.year, targetDate.month) : editAvailability;
+
         if (readonly) {
+            if (!nextEditAvailability.canEdit && nextEditAvailability.validationMessage) {
+                showValidationFeedback(nextEditAvailability.validationMessage);
+
+                return;
+            }
+
             setState('readonly', false);
         } else {
             setState('readonly', true);
@@ -366,6 +379,16 @@ const useRequestShift = (activeEffect = false) => {
     };
     const handleCreateNextMonthShift = () => {
         const nextMonth = new Date().getMonth() + 2;
+        const nextDate =
+            nextMonth > 12
+                ? {
+                      year: year + 1,
+                      month: 1,
+                  }
+                : {
+                      year,
+                      month: nextMonth,
+                  };
 
         if (nextMonth > 12) {
             setState('year', year + 1);
@@ -374,7 +397,7 @@ const useRequestShift = (activeEffect = false) => {
             setState('month', nextMonth);
         }
 
-        handleToggleEditMode();
+        handleToggleEditMode(nextDate);
     };
     const retry = useCallback(async () => {
         const retryTasks: Promise<unknown>[] = [refetchShiftTeams()];
@@ -444,6 +467,7 @@ const useRequestShift = (activeEffect = false) => {
             updatingRequestId,
             currentShiftTeam: shiftTeams?.find((x) => x.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
+            editAvailability,
         },
         actions: {
             changeRequestShift: (focus: TFocus, shiftTypeId: number | null) => changeRequestShift(focus, shiftTypeId),
