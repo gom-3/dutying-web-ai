@@ -85,6 +85,25 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
     });
 
+    it('disables completion when step 2 remains invalid after skipping ahead', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+
+        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+        await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(screen.getByRole('button', {name: '완료'})).toBeDisabled();
+    });
+
     it('updates skill level config and creates a mock payload on completion', async () => {
         const user = userEvent.setup();
 

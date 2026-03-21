@@ -95,4 +95,18 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(canComplete(invalidDraft)).toBe(false);
     });
+
+    it('blocks completion when an earlier required step is invalid', () => {
+        const draft = createInitialDraft();
+        const withSecondTeamNurse = addNurseDraft(draft, draft.teams[1]!.id);
+        const withAllTeamNurses = addNurseDraft(withSecondTeamNurse, draft.teams[2]!.id);
+        const invalidShiftDraft = addShiftTypeDraft({
+            ...withAllTeamNurses,
+            currentStep: 4,
+        });
+
+        expect(getStepValidation(invalidShiftDraft, 2).isValid).toBe(false);
+        expect(getStepValidation(invalidShiftDraft, 4).isValid).toBe(true);
+        expect(canComplete(invalidShiftDraft)).toBe(false);
+    });
 });

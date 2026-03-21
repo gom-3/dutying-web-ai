@@ -99,6 +99,7 @@ const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
 };
 const MIN_STEP = 1;
 const MAX_STEP = 4;
+const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [2, 3, 4];
 
 let nextId = 0;
 
@@ -481,7 +482,7 @@ export const canGoNext = (draft: TOnboardingWardDraft): boolean =>
     draft.currentStep < MAX_STEP && getStepValidation(draft).isValid;
 
 export const canComplete = (draft: TOnboardingWardDraft): boolean =>
-    draft.currentStep === MAX_STEP && getStepValidation(draft, MAX_STEP).isValid;
+    draft.currentStep === MAX_STEP && REQUIRED_COMPLETION_STEPS.every((step) => getStepValidation(draft, step).isValid);
 
 export const getActionState = (draft: TOnboardingWardDraft): TOnboardingActionState => ({
     canGoPrev: canGoPrev(draft),
