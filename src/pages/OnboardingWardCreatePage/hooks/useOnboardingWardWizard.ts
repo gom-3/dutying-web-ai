@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import {type DropResult} from '@hello-pangea/dnd';
 import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -145,11 +146,13 @@ function useOnboardingWardWizard() {
         try {
             const submission = await onboardingWardCreateExecutor(draft);
 
-            console.info('createWardPayload', submission.wardCreatePayload);
             setSubmissionStatus('success');
             toast.success(submission.successMessage);
         } catch (error) {
-            console.error('Failed to complete onboarding ward creation.', error);
+            Sentry.captureException(error, {
+                tags: {feature: 'onboarding-ward-create'},
+                extra: {step: draft.currentStep},
+            });
             setSubmissionStatus('error');
             setSubmissionError(error instanceof Error ? error.message : '병동 생성에 실패했습니다. 다시 시도해주세요.');
         }

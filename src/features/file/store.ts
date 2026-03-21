@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import {AccountAPI} from '@/shared/api';
 import {createStore} from '@/shared/util/create-store';
 
@@ -36,7 +37,9 @@ export const initializeProfileImageStore = async () => {
             imageBaseUrl: match ? match[1] : DEFAULT_IMAGE_BASE_URL,
         });
     } catch (error) {
-        console.error('Failed to initialize profile image store:', error);
+        Sentry.captureException(error, {
+            tags: {feature: 'profile-image', action: 'initialize-store'},
+        });
         useProfileImageStore.setState({
             imageBaseUrl: DEFAULT_IMAGE_BASE_URL,
         });
