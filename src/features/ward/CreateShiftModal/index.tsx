@@ -91,6 +91,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               onClick={() => {
                                   if (writeShift.isDefault) return;
 
+                                  setValidationMessage(null);
                                   setWriteShift({...writeShift, isOff: false, classification: 'OTHER_WORK'});
                               }}
                           >
@@ -103,6 +104,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               onClick={() => {
                                   if (writeShift.isDefault) return;
 
+                                  setValidationMessage(null);
                                   setWriteShift({...writeShift, isOff: true, classification: 'OTHER_LEAVE'});
                               }}
                           >
