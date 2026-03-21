@@ -53,6 +53,10 @@ export const en: TLocale = {
                 },
                 dragHandleAria: 'Drag to reorder',
             },
+            aiRefill: {
+                action: 'Refill with AI',
+                generating: 'Filling with AI...',
+            },
         },
         duty: {
             prevMonth: 'Previous month',
