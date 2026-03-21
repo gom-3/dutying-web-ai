@@ -3,7 +3,7 @@ import {DateTime} from 'luxon';
 export function getDaysInMonth(month?: number, year?: number) {
     const currentDate = new Date();
 
-    month ??= currentDate.getMonth();
+    month ??= currentDate.getMonth() + 1;
     month--;
     year ??= currentDate.getFullYear();
 
