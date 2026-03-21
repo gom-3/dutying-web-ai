@@ -1,8 +1,8 @@
 import {type DropResult} from '@hello-pangea/dnd';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
+import {applyParsedWardData} from '../adapter';
 import {
-    applyMockUpload,
     addNurseDraft,
     addShiftTypeDraft,
     addTeamDraft,
@@ -14,7 +14,6 @@ import {
     getStepValidation,
     goNextStep as goNextStepDraft,
     goPreviousStep as goPreviousStepDraft,
-    serializeDraft,
     reorderNursesWithinTeam,
     saveSkillLevelConfig,
     type TOnboardingWardDraft,
@@ -22,6 +21,7 @@ import {
     updateNurseDraft,
     updateShiftTypeDraft,
 } from '../model';
+import {onboardingWardCreateExecutor} from '../submission';
 import type {TSortMode} from '../types';
 
 const MAX_STEP = 4;
@@ -76,7 +76,7 @@ function useOnboardingWardWizard() {
         setDraft((prev) => reorderNursesWithinTeam(prev, activeTeamId, {destination, source}));
     };
     const uploadMockFile = (fileName: string) => {
-        setDraft((prev) => applyMockUpload(prev, fileName));
+        setDraft((prev) => applyParsedWardData(prev, {fileName}));
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
@@ -86,12 +86,13 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        const payload = serializeDraft(draft);
-        const stringified = JSON.stringify(payload, null, 2);
+        const submission = onboardingWardCreateExecutor(draft);
+        const stringified = JSON.stringify(submission.previewPayload, null, 2);
 
-        console.info('mockCreateWardPayload', payload);
+        console.info('createWardPayload', submission.wardCreatePayload);
+        console.info('mockCreateWardPayload', submission.previewPayload);
         setCompletedPayload(stringified);
-        toast.success('mock 병동 생성 payload를 만들었습니다.');
+        toast.success(submission.successMessage);
     };
     const skipOrComplete = () => {
         if (draft.currentStep === MAX_STEP) {
