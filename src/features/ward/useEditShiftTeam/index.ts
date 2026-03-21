@@ -107,6 +107,10 @@ const useEditShiftTeam = () => {
     );
     const selectNurse = useCallback(
         (nurseId: number | null, mode: 'create' | 'edit' = 'edit') => {
+            if (selectedNurseId === nurseId) {
+                return true;
+            }
+
             const isChangingSelection = selectedNurseId !== nurseId;
             const isClosingDrawer = nurseId === null;
 
@@ -343,12 +347,18 @@ const useEditShiftTeam = () => {
     );
     const setNurseDraftDirty = useCallback(
         (isDirty: boolean) => {
-            patch({
-                isNurseDraftDirty: isDirty,
-                nurseSaveStatus: isDirty ? 'idle' : nurseSaveStatus,
+            patch((prev) => {
+                if (prev.isNurseDraftDirty === isDirty) {
+                    return {};
+                }
+
+                return {
+                    isNurseDraftDirty: isDirty,
+                    nurseSaveStatus: isDirty && prev.nurseSaveStatus !== 'saving' ? 'idle' : prev.nurseSaveStatus,
+                };
             });
         },
-        [nurseSaveStatus, patch],
+        [patch],
     );
 
     return {
