@@ -107,6 +107,30 @@ export const ko = {
         auth: {
             sessionExpired: '로그인이 만료되었습니다. 다시 로그인해주세요.',
         },
+        registerWard: {
+            shiftTypes: {
+                title: '근무 유형',
+                addAction: '근무 •휴가 추가하기',
+                leave: '휴가',
+                work: '근무',
+                column: {
+                    name: '근무 명',
+                    shortName: '약자',
+                    workTime: '근무 시간',
+                    color: '색상',
+                    category: '유형',
+                    edit: '수정',
+                },
+            },
+            shiftTeams: {
+                title: '병동내 간호사',
+                excludeMe: '* 본인은 제외해주세요',
+                addTeam: '팀 추가하기',
+                teamName: '간호사 {{index}}팀',
+                count: '{{count}}명',
+                addNamePlaceholder: '이름 추가',
+            },
+        },
         shiftEditor: {
             panel: {
                 histories: '기록',
