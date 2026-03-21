@@ -67,8 +67,8 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            AccountAPI.deleteAccount(accountMe.accountId);
-            handleLogout();
+            await AccountAPI.deleteAccount(accountMe.accountId);
+            await handleLogout();
         } catch (e) {
             Sentry.captureException(e, {
                 tags: {feature: 'account', action: 'delete-account'},
