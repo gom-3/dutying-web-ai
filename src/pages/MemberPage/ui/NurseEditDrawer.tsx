@@ -84,8 +84,12 @@ function NurseEditDrawer() {
                     value={writeNurse?.name ?? ''}
                 />
                 <div
-                    className="ml-auto flex h-5 w-7 cursor-pointer items-center justify-center rounded-[.3125rem] bg-sub-5 font-apple text-[.875rem] text-[#A2A6F5]"
+                    className={`ml-auto flex h-5 w-7 items-center justify-center rounded-[.3125rem] bg-sub-5 font-apple text-[.875rem] text-[#A2A6F5] ${
+                        isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                    }`}
                     onClick={() => {
+                        if (isBusy) return;
+
                         handleChange('gender', writeNurse?.gender === '남' ? '여' : '남');
                         sendEvent(events.memberPage.editNurseDrawer.changeNurseGender);
                     }}
