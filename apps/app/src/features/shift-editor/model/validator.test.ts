@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import type {TWardConstraint} from '@/entities';
-import {buildViolationMap, createDutyValidator} from './validator';
 import type {TDutyDoc, TDutyValidationInput} from './types';
+import {buildViolationMap, createDutyValidator} from './validator';
 
 function createWardConstraint(overrides: Partial<TWardConstraint> = {}): TWardConstraint {
     return {
@@ -122,6 +122,7 @@ describe('validator combinations', () => {
         ]);
 
         const map = buildViolationMap(violations, createDoc(['N', 'D', 'E']));
+
         expect(map.get('worker-1,0')).toMatchObject({
             ruleId: 'duty.maxContinuousWork',
             level: 'error',
@@ -152,6 +153,7 @@ describe('validator combinations', () => {
         ]);
 
         const map = buildViolationMap(violations, doc);
+
         expect(map.get('worker-1,0')).toMatchObject({
             ruleId: 'duty.maxContinuousWork',
             level: 'warning',

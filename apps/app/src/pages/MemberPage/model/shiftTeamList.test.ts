@@ -22,7 +22,6 @@ const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'shiftTe
     divisionNum: params.divisionNum,
     priority: params.priority,
 });
-
 const createShiftTeams = (): TShiftTeam[] => [
     {
         shiftTeamId: 10,

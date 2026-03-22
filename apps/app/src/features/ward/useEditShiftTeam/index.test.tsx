@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@/shared/util/test-utils';
@@ -13,7 +14,6 @@ const ward = {
         },
     ],
 } as any;
-
 const {
     mockInvalidateQueries,
     mockCancelQueries,
@@ -37,7 +37,7 @@ const {
 }));
 
 vi.mock('@tanstack/react-query', async () => {
-    const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const actual = await vi.importActual('@tanstack/react-query');
 
     return {
         ...actual,
@@ -105,7 +105,9 @@ describe('useEditShiftTeam', () => {
             isNurseDraftDirty: true,
         });
         mockUpdateNurse.mockRejectedValue({response: {status: 500}});
+
         const {result} = renderHook(() => useEditShiftTeam());
+
         let isSuccess: boolean | undefined;
 
         await act(async () => {
@@ -122,6 +124,7 @@ describe('useEditShiftTeam', () => {
 
     it('resets the adding flag after addNurse fails', async () => {
         mockAddNurseIntoShiftTeam.mockRejectedValue(new Error('network'));
+
         const {result} = renderHook(() => useEditShiftTeam());
 
         await act(async () => {
@@ -139,6 +142,7 @@ describe('useEditShiftTeam', () => {
             selectedNurseId: 11,
         });
         mockRemoveNurseFromShiftTeam.mockRejectedValue({message: 'server error'});
+
         const {result} = renderHook(() => useEditShiftTeam());
 
         await act(async () => {

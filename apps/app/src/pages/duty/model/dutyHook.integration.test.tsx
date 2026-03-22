@@ -1,12 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {act} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {renderHook} from '@/shared/util/test-utils';
 import {useShiftEditorCommands, useShiftEditorStore, type TDutyDoc} from '@/features/shift-editor';
+import {renderHook} from '@/shared/util/test-utils';
 import {useDutyHook} from './dutyHook';
 import {useDutyStore} from './dutyStore';
 
 const SHIFT_EDITOR_STORAGE_KEY = 'shift-editor:draft';
-
 const {mockNavigate, mockInvalidateQueries, mockSetLoading, mockUpdateShifts, mockPostShift, mockRefetch} = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockInvalidateQueries: vi.fn(),
@@ -20,7 +20,7 @@ let mockSearchParams = new URLSearchParams();
 let mockQueries: Record<string, any> = {};
 
 vi.mock('@/features/shift-editor', async () => {
-    const actual = await vi.importActual<typeof import('@/features/shift-editor')>('@/features/shift-editor');
+    const actual = await vi.importActual('@/features/shift-editor');
 
     return {
         ...actual,
@@ -32,7 +32,7 @@ vi.mock('@/features/shift-editor', async () => {
 });
 
 vi.mock('@tanstack/react-query', async () => {
-    const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const actual = await vi.importActual('@tanstack/react-query');
     const disabledQueryState = {
         data: undefined,
         isPending: true,
@@ -81,7 +81,6 @@ const shiftTeams = [
     {shiftTeamId: 10, name: 'A팀'},
     {shiftTeamId: 20, name: 'B팀'},
 ];
-
 const shift = {
     lastDays: [],
     days: [
@@ -122,7 +121,6 @@ const shift = {
         ],
     ],
 };
-
 const initializedDoc: TDutyDoc = {
     columns: ['2025-07-01', '2025-07-02'],
     rows: [{workerId: '1', cells: ['D', null]}],

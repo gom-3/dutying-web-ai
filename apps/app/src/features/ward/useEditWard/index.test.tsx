@@ -4,13 +4,7 @@ import {wardQueryKeys} from '@/entities/ward/model/queries';
 import {renderHook} from '@/shared/util/test-utils';
 import useEditWard from '.';
 
-const {
-    mockInvalidateQueries,
-    mockApproveWaitingNurses,
-    mockConnectWaitingNurses,
-    mockToastSuccess,
-    mockToastError,
-} = vi.hoisted(() => ({
+const {mockInvalidateQueries, mockApproveWaitingNurses, mockConnectWaitingNurses, mockToastSuccess, mockToastError} = vi.hoisted(() => ({
     mockInvalidateQueries: vi.fn(),
     mockApproveWaitingNurses: vi.fn(),
     mockConnectWaitingNurses: vi.fn(),
@@ -19,7 +13,7 @@ const {
 }));
 
 vi.mock('@tanstack/react-query', async () => {
-    const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const actual = await vi.importActual('@tanstack/react-query');
 
     return {
         ...actual,
@@ -63,7 +57,9 @@ describe('useEditWard', () => {
 
     it('returns true and invalidates ward queries after approving a waiting nurse', async () => {
         mockApproveWaitingNurses.mockResolvedValue(undefined);
+
         const {result} = renderHook(() => useEditWard());
+
         let isSuccess: boolean | undefined;
 
         await act(async () => {
@@ -80,7 +76,9 @@ describe('useEditWard', () => {
 
     it('returns false without showing an error toast when approveWaitingNurses rejects with a handled API code', async () => {
         mockApproveWaitingNurses.mockRejectedValue({code: 400});
+
         const {result} = renderHook(() => useEditWard());
+
         let isSuccess: boolean | undefined;
 
         await act(async () => {
@@ -95,7 +93,9 @@ describe('useEditWard', () => {
 
     it('returns false and surfaces a generic feedback toast when connectWaitingNurses rejects with an unknown error shape', async () => {
         mockConnectWaitingNurses.mockRejectedValue({response: {status: 500}});
+
         const {result} = renderHook(() => useEditWard());
+
         let isSuccess: boolean | undefined;
 
         await act(async () => {

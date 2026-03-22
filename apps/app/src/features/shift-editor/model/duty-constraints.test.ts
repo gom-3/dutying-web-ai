@@ -1,10 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {TWardConstraint} from '@/entities';
-import {
-    applyBoardToWardConstraint,
-    buildInitialDutyRuleBoard,
-    buildRuleLevelByKeyFromBoard,
-} from './duty-constraints';
+import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import type {TDutyRuleBoard} from './types';
 
 function createWardConstraint(overrides: Partial<TWardConstraint> = {}): TWardConstraint {
@@ -61,7 +57,6 @@ describe('duty constraint combinations', () => {
             minContinuousNightVal: 3,
             minOffAssignAfterNightVal: 3,
         });
-
         const board: TDutyRuleBoard = {
             error: ['maxContinuousNight'],
             warning: ['minOffAssignAfterNight', 'excludeNightBeforeReqOff'],

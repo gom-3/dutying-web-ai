@@ -62,12 +62,8 @@ describe('OnboardingWardCreatePage model', () => {
         const withoutWorkingStartTime = updateShiftTypeDraft(withoutOffTimes, workingShiftId, {startTime: ''});
         const validation = getStepValidation(withoutWorkingStartTime, 2);
 
-        expect(validation.issues).toEqual(
-            expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: workingShiftId}]),
-        );
-        expect(validation.issues).not.toEqual(
-            expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: offShiftId}]),
-        );
+        expect(validation.issues).toEqual(expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: workingShiftId}]));
+        expect(validation.issues).not.toEqual(expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: offShiftId}]));
     });
 
     it('reports empty-team when all onboarding teams are removed', () => {

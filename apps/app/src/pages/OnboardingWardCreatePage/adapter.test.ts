@@ -243,11 +243,7 @@ describe('OnboardingWardCreatePage adapter', () => {
                 possibleShiftShortNames: ['D'],
             },
         ]);
-        expect(warnings).toEqual([
-            '기본 경고',
-            '시트 "3월" 데이터를 불러오지 못했어요.',
-            '일부 행(12행)을 해석하지 못해 제외했어요.',
-        ]);
+        expect(warnings).toEqual(['기본 경고', '시트 "3월" 데이터를 불러오지 못했어요.', '일부 행(12행)을 해석하지 못해 제외했어요.']);
     });
 
     it('detects supported upload file extensions', () => {

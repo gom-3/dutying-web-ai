@@ -1,3 +1,4 @@
+import {type TShiftTeam} from '@dutying/domain';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook} from '@/shared/util/test-utils';
@@ -40,7 +41,7 @@ const shiftTeams = [
         name: 'B팀',
         nurses: [{nurseId: 3, name: '박셋', divisionNum: 1, priority: 1000}],
     },
-] as any;
+] as TShiftTeam[];
 
 describe('useShiftTeamListController', () => {
     beforeEach(() => {

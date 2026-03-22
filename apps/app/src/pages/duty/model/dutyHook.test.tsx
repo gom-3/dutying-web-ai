@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
@@ -45,7 +46,7 @@ let mockEditorState: any = {
 let mockQueries: Record<string, any> = {};
 
 vi.mock('@tanstack/react-query', async () => {
-    const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const actual = await vi.importActual('@tanstack/react-query');
     const disabledQueryState = {
         data: undefined,
         isPending: false,
@@ -104,7 +105,6 @@ const shiftTeams = [
     {shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []},
     {shiftTeamId: 20, name: 'B팀', nurseCnt: 0, nurses: []},
 ];
-
 const shift = {
     lastDays: [],
     days: [
@@ -145,7 +145,6 @@ const shift = {
         ],
     ],
 };
-
 const convertedDoc = {
     columns: ['2025-07-01', '2025-07-02'],
     rows: [{workerId: '1', cells: ['D', null]}],
