@@ -6,10 +6,13 @@
     "scripts": {
         "dev": "pnpm run dev:app",
         "dev:app": "pnpm --dir ./apps/app dev",
+        "dev:landing": "pnpm --dir ./apps/landing dev",
         "build": "pnpm run build:app",
         "build:app": "pnpm --dir ./apps/app build",
+        "build:landing": "pnpm --dir ./apps/landing build",
         "preview": "pnpm run preview:app",
         "preview:app": "pnpm --dir ./apps/app preview",
+        "preview:landing": "pnpm --dir ./apps/landing preview",
         "lint": "pnpm run lint:app",
         "lint:app": "pnpm --dir ./apps/app lint",
         "format": "prettier --write .",
@@ -28,6 +31,7 @@
         "changeset:version": "changeset version",
         "type-check": "pnpm run type-check:app",
         "type-check:app": "pnpm --dir ./apps/app type-check",
+        "type-check:landing": "pnpm --dir ./apps/landing check",
         "workspace:list": "pnpm ls -r --depth -1"
     },
     "pnpm": {
