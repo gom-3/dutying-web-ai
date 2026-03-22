@@ -8,6 +8,9 @@ export default function initializeApp() {
     enableMapSet();
 
     if (import.meta.env.PROD) {
+        const gaTrackingId = import.meta.env.VITE_GA_TRACKING_ID;
+        const pixelId = import.meta.env.VITE_PIXEL_ID;
+
         Sentry.init({
             dsn: 'https://5035f79c451043f4b6438a90817ff608@o4505477969084416.ingest.us.sentry.io/4505477970526208',
             tracesSampleRate: 0.2,
@@ -16,16 +19,22 @@ export default function initializeApp() {
         });
 
         // GA 관련 초기화
-        ReactGA.initialize(import.meta.env.VITE_GA_TRACKING_ID, {gaOptions: {}});
+        if (gaTrackingId) {
+            ReactGA.initialize(gaTrackingId, {gaOptions: {}});
+        }
 
         const history = createBrowserHistory();
 
         history.listen(async (response) => {
-            ReactGA.send({hitType: 'pageview', page: response.location.pathname});
+            if (gaTrackingId) {
+                ReactGA.send({hitType: 'pageview', page: response.location.pathname});
+            }
         });
 
         // Pixel 관련 초기화
-        ReactPixel.init(import.meta.env.VITE_PIXEL_ID);
-        ReactPixel.pageView();
+        if (pixelId) {
+            ReactPixel.init(pixelId);
+            ReactPixel.pageView();
+        }
     }
 }

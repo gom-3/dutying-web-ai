@@ -4,6 +4,7 @@ import useRequestShift from '@/features/shift/useRequestShift';
 import {useRequestShiftStore} from '@/features/shift/useRequestShift/store';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type IStepConfig, type IStepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const RequestTutorial = () => {
@@ -56,7 +57,7 @@ const RequestTutorial = () => {
         infoBoxAlignment: 'center',
         onPrevStep: toggleEditMode,
         ctaText: '메뉴얼 보러가기',
-        ctaUrl: 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
+        ctaUrl: RUNTIME_CONFIG.docs.requestTutorial,
     });
 
     useEffect(() => {
