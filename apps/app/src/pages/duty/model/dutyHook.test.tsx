@@ -46,10 +46,20 @@ let mockQueries: Record<string, any> = {};
 
 vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const disabledQueryState = {
+        data: undefined,
+        isPending: false,
+        isError: false,
+        refetch: mockRefetch,
+    };
 
     return {
         ...actual,
-        useQuery: vi.fn((options: {queryKey: unknown[]}) => mockQueries[String(options.queryKey[1])] ?? {data: undefined, isPending: false, isError: false}),
+        useQuery: vi.fn((options: {queryKey: unknown[]; enabled?: boolean}) => {
+            if (options.enabled === false) return disabledQueryState;
+
+            return mockQueries[String(options.queryKey[1])] ?? disabledQueryState;
+        }),
         useQueryClient: vi.fn(() => ({invalidateQueries: mockInvalidateQueries})),
     };
 });
