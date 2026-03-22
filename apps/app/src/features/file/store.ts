@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import {AccountAPI} from '@/shared/api';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {createStore} from '@/shared/util/create-store';
 
 interface IState {
@@ -24,12 +25,12 @@ AccountAPI.getDefaultProfileImages().then((images) => {
         imageBaseUrl: (() => {
             const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
 
-            return match ? match[1] : 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com';
+            return match ? match[1] : RUNTIME_CONFIG.profileImageBaseUrl();
         })(),
     });
 });
 
-const DEFAULT_IMAGE_BASE_URL = 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com';
+const DEFAULT_IMAGE_BASE_URL = RUNTIME_CONFIG.profileImageBaseUrl();
 
 export const initializeProfileImageStore = async () => {
     try {

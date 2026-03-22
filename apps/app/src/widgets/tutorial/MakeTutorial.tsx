@@ -2,6 +2,7 @@ import {useEffect} from 'react';
 import {createPortal} from 'react-dom';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type IStepConfig, type IStepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const MakeTutorial = () => {
@@ -56,7 +57,7 @@ const MakeTutorial = () => {
         info: '셀을 클릭하시고 D E N O를 입력하시면 근무를 작성하실 수 있어요! \n더 자세한 가이드는 메뉴얼 문서를 참고해주세요!',
         infoBoxAlignment: 'center',
         ctaText: '메뉴얼 보러가기',
-        ctaUrl: 'https://gom3.notion.site/68d3ad01e68d4d6a8b4cb8c2409353a3?pvs=4',
+        ctaUrl: RUNTIME_CONFIG.docs.makeTutorial,
     });
 
     useEffect(() => {

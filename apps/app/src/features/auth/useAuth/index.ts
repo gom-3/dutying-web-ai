@@ -6,7 +6,7 @@ import useLoadingUseCase from '@/features/ui/useLoading';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken} from '@/shared/api/client';
-import {siteConfig, toAppRedirectPath} from '@/shared/config/site';
+import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import useAuthStore from './store';
 
@@ -32,19 +32,20 @@ const useAuth = (activeEffect = false) => {
         setState('isAuth', true);
         setState('accessToken', accessToken);
         setAccessToken(accessToken);
-        const nextPath = toAppRedirectPath(nextPageUrl, siteConfig.appOrigin);
 
         // refresh 등 "상태만 세팅"이 필요할 때는 리다이렉트를 하지 않는다.
-        if (nextPath === null) {
+        if (nextPageUrl === null) {
             sendEvent(events.auth.login);
 
             return;
         }
 
-        if (nextPath === 'back') {
+        const redirectTarget = resolveSafeRedirectTarget(nextPageUrl);
+
+        if (redirectTarget === 'back') {
             window.history.back();
         } else {
-            location.replace(nextPath ?? ROUTE.MAKE);
+            location.replace(redirectTarget);
         }
 
         sendEvent(events.auth.login);

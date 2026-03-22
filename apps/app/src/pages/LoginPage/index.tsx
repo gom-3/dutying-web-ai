@@ -1,7 +1,7 @@
 import {Carousel} from 'react-responsive-carousel';
 import {useNavigate} from 'react-router';
 import {AppleIcon, BackCircle, FullLogo, KakaoIcon, LogoSymbolFill, NextCircle} from '@/shared/assets/svg';
-import {createOAuthAuthorizationUrl, siteConfig} from '@/shared/config/site';
+import {buildAuthAuthorizeUrl, RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import 'react-responsive-carousel/lib/styles/carousel.min.css'; // requires a loader
 import './index.css';
@@ -47,27 +47,21 @@ const LoginPage = () => {
                 </div>
                 <div className="flex flex-col">
                     <h1 className="font-apple text-[2rem] font-semibold text-text-1">로그인</h1>
-                    <a
-                        href={createOAuthAuthorizationUrl('kakao')}
-                        className="mt-10.5 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#FEE500] shadow-banner"
-                    >
+                    <a href={buildAuthAuthorizeUrl('kakao')} className="mt-10.5 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#FEE500] shadow-banner">
                         <KakaoIcon className="mr-12.5 h-8.5 w-9" />
                         <div className="font-apple text-[2rem] text-sub-1">카카오 계정으로 시작하기</div>
                     </a>
-                    <a
-                        href={createOAuthAuthorizationUrl('apple')}
-                        className="mt-6 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#231F20] shadow-banner"
-                    >
+                    <a href={buildAuthAuthorizeUrl('apple')} className="mt-6 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#231F20] shadow-banner">
                         <AppleIcon className="mr-12.5 h-8.5 w-9" />
                         <div className="font-apple text-[2rem] text-white">Apple 계정으로 시작하기</div>
                     </a>
                 </div>
                 <div className="flex font-apple text-[1rem] text-sub-3">
                     버튼을 누르면
-                    <a href={siteConfig.legal.terms} className="ml-[.5rem] underline underline-offset-[.1875rem]">
+                    <a href={RUNTIME_CONFIG.docs.termsOfService} className="ml-[.5rem] underline underline-offset-[.1875rem]">
                         서비스 약관,
                     </a>
-                    <a href={siteConfig.legal.terms} className="ml-[.5rem] underline underline-offset-[.1875rem]">
+                    <a href={RUNTIME_CONFIG.docs.privacyPolicy} className="ml-[.5rem] underline underline-offset-[.1875rem]">
                         개인정보 취급 방침
                     </a>
                     에 동의하신 것으로 간주합니다.

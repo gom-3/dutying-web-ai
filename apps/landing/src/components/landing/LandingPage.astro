@@ -1,5 +1,5 @@
 ---
-import {siteConfig} from '../../config/site';
+import {landingPrimaryCtas, siteConfig} from '../../config/site';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
 const inquiryLink = 'https://ye620.channel.io';
@@ -47,11 +47,6 @@ const featureSections = [
         tone: 'dark',
         align: 'start',
     },
-];
-
-const primaryCtas = [
-    {label: '근무표 작성 체험하기', href: siteConfig.appLinks.makeEntry},
-    {label: '근무표 만들기', href: siteConfig.appLinks.make},
 ];
 
 const formattedFeatureSections = featureSections.map((section) => ({
@@ -130,7 +125,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <p>근무표 작성 (수간호사 용)</p>
                     </div>
                     <div class="cta-row">
-                        {primaryCtas.map((cta) => (
+                        {landingPrimaryCtas.map((cta) => (
                             <a class="button button--store" href={cta.href}>{cta.label}</a>
                         ))}
                     </div>

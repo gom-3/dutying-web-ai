@@ -53,7 +53,7 @@ const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
-    const appSiteUrl = stripTrailingSlash(env.VITE_APP_SITE_URL || defaultAppSiteUrl);
+    const appSiteUrl = stripTrailingSlash(env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL || defaultAppSiteUrl);
 
     return {
         envDir: workspaceRoot,
