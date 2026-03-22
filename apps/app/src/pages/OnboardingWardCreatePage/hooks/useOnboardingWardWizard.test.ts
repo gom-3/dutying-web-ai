@@ -71,10 +71,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         const {result} = renderHook(() => useOnboardingWardWizard());
 
-        await uploadFile(
-            result.current.applyUploadedFile,
-            new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}),
-        );
+        await uploadFile(result.current.applyUploadedFile, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         expect(result.current.uploadStatus).toBe('success');
         expect(result.current.uploadError).toBeNull();
@@ -97,10 +94,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         const {result} = renderHook(() => useOnboardingWardWizard());
 
-        await uploadFile(
-            result.current.applyUploadedFile,
-            new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}),
-        );
+        await uploadFile(result.current.applyUploadedFile, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         expect(result.current.uploadStatus).toBe('warning');
         expect(result.current.uploadError).toBeNull();
@@ -118,10 +112,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         const {result} = renderHook(() => useOnboardingWardWizard());
         const initialDraft = result.current.draft;
 
-        await uploadFile(
-            result.current.applyUploadedFile,
-            new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}),
-        );
+        await uploadFile(result.current.applyUploadedFile, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         expect(result.current.uploadStatus).toBe('error');
         expect(result.current.uploadError).toBe('업로드한 파일 형식이 올바르지 않습니다.');
