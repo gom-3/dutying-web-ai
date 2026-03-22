@@ -6,12 +6,16 @@ export const getLandingRedirectPath = (isAuth: boolean) => (isAuth ? ROUTE.MAKE 
 
 const LandingPageRedirect = () => {
     const {
-        state: {isAuth},
+        state: {isAuth, _loaded},
     } = useAuth();
 
     useEffect(() => {
+        if (!_loaded) {
+            return;
+        }
+
         window.location.replace(getLandingRedirectPath(isAuth));
-    }, [isAuth]);
+    }, [_loaded, isAuth]);
 
     return null;
 };
