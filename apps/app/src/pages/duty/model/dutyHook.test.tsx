@@ -101,8 +101,8 @@ vi.mock('@/features/shift-editor', () => ({
 }));
 
 const shiftTeams = [
-    {shiftTeamId: 10, name: 'A팀'},
-    {shiftTeamId: 20, name: 'B팀'},
+    {shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []},
+    {shiftTeamId: 20, name: 'B팀', nurseCnt: 0, nurses: []},
 ];
 
 const shift = {
@@ -306,5 +306,168 @@ describe('useDutyHook', () => {
         });
         expect(mockSetLoading).toHaveBeenLastCalledWith(false);
         expect(useDutyStore.getState().readonly).toBe(true);
+    });
+
+    it('keeps edit mode active when saving fails while still clearing the loading state', async () => {
+        mockUpdateShifts.mockRejectedValue(new Error('save failed'));
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.shift).toBe(shift);
+        });
+
+        mockCommands.discardPersisted.mockClear();
+        mockInvalidateQueries.mockClear();
+
+        act(() => {
+            result.current.handlers.enableEdit();
+        });
+
+        await expect(
+            act(async () => {
+                await result.current.handlers.saveEdit();
+            }),
+        ).rejects.toThrow('save failed');
+
+        expect(mockDocToWardShiftsDTO).toHaveBeenCalledWith(mockEditorState.doc, shift);
+        expect(mockUpdateShifts).toHaveBeenCalled();
+        expect(mockCommands.discardPersisted).not.toHaveBeenCalled();
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+        expect(useDutyStore.getState().readonly).toBe(false);
+    });
+
+    it('posts the current shift and invalidates the duty query', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+        mockPostShift.mockResolvedValue(undefined);
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        await act(async () => {
+            await result.current.handlers.postShift();
+        });
+
+        expect(mockPostShift).toHaveBeenCalledWith(1, 20, 2025, 7);
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ['ward', 'duty', 1, 20, 2025, 7],
+        });
+    });
+
+    it('does not invalidate the duty query when postShift fails', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+        mockPostShift.mockRejectedValue(new Error('post failed'));
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        mockInvalidateQueries.mockClear();
+
+        await expect(
+            act(async () => {
+                await result.current.handlers.postShift();
+            }),
+        ).rejects.toThrow('post failed');
+
+        expect(mockPostShift).toHaveBeenCalledWith(1, 20, 2025, 7);
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+    });
+
+    it('skips postShift when no shift team is selected', async () => {
+        setQueryState({
+            shiftTeams: {data: [], isPending: false, isError: false},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBeNull();
+        });
+
+        await act(async () => {
+            await result.current.handlers.postShift();
+        });
+
+        expect(mockPostShift).not.toHaveBeenCalled();
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+    });
+
+    it('exports the current shift as excel with the selected month', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.shift).toBe(shift);
+        });
+
+        act(() => {
+            result.current.handlers.exportExcel();
+        });
+
+        expect(mockShiftToExcel).toHaveBeenCalledWith(7, shift);
+    });
+
+    it('skips excel export when there is no shift data', async () => {
+        setQueryState({
+            duty: {data: null, isPending: false, isError: false, refetch: mockRefetch},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.shift).toBeNull();
+        });
+
+        act(() => {
+            result.current.handlers.exportExcel();
+        });
+
+        expect(mockShiftToExcel).not.toHaveBeenCalled();
+    });
+
+    it('navigates to the current month make page with the selected shift team', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        act(() => {
+            result.current.handlers.goCurrentMonthMake();
+        });
+
+        expect(mockNavigate).toHaveBeenCalledWith('/make?year=2025&month=7&shiftTeamId=20');
+    });
+
+    it('navigates to the next month make page and rolls the year forward in december', async () => {
+        useDutyStore.setState({
+            year: 2026,
+            month: 12,
+            shiftTeams,
+            currentShiftTeamId: 20,
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        act(() => {
+            result.current.handlers.goNextMonthMake();
+        });
+
+        expect(mockNavigate).toHaveBeenCalledWith('/make?year=2027&month=1&shiftTeamId=20');
     });
 });
