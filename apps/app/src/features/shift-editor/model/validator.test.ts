@@ -79,7 +79,7 @@ describe('validator combinations', () => {
         expect(violations.every((violation) => violation.level === 'warning')).toBe(true);
     });
 
-    it('reports requested-off warnings alongside other warnings without fabricating error violations', () => {
+    it('reports requested-off warnings without leaking unrelated warning rules', () => {
         const {violations} = validate(['N', null, 'D'], {
             wardConstraint: createWardConstraint({
                 excludeNightBeforeReqOff: true,
