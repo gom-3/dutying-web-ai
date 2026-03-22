@@ -8,7 +8,7 @@ export const siteConfig = {
     marketingOrigin,
     appOrigin,
     appLinks: {
-        home: `${appOrigin}/`,
+        home: appOrigin,
         login: `${appOrigin}/login`,
         make: `${appOrigin}/make`,
         register: `${appOrigin}/register`,
