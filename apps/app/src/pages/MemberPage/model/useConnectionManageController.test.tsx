@@ -1,6 +1,6 @@
 import {act} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {renderHook} from '@/shared/util/test-utils';
+import {renderHook, waitFor} from '@/shared/util/test-utils';
 import useConnectionManageController from './useConnectionManageController';
 
 const waitingNurse = {
@@ -183,5 +183,64 @@ describe('useConnectionManageController', () => {
 
         expect(result.current.state.step).toBe(0);
         expect(result.current.state.submitStatus).toBe('idle');
+    });
+
+    it('stores an error result when connectWaitingNurses resolves false in link mode', async () => {
+        const connectWaitingNurses = vi.fn().mockResolvedValue(false);
+        const approveWaitingNurses = vi.fn();
+        const {result} = renderHook(() =>
+            useConnectionManageController({
+                open: true,
+                approveWaitingNurses,
+                connectWaitingNurses,
+            }),
+        );
+
+        act(() => {
+            result.current.actions.handleSelectWaitingNurse(waitingNurse);
+            result.current.actions.setToLinkNurseId(99);
+        });
+
+        await act(async () => {
+            await result.current.actions.handleCompleteSelection();
+        });
+
+        expect(connectWaitingNurses).toHaveBeenCalledWith(1, 99);
+        expect(approveWaitingNurses).not.toHaveBeenCalled();
+        expect(result.current.state.step).toBe(3);
+        expect(result.current.state.submitStatus).toBe('error');
+    });
+
+    it('retries the current selection after a failed submit and stores the later success result', async () => {
+        const connectWaitingNurses = vi.fn().mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+        const {result} = renderHook(() =>
+            useConnectionManageController({
+                open: true,
+                approveWaitingNurses: vi.fn(),
+                connectWaitingNurses,
+            }),
+        );
+
+        act(() => {
+            result.current.actions.handleSelectWaitingNurse(waitingNurse);
+            result.current.actions.setToLinkNurseId(99);
+        });
+
+        await act(async () => {
+            await result.current.actions.handleCompleteSelection();
+        });
+
+        expect(result.current.state.submitStatus).toBe('error');
+
+        await act(async () => {
+            result.current.actions.retryCompleteSelection();
+        });
+
+        expect(connectWaitingNurses).toHaveBeenNthCalledWith(1, 1, 99);
+        expect(connectWaitingNurses).toHaveBeenNthCalledWith(2, 1, 99);
+
+        await waitFor(() => {
+            expect(result.current.state.submitStatus).toBe('success');
+        });
     });
 });
