@@ -1,0 +1,310 @@
+import {act} from 'react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {renderHook, waitFor} from '@/shared/util/test-utils';
+import {useDutyHook} from './dutyHook';
+import {useDutyStore} from './dutyStore';
+
+const {
+    mockNavigate,
+    mockInvalidateQueries,
+    mockSetLoading,
+    mockUpdateShifts,
+    mockPostShift,
+    mockRefetch,
+    mockShiftToDoc,
+    mockDocToWardShiftsDTO,
+    mockBuildWorkKeyMap,
+    mockShiftToExcel,
+    mockCommands,
+} = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockInvalidateQueries: vi.fn(),
+    mockSetLoading: vi.fn(),
+    mockUpdateShifts: vi.fn(),
+    mockPostShift: vi.fn(),
+    mockRefetch: vi.fn(),
+    mockShiftToDoc: vi.fn(),
+    mockDocToWardShiftsDTO: vi.fn(),
+    mockBuildWorkKeyMap: vi.fn(),
+    mockShiftToExcel: vi.fn(),
+    mockCommands: {
+        init: vi.fn(),
+        discardPersisted: vi.fn(),
+        setDutyValidationInput: vi.fn(),
+    },
+}));
+
+let mockSearchParams = new URLSearchParams();
+let mockEditorState: any = {
+    doc: {
+        columns: ['2026-03-01'],
+        rows: [{workerId: '1', cells: ['D']}],
+        workerMeta: {'1': {name: 'Kim'}},
+    },
+};
+let mockQueries: Record<string, any> = {};
+
+vi.mock('@tanstack/react-query', async () => {
+    const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
+    const disabledQueryState = {
+        data: undefined,
+        isPending: false,
+        isError: false,
+        refetch: mockRefetch,
+    };
+
+    return {
+        ...actual,
+        useQuery: vi.fn((options: {queryKey: unknown[]; enabled?: boolean}) => {
+            if (options.enabled === false) return disabledQueryState;
+
+            return mockQueries[String(options.queryKey[1])] ?? disabledQueryState;
+        }),
+        useQueryClient: vi.fn(() => ({invalidateQueries: mockInvalidateQueries})),
+    };
+});
+
+vi.mock('react-router', () => ({
+    useNavigate: () => mockNavigate,
+    useSearchParams: () => [mockSearchParams, vi.fn()],
+}));
+
+vi.mock('@/features/auth/useAuth', () => ({
+    default: () => ({
+        state: {
+            wardId: 1,
+        },
+    }),
+}));
+
+vi.mock('@/features/ui/useLoading', () => ({
+    default: () => ({
+        setLoading: mockSetLoading,
+    }),
+}));
+
+vi.mock('@/shared/api/ward', () => ({
+    default: {
+        updateShifts: mockUpdateShifts,
+        postShift: mockPostShift,
+    },
+}));
+
+vi.mock('@/features/shift-editor', () => ({
+    buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
+    docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
+    shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
+    shiftToExcel: (...args: unknown[]) => mockShiftToExcel(...args),
+    useShiftEditorCommands: () => mockCommands,
+    useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
+    useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
+}));
+
+const shiftTeams = [
+    {shiftTeamId: 10, name: 'A팀'},
+    {shiftTeamId: 20, name: 'B팀'},
+];
+
+const shift = {
+    lastDays: [],
+    days: [
+        {day: 1, dayType: 'workday'},
+        {day: 2, dayType: 'holiday'},
+    ],
+    wardShiftTypes: [
+        {
+            wardShiftTypeId: 1,
+            name: 'Day',
+            shortName: 'D',
+            startTime: '07:00',
+            endTime: '15:00',
+            color: '#fff',
+            isDefault: true,
+            isOff: false,
+            isCounted: true,
+            classification: 'DAY',
+        },
+    ],
+    divisionShiftNurses: [
+        [
+            {
+                shiftNurse: {
+                    shiftNurseId: 1,
+                    name: 'Kim',
+                    carried: 0,
+                    divisionNum: 0,
+                    priority: 0,
+                    isWorker: true,
+                    nurseId: 100,
+                },
+                lastWardShiftList: [],
+                lastWardReqShiftList: [],
+                wardShiftList: [1, null],
+                wardReqShiftList: [],
+            },
+        ],
+    ],
+};
+
+const convertedDoc = {
+    columns: ['2025-07-01', '2025-07-02'],
+    rows: [{workerId: '1', cells: ['D', null]}],
+    workerMeta: {'1': {name: 'Kim'}},
+};
+
+function resetDutyStore() {
+    useDutyStore.setState({
+        year: 2026,
+        month: 3,
+        shiftTeams: [],
+        currentShiftTeamId: null,
+        readonly: true,
+        shift: null,
+        status: 'idle',
+    });
+}
+
+function setQueryState(overrides?: Partial<typeof mockQueries>) {
+    mockQueries = {
+        shiftTeams: {data: shiftTeams, isPending: false, isError: false},
+        duty: {data: shift, isPending: false, isError: false, refetch: mockRefetch},
+        constraint: {data: null, isPending: false, isError: false},
+        ...overrides,
+    };
+}
+
+describe('useDutyHook', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        resetDutyStore();
+        mockSearchParams = new URLSearchParams();
+        mockEditorState = {
+            doc: {
+                columns: ['2026-03-01'],
+                rows: [{workerId: '1', cells: ['D']}],
+                workerMeta: {'1': {name: 'Kim'}},
+            },
+        };
+        mockBuildWorkKeyMap.mockReturnValue({});
+        mockShiftToDoc.mockReturnValue(convertedDoc);
+        mockDocToWardShiftsDTO.mockReturnValue([{shiftNurseId: 1, date: '2025-07-01', wardShiftTypeId: 1}]);
+        setQueryState();
+    });
+
+    it('bootstraps year, month, and selected shift team from query params', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.year).toBe(2025);
+            expect(result.current.state.month).toBe(7);
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+    });
+
+    it('initializes the editor doc from fetched shift data and current month context', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(mockShiftToDoc).toHaveBeenCalledWith(shift, 2025, 7);
+            expect(mockCommands.init).toHaveBeenCalledWith(convertedDoc);
+            expect(mockCommands.discardPersisted).toHaveBeenCalled();
+            expect(result.current.state.status).toBe('success');
+            expect(result.current.state.shift).toBe(shift);
+        });
+    });
+
+    it('initializes an empty doc and clears persisted draft when duty query fails', async () => {
+        setQueryState({
+            duty: {data: undefined, isPending: false, isError: true, refetch: mockRefetch},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}});
+            expect(mockCommands.discardPersisted).toHaveBeenCalled();
+            expect(result.current.state.status).toBe('error');
+            expect(result.current.state.shift).toBeNull();
+        });
+    });
+
+    it('initializes an empty doc when the selected month has no shift data', async () => {
+        setQueryState({
+            duty: {data: null, isPending: false, isError: false, refetch: mockRefetch},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}});
+            expect(mockCommands.discardPersisted).toHaveBeenCalled();
+            expect(result.current.state.status).toBe('success');
+            expect(result.current.state.shift).toBeNull();
+        });
+    });
+
+    it('restores the edit snapshot on cancel even when the current doc was mutated later', async () => {
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.shift).toBe(shift);
+        });
+
+        mockCommands.init.mockClear();
+        mockCommands.discardPersisted.mockClear();
+
+        act(() => {
+            result.current.handlers.enableEdit();
+        });
+
+        mockEditorState.doc.rows[0]!.cells[0] = null;
+        mockEditorState.doc.workerMeta['1']!.name = 'Edited';
+
+        act(() => {
+            result.current.handlers.cancelEdit();
+        });
+
+        const restoredDoc = mockCommands.init.mock.calls[0]?.[0];
+
+        expect(restoredDoc).toEqual({
+            columns: ['2026-03-01'],
+            rows: [{workerId: '1', cells: ['D']}],
+            workerMeta: {'1': {name: 'Kim'}},
+        });
+        expect(restoredDoc).not.toBe(mockEditorState.doc);
+        expect(restoredDoc.rows[0]).not.toBe(mockEditorState.doc.rows[0]);
+        expect(mockCommands.discardPersisted).toHaveBeenCalled();
+        expect(useDutyStore.getState().readonly).toBe(true);
+    });
+
+    it('converts the current doc to dto and saves it through the ward api', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+        mockUpdateShifts.mockResolvedValue(undefined);
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        mockCommands.discardPersisted.mockClear();
+
+        await act(async () => {
+            await result.current.handlers.saveEdit();
+        });
+
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockDocToWardShiftsDTO).toHaveBeenCalledWith(mockEditorState.doc, shift);
+        expect(mockUpdateShifts).toHaveBeenCalledWith(1, [{shiftNurseId: 1, date: '2025-07-01', wardShiftTypeId: 1}]);
+        expect(mockCommands.discardPersisted).toHaveBeenCalled();
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: ['ward', 'duty', 1, 20, 2025, 7],
+        });
+        expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+        expect(useDutyStore.getState().readonly).toBe(true);
+    });
+});
