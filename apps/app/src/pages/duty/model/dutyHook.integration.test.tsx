@@ -19,6 +19,18 @@ const {mockNavigate, mockInvalidateQueries, mockSetLoading, mockUpdateShifts, mo
 let mockSearchParams = new URLSearchParams();
 let mockQueries: Record<string, any> = {};
 
+vi.mock('@/features/shift-editor', async () => {
+    const actual = await vi.importActual<typeof import('@/features/shift-editor')>('@/features/shift-editor');
+
+    return {
+        ...actual,
+        useShiftEditorKeyBindings: () => ({
+            onKeyDown: vi.fn(),
+            onPaste: vi.fn(),
+        }),
+    };
+});
+
 vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
     const disabledQueryState = {
