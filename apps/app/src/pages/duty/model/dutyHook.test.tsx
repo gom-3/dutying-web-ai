@@ -222,6 +222,21 @@ describe('useDutyHook', () => {
         });
     });
 
+    it('initializes an empty doc when the selected month has no shift data', async () => {
+        setQueryState({
+            duty: {data: null, isPending: false, isError: false, refetch: mockRefetch},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}});
+            expect(mockCommands.discardPersisted).toHaveBeenCalled();
+            expect(result.current.state.status).toBe('success');
+            expect(result.current.state.shift).toBeNull();
+        });
+    });
+
     it('restores the edit snapshot on cancel even when the current doc was mutated later', async () => {
         const {result} = renderHook(() => useDutyHook());
 
