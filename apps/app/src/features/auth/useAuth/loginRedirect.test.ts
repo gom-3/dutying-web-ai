@@ -25,6 +25,22 @@ describe('getLoginRedirectDecision', () => {
         });
     });
 
+    it('falls back to the default app route when nextPageUrl is missing', () => {
+        vi.stubGlobal('window', {
+            location: {
+                origin: 'https://app.dutying.net',
+            },
+            history: {
+                back: vi.fn(),
+            },
+        });
+
+        expect(getLoginRedirectDecision(undefined)).toEqual({
+            type: 'replace',
+            href: ROUTE.MAKE,
+        });
+    });
+
     it('keeps allowed app-domain subdomain redirects as in-app replace targets', () => {
         vi.stubGlobal('window', {
             location: {
