@@ -11,5 +11,5 @@
 }
 
 .VPFeature {
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid var(--vp-c-brand-soft);
 }

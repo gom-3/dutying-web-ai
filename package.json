@@ -35,7 +35,7 @@
         "type-check": "pnpm run type-check:app",
         "type-check:app": "pnpm --dir ./apps/app type-check",
         "type-check:docs": "pnpm --dir ./apps/docs type-check",
-        "type-check:landing": "pnpm --dir ./apps/landing check",
+        "type-check:landing": "pnpm --dir ./apps/landing type-check",
         "workspace:list": "pnpm ls -r --depth -1"
     },
     "pnpm": {
