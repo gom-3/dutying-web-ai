@@ -3,7 +3,7 @@ import {defineConfig} from 'vitepress';
 const webGuideSidebar = [
     {
         text: '개요',
-        items: [{text: '웹 가이드 소개', link: '/web-guide/'}],
+        items: [{text: '웹 사용자 가이드', link: '/web-guide/'}],
     },
     {
         text: '계정 시작',
@@ -13,11 +13,11 @@ const webGuideSidebar = [
         ],
     },
     {
-        text: '온보딩',
+        text: '병동 시작',
         items: [{text: '병동 생성/입장', link: '/web-guide/wards'}],
     },
     {
-        text: '운영 흐름',
+        text: '근무표 운영',
         items: [
             {text: '근무표 만들기', link: '/web-guide/schedule'},
             {text: '신청근무 관리', link: '/web-guide/requests'},
