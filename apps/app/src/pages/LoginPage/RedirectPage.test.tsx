@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth/useAuth';
 import {render, waitFor} from '@/shared/util/test-utils';
 import RedirectPage from './RedirectPage';
@@ -16,6 +16,10 @@ const mockedUseAuth = vi.mocked(useAuth);
 describe('RedirectPage', () => {
     const handleLogin = vi.fn();
 
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
     beforeEach(() => {
         handleLogin.mockReset();
         mockedUseAuth.mockReset();
@@ -29,7 +33,7 @@ describe('RedirectPage', () => {
         window.history.replaceState({}, '', '/oauth2/redirect');
     });
 
-    it('passes a sanitized in-app nextPageUrl to login handler', async () => {
+    it('falls back when nextPageUrl points to the landing domain', async () => {
         window.history.replaceState(
             {},
             '',
