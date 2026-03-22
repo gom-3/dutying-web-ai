@@ -66,4 +66,15 @@ describe('operation', () => {
         expect(applyOperation(reordered, invertOperation({kind: 'reorderRows', prevOrder: [0, 1], nextOrder: [1, 0]}))).toEqual(doc);
         expect(invalid).toBe(doc);
     });
+
+    it('ignores reorder operations with duplicate row indexes', () => {
+        const doc = createDoc();
+        const invalid = applyOperation(doc, {
+            kind: 'reorderRows',
+            prevOrder: [0, 1],
+            nextOrder: [0, 0],
+        });
+
+        expect(invalid).toBe(doc);
+    });
 });
