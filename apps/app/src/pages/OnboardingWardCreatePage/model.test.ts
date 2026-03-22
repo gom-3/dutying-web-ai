@@ -9,6 +9,7 @@ import {
     deleteShiftTypeDraft,
     getStepValidation,
     reorderNursesWithinTeam,
+    saveSkillLevelConfig,
     updateNurseDraft,
     updateShiftTypeDraft,
 } from './model';
@@ -51,6 +52,37 @@ describe('OnboardingWardCreatePage model', () => {
         expect(validation.isValid).toBe(false);
         expect(validation.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(['empty-team-nurses', 'missing-nurse-name']));
         expect(canGoNext(invalidDraft)).toBe(false);
+    });
+
+    it('allows off shifts without times but blocks working shifts without times', () => {
+        const draft = createInitialDraft();
+        const offShiftId = draft.shiftTypes.find((shiftType) => shiftType.isOff)?.id ?? '';
+        const workingShiftId = draft.shiftTypes.find((shiftType) => !shiftType.isOff)?.id ?? '';
+        const withoutOffTimes = updateShiftTypeDraft(draft, offShiftId, {startTime: '', endTime: ''});
+        const withoutWorkingStartTime = updateShiftTypeDraft(withoutOffTimes, workingShiftId, {startTime: ''});
+        const validation = getStepValidation(withoutWorkingStartTime, 2);
+
+        expect(validation.issues).toEqual(
+            expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: workingShiftId}]),
+        );
+        expect(validation.issues).not.toEqual(
+            expect.arrayContaining([{code: 'missing-shift-time', step: 2, targetId: offShiftId}]),
+        );
+    });
+
+    it('reports empty-team when all onboarding teams are removed', () => {
+        const draft = createInitialDraft();
+        const withoutTeams = {
+            ...draft,
+            currentStep: 3 as const,
+            teams: [],
+            nurses: [],
+        };
+        const validation = getStepValidation(withoutTeams, 3);
+
+        expect(validation.isValid).toBe(false);
+        expect(validation.issues).toEqual([{code: 'empty-team', step: 3}]);
+        expect(canGoNext(withoutTeams)).toBe(false);
     });
 
     it('keeps nurse order changes scoped to the active team', () => {
@@ -108,5 +140,28 @@ describe('OnboardingWardCreatePage model', () => {
         expect(getStepValidation(invalidShiftDraft, 2).isValid).toBe(false);
         expect(getStepValidation(invalidShiftDraft, 4).isValid).toBe(true);
         expect(canComplete(invalidShiftDraft)).toBe(false);
+    });
+
+    it('clamps nurse levels to the configured range when auto assignment is disabled', () => {
+        const draft = createInitialDraft();
+        const withCustomLevels = {
+            ...draft,
+            nurses: draft.nurses.map((nurse, index) => ({
+                ...nurse,
+                level: index === 0 ? null : 5,
+            })),
+        };
+        const nextDraft = saveSkillLevelConfig(withCustomLevels, {
+            levelCount: 3,
+            paletteId: 'cool',
+            autoAssign: false,
+        });
+
+        expect(nextDraft.skillLevelConfig).toEqual({
+            levelCount: 3,
+            paletteId: 'cool',
+            autoAssign: false,
+        });
+        expect(nextDraft.nurses.map((nurse) => nurse.level)).toEqual([3, 3, 3, 3]);
     });
 });
