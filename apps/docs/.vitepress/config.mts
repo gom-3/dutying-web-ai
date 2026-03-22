@@ -38,7 +38,7 @@ export default defineConfig({
         siteTitle: 'Dutying Docs',
         nav: [
             {text: '시작하기', link: '/getting-started/'},
-            {text: '웹 가이드', link: '/web-guide/'},
+            {text: '웹 사용자 가이드', link: '/web-guide/'},
             {text: '모바일 가이드', link: '/mobile-guide/'},
             {text: 'FAQ', link: '/troubleshooting/faq'},
             {text: '앱 열기', link: 'https://app.dutying.net'},
