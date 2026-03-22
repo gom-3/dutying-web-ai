@@ -60,13 +60,22 @@ function applySetCellsOp(doc: TDutyDoc, op: TSetCellsOp): TDutyDoc {
 }
 
 function applyReorderRowsOp(doc: TDutyDoc, op: TReorderRowsOp): TDutyDoc {
-    if (op.nextOrder.length !== doc.rows.length) return doc;
+    if (op.prevOrder.length !== doc.rows.length || op.nextOrder.length !== doc.rows.length) return doc;
 
-    const nextRows = op.nextOrder.map((idx) => doc.rows[idx]).filter(Boolean);
+    if (new Set(op.prevOrder).size !== op.prevOrder.length || new Set(op.nextOrder).size !== op.nextOrder.length) return doc;
 
-    if (nextRows.length !== doc.rows.length) return doc;
+    const prevIndexByRow = new Map(op.prevOrder.map((rowIdx, position) => [rowIdx, position]));
+    const nextRows = op.nextOrder.map((rowIdx) => {
+        const currentPosition = prevIndexByRow.get(rowIdx);
 
-    return {...doc, rows: nextRows};
+        if (currentPosition === undefined) return null;
+
+        return doc.rows[currentPosition] ?? null;
+    });
+
+    if (nextRows.some((row) => row === null)) return doc;
+
+    return {...doc, rows: nextRows as TDutyDoc['rows']};
 }
 
 export function applyOperation(doc: TDutyDoc, op: TOperation): TDutyDoc {

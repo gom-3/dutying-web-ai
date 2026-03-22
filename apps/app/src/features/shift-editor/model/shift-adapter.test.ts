@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
-import {buildWorkKeyMap, docToWardShiftsDTO, shiftToDoc} from './shift-adapter';
+import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, shiftToDoc} from './shift-adapter';
 
 function createShift(): TShift {
     return {
@@ -112,5 +112,32 @@ describe('shift-adapter', () => {
             d: 'D',
             o: 'O',
         });
+    });
+
+    it('projects editor doc back onto worker rows while preserving non-worker rows', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-03-01', '2026-03-02'],
+            rows: [{workerId: '1', cells: ['O', 'TR']}],
+            workerMeta: {1: {name: 'Kim'}},
+        };
+        const nextShift = docToShift(doc, shift);
+
+        expect(nextShift.divisionShiftNurses[0]?.[0]?.wardShiftList).toEqual([20, 30]);
+        expect(nextShift.divisionShiftNurses[0]?.[1]?.wardShiftList).toEqual([20, 10]);
+    });
+
+    it('falls back to null when editor cells do not map to a known ward shift type', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-03-01', '2026-03-02'],
+            rows: [{workerId: '1', cells: ['UNKNOWN', 'D']}],
+            workerMeta: {1: {name: 'Kim'}},
+        };
+
+        expect(docToWardShiftsDTO(doc, shift)).toEqual([
+            {shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: null},
+            {shiftNurseId: 1, date: '2026-03-02', wardShiftTypeId: 10},
+        ]);
     });
 });
