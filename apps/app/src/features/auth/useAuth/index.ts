@@ -33,13 +33,6 @@ const useAuth = (activeEffect = false) => {
         setState('accessToken', accessToken);
         setAccessToken(accessToken);
 
-        // refresh 등 "상태만 세팅"이 필요할 때는 리다이렉트를 하지 않는다.
-        if (nextPageUrl === null) {
-            sendEvent(events.auth.login);
-
-            return;
-        }
-
         const redirectDecision = getLoginRedirectDecision(nextPageUrl);
 
         executeLoginRedirect(redirectDecision);

@@ -1,6 +1,10 @@
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
 import {executeLoginRedirect, getLoginRedirectDecision} from './loginRedirect';
+
+afterEach(() => {
+    vi.unstubAllGlobals();
+});
 
 describe('getLoginRedirectDecision', () => {
     it('returns none when login should only update auth state', () => {
