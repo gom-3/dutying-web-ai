@@ -81,7 +81,7 @@ export default defineConfig(({command}) => ({
         ...(command === 'serve' ? [mkcert()] : []),
     ],
     server: {
-        host: 'local.dutying.net',
+        host: 'local.app.dutying.net',
         port: 3000,
     },
     css: {
