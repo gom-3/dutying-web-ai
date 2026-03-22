@@ -15,8 +15,8 @@ import {
 } from '@/features/shift-editor';
 import useLoadingUseCase from '@/features/ui/useLoading';
 import WardAPI from '@/shared/api/ward';
-import ROUTE from '@/shared/constant/path';
 import {useDutyStore} from './dutyStore';
+import {buildMakeShiftPath, getNextYearMonth} from './dutyNavigation';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -201,23 +201,13 @@ export function useDutyHook() {
         setReadonly(true);
     };
     const navigateToMakeShift = (targetYear: number, targetMonth: number) => {
-        const params = new URLSearchParams({
-            year: String(targetYear),
-            month: String(targetMonth),
-        });
-
-        if (currentShiftTeamId !== null) {
-            params.set('shiftTeamId', String(currentShiftTeamId));
-        }
-
-        navigate(`${ROUTE.MAKE}?${params.toString()}`);
+        navigate(buildMakeShiftPath({year: targetYear, month: targetMonth, shiftTeamId: currentShiftTeamId}));
     };
     const handleGoCurrentMonthMake = () => {
         navigateToMakeShift(year, month);
     };
     const handleGoNextMonthMake = () => {
-        const nextMonth = month === 12 ? 1 : month + 1;
-        const nextYear = month === 12 ? year + 1 : year;
+        const {year: nextYear, month: nextMonth} = getNextYearMonth(year, month);
 
         navigateToMakeShift(nextYear, nextMonth);
     };
