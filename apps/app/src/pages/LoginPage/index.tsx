@@ -1,6 +1,7 @@
 import {Carousel} from 'react-responsive-carousel';
 import {useNavigate} from 'react-router';
 import {AppleIcon, BackCircle, FullLogo, KakaoIcon, LogoSymbolFill, NextCircle} from '@/shared/assets/svg';
+import {createOAuthAuthorizationUrl, siteConfig} from '@/shared/config/site';
 import ROUTE from '@/shared/constant/path';
 import 'react-responsive-carousel/lib/styles/carousel.min.css'; // requires a loader
 import './index.css';
@@ -47,14 +48,14 @@ const LoginPage = () => {
                 <div className="flex flex-col">
                     <h1 className="font-apple text-[2rem] font-semibold text-text-1">로그인</h1>
                     <a
-                        href={`${import.meta.env.VITE_SERVER_URL}/oauth2/authorization/kakao?nextPageUrl=${location.origin}/make`}
+                        href={createOAuthAuthorizationUrl('kakao')}
                         className="mt-10.5 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#FEE500] shadow-banner"
                     >
                         <KakaoIcon className="mr-12.5 h-8.5 w-9" />
                         <div className="font-apple text-[2rem] text-sub-1">카카오 계정으로 시작하기</div>
                     </a>
                     <a
-                        href={`${import.meta.env.VITE_SERVER_URL}/oauth2/authorization/apple?nextPageUrl=${location.origin}/make`}
+                        href={createOAuthAuthorizationUrl('apple')}
                         className="mt-6 flex h-25 w-142.5 items-center justify-center rounded-[1.25rem] bg-[#231F20] shadow-banner"
                     >
                         <AppleIcon className="mr-12.5 h-8.5 w-9" />
@@ -63,16 +64,10 @@ const LoginPage = () => {
                 </div>
                 <div className="flex font-apple text-[1rem] text-sub-3">
                     버튼을 누르면
-                    <a
-                        href="https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4"
-                        className="ml-[.5rem] underline underline-offset-[.1875rem]"
-                    >
+                    <a href={siteConfig.legal.terms} className="ml-[.5rem] underline underline-offset-[.1875rem]">
                         서비스 약관,
                     </a>
-                    <a
-                        href="https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4"
-                        className="ml-[.5rem] underline underline-offset-[.1875rem]"
-                    >
+                    <a href={siteConfig.legal.terms} className="ml-[.5rem] underline underline-offset-[.1875rem]">
                         개인정보 취급 방침
                     </a>
                     에 동의하신 것으로 간주합니다.

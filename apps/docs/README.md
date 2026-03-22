@@ -1,6 +1,6 @@
 # Dutying Docs
 
-`apps/docs`는 `docs.dutying.net` 배포를 전제로 한 `VitePress` 기반 문서 앱이다.
+`apps/docs`는 별도 도메인에 독립 배포할 수 있도록 분리한 `VitePress` 기반 문서 앱이다.
 
 ## 구조
 

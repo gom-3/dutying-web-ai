@@ -1,7 +1,7 @@
 import {defineConfig} from 'astro/config';
 
 export default defineConfig({
-    site: 'https://dutying.net',
+    site: process.env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.net',
     build: {
         format: 'directory',
     },
