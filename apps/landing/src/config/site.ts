@@ -10,6 +10,7 @@ export const siteConfig = {
     appLinks: {
         home: appOrigin,
         login: `${appOrigin}/login`,
+        makeEntry: `${appOrigin}/login?next=%2Fmake`,
         make: `${appOrigin}/make`,
         register: `${appOrigin}/register`,
     },

@@ -1,3 +1,1 @@
-import {LandingPageView} from './ui/landing-page-view';
-
-export default LandingPageView;
+export {default} from './landing-page-redirect';
