@@ -6,6 +6,7 @@ import useLoadingUseCase from '@/features/ui/useLoading';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken} from '@/shared/api/client';
+import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import useAuthStore from './store';
 
@@ -39,10 +40,12 @@ const useAuth = (activeEffect = false) => {
             return;
         }
 
-        if (nextPageUrl === 'back') {
+        const redirectTarget = resolveSafeRedirectTarget(nextPageUrl);
+
+        if (redirectTarget === 'back') {
             window.history.back();
         } else {
-            location.replace(nextPageUrl ?? ROUTE.MAKE);
+            location.replace(redirectTarget);
         }
 
         sendEvent(events.auth.login);

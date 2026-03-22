@@ -3,6 +3,7 @@ import {createPortal} from 'react-dom';
 import useTutorialUseCase from '@/features/ui/useTutorial';
 import {useTutorialStore} from '@/features/ui/useTutorial/store';
 import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type IStepConfig, type IStepsConfig, TutorialOverlay} from './TutorialOverlay';
 
 const MemberTutorial = () => {
@@ -53,7 +54,7 @@ const MemberTutorial = () => {
         title: '간호사 관리하기',
         info: '편집을 완료하고 하단에 저장을 눌러주세요! \n더 자세한 가이드는 메뉴얼 문서를 참고해주세요!',
         ctaText: '메뉴얼 보러가기',
-        ctaUrl: 'https://gom3.notion.site/befb4602f83241ed896a1700eb592b35?pvs=4',
+        ctaUrl: RUNTIME_CONFIG.docs.memberTutorial,
 
         infoBoxAlignment: 'right',
         onNextStep: () => {
