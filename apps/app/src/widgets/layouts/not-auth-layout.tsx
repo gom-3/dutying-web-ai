@@ -10,8 +10,8 @@ export const NotAuthLayout = () => {
     } = useAuth();
 
     useEffect(() => {
-        if (isAuth) navigate(ROUTE.ROOT);
-    }, [isAuth]);
+        if (isAuth) navigate(ROUTE.MAKE);
+    }, [isAuth, navigate]);
 
     return !isAuth && <Outlet />;
 };

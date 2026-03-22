@@ -78,10 +78,21 @@ export default defineConfig(({command}) => ({
         }),
         tsconfigPaths({projects: ['./tsconfig.app.json']}),
         tailwindcss(),
-        ...(command === 'serve' ? [mkcert()] : []),
+        ...(command === 'serve'
+            ? [
+                  mkcert({
+                      hosts: ['local.app.dutying.net', 'localhost', '127.0.0.1'],
+                  }),
+              ]
+            : []),
     ],
     server: {
         host: 'local.app.dutying.net',
+        https: {},
+        hmr: {
+            host: 'local.app.dutying.net',
+            protocol: 'wss',
+        },
         port: 3000,
     },
     css: {
