@@ -35,7 +35,7 @@ vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual<typeof import('@tanstack/react-query')>('@tanstack/react-query');
     const disabledQueryState = {
         data: undefined,
-        isPending: false,
+        isPending: true,
         isError: false,
         refetch: mockRefetch,
     };
