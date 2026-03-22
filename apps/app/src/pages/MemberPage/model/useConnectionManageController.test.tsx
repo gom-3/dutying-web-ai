@@ -66,6 +66,32 @@ describe('useConnectionManageController', () => {
         expect(result.current.state.submitStatus).toBe('success');
     });
 
+    it('enters the error state when add mode completes without a selected team', async () => {
+        const connectWaitingNurses = vi.fn();
+        const approveWaitingNurses = vi.fn();
+        const {result} = renderHook(() =>
+            useConnectionManageController({
+                open: true,
+                approveWaitingNurses,
+                connectWaitingNurses,
+            }),
+        );
+
+        act(() => {
+            result.current.actions.handleSelectWaitingNurse(waitingNurse);
+            result.current.actions.setConnectMode('add');
+        });
+
+        await act(async () => {
+            await result.current.actions.handleCompleteSelection();
+        });
+
+        expect(result.current.state.step).toBe(3);
+        expect(result.current.state.submitStatus).toBe('error');
+        expect(connectWaitingNurses).not.toHaveBeenCalled();
+        expect(approveWaitingNurses).not.toHaveBeenCalled();
+    });
+
     it('clears selected targets when returning to method selection', () => {
         const {result} = renderHook(() =>
             useConnectionManageController({
