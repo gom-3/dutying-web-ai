@@ -23,13 +23,13 @@ export default function initializeApp() {
             ReactGA.initialize(gaTrackingId, {gaOptions: {}});
         }
 
-        const history = createBrowserHistory();
+        if (gaTrackingId) {
+            const history = createBrowserHistory();
 
-        history.listen(async (response) => {
-            if (gaTrackingId) {
+            history.listen(async (response) => {
                 ReactGA.send({hitType: 'pageview', page: response.location.pathname});
-            }
-        });
+            });
+        }
 
         // Pixel 관련 초기화
         if (pixelId) {

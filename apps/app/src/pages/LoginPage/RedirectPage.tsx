@@ -2,6 +2,7 @@ import qs from 'qs';
 import {useEffect} from 'react';
 import {TailSpin} from 'react-loader-spinner';
 import useAuth from '@/features/auth/useAuth';
+import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
 
 const RedirectPage = () => {
     const {
@@ -11,7 +12,7 @@ const RedirectPage = () => {
     useEffect(() => {
         const query = qs.parse(location.search, {ignoreQueryPrefix: true});
         const accessToken = query?.['accessToken'] as string;
-        const nextPageUrl = query?.['nextPageUrl'] as string;
+        const nextPageUrl = resolveSafeRedirectTarget(query?.['nextPageUrl'] as string | undefined);
 
         if (accessToken) {
             handleLogin(accessToken, nextPageUrl);

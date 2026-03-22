@@ -7,10 +7,11 @@ const getWindowOrigin = () => {
     return window.location.origin;
 };
 const getRuntimeUrl = (envValue: string | undefined, fallback: string) => trimTrailingSlash(envValue ?? fallback);
+const INTERNAL_PATH_PATTERN = /^\/(?!\/)/;
 
 export const RUNTIME_CONFIG = {
     publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.net'),
-    serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, ''),
+    serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, RUNTIME_CONFIG.publicAppUrl()),
     profileImageBaseUrl: () =>
         getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com'),
     docs: {
@@ -22,12 +23,36 @@ export const RUNTIME_CONFIG = {
     },
 } as const;
 
-export const buildAppUrl = (path: string) => new URL(path, `${RUNTIME_CONFIG.publicAppUrl()}/`).toString();
+export const sanitizeInternalPath = (path: string | null | undefined, fallback: string = ROUTE.MAKE) =>
+    path && INTERNAL_PATH_PATTERN.test(path) ? path : fallback;
+
+export const buildAppUrl = (path: string) => new URL(sanitizeInternalPath(path), `${RUNTIME_CONFIG.publicAppUrl()}/`).toString();
+
+export const resolveSafeRedirectTarget = (target: string | null | undefined, fallback: string = ROUTE.MAKE) => {
+    if (target === 'back') return 'back';
+
+    if (!target) return fallback;
+
+    if (INTERNAL_PATH_PATTERN.test(target)) return target;
+
+    try {
+        const redirectUrl = new URL(target);
+        const allowedOrigins = [getWindowOrigin(), RUNTIME_CONFIG.publicAppUrl()].filter((origin): origin is string => Boolean(origin));
+
+        if (!allowedOrigins.includes(redirectUrl.origin)) {
+            return fallback;
+        }
+
+        return `${sanitizeInternalPath(redirectUrl.pathname, fallback)}${redirectUrl.search}${redirectUrl.hash}`;
+    } catch {
+        return fallback;
+    }
+};
 
 export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: string = ROUTE.MAKE) => {
     const url = new URL(`/oauth2/authorization/${provider}`, `${RUNTIME_CONFIG.serverUrl()}/`);
 
-    url.searchParams.set('nextPageUrl', buildAppUrl(nextPath));
+    url.searchParams.set('nextPageUrl', buildAppUrl(sanitizeInternalPath(nextPath)));
 
     return url.toString();
 };
