@@ -3,7 +3,6 @@ import {landingPrimaryCtas, siteConfig} from '../../config/site';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
 const inquiryLink = 'https://ye620.channel.io';
-const termsLink = 'https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4';
 
 const featureSections = [
     {
@@ -218,8 +217,8 @@ const formattedFeatureSections = featureSections.map((section) => ({
         </div>
 
         <div class="landing-footer__bottom">
-            <a href={termsLink} target="_blank" rel="noreferrer">이용 약관</a>
-            <a href={termsLink} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">이용 약관</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
         </div>
     </footer>
 
@@ -249,8 +248,8 @@ const formattedFeatureSections = featureSections.map((section) => ({
         </div>
 
         <div class="landing-footer__bottom landing-footer__bottom--mobile">
-            <a href={termsLink} target="_blank" rel="noreferrer">이용 약관</a>
-            <a href={termsLink} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">이용 약관</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
         </div>
     </footer>
 </main>

@@ -30,6 +30,15 @@ These URLs are exposed in `apps/landing/src/config/site.ts` and can be overridde
 
 - `PUBLIC_MARKETING_SITE_URL`
 - `PUBLIC_APP_SITE_URL`
+- `PUBLIC_DOCS_SITE_URL`
+- `PUBLIC_TERMS_URL`
+
+The app itself uses matching Vite env keys:
+
+- `VITE_APP_SITE_URL`
+- `VITE_MARKETING_SITE_URL`
+- `VITE_DOCS_SITE_URL`
+- `VITE_TERMS_URL`
 
 ## App Audit Points For Follow-up
 
@@ -49,7 +58,7 @@ These URLs are exposed in `apps/landing/src/config/site.ts` and can be overridde
 
 These are now updated toward `app.dutying.net`, but the real deployment sitemap strategy still needs a final decision once both domains ship.
 
-### 3. OAuth redirect depends on current origin
+### 3. OAuth redirect should stay app-domain only
 
 - `apps/app/src/pages/LoginPage/index.tsx`
 - `apps/app/src/features/auth/useAuth/index.ts`
@@ -57,7 +66,7 @@ These are now updated toward `app.dutying.net`, but the real deployment sitemap 
 - `apps/app/src/shared/api/client.ts`
 - `apps/app/src/pages/RefreshPage/index.tsx`
 
-The app currently builds redirect URLs from `location.origin` and path-only redirects. This is fine only if login, refresh, and callback all stay inside `app.dutying.net`.
+The app should build OAuth entry URLs from an explicit app-site setting and normalize callback targets back into app-relative paths. That keeps login, refresh, and callback flows inside `app.dutying.net` even after domain separation.
 
 Checkpoints:
 

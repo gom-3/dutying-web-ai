@@ -1,7 +1,10 @@
 import {defineConfig} from 'astro/config';
+import {loadRootEnv} from '../../packages/config/load-root-env.mjs';
+
+const env = loadRootEnv(process.cwd());
 
 export default defineConfig({
-    site: 'https://dutying.net',
+    site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.net',
     build: {
         format: 'directory',
     },

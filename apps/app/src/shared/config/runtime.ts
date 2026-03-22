@@ -15,7 +15,7 @@ const getRuntimeUrl = (envValue: string | undefined, fallback: string) => {
 
     return trimTrailingSlash(normalized ?? fallback);
 };
-const INTERNAL_PATH_PATTERN = /^\/(?!\/)/;
+const INTERNAL_PATH_PATTERN = /^\/(?![\\/])/;
 
 export const RUNTIME_CONFIG = {
     publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.net'),

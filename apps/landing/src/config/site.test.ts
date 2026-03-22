@@ -7,6 +7,8 @@ describe('createSiteConfig', () => {
 
         expect(config.marketingOrigin).toBe('https://dutying.net');
         expect(config.appOrigin).toBe('https://app.dutying.net');
+        expect(config.docsOrigin).toBe('https://docs.dutying.net');
+        expect(config.legal.terms).toBe('https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4');
         expect(config.appLinks).toEqual({
             home: 'https://app.dutying.net',
             login: 'https://app.dutying.net/login',
@@ -20,9 +22,11 @@ describe('createSiteConfig', () => {
         const config = createSiteConfig({
             PUBLIC_MARKETING_SITE_URL: 'https://preview.dutying.net///',
             PUBLIC_APP_SITE_URL: 'https://preview.app.dutying.net//',
+            PUBLIC_DOCS_SITE_URL: 'https://preview.docs.dutying.net//',
         });
 
         expect(config.marketingOrigin).toBe('https://preview.dutying.net');
+        expect(config.docsLinks.home).toBe('https://preview.docs.dutying.net');
         expect(config.appLinks.login).toBe('https://preview.app.dutying.net/login');
         expect(config.appLinks.makeEntry).toBe('https://preview.app.dutying.net/login?next=%2Fmake');
     });

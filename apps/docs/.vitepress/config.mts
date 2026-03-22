@@ -1,4 +1,5 @@
 import {defineConfig} from 'vitepress';
+import {docsSiteLinks} from './site.mts';
 
 const webGuideSidebar = [
     {
@@ -41,8 +42,8 @@ export default defineConfig({
             {text: '웹 사용자 가이드', link: '/web-guide/'},
             {text: '모바일 가이드', link: '/mobile-guide/'},
             {text: 'FAQ', link: '/troubleshooting/faq'},
-            {text: '앱 열기', link: 'https://app.dutying.net'},
-            {text: '랜딩 보기', link: 'https://dutying.net'},
+            {text: '앱 열기', link: docsSiteLinks.app},
+            {text: '랜딩 보기', link: docsSiteLinks.marketing},
         ],
         sidebar: {
             '/getting-started/': [

@@ -47,6 +47,21 @@ describe('resolveSafeRedirectTarget', () => {
     it('rejects protocol-relative redirect targets', () => {
         expect(resolveSafeRedirectTarget('//evil.example/phish')).toBe(ROUTE.MAKE);
     });
+
+    it('rejects same-origin redirects whose normalized path becomes protocol-relative', () => {
+        vi.stubGlobal('window', {
+            location: {
+                origin: 'https://app.dutying.net',
+            },
+        });
+
+        expect(resolveSafeRedirectTarget('https://app.dutying.net//evil.example')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('https://app.dutying.net/\\evil.example')).toBe(ROUTE.MAKE);
+    });
+
+    it('rejects slash-backslash redirect targets', () => {
+        expect(resolveSafeRedirectTarget('/\\evil.example')).toBe(ROUTE.MAKE);
+    });
 });
 
 describe('buildAppUrl', () => {
