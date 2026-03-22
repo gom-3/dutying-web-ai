@@ -61,7 +61,7 @@ describe('LandingPageRedirect', () => {
         expect(replaceSpy).toHaveBeenCalledWith(ROUTE.MAKE);
     });
 
-    it('redirects unauthenticated users to login after auth hydration is loaded', () => {
+    it('sends unauthenticated users to login once hydration is loaded', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: false,

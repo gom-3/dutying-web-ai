@@ -1,9 +1,8 @@
 ---
-import {siteConfig} from '../../config/site';
+import {landingPrimaryCtas, siteConfig} from '../../config/site';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
 const inquiryLink = 'https://ye620.channel.io';
-const termsLink = 'https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4';
 
 const featureSections = [
     {
@@ -48,11 +47,6 @@ const featureSections = [
         tone: 'dark',
         align: 'start',
     },
-];
-
-const primaryCtas = [
-    {label: '근무표 작성 체험하기', href: siteConfig.appLinks.makeEntry},
-    {label: '근무표 만들기', href: siteConfig.appLinks.make},
 ];
 
 const formattedFeatureSections = featureSections.map((section) => ({
@@ -131,7 +125,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <p>근무표 작성 (수간호사 용)</p>
                     </div>
                     <div class="cta-row">
-                        {primaryCtas.map((cta) => (
+                        {landingPrimaryCtas.map((cta) => (
                             <a class="button button--store" href={cta.href}>{cta.label}</a>
                         ))}
                     </div>
@@ -223,8 +217,8 @@ const formattedFeatureSections = featureSections.map((section) => ({
         </div>
 
         <div class="landing-footer__bottom">
-            <a href={termsLink} target="_blank" rel="noreferrer">이용 약관</a>
-            <a href={termsLink} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">이용 약관</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
         </div>
     </footer>
 
@@ -254,8 +248,8 @@ const formattedFeatureSections = featureSections.map((section) => ({
         </div>
 
         <div class="landing-footer__bottom landing-footer__bottom--mobile">
-            <a href={termsLink} target="_blank" rel="noreferrer">이용 약관</a>
-            <a href={termsLink} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">이용 약관</a>
+            <a href={siteConfig.legal.terms} target="_blank" rel="noreferrer">개인 정보 처리 방침</a>
         </div>
     </footer>
 </main>
