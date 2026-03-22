@@ -11,8 +11,8 @@ const RedirectPage = () => {
 
     useEffect(() => {
         const query = qs.parse(location.search, {ignoreQueryPrefix: true});
-        const accessToken = query?.['accessToken'] as string;
-        const nextPageUrl = resolveSafeRedirectTarget(query?.['nextPageUrl'] as string | undefined);
+        const accessToken = typeof query?.['accessToken'] === 'string' ? query['accessToken'] : undefined;
+        const nextPageUrl = typeof query?.['nextPageUrl'] === 'string' ? resolveSafeRedirectTarget(query['nextPageUrl']) : undefined;
 
         if (accessToken) {
             handleLogin(accessToken, nextPageUrl);

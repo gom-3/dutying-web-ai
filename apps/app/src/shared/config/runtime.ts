@@ -6,7 +6,15 @@ const getWindowOrigin = () => {
 
     return window.location.origin;
 };
-const getRuntimeUrl = (envValue: string | undefined, fallback: string) => trimTrailingSlash(envValue ?? fallback);
+const getRuntimeUrl = (envValue: string | undefined, fallback: string) => {
+    const normalized = envValue?.trim();
+
+    if (normalized === '') {
+        return trimTrailingSlash(fallback);
+    }
+
+    return trimTrailingSlash(normalized ?? fallback);
+};
 const INTERNAL_PATH_PATTERN = /^\/(?!\/)/;
 
 export const RUNTIME_CONFIG = {
