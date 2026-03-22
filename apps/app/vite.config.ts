@@ -1,26 +1,27 @@
-import {defineConfig} from 'vitest/config';
 import {fileURLToPath} from 'node:url';
-import react from '@vitejs/plugin-react';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
+import react from '@vitejs/plugin-react';
+import {defineConfig} from 'vite';
 import mkcert from 'vite-plugin-mkcert';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
-interface Chunks {
+interface IChunks {
     [key: string]: string[];
 }
 
 const renderChunks = (deps: Record<string, string>) => {
-    const chunks: Chunks = {};
+    const chunks: IChunks = {};
+
     Object.keys(deps).forEach((key) => {
         if (['react', 'react-router-dom', 'react-dom'].includes(key)) {
             return;
         }
+
         chunks[key] = [key];
     });
 
     return chunks;
 };
-
 const dependencies = {
     '@hookform/resolvers': '@hookform/resolvers',
     '@tanstack/react-query': '@tanstack/react-query',
@@ -46,10 +47,9 @@ const dependencies = {
     yup: 'yup',
     zustand: 'zustand',
 };
-
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-export default defineConfig(({command}) => ({
+export default defineConfig(() => ({
     envDir: workspaceRoot,
     build: {
         sourcemap: true,
@@ -78,21 +78,10 @@ export default defineConfig(({command}) => ({
         }),
         tsconfigPaths({projects: ['./tsconfig.app.json']}),
         tailwindcss(),
-        ...(command === 'serve'
-            ? [
-                  mkcert({
-                      hosts: ['local.app.dutying.net', 'localhost', '127.0.0.1'],
-                  }),
-              ]
-            : []),
+        mkcert(),
     ],
     server: {
         host: 'local.app.dutying.net',
-        https: {},
-        hmr: {
-            host: 'local.app.dutying.net',
-            protocol: 'wss',
-        },
         port: 3000,
     },
     css: {
