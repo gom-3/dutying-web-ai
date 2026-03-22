@@ -29,4 +29,13 @@ describe('toAppRedirectPath', () => {
     it('rejects protocol-relative paths', () => {
         expect(toAppRedirectPath('//dutying.net/make', appOrigin)).toBeUndefined();
     });
+
+    it('rejects same-origin absolute URLs whose normalized path becomes protocol-relative', () => {
+        expect(toAppRedirectPath('https://app.dutying.net//evil.example', appOrigin)).toBeUndefined();
+        expect(toAppRedirectPath('https://app.dutying.net/\\evil.example', appOrigin)).toBeUndefined();
+    });
+
+    it('rejects app-relative paths that start with a slash-backslash sequence', () => {
+        expect(toAppRedirectPath('/\\evil.example', appOrigin)).toBeUndefined();
+    });
 });

@@ -6,6 +6,7 @@ const DEFAULT_DOCS_SITE_URL = 'https://docs.dutying.net';
 const DEFAULT_TERMS_URL = 'https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4';
 
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const isSafeAppPath = (value: string) => /^\/(?![\\/])/.test(value);
 
 export const normalizeSiteOrigin = (value: string | undefined, fallback: string) => stripTrailingSlash(value?.trim() || fallback);
 
@@ -15,7 +16,7 @@ export const toAppRedirectPath = (value: string | null | undefined, appOrigin: s
     if (value === 'back') return 'back';
 
     if (value.startsWith('/')) {
-        return value.startsWith('//') ? undefined : value;
+        return isSafeAppPath(value) ? value : undefined;
     }
 
     try {
@@ -25,7 +26,7 @@ export const toAppRedirectPath = (value: string | null | undefined, appOrigin: s
             return undefined;
         }
 
-        return `${url.pathname}${url.search}${url.hash}`;
+        return isSafeAppPath(url.pathname) ? `${url.pathname}${url.search}${url.hash}` : undefined;
     } catch {
         return undefined;
     }
