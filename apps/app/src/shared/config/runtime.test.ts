@@ -32,6 +32,26 @@ describe('resolveSafeRedirectTarget', () => {
 
         expect(resolveSafeRedirectTarget('https://evil.example/request')).toBe(ROUTE.MAKE);
     });
+
+    it('rejects landing-domain redirects after domain split', () => {
+        vi.stubGlobal('window', {
+            location: {
+                origin: 'https://app.dutying.net',
+            },
+        });
+
+        expect(resolveSafeRedirectTarget('https://dutying.net/request')).toBe(ROUTE.MAKE);
+    });
+
+    it('rejects docs-domain redirects after domain split', () => {
+        vi.stubGlobal('window', {
+            location: {
+                origin: 'https://app.dutying.net',
+            },
+        });
+
+        expect(resolveSafeRedirectTarget('https://docs.dutying.net/request')).toBe(ROUTE.MAKE);
+    });
 });
 
 describe('buildAuthAuthorizeUrl', () => {
