@@ -53,6 +53,23 @@ describe('hasNurseChanges', () => {
 
         expect(hasNurseChanges(nurse, draft)).toBe(true);
     });
+
+    it('returns false when the original or draft value is missing', () => {
+        const nurse = createNurse();
+
+        expect(hasNurseChanges(nurse, null)).toBe(false);
+        expect(hasNurseChanges(undefined, nurse)).toBe(false);
+    });
+
+    it('detects reordered shift types as a change', () => {
+        const nurse = createNurse();
+        const draft = {
+            ...nurse,
+            nurseShiftTypes: [...nurse.nurseShiftTypes].reverse(),
+        };
+
+        expect(hasNurseChanges(nurse, draft)).toBe(true);
+    });
 });
 
 describe('getNurseDrawerFeedback', () => {
@@ -74,5 +91,35 @@ describe('getNurseDrawerFeedback', () => {
                 isDirty: true,
             }).title,
         ).toBe('저장하지 못했어요');
+    });
+
+    it('describes that the draft is preserved on save failure', () => {
+        expect(
+            getNurseDrawerFeedback({
+                mode: 'edit',
+                saveStatus: 'error',
+                isDirty: false,
+            }).description,
+        ).toContain('입력한 내용은 그대로 남아 있어요');
+    });
+
+    it('returns success feedback after a clean save in edit mode', () => {
+        expect(
+            getNurseDrawerFeedback({
+                mode: 'edit',
+                saveStatus: 'success',
+                isDirty: false,
+            }).title,
+        ).toBe('저장이 완료되었어요');
+    });
+
+    it('warns about losing edits when the drawer is closed with unsaved changes', () => {
+        expect(
+            getNurseDrawerFeedback({
+                mode: 'edit',
+                saveStatus: 'idle',
+                isDirty: true,
+            }).description,
+        ).toContain('저장하지 않고 닫으면');
     });
 });

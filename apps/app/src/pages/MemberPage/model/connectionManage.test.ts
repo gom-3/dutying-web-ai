@@ -59,6 +59,17 @@ describe('getConnectionManageTargetLabel', () => {
             }),
         ).toBe('B팀');
     });
+
+    it('returns null when the requested target no longer exists', () => {
+        expect(
+            getConnectionManageTargetLabel({
+                connectMode: 'link',
+                shiftTeams,
+                toLinkNurseId: 999,
+                toAddShiftTeamId: null,
+            }),
+        ).toBeNull();
+    });
 });
 
 describe('getConnectionManageResultCopy', () => {
@@ -82,5 +93,26 @@ describe('getConnectionManageResultCopy', () => {
                 targetLabel: 'B팀',
             }).description,
         ).toContain('다시 시도하거나 이전 단계로 돌아가');
+    });
+
+    it('keeps the loading copy specific to add mode', () => {
+        expect(
+            getConnectionManageResultCopy({
+                submitStatus: 'loading',
+                connectMode: 'add',
+                waitingNurseName: '박신청',
+                targetLabel: 'B팀',
+            }).description,
+        ).toContain('팀과 관계 변경이 반영될 때까지');
+    });
+
+    it('falls back to safe labels when waiting nurse information is missing', () => {
+        const result = getConnectionManageResultCopy({
+            submitStatus: 'error',
+            connectMode: 'link',
+        });
+
+        expect(result.title).toBe('기존 계정과 연결하지 못했어요');
+        expect(result.description).toContain('선택한 간호사 계정');
     });
 });
