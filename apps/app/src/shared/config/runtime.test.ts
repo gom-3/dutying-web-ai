@@ -1,6 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
-import {buildAuthAuthorizeUrl, resolveSafeRedirectTarget, sanitizeInternalPath} from './runtime';
+import {buildAppUrl, buildAuthAuthorizeUrl, resolveSafeRedirectTarget, sanitizeInternalPath} from './runtime';
 
 describe('sanitizeInternalPath', () => {
     it('keeps app-relative paths', () => {
@@ -31,6 +31,29 @@ describe('resolveSafeRedirectTarget', () => {
         });
 
         expect(resolveSafeRedirectTarget('https://evil.example/request')).toBe(ROUTE.MAKE);
+    });
+
+    it('accepts redirects that match the configured public app origin in local development', () => {
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
+        vi.stubGlobal('window', {
+            location: {
+                origin: 'https://local.app.dutying.net:3000',
+            },
+        });
+
+        expect(resolveSafeRedirectTarget('https://app.dutying.net/login?next=%2Fmake#cta')).toBe('/login?next=%2Fmake#cta');
+    });
+
+    it('rejects protocol-relative redirect targets', () => {
+        expect(resolveSafeRedirectTarget('//evil.example/phish')).toBe(ROUTE.MAKE);
+    });
+});
+
+describe('buildAppUrl', () => {
+    it('uses the configured public app url and strips trailing slashes', () => {
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://staging.app.dutying.net///');
+
+        expect(buildAppUrl('/member')).toBe('https://staging.app.dutying.net/member');
     });
 });
 
