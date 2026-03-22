@@ -1,6 +1,6 @@
 import {act} from 'react';
 import {describe, expect, it, vi} from 'vitest';
-import {renderHook} from '@/shared/util/test-utils';
+import {renderHook, waitFor} from '@/shared/util/test-utils';
 import useConnectionManageController from './useConnectionManageController';
 
 const waitingNurse = {
@@ -238,6 +238,9 @@ describe('useConnectionManageController', () => {
 
         expect(connectWaitingNurses).toHaveBeenNthCalledWith(1, 1, 99);
         expect(connectWaitingNurses).toHaveBeenNthCalledWith(2, 1, 99);
-        expect(result.current.state.submitStatus).toBe('success');
+
+        await waitFor(() => {
+            expect(result.current.state.submitStatus).toBe('success');
+        });
     });
 });
