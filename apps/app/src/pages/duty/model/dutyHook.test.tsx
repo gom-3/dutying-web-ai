@@ -359,6 +359,28 @@ describe('useDutyHook', () => {
         });
     });
 
+    it('does not invalidate the duty query when postShift fails', async () => {
+        mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
+        mockPostShift.mockRejectedValue(new Error('post failed'));
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        mockInvalidateQueries.mockClear();
+
+        await expect(
+            act(async () => {
+                await result.current.handlers.postShift();
+            }),
+        ).rejects.toThrow('post failed');
+
+        expect(mockPostShift).toHaveBeenCalledWith(1, 20, 2025, 7);
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+    });
+
     it('skips postShift when no shift team is selected', async () => {
         setQueryState({
             shiftTeams: {data: [], isPending: false, isError: false},
