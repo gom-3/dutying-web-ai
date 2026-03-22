@@ -1,4 +1,13 @@
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const getRuntimeOrigin = (value: string | undefined, fallback: string) => {
+    const normalized = value?.trim();
+
+    if (normalized === '') {
+        return stripTrailingSlash(fallback);
+    }
+
+    return stripTrailingSlash(normalized ?? fallback);
+};
 
 type SiteEnv = {
     PUBLIC_MARKETING_SITE_URL?: string;
@@ -11,8 +20,8 @@ const readSiteEnv = (): SiteEnv => ({
 });
 
 export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
-    const marketingOrigin = stripTrailingSlash(env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.net');
-    const appOrigin = stripTrailingSlash(env.PUBLIC_APP_SITE_URL ?? 'https://app.dutying.net');
+    const marketingOrigin = getRuntimeOrigin(env.PUBLIC_MARKETING_SITE_URL, 'https://dutying.net');
+    const appOrigin = getRuntimeOrigin(env.PUBLIC_APP_SITE_URL, 'https://app.dutying.net');
 
     return {
         productName: 'Dutying',

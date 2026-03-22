@@ -26,6 +26,17 @@ describe('createSiteConfig', () => {
         expect(config.appLinks.login).toBe('https://preview.app.dutying.net/login');
         expect(config.appLinks.makeEntry).toBe('https://preview.app.dutying.net/login?next=%2Fmake');
     });
+
+    it('falls back safely when env overrides are blank strings', () => {
+        const config = createSiteConfig({
+            PUBLIC_MARKETING_SITE_URL: '   ',
+            PUBLIC_APP_SITE_URL: '',
+        });
+
+        expect(config.marketingOrigin).toBe('https://dutying.net');
+        expect(config.appOrigin).toBe('https://app.dutying.net');
+        expect(config.appLinks.login).toBe('https://app.dutying.net/login');
+    });
 });
 
 describe('createLandingPrimaryCtas', () => {
