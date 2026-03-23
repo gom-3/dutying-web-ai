@@ -155,7 +155,7 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        expect(screen.getByText('신청 근무를 검토해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('toolbar')).toBeInTheDocument();
         expect(screen.getByText('request-calendar')).toBeInTheDocument();
     });
 });

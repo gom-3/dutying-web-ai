@@ -1,26 +1,15 @@
 import useRequestShift from '@/features/shift/useRequestShift';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
-import SectionHeader from '@/shared/ui/SectionHeader';
 import RequestCalendar from './ui/RequestCalendar';
 import Toolbar from './ui/Toolbar';
 
 const RequestShiftPage = () => {
     const {
-        state: {readonly, requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, editAvailability},
+        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus},
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
-    const sectionTitle = readonly
-        ? editAvailability.canEdit
-            ? '신청 근무를 검토해 주세요'
-            : '신청 근무를 확인해 주세요'
-        : '신청 근무를 확정해 주세요';
-    const sectionDescription = readonly
-        ? editAvailability.canEdit
-            ? '제출된 신청과 팀별 배치를 먼저 확인한 뒤, 필요하면 수정하기로 바로 편집할 수 있어요.'
-            : editAvailability.description
-        : '셀을 선택한 뒤 단축키로 근무를 입력할 수 있고, 변경 내용은 자동 저장돼요.';
     const pageState =
         shiftTeamsStatus === 'pending'
             ? {
@@ -64,9 +53,7 @@ const RequestShiftPage = () => {
 
     return (
         <div className="flex min-h-screen w-full flex-col px-5 py-5 md:px-10 md:py-10">
-            <Toolbar />
-
-            <div className="mt-3 flex flex-1 flex-col rounded-[20px] bg-white px-5 py-6 md:px-10 md:py-8">
+            <div className="flex flex-1 flex-col rounded-[20px] bg-white px-5 py-6 shadow-banner md:px-10 md:py-8">
                 {pageState ? (
                     <PageState {...pageState} className="py-0">
                         {pageState.tone === 'empty' && !requestShift && shiftTeamCount > 0 ? (
@@ -85,13 +72,7 @@ const RequestShiftPage = () => {
                     </PageState>
                 ) : (
                     <>
-                        <SectionHeader
-                            title={sectionTitle}
-                            description={sectionDescription}
-                            className="mb-8"
-                            titleClassName="text-[28px] md:text-[32px]"
-                            descriptionClassName="text-base md:text-[20px]"
-                        />
+                        <Toolbar />
                         <RequestCalendar />
                     </>
                 )}
