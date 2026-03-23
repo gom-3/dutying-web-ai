@@ -45,4 +45,22 @@ describe('useAuthStore', () => {
             });
         });
     });
+
+    it('marks hydration as loaded and falls back to safe defaults when persisted payload is malformed', async () => {
+        localStorage.setItem('useAuthStore', '{invalid-json');
+
+        const {default: useAuthStore} = await import('./store');
+
+        await vi.waitFor(() => {
+            expect(useAuthStore.getState()).toMatchObject({
+                isAuth: false,
+                accessToken: null,
+                accountId: null,
+                nurseId: null,
+                wardId: null,
+                demoStartDate: null,
+                _loaded: true,
+            });
+        });
+    });
 });
