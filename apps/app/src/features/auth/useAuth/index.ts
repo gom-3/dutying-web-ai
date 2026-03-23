@@ -69,10 +69,6 @@ const useAuth = (activeEffect = false) => {
         setLoading(false);
     };
     const handleGetAccountMe = async () => {
-        setState('accountMe', null);
-        setState('accountId', null);
-        setState('nurseId', null);
-        setState('wardId', null);
         setState('accountMeStatus', 'loading');
 
         try {

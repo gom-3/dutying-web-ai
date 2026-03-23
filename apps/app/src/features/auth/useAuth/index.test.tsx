@@ -131,7 +131,7 @@ describe('useAuth', () => {
         });
     });
 
-    it('drops stale identity fields and rethrows when account bootstrap fails', async () => {
+    it('preserves stale identity fields and rethrows when account bootstrap fails', async () => {
         vi.mocked(AccountAPI.getAccountMe).mockRejectedValueOnce(new Error('boom'));
         const {result} = renderHook(() => useAuth());
 
@@ -142,11 +142,11 @@ describe('useAuth', () => {
         ).rejects.toThrow('boom');
 
         expect(useAuthStore.getState()).toMatchObject({
-            accountMe: null,
+            accountMe: {accountId: 9, wardId: 99, nurseId: 19},
             accountMeStatus: 'error',
-            accountId: null,
-            nurseId: null,
-            wardId: null,
+            accountId: 9,
+            nurseId: 19,
+            wardId: 99,
         });
     });
 });
