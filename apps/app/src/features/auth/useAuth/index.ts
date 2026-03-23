@@ -10,6 +10,10 @@ import ROUTE from '@/shared/constant/path';
 import {executeLoginRedirect, getLoginRedirectDecision} from './loginRedirect';
 import useAuthStore from './store';
 
+type THandleLoginOptions = {
+    preserveDemoStartDate?: boolean;
+};
+
 const useAuth = (activeEffect = false) => {
     const {accountMe, accountMeStatus, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState, resetState} =
         useAuthStore();
@@ -29,12 +33,14 @@ const useAuth = (activeEffect = false) => {
 
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
     };
-    const handleLogin = (accessToken: string, nextPageUrl?: string | null) => {
+    const handleLogin = (accessToken: string, nextPageUrl?: string | null, options?: THandleLoginOptions) => {
         setState('accountMe', null);
         setState('accountId', null);
         setState('nurseId', null);
         setState('wardId', null);
-        setState('demoStartDate', null);
+        if (!options?.preserveDemoStartDate) {
+            setState('demoStartDate', null);
+        }
         setState('isAuth', true);
         setState('accessToken', accessToken);
         setState('accountMeStatus', 'loading');

@@ -112,6 +112,25 @@ describe('useAuth', () => {
         });
     });
 
+    it('preserves demoStartDate when login is used for token refresh', () => {
+        const {result} = renderHook(() => useAuth());
+
+        act(() => {
+            result.current.actions.handleLogin('refreshed-token', null, {preserveDemoStartDate: true});
+        });
+
+        expect(useAuthStore.getState()).toMatchObject({
+            accountMe: null,
+            accountMeStatus: 'loading',
+            accessToken: 'refreshed-token',
+            accountId: null,
+            nurseId: null,
+            wardId: null,
+            demoStartDate: '2026-03-01T00:00:00.000Z',
+            isAuth: true,
+        });
+    });
+
     it('drops stale identity fields and rethrows when account bootstrap fails', async () => {
         vi.mocked(AccountAPI.getAccountMe).mockRejectedValueOnce(new Error('boom'));
         const {result} = renderHook(() => useAuth());
