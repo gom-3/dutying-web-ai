@@ -1,12 +1,5 @@
 import {type TMakeShiftStep} from '../model/make-shift-store';
-
-export const STEP_LABELS: Record<TMakeShiftStep, string> = {
-    1: '근무자 확인',
-    2: '제약 조건',
-    3: '신청 근무 확정',
-    4: '고정 근무',
-    5: 'AI 자동 채우기',
-};
+import {STEP_LABELS} from './make-shift-step-config';
 
 function StepCircle({state, step}: {state: 'prev' | 'current' | 'next'; step: number}) {
     const base = 'flex size-8 items-center justify-center rounded-full font-poppins text-xl font-medium';
