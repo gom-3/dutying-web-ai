@@ -1,7 +1,6 @@
 name: Vitest Unit Test
 
 on:
-  push:
   pull_request:
 
 jobs:
@@ -30,15 +29,7 @@ jobs:
         run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
       - name: vitest coverage
         run: pnpm coverage
-      - name: Upload Vitest coverage artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: vitest-coverage
-          path: apps/app/coverage
-          if-no-files-found: error
       - name: Comment coverage on pull request
-        if: github.event_name == 'pull_request'
         uses: davelosert/vitest-coverage-report-action@v2
         with:
           working-directory: ./apps/app
