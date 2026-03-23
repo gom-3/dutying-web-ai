@@ -80,6 +80,7 @@ const useAuth = (activeEffect = false) => {
             setState('accountMeStatus', 'success');
         } catch (error) {
             setState('accountMeStatus', 'error');
+            throw error;
         }
     };
 
@@ -94,7 +95,7 @@ const useAuth = (activeEffect = false) => {
             if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() <= 0) {
                 void handleLogout();
             } else {
-                void handleGetAccountMe();
+                void handleGetAccountMe().catch(() => undefined);
             }
         }
     }, [accessToken, activeEffect, demoStartDate, _loaded]);

@@ -112,13 +112,15 @@ describe('useAuth', () => {
         });
     });
 
-    it('drops stale identity fields when account bootstrap fails', async () => {
+    it('drops stale identity fields and rethrows when account bootstrap fails', async () => {
         vi.mocked(AccountAPI.getAccountMe).mockRejectedValueOnce(new Error('boom'));
         const {result} = renderHook(() => useAuth());
 
-        await act(async () => {
-            await result.current.actions.handleGetAccountMe();
-        });
+        await expect(
+            act(async () => {
+                await result.current.actions.handleGetAccountMe();
+            }),
+        ).rejects.toThrow('boom');
 
         expect(useAuthStore.getState()).toMatchObject({
             accountMe: null,

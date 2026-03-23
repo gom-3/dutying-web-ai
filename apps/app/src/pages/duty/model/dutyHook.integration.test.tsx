@@ -203,6 +203,7 @@ describe('useDutyHook integration', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         window.localStorage.clear();
         resetDutyStore();
         useShiftEditorStore.getState().reset();

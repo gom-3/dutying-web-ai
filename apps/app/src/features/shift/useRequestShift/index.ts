@@ -408,7 +408,7 @@ const useRequestShift = (activeEffect = false) => {
     };
     const retry = useCallback(async () => {
         if (wardId === null) {
-            await handleGetAccountMe();
+            await handleGetAccountMe().catch(() => undefined);
 
             return;
         }

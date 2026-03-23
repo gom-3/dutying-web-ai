@@ -231,7 +231,7 @@ export function useDutyHook() {
     };
     const handleRetry = () => {
         if (wardId === null) {
-            void handleGetAccountMe();
+            void handleGetAccountMe().catch(() => undefined);
 
             return;
         }

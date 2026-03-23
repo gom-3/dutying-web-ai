@@ -189,6 +189,7 @@ function setQueryState(overrides?: Partial<typeof mockQueries>) {
 describe('useDutyHook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         resetDutyStore();
         mockSearchParams = new URLSearchParams();
         mockAuthState = {

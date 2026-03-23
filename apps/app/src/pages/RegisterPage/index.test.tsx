@@ -48,6 +48,7 @@ vi.mock('./ui/PendingEnter', () => ({
 describe('RegisterPage', () => {
     beforeEach(() => {
         mockHandleGetAccountMe.mockReset();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockNavigate.mockReset();
         mockAuthState = {
             accountMe: null,
