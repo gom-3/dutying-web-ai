@@ -15,6 +15,7 @@ import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
 import {LinkedIcon, MoreIcon, PlusIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
+import {shouldAutoSelectVisibleNurse} from './model/detailPanelSelection';
 import MemberSkillLevelModal from './ui/MemberSkillLevelModal';
 import NurseDetailPanel from './ui/NurseDetailPanel';
 
@@ -29,11 +30,13 @@ function MemberPage() {
     const [skillSettings, setSkillSettings] = useState<TWardSkillSettings | null>(null);
     const [skillModalOpen, setSkillModalOpen] = useState(false);
     const [teamMenuOpen, setTeamMenuOpen] = useState(false);
+    const [isDetailPanelDismissed, setIsDetailPanelDismissed] = useState(false);
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
 
     useEffect(() => {
         setSkillSettings(getWardSkillSettings(wardId));
+        setIsDetailPanelDismissed(false);
     }, [wardId]);
 
     const {config: skillConfig, levelsByNurseId} = useMemo(
@@ -87,15 +90,31 @@ function MemberPage() {
     }, [activeShiftTeamId, selectedNurse, shiftTeams]);
 
     useEffect(() => {
-        if (!activeShiftTeam || visibleNurses.length === 0) {
+        if (
+            !shouldAutoSelectVisibleNurse({
+                activeShiftTeamId: activeShiftTeam?.shiftTeamId,
+                isDetailPanelDismissed,
+                selectedShiftTeamId: selectedNurse?.shiftTeamId,
+                visibleNurseCount: visibleNurses.length,
+            })
+        ) {
             return;
         }
 
-        if (!selectedNurse || selectedNurse.shiftTeamId !== activeShiftTeam.shiftTeamId) {
-            selectNurse(visibleNurses[0].nurseId);
-        }
-    }, [activeShiftTeam, selectNurse, selectedNurse, visibleNurses]);
+        selectNurse(visibleNurses[0].nurseId);
+    }, [activeShiftTeam, isDetailPanelDismissed, selectNurse, selectedNurse, visibleNurses]);
 
+    const handleDismissDetailPanel = () => {
+        const canClose = selectNurse(null);
+
+        if (!canClose) {
+            return false;
+        }
+
+        setIsDetailPanelDismissed(true);
+
+        return true;
+    };
     const handleSelectTeam = (shiftTeamId: number) => {
         if (!shiftTeams) return;
 
@@ -105,6 +124,7 @@ function MemberPage() {
 
         if (!canMove) return;
 
+        setIsDetailPanelDismissed(false);
         setActiveShiftTeamId(shiftTeamId);
         setTeamMenuOpen(false);
     };
@@ -116,14 +136,23 @@ function MemberPage() {
         saveWardSkillSettings(wardId, nextSettings);
         setSkillSettings(nextSettings);
     };
-    const handleDeleteActiveTeam = () => {
+    const handleDeleteActiveTeam = async () => {
         if (!activeShiftTeam) return;
 
         const shouldDelete = window.confirm(t('page.member.confirmDeleteTeam', {teamName: activeShiftTeam.name}));
 
         if (!shouldDelete) return;
 
-        deleteShiftTeam(activeShiftTeam.shiftTeamId);
+        if (selectedNurse?.shiftTeamId === activeShiftTeam.shiftTeamId) {
+            const canClose = selectNurse(null);
+
+            if (!canClose) {
+                return;
+            }
+        }
+
+        setIsDetailPanelDismissed(false);
+        await deleteShiftTeam(activeShiftTeam.shiftTeamId);
         setTeamMenuOpen(false);
     };
 
@@ -294,6 +323,7 @@ function MemberPage() {
                                         skillLevel={levelsByNurseId[nurse.nurseId]}
                                         skillConfig={skillConfig}
                                         onSelect={() => {
+                                            setIsDetailPanelDismissed(false);
                                             selectNurse(nurse.nurseId);
                                             sendEvent(events.memberPage.focusNurse);
                                         }}
@@ -305,6 +335,7 @@ function MemberPage() {
                 </section>
 
                 <NurseDetailPanel
+                    onClose={handleDismissDetailPanel}
                     skillConfig={skillConfig}
                     skillLevel={selectedNurse ? levelsByNurseId[selectedNurse.nurseId] : null}
                     wardShiftTypes={ward?.wardShiftTypes}

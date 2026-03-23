@@ -13,15 +13,16 @@ import {Switch} from '@/shared/ui/primitives/switch';
 import {getNurseDrawerFeedback, hasNurseChanges} from '../model/nurseEdit';
 
 interface INurseDetailPanelProps {
+    onClose: () => void;
     skillConfig: TSkillLevelConfig;
     skillLevel: number | null | undefined;
     wardShiftTypes: TWardShiftType[] | undefined;
 }
 
-function NurseDetailPanel({skillConfig, skillLevel, wardShiftTypes}: INurseDetailPanelProps) {
+function NurseDetailPanel({onClose, skillConfig, skillLevel, wardShiftTypes}: INurseDetailPanelProps) {
     const {
         state: {shiftTeams, selectedNurse, selectedNurseDrawerMode, nurseSaveStatus, isDeletingNurse},
-        actions: {selectNurse, updateNurse, deleteNurse, setNurseDraftDirty},
+        actions: {updateNurse, deleteNurse, setNurseDraftDirty},
     } = useEditShiftTeam();
     const {t} = useTypedTranslation();
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
@@ -120,7 +121,7 @@ function NurseDetailPanel({skillConfig, skillLevel, wardShiftTypes}: INurseDetai
                     <button
                         type="button"
                         className="grid size-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1"
-                        onClick={() => selectNurse(null)}
+                        onClick={onClose}
                         aria-label={t('page.member.detail.close')}
                     >
                         <XIcon aria-hidden="true" className="size-5" />
@@ -312,12 +313,7 @@ function NurseDetailPanel({skillConfig, skillLevel, wardShiftTypes}: INurseDetai
                     {isDeletingNurse ? t('page.member.detail.deleting') : t('page.member.detail.delete')}
                 </button>
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant="outline"
-                        size="md"
-                        className="h-10 rounded-[10px] px-4 font-apple text-[16px]"
-                        onClick={() => selectNurse(null)}
-                    >
+                    <Button variant="outline" size="md" className="h-10 rounded-[10px] px-4 font-apple text-[16px]" onClick={onClose}>
                         {isDirty ? t('page.member.detail.cancel') : t('page.member.detail.closeAction')}
                     </Button>
                     <Button
