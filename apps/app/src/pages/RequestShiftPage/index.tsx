@@ -1,56 +1,71 @@
 import useRequestShift from '@/features/shift/useRequestShift';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import RequestCalendar from './ui/RequestCalendar';
 import Toolbar from './ui/Toolbar';
 
 const RequestShiftPage = () => {
+    const {t} = useTypedTranslation();
     const {
-        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus},
+        state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus},
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
-    const shouldShowToolbar = shiftTeamsStatus !== 'pending' && shiftTeamsStatus !== 'error' && shiftTeamCount > 0;
+    const shouldShowToolbar = bootstrapStatus === 'success' && shiftTeamsStatus === 'success' && shiftTeamCount > 0;
     const pageState =
-        shiftTeamsStatus === 'pending'
+        bootstrapStatus === 'pending'
             ? {
                   tone: 'loading' as const,
-                  title: '신청 근무 화면을 준비하고 있어요',
-                  description: '근무 팀과 신청 근무표를 순서대로 불러오고 있어요.',
+                  title: t('page.request.overview.bootstrapLoadingTitle'),
+                  description: t('page.request.overview.bootstrapLoadingDescription'),
               }
-            : shiftTeamsStatus === 'error'
+            : bootstrapStatus === 'error'
               ? {
                     tone: 'error' as const,
-                    title: '근무 팀을 불러오지 못했어요',
-                    description: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
-                    action: {label: '다시 시도', onClick: () => void retry()},
+                    title: t('page.request.overview.bootstrapErrorTitle'),
+                    description: t('page.request.overview.bootstrapErrorDescription'),
+                    action: {label: t('page.state.retry'), onClick: () => void retry()},
                 }
-              : shiftTeamCount === 0
+              : shiftTeamsStatus === 'pending'
                 ? {
-                      tone: 'empty' as const,
-                      title: '아직 등록된 팀이 없어요',
-                      description: '신청 근무를 작성하려면 먼저 근무 팀을 등록해 주세요.',
+                      tone: 'loading' as const,
+                      title: t('page.request.overview.loadingTitle'),
+                      description: t('page.request.overview.loadingDescription'),
                   }
-                : shiftStatus === 'pending'
+                : shiftTeamsStatus === 'error'
                   ? {
-                        tone: 'loading' as const,
-                        title: '신청 근무표를 불러오는 중이에요',
-                        description: '선택한 팀의 신청 근무와 신청 내역을 정리하고 있어요.',
+                        tone: 'error' as const,
+                        title: t('page.request.overview.teamsErrorTitle'),
+                        description: t('page.state.errorDescription'),
+                        action: {label: t('page.state.retry'), onClick: () => void retry()},
                     }
-                  : shiftStatus === 'error'
+                  : shiftTeamCount === 0
                     ? {
-                          tone: 'error' as const,
-                          title: '신청 근무표를 불러오지 못했어요',
-                          description: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
-                          action: {label: '다시 시도', onClick: () => void retry()},
+                          tone: 'empty' as const,
+                          title: t('page.request.overview.noTeamsTitle'),
+                          description: t('page.request.overview.noTeamsDescription'),
                       }
-                    : !requestShift
+                    : shiftStatus === 'pending'
                       ? {
-                            tone: 'empty' as const,
-                            title: '이번 달 신청 근무표가 아직 없어요',
-                            description: '다음 달 신청 근무표를 먼저 열어 작성할 수 있어요.',
+                            tone: 'loading' as const,
+                            title: t('page.request.overview.shiftLoadingTitle'),
+                            description: t('page.request.overview.shiftLoadingDescription'),
                         }
-                      : null;
+                      : shiftStatus === 'error'
+                        ? {
+                              tone: 'error' as const,
+                              title: t('page.request.overview.shiftErrorTitle'),
+                              description: t('page.state.errorDescription'),
+                              action: {label: t('page.state.retry'), onClick: () => void retry()},
+                          }
+                        : !requestShift
+                          ? {
+                                tone: 'empty' as const,
+                                title: t('page.request.overview.emptyTitle'),
+                                description: t('page.request.overview.emptyDescription'),
+                            }
+                          : null;
 
     return (
         <div className="flex min-h-screen w-full flex-col px-5 py-5 md:px-10 md:py-10">
@@ -68,7 +83,7 @@ const RequestShiftPage = () => {
                                     className="h-11 rounded-[14px] px-5 font-semibold"
                                     onClick={createNextMonthShift}
                                 >
-                                    다음 달 신청 근무 작성하기
+                                    {t('page.request.overview.createNextMonth')}
                                 </Button>
                             </div>
                         ) : null}

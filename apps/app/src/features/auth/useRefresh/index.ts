@@ -16,7 +16,7 @@ export default function useRefresh() {
             const accessToken = (await axiosInstance.post('/token/refresh')).data.accessToken;
 
             // 여기서는 "세션만 갱신"하고, 이동은 호출자(RefreshPage)가 담당한다.
-            handleLogin(accessToken, null);
+            handleLogin(accessToken, null, {preserveDemoStartDate: true});
 
             return accessToken as string;
         } catch {

@@ -17,6 +17,7 @@ const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const DutyPage = lazy(() => import('@/pages/duty'));
 const RequestShiftPage = lazy(() => import('@/pages/RequestShiftPage/index.tsx'));
 const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
+const WardSettingsPage = lazy(() => import('@/pages/WardSettingsPage/index.tsx'));
 const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));
 
 export const Router = () => {
@@ -52,6 +53,7 @@ export const Router = () => {
                         <Route path={ROUTE.DUTY} element={<DutyPage />} />
                         <Route path={ROUTE.REQUEST} element={<RequestShiftPage />} />
                         <Route path={ROUTE.MEMBER} element={<MemberPage />} />
+                        <Route path={ROUTE.WARD_SETTINGS} element={<WardSettingsPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                     </Route>
                 </Route>

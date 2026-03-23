@@ -4,6 +4,7 @@ import {type TDutyRequest} from '@/entities/shift';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/shift/useRequestShift/type';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {getRequestFocus} from './utils';
@@ -18,8 +19,8 @@ interface IRequestDutyRequestPanelProps {
     updatingRequestId: number | null;
     shiftNurseIdByNurseId: Map<number, number>;
     changeFocus: (focus: TFocus | null) => void;
-    acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => Promise<void>;
-    acceptRequests: (reqShiftIds: number[], isAccepted: boolean | null) => Promise<void>;
+    acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => Promise<boolean>;
+    acceptRequests: (reqShiftIds: number[], isAccepted: boolean | null) => Promise<boolean>;
     retry: () => Promise<unknown>;
     onAcceptAnalytics: (accepted: boolean) => void;
 }
@@ -39,14 +40,13 @@ export default function RequestDutyRequestPanel({
     retry,
     onAcceptAnalytics,
 }: IRequestDutyRequestPanelProps) {
+    const {t} = useTypedTranslation();
     const isRequestActionLocked = updatingRequestId !== null;
     const isBulkUpdating = updatingRequestId === -1;
     const displayedRequestList = readonly ? dutyRequestList?.filter((request) => request.isAccepted === true) : dutyRequestList;
-    const panelTitle = readonly ? '반영된 신청 근무' : '신청 내역';
-    const emptyTitle = readonly ? '아직 반영된 신청 근무가 없어요' : '아직 제출된 신청이 없어요';
-    const emptyDescription = readonly
-        ? '수락된 신청이 생기면 이 패널에서 바로 확인할 수 있어요.'
-        : '신청이 들어오면 이 패널에서 바로 확인하고 처리할 수 있어요.';
+    const panelTitle = readonly ? t('page.request.panel.readonlyTitle') : t('page.request.panel.editTitle');
+    const emptyTitle = readonly ? t('page.request.panel.emptyTitleReadonly') : t('page.request.panel.emptyTitleEdit');
+    const emptyDescription = readonly ? t('page.request.panel.emptyDescriptionReadonly') : t('page.request.panel.emptyDescriptionEdit');
     const unresolvedRequestIds =
         displayedRequestList?.filter((request) => request.isAccepted === null).map((request) => request.wardReqShiftId) ?? [];
 
@@ -61,13 +61,15 @@ export default function RequestDutyRequestPanel({
                 <div>
                     <p className="font-apple text-[1.25rem] font-semibold text-main-1">{panelTitle}</p>
                     {!readonly ? (
-                        <p className="mt-1 font-apple text-sm font-medium text-gray-4">미처리 신청 {unresolvedRequestCount}건</p>
+                        <p className="mt-1 font-apple text-sm font-medium text-gray-4">
+                            {t('page.request.panel.unresolvedCount', {count: unresolvedRequestCount})}
+                        </p>
                     ) : null}
                 </div>
-                <button type="button" className="inline-flex items-center gap-1 font-apple text-sm font-medium text-gray-4">
-                    신청순
+                <span className="inline-flex items-center gap-1 font-apple text-sm font-medium text-gray-4" aria-disabled="true">
+                    {t('page.request.panel.sortOrder')}
                     <ChevronDown className="h-4 w-4" strokeWidth={1.8} />
-                </button>
+                </span>
             </div>
 
             {!readonly ? (
@@ -78,7 +80,7 @@ export default function RequestDutyRequestPanel({
                         disabled={isRequestActionLocked || unresolvedRequestIds.length === 0}
                         onClick={() => void acceptRequests(unresolvedRequestIds, true)}
                     >
-                        모두 수락
+                        {t('page.request.panel.acceptAll')}
                     </button>
                     <button
                         type="button"
@@ -86,7 +88,7 @@ export default function RequestDutyRequestPanel({
                         disabled={isRequestActionLocked || unresolvedRequestIds.length === 0}
                         onClick={() => void acceptRequests(unresolvedRequestIds, false)}
                     >
-                        모두 거절
+                        {t('page.request.panel.rejectAll')}
                     </button>
                 </div>
             ) : (
@@ -97,16 +99,18 @@ export default function RequestDutyRequestPanel({
                 {dutyRequestStatus === 'pending' ? (
                     <PageState
                         tone="loading"
-                        title={readonly ? '반영된 신청 근무를 불러오는 중이에요' : '신청 내역을 불러오는 중이에요'}
-                        description={readonly ? '수락된 신청 근무를 정리하고 있어요.' : '제출된 신청 근무를 확인하고 있어요.'}
+                        title={readonly ? t('page.request.panel.loadingTitleReadonly') : t('page.request.panel.loadingTitleEdit')}
+                        description={
+                            readonly ? t('page.request.panel.loadingDescriptionReadonly') : t('page.request.panel.loadingDescriptionEdit')
+                        }
                         className="px-6 py-6"
                     />
                 ) : dutyRequestStatus === 'error' ? (
                     <PageState
                         tone="error"
-                        title={readonly ? '반영된 신청 근무를 불러오지 못했어요' : '신청 내역을 불러오지 못했어요'}
-                        description="잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요."
-                        action={{label: '다시 시도', onClick: () => void retry()}}
+                        title={readonly ? t('page.request.panel.errorTitleReadonly') : t('page.request.panel.errorTitleEdit')}
+                        description={t('page.state.errorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void retry()}}
                         className="px-6 py-6"
                     />
                 ) : displayedRequestList && displayedRequestList.length > 0 ? (
@@ -127,7 +131,9 @@ export default function RequestDutyRequestPanel({
                                 >
                                     {readonly ? (
                                         <>
-                                            <p className="text-gray-1 font-apple text-base font-normal">{`${month}월 ${dutyRequest.date}일`}</p>
+                                            <p className="text-gray-1 font-apple text-base font-normal">
+                                                {t('page.request.panel.dateLabel', {month, date: dutyRequest.date})}
+                                            </p>
                                             <div className="flex items-center gap-6">
                                                 <p className="text-gray-1 font-apple text-base font-normal">{dutyRequest.nurseName}</p>
                                                 <ShiftBadge shiftType={wardShiftTypeMap.get(dutyRequest.wardShiftTypeId)} />
@@ -147,7 +153,12 @@ export default function RequestDutyRequestPanel({
                                                     changeFocus(requestFocus);
                                                 }}
                                             >
-                                                <span className="text-gray-1 truncate font-apple text-base font-normal">{`${dutyRequest.nurseName} / ${dutyRequest.date}일`}</span>
+                                                <span className="text-gray-1 truncate font-apple text-base font-normal">
+                                                    {t('page.request.panel.nurseDateLabel', {
+                                                        nurseName: dutyRequest.nurseName,
+                                                        date: dutyRequest.date,
+                                                    })}
+                                                </span>
                                                 <ShiftBadge shiftType={wardShiftTypeMap.get(dutyRequest.wardShiftTypeId)} />
                                             </button>
                                             <div className="flex h-7 w-[90px] rounded-[5px] border border-gray-5 bg-sub-5 p-[1px]">
@@ -159,14 +170,17 @@ export default function RequestDutyRequestPanel({
                                                         dutyRequest.isAccepted === true && 'bg-main-1 text-white',
                                                     )}
                                                     disabled={isRequestActionLocked}
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         if (isRequestActionLocked) return;
 
-                                                        void acceptRequest(dutyRequest.wardReqShiftId, true);
+                                                        const accepted = await acceptRequest(dutyRequest.wardReqShiftId, true);
+
+                                                        if (!accepted) return;
+
                                                         onAcceptAnalytics(true);
                                                     }}
                                                 >
-                                                    수락
+                                                    {t('page.request.panel.accept')}
                                                 </button>
                                                 <button
                                                     type="button"
@@ -176,14 +190,17 @@ export default function RequestDutyRequestPanel({
                                                         dutyRequest.isAccepted === false && 'bg-gray-3 text-white',
                                                     )}
                                                     disabled={isRequestActionLocked}
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         if (isRequestActionLocked) return;
 
-                                                        void acceptRequest(dutyRequest.wardReqShiftId, false);
+                                                        const accepted = await acceptRequest(dutyRequest.wardReqShiftId, false);
+
+                                                        if (!accepted) return;
+
                                                         onAcceptAnalytics(false);
                                                     }}
                                                 >
-                                                    거절
+                                                    {t('page.request.panel.reject')}
                                                 </button>
                                             </div>
                                         </>

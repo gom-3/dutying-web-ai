@@ -2,24 +2,30 @@ import {cn} from '@dutying/utils/style';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 
 function Toolbar() {
+    const {t} = useTypedTranslation();
     const {
         state: {year, month, changeStatus, currentShiftTeam, shiftTeams, readonly, editAvailability},
         actions: {changeMonth, changeShiftTeam, toggleEditMode},
     } = useRequestShift();
     const isSaving = changeStatus === 'loading';
-    const title = readonly ? `${month}월 신청 근무 확정본` : '신청 근무를 확정해 주세요';
-    const actionLabel = readonly ? '수정하기' : isSaving ? '저장 중...' : '저장하기';
+    const title = readonly ? t('page.request.toolbar.readonlyTitle', {month}) : t('page.request.toolbar.editTitle');
+    const actionLabel = isSaving
+        ? t('page.request.toolbar.savingAction')
+        : readonly
+          ? t('page.request.toolbar.editAction')
+          : t('page.request.toolbar.saveAction');
 
     return (
         <div id="toolbar" className="flex flex-col gap-10">
             <DutyManagementMonthTeamHeader
                 year={year}
                 month={month}
-                prevLabel="이전 달 보기"
-                nextLabel="다음 달 보기"
+                prevLabel={t('page.duty.prevMonth')}
+                nextLabel={t('page.duty.nextMonth')}
                 shiftTeams={shiftTeams ?? []}
                 currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
                 onPrevMonth={() => {
@@ -44,8 +50,8 @@ function Toolbar() {
                     changeShiftTeam(nextTeam);
                     sendEvent(events.requestPage.toolbar.changeShiftTeam);
                 }}
-                emptyLabel="등록된 팀이 없어요"
-                formatMonthLabel={(targetYear, targetMonth) => `${targetYear}년 ${targetMonth}월`}
+                emptyLabel={t('page.request.toolbar.noTeamsLabel')}
+                formatMonthLabel={(targetYear, targetMonth) => t('page.duty.monthHeader', {year: targetYear, month: targetMonth})}
                 disabled={isSaving}
             />
 
@@ -72,8 +78,10 @@ function Toolbar() {
                         'inline-flex h-[42px] items-center justify-center rounded-[10px] px-5 font-apple text-2xl font-semibold text-white transition-colors disabled:cursor-not-allowed disabled:opacity-50',
                         readonly ? 'bg-gray-3 hover:bg-[#556176]' : 'bg-main-1 hover:bg-[#5A34ED]',
                     )}
-                    disabled={(!readonly && isSaving) || (readonly && !editAvailability.canEdit)}
+                    disabled={isSaving || (readonly && !editAvailability.canEdit)}
                     onClick={() => {
+                        if (isSaving) return;
+
                         toggleEditMode();
                         sendEvent(events.requestPage.toolbar.changeEditMode, readonly ? 'edit' : 'save');
                     }}
@@ -86,8 +94,8 @@ function Toolbar() {
                 <p className="mt-[-24px] font-apple text-base font-medium text-gray-4">{editAvailability.description}</p>
             ) : null}
 
-            {!readonly && changeStatus === 'error' ? (
-                <p className="mt-[-24px] font-apple text-base font-medium text-sub-2">최근 변경 저장에 실패했어요. 다시 저장해 주세요.</p>
+            {changeStatus === 'error' ? (
+                <p className="mt-[-24px] font-apple text-base font-medium text-sub-2">{t('page.request.toolbar.saveError')}</p>
             ) : null}
         </div>
     );

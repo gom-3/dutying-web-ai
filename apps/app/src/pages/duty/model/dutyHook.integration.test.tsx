@@ -7,16 +7,23 @@ import {useDutyHook} from './dutyHook';
 import {useDutyStore} from './dutyStore';
 
 const SHIFT_EDITOR_STORAGE_KEY = 'shift-editor:draft';
-const {mockNavigate, mockInvalidateQueries, mockSetLoading, mockUpdateShifts, mockPostShift, mockRefetch} = vi.hoisted(() => ({
+const {mockNavigate, mockInvalidateQueries, mockSetLoading, mockUpdateShifts, mockPostShift, mockRefetch, mockHandleGetAccountMe} = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockInvalidateQueries: vi.fn(),
     mockSetLoading: vi.fn(),
     mockUpdateShifts: vi.fn(),
     mockPostShift: vi.fn(),
     mockRefetch: vi.fn(),
+    mockHandleGetAccountMe: vi.fn(),
 }));
 
 let mockSearchParams = new URLSearchParams();
+let mockAuthState = {
+    wardId: 1,
+    isAuth: true,
+    _loaded: true,
+    accountMeStatus: 'success' as const,
+};
 let mockQueries: Record<string, any> = {};
 
 vi.mock('@/features/shift-editor', async () => {
@@ -58,8 +65,9 @@ vi.mock('react-router', () => ({
 
 vi.mock('@/features/auth/useAuth', () => ({
     default: () => ({
-        state: {
-            wardId: 1,
+        state: mockAuthState,
+        actions: {
+            handleGetAccountMe: mockHandleGetAccountMe,
         },
     }),
 }));
@@ -195,9 +203,16 @@ describe('useDutyHook integration', () => {
     beforeEach(() => {
         vi.useFakeTimers();
         vi.clearAllMocks();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         window.localStorage.clear();
         resetDutyStore();
         useShiftEditorStore.getState().reset();
+        mockAuthState = {
+            wardId: 1,
+            isAuth: true,
+            _loaded: true,
+            accountMeStatus: 'success',
+        };
         mockSearchParams = new URLSearchParams('year=2025&month=7&shiftTeamId=20');
         setQueryState();
     });

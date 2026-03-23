@@ -110,7 +110,7 @@ export function DutyManagementMonthTeamHeader({
                                 disabled={disabled}
                                 className={cn(
                                     'flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                                    selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70',
+                                    selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
                                 )}
                             >
                                 <p className="font-apple text-base leading-normal font-medium">{team.name}</p>

@@ -5,44 +5,19 @@ import {useEffect, useMemo, useState} from 'react';
 import {type TNurse} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
+import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward/skill-level';
+import SkillBadge from '@/features/ward/SkillBadge';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementStatusCard} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 
-type TLevel = 1 | 2 | 3 | 4 | 5;
-
-const LEVEL_STYLE: Record<TLevel, {bg: string; text: string}> = {
-    5: {bg: '#ffa395', text: '#c52f18'},
-    4: {bg: '#ffc0b6', text: '#d64732'},
-    3: {bg: '#ffcbb6', text: '#d96d43'},
-    2: {bg: '#ffe195', text: '#de914b'},
-    1: {bg: '#fff0b0', text: '#daab4c'},
-};
 const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     D: {bg: '#4dc2ad', text: '#ffffff'},
     E: {bg: '#ff8ba5', text: '#ffffff'},
     N: {bg: '#3580ff', text: '#ffffff'},
     O: {bg: '#465b7a', text: '#ffffff'},
 };
-
-/** TODO: DB에 숙련도 필드 추가 후 제거 */
-function getMockLevel(nurseId: number): TLevel {
-    return ((nurseId % 5) + 1) as TLevel;
-}
-
-function LevelBadge({level}: {level: TLevel}) {
-    const style = LEVEL_STYLE[level];
-
-    return (
-        <div
-            className="flex h-5 w-11 items-center justify-center rounded-[3px] font-apple text-[14px] font-medium"
-            style={{backgroundColor: style.bg, color: style.text}}
-        >
-            LV. {level}
-        </div>
-    );
-}
 
 function ShiftTypeBadge({code}: {code: string}) {
     const style = SHIFT_TYPE_STYLE[code] ?? {bg: '#939ba9', text: '#ffffff'};
@@ -78,7 +53,17 @@ export function Workers() {
         ...wardQueryOptions.shiftTeamNurses(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
     });
+    const {data: ward} = useQuery({
+        ...wardQueryOptions.id(wardId ?? -1),
+        enabled: wardId !== null,
+    });
     const workers = useMemo(() => (data ?? []).filter((nurse) => nurse.isWorker), [data]);
+    const allWardNurses = useMemo(() => ward?.shiftTeams.flatMap((shiftTeam) => shiftTeam.nurses) ?? workers, [ward?.shiftTeams, workers]);
+    const skillSettings = useMemo(() => getWardSkillSettings(wardId), [wardId]);
+    const {config: skillConfig, levelsByNurseId} = useMemo(
+        () => resolveWardSkillLevels(allWardNurses, skillSettings),
+        [allWardNurses, skillSettings],
+    );
     const [orderedWorkers, setOrderedWorkers] = useState<TNurse[]>([]);
     const totalCount = orderedWorkers.length;
 
@@ -106,7 +91,7 @@ export function Workers() {
         });
     };
     const sortByLevel = () => {
-        setOrderedWorkers((prev) => prev.slice().sort((a, b) => getMockLevel(b.nurseId) - getMockLevel(a.nurseId)));
+        setOrderedWorkers((prev) => prev.slice().sort((a, b) => (levelsByNurseId[b.nurseId] ?? 0) - (levelsByNurseId[a.nurseId] ?? 0)));
     };
 
     return (
@@ -145,7 +130,6 @@ export function Workers() {
                                 />
                             )}
                             {orderedWorkers.map((nurse, index) => {
-                                const level = getMockLevel(nurse.nurseId);
                                 const shiftCodes = buildShiftCodes(nurse);
                                 const memo = nurse.memo?.trim();
 
@@ -167,7 +151,7 @@ export function Workers() {
                                                 </button>
                                                 <p className="font-apple text-[20px] font-medium text-sub-1">{nurse.name}</p>
                                                 <div className="flex justify-center">
-                                                    <LevelBadge level={level} />
+                                                    <SkillBadge level={levelsByNurseId[nurse.nurseId]} config={skillConfig} />
                                                 </div>
                                                 <div className="flex items-center justify-center gap-1">
                                                     {shiftCodes.length > 0 ? (

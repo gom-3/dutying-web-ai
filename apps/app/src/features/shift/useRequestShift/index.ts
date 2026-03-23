@@ -29,7 +29,8 @@ const useRequestShift = (activeEffect = false) => {
         setState,
     } = useRequestShiftStore();
     const {
-        state: {wardId},
+        state: {wardId, isAuth, _loaded, accountMeStatus},
+        actions: {handleGetAccountMe},
     } = useAuth();
     const queryClient = useQueryClient();
     const shiftTeamsQueryOptions = wardQueryOptions.shiftTeams(wardId ?? 0);
@@ -41,6 +42,12 @@ const useRequestShift = (activeEffect = false) => {
     const wardConstraintQueryKey = wardConstraintQueryOptions.queryKey;
     const dutyRequestQueryKey = requestListQueryOptions.queryKey;
     const editAvailability = getRequestShiftEditAvailability(year, month);
+    const bootstrapStatus =
+        !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'))
+            ? 'pending'
+            : isAuth && wardId === null && accountMeStatus === 'error'
+              ? 'error'
+              : 'success';
     const changeStatusResetTimerRef = useRef<number | null>(null);
     const requestShiftChangeQueueRef = useRef<Array<{focus: TFocus; shiftTypeId: number | null}>>([]);
     const isProcessingRequestShiftQueueRef = useRef(false);
@@ -219,9 +226,9 @@ const useRequestShift = (activeEffect = false) => {
     );
     const acceptRequests = useCallback(
         async (reqShiftIds: number[], isAccepted: boolean | null) => {
-            if (!wardId) return;
+            if (!wardId) return false;
 
-            if (reqShiftIds.length === 0 || useRequestShiftStore.getState().updatingRequestId !== null) return;
+            if (reqShiftIds.length === 0 || useRequestShiftStore.getState().updatingRequestId !== null) return false;
 
             setState('updatingRequestId', reqShiftIds.length === 1 ? reqShiftIds[0] : -1);
 
@@ -231,7 +238,7 @@ const useRequestShift = (activeEffect = false) => {
                 );
                 const rejectedResults = results.filter((result) => result.status === 'rejected');
 
-                if (rejectedResults.length !== results.length) {
+                if (results.length > 0) {
                     await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
                     await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
                 }
@@ -239,6 +246,8 @@ const useRequestShift = (activeEffect = false) => {
                 if (rejectedResults.length > 0) {
                     showActionErrorFeedback(rejectedResults[0].reason, '신청 처리에 실패했습니다.');
                 }
+
+                return rejectedResults.length === 0;
             } finally {
                 setState('updatingRequestId', null);
             }
@@ -247,7 +256,7 @@ const useRequestShift = (activeEffect = false) => {
     );
     const acceptRequest = useCallback(
         async (reqShiftId: number, isAccepted: boolean | null) => {
-            await acceptRequests([reqShiftId], isAccepted);
+            return acceptRequests([reqShiftId], isAccepted);
         },
         [acceptRequests],
     );
@@ -414,6 +423,12 @@ const useRequestShift = (activeEffect = false) => {
         handleToggleEditMode(nextDate);
     };
     const retry = useCallback(async () => {
+        if (wardId === null) {
+            await handleGetAccountMe().catch(() => undefined);
+
+            return;
+        }
+
         const retryTasks: Promise<unknown>[] = [refetchShiftTeams()];
 
         if (currentShiftTeamId !== null) {
@@ -421,7 +436,7 @@ const useRequestShift = (activeEffect = false) => {
         }
 
         await Promise.all(retryTasks);
-    }, [currentShiftTeamId, refetchDutyRequestList, refetchRequestShift, refetchShiftTeams]);
+    }, [currentShiftTeamId, handleGetAccountMe, refetchDutyRequestList, refetchRequestShift, refetchShiftTeams, wardId]);
 
     useEffect(() => {
         if (activeEffect && requestShift) {
@@ -468,6 +483,7 @@ const useRequestShift = (activeEffect = false) => {
         state: {
             year,
             month,
+            bootstrapStatus,
             requestShift,
             dutyRequestList,
             focus,
