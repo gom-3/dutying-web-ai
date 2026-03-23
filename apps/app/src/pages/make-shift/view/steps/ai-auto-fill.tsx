@@ -254,8 +254,8 @@ export function AiAutofill() {
                 isLoading={dutyQuery.isLoading}
                 isError={dutyQuery.isError}
                 onRetry={dutyQuery.refetch}
-                loadingTitle="근무표를 불러오는 중이에요"
-                errorTitle="근무표를 불러오지 못했어요"
+                loadingTitle={t('page.makeShift.aiRefill.loading')}
+                errorTitle={t('page.makeShift.aiRefill.error')}
                 editorDoc={hydratedDoc}
                 violationMap={violationMap}
                 editorRef={editorRef}

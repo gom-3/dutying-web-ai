@@ -1,5 +1,6 @@
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type TMakeShiftStep} from '../model/make-shift-store';
-import {STEP_LABELS} from './make-shift-step-config';
+import {MAKE_SHIFT_STEP_CONFIG} from './make-shift-step-config';
 
 function StepCircle({state, step}: {state: 'prev' | 'current' | 'next'; step: number}) {
     const base = 'flex size-8 items-center justify-center rounded-full font-poppins text-xl font-medium';
@@ -12,6 +13,8 @@ function StepCircle({state, step}: {state: 'prev' | 'current' | 'next'; step: nu
 }
 
 export function MakeShiftStepper({currentStep, onClickStep}: {currentStep: TMakeShiftStep; onClickStep: (step: TMakeShiftStep) => void}) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="border-b-[2px] border-gray-6">
             <div className="flex flex-wrap items-center justify-between gap-6 px-10">
@@ -36,7 +39,7 @@ export function MakeShiftStepper({currentStep, onClickStep}: {currentStep: TMake
                                           : 'font-medium text-gray-4'
                                 }`}
                             >
-                                {STEP_LABELS[step]}
+                                {t(MAKE_SHIFT_STEP_CONFIG[step].labelKey)}
                             </div>
 
                             {state === 'current' && (

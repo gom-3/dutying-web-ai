@@ -11,6 +11,27 @@ export const ko = {
             title: '근무표\n이제 더 간편하게!',
         },
         makeShift: {
+            steps: {
+                workers: {
+                    label: '근무자 확인',
+                    introTitle: '근무자를 확정해 주세요',
+                    introDescription: "'근무투입'이 선택된 근무자만 불러왔어요\n목록 순서대로 근무표에 배치해 드릴게요",
+                },
+                constraints: {
+                    label: '제약 조건',
+                    introTitle: '제약 조건을 확정해 주세요',
+                    introDescription: '모든 제약 조건을 적용하기 어려울 수 있어요\n우선순위를 정해 주시면, 더 정확하게 반영해 드릴게요',
+                },
+                requests: {
+                    label: '신청 근무 확정',
+                },
+                fixedShifts: {
+                    label: '고정 근무',
+                },
+                aiAutofill: {
+                    label: 'AI 자동 채우기',
+                },
+            },
             navigation: {
                 previous: '이전',
                 next: '다음',
@@ -54,6 +75,7 @@ export const ko = {
                 emptyAccepted: '반영된 신청이 없어요.',
                 emptyPending: '반영 대기 신청이 없어요.',
                 emptyRejected: '거절된 신청이 없어요.',
+                itemLabel: '{{name}} / {{date}}일',
                 action: {
                     accept: '반영',
                     reject: '거절',
@@ -97,13 +119,21 @@ export const ko = {
                     shiftTypes: '가능 근무',
                     memo: '비고',
                 },
+                emptyTitle: '근무자로 확정된 인력이 없어요.',
+                emptyDescription: '근무 투입이 설정된 인원을 먼저 확인해 주세요.',
                 dragHandleAria: '드래그하여 순서 변경',
+            },
+            fixedShifts: {
+                loading: '근무표를 불러오는 중이에요',
+                error: '고정 근무 데이터를 불러오지 못했어요',
             },
             aiRefill: {
                 action: 'AI 다시 채우기',
                 retry: 'AI 다시 시도',
                 generating: 'AI 채우는 중...',
                 intro: '실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.',
+                loading: '근무표를 불러오는 중이에요',
+                error: '근무표를 불러오지 못했어요',
                 saveFailed: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
                 title: {
                     idle: 'AI 자동 채우기를 시작할 준비가 됐어요',

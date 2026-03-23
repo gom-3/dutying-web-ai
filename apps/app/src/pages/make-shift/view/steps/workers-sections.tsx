@@ -78,14 +78,16 @@ type TWorkersListProps = {
 };
 
 export function WorkersList({workers, levelsByNurseId, skillConfig}: TWorkersListProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <Droppable droppableId="workers">
             {(provided) => (
                 <div ref={provided.innerRef} {...provided.droppableProps} className="mt-4 flex flex-col gap-3">
                     {workers.length === 0 ? (
                         <DutyManagementStatusCard
-                            title="근무자로 확정된 인력이 없어요."
-                            description="근무 투입이 설정된 인원을 먼저 확인해 주세요."
+                            title={t('page.makeShift.workers.emptyTitle')}
+                            description={t('page.makeShift.workers.emptyDescription')}
                             className="min-h-[220px] border-solid"
                         />
                     ) : null}

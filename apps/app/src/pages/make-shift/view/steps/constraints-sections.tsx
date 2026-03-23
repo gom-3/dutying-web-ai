@@ -65,7 +65,7 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
     const select = (
         <Select
             value={value ?? ''}
-            onChange={(e) => onChange(parseInt(e.target.value))}
+            onChange={(e) => onChange(parseInt(e.target.value, 10))}
             options={options}
             className="mx-[.3125rem] h-11 w-16.75"
             selectClassName="rounded-[5px] px-[15px] py-[7px] outline-[0.5px] outline-main-4 text-main-1"
@@ -121,14 +121,6 @@ export function ConstraintBucketList({
     wardConstraint,
     onUpdateRuleValue,
 }: TConstraintBucketListProps) {
-    if (ruleKeys.length === 0) {
-        return (
-            <div className="rounded-[10px] bg-white px-6 py-5 text-center font-apple text-sm text-gray-4">
-                {t('page.makeShift.constraints.empty')}
-            </div>
-        );
-    }
-
     return (
         <Droppable droppableId={bucket}>
             {(provided, snapshot) => (
@@ -137,56 +129,64 @@ export function ConstraintBucketList({
                     {...provided.droppableProps}
                     className={cn(bucket === 'excluded' && 'min-h-[10px]', snapshot.isDraggingOver && 'bg-[#f0ecff]')}
                 >
-                    <div className="flex flex-col gap-3">
-                        {ruleKeys.map((key, index) => {
-                            const meta = DUTY_RULE_META[key];
-                            const label = t(meta.labelKey);
-                            const count = ruleViolationCount.get(`duty.${key}`) ?? 0;
-                            const value = wardConstraint && meta.valueField ? (wardConstraint[meta.valueField] as number) : null;
+                    {ruleKeys.length === 0 ? (
+                        <div className="rounded-[10px] bg-white px-6 py-5 text-center font-apple text-sm text-gray-4">
+                            {t('page.makeShift.constraints.empty')}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {ruleKeys.map((key, index) => {
+                                const meta = DUTY_RULE_META[key];
+                                const label = t(meta.labelKey);
+                                const count = ruleViolationCount.get(`duty.${key}`) ?? 0;
+                                const value = wardConstraint && meta.valueField ? (wardConstraint[meta.valueField] as number) : null;
 
-                            return (
-                                <Draggable draggableId={key} index={index} key={key}>
-                                    {(dragProvided, dragSnapshot) => (
-                                        <div
-                                            ref={dragProvided.innerRef}
-                                            {...dragProvided.draggableProps}
-                                            className={cn('flex items-center gap-5', dragSnapshot.isDragging && 'opacity-95')}
-                                        >
-                                            <div className="w-10 text-center font-apple text-[28px] text-gray-3">{index + 1}</div>
-                                            <div className="flex h-[62px] flex-1 items-center rounded-[10px] bg-white px-5">
-                                                <button
-                                                    type="button"
-                                                    aria-label={t('page.makeShift.constraints.dragHandleAria')}
-                                                    className="mr-4 cursor-grab active:cursor-grabbing"
-                                                    {...dragProvided.dragHandleProps}
-                                                >
-                                                    <SixDotsIcon className="h-6 w-6" />
-                                                </button>
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center gap-3">
-                                                        <p className="truncate font-apple text-[20px] font-medium text-sub-1">{label}</p>
-                                                        {count > 0 ? (
-                                                            <span className="rounded-full bg-main-light px-2 py-0.5 font-apple text-xs font-medium text-main-1">
-                                                                {t('page.makeShift.constraints.violationCount', {count})}
-                                                            </span>
-                                                        ) : null}
+                                return (
+                                    <Draggable draggableId={key} index={index} key={key}>
+                                        {(dragProvided, dragSnapshot) => (
+                                            <div
+                                                ref={dragProvided.innerRef}
+                                                {...dragProvided.draggableProps}
+                                                className={cn('flex items-center gap-5', dragSnapshot.isDragging && 'opacity-95')}
+                                            >
+                                                <div className="w-10 text-center font-apple text-[28px] text-gray-3">{index + 1}</div>
+                                                <div className="flex h-[62px] flex-1 items-center rounded-[10px] bg-white px-5">
+                                                    <button
+                                                        type="button"
+                                                        aria-label={t('page.makeShift.constraints.dragHandleAria')}
+                                                        className="mr-4 cursor-grab active:cursor-grabbing"
+                                                        {...dragProvided.dragHandleProps}
+                                                    >
+                                                        <SixDotsIcon className="h-6 w-6" />
+                                                    </button>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-3">
+                                                            <p className="truncate font-apple text-[20px] font-medium text-sub-1">
+                                                                {label}
+                                                            </p>
+                                                            {count > 0 ? (
+                                                                <span className="rounded-full bg-main-light px-2 py-0.5 font-apple text-xs font-medium text-main-1">
+                                                                    {t('page.makeShift.constraints.violationCount', {count})}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    </div>
+                                                    <div className="shrink-0">
+                                                        {wardConstraint
+                                                            ? renderRuleEditor(t, meta, value, (nextValue) =>
+                                                                  onUpdateRuleValue(meta, nextValue),
+                                                              )
+                                                            : null}
                                                     </div>
                                                 </div>
-                                                <div className="shrink-0">
-                                                    {wardConstraint
-                                                        ? renderRuleEditor(t, meta, value, (nextValue) =>
-                                                              onUpdateRuleValue(meta, nextValue),
-                                                          )
-                                                        : null}
-                                                </div>
                                             </div>
-                                        </div>
-                                    )}
-                                </Draggable>
-                            );
-                        })}
-                        {provided.placeholder}
-                    </div>
+                                        )}
+                                    </Draggable>
+                                );
+                            })}
+                            {provided.placeholder}
+                        </div>
+                    )}
                 </div>
             )}
         </Droppable>

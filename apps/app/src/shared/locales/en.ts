@@ -13,6 +13,28 @@ export const en: TLocale = {
             title: 'Duty Schedule\nNow Easier!',
         },
         makeShift: {
+            steps: {
+                workers: {
+                    label: 'Workers',
+                    introTitle: 'Please confirm the workers',
+                    introDescription:
+                        "We only loaded workers marked as 'included in duty'.\nWe will place them into the schedule in this order.",
+                },
+                constraints: {
+                    label: 'Constraints',
+                    introTitle: 'Please confirm the constraints',
+                    introDescription: 'It may be difficult to satisfy every constraint.\nSet the priority order to improve the result.',
+                },
+                requests: {
+                    label: 'Requested shifts',
+                },
+                fixedShifts: {
+                    label: 'Fixed shifts',
+                },
+                aiAutofill: {
+                    label: 'AI autofill',
+                },
+            },
             navigation: {
                 previous: 'Previous',
                 next: 'Next',
@@ -56,6 +78,7 @@ export const en: TLocale = {
                 emptyAccepted: 'No accepted requests.',
                 emptyPending: 'No pending requests.',
                 emptyRejected: 'No rejected requests.',
+                itemLabel: '{{name}} / {{date}}',
                 action: {
                     accept: 'Accept',
                     reject: 'Reject',
@@ -99,13 +122,21 @@ export const en: TLocale = {
                     shiftTypes: 'Available shifts',
                     memo: 'Memo',
                 },
+                emptyTitle: 'No confirmed workers yet.',
+                emptyDescription: 'Check the staff marked for duty first.',
                 dragHandleAria: 'Drag to reorder',
+            },
+            fixedShifts: {
+                loading: 'Loading the duty schedule',
+                error: 'Failed to load fixed shift data',
             },
             aiRefill: {
                 action: 'Refill with AI',
                 retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',
+                loading: 'Loading the duty schedule',
+                error: 'Failed to load the duty schedule',
                 saveFailed: 'Failed to save. Please try again shortly.',
                 title: {
                     idle: 'Ready to start AI autofill',

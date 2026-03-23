@@ -1,3 +1,4 @@
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
@@ -5,6 +6,7 @@ import {DutyEditorStepCanvas} from './shared/duty-editor-step-canvas';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
 
 export function FixedShifts() {
+    const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
@@ -31,8 +33,8 @@ export function FixedShifts() {
                 isLoading={dutyQuery.isLoading}
                 isError={dutyQuery.isError}
                 onRetry={dutyQuery.refetch}
-                loadingTitle="근무표를 불러오는 중이에요"
-                errorTitle="고정 근무 데이터를 불러오지 못했어요"
+                loadingTitle={t('page.makeShift.fixedShifts.loading')}
+                errorTitle={t('page.makeShift.fixedShifts.error')}
                 editorDoc={editorDoc}
                 violationMap={violationMap}
                 editorRef={editorRef}

@@ -345,7 +345,7 @@ function RequestsDecisionSection<TItem extends TRequestsDecisionSectionItem>({
                         >
                             <div className="min-w-0 flex-1">
                                 <p className="truncate font-apple text-sm font-medium text-sub-1">
-                                    {item.nurseName} / {item.date}일
+                                    {t('page.makeShift.requests.itemLabel', {name: item.nurseName, date: item.date})}
                                 </p>
                             </div>
                             {renderBadge(item)}

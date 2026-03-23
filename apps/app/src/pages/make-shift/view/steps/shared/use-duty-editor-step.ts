@@ -31,6 +31,11 @@ type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
 };
 
+/**
+ * `onContextChanged` should be passed as a stable reference such as `useCallback`.
+ * This hook includes the callback in the hydration effect dependency list, so changing
+ * the callback identity will re-run the effect that compares `hydratedContextKeyRef.current`.
+ */
 export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions = {}) {
     const {
         state: {wardId},
