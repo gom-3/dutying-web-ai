@@ -33,12 +33,16 @@ const useProfileImage = (initialImg?: {profileImgUrl?: string; defaultProfileImg
             setIsLoading(false);
         }
     };
+    const resetProfileImage = (nextProfileImg?: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
+        setProfileImg(nextProfileImg);
+    };
 
     return {
         profileImg,
         isLoading,
         setRandomImage,
         setPhotoImage,
+        resetProfileImage,
     };
 };
 
