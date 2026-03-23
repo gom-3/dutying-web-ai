@@ -9,12 +9,12 @@ interface IRequestCalendarHeaderProps {
 
 export default function RequestCalendarHeader({days, focusDay, separateWeekendColor}: IRequestCalendarHeaderProps) {
     return (
-        <div className="z-20 my-[.75rem] flex h-7.5 min-w-max items-center gap-5 bg-white pr-4">
+        <div className="z-20 mb-3 flex h-7.5 min-w-max items-center gap-5 bg-white pt-2 pr-4">
             <div className="flex gap-5">
-                <div className="w-13.5 text-center font-apple text-[1rem] font-medium text-sub-3">{/* 구분 */}</div>
-                <div className="w-17.5 text-center font-apple text-[1rem] font-medium text-sub-3">이름</div>
-                <div className="w-7.5 text-center font-apple text-[1rem] font-medium text-sub-3">연동</div>
-                <div className="flex rounded-[2.5rem] border-[.0625rem] border-sub-4 px-4 py-[.1875rem]">
+                <div className="w-13.5 text-center font-apple text-[1rem] font-medium text-gray-4">{/* 구분 */}</div>
+                <div className="w-17.5 text-center font-apple text-[1rem] font-medium text-gray-4">이름</div>
+                <div className="w-7.5 text-center font-apple text-[1rem] font-medium text-gray-4">연동</div>
+                <div className="flex rounded-[2.5rem] border border-sub-4.5 px-4 py-[.1875rem]">
                     {days.map((day, index) => (
                         <p
                             key={day.day}

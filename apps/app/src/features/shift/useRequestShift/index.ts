@@ -224,25 +224,41 @@ const useRequestShift = (activeEffect = false) => {
         },
         [applyRequestShiftChangeToCache, flushRequestShiftChangeQueue, queryClient, requestShiftQueryKey, wardId],
     );
-    const acceptRequest = useCallback(
-        async (reqShiftId: number, isAccepted: boolean | null) => {
-            if (!wardId) return;
+    const acceptRequests = useCallback(
+        async (reqShiftIds: number[], isAccepted: boolean | null) => {
+            if (!wardId) return false;
 
-            if (useRequestShiftStore.getState().updatingRequestId !== null) return;
+            if (reqShiftIds.length === 0 || useRequestShiftStore.getState().updatingRequestId !== null) return false;
 
-            setState('updatingRequestId', reqShiftId);
+            setState('updatingRequestId', reqShiftIds.length === 1 ? reqShiftIds[0] : -1);
 
             try {
-                await WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted);
-                await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-                await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
-            } catch (error) {
-                showActionErrorFeedback(error, '신청 처리에 실패했습니다.');
+                const results = await Promise.allSettled(
+                    reqShiftIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted)),
+                );
+                const rejectedResults = results.filter((result) => result.status === 'rejected');
+
+                if (results.length > 0) {
+                    await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+                    await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+                }
+
+                if (rejectedResults.length > 0) {
+                    showActionErrorFeedback(rejectedResults[0].reason, '신청 처리에 실패했습니다.');
+                }
+
+                return rejectedResults.length === 0;
             } finally {
                 setState('updatingRequestId', null);
             }
         },
         [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, wardId],
+    );
+    const acceptRequest = useCallback(
+        async (reqShiftId: number, isAccepted: boolean | null) => {
+            return acceptRequests([reqShiftId], isAccepted);
+        },
+        [acceptRequests],
     );
     const changeMonth = (type: 'prev' | 'next') => {
         const targetYear = type === 'prev' ? (month === 1 ? year - 1 : year) : month === 12 ? year + 1 : year;
@@ -488,6 +504,7 @@ const useRequestShift = (activeEffect = false) => {
             toggleEditMode: handleToggleEditMode,
             createNextMonthShift: handleCreateNextMonthShift,
             acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => acceptRequest(reqShiftId, isAccepted),
+            acceptRequests: (reqShiftIds: number[], isAccepted: boolean | null) => acceptRequests(reqShiftIds, isAccepted),
             foldLevel,
             changeMonth,
             retry,

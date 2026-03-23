@@ -34,7 +34,7 @@ export default function ShiftCalendar() {
             wardShiftTypeMap,
             currentShiftTeam,
         },
-        actions: {changeFocus, foldLevel, acceptRequest, retry},
+        actions: {changeFocus, foldLevel, acceptRequest, acceptRequests, retry},
     } = useRequestShift();
     const {
         state: {shiftTeams},
@@ -85,9 +85,13 @@ export default function ShiftCalendar() {
     const shiftNurseIdByNurseId = createShiftNurseIdByNurseId(requestShift);
 
     return (
-        <div id="calendar" className="flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
-            <Card variant="elevated" padding="none" className="min-w-0 flex-1 overflow-hidden border-gray-6">
-                <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col px-4 pb-4">
+        <div id="calendar" className="mt-6 flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
+            <Card
+                variant="elevated"
+                padding="none"
+                className="min-w-0 flex-1 overflow-hidden border-transparent shadow-[0_4px_34px_0_rgba(237,233,245,1)]"
+            >
+                <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col px-5 pb-4">
                     <RequestCalendarHeader days={requestShift.days} focusDay={focus?.day} separateWeekendColor={separateWeekendColor} />
                     <RequestCalendarGrid
                         requestShift={requestShift}
@@ -116,6 +120,7 @@ export default function ShiftCalendar() {
                 </div>
             </Card>
             <RequestDutyRequestPanel
+                month={month}
                 dutyRequestList={dutyRequestList}
                 dutyRequestStatus={dutyRequestStatus}
                 wardShiftTypeMap={wardShiftTypeMap}
@@ -125,6 +130,7 @@ export default function ShiftCalendar() {
                 shiftNurseIdByNurseId={shiftNurseIdByNurseId}
                 changeFocus={changeFocus}
                 acceptRequest={acceptRequest}
+                acceptRequests={acceptRequests}
                 retry={retry}
                 onAcceptAnalytics={(accepted) => sendEvent(events.requestPage.acceptRequest, String(accepted))}
             />

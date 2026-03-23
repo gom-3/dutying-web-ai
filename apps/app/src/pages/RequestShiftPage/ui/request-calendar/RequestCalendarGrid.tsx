@@ -55,7 +55,7 @@ export default function RequestCalendarGrid({
     return (
         <DragDropContext onDragEnd={(result) => !readonly && onDragEnd(result)}>
             <div
-                className="-mt-5 scrollbar-hide flex min-h-0 flex-col gap-[.3125rem] overflow-x-auto overflow-y-scroll pt-5 pr-4 pb-8"
+                className="scrollbar-hide flex min-h-0 flex-col gap-[.3125rem] overflow-x-auto overflow-y-scroll pr-4 pb-3"
                 ref={containerRef}
             >
                 {requestShift.divisionShiftNurses
@@ -108,7 +108,7 @@ export default function RequestCalendarGrid({
                                                     >
                                                         {(draggableProvided) => (
                                                             <div
-                                                                className={`relative flex h-10 items-center gap-5 ${
+                                                                className={`relative flex h-[3.1875rem] items-center gap-5 ${
                                                                     isSingleRow
                                                                         ? 'rounded-[1.25rem]'
                                                                         : rowIndex === 0
@@ -126,10 +126,10 @@ export default function RequestCalendarGrid({
                                                                         <DragIcon className="absolute top-[50%] -right-2.5 h-6 w-6 translate-y-[-50%]" />
                                                                     )}
                                                                 </div>
-                                                                <div className="w-17.5 shrink-0 truncate text-center font-apple text-[1.25rem] text-sub-1">
+                                                                <div className="w-17.5 shrink-0 truncate text-center font-apple text-[1rem] font-medium text-sub-1">
                                                                     {row.shiftNurse.name}
                                                                 </div>
-                                                                <div className="flex w-7.5 shrink-0 items-center justify-center text-center font-apple text-[1.25rem] text-sub-1">
+                                                                <div className="flex w-7.5 shrink-0 items-center justify-center text-center font-apple text-[1rem] text-sub-1">
                                                                     {connectedNurseIds.has(row.shiftNurse.nurseId) ? (
                                                                         <LinkedIcon className="h-6 w-6" />
                                                                     ) : (

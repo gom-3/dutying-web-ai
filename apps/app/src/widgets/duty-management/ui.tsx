@@ -21,6 +21,7 @@ type TMonthTeamHeaderProps = {
     onSelectShiftTeam: (shiftTeamId: number) => void;
     emptyLabel: string;
     formatMonthLabel: (year: number, month: number) => string;
+    disabled?: boolean;
 };
 
 const managementActionVariants = cva(
@@ -70,14 +71,16 @@ export function DutyManagementMonthTeamHeader({
     onSelectShiftTeam,
     emptyLabel,
     formatMonthLabel,
+    disabled = false,
 }: TMonthTeamHeaderProps) {
     return (
         <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
                 <button
                     type="button"
-                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 hover:bg-gray-7 hover:text-sub-1"
+                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
                     onClick={onPrevMonth}
+                    disabled={disabled}
                     aria-label={prevLabel}
                 >
                     <ChevronLeftIcon />
@@ -85,8 +88,9 @@ export function DutyManagementMonthTeamHeader({
                 <div className="font-apple text-2xl font-semibold text-main-1">{formatMonthLabel(year, month)}</div>
                 <button
                     type="button"
-                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 hover:bg-gray-7 hover:text-sub-1"
+                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
                     onClick={onNextMonth}
+                    disabled={disabled}
                     aria-label={nextLabel}
                 >
                     <ChevronRightIcon />
@@ -103,9 +107,10 @@ export function DutyManagementMonthTeamHeader({
                                 key={team.shiftTeamId}
                                 type="button"
                                 onClick={() => onSelectShiftTeam(team.shiftTeamId)}
+                                disabled={disabled}
                                 className={cn(
-                                    'flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] transition-colors',
-                                    selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70',
+                                    'flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                    selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
                                 )}
                             >
                                 <p className="font-apple text-base leading-normal font-medium">{team.name}</p>

@@ -3,9 +3,26 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import RequestShiftPage from '../index';
 
 const mockUseRequestShift = vi.fn();
+const translations: Record<string, string> = {
+    'page.request.overview.loadingTitle': '신청 근무 화면을 준비하고 있어요',
+    'page.request.overview.loadingDescription': '근무 팀과 신청 근무표를 순서대로 불러오고 있어요.',
+    'page.request.overview.bootstrapLoadingTitle': '계정 정보를 확인하고 있어요',
+    'page.request.overview.bootstrapLoadingDescription': '병동 정보를 확인한 뒤 신청 근무 화면을 준비하고 있어요.',
+    'page.request.overview.shiftErrorTitle': '신청 근무표를 불러오지 못했어요',
+    'page.request.overview.emptyTitle': '이번 달 신청 근무표가 아직 없어요',
+    'page.request.overview.createNextMonth': '다음 달 신청 근무 작성하기',
+    'page.state.retry': '다시 시도',
+    'page.state.errorDescription': '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
+};
 
 vi.mock('@/features/shift/useRequestShift', () => ({
     default: (...args: unknown[]) => mockUseRequestShift(...args),
+}));
+
+vi.mock('@/shared/hook/use-typed-translation', () => ({
+    useTypedTranslation: () => ({
+        t: (key: string) => translations[key] ?? key,
+    }),
 }));
 
 vi.mock('../ui/Toolbar', () => ({
@@ -172,7 +189,7 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        expect(screen.getByText('신청 근무를 검토해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('toolbar')).toBeInTheDocument();
         expect(screen.getByText('request-calendar')).toBeInTheDocument();
     });
 });
