@@ -18,6 +18,7 @@ const translations: Record<string, string> = {
     'page.wardSettings.constraints.noTeamsTitle': '등록된 근무팀이 없어요',
     'page.wardSettings.constraints.noTeamsDescription': '제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.',
     'page.wardSettings.constraints.error': '제약 조건을 불러오지 못했어요',
+    'page.wardSettings.constraints.loading': '제약 조건을 불러오는 중이에요',
 };
 
 vi.mock('./model/wardSettingsHook', () => ({
@@ -274,6 +275,23 @@ describe('WardSettingsPage', () => {
 
         expect(screen.getByText('등록된 근무팀이 없어요')).toBeInTheDocument();
         expect(screen.getByText('제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.')).toBeInTheDocument();
+    });
+
+    it('제약 조건을 불러오는 동안에는 에러 대신 로딩 상태만 보여준다', () => {
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'constraints',
+                    constraint: null,
+                    constraintStatus: 'pending',
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('제약 조건을 불러오는 중이에요')).toBeInTheDocument();
+        expect(screen.queryByText('제약 조건을 불러오지 못했어요')).not.toBeInTheDocument();
     });
 
     it('제약 조건 로드 실패 상태에서도 다른 팀으로 전환할 수 있다', async () => {

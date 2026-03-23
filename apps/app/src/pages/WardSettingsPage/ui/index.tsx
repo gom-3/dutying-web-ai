@@ -312,7 +312,7 @@ function ConstraintsContent({
                 <PageState tone="loading" title={t('page.wardSettings.constraints.loading')} className="py-0" />
             ) : null}
 
-            {state.constraintStatus === 'error' || !state.constraint ? (
+            {state.constraintStatus === 'error' ? (
                 <PageState
                     tone="error"
                     title={t('page.wardSettings.constraints.error')}
