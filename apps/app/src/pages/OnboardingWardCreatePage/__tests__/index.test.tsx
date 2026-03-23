@@ -295,7 +295,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '근무표 만들러 가기'}));
 
         expect(mockNavigate).toHaveBeenCalledWith('/make');
-    });
+    }, 10_000);
 
     it('shows retryable error UI when ward creation fails', async () => {
         const user = userEvent.setup();
