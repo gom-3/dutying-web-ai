@@ -30,6 +30,11 @@ const useAuth = (activeEffect = false) => {
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
     };
     const handleLogin = (accessToken: string, nextPageUrl?: string | null) => {
+        setState('accountMe', null);
+        setState('accountId', null);
+        setState('nurseId', null);
+        setState('wardId', null);
+        setState('demoStartDate', null);
         setState('isAuth', true);
         setState('accessToken', accessToken);
         setState('accountMeStatus', 'loading');
@@ -58,6 +63,10 @@ const useAuth = (activeEffect = false) => {
         setLoading(false);
     };
     const handleGetAccountMe = async () => {
+        setState('accountMe', null);
+        setState('accountId', null);
+        setState('nurseId', null);
+        setState('wardId', null);
         setState('accountMeStatus', 'loading');
 
         try {
