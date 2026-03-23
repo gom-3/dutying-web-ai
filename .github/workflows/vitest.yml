@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
 
     strategy:
       matrix:
@@ -36,3 +37,8 @@ jobs:
           name: vitest-coverage
           path: apps/app/coverage
           if-no-files-found: error
+      - name: Comment coverage on pull request
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: ./apps/app
