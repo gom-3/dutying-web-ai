@@ -6,47 +6,8 @@ import {ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
-import {MakeShiftStepper, STEP_LABELS} from './make-shift-stepper';
-import {AiAutofill} from './steps/ai-auto-fill';
-import {Constraints} from './steps/constraints';
-import {FixedShifts} from './steps/fixed-shifts';
-import {RequestsShifts} from './steps/requests-shifts';
-import {Workers} from './steps/workers';
-
-const STEP_INTRO: Record<
-    1 | 2 | 3 | 4 | 5,
-    {
-        title: string;
-        desc: string[];
-        isWideStep: boolean;
-    }
-> = {
-    1: {
-        title: '근무자를 확정해 주세요',
-        desc: ["'근무투입'이 선택된 근무자만 불러왔어요", '목록 순서대로 근무표에 배치해 드릴게요'],
-        isWideStep: false,
-    },
-    2: {
-        title: '제약 조건을 확정해 주세요',
-        desc: ['모든 제약 조건을 적용하기 어려울 수 있어요', '우선순위를 정해 주시면, 더 정확하게 반영해 드릴게요'],
-        isWideStep: false,
-    },
-    3: {
-        title: '신청 근무를 확정해 주세요',
-        desc: ['제출된 신청 근무를 확인하고 확정해 주세요.'],
-        isWideStep: true,
-    },
-    4: {
-        title: '고정 근무를 확인해 주세요',
-        desc: ['고정 근무를 확인하고 반영해 주세요.'],
-        isWideStep: true,
-    },
-    5: {
-        title: 'AI 자동 채우기를 진행해 주세요',
-        desc: ['설정한 조건을 바탕으로 근무표를 자동으로 채워 드릴게요.'],
-        isWideStep: true,
-    },
-};
+import {MakeShiftStepContent} from './make-shift-step-content';
+import {MakeShiftStepper} from './make-shift-stepper';
 
 export const MakeShiftPageView = () => {
     const navigate = useNavigate();
@@ -157,55 +118,13 @@ export const MakeShiftPageView = () => {
                 ) : (
                     <>
                         <MakeShiftStepper currentStep={currentStep} onClickStep={useCase.goToStep} />
-
-                        {STEP_INTRO[currentStep].isWideStep ? (
-                            <div className="flex flex-1 flex-col px-10 pt-[42px] pb-10">
-                                <p className="sr-only">{STEP_LABELS[currentStep]}</p>
-                                {currentStep === 3 && <RequestsShifts />}
-                                {currentStep === 4 && <FixedShifts />}
-                                {currentStep === 5 && <AiAutofill />}
-                            </div>
-                        ) : (
-                            <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
-                                <div className="w-[440px] shrink-0">
-                                    <p className="font-apple text-[32px] font-semibold text-sub-1">{STEP_INTRO[currentStep].title}</p>
-                                    <div className="mt-6 font-apple text-xl leading-[1.72] font-medium text-gray-3">
-                                        {STEP_INTRO[currentStep].desc.map((line) => (
-                                            <p key={line}>{line}</p>
-                                        ))}
-                                    </div>
-
-                                    <div className="mt-[82px] flex items-center gap-8">
-                                        <ManagementActionButton
-                                            variant="neutral"
-                                            size="sm"
-                                            onClick={() => useCase.prev()}
-                                            disabled={!canPrev}
-                                        >
-                                            {t('page.makeShift.navigation.previous')}
-                                        </ManagementActionButton>
-                                        <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
-                                            {t('page.makeShift.navigation.next')}
-                                        </ManagementActionButton>
-                                        {currentStep === 5 && (
-                                            <ManagementActionButton
-                                                className="bg-sub-3 hover:bg-sub-2"
-                                                size="sm"
-                                                onClick={() => useCase.complete()}
-                                            >
-                                                {t('page.makeShift.navigation.complete')}
-                                            </ManagementActionButton>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-                                    <p className="sr-only">{STEP_LABELS[currentStep]}</p>
-                                    {currentStep === 1 && <Workers />}
-                                    {currentStep === 2 && <Constraints />}
-                                </div>
-                            </div>
-                        )}
+                        <MakeShiftStepContent
+                            currentStep={currentStep}
+                            canPrev={canPrev}
+                            canNext={canNext}
+                            onPrev={useCase.prev}
+                            onNext={useCase.next}
+                        />
                     </>
                 )}
             </div>
