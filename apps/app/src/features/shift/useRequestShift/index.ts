@@ -226,11 +226,19 @@ const useRequestShift = (activeEffect = false) => {
             setState('updatingRequestId', reqShiftIds.length === 1 ? reqShiftIds[0] : -1);
 
             try {
-                await Promise.all(reqShiftIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted)));
-                await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-                await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
-            } catch (error) {
-                showActionErrorFeedback(error, '신청 처리에 실패했습니다.');
+                const results = await Promise.allSettled(
+                    reqShiftIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted)),
+                );
+                const rejectedResults = results.filter((result) => result.status === 'rejected');
+
+                if (rejectedResults.length !== results.length) {
+                    await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+                    await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+                }
+
+                if (rejectedResults.length > 0) {
+                    showActionErrorFeedback(rejectedResults[0].reason, '신청 처리에 실패했습니다.');
+                }
             } finally {
                 setState('updatingRequestId', null);
             }

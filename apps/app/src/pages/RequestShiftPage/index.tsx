@@ -10,6 +10,7 @@ const RequestShiftPage = () => {
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
+    const shouldShowToolbar = shiftTeamsStatus !== 'pending' && shiftTeamsStatus !== 'error' && shiftTeamCount > 0;
     const pageState =
         shiftTeamsStatus === 'pending'
             ? {
@@ -54,8 +55,10 @@ const RequestShiftPage = () => {
     return (
         <div className="flex min-h-screen w-full flex-col px-5 py-5 md:px-10 md:py-10">
             <div className="flex flex-1 flex-col rounded-[20px] bg-white px-5 py-6 shadow-banner md:px-10 md:py-8">
+                {shouldShowToolbar ? <Toolbar /> : null}
+
                 {pageState ? (
-                    <PageState {...pageState} className="py-0">
+                    <PageState {...pageState} className={shouldShowToolbar ? 'py-0 pt-14' : 'py-0'}>
                         {pageState.tone === 'empty' && !requestShift && shiftTeamCount > 0 ? (
                             <div className="mt-1 flex justify-center">
                                 <Button
@@ -71,10 +74,7 @@ const RequestShiftPage = () => {
                         ) : null}
                     </PageState>
                 ) : (
-                    <>
-                        <Toolbar />
-                        <RequestCalendar />
-                    </>
+                    <RequestCalendar />
                 )}
             </div>
         </div>
