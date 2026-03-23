@@ -72,4 +72,11 @@ describe('ProfilePage model', () => {
         expect(getProfileDisplayName(null, account)).toBe('계정 이름');
         expect(getProfileDisplayName(null, null)).toBe('이름 미등록');
     });
+
+    it('공백 이름은 비어 있는 값으로 보고 다음 fallback 으로 넘긴다', () => {
+        const account = {name: '  계정 이름  '} as TAccount;
+
+        expect(getProfileDisplayName({...baseNurse, name: '   '}, account)).toBe('계정 이름');
+        expect(getProfileDisplayName({...baseNurse, name: '   '}, {name: '   '} as TAccount)).toBe('이름 미등록');
+    });
 });

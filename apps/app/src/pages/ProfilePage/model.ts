@@ -4,6 +4,11 @@ import type {TNurse} from '@/entities/nurse';
 import type {TWard} from '@/entities/ward';
 
 const editableProfileFields = ['name', 'gender', 'phoneNum', 'employmentDate', 'isWorker'] as const;
+const getMeaningfulDisplayName = (name?: string | null) => {
+    const trimmedName = name?.trim();
+
+    return trimmedName === '' ? undefined : trimmedName;
+};
 
 export const findProfileNurse = (ward: TWard | undefined, accountId: number | null | undefined) => {
     if (!ward || !accountId) return null;
@@ -34,8 +39,8 @@ export const getCurrentProfileImage = (account: TAccount | null, profileImg?: TP
 };
 
 export const getProfileDisplayName = (draftNurse: TNurse | null, account: TAccount | null) => {
-    const draftName = draftNurse?.name?.trim();
-    const accountName = account?.name?.trim();
+    const draftName = getMeaningfulDisplayName(draftNurse?.name);
+    const accountName = getMeaningfulDisplayName(account?.name);
 
     return draftName ?? accountName ?? '이름 미등록';
 };
