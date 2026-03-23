@@ -19,6 +19,7 @@ vi.mock('./ui/RequestCalendar', () => ({
 type TMockUseRequestShiftValue = {
     state: {
         readonly: boolean;
+        bootstrapStatus: 'pending' | 'error' | 'success';
         editAvailability: {
             canEdit: boolean;
             status: 'editable' | 'lockedPast' | 'lockedFuture';
@@ -62,6 +63,7 @@ function baseUseRequestShiftValue(): TMockUseRequestShiftValue {
     return {
         state: {
             readonly: true,
+            bootstrapStatus: 'success',
             editAvailability: {
                 canEdit: true,
                 status: 'editable',
@@ -100,6 +102,21 @@ describe('RequestShiftPage', () => {
 
         expect(screen.getByText('신청 근무 화면을 준비하고 있어요')).toBeInTheDocument();
         expect(screen.getByText('근무 팀과 신청 근무표를 순서대로 불러오고 있어요.')).toBeInTheDocument();
+    });
+
+    it('계정 정보를 확인하는 중이면 부트스트랩 로딩 상태를 보여준다', () => {
+        mockUseRequestShift.mockReturnValue(
+            createUseRequestShiftValue({
+                state: {
+                    bootstrapStatus: 'pending',
+                },
+            }),
+        );
+
+        render(<RequestShiftPage />);
+
+        expect(screen.getByText('계정 정보를 확인하고 있어요')).toBeInTheDocument();
+        expect(screen.getByText('병동 정보를 확인한 뒤 신청 근무 화면을 준비하고 있어요.')).toBeInTheDocument();
     });
 
     it('신청 근무표 조회 실패 시 재시도를 노출하고 실행한다', async () => {

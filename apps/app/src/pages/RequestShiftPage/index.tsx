@@ -7,7 +7,7 @@ import Toolbar from './ui/Toolbar';
 
 const RequestShiftPage = () => {
     const {
-        state: {readonly, requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, editAvailability},
+        state: {readonly, requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, editAvailability, bootstrapStatus},
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
@@ -22,7 +22,20 @@ const RequestShiftPage = () => {
             : editAvailability.description
         : '셀을 선택한 뒤 단축키로 근무를 입력할 수 있고, 변경 내용은 자동 저장돼요.';
     const pageState =
-        shiftTeamsStatus === 'pending'
+        bootstrapStatus === 'pending'
+            ? {
+                  tone: 'loading' as const,
+                  title: '계정 정보를 확인하고 있어요',
+                  description: '병동 정보를 확인한 뒤 신청 근무 화면을 준비하고 있어요.',
+              }
+            : bootstrapStatus === 'error'
+              ? {
+                    tone: 'error' as const,
+                    title: '병동 정보를 불러오지 못했어요',
+                    description: '계정 정보를 다시 확인해 주세요. 문제가 계속되면 다시 로그인해 주세요.',
+                    action: {label: '다시 시도', onClick: () => void retry()},
+                }
+              : shiftTeamsStatus === 'pending'
             ? {
                   tone: 'loading' as const,
                   title: '신청 근무 화면을 준비하고 있어요',

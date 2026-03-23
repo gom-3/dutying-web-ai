@@ -16,6 +16,7 @@ const {
     mockDocToWardShiftsDTO,
     mockBuildWorkKeyMap,
     mockShiftToExcel,
+    mockHandleGetAccountMe,
     mockCommands,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
@@ -28,6 +29,7 @@ const {
     mockDocToWardShiftsDTO: vi.fn(),
     mockBuildWorkKeyMap: vi.fn(),
     mockShiftToExcel: vi.fn(),
+    mockHandleGetAccountMe: vi.fn(),
     mockCommands: {
         init: vi.fn(),
         discardPersisted: vi.fn(),
@@ -36,6 +38,17 @@ const {
 }));
 
 let mockSearchParams = new URLSearchParams();
+let mockAuthState: {
+    wardId: number | null;
+    isAuth: boolean;
+    _loaded: boolean;
+    accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
+} = {
+    wardId: 1,
+    isAuth: true,
+    _loaded: true,
+    accountMeStatus: 'success',
+};
 let mockEditorState: any = {
     doc: {
         columns: ['2026-03-01'],
@@ -72,8 +85,9 @@ vi.mock('react-router', () => ({
 
 vi.mock('@/features/auth/useAuth', () => ({
     default: () => ({
-        state: {
-            wardId: 1,
+        state: mockAuthState,
+        actions: {
+            handleGetAccountMe: mockHandleGetAccountMe,
         },
     }),
 }));
@@ -175,8 +189,15 @@ function setQueryState(overrides?: Partial<typeof mockQueries>) {
 describe('useDutyHook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         resetDutyStore();
         mockSearchParams = new URLSearchParams();
+        mockAuthState = {
+            wardId: 1,
+            isAuth: true,
+            _loaded: true,
+            accountMeStatus: 'success',
+        };
         mockEditorState = {
             doc: {
                 columns: ['2026-03-01'],
@@ -200,6 +221,36 @@ describe('useDutyHook', () => {
             expect(result.current.state.month).toBe(7);
             expect(result.current.state.currentShiftTeamId).toBe(20);
         });
+    });
+
+    it('exposes bootstrap pending state while auth context is still loading', () => {
+        mockAuthState = {
+            wardId: null,
+            isAuth: true,
+            _loaded: false,
+            accountMeStatus: 'loading',
+        };
+
+        const {result} = renderHook(() => useDutyHook());
+
+        expect(result.current.state.bootstrapStatus).toBe('pending');
+    });
+
+    it('retries auth bootstrap when wardId is missing', async () => {
+        mockAuthState = {
+            wardId: null,
+            isAuth: true,
+            _loaded: true,
+            accountMeStatus: 'error',
+        };
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await act(async () => {
+            result.current.handlers.retry();
+        });
+
+        expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
     });
 
     it('initializes the editor doc from fetched shift data and current month context', async () => {

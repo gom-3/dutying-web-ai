@@ -11,6 +11,8 @@ type TDutyPageViewProps = {
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
+    const showBootstrapLoadingState = state.bootstrapStatus === 'pending';
+    const showBootstrapErrorState = state.bootstrapStatus === 'error';
     const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
     const showShiftTeamsErrorState = state.shiftTeamsStatus === 'error';
     const showLoadingState =
@@ -71,7 +73,24 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 </div>
 
                 <div className="mt-6 min-h-0 flex-1 overflow-auto">
-                    {showNoTeamsState && (
+                    {showBootstrapLoadingState && (
+                        <PageState
+                            tone="loading"
+                            title="계정 정보를 확인하고 있어요"
+                            description="병동 정보를 확인한 뒤 확정 근무표 화면을 준비하고 있어요."
+                            className="py-0"
+                        />
+                    )}
+                    {showBootstrapErrorState && (
+                        <PageState
+                            tone="error"
+                            title="병동 정보를 불러오지 못했어요"
+                            description="계정 정보를 다시 확인해 주세요. 문제가 계속되면 다시 로그인해 주세요."
+                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                            className="py-0"
+                        />
+                    )}
+                    {!showBootstrapLoadingState && !showBootstrapErrorState && showNoTeamsState && (
                         <PageState
                             tone="empty"
                             title={t('page.duty.noTeamsTitle')}
@@ -79,7 +98,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             className="py-0"
                         />
                     )}
-                    {showShiftTeamsErrorState && (
+                    {!showBootstrapLoadingState && !showBootstrapErrorState && showShiftTeamsErrorState && (
                         <PageState
                             tone="error"
                             title={t('page.duty.teamsError')}
@@ -88,7 +107,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             className="py-0"
                         />
                     )}
-                    {showLoadingState && (
+                    {!showBootstrapLoadingState && !showBootstrapErrorState && showLoadingState && (
                         <PageState
                             tone="loading"
                             title={t('page.duty.loading')}
@@ -96,7 +115,11 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             className="py-0"
                         />
                     )}
-                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'error' && (
+                    {!showBootstrapLoadingState &&
+                        !showBootstrapErrorState &&
+                        state.shiftTeamsStatus === 'success' &&
+                        state.shiftTeams.length > 0 &&
+                        state.status === 'error' && (
                         <PageState
                             tone="error"
                             title={t('page.duty.error')}
@@ -105,7 +128,12 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             className="py-0"
                         />
                     )}
-                    {state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0 && state.status === 'success' && !state.shift && (
+                    {!showBootstrapLoadingState &&
+                        !showBootstrapErrorState &&
+                        state.shiftTeamsStatus === 'success' &&
+                        state.shiftTeams.length > 0 &&
+                        state.status === 'success' &&
+                        !state.shift && (
                         <PageState
                             tone="empty"
                             title={t('page.duty.emptyTitle', {teamName: state.currentShiftTeamName, month: state.month})}
@@ -119,7 +147,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                             </div>
                         </PageState>
                     )}
-                    {state.status === 'success' && state.shift && (
+                    {!showBootstrapLoadingState && !showBootstrapErrorState && state.status === 'success' && state.shift && (
                         <div
                             ref={refs.editorRef}
                             className="outline-none"

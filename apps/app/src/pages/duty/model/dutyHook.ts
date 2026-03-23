@@ -48,7 +48,8 @@ export function useDutyHook() {
     const queryClient = useQueryClient();
     const [searchParams] = useSearchParams();
     const {
-        state: {wardId},
+        state: {wardId, isAuth, _loaded, accountMeStatus},
+        actions: {handleGetAccountMe},
     } = useAuth();
     const {setLoading} = useLoadingUseCase();
     const year = useDutyStore((s) => s.year);
@@ -74,6 +75,12 @@ export function useDutyHook() {
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
     const queryShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
+    const bootstrapStatus =
+        !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'))
+            ? 'pending'
+            : isAuth && wardId === null && accountMeStatus === 'error'
+              ? 'error'
+              : 'success';
     const shiftTeamsQuery = useQuery({
         ...wardQueryOptions.shiftTeams(wardId ?? -1),
         enabled: wardId !== null,
@@ -223,13 +230,24 @@ export function useDutyHook() {
         void shiftToExcel(month, shift);
     };
     const handleRetry = () => {
-        void dutyQuery.refetch();
+        if (wardId === null) {
+            void handleGetAccountMe().catch(() => undefined);
+
+            return;
+        }
+
+        void Promise.all([
+            shiftTeamsQuery.refetch(),
+            currentShiftTeamId !== null ? dutyQuery.refetch() : Promise.resolve(),
+            currentShiftTeamId !== null ? constraintQuery.refetch() : Promise.resolve(),
+        ]);
     };
 
     return {
         state: {
             year,
             month,
+            bootstrapStatus,
             shiftTeams,
             currentShiftTeamId,
             currentShiftTeamName,
