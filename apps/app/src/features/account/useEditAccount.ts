@@ -18,7 +18,7 @@ const useEditAccount = () => {
     const {setLoading} = useLoadingUseCase();
     const queryClient = useQueryClient();
     const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
-        if (!accountMe) return;
+        if (!accountMe) return false;
 
         try {
             setLoading(true);
@@ -28,14 +28,20 @@ const useEditAccount = () => {
                 name: nurse.name,
                 ...profileImg,
             });
+
             await queryClient.invalidateQueries({queryKey: getWardQueryKey});
             await handleGetAccountMe();
+
+            return true;
         } catch (e) {
             Sentry.captureException(e, {
                 tags: {feature: 'account', action: 'edit-profile'},
                 extra: {nurseId: nurse.nurseId, accountId: accountMe.accountId},
             });
-            toast.error('프로필 업데이트에 실패했습니다..');
+
+            toast.error('프로필 업데이트에 실패했습니다.');
+
+            return false;
         } finally {
             setLoading(false);
         }
