@@ -23,14 +23,20 @@ function Toolbar() {
                 shiftTeams={shiftTeams ?? []}
                 currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
                 onPrevMonth={() => {
+                    if (isSaving) return;
+
                     changeMonth('prev');
                     sendEvent(events.requestPage.toolbar.changeMonth);
                 }}
                 onNextMonth={() => {
+                    if (isSaving) return;
+
                     changeMonth('next');
                     sendEvent(events.requestPage.toolbar.changeMonth);
                 }}
                 onSelectShiftTeam={(shiftTeamId) => {
+                    if (isSaving) return;
+
                     const nextTeam = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
 
                     if (!nextTeam) return;
@@ -40,6 +46,7 @@ function Toolbar() {
                 }}
                 emptyLabel="등록된 팀이 없어요"
                 formatMonthLabel={(targetYear, targetMonth) => `${targetYear}년 ${targetMonth}월`}
+                disabled={isSaving}
             />
 
             <div className="flex flex-wrap items-center justify-between gap-4">
