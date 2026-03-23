@@ -53,9 +53,17 @@ export function Workers() {
         ...wardQueryOptions.shiftTeamNurses(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
     });
+    const {data: ward} = useQuery({
+        ...wardQueryOptions.id(wardId ?? -1),
+        enabled: wardId !== null,
+    });
     const workers = useMemo(() => (data ?? []).filter((nurse) => nurse.isWorker), [data]);
+    const allWardNurses = useMemo(() => ward?.shiftTeams.flatMap((shiftTeam) => shiftTeam.nurses) ?? workers, [ward?.shiftTeams, workers]);
     const skillSettings = useMemo(() => getWardSkillSettings(wardId), [wardId]);
-    const {config: skillConfig, levelsByNurseId} = useMemo(() => resolveWardSkillLevels(workers, skillSettings), [skillSettings, workers]);
+    const {config: skillConfig, levelsByNurseId} = useMemo(
+        () => resolveWardSkillLevels(allWardNurses, skillSettings),
+        [allWardNurses, skillSettings],
+    );
     const [orderedWorkers, setOrderedWorkers] = useState<TNurse[]>([]);
     const totalCount = orderedWorkers.length;
 

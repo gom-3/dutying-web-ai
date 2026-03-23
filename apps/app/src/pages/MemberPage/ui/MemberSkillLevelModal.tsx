@@ -164,7 +164,10 @@ function MemberSkillLevelModal({open, config, onClose, onSave}: IMemberSkillLeve
                     <button
                         type="button"
                         className="font-apple text-[20px] font-medium text-gray-4 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-main-1"
-                        onClick={onClose}
+                        onClick={() => {
+                            onSave(localConfig);
+                            onClose();
+                        }}
                     >
                         {t('page.member.skillLevelModal.temporarySave')}
                     </button>

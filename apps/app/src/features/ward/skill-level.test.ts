@@ -78,6 +78,29 @@ describe('skill-level', () => {
         });
     });
 
+    it('고정 저장에 없는 간호사는 최저 숙련도로 처리해야 한다', () => {
+        const settings = {
+            config: {
+                levelCount: 4,
+                paletteId: 'cool',
+                autoAssign: false,
+            },
+            frozenLevelsByNurseId: {
+                10: 4,
+                11: 2,
+            },
+        };
+
+        expect(resolveWardSkillLevels(nurses, settings)).toEqual({
+            config: settings.config,
+            levelsByNurseId: {
+                10: 4,
+                11: 2,
+                12: 1,
+            },
+        });
+    });
+
     it('브라우저 저장소에 병동별 숙련도 설정을 저장하고 읽어야 한다', () => {
         const settings = {
             config: {

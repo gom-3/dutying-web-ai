@@ -17,6 +17,7 @@ export type TWardSkillSettings = {
 };
 
 const STORAGE_KEY = 'ward-skill-settings:v1';
+const DEFAULT_UNASSIGNED_SKILL_LEVEL = 1;
 const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'warm', colors: ['#FFA395', '#FFC0B6', '#FFC795', '#FFE195', '#FFF0B0']},
     {id: 'cool', colors: ['#9EC5FF', '#B7D6FF', '#CFE4FF', '#DFF0FF', '#ECF8FF']},
@@ -82,7 +83,10 @@ export const resolveWardSkillLevels = (
     }
 
     const levelsByNurseId = nurses.reduce<Record<number, number>>((acc, nurse) => {
-        acc[nurse.nurseId] = clampSkillLevel(settings?.frozenLevelsByNurseId?.[nurse.nurseId], config.levelCount);
+        acc[nurse.nurseId] = clampSkillLevel(
+            settings?.frozenLevelsByNurseId?.[nurse.nurseId] ?? DEFAULT_UNASSIGNED_SKILL_LEVEL,
+            config.levelCount,
+        );
 
         return acc;
     }, {});
