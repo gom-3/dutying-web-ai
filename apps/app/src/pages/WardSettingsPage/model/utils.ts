@@ -14,9 +14,15 @@ export function formatShiftDuration(startTime: string, endTime: string) {
 }
 
 function parseTime(value: string) {
-    const [hour, minute] = value.split(':').map(Number);
+    const normalizedValue = value.trim();
+
+    if (!/^\d{2}:\d{2}$/.test(normalizedValue)) return null;
+
+    const [hour, minute] = normalizedValue.split(':').map(Number);
 
     if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
 
     return hour * 60 + minute;
 }

@@ -9,13 +9,13 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';
 import PageState from '@/shared/ui/PageState';
 import Toggle from '@/shared/ui/Toggle';
+import {formatShiftDuration} from '../model/utils';
 import {
     type TWardSettingsActions,
     type TWardSettingsShiftType,
     type TWardSettingsState,
     type TWardSettingsTab,
-} from '../model/useWardSettings';
-import {formatShiftDuration} from '../model/utils';
+} from '../model/wardSettingsHook';
 
 type TWardSettingsPageViewProps = {
     state: TWardSettingsState;
@@ -23,6 +23,20 @@ type TWardSettingsPageViewProps = {
 };
 
 const TAB_ORDER: TWardSettingsTab[] = ['shiftTypes', 'constraints'];
+
+function toShiftTypeDTO(shiftType: TWardSettingsShiftType, nextIsOff: boolean): TCreateShiftTypeDTO {
+    return {
+        name: shiftType.name,
+        shortName: shiftType.shortName,
+        startTime: shiftType.startTime,
+        endTime: shiftType.endTime,
+        color: shiftType.color,
+        isDefault: shiftType.isDefault,
+        isOff: nextIsOff,
+        isCounted: shiftType.isCounted,
+        classification: nextIsOff ? 'OTHER_LEAVE' : 'OTHER_WORK',
+    };
+}
 
 function Tabs({currentTab, onSelect}: {currentTab: TWardSettingsTab; onSelect: (tab: TWardSettingsTab) => void}) {
     const {t} = useTypedTranslation();
@@ -457,11 +471,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         onToggleType={(shiftType, nextIsOff) => {
                             if (shiftType.isOff === nextIsOff) return;
 
-                            void actions.updateShiftType(shiftType.wardShiftTypeId, {
-                                ...shiftType,
-                                isOff: nextIsOff,
-                                classification: nextIsOff ? 'OTHER_LEAVE' : 'OTHER_WORK',
-                            });
+                            void actions.updateShiftType(shiftType.wardShiftTypeId, toShiftTypeDTO(shiftType, nextIsOff));
                         }}
                         onRetry={actions.retryShiftTypes}
                     />

@@ -20,7 +20,7 @@ const translations: Record<string, string> = {
     'page.wardSettings.constraints.error': '제약 조건을 불러오지 못했어요',
 };
 
-vi.mock('./model/useWardSettings', () => ({
+vi.mock('./model/wardSettingsHook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
 }));
 
@@ -244,7 +244,17 @@ describe('WardSettingsPage', () => {
         leaveButton.focus();
         await user.keyboard('{Enter}');
 
-        expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({isOff: true, classification: 'OTHER_LEAVE'}));
+        expect(updateShiftType).toHaveBeenCalledWith(1, {
+            name: '데이',
+            shortName: 'D',
+            startTime: '07:00',
+            endTime: '15:00',
+            color: '#4dc2ad',
+            isDefault: false,
+            isOff: true,
+            isCounted: true,
+            classification: 'OTHER_LEAVE',
+        });
         expect(screen.queryByText('edit-modal:데이')).not.toBeInTheDocument();
     });
 
