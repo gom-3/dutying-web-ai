@@ -1,24 +1,36 @@
 name: Vitest Unit Test
 
-on: push
+on:
+  push:
+  pull_request:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     strategy:
       matrix:
         node-version: [22.x]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: pnpm
       - name: Install pnpm
         run: npm install -g pnpm
       - name: npm ci
         run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
-      - name: vitest
-        run: pnpm test:run
+      - name: vitest coverage
+        run: pnpm coverage
+      - name: Upload Vitest coverage artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-coverage
+          path: apps/app/coverage
+          if-no-files-found: error
