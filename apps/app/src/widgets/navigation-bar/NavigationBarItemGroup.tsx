@@ -52,12 +52,10 @@ const sections: TNavSection[] = [
                 text: '근무자 관리',
             },
             {
-                // 아직 라우트가 없어서 비활성 처리
-                path: undefined,
+                path: ROUTE.WARD_SETTINGS,
                 icon: SettingIcon,
                 selectedIcon: SettingIconSelected,
                 text: '근무 관리',
-                disabled: true,
             },
         ],
     },

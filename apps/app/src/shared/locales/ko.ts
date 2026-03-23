@@ -258,6 +258,46 @@ export const ko = {
                 },
             },
         },
+        wardSettings: {
+            title: '근무 관리',
+            tabs: {
+                shiftTypes: '근무 유형',
+                constraints: '제약 조건',
+            },
+            addShiftType: '근무 추가하기',
+            type: {
+                work: '근무',
+                leave: '휴무',
+            },
+            shiftTypes: {
+                loading: '근무 유형을 불러오는 중이에요',
+                error: '근무 유형을 불러오지 못했어요',
+                empty: '등록된 근무 유형이 없어요',
+                editAria: '{{name}} 근무 유형 수정',
+                column: {
+                    name: '근무명',
+                    shortName: '약자',
+                    type: '유형',
+                    workTime: '근무 시간',
+                    color: '색상',
+                },
+            },
+            constraints: {
+                teamLabel: '대상 팀',
+                teamDescription: '제약 조건은 근무팀별로 관리돼요.',
+                loading: '제약 조건을 불러오는 중이에요',
+                error: '제약 조건을 불러오지 못했어요',
+                noTeamsTitle: '등록된 근무팀이 없어요',
+                noTeamsDescription: '제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.',
+                apply: '근무표 적용',
+                exclude: '근무표 미적용',
+                column: {
+                    rule: '제약 조건',
+                    value: '기준',
+                    status: '적용 여부',
+                },
+            },
+        },
     },
     feature: {
         auth: {

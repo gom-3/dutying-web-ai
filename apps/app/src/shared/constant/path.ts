@@ -14,6 +14,7 @@ const ROUTE = {
     REQUEST: '/request',
     DUTY: '/duty',
     MEMBER: '/member',
+    WARD_SETTINGS: '/ward-settings',
     PROFILE: '/profile',
 };
 

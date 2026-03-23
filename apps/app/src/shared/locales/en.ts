@@ -261,6 +261,46 @@ export const en: TLocale = {
                 },
             },
         },
+        wardSettings: {
+            title: 'Duty management',
+            tabs: {
+                shiftTypes: 'Shift types',
+                constraints: 'Constraints',
+            },
+            addShiftType: 'Add shift type',
+            type: {
+                work: 'Work',
+                leave: 'Leave',
+            },
+            shiftTypes: {
+                loading: 'Loading shift types',
+                error: 'Failed to load shift types.',
+                empty: 'No shift types found.',
+                editAria: 'Edit shift type {{name}}',
+                column: {
+                    name: 'Name',
+                    shortName: 'Abbr.',
+                    type: 'Type',
+                    workTime: 'Work time',
+                    color: 'Color',
+                },
+            },
+            constraints: {
+                teamLabel: 'Team',
+                teamDescription: 'Constraints are managed per shift team.',
+                loading: 'Loading constraints',
+                error: 'Failed to load constraints.',
+                noTeamsTitle: 'No shift teams found.',
+                noTeamsDescription: 'Create a shift team before managing constraints.',
+                apply: 'Applied to schedule',
+                exclude: 'Excluded from schedule',
+                column: {
+                    rule: 'Constraint',
+                    value: 'Value',
+                    status: 'Status',
+                },
+            },
+        },
     },
     feature: {
         auth: {
