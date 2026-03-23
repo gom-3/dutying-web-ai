@@ -6,6 +6,7 @@ import {type TValues} from '@/shared/types/util';
 
 interface IState {
     accountMe: TAccount | null;
+    accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
     isAuth: boolean;
     accessToken: string | null;
     accountId: number | null;
@@ -24,6 +25,7 @@ type TPersistedAuthState = Pick<IState, 'isAuth' | 'accessToken' | 'accountId' |
 
 const initialState: IState = {
     accountMe: null,
+    accountMeStatus: 'idle',
     isAuth: false,
     accessToken: null,
     accountId: null,

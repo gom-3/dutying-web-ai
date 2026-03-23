@@ -11,7 +11,8 @@ import {executeLoginRedirect, getLoginRedirectDecision} from './loginRedirect';
 import useAuthStore from './store';
 
 const useAuth = (activeEffect = false) => {
-    const {accountMe, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState, resetState} = useAuthStore();
+    const {accountMe, accountMeStatus, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState, resetState} =
+        useAuthStore();
     const resetRequestShiftState = useRequestShiftStore((state) => state.resetState);
     const {pathname} = useLocation();
     const {setLoading} = useLoadingUseCase();
@@ -31,6 +32,7 @@ const useAuth = (activeEffect = false) => {
     const handleLogin = (accessToken: string, nextPageUrl?: string | null) => {
         setState('isAuth', true);
         setState('accessToken', accessToken);
+        setState('accountMeStatus', 'loading');
         setAccessToken(accessToken);
 
         const redirectDecision = getLoginRedirectDecision(nextPageUrl);
@@ -50,18 +52,26 @@ const useAuth = (activeEffect = false) => {
         setState('nurseId', data.accountResDto.nurseId);
         setState('wardId', data.accountResDto.wardId);
         setState('isAuth', true);
+        setState('accountMeStatus', 'success');
         setState('demoStartDate', new Date().toISOString());
         navigate(ROUTE.MAKE);
         setLoading(false);
     };
     const handleGetAccountMe = async () => {
-        const account = await AccountAPI.getAccountMe();
+        setState('accountMeStatus', 'loading');
 
-        setState('accountMe', account);
-        setState('wardId', account.wardId);
-        setState('accountId', account.accountId);
-        setState('nurseId', account.nurseId);
-        setState('isAuth', true);
+        try {
+            const account = await AccountAPI.getAccountMe();
+
+            setState('accountMe', account);
+            setState('wardId', account.wardId);
+            setState('accountId', account.accountId);
+            setState('nurseId', account.nurseId);
+            setState('isAuth', true);
+            setState('accountMeStatus', 'success');
+        } catch (error) {
+            setState('accountMeStatus', 'error');
+        }
     };
 
     useEffect(() => {
@@ -72,14 +82,18 @@ const useAuth = (activeEffect = false) => {
 
     useEffect(() => {
         if (_loaded && activeEffect && accessToken) {
-            if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() <= 0) handleLogout();
-            else handleGetAccountMe();
+            if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() <= 0) {
+                void handleLogout();
+            } else {
+                void handleGetAccountMe();
+            }
         }
     }, [accessToken, activeEffect, demoStartDate, _loaded]);
 
     return {
         state: {
             accountMe: accountMe === undefined ? null : accountMe,
+            accountMeStatus,
             isAuth,
             accessToken,
             nurseId,
