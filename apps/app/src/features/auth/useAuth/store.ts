@@ -50,8 +50,10 @@ const useAuthStore = create<IStore>()(
                         nurseId,
                         wardId,
                         demoStartDate,
-                        _loaded: true,
                     };
+                },
+                onRehydrateStorage: () => (state) => {
+                    state?.setState('_loaded', true);
                 },
             },
         ),
