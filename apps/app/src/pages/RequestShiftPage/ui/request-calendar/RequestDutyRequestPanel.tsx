@@ -49,6 +49,7 @@ export default function RequestDutyRequestPanel({
     const emptyDescription = readonly ? t('page.request.panel.emptyDescriptionReadonly') : t('page.request.panel.emptyDescriptionEdit');
     const unresolvedRequestIds =
         displayedRequestList?.filter((request) => request.isAccepted === null).map((request) => request.wardReqShiftId) ?? [];
+    const isBulkActionDisabled = dutyRequestStatus !== 'success' || isRequestActionLocked || unresolvedRequestIds.length === 0;
 
     return (
         <Card
@@ -77,7 +78,7 @@ export default function RequestDutyRequestPanel({
                     <button
                         type="button"
                         className="font-apple text-xs font-medium text-gray-4 transition-colors hover:text-main-1 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={isRequestActionLocked || unresolvedRequestIds.length === 0}
+                        disabled={isBulkActionDisabled}
                         onClick={() => void acceptRequests(unresolvedRequestIds, true)}
                     >
                         {t('page.request.panel.acceptAll')}
@@ -85,7 +86,7 @@ export default function RequestDutyRequestPanel({
                     <button
                         type="button"
                         className="font-apple text-xs font-medium text-gray-4 transition-colors hover:text-sub-2 disabled:cursor-not-allowed disabled:opacity-40"
-                        disabled={isRequestActionLocked || unresolvedRequestIds.length === 0}
+                        disabled={isBulkActionDisabled}
                         onClick={() => void acceptRequests(unresolvedRequestIds, false)}
                     >
                         {t('page.request.panel.rejectAll')}

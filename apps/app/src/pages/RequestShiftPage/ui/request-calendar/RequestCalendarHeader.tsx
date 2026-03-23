@@ -13,7 +13,7 @@ export default function RequestCalendarHeader({days, focusDay, separateWeekendCo
             <div className="flex gap-5">
                 <div className="w-13.5 text-center font-apple text-[1rem] font-medium text-gray-4">{/* 구분 */}</div>
                 <div className="w-17.5 text-center font-apple text-[1rem] font-medium text-gray-4">이름</div>
-                <div className="w-7.5 text-center font-apple text-[1rem] font-medium text-gray-4">이월</div>
+                <div className="w-7.5 text-center font-apple text-[1rem] font-medium text-gray-4">연동</div>
                 <div className="flex rounded-[2.5rem] border border-sub-4.5 px-4 py-[.1875rem]">
                     {days.map((day, index) => (
                         <p
