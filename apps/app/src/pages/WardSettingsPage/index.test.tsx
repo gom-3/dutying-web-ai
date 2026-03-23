@@ -17,6 +17,7 @@ const translations: Record<string, string> = {
     'page.wardSettings.shiftTypes.column.color': '색상',
     'page.wardSettings.constraints.noTeamsTitle': '등록된 근무팀이 없어요',
     'page.wardSettings.constraints.noTeamsDescription': '제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.',
+    'page.wardSettings.constraints.error': '제약 조건을 불러오지 못했어요',
 };
 
 vi.mock('./model/useWardSettings', () => ({
@@ -216,6 +217,37 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('edit-modal:데이')).toBeInTheDocument();
     });
 
+    it('행 내부 스위치에서 Enter를 눌러도 수정 모달이 열리지 않는다', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: [
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            isDefault: false,
+                        },
+                    ],
+                },
+                actions: {
+                    updateShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        const leaveButton = screen.getByRole('button', {name: '휴무'});
+
+        leaveButton.focus();
+        await user.keyboard('{Enter}');
+
+        expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({isOff: true, classification: 'OTHER_LEAVE'}));
+        expect(screen.queryByText('edit-modal:데이')).not.toBeInTheDocument();
+    });
+
     it('제약 조건 탭에서 팀이 없으면 안내 상태를 보여준다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
@@ -232,5 +264,36 @@ describe('WardSettingsPage', () => {
 
         expect(screen.getByText('등록된 근무팀이 없어요')).toBeInTheDocument();
         expect(screen.getByText('제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.')).toBeInTheDocument();
+    });
+
+    it('제약 조건 로드 실패 상태에서도 다른 팀으로 전환할 수 있다', async () => {
+        const user = userEvent.setup();
+        const selectShiftTeam = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'constraints',
+                    shiftTeams: [
+                        {shiftTeamId: 1, name: '중환자실 A팀', nurseCnt: 0, nurses: []},
+                        {shiftTeamId: 2, name: '중환자실 B팀', nurseCnt: 0, nurses: []},
+                    ],
+                    currentShiftTeamId: 1,
+                    constraint: null,
+                    constraintStatus: 'error',
+                },
+                actions: {
+                    selectShiftTeam,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('제약 조건을 불러오지 못했어요')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '중환자실 B팀'}));
+
+        expect(selectShiftTeam).toHaveBeenCalledWith(2);
     });
 });

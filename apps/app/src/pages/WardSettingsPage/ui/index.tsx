@@ -1,6 +1,5 @@
 import {cn} from '@dutying/utils/style';
 import {type KeyboardEvent, useMemo, useState} from 'react';
-import {type TWardConstraint} from '@/entities/ward';
 import {DUTY_RULE_KEYS, DUTY_RULE_META} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleMeta} from '@/features/shift-editor/model/duty-constraints';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
@@ -260,32 +259,7 @@ function ConstraintsContent({
         );
     }
 
-    if (state.constraintStatus === 'pending' || state.constraintStatus === 'idle') {
-        return (
-            <div className="rounded-[10px] bg-white">
-                <PageState tone="loading" title={t('page.wardSettings.constraints.loading')} className="py-0" />
-            </div>
-        );
-    }
-
-    if (state.constraintStatus === 'error' || !state.constraint) {
-        return (
-            <div className="rounded-[10px] bg-white">
-                <PageState
-                    tone="error"
-                    title={t('page.wardSettings.constraints.error')}
-                    description={t('page.state.errorDescription')}
-                    action={{label: t('page.state.retry'), onClick: () => void actions.retryConstraint()}}
-                    className="py-0"
-                />
-            </div>
-        );
-    }
-
-    const constraint = state.constraint;
-    const pushConstraint = (patch: Partial<TWardConstraint>) => {
-        void actions.updateConstraint({...constraint, ...patch});
-    };
+    const constraint = state.constraintStatus === 'success' ? state.constraint : null;
 
     return (
         <div className="rounded-[10px] bg-white">
@@ -320,53 +294,73 @@ function ConstraintsContent({
                 </div>
             </div>
 
-            <div className="grid grid-cols-[minmax(260px,1fr)_160px_150px] items-center gap-x-6 px-8 py-5 text-left font-apple text-base text-gray-4 md:px-[42px]">
-                <p>{t('page.wardSettings.constraints.column.rule')}</p>
-                <p>{t('page.wardSettings.constraints.column.value')}</p>
-                <p>{t('page.wardSettings.constraints.column.status')}</p>
-            </div>
+            {state.constraintStatus === 'pending' || state.constraintStatus === 'idle' ? (
+                <PageState tone="loading" title={t('page.wardSettings.constraints.loading')} className="py-0" />
+            ) : null}
 
-            {DUTY_RULE_KEYS.map((key) => {
-                const meta = DUTY_RULE_META[key];
-                const isActive = Boolean(constraint[meta.booleanField]);
-                const value = meta.valueField ? (constraint[meta.valueField] as number) : null;
+            {state.constraintStatus === 'error' || !state.constraint ? (
+                <PageState
+                    tone="error"
+                    title={t('page.wardSettings.constraints.error')}
+                    description={t('page.state.errorDescription')}
+                    action={{label: t('page.state.retry'), onClick: () => void actions.retryConstraint()}}
+                    className="py-0"
+                />
+            ) : null}
 
-                return (
-                    <div
-                        key={key}
-                        className="grid min-h-[74px] grid-cols-[minmax(260px,1fr)_160px_150px] items-center gap-x-6 border-t border-gray-6 px-8 py-4 md:px-[42px]"
-                    >
-                        <p className="font-apple text-[20px] font-medium text-[#0A0F15]">{t(meta.labelKey)}</p>
-                        <div className="flex">
-                            <ConstraintValueEditor
-                                meta={meta}
-                                value={value}
-                                onChange={(nextValue) => {
-                                    if (!meta.valueField) return;
-
-                                    pushConstraint({
-                                        [meta.valueField]: nextValue,
-                                    });
-                                }}
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-3">
-                            <Toggle
-                                isOn={isActive}
-                                setIsOn={() => {
-                                    pushConstraint({
-                                        [meta.booleanField]: !isActive,
-                                    });
-                                }}
-                            />
-                            <p className="font-apple text-xs font-medium text-gray-3">
-                                {isActive ? t('page.wardSettings.constraints.apply') : t('page.wardSettings.constraints.exclude')}
-                            </p>
-                        </div>
+            {constraint ? (
+                <>
+                    <div className="grid grid-cols-[minmax(260px,1fr)_160px_150px] items-center gap-x-6 px-8 py-5 text-left font-apple text-base text-gray-4 md:px-[42px]">
+                        <p>{t('page.wardSettings.constraints.column.rule')}</p>
+                        <p>{t('page.wardSettings.constraints.column.value')}</p>
+                        <p>{t('page.wardSettings.constraints.column.status')}</p>
                     </div>
-                );
-            })}
+
+                    {DUTY_RULE_KEYS.map((key) => {
+                        const meta = DUTY_RULE_META[key];
+                        const isActive = Boolean(constraint[meta.booleanField]);
+                        const value = meta.valueField ? (constraint[meta.valueField] as number) : null;
+
+                        return (
+                            <div
+                                key={key}
+                                className="grid min-h-[74px] grid-cols-[minmax(260px,1fr)_160px_150px] items-center gap-x-6 border-t border-gray-6 px-8 py-4 md:px-[42px]"
+                            >
+                                <p className="font-apple text-[20px] font-medium text-[#0A0F15]">{t(meta.labelKey)}</p>
+                                <div className="flex">
+                                    <ConstraintValueEditor
+                                        meta={meta}
+                                        value={value}
+                                        onChange={(nextValue) => {
+                                            if (!meta.valueField) return;
+
+                                            void actions.updateConstraint({
+                                                ...constraint,
+                                                [meta.valueField]: nextValue,
+                                            });
+                                        }}
+                                    />
+                                </div>
+
+                                <div className="flex items-center gap-3">
+                                    <Toggle
+                                        isOn={isActive}
+                                        setIsOn={() => {
+                                            void actions.updateConstraint({
+                                                ...constraint,
+                                                [meta.booleanField]: !isActive,
+                                            });
+                                        }}
+                                    />
+                                    <p className="font-apple text-xs font-medium text-gray-3">
+                                        {isActive ? t('page.wardSettings.constraints.apply') : t('page.wardSettings.constraints.exclude')}
+                                    </p>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </>
+            ) : null}
         </div>
     );
 }
@@ -410,6 +404,8 @@ function ConstraintValueEditor({
 
 function onRowKeyDown(event: KeyboardEvent<HTMLDivElement>, onActivate: () => void) {
     if (event.key !== 'Enter' && event.key !== ' ') return;
+
+    if (event.target !== event.currentTarget) return;
 
     event.preventDefault();
     onActivate();
