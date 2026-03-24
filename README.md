@@ -57,11 +57,15 @@ Current transition rules:
 ### Changesets Bootstrap
 
 - Changesets manages every workspace package under the scoped fixed group `@dutying/*`, so any accepted changeset bump applies the same release version to `apps/*` and `packages/*`.
-- The root package is intentionally not part of the Changesets workspace. Run `pnpm run changeset:version` to apply workspace version bumps first and then mirror the resolved version back to the root `package.json`.
+- The root package is intentionally not part of the Changesets workspace. `pnpm run changeset:version` applies workspace version bumps, mirrors the resolved version back to the root `package.json`, and then prepends the same release entry to the root `CHANGELOG.md`.
+- Package-level `CHANGELOG.md` files stay disabled. This repository ships one fixed shared version across private workspaces, so release notes live only in the root `CHANGELOG.md`.
 - Local release-prep flow:
     1. `pnpm run changeset:add`
     2. `pnpm run changeset:status`
-    3. `pnpm run changeset:version`
+    3. `pnpm run release:changelog:preview`
+    4. `pnpm run changeset:version`
+- `pnpm run release:version` is kept as the same official release command if you prefer a release-prefixed entrypoint.
+- `pnpm run changeset:version:workspaces` remains a low-level helper for internal scripting only; do not use it for normal releases because it skips the root changelog step.
 
 ## Running Tests
 

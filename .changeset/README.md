@@ -6,3 +6,9 @@ find the full documentation for it [in our repository](https://github.com/change
 
 We have a quick list of common questions to get you started engaging with this project in
 [our documentation](https://github.com/changesets/changesets/blob/main/docs/common-questions.md)
+
+## Dutying Release Notes
+
+- Pending `.changeset/*.md` files are the source of truth for the next root `CHANGELOG.md` entry.
+- Package-level changelogs stay disabled because this monorepo ships one fixed shared version across private workspaces.
+- Use `pnpm run release:status` to inspect pending changesets and `pnpm run release:version` to version workspaces, sync the root version, and update the root changelog together.
