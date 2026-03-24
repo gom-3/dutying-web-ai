@@ -1,7 +1,7 @@
 import {events, sendEvent} from '@/analytics';
 import {type TShift, type TShiftTeam} from '@/entities';
 import {shiftToExcel} from '@/features/shift-editor/model/shift-to-excel';
-import {DutyIconSelected, HistoryBackIcon, HistoryNextIcon, PenIcon, SaveCompleteIcon, SavingIcon, ShareIcon} from '@/shared/assets/svg';
+import {CameraIcon, DutyIconSelected, HistoryBackIcon, HistoryNextIcon, PenIcon, SaveCompleteIcon, SavingIcon, ShareIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import {showValidationFeedback} from '@/shared/util/feedback';
@@ -18,8 +18,10 @@ type TToolbarActionGroupProps = {
     onRedo: () => void;
     onPostShift: () => void;
     onToggleEditMode: () => void;
+    onDownloadImage: () => void;
     onCreateNextMonth: () => void;
     onChangeShiftTeam: (shiftTeamId: number) => void;
+    isDownloadingImage: boolean;
 };
 
 export function ToolbarActionGroup({
@@ -34,8 +36,10 @@ export function ToolbarActionGroup({
     onRedo,
     onPostShift,
     onToggleEditMode,
+    onDownloadImage,
     onCreateNextMonth,
     onChangeShiftTeam,
+    isDownloadingImage,
 }: TToolbarActionGroupProps) {
     return (
         <>
@@ -107,6 +111,19 @@ export function ToolbarActionGroup({
                         id="El2"
                         variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
+                        disabled={isDownloadingImage}
+                        onClick={() => {
+                            onDownloadImage();
+                            sendEvent(events.makePage.toolbar.downloadImage);
+                        }}
+                    >
+                        {isDownloadingImage ? '이미지 저장 중' : '이미지 저장'}
+                        <CameraIcon className="h-6 w-6 stroke-white" />
+                    </Button>
+                    <Button
+                        id="El3"
+                        variant="default"
+                        className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
                         onClick={() => {
                             if (shift) {
                                 shiftToExcel(month, shift);
@@ -115,7 +132,7 @@ export function ToolbarActionGroup({
                             sendEvent(events.makePage.toolbar.downloadExcel);
                         }}
                     >
-                        다운로드
+                        엑셀 저장
                         <ShareIcon className="h-6 w-6" />
                     </Button>
                     <Button

@@ -1,8 +1,8 @@
-import {type ComponentProps} from 'react';
+import {type ComponentProps, useRef} from 'react';
 import {type TShift} from '@/entities';
-import {type TDutyDoc} from '@/features/shift-editor/model';
-import CountDutyByDay from './count-duty-by-day';
+import {type TDutyDoc, useShiftImageExport} from '@/features/shift-editor/model';
 import NurseEditModal from './nurse-edit-modal';
+import {ShiftEditorCanvas} from './shift-editor-canvas';
 import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
 
@@ -18,7 +18,7 @@ interface IMakeShiftEditorViewProps {
     stickyBottom?: boolean;
     className?: string;
     calendarProps?: Omit<ComponentProps<typeof ShiftCalendar>, 'shift' | 'doc'>;
-    toolbarProps?: Omit<ComponentProps<typeof Toolbar>, 'shift'>;
+    toolbarProps?: Omit<ComponentProps<typeof Toolbar>, 'shift' | 'onDownloadImage' | 'isDownloadingImage'>;
 }
 
 export const MakeShiftEditorView = ({
@@ -33,23 +33,35 @@ export const MakeShiftEditorView = ({
     calendarProps,
     toolbarProps,
 }: IMakeShiftEditorViewProps) => {
-    const countedShiftTypeCount = shift.wardShiftTypes.filter((x) => x.isCounted).length;
-    const bottomHeight = shift ? `${countedShiftTypeCount * 2.5 + 2.5}rem` : '0';
+    const exportRef = useRef<HTMLDivElement>(null);
+    const {isExporting, downloadImage} = useShiftImageExport({
+        targetRef: exportRef,
+        year: toolbarProps?.year ?? new Date().getFullYear(),
+        month: toolbarProps?.month ?? 1,
+        teamName: toolbarProps?.currentShiftTeam?.name ?? null,
+        disabled: !shift,
+    });
 
     return (
         <div className={`mx-auto flex w-fit flex-col ${className ?? ''}`}>
-            {showToolbar && toolbarProps && <Toolbar shift={shift} {...toolbarProps} />}
-            {showCalendar && <ShiftCalendar shift={shift} doc={doc} {...calendarProps} />}
-            {showCountByDay && (
-                <div
-                    className={`${stickyBottom ? 'sticky bottom-0' : ''} z-20 flex items-stretch gap-5 py-5 pl-55.25`}
-                    style={{
-                        height: bottomHeight,
-                    }}
-                >
-                    {showCountByDay && <CountDutyByDay shift={shift} doc={doc} />}
-                    {/* {showPanel && <Panel shift={shift} readonly={readonly} />} @deprecated 근무표 작성 기능 개편 중으로 인해 deprecated 예정 */}
-                </div>
+            {showToolbar && toolbarProps && (
+                <Toolbar
+                    shift={shift}
+                    isDownloadingImage={isExporting}
+                    onDownloadImage={() => void downloadImage()}
+                    {...toolbarProps}
+                />
+            )}
+            {showCalendar && (
+                <ShiftEditorCanvas
+                    shift={shift}
+                    doc={doc}
+                    showCountByDay={showCountByDay}
+                    stickyBottom={stickyBottom}
+                    exportMode={isExporting}
+                    exportRef={exportRef}
+                    calendarProps={calendarProps}
+                />
             )}
             {showNurseEditModal && <NurseEditModal />}
         </div>

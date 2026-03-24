@@ -25,9 +25,11 @@ interface IToolbarProps {
     onRedo: () => void;
     onPostShift: () => void;
     onToggleEditMode: () => void;
+    onDownloadImage: () => void;
     onCreateNextMonth: () => void;
     onChangeShiftTeam: (shiftTeamId: number) => void;
     onUpdateConstraint: (constraint: TWardConstraint) => void;
+    isDownloadingImage: boolean;
 }
 
 function Toolbar({
@@ -46,9 +48,11 @@ function Toolbar({
     onRedo,
     onPostShift,
     onToggleEditMode,
+    onDownloadImage,
     onCreateNextMonth,
     onChangeShiftTeam,
     onUpdateConstraint,
+    isDownloadingImage,
 }: IToolbarProps) {
     const [openInfo, setOpenInfo] = useState(false);
     const [currentSetup, setCurrentSetup] = useState<TToolbarSetupTab | null>(null);
@@ -128,8 +132,10 @@ function Toolbar({
                 onRedo={onRedo}
                 onPostShift={onPostShift}
                 onToggleEditMode={onToggleEditMode}
+                onDownloadImage={onDownloadImage}
                 onCreateNextMonth={onCreateNextMonth}
                 onChangeShiftTeam={onChangeShiftTeam}
+                isDownloadingImage={isDownloadingImage}
             />
         </div>
     );

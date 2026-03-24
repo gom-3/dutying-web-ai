@@ -2,9 +2,9 @@ import {cn} from '@dutying/utils/style';
 import {useCallback, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth/useAuth';
-import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore, useShiftImageExport} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
+import {CameraIcon, HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {renderMultilineText} from '@/shared/util/string';
 import {
@@ -28,6 +28,7 @@ export function AiAutofill() {
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const currentShiftTeamName = useMakeShiftStore((s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null);
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const history = useShiftEditorStore((s) => s.history);
@@ -54,8 +55,16 @@ export function AiAutofill() {
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
     });
+    const exportRef = useRef<HTMLDivElement>(null);
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
+    const {isExporting, downloadImage} = useShiftImageExport({
+        targetRef: exportRef,
+        year,
+        month,
+        teamName: currentShiftTeamName,
+        disabled: !dutyQuery.data || dutyQuery.isLoading || dutyQuery.isError,
+    });
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
@@ -187,6 +196,15 @@ export function AiAutofill() {
                         </button>
                     </div>
                     <button
+                        className="flex h-[42px] items-center gap-2 rounded-[10px] border border-sub-4.5 bg-white px-4 font-apple text-base font-semibold text-sub-1 disabled:opacity-50"
+                        disabled={!dutyQuery.data || dutyQuery.isLoading || dutyQuery.isError || isExporting}
+                        onClick={() => void downloadImage()}
+                        type="button"
+                    >
+                        <CameraIcon className="h-5 w-5 stroke-sub-1" />
+                        {isExporting ? '이미지 저장 중' : '이미지 저장'}
+                    </button>
+                    <button
                         className="flex h-[42px] items-center rounded-[10px] bg-gray-6 px-5 font-apple text-base font-semibold text-gray-3 disabled:opacity-50"
                         disabled={!canPrev || isAiGenerating || isWorking}
                         onClick={() => useCase.prev()}
@@ -263,6 +281,8 @@ export function AiAutofill() {
                 onPaste={onPaste}
                 onFocusEditor={focusEditor}
                 showFaults={showFaults}
+                exportRef={exportRef}
+                exportMode={isExporting}
             />
         </div>
     );
