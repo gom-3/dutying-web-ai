@@ -5,12 +5,14 @@ import {useTutorialOverlay} from './useTutorialOverlay';
 interface ITutorialOverlayProps {
     config: ITutorialConfig;
     closeCallback: () => void;
+    initialStepIndex?: number;
 }
 
-export const TutorialOverlay = ({config, closeCallback}: ITutorialOverlayProps) => {
+export const TutorialOverlay = ({config, closeCallback, initialStepIndex}: ITutorialOverlayProps) => {
     const {currentStep, infoBoxElement, nextStep, previousStep, rectStyles, skip, stepIndex, totalSteps} = useTutorialOverlay({
         config,
         closeCallback,
+        initialStepIndex,
     });
 
     return (

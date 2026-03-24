@@ -6,14 +6,15 @@ type TTutorialPortalProps = {
     open: boolean;
     config: ITutorialConfig;
     closeCallback: () => void;
+    initialStepIndex?: number;
 };
 
-export function TutorialPortal({open, config, closeCallback}: TTutorialPortalProps) {
+export function TutorialPortal({open, config, closeCallback, initialStepIndex}: TTutorialPortalProps) {
     const container = document.getElementById('tutorial');
 
     if (!open || !container) {
         return null;
     }
 
-    return createPortal(<TutorialOverlay config={config} closeCallback={closeCallback} />, container);
+    return createPortal(<TutorialOverlay config={config} closeCallback={closeCallback} initialStepIndex={initialStepIndex} />, container);
 }

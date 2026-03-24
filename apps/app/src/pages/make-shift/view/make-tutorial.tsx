@@ -10,8 +10,10 @@ import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 const MakeTutorial = () => {
     const showMakeTutorial = useTutorialStore((state) => state.showMakeTutorial);
     const phase = useMakeShiftStore((state) => state.phase);
+    const currentStep = useMakeShiftStore((state) => state.currentStep);
     const useCase = useMakeShiftUseCase();
     const {setMakeTutorial} = useTutorialUseCase();
+    const initialStepIndex = currentStep === 1 ? 0 : currentStep;
     const config = useMemo<ITutorialConfig>(
         () => ({
             steps: [
@@ -37,7 +39,7 @@ const MakeTutorial = () => {
                     onNextStep: useCase.next,
                 },
                 {
-                    highlightIds: ['make_requests_board', 'make_requests_decision_panel'],
+                    highlightIds: ['make_requests_step', 'make_requests_decision_panel'],
                     title: '근무표 만들기',
                     info: '신청 근무를 보면서 수락, 보류, 거절을 정리해 주세요. 오른쪽 패널에서 빠르게 상태를 바꿀 수 있어요.',
                     infoBoxAlignment: 'right',
@@ -69,7 +71,14 @@ const MakeTutorial = () => {
         [useCase.next, useCase.prev],
     );
 
-    return <TutorialPortal open={showMakeTutorial && phase === 'stepping'} config={config} closeCallback={() => setMakeTutorial(false)} />;
+    return (
+        <TutorialPortal
+            open={showMakeTutorial && phase === 'stepping'}
+            config={config}
+            closeCallback={() => setMakeTutorial(false)}
+            initialStepIndex={initialStepIndex}
+        />
+    );
 };
 
 export default MakeTutorial;

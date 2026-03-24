@@ -13,6 +13,7 @@ let tutorialStoreState = {
 };
 let makeShiftStoreState = {
     phase: 'stepping' as 'overview' | 'stepping',
+    currentStep: 1,
 };
 
 vi.mock('@/features/ui/useTutorial/store', () => ({
@@ -37,17 +38,34 @@ vi.mock('../../model/make-shift-use-case', () => ({
 }));
 
 vi.mock('@/widgets/tutorial/TutorialPortal', () => ({
-    TutorialPortal: ({open, config, closeCallback}: {open: boolean; config: ITutorialConfig; closeCallback: () => void}) => {
-        tutorialPortalMock({open, config, closeCallback});
+    TutorialPortal: ({
+        open,
+        config,
+        closeCallback,
+        initialStepIndex,
+    }: {
+        open: boolean;
+        config: ITutorialConfig;
+        closeCallback: () => void;
+        initialStepIndex?: number;
+    }) => {
+        tutorialPortalMock({open, config, closeCallback, initialStepIndex});
 
-        return <div data-testid="tutorial-portal" data-open={String(open)} data-step-count={String(config.steps.length)} />;
+        return (
+            <div
+                data-testid="tutorial-portal"
+                data-open={String(open)}
+                data-step-count={String(config.steps.length)}
+                data-initial-step-index={String(initialStepIndex ?? 0)}
+            />
+        );
     },
 }));
 
 describe('make-tutorial', () => {
     beforeEach(() => {
         tutorialStoreState = {showMakeTutorial: true};
-        makeShiftStoreState = {phase: 'stepping'};
+        makeShiftStoreState = {phase: 'stepping', currentStep: 1};
         setMakeTutorialMock.mockReset();
         nextMock.mockReset();
         prevMock.mockReset();
@@ -55,7 +73,7 @@ describe('make-tutorial', () => {
     });
 
     it('opens tutorial only during make stepping phase', () => {
-        makeShiftStoreState = {phase: 'overview'};
+        makeShiftStoreState = {phase: 'overview', currentStep: 1};
 
         render(<MakeTutorial />);
 
@@ -70,9 +88,19 @@ describe('make-tutorial', () => {
 
         expect(portal).toHaveAttribute('data-open', 'true');
         expect(portal).toHaveAttribute('data-step-count', '6');
+        expect(portal).toHaveAttribute('data-initial-step-index', '0');
         expect(lastCall.open).toBe(true);
         expect(lastCall.config.steps[0]?.highlightIds).toEqual(['make_stepper']);
+        expect(lastCall.config.steps[3]?.highlightIds).toEqual(['make_requests_step', 'make_requests_decision_panel']);
         expect(lastCall.config.steps[4]?.highlightIds).toEqual(['make_fixed_shifts_step', 'count_by_day']);
         expect(lastCall.config.steps[5]?.highlightIds).toEqual(['make_ai_autofill_actions', 'make_ai_autofill_status']);
+    });
+
+    it('aligns tutorial start step with restored make step', () => {
+        makeShiftStoreState = {phase: 'stepping', currentStep: 4};
+
+        render(<MakeTutorial />);
+
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-initial-step-index', '4');
     });
 });

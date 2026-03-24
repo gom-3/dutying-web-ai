@@ -9,6 +9,7 @@ import {
 type TUseTutorialOverlayOptions = {
     config: ITutorialConfig;
     closeCallback: () => void;
+    initialStepIndex?: number;
 };
 
 type THighlightedElement = {
@@ -20,15 +21,30 @@ function getCurrentStep(config: ITutorialConfig, stepIndex: number): ITutorialSt
     return config.steps[stepIndex];
 }
 
-export function useTutorialOverlay({config, closeCallback}: TUseTutorialOverlayOptions) {
+function normalizeStepIndex(config: ITutorialConfig, stepIndex?: number) {
+    if (stepIndex == null) return 0;
+
+    return Math.min(Math.max(stepIndex, 0), Math.max(config.steps.length - 1, 0));
+}
+
+export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TUseTutorialOverlayOptions) {
+    const normalizedInitialStepIndex = normalizeStepIndex(config, initialStepIndex);
     const [rectStyles, setRectStyles] = useState<ITutorialHighlightRect[]>([]);
-    const [stepIndex, setStepIndex] = useState(0);
-    const stepIndexRef = useRef(0);
+    const [stepIndex, setStepIndex] = useState(normalizedInitialStepIndex);
+    const stepIndexRef = useRef(normalizedInitialStepIndex);
     const infoBoxElement = useRef<HTMLDivElement>(null);
     const currentElements = useRef<THighlightedElement[]>([]);
     const resizeTimeoutRef = useRef<number | null>(null);
     const currentStep = getCurrentStep(config, stepIndex);
     const totalSteps = config.steps.length;
+
+    useEffect(() => {
+        const nextStepIndex = normalizeStepIndex(config, initialStepIndex);
+
+        setStepIndex(nextStepIndex);
+        stepIndexRef.current = nextStepIndex;
+    }, [config, initialStepIndex]);
+
     const resetHighlightedElements = useCallback(() => {
         currentElements.current.forEach(({element}) => {
             element.classList.remove('foreground');
@@ -138,9 +154,9 @@ export function useTutorialOverlay({config, closeCallback}: TUseTutorialOverlayO
         setRectStyles(positions);
     }, [calculateInfoBoxPosition, config, resetHighlightedElements]);
     const skip = useCallback(() => {
-        setStepIndex(0);
+        setStepIndex(normalizedInitialStepIndex);
         closeCallback();
-    }, [closeCallback]);
+    }, [closeCallback, normalizedInitialStepIndex]);
     const previousStep = useCallback(() => {
         if (stepIndex === 0) return;
 
@@ -151,14 +167,14 @@ export function useTutorialOverlay({config, closeCallback}: TUseTutorialOverlayO
         currentStep?.onNextStep?.();
 
         if (stepIndex === totalSteps - 1) {
-            setStepIndex(0);
+            setStepIndex(normalizedInitialStepIndex);
             closeCallback();
 
             return;
         }
 
         setStepIndex((prev) => prev + 1);
-    }, [closeCallback, currentStep, stepIndex, totalSteps]);
+    }, [closeCallback, currentStep, normalizedInitialStepIndex, stepIndex, totalSteps]);
 
     useEffect(() => {
         stepIndexRef.current = stepIndex;
