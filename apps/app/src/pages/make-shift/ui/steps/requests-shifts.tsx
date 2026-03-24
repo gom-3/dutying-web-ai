@@ -2,7 +2,7 @@ import {useMemo} from 'react';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
-import {useRequestsShiftsHook} from '../../model/requestsShiftsHook';
+import {useRequestsShiftsHook} from '../../model/requests-shifts-hook';
 import {RequestsDecisionPanel, RequestsShiftBoard, RequestsShiftsHeader} from './requests-shifts-sections';
 
 export function RequestsShifts() {

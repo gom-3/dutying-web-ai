@@ -1,7 +1,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import {
     buildWorkKeyMap,
     buildViolationMap,

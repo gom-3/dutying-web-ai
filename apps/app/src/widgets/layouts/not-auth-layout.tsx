@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
 import {Outlet, useNavigate} from 'react-router';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 
 export const NotAuthLayout = () => {

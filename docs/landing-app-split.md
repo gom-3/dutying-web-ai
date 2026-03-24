@@ -61,8 +61,8 @@ These are now updated toward `app.dutying.net`, but the real deployment sitemap 
 ### 3. OAuth redirect should stay app-domain only
 
 - `apps/app/src/pages/login/index.tsx`
-- `apps/app/src/features/auth/useAuth/index.ts`
-- `apps/app/src/pages/login/RedirectPage.tsx`
+- `apps/app/src/features/auth/index.ts`
+- `apps/app/src/pages/login/redirect-page.tsx`
 - `apps/app/src/shared/api/client.ts`
 - `apps/app/src/pages/refresh/index.tsx`
 
@@ -76,7 +76,7 @@ Checkpoints:
 
 ### 4. Auth state is not purely cookie-based
 
-- `apps/app/src/features/auth/useAuth/store.ts` persists auth state with Zustand `persist`
+- `apps/app/src/features/auth/model/store.ts` persists auth state with Zustand `persist`
 - several features also use `localStorage`
 
 Implications:

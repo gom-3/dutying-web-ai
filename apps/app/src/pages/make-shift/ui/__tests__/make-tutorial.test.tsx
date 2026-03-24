@@ -16,11 +16,11 @@ let makeShiftStoreState = {
     currentStep: 1,
 };
 
-vi.mock('@/features/ui/useTutorial/store', () => ({
+vi.mock('@/features/tutorial/model/store', () => ({
     useTutorialStore: (selector: (state: typeof tutorialStoreState) => unknown) => selector(tutorialStoreState),
 }));
 
-vi.mock('@/features/ui/useTutorial', () => ({
+vi.mock('@/features/tutorial', () => ({
     default: () => ({
         setMakeTutorial: setMakeTutorialMock,
     }),

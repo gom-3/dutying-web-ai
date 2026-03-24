@@ -3,21 +3,21 @@ import {ChevronDown, Plus} from 'lucide-react';
 import {useEffect, useMemo, useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse} from '@/entities';
+import useEditShiftTeam from '@/features/edit-shift-team';
 import {
     createWardSkillSettings,
     getWardSkillSettings,
     resolveWardSkillLevels,
     saveWardSkillSettings,
     type TWardSkillSettings,
-} from '@/features/ward/skill-level';
-import SkillBadge from '@/features/ward/SkillBadge';
-import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+} from '@/features/ward-skill/model/skill-level';
+import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {LinkedIcon, MoreIcon, PlusIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
-import {shouldAutoSelectVisibleNurse} from './model/detailPanelSelection';
-import MemberSkillLevelModal from './ui/MemberSkillLevelModal';
-import NurseDetailPanel from './ui/NurseDetailPanel';
+import {shouldAutoSelectVisibleNurse} from './model/detail-panel-selection';
+import MemberSkillLevelModal from './ui/member-skill-level-modal';
+import NurseDetailPanel from './ui/nurse-detail-panel';
 
 function MemberPage() {
     const {t} = useTypedTranslation();

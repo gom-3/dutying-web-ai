@@ -1,4 +1,4 @@
-import {useWardSettings} from './model/wardSettingsHook';
+import {useWardSettings} from './model/ward-settings-hook';
 import {WardSettingsPageView} from './ui';
 
 const WardSettingsPage = () => {

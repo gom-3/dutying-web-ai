@@ -39,7 +39,7 @@ vi.mock('react-router', async () => {
     };
 });
 
-vi.mock('@/features/auth/useRegister', () => ({
+vi.mock('@/features/register', () => ({
     default: () => ({
         actions: {
             createWard: mockCreateWard,

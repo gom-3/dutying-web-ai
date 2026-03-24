@@ -1,13 +1,13 @@
 import {TailSpin} from 'react-loader-spinner';
 import {Navigate, useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import {FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import PageState from '@/shared/ui/PageState';
-import PendingEnter from './ui/PendingEnter';
-import RegisterNurse from './ui/RegisterNurse';
-import SelectEnterOrCreate from './ui/SelectEnterOrCreate';
+import PendingEnter from './ui/pending-enter';
+import RegisterNurse from './ui/register-nurse';
+import SelectEnterOrCreate from './ui/select-enter-or-create';
 
 function RegisterPage() {
     const {

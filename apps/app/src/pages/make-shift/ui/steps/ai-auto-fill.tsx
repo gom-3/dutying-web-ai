@@ -1,7 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {useCallback, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore, useShiftImageExport} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {CameraIcon, HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
@@ -28,7 +28,9 @@ export function AiAutofill() {
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
-    const currentShiftTeamName = useMakeShiftStore((s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null);
+    const currentShiftTeamName = useMakeShiftStore(
+        (s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null,
+    );
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const history = useShiftEditorStore((s) => s.history);

@@ -1,5 +1,5 @@
-import type {TDutyDoc} from '@/features/shift-editor';
 import type {TAiScheduleResponse} from '@dutying/api/ward';
+import type {TDutyDoc} from '@/features/shift-editor';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
 
 export function generateMockAiSchedule(doc: TDutyDoc): TAiScheduleResponse {

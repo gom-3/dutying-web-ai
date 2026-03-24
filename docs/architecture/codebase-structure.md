@@ -21,28 +21,28 @@ docs/
 ### apps 역할
 
 - `apps/app`
-  - 실제 제품 기능이 들어가는 메인 웹 앱
-  - 루트 `pnpm dev`, `build`, `lint`, `test`, `type-check`의 기본 대상
+    - 실제 제품 기능이 들어가는 메인 웹 앱
+    - 루트 `pnpm dev`, `build`, `lint`, `test`, `type-check`의 기본 대상
 - `apps/docs`
-  - VitePress 기반 사용자 가이드
-  - 제품 기능 코드나 내부 구조 규칙의 source of truth는 아니다
+    - VitePress 기반 사용자 가이드
+    - 제품 기능 코드나 내부 구조 규칙의 source of truth는 아니다
 - `apps/landing`
-  - 서비스 소개용 공개 페이지
-  - 제품 앱 로직과 분리해 운영한다
+    - 서비스 소개용 공개 페이지
+    - 제품 앱 로직과 분리해 운영한다
 
 ### packages 역할
 
 - `packages/api`
-  - API contract, DTO, response type, interface
-  - 예: [`packages/api/src/client.ts`](../../packages/api/src/client.ts), [`packages/api/src/ward/contracts.ts`](../../packages/api/src/ward/contracts.ts)
+    - API contract, DTO, response type, interface
+    - 예: [`packages/api/src/client.ts`](../../packages/api/src/client.ts), [`packages/api/src/ward/contracts.ts`](../../packages/api/src/ward/contracts.ts)
 - `packages/domain`
-  - 화면/전송 방식에 독립적인 도메인 타입
-  - 예: [`packages/domain/src/ward.ts`](../../packages/domain/src/ward.ts)
+    - 화면/전송 방식에 독립적인 도메인 타입
+    - 예: [`packages/domain/src/ward.ts`](../../packages/domain/src/ward.ts)
 - `packages/utils`
-  - app 문맥 없는 순수 유틸과 범용 타입
-  - 예: [`packages/utils/src/date.ts`](../../packages/utils/src/date.ts), [`packages/utils/src/types.ts`](../../packages/utils/src/types.ts)
+    - app 문맥 없는 순수 유틸과 범용 타입
+    - 예: [`packages/utils/src/date.ts`](../../packages/utils/src/date.ts), [`packages/utils/src/types.ts`](../../packages/utils/src/types.ts)
 - `packages/config`
-  - workspace 공통 ESLint/TypeScript 설정
+    - workspace 공통 ESLint/TypeScript 설정
 
 ## 2. `apps/app/src` 레이어 기준
 
@@ -148,11 +148,11 @@ shared/
 - [`packages/api/src/client.ts`](../../packages/api/src/client.ts)
 - [`packages/domain/src/ward.ts`](../../packages/domain/src/ward.ts)
 
-### 레거시 예외
+### 현재 source of truth
 
-- 기존 코드에는 `useAuth`, `useEditWard`, `CreateShiftModal`, `NavigationBarItem`처럼 예전 naming 패턴이 남아 있다.
-- 이 패턴은 호환을 위해 유지할 수는 있지만, 신규 page/feature slice에서 그대로 복제하지 않는다.
-- 특히 신규 slice 루트에 `components/`, `hooks/`, `view/`를 병렬로 두는 방식은 더 이상 늘리지 않는다.
+- DUT-936 기준으로 `apps/app/src/pages/*`, `apps/app/src/features/*`의 slice는 `kebab-case` + `index.ts(x)` + `ui/` + `model/` 규칙으로 정리되어 있다.
+- 신규 page/feature slice는 이 기준을 그대로 따른다.
+- 특히 slice 루트에 `components/`, `hooks/`, `view/`를 병렬로 두는 방식은 더 이상 늘리지 않는다.
 
 ## 4. page / feature slice 규칙
 
@@ -185,8 +185,8 @@ slice-name/
 - type
 - 계산 로직
 - 테스트는 가장 가까운 owner 아래에 둔다
-  - 계산/상태 로직: `model/__tests__`
-  - route entry 또는 legacy slice 테스트: slice 루트 `__tests__`
+- 계산/상태 로직: `model/__tests__`
+- route entry 또는 slice public entry 테스트: slice 루트 `__tests__`
 
 ### 허용되는 축약
 
@@ -226,6 +226,14 @@ apps/app/src/features/shift-editor/
 └── ui/
 ```
 
+정리된 소형 feature 예시:
+
+```text
+apps/app/src/features/file/
+├── index.ts
+└── model/
+```
+
 ## 5. shared 와 packages 경계
 
 원칙은 간단하다.
@@ -255,3 +263,9 @@ apps/app/src/features/shift-editor/
 - `shared`에 도메인 맥락이 새어 들어오지 않았는가?
 - `packages/*`로 올릴 수 있는 코드를 app 내부에 가둬두지 않았는가?
 - 신규 파일 naming이 `kebab-case`와 `index.ts(x)` 규칙을 따르는가?
+
+## 7. DUT-936 마감 기준
+
+- 이 티켓의 목적은 구조 규칙을 하나의 기준으로 고정하고, 현재 코드와 문서의 모순을 해소하는 것이다.
+- `apps/app/src/pages/*`, `apps/app/src/features/*`, 구조 문서는 현재 기준으로 정렬되어 있어 DUT-936 마감 조건을 충족한다.
+- 이후 후속 작업이 생기더라도 그것은 새 구조 개편이나 추가 추상화 논의이지, 현재 규칙 정합성의 미해결 항목은 아니다.

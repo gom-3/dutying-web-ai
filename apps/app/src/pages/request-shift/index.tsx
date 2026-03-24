@@ -1,9 +1,9 @@
-import useRequestShift from '@/features/shift/useRequestShift';
+import useRequestShift from '@/features/request-shift';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
-import RequestCalendar from './ui/RequestCalendar';
-import Toolbar from './ui/Toolbar';
+import RequestCalendar from './ui/request-calendar';
+import Toolbar from './ui/toolbar';
 
 const RequestShiftPage = () => {
     const {t} = useTypedTranslation();

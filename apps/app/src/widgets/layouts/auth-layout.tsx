@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import useInterval from '@/shared/util/useInterval';
 

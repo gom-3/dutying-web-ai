@@ -1,11 +1,11 @@
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import useRefresh from '@/features/auth/useRefresh';
+import useRefresh from '@/features/refresh';
 import ROUTE from '@/shared/constant/path';
 import {render, waitFor} from '@/shared/util/test-utils';
 import RefreshPage from '../index';
 
-vi.mock('@/features/auth/useRefresh', () => ({
+vi.mock('@/features/refresh', () => ({
     default: vi.fn(),
 }));
 

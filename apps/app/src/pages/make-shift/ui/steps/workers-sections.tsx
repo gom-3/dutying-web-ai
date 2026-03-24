@@ -2,7 +2,7 @@ import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {ChevronDown} from 'lucide-react';
 import {type ComponentProps} from 'react';
 import {type TNurse} from '@/entities';
-import SkillBadge from '@/features/ward/SkillBadge';
+import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementStatusCard} from '@/widgets/duty-management/ui';

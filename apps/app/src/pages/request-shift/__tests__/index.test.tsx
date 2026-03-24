@@ -15,7 +15,7 @@ const translations: Record<string, string> = {
     'page.state.errorDescription': '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
 };
 
-vi.mock('@/features/shift/useRequestShift', () => ({
+vi.mock('@/features/request-shift', () => ({
     default: (...args: unknown[]) => mockUseRequestShift(...args),
 }));
 
@@ -25,11 +25,11 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     }),
 }));
 
-vi.mock('../ui/Toolbar', () => ({
+vi.mock('../ui/toolbar', () => ({
     default: () => <div>toolbar</div>,
 }));
 
-vi.mock('../ui/RequestCalendar', () => ({
+vi.mock('../ui/request-calendar', () => ({
     default: () => <div>request-calendar</div>,
 }));
 

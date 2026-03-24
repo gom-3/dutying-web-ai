@@ -1,2 +1,2 @@
-export {default as useCreateAccount} from './useCreateAccount';
-export {default as useEditAccount} from './useEditAccount';
+export {default as useCreateAccount} from './use-create-account';
+export {default as useEditAccount} from './use-edit-account';

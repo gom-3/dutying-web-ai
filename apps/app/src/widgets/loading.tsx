@@ -1,5 +1,5 @@
 import Lottie from 'react-lottie';
-import {useLoadingStore} from '@/features/ui/useLoading/store';
+import {useLoadingStore} from '@/features/loading/model/store';
 import loadingLottie from '@/shared/assets/animation/loading.json';
 
 const Loading = () => {

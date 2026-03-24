@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
-import useRefresh from '@/features/auth/useRefresh';
+import useRefresh from '@/features/refresh';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';

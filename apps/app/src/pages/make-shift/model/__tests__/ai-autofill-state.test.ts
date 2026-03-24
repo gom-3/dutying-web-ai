@@ -1,5 +1,10 @@
 import {describe, expect, it} from 'vitest';
-import {canConfirmAiAutofill, getAiAutofillActionLabel, getAiAutofillStatusDescription, getAiAutofillStatusTone} from '../ai-autofill-state';
+import {
+    canConfirmAiAutofill,
+    getAiAutofillActionLabel,
+    getAiAutofillStatusDescription,
+    getAiAutofillStatusTone,
+} from '../ai-autofill-state';
 
 describe('ai-autofill-state', () => {
     it('loading 동안에는 확정을 막아야 한다', () => {

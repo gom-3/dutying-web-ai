@@ -24,7 +24,7 @@ vi.mock('react-loader-spinner', () => ({
     TailSpin: () => <div>spinner</div>,
 }));
 
-vi.mock('@/features/auth/useAuth', () => ({
+vi.mock('@/features/auth', () => ({
     default: () => ({
         state: mockAuthState,
         actions: {
@@ -33,15 +33,15 @@ vi.mock('@/features/auth/useAuth', () => ({
     }),
 }));
 
-vi.mock('../ui/RegisterNurse', () => ({
+vi.mock('../ui/register-nurse', () => ({
     default: () => <div>register-nurse</div>,
 }));
 
-vi.mock('../ui/SelectEnterOrCreate', () => ({
+vi.mock('../ui/select-enter-or-create', () => ({
     default: () => <div>select-enter-or-create</div>,
 }));
 
-vi.mock('../ui/PendingEnter', () => ({
+vi.mock('../ui/pending-enter', () => ({
     default: () => <div>pending-enter</div>,
 }));
 

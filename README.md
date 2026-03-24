@@ -77,6 +77,8 @@ slice-name/
 - `model/`: hook, store, adapter, type, 계산 로직
 - 하위 단계가 필요하면 `ui/...`, `model/...` 아래에서만 확장
 
+`apps/app/src/pages/*`와 `apps/app/src/features/*`는 DUT-936 기준으로 `kebab-case` + `index.ts(x)` + `ui/` + `model/` 규칙에 맞춰 정리했습니다. 신규 slice도 같은 기준을 그대로 따릅니다.
+
 구조 기준 상세 문서:
 
 - [코드베이스 구조 가이드](docs/architecture/codebase-structure.md)
@@ -90,6 +92,7 @@ slice-name/
 - 도메인 조회 모델이나 엔티티 UI라면 `apps/app/src/entities/*`
 - 브라우저 런타임에 묶인 공용 코드라면 `apps/app/src/shared/*`
 - 다른 앱에서도 그대로 쓸 계약/타입/유틸이라면 `packages/*`
+- package를 직접 import 할 수 있는 계약/타입은 `shared` 재수출 대신 `packages/*`를 바로 사용
 
 예시:
 

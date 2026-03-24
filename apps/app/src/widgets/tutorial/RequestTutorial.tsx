@@ -1,8 +1,8 @@
 import {useEffect, useMemo} from 'react';
-import useRequestShift from '@/features/shift/useRequestShift';
-import {useRequestShiftStore} from '@/features/shift/useRequestShift/store';
-import useTutorialUseCase from '@/features/ui/useTutorial';
-import {useTutorialStore} from '@/features/ui/useTutorial/store';
+import useRequestShift from '@/features/request-shift';
+import {useRequestShiftStore} from '@/features/request-shift/model/store';
+import useTutorialUseCase from '@/features/tutorial';
+import {useTutorialStore} from '@/features/tutorial/model/store';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';

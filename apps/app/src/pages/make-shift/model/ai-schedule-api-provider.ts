@@ -1,5 +1,5 @@
-import {WardAPI} from '@/shared/api';
 import type {TGenerateAiAutofillScheduleDTO} from '@dutying/api/ward';
+import {WardAPI} from '@/shared/api';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
