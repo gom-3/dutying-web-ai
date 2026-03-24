@@ -47,6 +47,13 @@ Current transition rules:
 - Root scripts now delegate through `*:root` aliases so a later ticket can retarget the top-level commands to `apps/app` without changing the developer entrypoints first.
 - New workspace packages should be created under `apps/*` or `packages/*`.
 
+## Monorepo Version Policy
+
+- The repository uses a single monorepo release version. The root `package.json` version is the canonical release number, and every workspace under `apps/*` and `packages/*` must keep the same value.
+- All current workspace packages are `private: true`, so they are not publish targets yet. Even so, each workspace still keeps an explicit aligned version because release notes, release branch naming, and future Changesets fixed-version groups need one consistent version source.
+- Future Changesets setup should treat the workspace packages as a fixed version group. The root package is not a publish target, but it should continue mirroring the same release number so the repository-level version stays readable in code and docs.
+- If a package later becomes publishable, it joins the same shared version policy unless the release policy is intentionally changed.
+
 ## Running Tests
 
 ### Unit Tests
