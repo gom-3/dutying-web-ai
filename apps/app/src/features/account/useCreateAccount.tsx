@@ -9,7 +9,6 @@ type TCreateAccountFeedback = {
 };
 
 type TUseCreateAccountParams = {
-    isValid: boolean;
     submit: (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => Promise<unknown>;
 };
 
@@ -42,7 +41,7 @@ function isHandledFailure(error: unknown) {
     return code === 400 || code === 401 || code === 404;
 }
 
-const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
+const useCreateAccount = ({submit}: TUseCreateAccountParams) => {
     const [createAccountStatus, setCreateAccountStatus] = useState<TCreateAccountStatus>('idle');
     const createAccountFeedback = useMemo(() => {
         if (createAccountStatus === 'idle') {
@@ -54,14 +53,11 @@ const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
     const resetCreateAccountStatus = useCallback(() => {
         setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' || currentStatus === 'loading' ? currentStatus : 'idle'));
     }, []);
+    const handleCreateAccountValidationFailure = useCallback(() => {
+        setCreateAccountStatus('failure');
+    }, []);
     const handleCreateAccount = useCallback(
         async (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => {
-            if (!isValid) {
-                setCreateAccountStatus('failure');
-
-                return;
-            }
-
             setCreateAccountStatus('loading');
 
             try {
@@ -72,7 +68,7 @@ const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
                 throw error;
             }
         },
-        [isValid, submit],
+        [submit],
     );
 
     return {
@@ -80,6 +76,7 @@ const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
         createAccountFeedback,
         isSubmitting: createAccountStatus === 'loading',
         handleCreateAccount,
+        handleCreateAccountValidationFailure,
         resetCreateAccountStatus,
     };
 };

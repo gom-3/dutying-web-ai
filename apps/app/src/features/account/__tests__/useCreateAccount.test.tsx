@@ -25,7 +25,6 @@ describe('useCreateAccount', () => {
         );
         const {result} = renderHook(() =>
             useCreateAccount({
-                isValid: true,
                 submit,
             }),
         );
@@ -48,16 +47,17 @@ describe('useCreateAccount', () => {
         expect(result.current.createAccountFeedback.message).toBe('계정 정보를 저장했어요.');
     });
 
-    it('marks validation failure before submit when the form is invalid', async () => {
+    it('marks validation failure without submitting when validation callback runs', () => {
         const submit = vi.fn();
         const {result} = renderHook(() =>
             useCreateAccount({
-                isValid: false,
                 submit,
             }),
         );
 
-        await act(async () => result.current.handleCreateAccount(createNurseDTO));
+        act(() => {
+            result.current.handleCreateAccountValidationFailure();
+        });
 
         expect(submit).not.toHaveBeenCalled();
         expect(result.current.createAccountStatus).toBe('failure');
@@ -68,7 +68,6 @@ describe('useCreateAccount', () => {
         const submit = vi.fn().mockRejectedValue({code: 400});
         const {result} = renderHook(() =>
             useCreateAccount({
-                isValid: true,
                 submit,
             }),
         );
@@ -93,7 +92,6 @@ describe('useCreateAccount', () => {
         const submit = vi.fn().mockRejectedValue(error);
         const {result} = renderHook(() =>
             useCreateAccount({
-                isValid: true,
                 submit,
             }),
         );
@@ -125,7 +123,6 @@ describe('useCreateAccount', () => {
         );
         const {result} = renderHook(() =>
             useCreateAccount({
-                isValid: true,
                 submit,
             }),
         );
