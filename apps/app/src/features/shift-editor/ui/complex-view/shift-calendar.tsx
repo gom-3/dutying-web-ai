@@ -1,4 +1,5 @@
 import {DragDropContext, type DropResult} from '@hello-pangea/dnd';
+import {cn} from '@dutying/utils/style';
 import {type ComponentProps, useEffect, useMemo, useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {type TWardShiftType, type TShift} from '@/entities';
@@ -30,6 +31,7 @@ interface IShiftCalendarProps {
     enableDivisionManagement?: boolean;
     onEditDivision?: (opts: {shiftNurseId: number; level: number; direction: 1 | -1}) => void;
     clearSelectionOnClickAway?: boolean;
+    exportMode?: boolean;
 }
 
 function ShiftCalendar({
@@ -50,6 +52,7 @@ function ShiftCalendar({
     enableDivisionManagement = false,
     onEditDivision,
     clearSelectionOnClickAway = true,
+    exportMode = false,
 }: IShiftCalendarProps) {
     const {separateWeekendColor, shiftTypeColorStyle} = useUIConfigStore();
     const commands = useShiftEditorCommands();
@@ -162,7 +165,7 @@ function ShiftCalendar({
     };
 
     return (
-        <div id="calendar" ref={clickAwayRef} className="flex w-full flex-col overflow-hidden">
+        <div id="calendar" ref={clickAwayRef} className={cn('flex w-full flex-col', exportMode ? 'overflow-visible' : 'overflow-hidden')}>
             <ShiftCalendarHeader
                 shift={shift}
                 effectiveFocusDay={effectiveFocus?.day}
@@ -171,7 +174,10 @@ function ShiftCalendar({
             />
             <DragDropContext onDragEnd={handleDragEnd}>
                 <div
-                    className="-mt-5 scrollbar-hide flex flex-col gap-[.3125rem] overflow-x-hidden overflow-y-scroll pt-5 pr-4 pb-8"
+                    className={cn(
+                        '-mt-5 scrollbar-hide flex flex-col gap-[.3125rem] pt-5 pr-4 pb-8',
+                        exportMode ? 'overflow-visible' : 'overflow-x-hidden overflow-y-scroll',
+                    )}
                     ref={containerRef}
                 >
                     {divisions.map((division, level) => (

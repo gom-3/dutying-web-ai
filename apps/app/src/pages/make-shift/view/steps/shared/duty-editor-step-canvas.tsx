@@ -1,6 +1,7 @@
 import {type ClipboardEventHandler, type ComponentProps, type KeyboardEventHandler, type RefObject} from 'react';
 import {type TShift} from '@/entities';
-import CountDutyByDay from '@/features/shift-editor/ui/complex-view/count-duty-by-day';
+import {type TDutyDoc} from '@/features/shift-editor';
+import {ShiftEditorCanvas} from '@/features/shift-editor/ui/complex-view/shift-editor-canvas';
 import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -14,13 +15,15 @@ type TDutyEditorStepCanvasProps = {
     onRetry: () => void;
     loadingTitle: string;
     errorTitle: string;
-    editorDoc: ComponentProps<typeof ShiftCalendar>['doc'];
+    editorDoc: TDutyDoc;
     violationMap: TShiftCalendarViolations;
     editorRef: RefObject<HTMLDivElement | null>;
     onKeyDown: KeyboardEventHandler<HTMLDivElement>;
     onPaste: ClipboardEventHandler<HTMLDivElement>;
     onFocusEditor: () => void;
     showFaults: boolean;
+    exportRef?: RefObject<HTMLDivElement | null>;
+    exportMode?: boolean;
 };
 
 export function DutyEditorStepCanvas({
@@ -37,6 +40,8 @@ export function DutyEditorStepCanvas({
     onPaste,
     onFocusEditor,
     showFaults,
+    exportRef,
+    exportMode = false,
 }: TDutyEditorStepCanvasProps) {
     const {t} = useTypedTranslation();
 
@@ -53,24 +58,19 @@ export function DutyEditorStepCanvas({
             )}
             {!isLoading && !isError && duty && (
                 <div className="flex min-h-0 flex-1" onClick={onFocusEditor}>
-                    <div className="mx-auto flex w-fit min-w-418.5 flex-col">
-                        <ShiftCalendar
-                            shift={duty}
-                            doc={editorDoc}
-                            onCellClick={onFocusEditor}
-                            disableInitialSelection
-                            violations={violationMap}
-                            showLayer={{fault: showFaults, check: false, slash: false}}
-                        />
-                        <div
-                            className="sticky bottom-0 z-20 flex items-stretch gap-5 py-5 pl-55.25"
-                            style={{
-                                height: `${duty.wardShiftTypes.filter((shiftType) => shiftType.isCounted).length * 2.5 + 2.5}rem`,
-                            }}
-                        >
-                            <CountDutyByDay shift={duty} doc={editorDoc} />
-                        </div>
-                    </div>
+                    <ShiftEditorCanvas
+                        shift={duty}
+                        doc={editorDoc}
+                        className="min-w-418.5"
+                        exportRef={exportRef}
+                        exportMode={exportMode}
+                        calendarProps={{
+                            onCellClick: onFocusEditor,
+                            disableInitialSelection: true,
+                            violations: violationMap,
+                            showLayer: {fault: showFaults, check: false, slash: false},
+                        }}
+                    />
                 </div>
             )}
         </div>
