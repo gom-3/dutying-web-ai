@@ -10,6 +10,11 @@ export const ko = {
         landing: {
             title: '근무표\n이제 더 간편하게!',
         },
+        register: {
+            nurse: {
+                submitting: '처리 중...',
+            },
+        },
         makeShift: {
             steps: {
                 workers: {

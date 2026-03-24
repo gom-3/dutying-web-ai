@@ -11,6 +11,7 @@ import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import TextField from '@/shared/ui/form-controls/TextField';
@@ -43,6 +44,7 @@ const schema = yup
     .required();
 
 function RegisterNurse() {
+    const {t} = useTypedTranslation();
     const {
         formState: {errors, isValid},
         watch,
@@ -220,7 +222,7 @@ function RegisterNurse() {
             </p>
 
             <Button disabled={!isValid || isSubmitting} className="mt-4 h-15 w-30 self-end text-center text-[2rem] font-semibold">
-                {isSubmitting ? '처리 중...' : '다음'}
+                {isSubmitting ? t('page.register.nurse.submitting') : t('page.makeShift.navigation.next')}
             </Button>
         </form>
     );

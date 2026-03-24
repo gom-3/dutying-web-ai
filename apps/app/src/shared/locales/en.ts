@@ -12,6 +12,11 @@ export const en: TLocale = {
         landing: {
             title: 'Duty Schedule\nNow Easier!',
         },
+        register: {
+            nurse: {
+                submitting: 'Processing...',
+            },
+        },
         makeShift: {
             steps: {
                 workers: {

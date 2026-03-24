@@ -113,4 +113,36 @@ describe('useCreateAccount', () => {
         expect(result.current.createAccountStatus).toBe('exception');
         expect(result.current.createAccountFeedback.message).toBe('계정 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.');
     });
+
+    it('does not reset back to idle while submit is still loading', async () => {
+        let resolveSubmit: (() => void) | undefined;
+
+        const submit = vi.fn(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveSubmit = resolve;
+                }),
+        );
+        const {result} = renderHook(() =>
+            useCreateAccount({
+                isValid: true,
+                submit,
+            }),
+        );
+
+        act(() => {
+            void result.current.handleCreateAccount(createNurseDTO);
+        });
+
+        act(() => {
+            result.current.resetCreateAccountStatus();
+        });
+
+        expect(result.current.createAccountStatus).toBe('loading');
+
+        await act(async () => {
+            resolveSubmit?.();
+            await Promise.resolve();
+        });
+    });
 });

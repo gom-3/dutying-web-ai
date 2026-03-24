@@ -52,7 +52,7 @@ const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
         return FEEDBACK_BY_STATUS[createAccountStatus];
     }, [createAccountStatus]);
     const resetCreateAccountStatus = useCallback(() => {
-        setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' ? currentStatus : 'idle'));
+        setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' || currentStatus === 'loading' ? currentStatus : 'idle'));
     }, []);
     const handleCreateAccount = useCallback(
         async (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => {
