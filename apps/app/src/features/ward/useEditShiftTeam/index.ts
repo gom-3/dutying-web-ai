@@ -8,8 +8,8 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import useRequestShift from '@/features/shift/useRequestShift';
 import {NurseAPI, WardAPI} from '@/shared/api';
-import {type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from '@/shared/api/nurse/type';
-import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
+import {type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from '@dutying/api/nurse';
+import {type TUpdateShiftTeamDTO} from '@dutying/api/ward';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './store';
 

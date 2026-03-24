@@ -1,4 +1,4 @@
-import {type TValues} from '../types/util';
+import {type TValues} from '@dutying/utils';
 
 const ROUTE = {
     ROOT: '/',

@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {CancelIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';

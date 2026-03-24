@@ -1,4 +1,4 @@
-import type {TCreateWardDTO} from '@/shared/api/ward/type';
+import type {TCreateWardDTO} from '@dutying/api/ward';
 import {buildCreateWardPayload} from './adapter';
 import type {TOnboardingWardDraft} from './draft';
 

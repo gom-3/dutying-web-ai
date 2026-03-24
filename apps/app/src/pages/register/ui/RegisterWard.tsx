@@ -8,7 +8,7 @@ import {registerWardSchema} from '@/features/register-ward/model/schema';
 import {DEFAULT_WARD_SHIFT_TYPES, getWardShiftValidationMessage} from '@/features/register-ward/model/ward';
 import RegisterWardShiftTeamsSection from '@/features/register-ward/ui/RegisterWardShiftTeamsSection';
 import RegisterWardShiftTypesSection from '@/features/register-ward/ui/RegisterWardShiftTypesSection';
-import {type TCreateWardDTO} from '@/shared/api/ward/type';
+import {type TCreateWardDTO} from '@dutying/api/ward';
 import {BackIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import Button from '@/shared/ui/form-controls/Button';

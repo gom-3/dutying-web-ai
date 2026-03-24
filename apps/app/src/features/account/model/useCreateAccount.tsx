@@ -1,5 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
-import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
+import {type TCreateNurseDTO} from '@dutying/api/nurse';
 
 export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
 

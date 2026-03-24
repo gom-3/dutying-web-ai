@@ -1,5 +1,5 @@
 import type {TShift, TWardShiftType} from '@/entities';
-import type {TWardShiftsDTO} from '@/shared/api/ward/type';
+import type {TWardShiftsDTO} from '@dutying/api/ward';
 import type {TCellValue, TDutyDoc, TWorkKeyMap} from './types';
 
 type TWardShiftTypeMaps = {

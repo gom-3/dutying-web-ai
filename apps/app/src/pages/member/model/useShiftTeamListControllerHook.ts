@@ -5,7 +5,7 @@ import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
 import type {TNurse} from '@/entities/nurse';
 import type {TShiftTeam} from '@/entities/ward';
-import {type TUpdateShiftTeamDTO} from '@/shared/api/ward/type';
+import {type TUpdateShiftTeamDTO} from '@dutying/api/ward';
 import {createMoveNurseOrderPayload, type TEditShiftTeamState, getNextSelectedNurseId} from './shiftTeamList';
 
 interface IUseShiftTeamListControllerParams {

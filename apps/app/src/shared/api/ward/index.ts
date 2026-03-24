@@ -1,5 +1,5 @@
 import {createWardApi} from '@dutying/api/ward';
-import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+import type {TAiScheduleResponse} from '@dutying/api/ward';
 import axiosInstance from '../client';
 import {type IWardAPI, type TGenerateAiAutofillScheduleDTO} from './type';
 

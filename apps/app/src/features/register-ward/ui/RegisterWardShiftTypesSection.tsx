@@ -2,7 +2,7 @@ import {produce} from 'immer';
 import {type Dispatch, type SetStateAction, useState} from 'react';
 import {type TWardShiftType} from '@/entities/ward';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
-import {type TCreateShiftTypeDTO, type TCreateWardDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO, type TCreateWardDTO} from '@dutying/api/ward';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 

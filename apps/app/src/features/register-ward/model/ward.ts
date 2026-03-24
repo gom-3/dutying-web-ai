@@ -1,4 +1,4 @@
-import {type TCreateWardDTO} from '@/shared/api/ward/type';
+import {type TCreateWardDTO} from '@dutying/api/ward';
 
 export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
     {

@@ -4,7 +4,7 @@ import {type TShiftTeam, type TWardConstraint, type TWardShiftType} from '@/enti
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 export type TWardSettingsTab = 'shiftTypes' | 'constraints';
