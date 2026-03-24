@@ -1,6 +1,14 @@
 import {describe, expect, it} from 'vitest';
 import {type TRequestShift} from '@/entities/shift';
-import {getDutyRequestStatusDescription, getMoveNurseOrderPayload, getRequestFocus} from '../utils';
+import {type TWardShiftType} from '@/entities/ward';
+import {
+    createRequestCalendarCellFocus,
+    getDutyRequestStatusDescription,
+    getMoveNurseOrderPayload,
+    getRequestCalendarCellState,
+    getRequestCalendarDivisionAction,
+    getRequestFocus,
+} from '../utils';
 
 const createRequestShift = (): TRequestShift => ({
     days: [],
@@ -187,5 +195,90 @@ describe('request-calendar utils', () => {
         });
 
         expect(description).toBe('현재 팀에 연결된 간호사 정보가 없어 달력 위치로는 바로 이동할 수 없어요.');
+    });
+
+    it('셀 선택용 focus 객체를 일관된 형태로 만든다', () => {
+        expect(
+            createRequestCalendarCellFocus({
+                shiftNurseName: '김간호',
+                shiftNurseId: 11,
+                day: 4,
+            }),
+        ).toEqual({
+            shiftNurseName: '김간호',
+            shiftNurseId: 11,
+            day: 4,
+        });
+    });
+
+    it('요청만 있는 셀 상태를 계산한다', () => {
+        const dayShiftType = {
+            wardShiftTypeId: 9,
+            name: '데이',
+            shortName: 'D',
+            color: '#000000',
+        } as TWardShiftType;
+
+        expect(
+            getRequestCalendarCellState({
+                currentShiftTypeId: null,
+                requestDutyRequest: {
+                    wardReqShiftId: 1,
+                    nurseId: 101,
+                    nurseName: '김간호',
+                    date: 3,
+                    requestDate: '2026-03-01',
+                    wardShiftTypeId: 9,
+                    wardShiftTypeShortName: 'D',
+                    wardShiftTypeColor: '#000000',
+                    isRead: false,
+                    isAccepted: null,
+                },
+                focus: {
+                    shiftNurseName: '김간호',
+                    shiftNurseId: 11,
+                    day: 2,
+                },
+                shiftNurseId: 11,
+                day: 2,
+                wardShiftTypeMap: new Map([[9, dayShiftType]]),
+            }),
+        ).toEqual({
+            isFocused: true,
+            shiftType: dayShiftType,
+            isOnlyRequest: true,
+        });
+    });
+
+    it('행 위치에 따라 분할 조정 액션을 결정한다', () => {
+        expect(
+            getRequestCalendarDivisionAction({
+                readonly: false,
+                rowIndex: 0,
+                rowCount: 3,
+                level: 0,
+                divisionCount: 2,
+            }),
+        ).toBe('create');
+
+        expect(
+            getRequestCalendarDivisionAction({
+                readonly: false,
+                rowIndex: 2,
+                rowCount: 3,
+                level: 0,
+                divisionCount: 2,
+            }),
+        ).toBe('delete');
+
+        expect(
+            getRequestCalendarDivisionAction({
+                readonly: true,
+                rowIndex: 0,
+                rowCount: 3,
+                level: 0,
+                divisionCount: 2,
+            }),
+        ).toBeNull();
     });
 });

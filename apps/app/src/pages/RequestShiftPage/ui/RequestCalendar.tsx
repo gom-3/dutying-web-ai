@@ -1,5 +1,5 @@
 import {type DropResult} from '@hello-pangea/dnd';
-import {useRef} from 'react';
+import {useCallback, useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
@@ -41,45 +41,79 @@ export default function ShiftCalendar() {
         actions: {selectNurse, moveNurseOrder, editDivision},
     } = useEditShiftTeam();
     const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
-    const focusedCellRef = useRef<HTMLParagraphElement>(null);
+    const focusedCellRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const clickAwayRef = useOnclickOutside(() => {
         changeFocus(null);
         selectNurse(null);
     });
-    const onDragEnd = ({source, destination, draggableId}: DropResult) => {
-        if (!destination || !shiftTeams || !requestShift || !currentShiftTeam) return null;
+    const handleDragEnd = useCallback(
+        ({source, destination, draggableId}: DropResult) => {
+            if (!destination || !shiftTeams || !requestShift || !currentShiftTeam) return null;
 
-        if (source.droppableId === destination.droppableId && destination.index === source.index) return;
+            if (source.droppableId === destination.droppableId && destination.index === source.index) return;
 
-        const movePayload = getMoveNurseOrderPayload({
-            source,
-            destination,
-            draggableId,
-            requestShift,
-        });
+            const movePayload = getMoveNurseOrderPayload({
+                source,
+                destination,
+                draggableId,
+                requestShift,
+            });
 
-        if (!movePayload) return;
+            if (!movePayload) return;
 
-        moveNurseOrder(
-            movePayload.nurseId,
-            currentShiftTeam.shiftTeamId,
-            currentShiftTeam.shiftTeamId,
-            movePayload.destinationDivisionNum,
-            movePayload.prevPriority,
-            movePayload.nextPriority,
-            getYearMonthLabel(year, month),
-        );
+            moveNurseOrder(
+                movePayload.nurseId,
+                currentShiftTeam.shiftTeamId,
+                currentShiftTeam.shiftTeamId,
+                movePayload.destinationDivisionNum,
+                movePayload.prevPriority,
+                movePayload.nextPriority,
+                getYearMonthLabel(year, month),
+            );
 
-        sendEvent(events.requestPage.calendar.moveNurse);
-    };
+            sendEvent(events.requestPage.calendar.moveNurse);
+        },
+        [currentShiftTeam, month, moveNurseOrder, requestShift, shiftTeams, year],
+    );
+    const handleSelectCell = useCallback(
+        (nextFocus: Parameters<typeof changeFocus>[0]) => {
+            changeFocus(nextFocus);
+            sendEvent(events.requestPage.calendar.focusCell);
+        },
+        [changeFocus],
+    );
+    const handleToggleFoldLevel = useCallback(
+        (level: number, expanded: boolean) => {
+            sendEvent(expanded ? events.requestPage.calendar.foldDivision : events.requestPage.calendar.spreadDivision);
+            foldLevel(level);
+        },
+        [foldLevel],
+    );
+    const handleCreateDivision = useCallback(
+        (priority: number) => {
+            if (!currentShiftTeam) return;
+
+            editDivision(currentShiftTeam.shiftTeamId, priority, 1, getYearMonthLabel(year, month));
+            sendEvent(events.makePage.calendar.createDivision);
+        },
+        [currentShiftTeam, editDivision, month, year],
+    );
+    const handleDeleteDivision = useCallback(
+        (priority: number) => {
+            if (!currentShiftTeam) return;
+
+            editDivision(currentShiftTeam.shiftTeamId, priority, -1, getYearMonthLabel(year, month));
+            sendEvent(events.makePage.calendar.deleteDivision);
+        },
+        [currentShiftTeam, editDivision, month, year],
+    );
 
     useRequestCalendarFocusScroll({focus, focusedCellRef, containerRef});
 
     if (!requestShift || !foldedLevels || !wardShiftTypeMap || !currentShiftTeam) return null;
 
     const unresolvedRequestCount = getUnresolvedRequestCount(dutyRequestStatus, dutyRequestList);
-    const yearMonthLabel = getYearMonthLabel(year, month);
     const dutyRequestLookup = createDutyRequestLookup(dutyRequestList);
     const connectedNurseIds = createConnectedNurseIdSet(currentShiftTeam);
     const shiftNurseIdByNurseId = createShiftNurseIdByNurseId(requestShift);
@@ -100,22 +134,15 @@ export default function ShiftCalendar() {
                         readonly={readonly}
                         separateWeekendColor={separateWeekendColor}
                         wardShiftTypeMap={wardShiftTypeMap}
-                        currentShiftTeam={currentShiftTeam}
                         dutyRequestLookup={dutyRequestLookup}
                         connectedNurseIds={connectedNurseIds}
                         focusedCellRef={focusedCellRef}
                         containerRef={containerRef}
-                        onDragEnd={onDragEnd}
-                        changeFocus={changeFocus}
-                        foldLevel={foldLevel}
-                        editDivision={editDivision}
-                        onFoldAnalytics={(expanded) =>
-                            sendEvent(expanded ? events.requestPage.calendar.foldDivision : events.requestPage.calendar.spreadDivision)
-                        }
-                        onFocusAnalytics={() => sendEvent(events.requestPage.calendar.focusCell)}
-                        onCreateDivisionAnalytics={() => sendEvent(events.makePage.calendar.createDivision)}
-                        onDeleteDivisionAnalytics={() => sendEvent(events.makePage.calendar.deleteDivision)}
-                        yearMonthLabel={yearMonthLabel}
+                        onDragEnd={handleDragEnd}
+                        onSelectCell={handleSelectCell}
+                        onToggleFoldLevel={handleToggleFoldLevel}
+                        onCreateDivision={handleCreateDivision}
+                        onDeleteDivision={handleDeleteDivision}
                     />
                 </div>
             </Card>
