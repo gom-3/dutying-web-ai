@@ -1,7 +1,15 @@
 import {events, sendEvent} from '@/analytics';
-import {type TShift, type TShiftTeam} from '@/entities';
-import {shiftToExcel} from '@/features/shift-editor/model/shift-to-excel';
-import {CameraIcon, DutyIconSelected, HistoryBackIcon, HistoryNextIcon, PenIcon, SaveCompleteIcon, SavingIcon, ShareIcon} from '@/shared/assets/svg';
+import {type TShiftTeam} from '@/entities';
+import {
+    CameraIcon,
+    DutyIconSelected,
+    HistoryBackIcon,
+    HistoryNextIcon,
+    PenIcon,
+    SaveCompleteIcon,
+    SavingIcon,
+    ShareIcon,
+} from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import {showValidationFeedback} from '@/shared/util/feedback';
@@ -9,7 +17,6 @@ import {showValidationFeedback} from '@/shared/util/feedback';
 type TToolbarActionGroupProps = {
     year: number;
     month: number;
-    shift: TShift | null;
     readonly: boolean;
     saveStatus: 'pending' | 'saved';
     currentShiftTeam: TShiftTeam | null;
@@ -18,16 +25,17 @@ type TToolbarActionGroupProps = {
     onRedo: () => void;
     onPostShift: () => void;
     onToggleEditMode: () => void;
+    onDownloadExcel: () => void;
     onDownloadImage: () => void;
     onCreateNextMonth: () => void;
     onChangeShiftTeam: (shiftTeamId: number) => void;
+    isDownloadingExcel: boolean;
     isDownloadingImage: boolean;
 };
 
 export function ToolbarActionGroup({
     year,
     month,
-    shift,
     readonly,
     saveStatus,
     currentShiftTeam,
@@ -36,9 +44,11 @@ export function ToolbarActionGroup({
     onRedo,
     onPostShift,
     onToggleEditMode,
+    onDownloadExcel,
     onDownloadImage,
     onCreateNextMonth,
     onChangeShiftTeam,
+    isDownloadingExcel,
     isDownloadingImage,
 }: TToolbarActionGroupProps) {
     return (
@@ -124,15 +134,13 @@ export function ToolbarActionGroup({
                         id="El3"
                         variant="default"
                         className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
+                        disabled={isDownloadingExcel}
                         onClick={() => {
-                            if (shift) {
-                                shiftToExcel(month, shift);
-                            }
-
+                            onDownloadExcel();
                             sendEvent(events.makePage.toolbar.downloadExcel);
                         }}
                     >
-                        엑셀 저장
+                        {isDownloadingExcel ? '엑셀 저장 중' : '엑셀 저장'}
                         <ShareIcon className="h-6 w-6" />
                     </Button>
                     <Button

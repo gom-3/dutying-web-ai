@@ -25,10 +25,12 @@ interface IToolbarProps {
     onRedo: () => void;
     onPostShift: () => void;
     onToggleEditMode: () => void;
+    onDownloadExcel: () => void;
     onDownloadImage: () => void;
     onCreateNextMonth: () => void;
     onChangeShiftTeam: (shiftTeamId: number) => void;
     onUpdateConstraint: (constraint: TWardConstraint) => void;
+    isDownloadingExcel: boolean;
     isDownloadingImage: boolean;
 }
 
@@ -48,10 +50,12 @@ function Toolbar({
     onRedo,
     onPostShift,
     onToggleEditMode,
+    onDownloadExcel,
     onDownloadImage,
     onCreateNextMonth,
     onChangeShiftTeam,
     onUpdateConstraint,
+    isDownloadingExcel,
     isDownloadingImage,
 }: IToolbarProps) {
     const [openInfo, setOpenInfo] = useState(false);
@@ -123,7 +127,6 @@ function Toolbar({
             <ToolbarActionGroup
                 year={year}
                 month={month}
-                shift={shift}
                 readonly={readonly}
                 saveStatus={saveStatus}
                 currentShiftTeam={currentShiftTeam}
@@ -132,9 +135,11 @@ function Toolbar({
                 onRedo={onRedo}
                 onPostShift={onPostShift}
                 onToggleEditMode={onToggleEditMode}
+                onDownloadExcel={onDownloadExcel}
                 onDownloadImage={onDownloadImage}
                 onCreateNextMonth={onCreateNextMonth}
                 onChangeShiftTeam={onChangeShiftTeam}
+                isDownloadingExcel={isDownloadingExcel}
                 isDownloadingImage={isDownloadingImage}
             />
         </div>

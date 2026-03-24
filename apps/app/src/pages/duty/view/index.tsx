@@ -54,8 +54,12 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                 <ManagementActionButton variant="neutral" onClick={handlers.postShift} disabled={!state.shift}>
                                     {t('page.duty.publish')}
                                 </ManagementActionButton>
-                                <ManagementActionButton variant="neutral" onClick={handlers.exportExcel} disabled={!state.shift}>
-                                    {t('page.duty.exportExcel')}
+                                <ManagementActionButton
+                                    variant="neutral"
+                                    onClick={handlers.exportExcel}
+                                    disabled={!state.shift || state.isExportingExcel}
+                                >
+                                    {state.isExportingExcel ? '엑셀 저장 중' : t('page.duty.exportExcel')}
                                 </ManagementActionButton>
                                 <ManagementActionButton onClick={handlers.enableEdit} disabled={!state.shift}>
                                     {t('page.duty.editShift')}
@@ -120,33 +124,33 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                         state.shiftTeamsStatus === 'success' &&
                         state.shiftTeams.length > 0 &&
                         state.status === 'error' && (
-                        <PageState
-                            tone="error"
-                            title={t('page.duty.error')}
-                            description={t('page.state.errorDescription')}
-                            action={{label: t('page.state.retry'), onClick: handlers.retry}}
-                            className="py-0"
-                        />
-                    )}
+                            <PageState
+                                tone="error"
+                                title={t('page.duty.error')}
+                                description={t('page.state.errorDescription')}
+                                action={{label: t('page.state.retry'), onClick: handlers.retry}}
+                                className="py-0"
+                            />
+                        )}
                     {!showBootstrapLoadingState &&
                         !showBootstrapErrorState &&
                         state.shiftTeamsStatus === 'success' &&
                         state.shiftTeams.length > 0 &&
                         state.status === 'success' &&
                         !state.shift && (
-                        <PageState
-                            tone="empty"
-                            title={t('page.duty.emptyTitle', {teamName: state.currentShiftTeamName, month: state.month})}
-                            description={t('page.duty.emptyDescription', {month: state.month})}
-                            className="py-0"
-                        >
-                            <div className="mt-1 flex justify-center">
-                                <ManagementActionButton variant="secondary" size="lg" onClick={handlers.goCurrentMonthMake}>
-                                    {t('page.duty.createCurrentMonth')}
-                                </ManagementActionButton>
-                            </div>
-                        </PageState>
-                    )}
+                            <PageState
+                                tone="empty"
+                                title={t('page.duty.emptyTitle', {teamName: state.currentShiftTeamName, month: state.month})}
+                                description={t('page.duty.emptyDescription', {month: state.month})}
+                                className="py-0"
+                            >
+                                <div className="mt-1 flex justify-center">
+                                    <ManagementActionButton variant="secondary" size="lg" onClick={handlers.goCurrentMonthMake}>
+                                        {t('page.duty.createCurrentMonth')}
+                                    </ManagementActionButton>
+                                </div>
+                            </PageState>
+                        )}
                     {!showBootstrapLoadingState && !showBootstrapErrorState && state.status === 'success' && state.shift && (
                         <div
                             ref={refs.editorRef}

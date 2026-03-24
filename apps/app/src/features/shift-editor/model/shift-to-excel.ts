@@ -2,6 +2,25 @@
 
 import {type TShift} from '@/entities/shift';
 
+const SHIFT_EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+export function buildShiftExcelFileName(month: number) {
+    return `${month}월 근무표.xlsx`;
+}
+
+export function downloadExcelBuffer(data: BlobPart, fileName: string) {
+    const blob = new Blob([data], {
+        type: SHIFT_EXCEL_MIME_TYPE,
+    });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+}
+
 export const shiftToExcel = async (month: number, shift: TShift) => {
     const Excel = await import('exceljs');
     const flatRows = shift.divisionShiftNurses.flatMap((row) => row);
@@ -112,18 +131,9 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
         });
     });
 
-    workbook.xlsx.writeBuffer().then((data) => {
-        const blob = new Blob([data], {
-            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        });
-        const url = window.URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
+    const data = await workbook.xlsx.writeBuffer();
 
-        anchor.href = url;
-        anchor.download = `${month}월 근무표.xlsx`;
-        anchor.click();
-        window.URL.revokeObjectURL(url);
-    });
+    downloadExcelBuffer(data, buildShiftExcelFileName(month));
 
     return workbook;
 };
