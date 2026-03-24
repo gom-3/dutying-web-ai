@@ -1,102 +1,86 @@
-import {type JSX, useCallback, useEffect, useState} from 'react';
-import {type TNurse} from '@/entities/nurse';
+import {useCallback, useMemo, useState} from 'react';
+import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 
-export type TStep = {
-    name: string;
-    contents: JSX.Element;
-    description: JSX.Element | null;
+export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
+
+type TCreateAccountFeedback = {
+    tone: 'neutral' | 'error';
+    message: string | null;
 };
 
-type TCreateAccountRequestDTO = Pick<TNurse, 'name' | 'gender' | 'phoneNum' | 'employmentDate' | 'isWorker'>;
+type TUseCreateAccountParams = {
+    isValid: boolean;
+    submit: (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => Promise<unknown>;
+};
 
-const useCreateAccount = () => {
-    // 추후 server state로 변경
-    const [account, setAccount] = useState<TCreateAccountRequestDTO>({
-        name: '',
-        gender: '여',
-        phoneNum: '',
-        employmentDate: '',
-        isWorker: true,
-    });
-    const [isFilled, setIsFilled] = useState<boolean>(false);
-    const [error, setError] = useState<{
-        key: keyof TCreateAccountRequestDTO;
-        message: string;
-    } | null>(null);
-    /** 인풋값이 상태에 반영될 수 있는지 체크하며 업데이트 합니다. */
-    const handleChangeAccount = (key: keyof TCreateAccountRequestDTO, value: string | boolean) => {
-        if (key === 'gender' && value !== '여' && value !== '남') return;
+const DEFAULT_FEEDBACK: TCreateAccountFeedback = {
+    tone: 'neutral',
+    message: null,
+};
+const FEEDBACK_BY_STATUS: Record<Exclude<TCreateAccountStatus, 'idle'>, TCreateAccountFeedback> = {
+    loading: {
+        tone: 'neutral',
+        message: '계정 정보를 저장하고 있어요.',
+    },
+    success: {
+        tone: 'neutral',
+        message: '계정 정보를 저장했어요.',
+    },
+    failure: {
+        tone: 'error',
+        message: '입력한 계정 정보를 다시 확인해 주세요.',
+    },
+    exception: {
+        tone: 'error',
+        message: '계정 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.',
+    },
+};
 
-        if (key === 'name') {
-            if (/![a-z|A-Z|ㄱ-ㅎ|ㅏ-ㅣ|가-힣|s]/.test(value as string)) return;
+function isHandledFailure(error: unknown) {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
 
-            if (typeof value === 'string' && value.length > 10) return;
+    return code === 400 || code === 401 || code === 404;
+}
+
+const useCreateAccount = ({isValid, submit}: TUseCreateAccountParams) => {
+    const [createAccountStatus, setCreateAccountStatus] = useState<TCreateAccountStatus>('idle');
+    const createAccountFeedback = useMemo(() => {
+        if (createAccountStatus === 'idle') {
+            return DEFAULT_FEEDBACK;
         }
 
-        if (key === 'phoneNum') {
-            if (/![d|-]/.test(value as string)) return;
+        return FEEDBACK_BY_STATUS[createAccountStatus];
+    }, [createAccountStatus]);
+    const resetCreateAccountStatus = useCallback(() => {
+        setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' ? currentStatus : 'idle'));
+    }, []);
+    const handleCreateAccount = useCallback(
+        async (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => {
+            if (!isValid) {
+                setCreateAccountStatus('failure');
 
-            if (typeof value === 'string') {
-                if (value.length > 13) return;
+                return;
             }
-        }
 
-        if (key === 'employmentDate') {
-            if (/![d|.]/.test(value as string)) return;
+            setCreateAccountStatus('loading');
 
-            if (typeof value === 'string') {
-                if (value.length > 10) return;
+            try {
+                await submit(createNurseDTO);
+                setCreateAccountStatus('success');
+            } catch (error) {
+                setCreateAccountStatus(isHandledFailure(error) ? 'failure' : 'exception');
+                throw error;
             }
-        }
-
-        setAccount({...account, [key]: value});
-    };
-    /** 서버에 제출하기 전 검토를 합니다. */
-    const validate = useCallback(() => {
-        if (!/^[가-힣|A-Z|a-z]{2,10}$/.test(account.name)) {
-            setIsFilled(false);
-            setError({
-                key: 'name',
-                message: '이름은 2~10자 한/영문에 숫자나 특수문자를 사용할 수 없습니다.',
-            });
-
-            return false;
-        }
-
-        if (!/(\d{3})-(\d{4})-(\d{4})/.test(account.phoneNum)) {
-            setIsFilled(false);
-            setError({key: 'name', message: '전화번호 형식을 지켜주세요.'});
-
-            return false;
-        }
-
-        if (account.gender !== '여' && account.gender !== '남') {
-            setIsFilled(false);
-            setError({key: 'name', message: '여, 남만 선택 가능합니다.'});
-
-            return false;
-        }
-
-        setIsFilled(true);
-        setError(null);
-
-        return true;
-    }, [account]);
-
-    useEffect(() => {
-        validate();
-    }, [account, validate]);
-
-    const handleCreateAccount = async () => {
-        //@TODO 상태 변경
-    };
+        },
+        [isValid, submit],
+    );
 
     return {
-        account,
-        isFilled,
-        error,
-        handleChangeAccount,
+        createAccountStatus,
+        createAccountFeedback,
+        isSubmitting: createAccountStatus === 'loading',
         handleCreateAccount,
+        resetCreateAccountStatus,
     };
 };
 

@@ -124,6 +124,9 @@ const useRegister = () => {
 
             await NurseAPI.createAccountNurse(accountId, createNurseDTO);
             await changeAccountStatus({accountId, status: 'WARD_SELECT_PENDING'});
+        } catch (error) {
+            showActionErrorFeedback(error, '계정 생성에 실패했습니다.');
+            throw error;
         } finally {
             setLoading(false);
         }
