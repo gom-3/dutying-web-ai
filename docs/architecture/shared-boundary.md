@@ -19,9 +19,15 @@
 현재 코드 예시:
 
 - [`apps/app/src/shared/api/client.ts`](../../apps/app/src/shared/api/client.ts)
-  - `axios`, `toast`, `window.location`, `import.meta.env`를 직접 사용
+    - `axios`, `toast`, `window.location`, `import.meta.env`를 직접 사용
+- [`apps/app/src/shared/api/account`](../../apps/app/src/shared/api/account)
+- [`apps/app/src/shared/api/nurse`](../../apps/app/src/shared/api/nurse)
+- [`apps/app/src/shared/api/ward`](../../apps/app/src/shared/api/ward)
+    - `packages/api` 계약에 app 전용 `axiosInstance`와 app 전용 endpoint를 결합하는 integration layer
+- [`apps/app/src/shared/api/file`](../../apps/app/src/shared/api/file)
+- [`apps/app/src/shared/api/auth`](../../apps/app/src/shared/api/auth)
 - [`apps/app/src/shared/config/runtime.ts`](../../apps/app/src/shared/config/runtime.ts)
-  - 앱 URL, redirect 안전성, env fallback을 관리
+    - 앱 URL, redirect 안전성, env fallback을 관리
 - [`apps/app/src/shared/ui/primitives`](../../apps/app/src/shared/ui/primitives)
 - [`apps/app/src/shared/ui/form-controls`](../../apps/app/src/shared/ui/form-controls)
 
@@ -86,6 +92,8 @@
 - 근무표 편집, 신청근무 처리, 병동 생성 같은 업무 플로우
 - 다른 앱에서도 쓸 수 있는 API response type, DTO, 범용 타입
 - package를 한 번 더 감싸기만 하는 compat re-export
+
+단, `packages/api` factory에 app 전용 `axiosInstance`를 주입해 실제 런타임 client를 만드는 코드는 `apps/app/src/shared/api/*`에 둔다. 이 계층은 package 소유권을 침범하는 것이 아니라 app integration 역할이다.
 
 ## 현재 코드 기준 예시
 

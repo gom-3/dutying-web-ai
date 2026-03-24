@@ -82,7 +82,7 @@
 
 - `apps/app/src/features/shift-editor/model/shift-to-excel.ts`
     - 브라우저 다운로드 anchor에 의존
-- `apps/app/src/features/file/uploadFile.ts`
+- `apps/app/src/features/file/model/upload-file.ts`
 - `apps/app/src/shared/api/file/index.ts`
     - web `File`, `FormData`, presigned URL 업로드에 의존
 

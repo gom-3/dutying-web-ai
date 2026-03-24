@@ -77,6 +77,8 @@ slice-name/
 - `model/`: hook, store, adapter, type, 계산 로직
 - 하위 단계가 필요하면 `ui/...`, `model/...` 아래에서만 확장
 
+현재 코드에는 `features/auth/useAuth`, `features/ward/useEditWard`, `pages/member/*`처럼 예전 naming/slice 패턴이 일부 남아 있습니다. 이 디렉터리들은 호환을 위해 유지하지만, 신규 구조의 기준으로 복제하지 않습니다. 남은 평탄화/rename 작업은 별도 follow-up 티켓으로 분리합니다.
+
 구조 기준 상세 문서:
 
 - [코드베이스 구조 가이드](docs/architecture/codebase-structure.md)
@@ -90,6 +92,7 @@ slice-name/
 - 도메인 조회 모델이나 엔티티 UI라면 `apps/app/src/entities/*`
 - 브라우저 런타임에 묶인 공용 코드라면 `apps/app/src/shared/*`
 - 다른 앱에서도 그대로 쓸 계약/타입/유틸이라면 `packages/*`
+- package를 직접 import 할 수 있는 계약/타입은 `shared` 재수출 대신 `packages/*`를 바로 사용
 
 예시:
 
