@@ -2,14 +2,14 @@ import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
 import {useOnboardingWardWizard} from './model';
-import HeaderLogo from './ui/HeaderLogo';
-import OnboardingStepLayout from './ui/OnboardingStepLayout';
-import SectionHeader from './ui/SectionHeader';
-import NurseStep from './ui/steps/NurseStep';
-import ShiftTypeStep from './ui/steps/ShiftTypeStep';
-import SkillLevelModal from './ui/steps/SkillLevelModal';
-import UploadStep from './ui/steps/UploadStep';
-import WizardButton from './ui/WizardButton';
+import HeaderLogo from './ui/header-logo';
+import OnboardingStepLayout from './ui/onboarding-step-layout';
+import SectionHeader from './ui/section-header';
+import NurseStep from './ui/steps/nurse-step';
+import ShiftTypeStep from './ui/steps/shift-type-step';
+import SkillLevelModal from './ui/steps/skill-level-modal';
+import UploadStep from './ui/steps/upload-step';
+import WizardButton from './ui/wizard-button';
 
 function OnboardingWardCreatePage() {
     const navigate = useNavigate();

@@ -3,8 +3,8 @@ import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useState} from 'react';
 import {type TNurse} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
-import useAuth from '@/features/auth/useAuth';
-import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward/skill-level';
+import useAuth from '@/features/auth';
+import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward-skill/model/skill-level';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {WorkersHeader, WorkersList, WorkersTableHeader} from './workers-sections';
 

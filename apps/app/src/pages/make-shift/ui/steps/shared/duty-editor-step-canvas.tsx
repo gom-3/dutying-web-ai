@@ -1,8 +1,8 @@
 import {type ClipboardEventHandler, type ComponentProps, type KeyboardEventHandler, type RefObject} from 'react';
 import {type TShift} from '@/entities';
 import {type TDutyDoc} from '@/features/shift-editor';
+import type ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {ShiftEditorCanvas} from '@/features/shift-editor/ui/complex-view/shift-editor-canvas';
-import ShiftCalendar from '@/features/shift-editor/ui/complex-view/shift-calendar';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 

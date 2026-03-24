@@ -1,7 +1,7 @@
 import {type DropResult} from '@hello-pangea/dnd';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
-import {type TFocus} from '@/features/shift/useRequestShift/type';
+import {type TFocus} from '@/features/request-shift/model/types';
 
 const PRIORITY_GAP = 2024;
 

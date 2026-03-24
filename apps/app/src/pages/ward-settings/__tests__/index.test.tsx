@@ -21,7 +21,7 @@ const translations: Record<string, string> = {
     'page.wardSettings.constraints.loading': '제약 조건을 불러오는 중이에요',
 };
 
-vi.mock('../model/wardSettingsHook', () => ({
+vi.mock('../model/ward-settings-hook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
 }));
 
@@ -37,7 +37,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     }),
 }));
 
-vi.mock('@/features/ward/CreateShiftModal', () => ({
+vi.mock('@/features/create-shift-modal', () => ({
     default: ({open, shiftType}: {open: boolean; shiftType: {name: string} | null}) =>
         open ? <div>{shiftType ? `edit-modal:${shiftType.name}` : 'create-modal'}</div> : null,
 }));

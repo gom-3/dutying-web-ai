@@ -1,7 +1,7 @@
 import {useEffect, useMemo} from 'react';
-import useTutorialUseCase from '@/features/ui/useTutorial';
-import {useTutorialStore} from '@/features/ui/useTutorial/store';
-import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import useEditShiftTeam from '@/features/edit-shift-team';
+import useTutorialUseCase from '@/features/tutorial';
+import {useTutorialStore} from '@/features/tutorial/model/store';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';

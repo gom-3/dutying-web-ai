@@ -1,11 +1,11 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {describe, expect, it, vi, beforeEach} from 'vitest';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import {AuthLayout} from '../auth-layout';
 
-vi.mock('@/features/auth/useAuth', () => ({
+vi.mock('@/features/auth', () => ({
     default: vi.fn(),
 }));
 

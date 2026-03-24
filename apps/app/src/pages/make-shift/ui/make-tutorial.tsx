@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
-import useTutorialUseCase from '@/features/ui/useTutorial';
-import {useTutorialStore} from '@/features/ui/useTutorial/store';
+import useTutorialUseCase from '@/features/tutorial';
+import {useTutorialStore} from '@/features/tutorial/model/store';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import {TutorialPortal} from '@/widgets/tutorial/TutorialPortal';

@@ -1,10 +1,10 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import {render} from '@/shared/util/test-utils';
 import LandingPageRedirect, {getLandingRedirectPath} from '../landing-page-redirect';
 
-vi.mock('@/features/auth/useAuth', () => ({
+vi.mock('@/features/auth', () => ({
     default: vi.fn(),
 }));
 

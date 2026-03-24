@@ -48,7 +48,9 @@ describe('shift-to-image', () => {
 
         vi.mocked(toBlob).mockResolvedValue(blob);
 
-        const downloadSpy = vi.spyOn(document, 'createElement').mockReturnValue({click: vi.fn(), href: '', download: ''} as unknown as HTMLAnchorElement);
+        const downloadSpy = vi
+            .spyOn(document, 'createElement')
+            .mockReturnValue({click: vi.fn(), href: '', download: ''} as unknown as HTMLAnchorElement);
         const createObjectURLSpy = vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:url');
         const revokeObjectURLSpy = vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
 

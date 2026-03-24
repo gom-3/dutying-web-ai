@@ -1,5 +1,5 @@
-import {type DropResult} from '@hello-pangea/dnd';
 import {type TCreateWardDTO} from '@dutying/api/ward';
+import {type DropResult} from '@hello-pangea/dnd';
 
 export type TOnboardingStep = 1 | 2 | 3 | 4;
 

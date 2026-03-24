@@ -2,7 +2,7 @@ import {MakeShiftEditorView} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementMonthTeamHeader, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {type TDutyHook} from '../model/dutyHook';
+import {type TDutyHook} from '../model/duty-hook';
 
 type TDutyPageViewProps = {
     duty: TDutyHook;

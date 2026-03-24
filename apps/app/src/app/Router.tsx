@@ -7,11 +7,11 @@ import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
-const RedirectPage = lazy(() => import('@/pages/login/RedirectPage.tsx'));
+const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
-const EnterWard = lazy(() => import('@/pages/register/EnterWardPage.tsx'));
-const RegisterWard = lazy(() => import('@/pages/register/RegisterWardPage.tsx'));
+const EnterWard = lazy(() => import('@/pages/register/enter-ward-page.tsx'));
+const RegisterWard = lazy(() => import('@/pages/register/register-ward-page.tsx'));
 const OnboardingWardCreatePage = lazy(() => import('@/pages/onboarding-ward-create'));
 const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const DutyPage = lazy(() => import('@/pages/duty'));

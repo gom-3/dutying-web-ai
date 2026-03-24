@@ -6,7 +6,7 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
-import useAuth from '@/features/auth/useAuth';
+import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';

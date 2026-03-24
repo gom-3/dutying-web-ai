@@ -148,14 +148,11 @@ shared/
 - [`packages/api/src/client.ts`](../../packages/api/src/client.ts)
 - [`packages/domain/src/ward.ts`](../../packages/domain/src/ward.ts)
 
-### 레거시 예외
+### 현재 source of truth
 
-- 기존 코드에는 `useAuth`, `useEditWard`, `CreateShiftModal`, `NavigationBarItem`처럼 예전 naming 패턴이 남아 있다.
-- `features/auth/*`, `features/shift/*`, `features/ward/*`, `features/ui/*`처럼 과거 namespace 성격 디렉터리도 남아 있다.
-- `pages/member/*`, `pages/register/*`, `pages/request-shift/*`, `pages/onboarding-ward-create/*`에는 PascalCase 파일과 예전 hook naming이 섞여 있다.
-- 이 패턴은 호환을 위해 유지할 수는 있지만, 신규 page/feature slice에서 그대로 복제하지 않는다.
-- DUT-936 기준으로 새 규칙의 source of truth는 `kebab-case` + `index.ts(x)` + `ui/` + `model/`이다.
-- 특히 신규 slice 루트에 `components/`, `hooks/`, `view/`를 병렬로 두는 방식은 더 이상 늘리지 않는다.
+- DUT-936 기준으로 `apps/app/src/pages/*`, `apps/app/src/features/*`의 slice는 `kebab-case` + `index.ts(x)` + `ui/` + `model/` 규칙으로 정리되어 있다.
+- 신규 page/feature slice는 이 기준을 그대로 따른다.
+- 특히 slice 루트에 `components/`, `hooks/`, `view/`를 병렬로 두는 방식은 더 이상 늘리지 않는다.
 
 ## 4. page / feature slice 규칙
 
@@ -188,8 +185,8 @@ slice-name/
 - type
 - 계산 로직
 - 테스트는 가장 가까운 owner 아래에 둔다
-    - 계산/상태 로직: `model/__tests__`
-    - route entry 또는 legacy slice 테스트: slice 루트 `__tests__`
+- 계산/상태 로직: `model/__tests__`
+- route entry 또는 slice public entry 테스트: slice 루트 `__tests__`
 
 ### 허용되는 축약
 
@@ -267,10 +264,8 @@ apps/app/src/features/file/
 - `packages/*`로 올릴 수 있는 코드를 app 내부에 가둬두지 않았는가?
 - 신규 파일 naming이 `kebab-case`와 `index.ts(x)` 규칙을 따르는가?
 
-## 7. DUT-936 이후 follow-up 범위
+## 7. DUT-936 마감 기준
 
 - 이 티켓의 목적은 구조 규칙을 하나의 기준으로 고정하고, 현재 코드와 문서의 모순을 해소하는 것이다.
-- 남아 있는 legacy namespace flattening과 광범위한 PascalCase 파일 rename은 별도 티켓으로 분리한다.
-- 우선순위 후보:
-    - `features/auth/*`, `features/shift/*`, `features/ward/*`, `features/ui/*`의 namespace 평탄화
-    - `pages/member/*`, `pages/register/*`, `pages/request-shift/*`, `pages/onboarding-ward-create/*`의 legacy file naming 정리
+- `apps/app/src/pages/*`, `apps/app/src/features/*`, 구조 문서는 현재 기준으로 정렬되어 있어 DUT-936 마감 조건을 충족한다.
+- 이후 후속 작업이 생기더라도 그것은 새 구조 개편이나 추가 추상화 논의이지, 현재 규칙 정합성의 미해결 항목은 아니다.

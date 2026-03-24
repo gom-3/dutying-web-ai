@@ -77,7 +77,7 @@ slice-name/
 - `model/`: hook, store, adapter, type, 계산 로직
 - 하위 단계가 필요하면 `ui/...`, `model/...` 아래에서만 확장
 
-현재 코드에는 `features/auth/useAuth`, `features/ward/useEditWard`, `pages/member/*`처럼 예전 naming/slice 패턴이 일부 남아 있습니다. 이 디렉터리들은 호환을 위해 유지하지만, 신규 구조의 기준으로 복제하지 않습니다. 남은 평탄화/rename 작업은 별도 follow-up 티켓으로 분리합니다.
+`apps/app/src/pages/*`와 `apps/app/src/features/*`는 DUT-936 기준으로 `kebab-case` + `index.ts(x)` + `ui/` + `model/` 규칙에 맞춰 정리했습니다. 신규 slice도 같은 기준을 그대로 따릅니다.
 
 구조 기준 상세 문서:
 

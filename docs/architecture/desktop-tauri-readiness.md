@@ -54,11 +54,11 @@
 
 - `apps/app/src/pages/login/index.tsx`
     - OAuth 복귀 URL을 런타임 app public URL에 의존
-- `apps/app/src/pages/login/RedirectPage.tsx`
+- `apps/app/src/pages/login/redirect-page.tsx`
     - `location.search`에서 access token 직접 파싱
 - `apps/app/src/shared/api/client.ts`
     - 401 시 `window.location.pathname/search` 기반 refresh 이동
-- `apps/app/src/features/auth/useAuth/index.ts`
+- `apps/app/src/features/auth/index.ts`
     - `window.history.back`, `location.replace`
 - `apps/app/src/pages/refresh/index.tsx`
     - refresh 완료 후 `location.replace`
@@ -66,16 +66,16 @@
 ### 저장/상태 복구
 
 - `apps/app/src/pages/make-shift/model/make-shift-store.ts`
-- `apps/app/src/features/shift/editDuty/model/utils/prefs.ts`
+- `apps/app/src/features/edit-duty/model/utils/prefs.ts`
 - `apps/app/src/features/shift-editor/model/persistence.ts`
     - 모두 `window.localStorage` 직접 사용
 
 ### 클립보드
 
-- `apps/app/src/pages/member/ui/WardInfo.tsx`
-- `apps/app/src/pages/register/ui/EnterWard.tsx`
-- `apps/app/src/features/register-ward/ui/RegisterWardShiftTeamsSection.tsx`
-- `apps/app/src/features/shift-editor/model/useShiftEditorKeyBindings.ts`
+- `apps/app/src/pages/member/ui/ward-info.tsx`
+- `apps/app/src/pages/register/ui/enter-ward.tsx`
+- `apps/app/src/features/register-ward/ui/register-ward-shift-teams-section.tsx`
+- `apps/app/src/features/shift-editor/model/use-shift-editor-key-bindings.ts`
     - `navigator.clipboard` 직접 사용
 
 ### 다운로드 / 파일

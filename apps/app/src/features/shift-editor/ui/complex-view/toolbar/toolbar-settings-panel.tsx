@@ -2,9 +2,9 @@ import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import {type TWardConstraint} from '@/entities';
 import {CancelIcon} from '@/shared/assets/svg';
-import SetConstraint from '../editWard/set-constraint';
-import SetDesignTheme from '../editWard/set-design-theme';
-import SetShiftType from '../editWard/set-shift-type';
+import SetConstraint from '../edit-ward/set-constraint';
+import SetDesignTheme from '../edit-ward/set-design-theme';
+import SetShiftType from '../edit-ward/set-shift-type';
 import {type TToolbarSetupTab} from '../types';
 
 type TToolbarSettingsPanelProps = {

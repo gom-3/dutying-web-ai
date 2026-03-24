@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {type TNurse} from '@/entities/nurse';
-import useEditShiftTeam from '@/features/ward/useEditShiftTeam';
+import useEditShiftTeam from '@/features/edit-shift-team';
 import {NurseEditForm} from './nurse-edit-modal/nurse-edit-form';
 
 function NurseEditModal() {
