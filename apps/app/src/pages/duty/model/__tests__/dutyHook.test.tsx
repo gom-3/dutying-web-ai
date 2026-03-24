@@ -15,7 +15,7 @@ const {
     mockShiftToDoc,
     mockDocToWardShiftsDTO,
     mockBuildWorkKeyMap,
-    mockShiftToExcel,
+    mockExportExcel,
     mockHandleGetAccountMe,
     mockCommands,
 } = vi.hoisted(() => ({
@@ -28,7 +28,7 @@ const {
     mockShiftToDoc: vi.fn(),
     mockDocToWardShiftsDTO: vi.fn(),
     mockBuildWorkKeyMap: vi.fn(),
-    mockShiftToExcel: vi.fn(),
+    mockExportExcel: vi.fn(),
     mockHandleGetAccountMe: vi.fn(),
     mockCommands: {
         init: vi.fn(),
@@ -109,8 +109,15 @@ vi.mock('@/features/shift-editor', () => ({
     buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
     docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
     shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
-    shiftToExcel: (...args: unknown[]) => mockShiftToExcel(...args),
     useShiftEditorCommands: () => mockCommands,
+    useShiftExcelExport: (options: {disabled?: boolean}) => ({
+        isExporting: false,
+        exportExcel: () => {
+            if (!options.disabled) {
+                mockExportExcel();
+            }
+        },
+    }),
     useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
     useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
 }));
@@ -463,7 +470,7 @@ describe('useDutyHook', () => {
             result.current.handlers.exportExcel();
         });
 
-        expect(mockShiftToExcel).toHaveBeenCalledWith(7, shift);
+        expect(mockExportExcel).toHaveBeenCalledTimes(1);
     });
 
     it('skips excel export when there is no shift data', async () => {
@@ -481,7 +488,7 @@ describe('useDutyHook', () => {
             result.current.handlers.exportExcel();
         });
 
-        expect(mockShiftToExcel).not.toHaveBeenCalled();
+        expect(mockExportExcel).not.toHaveBeenCalled();
     });
 
     it('navigates to the current month make page with the selected shift team', async () => {

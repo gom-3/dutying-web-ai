@@ -7,10 +7,10 @@ import {
     buildWorkKeyMap,
     docToWardShiftsDTO,
     shiftToDoc,
-    shiftToExcel,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
+    useShiftExcelExport,
     useShiftEditorStore,
 } from '@/features/shift-editor';
 import useLoadingUseCase from '@/features/ui/useLoading';
@@ -98,6 +98,11 @@ export function useDutyHook() {
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
+    const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({
+        month,
+        shift,
+        disabled: !shift,
+    });
     const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const shiftTeamsStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
 
@@ -225,9 +230,7 @@ export function useDutyHook() {
         await queryClient.invalidateQueries({queryKey: dutyQueryKey});
     };
     const handleExportExcel = () => {
-        if (!shift) return;
-
-        void shiftToExcel(month, shift);
+        void exportExcel();
     };
     const handleRetry = () => {
         if (wardId === null) {
@@ -255,6 +258,7 @@ export function useDutyHook() {
             readonly,
             shift,
             status,
+            isExportingExcel,
             doc,
         },
         refs: {

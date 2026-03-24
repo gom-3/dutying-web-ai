@@ -4,6 +4,7 @@ export * from './shift-adapter';
 export * from './shift-to-excel';
 export * from './shift-to-image';
 export * from './useShiftEditorCommands';
+export * from './useShiftExcelExport';
 export * from './useShiftImageExport';
 export * from './useShiftEditorKeyBindings';
 export {buildViolationMap} from './validator';

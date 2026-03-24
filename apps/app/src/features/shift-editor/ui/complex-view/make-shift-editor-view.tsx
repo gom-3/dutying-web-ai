@@ -1,9 +1,9 @@
 import {type ComponentProps, useRef} from 'react';
 import {type TShift} from '@/entities';
-import {type TDutyDoc, useShiftImageExport} from '@/features/shift-editor/model';
+import {type TDutyDoc, useShiftExcelExport, useShiftImageExport} from '@/features/shift-editor/model';
 import NurseEditModal from './nurse-edit-modal';
+import type ShiftCalendar from './shift-calendar';
 import {ShiftEditorCanvas} from './shift-editor-canvas';
-import ShiftCalendar from './shift-calendar';
 import Toolbar from './toolbar';
 
 interface IMakeShiftEditorViewProps {
@@ -18,7 +18,10 @@ interface IMakeShiftEditorViewProps {
     stickyBottom?: boolean;
     className?: string;
     calendarProps?: Omit<ComponentProps<typeof ShiftCalendar>, 'shift' | 'doc'>;
-    toolbarProps?: Omit<ComponentProps<typeof Toolbar>, 'shift' | 'onDownloadImage' | 'isDownloadingImage'>;
+    toolbarProps?: Omit<
+        ComponentProps<typeof Toolbar>,
+        'shift' | 'onDownloadImage' | 'isDownloadingImage' | 'onDownloadExcel' | 'isDownloadingExcel'
+    >;
 }
 
 export const MakeShiftEditorView = ({
@@ -41,13 +44,20 @@ export const MakeShiftEditorView = ({
         teamName: toolbarProps?.currentShiftTeam?.name ?? null,
         disabled: !shift,
     });
+    const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({
+        month: toolbarProps?.month ?? 1,
+        shift,
+        disabled: !shift,
+    });
 
     return (
         <div className={`mx-auto flex w-fit flex-col ${className ?? ''}`}>
             {showToolbar && toolbarProps && (
                 <Toolbar
                     shift={shift}
+                    isDownloadingExcel={isExportingExcel}
                     isDownloadingImage={isExporting}
+                    onDownloadExcel={() => void exportExcel()}
                     onDownloadImage={() => void downloadImage()}
                     {...toolbarProps}
                 />
