@@ -28,7 +28,7 @@ export function FixedShifts() {
     });
 
     return (
-        <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
+        <div id="make_fixed_shifts_step" className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
             <div className="flex flex-wrap items-start justify-between gap-6">
                 <div>
                     <p className="font-apple text-[32px] font-semibold text-sub-1">고정할 근무를 선택해 주세요</p>

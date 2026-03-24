@@ -27,7 +27,7 @@ export function RequestsShifts() {
     );
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div id="make_requests_step" className="flex min-h-0 flex-1 flex-col">
             <RequestsShiftsHeader
                 acceptedCount={acceptedRequestSummaries.length}
                 pendingCount={pendingRequests.length}

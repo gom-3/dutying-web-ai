@@ -1,6 +1,7 @@
 import useAuth from '@/features/auth/useAuth';
 import {useMakeShiftBootstrap} from './model/use-bootstrap';
 import {MakeShiftPageView} from './view';
+import MakeTutorial from './view/make-tutorial';
 
 const MakeShiftPage = () => {
     const {
@@ -9,7 +10,12 @@ const MakeShiftPage = () => {
 
     useMakeShiftBootstrap(wardId);
 
-    return <MakeShiftPageView />;
+    return (
+        <>
+            <MakeShiftPageView />
+            <MakeTutorial />
+        </>
+    );
 };
 
 export default MakeShiftPage;

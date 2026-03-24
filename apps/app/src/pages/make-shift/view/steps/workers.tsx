@@ -60,7 +60,7 @@ export function Workers() {
     };
 
     return (
-        <div className="rounded-[15px] bg-gray-7 p-[30px]">
+        <div id="make_workers_step" className="rounded-[15px] bg-gray-7 p-[30px]">
             <WorkersHeader totalCount={totalCount} onSortByLevel={sortByLevel} />
             <WorkersTableHeader />
 
