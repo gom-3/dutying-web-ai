@@ -17,13 +17,14 @@ export function FixedShifts() {
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const currentShiftTeamName = useMakeShiftStore((s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null);
     const {dutyQuery, editorDoc, violationMap, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
+    const canExportImage = Boolean(dutyQuery.data) && !dutyQuery.isLoading && !dutyQuery.isError;
     const exportRef = useRef<HTMLDivElement>(null);
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: exportRef,
         year,
         month,
         teamName: currentShiftTeamName,
-        disabled: !dutyQuery.data,
+        disabled: !canExportImage,
     });
 
     return (
@@ -34,7 +35,7 @@ export function FixedShifts() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <ManagementActionButton variant="outline" size="sm" onClick={() => void downloadImage()} disabled={!dutyQuery.data || isExporting}>
+                    <ManagementActionButton variant="outline" size="sm" onClick={() => void downloadImage()} disabled={!canExportImage || isExporting}>
                         <span className="flex items-center gap-2">
                             <CameraIcon className="h-5 w-5 stroke-main-1" />
                             {isExporting ? '이미지 저장 중' : '이미지 저장'}
