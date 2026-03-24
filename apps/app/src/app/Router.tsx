@@ -5,20 +5,20 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
-const LandingPage = lazy(() => import('@/pages/LandingPage/index.ts'));
-const RefreshPage = lazy(() => import('@/pages/RefreshPage/index.tsx'));
-const RedirectPage = lazy(() => import('@/pages/LoginPage/RedirectPage.tsx'));
-const LoginPage = lazy(() => import('@/pages/LoginPage/index.tsx'));
-const RegisterPage = lazy(() => import('@/pages/RegisterPage/index.tsx'));
-const EnterWard = lazy(() => import('@/pages/RegisterPage/EnterWardPage.tsx'));
-const RegisterWard = lazy(() => import('@/pages/RegisterPage/RegisterWardPage.tsx'));
-const OnboardingWardCreatePage = lazy(() => import('@/pages/OnboardingWardCreatePage/index.tsx'));
+const LandingPage = lazy(() => import('@/pages/landing'));
+const RefreshPage = lazy(() => import('@/pages/refresh'));
+const RedirectPage = lazy(() => import('@/pages/login/RedirectPage.tsx'));
+const LoginPage = lazy(() => import('@/pages/login'));
+const RegisterPage = lazy(() => import('@/pages/register'));
+const EnterWard = lazy(() => import('@/pages/register/EnterWardPage.tsx'));
+const RegisterWard = lazy(() => import('@/pages/register/RegisterWardPage.tsx'));
+const OnboardingWardCreatePage = lazy(() => import('@/pages/onboarding-ward-create'));
 const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const DutyPage = lazy(() => import('@/pages/duty'));
-const RequestShiftPage = lazy(() => import('@/pages/RequestShiftPage/index.tsx'));
-const MemberPage = lazy(() => import('@/pages/MemberPage/index.tsx'));
-const WardSettingsPage = lazy(() => import('@/pages/WardSettingsPage/index.tsx'));
-const ProfilePage = lazy(() => import('@/pages/ProfilePage/index.tsx'));
+const RequestShiftPage = lazy(() => import('@/pages/request-shift'));
+const MemberPage = lazy(() => import('@/pages/member'));
+const WardSettingsPage = lazy(() => import('@/pages/ward-settings'));
+const ProfilePage = lazy(() => import('@/pages/profile'));
 
 export const Router = () => {
     const {t} = useTypedTranslation();

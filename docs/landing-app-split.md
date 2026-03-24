@@ -60,11 +60,11 @@ These are now updated toward `app.dutying.net`, but the real deployment sitemap 
 
 ### 3. OAuth redirect should stay app-domain only
 
-- `apps/app/src/pages/LoginPage/index.tsx`
+- `apps/app/src/pages/login/index.tsx`
 - `apps/app/src/features/auth/useAuth/index.ts`
-- `apps/app/src/pages/LoginPage/RedirectPage.tsx`
+- `apps/app/src/pages/login/RedirectPage.tsx`
 - `apps/app/src/shared/api/client.ts`
-- `apps/app/src/pages/RefreshPage/index.tsx`
+- `apps/app/src/pages/refresh/index.tsx`
 
 The app should build OAuth entry URLs from an explicit app-site setting and normalize callback targets back into app-relative paths. That keeps login, refresh, and callback flows inside `app.dutying.net` even after domain separation.
 
