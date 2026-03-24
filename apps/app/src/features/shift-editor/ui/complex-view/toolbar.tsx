@@ -1,34 +1,13 @@
 import {useState} from 'react';
-import {createPortal} from 'react-dom';
-import Draggable from 'react-draggable';
 import {events, sendEvent} from '@/analytics';
 import {type TShift, type TWardConstraint, type TShiftTeam} from '@/entities';
-import ShiftBadge from '@/entities/shift/ui/shift-badge';
-import {shiftToExcel} from '@/features/shift-editor/model/shift-to-excel';
-import {
-    CancelIcon,
-    DutyIconSelected,
-    FaultDotIcon,
-    HistoryBackIcon,
-    HistoryNextIcon,
-    InfoIcon,
-    NextIcon,
-    PenIcon,
-    PrevIcon,
-    RequestCheckIcon,
-    RequestSlashIcon,
-    SaveCompleteIcon,
-    SavingIcon,
-    ShareIcon,
-} from '@/shared/assets/svg';
+import {InfoIcon, NextIcon, PenIcon, PrevIcon} from '@/shared/assets/svg';
 import Button from '@/shared/ui/form-controls/Button';
-import Select from '@/shared/ui/form-controls/Select';
-import {showValidationFeedback} from '@/shared/util/feedback';
-import SetConstraint from './editWard/set-constraint';
-import SetDesignTheme from './editWard/set-design-theme';
-import SetShiftType from './editWard/set-shift-type';
-
-type TLayerFlags = {fault: boolean; check: boolean; slash: boolean};
+import {ToolbarActionGroup} from './toolbar/toolbar-action-group';
+import {ToolbarLayerToggles} from './toolbar/toolbar-layer-toggles';
+import {ToolbarSettingsPanel} from './toolbar/toolbar-settings-panel';
+import {ToolbarShiftInfoPanel} from './toolbar/toolbar-shift-info-panel';
+import {type TLayerFlags, type TToolbarSetupTab} from './types';
 
 interface IToolbarProps {
     year: number;
@@ -72,7 +51,7 @@ function Toolbar({
     onUpdateConstraint,
 }: IToolbarProps) {
     const [openInfo, setOpenInfo] = useState(false);
-    const [currentSetup, setCurrentSetup] = useState<'constraint' | 'shiftType' | 'designTheme' | null>(null);
+    const [currentSetup, setCurrentSetup] = useState<TToolbarSetupTab | null>(null);
 
     return (
         <div id="toolbar" className="sticky top-0 z-30 flex h-24.5 w-full items-center bg-[#FDFCFE] pt-7.5 pr-4 pb-[.75rem] pl-5">
@@ -109,12 +88,7 @@ function Toolbar({
                     variant="outline"
                     className="mr-5 flex h-10 w-31.75 items-center justify-center rounded-[3.125rem] border-[.0313rem] border-main-2 bg-main-4 text-base font-normal"
                     onClick={() => {
-                        if (currentSetup) {
-                            setCurrentSetup(null);
-                        } else {
-                            setCurrentSetup('constraint');
-                        }
-
+                        setCurrentSetup((prev) => (prev ? null : 'constraint'));
                         sendEvent(events.makePage.toolbar.openEditWardModal);
                     }}
                 >
@@ -123,248 +97,40 @@ function Toolbar({
                 </Button>
             )}
 
-            {currentSetup !== null &&
-                createPortal(
-                    <Draggable>
-                        <div className="absolute top-22 left-70.5 z-1001 flex flex-col rounded-[1.25rem] bg-white shadow-shadow-3">
-                            <div className="flex h-11 cursor-move items-center rounded-t-[1.25rem] bg-sub-5">
-                                <div
-                                    className={`flex h-full w-37.5 cursor-pointer items-center justify-center rounded-t-[1.25rem] font-apple text-base ${currentSetup === 'constraint' ? 'bg-white text-main-1' : 'text-sub-3'} `}
-                                    onClick={() => setCurrentSetup('constraint')}
-                                >
-                                    제약 조건
-                                </div>
-                                <div
-                                    className={`flex h-full w-37.5 cursor-pointer items-center justify-center rounded-t-[1.25rem] font-apple text-base ${currentSetup === 'shiftType' ? 'bg-white text-main-1' : 'text-sub-3'} `}
-                                    onClick={() => setCurrentSetup('shiftType')}
-                                >
-                                    근무 유형
-                                </div>
-                                <div
-                                    className={`flex h-full w-37.5 cursor-pointer items-center justify-center rounded-t-[1.25rem] font-apple text-base ${currentSetup === 'designTheme' ? 'bg-white text-main-1' : 'text-sub-3'} `}
-                                    onClick={() => setCurrentSetup('designTheme')}
-                                >
-                                    디자인 테마
-                                </div>
-                                <CancelIcon
-                                    className="absolute right-[.5rem] h-6 w-6 cursor-pointer"
-                                    onClick={() => setCurrentSetup(null)}
-                                />
-                            </div>
-                            {currentSetup === 'constraint' && wardConstraint && (
-                                <SetConstraint wardConstraint={wardConstraint} onUpdateConstraint={onUpdateConstraint} />
-                            )}
-                            {currentSetup === 'shiftType' && <SetShiftType />}
-                            {currentSetup === 'designTheme' && <SetDesignTheme />}
-                        </div>
-                    </Draggable>,
-
-                    document.getElementById('edit-modal-root')!,
-                )}
+            <ToolbarSettingsPanel
+                currentSetup={currentSetup}
+                wardConstraint={wardConstraint}
+                onSelectSetup={setCurrentSetup}
+                onClose={() => setCurrentSetup(null)}
+                onUpdateConstraint={onUpdateConstraint}
+            />
 
             <InfoIcon
                 className="h-6.5 w-6.5 cursor-pointer"
                 onClick={() => {
-                    setOpenInfo(!openInfo);
+                    setOpenInfo((prev) => !prev);
                     sendEvent(events.makePage.toolbar.openShiftInfoModal);
                 }}
             />
-            {openInfo &&
-                createPortal(
-                    <Draggable>
-                        <div className="absolute top-22 left-70.5 z-1001 flex w-116.5 flex-col rounded-[.625rem] bg-white shadow-shadow-3">
-                            <div className="flex h-6.5 cursor-move items-center rounded-t-[.625rem] bg-sub-5 pl-10">
-                                <p className="bottom-0 font-apple text-[.875rem] text-sub-2.5">근무 유형 보기</p>
-                                <CancelIcon
-                                    className="absolute right-[.5rem] h-4.5 w-4.5 cursor-pointer"
-                                    onClick={() => setOpenInfo(false)}
-                                />
-                            </div>
-                            <div className="flex flex-wrap items-center justify-start gap-5 py-[.875rem] pl-10">
-                                {shift?.wardShiftTypes.map((shiftType, index) => (
-                                    <div key={index} className="flex shrink-0 items-center gap-[.3125rem]">
-                                        <ShiftBadge key={index} shiftType={shiftType} />
-                                        <p className="font-apple text-[.875rem] text-sub-2">
-                                            {shiftType.name}({shiftType.shortName})
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </Draggable>,
+            <ToolbarShiftInfoPanel shift={shift} open={openInfo} onClose={() => setOpenInfo(false)} />
 
-                    document.getElementById('info-modal-root')!,
-                )}
+            {!readonly && <ToolbarLayerToggles showLayer={showLayer} onToggleLayer={onToggleLayer} />}
 
-            {!readonly && (
-                <>
-                    <div className="ml-12.5 flex gap-[.25rem]">
-                        <div
-                            className={`flex h-9 cursor-pointer items-center gap-[.5rem] rounded-[.3125rem] border-[.0313rem] border-sub-4 px-[.625rem] ${
-                                showLayer.fault ? 'white' : 'bg-sub-5'
-                            }`}
-                            onClick={() => {
-                                onToggleLayer('fault');
-                                sendEvent(showLayer.fault ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'fault');
-                            }}
-                        >
-                            <div
-                                className={`relative h-[.875rem] w-[.875rem] rounded-[.1875rem] border-[.0806rem] border-[#FF0000] bg-[#ff000033]`}
-                            >
-                                <FaultDotIcon className="absolute -top-2 -right-0.75 h-[.4rem] w-[.4rem]" />
-                            </div>
-                            <p className={`font-apple text-[.75rem] select-none ${showLayer.fault ? 'text-sub-2' : 'text-sub-3'}`}>
-                                잘못된 근무
-                            </p>
-                        </div>
-                        <div
-                            className={`flex h-9 cursor-pointer items-center gap-[.5rem] rounded-[.3125rem] border-[.0313rem] border-sub-4 px-[.625rem] ${
-                                showLayer.check ? 'white' : 'bg-sub-5'
-                            }`}
-                            onClick={() => {
-                                onToggleLayer('check');
-                                sendEvent(showLayer.check ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'check');
-                            }}
-                        >
-                            <div
-                                className={`relative h-[.875rem] w-[.875rem] rounded-[.1875rem] border-[.0806rem] border-[#06E738] bg-[#06e73833]`}
-                            >
-                                <RequestCheckIcon className="absolute -top-2 -right-0.75 h-[.4rem] w-[.4rem]" />
-                            </div>
-                            <p className={`font-apple text-[.75rem] select-none ${showLayer.check ? 'text-sub-2' : 'text-sub-3'}`}>
-                                신청 근무 반영
-                            </p>
-                        </div>
-                        <div
-                            className={`flex h-9 cursor-pointer items-center gap-[.5rem] rounded-[.3125rem] border-[.0313rem] border-sub-4 px-[.625rem] ${
-                                showLayer.slash ? 'white' : 'bg-sub-5'
-                            }`}
-                            onClick={() => {
-                                onToggleLayer('slash');
-                                sendEvent(showLayer.slash ? events.makePage.toolbar.offLayer : events.makePage.toolbar.onLayer, 'slash');
-                            }}
-                        >
-                            <div
-                                className={`relative h-[.875rem] w-[.875rem] rounded-[.1875rem] border-[.0806rem] border-[#0027F4] bg-[#0027f433]`}
-                            >
-                                <RequestSlashIcon className="absolute -top-2 -right-0.75 h-[.4rem] w-[.4rem]" />
-                            </div>
-                            <p className={`font-apple text-[.75rem] select-none ${showLayer.slash ? 'text-sub-2' : 'text-sub-3'}`}>
-                                신청 근무 미반영
-                            </p>
-                        </div>
-                    </div>
-
-                    <div className="ml-auto flex gap-[.3125rem] font-apple text-[.875rem] text-sub-2.5">
-                        {saveStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
-                        {saveStatus === 'pending' ? '저장중' : '저장 완료'}
-                    </div>
-
-                    <div className="ml-7.5 flex gap-[.625rem]">
-                        <HistoryBackIcon
-                            className="h-6.5 w-6.5 cursor-pointer"
-                            onClick={() => {
-                                onUndo();
-                                sendEvent(events.makePage.toolbar.undoBytoolbar);
-                            }}
-                        />
-                        <HistoryNextIcon
-                            className="h-6.5 w-6.5 cursor-pointer"
-                            onClick={() => {
-                                onRedo();
-                                sendEvent(events.makePage.toolbar.redoByToolbar);
-                            }}
-                        />
-                    </div>
-                </>
-            )}
-
-            <div>
-                {currentShiftTeam && (
-                    <Select
-                        value={currentShiftTeam?.shiftTeamId}
-                        options={shiftTeams?.map((shiftTeam) => ({
-                            label: shiftTeam.name,
-                            value: shiftTeam.shiftTeamId,
-                        }))}
-                        className="ml-7.5 h-11.5 w-42 font-apple text-[1.25rem] font-semibold text-main-1"
-                        selectClassName="outline-[.0938rem] outline-main-1"
-                        onChange={(e) => onChangeShiftTeam(parseInt(e.target.value))}
-                    />
-                )}
-            </div>
-
-            {readonly ? (
-                <div className="ml-auto flex gap-[10px]">
-                    <Button
-                        variant="default"
-                        className="flex h-10 items-center justify-center rounded-[.625rem] bg-main-2 px-[.75rem] text-[1.25rem] font-semibold"
-                        onClick={() => {
-                            onPostShift();
-                            sendEvent(events.makePage.toolbar.postShift);
-                        }}
-                        disabled={new Date(year, month + 1, 1) <= new Date()}
-                    >
-                        게시하기
-                    </Button>
-                    <Button
-                        id="editButton"
-                        variant="default"
-                        className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
-                        onClick={() => {
-                            onToggleEditMode();
-                            sendEvent(events.makePage.toolbar.changeEditMode);
-                        }}
-                        disabled={new Date(year, month + 1, 1) <= new Date()}
-                    >
-                        수정하기
-                        <PenIcon className="h-6 w-6 stroke-white" />
-                    </Button>
-                    {/* @TODO 이미지 저장 구현 */}
-                    <Button
-                        id="El2"
-                        variant="default"
-                        className="flex h-10 items-center justify-center gap-[.5rem] rounded-[.625rem] bg-main-2 pr-[.5rem] pl-[.75rem] text-[1.25rem] font-semibold"
-                        onClick={() => {
-                            if (shift) {
-                                shiftToExcel(month, shift);
-                            }
-
-                            sendEvent(events.makePage.toolbar.downloadExcel);
-                        }}
-                    >
-                        다운로드
-                        <ShareIcon className="h-6 w-6" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        className="flex h-10 w-59 items-center justify-center gap-[.5rem] rounded-[.625rem] text-[1.25rem] font-semibold"
-                        onClick={() => {
-                            onCreateNextMonth();
-                            sendEvent(events.makePage.toolbar.editNextMonth);
-                        }}
-                    >
-                        다음달 근무표 만들기
-                        <DutyIconSelected className="h-6 w-6" />
-                    </Button>
-                </div>
-            ) : (
-                <div className="ml-5 flex gap-[.875rem]">
-                    <Button
-                        variant="default"
-                        className="h-10 w-33 rounded-[3.125rem] border-none bg-[rgba(171,171,180,0.80)] text-[1.25rem] font-semibold text-white"
-                        onClick={() => showValidationFeedback('아직 준비 중인 기능입니다.')}
-                    >
-                        자동 채우기
-                    </Button>
-                    <Button
-                        className="h-10 rounded-[3.125rem] border-main-1 bg-white px-5 text-[1.25rem] font-semibold text-main-1 transition-all hover:bg-main-1 hover:text-white"
-                        onClick={() => onToggleEditMode()}
-                    >
-                        저장
-                    </Button>
-                </div>
-            )}
+            <ToolbarActionGroup
+                year={year}
+                month={month}
+                shift={shift}
+                readonly={readonly}
+                saveStatus={saveStatus}
+                currentShiftTeam={currentShiftTeam}
+                shiftTeams={shiftTeams}
+                onUndo={onUndo}
+                onRedo={onRedo}
+                onPostShift={onPostShift}
+                onToggleEditMode={onToggleEditMode}
+                onCreateNextMonth={onCreateNextMonth}
+                onChangeShiftTeam={onChangeShiftTeam}
+            />
         </div>
     );
 }
