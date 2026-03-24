@@ -56,8 +56,14 @@ export default function RequestCalendarGrid({
                             return (
                                 <div
                                     key={level}
-                                    className="ml-5 flex h-7.5 w-[calc(100%-1.25rem)] cursor-pointer items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem]"
-                                    onClick={() => onToggleFoldLevel(level, true)}
+                                    className={`ml-5 flex h-7.5 w-[calc(100%-1.25rem)] items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem] ${
+                                        readonly ? '' : 'cursor-pointer'
+                                    }`}
+                                    onClick={() => {
+                                        if (readonly) return;
+
+                                        onToggleFoldLevel(level, true);
+                                    }}
                                 >
                                     <FoldDutyIcon className="h-5.5 w-5.5 rotate-180" />
                                 </div>

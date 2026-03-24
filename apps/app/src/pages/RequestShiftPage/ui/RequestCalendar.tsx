@@ -85,7 +85,7 @@ export default function ShiftCalendar() {
     );
     const handleToggleFoldLevel = useCallback(
         (level: number, expanded: boolean) => {
-            sendEvent(expanded ? events.requestPage.calendar.foldDivision : events.requestPage.calendar.spreadDivision);
+            sendEvent(expanded ? events.requestPage.calendar.spreadDivision : events.requestPage.calendar.foldDivision);
             foldLevel(level);
         },
         [foldLevel],
@@ -95,7 +95,7 @@ export default function ShiftCalendar() {
             if (!currentShiftTeam) return;
 
             editDivision(currentShiftTeam.shiftTeamId, priority, 1, getYearMonthLabel(year, month));
-            sendEvent(events.makePage.calendar.createDivision);
+            sendEvent(events.requestPage.calendar.createDivision);
         },
         [currentShiftTeam, editDivision, month, year],
     );
@@ -104,7 +104,7 @@ export default function ShiftCalendar() {
             if (!currentShiftTeam) return;
 
             editDivision(currentShiftTeam.shiftTeamId, priority, -1, getYearMonthLabel(year, month));
-            sendEvent(events.makePage.calendar.deleteDivision);
+            sendEvent(events.requestPage.calendar.deleteDivision);
         },
         [currentShiftTeam, editDivision, month, year],
     );
