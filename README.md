@@ -101,6 +101,29 @@ pnpm type-check
 pnpm workspace:list
 ```
 
+## 기술 스택
+
+- 메인 앱: React 19, TypeScript, Vite
+- 문서 앱: VitePress
+- 랜딩 앱: Astro
+- 상태 관리: TanStack Query, Zustand
+- 스타일링: Tailwind CSS
+- 테스트: Vitest, Cypress
+- 모니터링/분석: Sentry, Google Analytics, Meta Pixel
+- 패키지 관리: pnpm workspace
+
+## 테스트와 CI
+
+- 로컬 단위 테스트: `pnpm test`
+- 로컬 커버리지: `pnpm coverage`
+- 로컬 E2E: `pnpm e2e`
+- 타입 체크: `pnpm type-check`
+
+GitHub Actions:
+
+- [`vitest.yml`](.github/workflows/vitest.yml): Pull Request 시 `pnpm coverage` 실행
+- [`cypress.yml`](.github/workflows/cypress.yml): Push 시 Cypress E2E 실행
+
 ## 릴리즈 메모
 
 - 모든 workspace는 동일한 버전을 사용합니다.
@@ -123,7 +146,11 @@ pnpm run changeset:version
 
 ## 링크
 
-- 웹 앱: [https://dutying.net](https://dutying.net)
+- 랜딩: [https://dutying.net](https://dutying.net)
+- 웹 앱: [https://app.dutying.net](https://app.dutying.net)
+- 문서 사이트 예상 도메인: [https://docs.dutying.net](https://docs.dutying.net)
 - 모바일 앱 저장소: [gom-3/dutying-mobile](https://github.com/gom-3/dutying-mobile)
+- 이용 약관: [Notion](https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4)
+- 근무표 만들기 튜토리얼: [Notion](https://gom3.notion.site/68d3ad01e68d4d6a8b4cb8c2409353a3?pvs=4)
 - 문서 사이트 소스: [`apps/docs`](apps/docs)
 - 라이선스: [Apache License 2.0](LICENSE)
