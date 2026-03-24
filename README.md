@@ -54,6 +54,15 @@ Current transition rules:
 - Future Changesets setup should treat the workspace packages as a fixed version group. The root package is not a publish target, but it should continue mirroring the same release number so the repository-level version stays readable in code and docs.
 - If a package later becomes publishable, it joins the same shared version policy unless the release policy is intentionally changed.
 
+### Changesets Bootstrap
+
+- Changesets manages every workspace package under the scoped fixed group `@dutying/*`, so any accepted changeset bump applies the same release version to `apps/*` and `packages/*`.
+- The root package is intentionally not part of the Changesets workspace. Run `pnpm run changeset:version` to apply workspace version bumps first and then mirror the resolved version back to the root `package.json`.
+- Local release-prep flow:
+    1. `pnpm run changeset:add`
+    2. `pnpm run changeset:status`
+    3. `pnpm run changeset:version`
+
 ## Running Tests
 
 ### Unit Tests
