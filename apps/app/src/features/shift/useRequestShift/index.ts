@@ -176,10 +176,12 @@ const useRequestShift = (activeEffect = false) => {
             setState('readonly', true);
         }
 
-        if (decision.shouldBlock) return;
+        if (decision.shouldBlock) return false;
 
         setState('year', decision.year);
         setState('month', decision.month);
+
+        return true;
     };
     const changeFocusedShift = useCallback(
         (shiftTypeId: number | null) => {
@@ -226,12 +228,12 @@ const useRequestShift = (activeEffect = false) => {
             if (!nextEditAvailability.canEdit && nextEditAvailability.validationMessage) {
                 showValidationFeedback(nextEditAvailability.validationMessage);
 
-                return;
+                return false;
             }
 
             setState('readonly', false);
 
-            return;
+            return true;
         }
 
         setState('readonly', true);
@@ -240,6 +242,8 @@ const useRequestShift = (activeEffect = false) => {
         if (requestShift) {
             setState('foldedLevels', createInitialFoldedLevels(requestShift));
         }
+
+        return true;
     };
     const handleCreateNextMonthShift = () => {
         const nextMonth = new Date().getMonth() + 2;
@@ -331,7 +335,13 @@ const useRequestShift = (activeEffect = false) => {
             changeMonth,
             retry,
             changeFocus: (nextFocus: TFocus | null) => setState('focus', nextFocus),
-            changeShiftTeam: (shiftTeam: TShiftTeam) => setState('currentShiftTeamId', shiftTeam.shiftTeamId),
+            changeShiftTeam: (shiftTeam: TShiftTeam) => {
+                if (shiftTeam.shiftTeamId === currentShiftTeamId) return false;
+
+                setState('currentShiftTeamId', shiftTeam.shiftTeamId);
+
+                return true;
+            },
         },
     };
 };

@@ -12,12 +12,51 @@ function Toolbar() {
         actions: {changeMonth, changeShiftTeam, toggleEditMode},
     } = useRequestShift();
     const isSaving = changeStatus === 'loading';
+    const isSaved = changeStatus === 'success';
+    const hasSaveError = changeStatus === 'error';
     const title = readonly ? t('page.request.toolbar.readonlyTitle', {month}) : t('page.request.toolbar.editTitle');
     const actionLabel = isSaving
         ? t('page.request.toolbar.savingAction')
         : readonly
           ? t('page.request.toolbar.editAction')
           : t('page.request.toolbar.saveAction');
+    const feedback =
+        hasSaveError
+            ? {
+                  tone: 'error' as const,
+                  message: t('page.request.toolbar.saveError'),
+              }
+            : isSaving
+              ? {
+                    tone: 'info' as const,
+                    message: t('page.request.toolbar.savingDescription'),
+                }
+              : isSaved
+                ? {
+                      tone: 'success' as const,
+                      message: t('page.request.toolbar.savedDescription'),
+                  }
+                : readonly
+                  ? {
+                        tone: 'neutral' as const,
+                        message: editAvailability.canEdit
+                            ? t('page.request.toolbar.readonlyDescription')
+                            : editAvailability.description,
+                    }
+                  : {
+                        tone: 'info' as const,
+                        message: t('page.request.toolbar.editingDescription'),
+                    };
+    const feedbackClassName = cn(
+        'mt-[-24px] font-apple text-base font-medium',
+        feedback.tone === 'error'
+            ? 'text-sub-2'
+            : feedback.tone === 'success'
+              ? 'text-green-600'
+              : feedback.tone === 'info'
+                ? 'text-main-2'
+                : 'text-gray-4',
+    );
 
     return (
         <div id="toolbar" className="flex flex-col gap-10">
@@ -29,15 +68,13 @@ function Toolbar() {
                 shiftTeams={shiftTeams ?? []}
                 currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
                 onPrevMonth={() => {
-                    if (isSaving) return;
+                    if (!changeMonth('prev')) return;
 
-                    changeMonth('prev');
                     sendEvent(events.requestPage.toolbar.changeMonth);
                 }}
                 onNextMonth={() => {
-                    if (isSaving) return;
+                    if (!changeMonth('next')) return;
 
-                    changeMonth('next');
                     sendEvent(events.requestPage.toolbar.changeMonth);
                 }}
                 onSelectShiftTeam={(shiftTeamId) => {
@@ -47,7 +84,8 @@ function Toolbar() {
 
                     if (!nextTeam) return;
 
-                    changeShiftTeam(nextTeam);
+                    if (!changeShiftTeam(nextTeam)) return;
+
                     sendEvent(events.requestPage.toolbar.changeShiftTeam);
                 }}
                 emptyLabel={t('page.request.toolbar.noTeamsLabel')}
@@ -80,9 +118,8 @@ function Toolbar() {
                     )}
                     disabled={isSaving || (readonly && !editAvailability.canEdit)}
                     onClick={() => {
-                        if (isSaving) return;
+                        if (!toggleEditMode()) return;
 
-                        toggleEditMode();
                         sendEvent(events.requestPage.toolbar.changeEditMode, readonly ? 'edit' : 'save');
                     }}
                 >
@@ -90,13 +127,7 @@ function Toolbar() {
                 </button>
             </div>
 
-            {readonly && !editAvailability.canEdit ? (
-                <p className="mt-[-24px] font-apple text-base font-medium text-gray-4">{editAvailability.description}</p>
-            ) : null}
-
-            {changeStatus === 'error' ? (
-                <p className="mt-[-24px] font-apple text-base font-medium text-sub-2">{t('page.request.toolbar.saveError')}</p>
-            ) : null}
+            <p className={feedbackClassName}>{feedback.message}</p>
         </div>
     );
 }
