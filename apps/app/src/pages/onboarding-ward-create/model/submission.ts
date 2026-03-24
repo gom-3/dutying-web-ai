@@ -1,6 +1,6 @@
 import type {TCreateWardDTO} from '@/shared/api/ward/type';
 import {buildCreateWardPayload} from './adapter';
-import type {TOnboardingWardDraft} from './model';
+import type {TOnboardingWardDraft} from './draft';
 
 export type TOnboardingWardCreateSubmission = {
     mode: 'created';

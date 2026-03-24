@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward';
-import useEditAccount from '@/features/account/useEditAccount';
+import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth/useAuth';
 import useProfileImage from '@/features/file/useProfileImage';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
