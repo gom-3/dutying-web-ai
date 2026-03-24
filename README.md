@@ -1,4 +1,4 @@
-# Dutying Web
+<img width="1510" alt="image" src="https://github.com/gom-3/dutying-web/assets/73516336/609319d4-8560-411e-a65e-206912bc09e7">
 
 듀팅 웹 서비스의 앱, 랜딩, 문서 사이트를 함께 관리하는 `pnpm workspace` 모노레포입니다.
 
