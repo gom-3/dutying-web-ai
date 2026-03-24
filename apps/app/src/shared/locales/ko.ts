@@ -170,6 +170,7 @@ export const ko = {
             createNextMonth: '다음달 근무표 만들기',
             publish: '게시하기',
             exportExcel: '엑셀 내보내기',
+            exportExcelLoading: '엑셀 저장 중',
             editShift: '근무표 수정하기',
             save: '저장하기',
             cancel: '취소하기',

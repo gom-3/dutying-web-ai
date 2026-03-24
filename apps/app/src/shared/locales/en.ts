@@ -173,6 +173,7 @@ export const en: TLocale = {
             createNextMonth: 'Create next month schedule',
             publish: 'Publish',
             exportExcel: 'Export Excel',
+            exportExcelLoading: 'Exporting Excel...',
             editShift: 'Edit duty schedule',
             save: 'Save',
             cancel: 'Cancel',

@@ -59,7 +59,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                     onClick={handlers.exportExcel}
                                     disabled={!state.shift || state.isExportingExcel}
                                 >
-                                    {state.isExportingExcel ? '엑셀 저장 중' : t('page.duty.exportExcel')}
+                                    {state.isExportingExcel ? t('page.duty.exportExcelLoading') : t('page.duty.exportExcel')}
                                 </ManagementActionButton>
                                 <ManagementActionButton onClick={handlers.enableEdit} disabled={!state.shift}>
                                     {t('page.duty.editShift')}
