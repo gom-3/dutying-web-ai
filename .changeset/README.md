@@ -11,4 +11,5 @@ We have a quick list of common questions to get you started engaging with this p
 
 - Pending `.changeset/*.md` files are the source of truth for the next root `CHANGELOG.md` entry.
 - Package-level changelogs stay disabled because this monorepo ships one fixed shared version across private workspaces.
+- Use `pnpm run release:verify` for the local preflight check that validates the changelog helpers, shows the pending workspace bump, and previews the next root changelog entry.
 - Use `pnpm run release:status` to inspect pending changesets and `pnpm run release:version` to version workspaces, sync the root version, and update the root changelog together.
