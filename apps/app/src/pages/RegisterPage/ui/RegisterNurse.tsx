@@ -6,10 +6,12 @@ import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
+import useCreateAccount from '@/features/account/useCreateAccount';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import TextField from '@/shared/ui/form-controls/TextField';
@@ -42,6 +44,7 @@ const schema = yup
     .required();
 
 function RegisterNurse() {
+    const {t} = useTypedTranslation();
     const {
         formState: {errors, isValid},
         watch,
@@ -61,6 +64,10 @@ function RegisterNurse() {
     } = useRegister();
     const watchIsWorker = watch('isWorker');
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage({defaultProfileImgId: 1});
+    const {createAccountFeedback, isSubmitting, handleCreateAccount, handleCreateAccountValidationFailure, resetCreateAccountStatus} =
+        useCreateAccount({
+            submit: registerAccountAndNurse,
+        });
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImage = () => {
         imageInputRef.current?.click();
@@ -89,8 +96,21 @@ function RegisterNurse() {
         }
     }, [profileImg, setValue]);
 
+    useEffect(() => {
+        const subscription = watch(() => {
+            if (!isSubmitting) {
+                resetCreateAccountStatus();
+            }
+        });
+
+        return () => subscription.unsubscribe();
+    }, [isSubmitting, resetCreateAccountStatus, watch]);
+
     return (
-        <form onSubmit={handleSubmit(registerAccountAndNurse)} className="my-auto flex w-full flex-col items-center justify-center">
+        <form
+            onSubmit={handleSubmit(handleCreateAccount, handleCreateAccountValidationFailure)}
+            className="my-auto flex w-full flex-col items-center justify-center"
+        >
             <h1 className="absolute top-0 left-0 font-apple text-[2rem] font-semibold text-text-1">회원 정보</h1>
             <div className="mt-15 flex w-full min-w-[500px] shrink-0 rounded-[1.25rem] bg-white px-11.25 pt-7.5 pb-10.5 shadow-banner">
                 <div className="flex flex-col items-center gap-7.5">
@@ -198,8 +218,16 @@ function RegisterNurse() {
                 </div>
             </div>
 
-            <Button disabled={!isValid} className="mt-10 h-15 w-30 self-end text-center text-[2rem] font-semibold">
-                다음
+            <p
+                className={`mt-6 min-h-6 self-end text-right font-apple text-[1rem] ${
+                    createAccountFeedback.tone === 'error' ? 'text-red' : 'text-sub-2'
+                }`}
+            >
+                {createAccountFeedback.message}
+            </p>
+
+            <Button disabled={!isValid || isSubmitting} className="mt-4 h-15 w-30 self-end text-center text-[2rem] font-semibold">
+                {isSubmitting ? t('page.register.nurse.submitting') : t('page.makeShift.navigation.next')}
             </Button>
         </form>
     );
