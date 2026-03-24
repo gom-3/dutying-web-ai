@@ -1,5 +1,13 @@
 <img width="1510" alt="image" src="https://github.com/gom-3/dutying-web/assets/73516336/609319d4-8560-411e-a65e-206912bc09e7">
 
+<p align='center'>
+  <img src='https://img.shields.io/github/package-json/v/gom-3/dutying-web'>
+  <a href="https://github.com/gom-3/dutying-web/issues"><img src='https://img.shields.io/github/issues/gom-3/dutying-web'></a>
+  <a href="https://github.com/gom-3/dutying-web/pulls"><img src='https://img.shields.io/github/issues-pr/gom-3/dutying-web'></a>
+  <a href="https://github.com/gom-3/dutying-web/graphs/contributors"><img src='https://img.shields.io/github/contributors/gom-3/dutying-web'></a>
+  <a href='https://github.com/gom-3/dutying-web/blob/main/LICENSE'><img src='https://img.shields.io/github/license/gom-3/dutying-web'></a>
+</p>
+
 듀팅 웹 서비스의 앱, 랜딩, 문서 사이트를 함께 관리하는 `pnpm workspace` 모노레포입니다.
 
 - 웹 앱: 수간호사/관리자용 근무표 운영 제품
@@ -148,9 +156,7 @@ pnpm run changeset:version
 
 - 랜딩: [https://dutying.net](https://dutying.net)
 - 웹 앱: [https://app.dutying.net](https://app.dutying.net)
-- 문서 사이트 예상 도메인: [https://docs.dutying.net](https://docs.dutying.net)
+- 가이드 문서 사이트: [https://docs.dutying.net](https://docs.dutying.net)
 - 모바일 앱 저장소: [gom-3/dutying-mobile](https://github.com/gom-3/dutying-mobile)
 - 이용 약관: [Notion](https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4)
-- 근무표 만들기 튜토리얼: [Notion](https://gom3.notion.site/68d3ad01e68d4d6a8b4cb8c2409353a3?pvs=4)
-- 문서 사이트 소스: [`apps/docs`](apps/docs)
 - 라이선스: [Apache License 2.0](LICENSE)
