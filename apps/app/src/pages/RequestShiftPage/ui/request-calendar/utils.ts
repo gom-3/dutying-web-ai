@@ -1,6 +1,6 @@
 import {type DropResult} from '@hello-pangea/dnd';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
-import {type TShiftTeam} from '@/entities/ward';
+import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/shift/useRequestShift/type';
 
 const PRIORITY_GAP = 2024;
@@ -71,6 +71,84 @@ export const getRequestFocus = (dutyRequest: TDutyRequest, shiftNurseIdByNurseId
         shiftNurseId: matchedShiftNurseId,
         day: dutyRequest.date - 1,
     };
+};
+
+export const createRequestCalendarCellFocus = ({
+    shiftNurseName,
+    shiftNurseId,
+    day,
+}: {
+    shiftNurseName: string;
+    shiftNurseId: number;
+    day: number;
+}): TFocus => ({
+    shiftNurseName,
+    shiftNurseId,
+    day,
+});
+
+export const getRequestCalendarCellState = ({
+    currentShiftTypeId,
+    requestDutyRequest,
+    focus,
+    shiftNurseId,
+    day,
+    wardShiftTypeMap,
+}: {
+    currentShiftTypeId: number | null;
+    requestDutyRequest: TDutyRequest | null;
+    focus: TFocus | null;
+    shiftNurseId: number;
+    day: number;
+    wardShiftTypeMap: Map<number, TWardShiftType>;
+}) => ({
+    isFocused: focus?.shiftNurseId === shiftNurseId && focus?.day === day,
+    shiftType:
+        currentShiftTypeId === null
+            ? requestDutyRequest === null
+                ? null
+                : wardShiftTypeMap.get(requestDutyRequest.wardShiftTypeId)
+            : wardShiftTypeMap.get(currentShiftTypeId),
+    isOnlyRequest: currentShiftTypeId === null && requestDutyRequest !== null,
+});
+
+export const getRequestCalendarDivisionAction = ({
+    readonly,
+    rowIndex,
+    rowCount,
+    level,
+    divisionCount,
+}: {
+    readonly: boolean;
+    rowIndex: number;
+    rowCount: number;
+    level: number;
+    divisionCount: number;
+}) => {
+    if (readonly) return null;
+
+    if (rowIndex !== rowCount - 1) return 'create' as const;
+
+    if (level !== divisionCount - 1) return 'delete' as const;
+
+    return null;
+};
+
+export const getRequestCalendarRowClassName = ({
+    rowIndex,
+    rowCount,
+    isFocusedRow,
+}: {
+    rowIndex: number;
+    rowCount: number;
+    isFocusedRow: boolean;
+}) => {
+    const isLastRow = rowIndex === rowCount - 1;
+    const isSingleRow = rowIndex === 0 && isLastRow;
+
+    return `relative flex h-[3.1875rem] items-center gap-5 ${
+        isSingleRow ? 'rounded-[1.25rem]' : rowIndex === 0 ? 'rounded-t-[1.25rem]' : isLastRow ? 'rounded-b-[1.25rem]' : ''
+    } ${isFocusedRow ? 'bg-main-4' : 'bg-white'}`;
 };
 
 export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType'], isFocused: boolean, separateWeekendColor: boolean) => {

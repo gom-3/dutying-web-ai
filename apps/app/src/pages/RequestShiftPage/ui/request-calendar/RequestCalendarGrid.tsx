@@ -1,11 +1,10 @@
 import {type DropResult, DragDropContext, Draggable, Droppable} from '@hello-pangea/dnd';
 import {type RefObject} from 'react';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
-import ShiftBadge from '@/entities/shift/ui/shift-badge';
-import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
+import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/shift/useRequestShift/type';
-import {DragIcon, FoldDutyIcon, LinkedIcon, MinusIcon, PlusIcon2, UnlinkedIcon} from '@/shared/assets/svg';
-import {getDayCellClass, getDutyRequestLookupKey} from './utils';
+import {FoldDutyIcon} from '@/shared/assets/svg';
+import RequestCalendarGridRow from './RequestCalendarGridRow';
 
 interface IRequestCalendarGridProps {
     requestShift: TRequestShift;
@@ -14,20 +13,15 @@ interface IRequestCalendarGridProps {
     readonly: boolean;
     separateWeekendColor: boolean;
     wardShiftTypeMap: Map<number, TWardShiftType>;
-    currentShiftTeam: TShiftTeam;
     dutyRequestLookup: Map<string, TDutyRequest>;
     connectedNurseIds: Set<number>;
-    focusedCellRef: RefObject<HTMLParagraphElement | null>;
+    focusedCellRef: RefObject<HTMLDivElement | null>;
     containerRef: RefObject<HTMLDivElement | null>;
     onDragEnd: (result: DropResult) => void;
-    changeFocus: (focus: TFocus | null) => void;
-    foldLevel: (level: number) => void;
-    editDivision: (shiftTeamId: number, priority: number, updateNum: number, workDate: string) => void;
-    onFoldAnalytics: (expanded: boolean) => void;
-    onFocusAnalytics: () => void;
-    onCreateDivisionAnalytics: () => void;
-    onDeleteDivisionAnalytics: () => void;
-    yearMonthLabel: string;
+    onSelectCell: (focus: TFocus) => void;
+    onToggleFoldLevel: (level: number, expanded: boolean) => void;
+    onCreateDivision: (priority: number) => void;
+    onDeleteDivision: (priority: number) => void;
 }
 
 export default function RequestCalendarGrid({
@@ -37,20 +31,15 @@ export default function RequestCalendarGrid({
     readonly,
     separateWeekendColor,
     wardShiftTypeMap,
-    currentShiftTeam,
     dutyRequestLookup,
     connectedNurseIds,
     focusedCellRef,
     containerRef,
     onDragEnd,
-    changeFocus,
-    foldLevel,
-    editDivision,
-    onFoldAnalytics,
-    onFocusAnalytics,
-    onCreateDivisionAnalytics,
-    onDeleteDivisionAnalytics,
-    yearMonthLabel,
+    onSelectCell,
+    onToggleFoldLevel,
+    onCreateDivision,
+    onDeleteDivision,
 }: IRequestCalendarGridProps) {
     return (
         <DragDropContext onDragEnd={(result) => !readonly && onDragEnd(result)}>
@@ -67,10 +56,13 @@ export default function RequestCalendarGrid({
                             return (
                                 <div
                                     key={level}
-                                    className="ml-5 flex h-7.5 w-[calc(100%-1.25rem)] cursor-pointer items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem]"
+                                    className={`ml-5 flex h-7.5 w-[calc(100%-1.25rem)] items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem] ${
+                                        readonly ? '' : 'cursor-pointer'
+                                    }`}
                                     onClick={() => {
-                                        onFoldAnalytics(true);
-                                        foldLevel(level);
+                                        if (readonly) return;
+
+                                        onToggleFoldLevel(level, true);
                                     }}
                                 >
                                     <FoldDutyIcon className="h-5.5 w-5.5 rotate-180" />
@@ -87,18 +79,11 @@ export default function RequestCalendarGrid({
                                                 <div className="absolute left-[-.9375rem] flex h-full w-7.5 items-center justify-center font-poppins font-light text-sub-2.5">
                                                     <FoldDutyIcon
                                                         className="absolute top-[50%] left-[50%] z-10 h-5.5 w-5.5 translate-x-[-50%] translate-y-[-50%] cursor-pointer"
-                                                        onClick={() => {
-                                                            onFoldAnalytics(false);
-                                                            foldLevel(level);
-                                                        }}
+                                                        onClick={() => onToggleFoldLevel(level, false)}
                                                     />
                                                 </div>
                                             )}
                                             {rows.map((row, rowIndex) => {
-                                                const isFocusedRow = focus?.shiftNurseId === row.shiftNurse.shiftNurseId;
-                                                const isLastRow = rowIndex === rows.length - 1;
-                                                const isSingleRow = rowIndex === 0 && isLastRow;
-
                                                 return (
                                                     <Draggable
                                                         draggableId={row.shiftNurse.shiftNurseId.toString()}
@@ -107,132 +92,25 @@ export default function RequestCalendarGrid({
                                                         isDragDisabled={readonly}
                                                     >
                                                         {(draggableProvided) => (
-                                                            <div
-                                                                className={`relative flex h-[3.1875rem] items-center gap-5 ${
-                                                                    isSingleRow
-                                                                        ? 'rounded-[1.25rem]'
-                                                                        : rowIndex === 0
-                                                                          ? 'rounded-t-[1.25rem]'
-                                                                          : isLastRow
-                                                                            ? 'rounded-b-[1.25rem]'
-                                                                            : ''
-                                                                } ${isFocusedRow ? 'bg-main-4' : 'bg-white'}`}
-                                                                ref={draggableProvided.innerRef}
-                                                                {...draggableProvided.draggableProps}
-                                                                {...draggableProvided.dragHandleProps}
-                                                            >
-                                                                <div className="relative w-8.5 shrink-0">
-                                                                    {!readonly && (
-                                                                        <DragIcon className="absolute top-[50%] -right-2.5 h-6 w-6 translate-y-[-50%]" />
-                                                                    )}
-                                                                </div>
-                                                                <div className="w-17.5 shrink-0 truncate text-center font-apple text-[1rem] font-medium text-sub-1">
-                                                                    {row.shiftNurse.name}
-                                                                </div>
-                                                                <div className="flex w-7.5 shrink-0 items-center justify-center text-center font-apple text-[1rem] text-sub-1">
-                                                                    {connectedNurseIds.has(row.shiftNurse.nurseId) ? (
-                                                                        <LinkedIcon className="h-6 w-6" />
-                                                                    ) : (
-                                                                        <UnlinkedIcon className="h-6 w-6" />
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex h-full px-4.25">
-                                                                    {row.wardReqShiftList.map((currentShiftTypeId, date) => {
-                                                                        const requestDutyRequest =
-                                                                            dutyRequestLookup.get(
-                                                                                getDutyRequestLookupKey(row.shiftNurse.nurseId, date),
-                                                                            ) ?? null;
-                                                                        const isFocusedCell = isFocusedRow && focus?.day === date;
-
-                                                                        return (
-                                                                            <div
-                                                                                key={date}
-                                                                                className={`group relative flex h-full w-9 flex-1 items-center justify-center px-[.25rem] ${getDayCellClass(
-                                                                                    requestShift.days[date].dayType,
-                                                                                    date === focus?.day,
-                                                                                    separateWeekendColor,
-                                                                                )}`}
-                                                                            >
-                                                                                <ShiftBadge
-                                                                                    id={
-                                                                                        rowIndex === 0 && date === 0
-                                                                                            ? 'cell_sample'
-                                                                                            : undefined
-                                                                                    }
-                                                                                    onClick={() => {
-                                                                                        if (readonly) return;
-
-                                                                                        changeFocus({
-                                                                                            shiftNurseName: row.shiftNurse.name,
-                                                                                            shiftNurseId: row.shiftNurse.shiftNurseId,
-                                                                                            day: date,
-                                                                                        });
-                                                                                        onFocusAnalytics();
-                                                                                    }}
-                                                                                    shiftType={
-                                                                                        currentShiftTypeId === null
-                                                                                            ? requestDutyRequest === null
-                                                                                                ? null
-                                                                                                : wardShiftTypeMap.get(
-                                                                                                      requestDutyRequest.wardShiftTypeId,
-                                                                                                  )
-                                                                                            : wardShiftTypeMap.get(currentShiftTypeId)
-                                                                                    }
-                                                                                    isOnlyRequest={
-                                                                                        currentShiftTypeId === null &&
-                                                                                        requestDutyRequest !== null
-                                                                                    }
-                                                                                    className={`z-10 ${
-                                                                                        readonly ? 'cursor-default' : 'cursor-pointer'
-                                                                                    } ${
-                                                                                        isFocusedCell && 'outline-[.125rem] outline-main-1'
-                                                                                    }`}
-                                                                                    forwardRef={isFocusedCell ? focusedCellRef : null}
-                                                                                />
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                                {rowIndex !== rows.length - 1
-                                                                    ? !readonly && (
-                                                                          <>
-                                                                              <div
-                                                                                  className="justify-cente group peer absolute bottom-0 z-10 flex h-6 w-6 translate-x-[-80%] translate-y-[50%] items-center"
-                                                                                  onClick={(event) => {
-                                                                                      event.stopPropagation();
-                                                                                      editDivision(
-                                                                                          currentShiftTeam.shiftTeamId,
-                                                                                          row.shiftNurse.priority,
-                                                                                          1,
-                                                                                          yearMonthLabel,
-                                                                                      );
-                                                                                      onCreateDivisionAnalytics();
-                                                                                  }}
-                                                                              >
-                                                                                  <PlusIcon2 className="invisible h-5 w-5 group-hover:visible" />
-                                                                              </div>
-                                                                              <div className="invisible absolute bottom-0 h-[.0938rem] w-full bg-sub-2.5 peer-hover:visible" />
-                                                                          </>
-                                                                      )
-                                                                    : level !== requestShift.divisionShiftNurses.length - 1 &&
-                                                                      !readonly && (
-                                                                          <div
-                                                                              className="absolute bottom-0 z-10 flex h-6 w-6 translate-x-[-65%] translate-y-[calc(50%+.1563rem)] items-center"
-                                                                              onClick={(event) => {
-                                                                                  event.stopPropagation();
-                                                                                  editDivision(
-                                                                                      currentShiftTeam.shiftTeamId,
-                                                                                      row.shiftNurse.priority,
-                                                                                      -1,
-                                                                                      yearMonthLabel,
-                                                                                  );
-                                                                                  onDeleteDivisionAnalytics();
-                                                                              }}
-                                                                          >
-                                                                              <MinusIcon className="h-5 w-5 opacity-0 hover:opacity-100" />
-                                                                          </div>
-                                                                      )}
-                                                            </div>
+                                                            <RequestCalendarGridRow
+                                                                row={row}
+                                                                rowIndex={rowIndex}
+                                                                rowCount={rows.length}
+                                                                level={level}
+                                                                divisionCount={requestShift.divisionShiftNurses.length}
+                                                                focus={focus}
+                                                                readonly={readonly}
+                                                                separateWeekendColor={separateWeekendColor}
+                                                                requestShift={requestShift}
+                                                                wardShiftTypeMap={wardShiftTypeMap}
+                                                                dutyRequestLookup={dutyRequestLookup}
+                                                                connectedNurseIds={connectedNurseIds}
+                                                                focusedCellRef={focusedCellRef}
+                                                                draggableProvided={draggableProvided}
+                                                                onSelectCell={onSelectCell}
+                                                                onCreateDivision={onCreateDivision}
+                                                                onDeleteDivision={onDeleteDivision}
+                                                            />
                                                         )}
                                                     </Draggable>
                                                 );
