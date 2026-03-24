@@ -67,6 +67,13 @@ Current transition rules:
 - `pnpm run release:version` is kept as the same official release command if you prefer a release-prefixed entrypoint.
 - `pnpm run changeset:version:workspaces` remains a low-level helper for internal scripting only; do not use it for normal releases because it skips the root changelog step.
 
+### GitHub Actions Release Automation
+
+- Pushes to `develop` run the release PR automation in [`.github/workflows/release-pr.yml`](./.github/workflows/release-pr.yml). It creates or updates a single release PR by running `pnpm run release:version` on top of pending `.changeset/*.md` files.
+- Pushes to `main` run the GitHub release automation in [`.github/workflows/github-release.yml`](./.github/workflows/github-release.yml). It reads the root version, extracts the matching root changelog section, and creates the `v{version}` GitHub Release.
+- The repository keeps the existing branch strategy: merge feature work into `develop`, merge the generated release PR into `develop` when the next version is ready, cut `release/{version}` for QA, and merge that branch into `main` to publish the GitHub Release.
+- Operational details and prerequisites are documented in [`docs/release-automation.md`](./docs/release-automation.md).
+
 ## Running Tests
 
 ### Unit Tests
