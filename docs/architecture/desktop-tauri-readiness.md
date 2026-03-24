@@ -52,15 +52,15 @@
 
 ### 인증/내비게이션
 
-- `apps/app/src/pages/LoginPage/index.tsx`
+- `apps/app/src/pages/login/index.tsx`
     - OAuth 복귀 URL을 런타임 app public URL에 의존
-- `apps/app/src/pages/LoginPage/RedirectPage.tsx`
+- `apps/app/src/pages/login/RedirectPage.tsx`
     - `location.search`에서 access token 직접 파싱
 - `apps/app/src/shared/api/client.ts`
     - 401 시 `window.location.pathname/search` 기반 refresh 이동
 - `apps/app/src/features/auth/useAuth/index.ts`
     - `window.history.back`, `location.replace`
-- `apps/app/src/pages/RefreshPage/index.tsx`
+- `apps/app/src/pages/refresh/index.tsx`
     - refresh 완료 후 `location.replace`
 
 ### 저장/상태 복구
@@ -72,8 +72,8 @@
 
 ### 클립보드
 
-- `apps/app/src/pages/MemberPage/ui/WardInfo.tsx`
-- `apps/app/src/pages/RegisterPage/ui/EnterWard.tsx`
+- `apps/app/src/pages/member/ui/WardInfo.tsx`
+- `apps/app/src/pages/register/ui/EnterWard.tsx`
 - `apps/app/src/features/register-ward/ui/RegisterWardShiftTeamsSection.tsx`
 - `apps/app/src/features/shift-editor/model/useShiftEditorKeyBindings.ts`
     - `navigator.clipboard` 직접 사용
