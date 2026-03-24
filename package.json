@@ -35,6 +35,8 @@
         "changeset:version": "node ./scripts/release/version-with-changelog.mjs",
         "changeset:version:workspaces": "CI=1 pnpm exec changeset version",
         "changeset:sync-root-version": "node ./scripts/release/sync-root-version.mjs",
+        "release:test": "node --test scripts/release/changelog.test.mjs",
+        "release:verify": "pnpm run release:test && pnpm run release:status && pnpm run release:changelog:preview",
         "release:changelog:preview": "node ./scripts/release/preview-root-changelog.mjs",
         "release:status": "pnpm run changeset:status",
         "release:version": "pnpm run changeset:version",

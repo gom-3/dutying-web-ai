@@ -36,6 +36,9 @@ jobs:
             - name: Install dependencies
               run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
 
+            - name: Validate release changelog helpers
+              run: pnpm run release:test
+
             - name: Create or update release pull request
               uses: changesets/action@v1
               with:
