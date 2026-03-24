@@ -3,8 +3,7 @@ import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pan
 import {ChevronDown, Pencil, Plus} from 'lucide-react';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {Input} from '@/shared/ui/primitives/input';
-import type {TOnboardingNurseDraft, TOnboardingStep, TOnboardingWardDraft} from '../../model';
-import type {TSortMode} from '../../types';
+import type {TOnboardingNurseDraft, TOnboardingStep, TOnboardingWardDraft, TSortMode} from '../../model';
 import {ShiftBadge, SkillBadge} from './Badges';
 import TeamTabs from './TeamTabs';
 

@@ -8,7 +8,7 @@ import {
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
     type TSkillLevelConfig,
-} from './model';
+} from './draft';
 
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
     name?: string;

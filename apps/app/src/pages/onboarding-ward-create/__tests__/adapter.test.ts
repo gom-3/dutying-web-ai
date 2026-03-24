@@ -4,10 +4,10 @@ import {
     applyParsedWardData,
     buildCreateWardPayload,
     buildOnboardingParseDraftInjection,
+    createInitialDraft,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
-} from '../adapter';
-import {createInitialDraft} from '../model';
+} from '../model';
 
 describe('OnboardingWardCreatePage adapter', () => {
     it('builds create ward payload outside the UI draft layer', () => {

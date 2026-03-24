@@ -1,6 +1,6 @@
 import {act, renderHook} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
-import useCreateAccount from '../useCreateAccount';
+import {useCreateAccount} from '../model';
 
 const createNurseDTO = {
     name: '홍길동',

@@ -1,7 +1,7 @@
 import useAuth from '@/features/auth/useAuth';
 import {useMakeShiftBootstrap} from './model/use-bootstrap';
-import {MakeShiftPageView} from './view';
-import MakeTutorial from './view/make-tutorial';
+import {MakeShiftPageView} from './ui';
+import MakeTutorial from './ui/make-tutorial';
 
 const MakeShiftPage = () => {
     const {

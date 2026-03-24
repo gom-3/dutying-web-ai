@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {match} from 'ts-pattern';
 import * as yup from 'yup';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
-import useCreateAccount from '@/features/account/useCreateAccount';
+import {useCreateAccount} from '@/features/account/model';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
 import {type TCreateNurseDTO} from '@/shared/api/nurse/type';

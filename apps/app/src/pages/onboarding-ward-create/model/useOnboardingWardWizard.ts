@@ -9,7 +9,7 @@ import {
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
-} from '../adapter';
+} from './adapter';
 import {
     addNurseDraft,
     addShiftTypeDraft,
@@ -28,9 +28,9 @@ import {
     type TSkillLevelConfig,
     updateNurseDraft,
     updateShiftTypeDraft,
-} from '../model';
-import {createOnboardingWardCreateExecutor} from '../submission';
-import type {TSortMode} from '../types';
+} from './draft';
+import {createOnboardingWardCreateExecutor} from './submission';
+import type {TSortMode} from './types';
 
 const MAX_STEP = 4;
 
