@@ -3,7 +3,7 @@ import {type KeyboardEvent, useMemo, useState} from 'react';
 import {DUTY_RULE_KEYS, DUTY_RULE_META} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleMeta} from '@/features/shift-editor/model/duty-constraints';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
-import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {PlusIcon2} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';

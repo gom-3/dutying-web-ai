@@ -3,7 +3,7 @@ import {events, sendEvent} from '@/analytics';
 import {type TWardShiftType} from '@/entities/ward';
 import CreateShiftModal from '@/features/ward/CreateShiftModal';
 import useEditWard from '@/features/ward/useEditWard';
-import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
 
 function SetShiftType() {

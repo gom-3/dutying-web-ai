@@ -9,7 +9,7 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {useCreateAccount} from '@/features/account/model';
 import useRegister from '@/features/auth/useRegister';
 import useProfileImage from '@/features/file/useProfileImage';
-import {type TCreateNurseDTO} from '@/shared/api/nurse/type';
+import {type TCreateNurseDTO} from '@dutying/api/nurse';
 import {CameraIcon, CheckedIcon, RandomIcon, UncheckedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';

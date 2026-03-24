@@ -4,8 +4,7 @@ import toast from 'react-hot-toast';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth/useAuth';
 import {WardAPI} from '@/shared/api';
-import {type TCreateShiftTypeDTO} from '@/shared/api/ward/type';
-import {type TEditWardDTO} from '@/shared/api/ward/type';
+import {type TCreateShiftTypeDTO, type TEditWardDTO} from '@dutying/api/ward';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 const useEditWard = () => {

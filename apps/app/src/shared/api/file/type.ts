@@ -1,4 +1,4 @@
-import {type TValues} from '@/shared/types/util';
+import {type TValues} from '@dutying/utils';
 
 export const FILE_TYPE = {
     PROFILE_IMAGE: 'PROFILE_IMAGE',

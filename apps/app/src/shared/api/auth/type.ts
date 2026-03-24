@@ -1,5 +1,5 @@
-import type {TAccountResponse} from '../account/type';
-import type {TWardResponse} from '../ward/type';
+import type {TAccountResponse} from '@dutying/api/account';
+import type {TWardResponse} from '@dutying/api/ward';
 
 export type TDemoStartResponse = {
     wardResDto: TWardResponse;

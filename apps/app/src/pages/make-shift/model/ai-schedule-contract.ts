@@ -1,5 +1,5 @@
 import type {TDutyDoc} from '@/features/shift-editor';
-import type {TAiScheduleResponse} from '@/shared/types/ai-schedule';
+import type {TAiScheduleResponse} from '@dutying/api/ward';
 
 export type TAiScheduleRequest = {
     wardId: number;

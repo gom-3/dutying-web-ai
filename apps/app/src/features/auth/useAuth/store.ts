@@ -2,7 +2,7 @@ import {create} from 'zustand';
 import {devtools, persist, type PersistStorage, type StorageValue} from 'zustand/middleware';
 import {type TAccount} from '@/entities/account';
 import {setAccessToken} from '@/shared/api/client';
-import {type TValues} from '@/shared/types/util';
+import {type TValues} from '@dutying/utils';
 
 interface IState {
     accountMe: TAccount | null;
