@@ -112,7 +112,7 @@ export function RequestsShiftBoard({
     }
 
     return (
-        <div className="flex h-full min-h-0 flex-col">
+        <div id="make_requests_board" className="flex h-full min-h-0 flex-col">
             <div className="scrollbar-default min-h-0 scroll-m-2 overflow-auto rounded-[15px] shadow-banner">
                 <div className="flex items-center px-5">
                     <div className="w-24 shrink-0 text-center font-apple text-[1rem] font-medium text-sub-3">
@@ -210,7 +210,7 @@ export function RequestsDecisionPanel({
     const {t} = useTypedTranslation();
 
     return (
-        <div className="w-[360px] shrink-0 rounded-[20px] bg-white shadow-banner">
+        <div id="make_requests_decision_panel" className="w-[360px] shrink-0 rounded-[20px] bg-white shadow-banner">
             <div className="border-b border-sub-4.5 px-6 py-4">
                 <p className="font-apple text-[1.25rem] font-semibold text-main-1">{t('page.makeShift.requests.panelTitle')}</p>
             </div>

@@ -16,7 +16,7 @@ export function MakeShiftStepper({currentStep, onClickStep}: {currentStep: TMake
     const {t} = useTypedTranslation();
 
     return (
-        <div className="border-b-[2px] border-gray-6">
+        <div id="make_stepper" className="border-b-[2px] border-gray-6">
             <div className="flex flex-wrap items-center justify-between gap-6 px-10">
                 {([1, 2, 3, 4, 5] as const).map((step) => {
                     const clickable = step < currentStep;

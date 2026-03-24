@@ -141,13 +141,13 @@ export function AiAutofill() {
     };
 
     return (
-        <div className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
+        <div id="make_ai_autofill_step" className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
             <div className="flex flex-wrap items-start justify-between gap-6">
                 <div>
                     <h1 className="font-apple text-[32px] font-semibold text-sub-1">AI가 채운 근무표를 수정해 보세요</h1>
                     <p className="mt-3 font-apple text-lg text-gray-3">{renderMultilineText(t('page.makeShift.aiRefill.intro'))}</p>
                 </div>
-                <div className="flex shrink-0 flex-wrap items-center gap-3">
+                <div id="make_ai_autofill_actions" className="flex shrink-0 flex-wrap items-center gap-3">
                     <div className="flex items-center gap-4">
                         <button
                             className={`flex h-[27px] items-center rounded-[5px] border px-[10px] py-[5px] font-apple text-[14px] text-sub-2.5 ${
@@ -216,6 +216,7 @@ export function AiAutofill() {
             </div>
 
             <div
+                id="make_ai_autofill_status"
                 aria-atomic="true"
                 aria-live={aiStatus === 'error' ? 'assertive' : 'polite'}
                 role={aiStatus === 'error' ? 'alert' : 'status'}

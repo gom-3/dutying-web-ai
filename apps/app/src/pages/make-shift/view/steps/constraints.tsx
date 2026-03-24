@@ -64,7 +64,7 @@ export function Constraints() {
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div className="w-full">
+            <div id="make_constraints_step" className="w-full">
                 <ConstraintSection
                     title={t('page.makeShift.constraints.section.strong')}
                     countLabel={t('page.makeShift.constraints.count', {count: strongCount})}
