@@ -1,59 +1,103 @@
 # shared 경계 기준
 
-## 목적
+이 문서는 `apps/app/src/shared/*`와 `packages/*`의 책임을 나누는 기준만 따로 정리한다. 구조 전체 기준은 [코드베이스 구조 가이드](./codebase-structure.md)를 본다.
 
-- `shared`는 어떤 도메인에서도 재사용 가능한 범용 코드만 둔다.
-- 화면 흐름, 병동/근무표 같은 업무 맥락이 섞이면 `shared`가 아니라 상위 slice로 올린다.
-- workspace 전체에서 재사용할 계약, 모델, 순수 유틸은 `packages/*`가 소유한다.
+## 핵심 원칙
 
-## app shared vs packages
+- `shared`는 앱 전역에서 재사용되지만 여전히 `app` 런타임과 가깝다.
+- `packages/*`는 다른 앱에서도 그대로 사용할 수 있는 계약, 타입, 순수 유틸을 소유한다.
+- 화면 흐름이나 업무 플로우를 알면 `shared`가 아니라 더 가까운 slice가 소유한다.
 
-- `apps/app/src/shared/*`
-    - 현재 app 런타임에 직접 묶인 코드만 둔다.
-    - 예: 브라우저/라우터/토스트 의존성이 있는 API client, 앱 URL/runtime config, app 테스트 유틸
-- `packages/api`
-    - 특정 앱 구현과 분리 가능한 API 계약과 생성 함수를 둔다.
-    - DTO, response type, `create*Api` 같은 browser-agnostic adapter factory를 포함한다.
-- `packages/domain`
-    - 화면/전송 방식과 무관한 업무 모델 타입을 둔다.
-- `packages/utils`
-    - app 문맥 없는 순수 유틸과 범용 타입을 둔다.
-- `packages/config`
-    - workspace 공통 빌드/TS/ESLint 설정만 둔다.
+## 현재 ownership
 
-## ownership 판단 질문
+### `apps/app/src/shared/*`
 
-- 이 코드가 브라우저 전역, router, toast, `import.meta.env` 같은 app 런타임을 직접 아는가?
-    - 그렇다면 `apps/app/src/shared/*`
-- 이 코드가 다른 app에서도 같은 계약/로직으로 재사용 가능한가?
-    - 그렇다면 `packages/*`
-- 이 코드가 단순 재수출 없이도 package를 직접 import 할 수 있는가?
-    - 그렇다면 app shared에 compat layer를 만들지 말고 package를 바로 사용한다.
+- 브라우저/라우터/토스트/환경변수처럼 앱 런타임을 직접 아는 코드
+- 앱 전용 공용 UI
+- 앱 라우트 상수, 로컬 자산, 테스트 유틸
 
-## shared에 남길 것
+현재 코드 예시:
 
-- 도메인 지식 없이 사용할 수 있는 primitive UI
-- 문자열, 날짜, 스타일 조합 같은 범용 유틸
-- 특정 화면의 레이아웃이나 폼 스타일을 전제하지 않는 추상화
+- [`apps/app/src/shared/api/client.ts`](../../apps/app/src/shared/api/client.ts)
+  - `axios`, `toast`, `window.location`, `import.meta.env`를 직접 사용
+- [`apps/app/src/shared/config/runtime.ts`](../../apps/app/src/shared/config/runtime.ts)
+  - 앱 URL, redirect 안전성, env fallback을 관리
+- [`apps/app/src/shared/ui/primitives`](../../apps/app/src/shared/ui/primitives)
+- [`apps/app/src/shared/ui/form-controls`](../../apps/app/src/shared/ui/form-controls)
 
-## shared에서 빼야 할 것
+### `packages/api`
 
-- `TShift`, `TWardConstraint`처럼 특정 도메인 모델을 직접 아는 유틸
-- 근무표 다운로드, 신청근무 편집처럼 업무 플로우를 수행하는 로직
-- 앱 특정 폼 패턴을 강하게 고정한 preset UI
-    - 예: 큰 pill 버튼, 고정 폭 select, 대형 입력 필드, 시간 입력 formatter
+- API interface
+- DTO / response type
+- app-agnostic contract
 
-## 이번 정리 기준
+현재 코드 예시:
 
-- `shiftToExcel`은 근무표 도메인과 엑셀 내보내기 플로우를 함께 알아야 하므로 `features/shift-editor/model`로 이동
-- `Button`, `Select`, `TextField`, `TimeInput`은 도메인 UI는 아니지만 primitive와 역할이 다르므로 `shared/ui/form-controls`로 분리
-- `shared/ui/primitives/*`는 도메인 비특화 기반 컴포넌트이므로 유지
-- `shared/types/*`에 있던 범용 타입과 API 응답 타입은 각각 `packages/utils`, `packages/api`로 이동
-- app 코드가 `shared/api/*/type` 같은 재수출 레이어 대신 `@dutying/api/*`를 직접 import 하도록 정리
+- [`packages/api/src/client.ts`](../../packages/api/src/client.ts)
+- [`packages/api/src/ward/contracts.ts`](../../packages/api/src/ward/contracts.ts)
 
-## 이후 체크리스트
+### `packages/domain`
 
-- 새 모듈이 `shared`에 들어갈 때 도메인 타입 import가 필요한지 먼저 확인
-- 새 모듈이 app runtime 없이도 성립하면 `packages/*`로 먼저 검토
-- 특정 페이지 레이아웃이나 입력 패턴을 전제하면 `widgets` 또는 더 가까운 slice에 둔다
-- 공용화가 필요하면 먼저 primitive와 preset을 분리한 뒤 shared 편입을 검토한다
+- 비즈니스 도메인 타입
+- 화면이나 전송 방식과 무관한 모델
+
+현재 코드 예시:
+
+- [`packages/domain/src/account.ts`](../../packages/domain/src/account.ts)
+- [`packages/domain/src/ward.ts`](../../packages/domain/src/ward.ts)
+
+### `packages/utils`
+
+- 순수 함수
+- 범용 타입
+- app 문맥 없는 스타일/날짜 유틸
+
+현재 코드 예시:
+
+- [`packages/utils/src/date.ts`](../../packages/utils/src/date.ts)
+- [`packages/utils/src/style.ts`](../../packages/utils/src/style.ts)
+- [`packages/utils/src/types.ts`](../../packages/utils/src/types.ts)
+
+### `packages/config`
+
+- workspace 공통 TypeScript / ESLint 설정
+
+## 배치 판단 질문
+
+1. 이 코드가 브라우저 전역, router, toast, `import.meta.env`를 직접 아는가?
+2. 이 코드가 `apps/app` 밖에서도 그대로 재사용 가능한가?
+3. 이 코드가 특정 페이지 흐름이나 기능 플로우를 알아야 하는가?
+
+판단 방법:
+
+- 1번이 `예`면 `apps/app/src/shared/*`
+- 2번이 `예`면 `packages/*`
+- 3번이 `예`면 `shared`가 아니라 `pages/*`, `features/*`, `widgets/*`로 올린다
+
+## `shared`에 남길 것
+
+- 도메인 지식 없이 쓸 수 있는 primitive UI
+- 앱 전역 폼 컨트롤, 상태 표시 컴포넌트
+- 앱 라우트/런타임/번역/테스트 유틸
+
+## `shared`에서 빼야 할 것
+
+- 특정 도메인 타입을 직접 아는 순수 유틸
+- 근무표 편집, 신청근무 처리, 병동 생성 같은 업무 플로우
+- 다른 앱에서도 쓸 수 있는 API response type, DTO, 범용 타입
+- package를 한 번 더 감싸기만 하는 compat re-export
+
+## 현재 코드 기준 예시
+
+- `IApiClient` 같은 계약은 `packages/api`
+- `axios` 인스턴스와 인증 실패 redirect 처리처럼 브라우저 런타임에 묶인 코드는 `apps/app/src/shared/api`
+- `TWard`, `TNurse` 같은 도메인 타입은 `packages/domain`
+- `TPartialByKey` 같은 범용 타입은 `packages/utils`
+- 페이지 전용 섹션 헤더 조합이나 특정 편집 흐름 UI는 `shared`가 아니라 해당 `pages/*`, `features/*`, `widgets/*`
+
+## 리뷰 시 확인할 것
+
+- `shared` 신규 파일이 도메인 타입 import 없이도 성립하는가?
+- `packages/*`로 옮길 수 있는 코드를 app 내부에 중복 생성하지 않았는가?
+- package를 직접 import 할 수 있는데 app shared re-export를 추가하지 않았는가?
+- 특정 화면이나 기능 흐름을 아는 코드가 `shared`에 들어오지 않았는가?
