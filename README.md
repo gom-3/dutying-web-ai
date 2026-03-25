@@ -129,16 +129,19 @@ pnpm workspace:list
 - 로컬 커버리지: `pnpm coverage`
 - 로컬 E2E: `pnpm e2e`
 - 타입 체크: `pnpm type-check`
+- Changeset 검증: `pnpm run changeset:check`
 
 GitHub Actions:
 
 - [`vitest.yml`](.github/workflows/vitest.yml): Pull Request 시 `pnpm coverage` 실행
 - [`cypress.yml`](.github/workflows/cypress.yml): Push 시 Cypress E2E 실행
+- [`changeset.yml`](.github/workflows/changeset.yml): Pull Request 시 changeset 필요 여부 검증
 
 ## 릴리즈 메모
 
 - 모든 workspace는 동일한 버전을 사용합니다.
 - Changesets는 workspace 버전을 올리고, 루트 `package.json` 및 루트 `CHANGELOG.md`를 함께 동기화합니다.
+- feature PR에서는 `pnpm run changeset:check`로 changeset 필요 여부를 먼저 확인합니다.
 - 로컬에서 release 기반을 점검할 때는 `pnpm run release:verify`를 먼저 실행합니다.
 - 일반적인 릴리즈 준비 순서:
 
@@ -150,11 +153,12 @@ pnpm run changeset:version
 
 ### GitHub Actions Release Automation
 
-- Pushes to `develop` run the release PR automation in [`.github/workflows/release-pr.yml`](./.github/workflows/release-pr.yml). It creates or updates a single release PR by running `pnpm run release:version` on top of pending `.changeset/*.md` files.
+- Pushes to `develop` run the release PR automation in [`.github/workflows/release-pr.yml`](./.github/workflows/release-pr.yml). It creates or updates a single release PR by running the custom `pnpm run release:pr` flow on top of pending `.changeset/*.md` files.
 - The release PR workflow also runs `pnpm run release:test` first so the custom root changelog helpers fail fast before the PR branch is updated.
+- Pull requests run [`.github/workflows/changeset.yml`](./.github/workflows/changeset.yml) to require changesets only for release-relevant web app/package changes.
 - Pushes to `main` run the GitHub release automation in [`.github/workflows/github-release.yml`](./.github/workflows/github-release.yml). It reads the root version, extracts the matching root changelog section, and creates the `v{version}` GitHub Release.
 - The repository keeps the existing branch strategy: merge feature work into `develop`, merge the generated release PR into `develop` when the next version is ready, cut `release/{version}` for QA, and merge that branch into `main` to publish the GitHub Release.
-- Operational details and prerequisites are documented in [`docs/release-automation.md`](./docs/release-automation.md).
+- Changeset 작성 기준은 [`docs/development/changesets.md`](./docs/development/changesets.md), 운영 상세는 [`docs/release-automation.md`](./docs/release-automation.md)에 정리돼 있습니다.
 
 ## 링크
 

@@ -1,20 +1,18 @@
-name: Release PR
+name: Changeset Check
 
 on:
-    push:
+    pull_request:
         branches:
             - develop
+            - main
 
 concurrency:
-    group: release-pr-${{ github.ref }}
+    group: changeset-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
     cancel-in-progress: true
 
 jobs:
-    release-pr:
+    changeset:
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
-            pull-requests: write
 
         steps:
             - name: Checkout repository
@@ -36,14 +34,7 @@ jobs:
             - name: Install dependencies
               run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
 
-            - name: Validate release changelog helpers
-              run: pnpm run release:test
-
-            - name: Create or update release pull request
+            - name: Validate changeset requirements
               env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  RELEASE_BASE_BRANCH: develop
-                  RELEASE_BRANCH: changeset-release/develop
-                  RELEASE_PR_TITLE: '[-]: version packages'
-                  RELEASE_PR_COMMIT_MESSAGE: '[-]: version packages'
-              run: pnpm run release:pr
+                  CHANGESET_BASE_REF: origin/${{ github.base_ref }}
+              run: pnpm run changeset:check
