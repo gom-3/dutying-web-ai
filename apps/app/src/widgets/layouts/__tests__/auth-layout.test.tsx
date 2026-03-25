@@ -1,8 +1,9 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
-import {describe, expect, it, vi, beforeEach} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
+import useInterval from '@/shared/util/useInterval';
 import {AuthLayout} from '../auth-layout';
 
 vi.mock('@/features/auth', () => ({
@@ -13,10 +14,41 @@ vi.mock('@/shared/util/useInterval', () => ({
     default: vi.fn(),
 }));
 
+const translationMap = {
+    'feature.auth.demoSession.badge': '체험 계정',
+    'feature.auth.demoSession.signupRequired': '회원가입 전환 필요',
+    'feature.auth.demoSession.expiringSoon': '곧 만료',
+    'feature.auth.demoSession.title': '지금은 체험용 임시 계정으로 근무표를 작성 중이에요.',
+    'feature.auth.demoSession.titleExpiringSoon': '체험 종료가 얼마 남지 않았어요.',
+    'feature.auth.demoSession.description':
+        '체험은 제한 시간이 있는 임시 세션이에요. 계속 사용하려면 체험이 끝나기 전에 회원가입으로 전환해 주세요.',
+    'feature.auth.demoSession.descriptionExpiringSoon': '곧 체험이 종료돼요. 이후에도 계속 사용하려면 회원가입 전환이 필요해요.',
+    'feature.auth.demoSession.remainingLabel': '남은 시간',
+    'feature.auth.demoSession.remainingFallback': '체험 진행 중',
+} as const;
+
+vi.mock('@/shared/hook/use-typed-translation', () => ({
+    useTypedTranslation: () => ({
+        t: (key: string, values?: Record<string, string | number>) => {
+            if (key === 'feature.auth.demoSession.remainingApprox') {
+                return `약 ${values?.minutes}분 남음`;
+            }
+
+            if (key === 'feature.auth.demoSession.documentTitle') {
+                return `체험 ${values?.countdown} | 듀팅`;
+            }
+
+            return translationMap[key as keyof typeof translationMap] ?? key;
+        },
+    }),
+}));
+
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseInterval = vi.mocked(useInterval);
 
 describe('AuthLayout', () => {
     beforeEach(() => {
+        mockedUseInterval.mockImplementation(() => undefined);
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
@@ -29,6 +61,10 @@ describe('AuthLayout', () => {
                 handleLogout: vi.fn(),
             },
         } as never);
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
     });
 
     it('redirects unauthenticated users to login before rendering protected routes', async () => {
@@ -128,5 +164,41 @@ describe('AuthLayout', () => {
         });
 
         expect(screen.queryByText('register page')).not.toBeInTheDocument();
+    });
+
+    it('renders a prominent demo session banner with remaining time for demo users', async () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-03-25T00:00:00.000Z'));
+
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                accountMe: {
+                    status: 'DEMO',
+                },
+                demoStartDate: '2026-03-24T23:31:00.000Z',
+            },
+            actions: {
+                handleLogout: vi.fn(),
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('체험 계정')).toBeInTheDocument();
+        expect(screen.getByText('회원가입 전환 필요')).toBeInTheDocument();
+        expect(screen.getByText('지금은 체험용 임시 계정으로 근무표를 작성 중이에요.')).toBeInTheDocument();
+        expect(screen.getByText('남은 시간')).toBeInTheDocument();
+        expect(screen.getByText('30:00')).toBeInTheDocument();
+        expect(screen.getByText('약 30분 남음')).toBeInTheDocument();
+        expect(mockedUseInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
     });
 });

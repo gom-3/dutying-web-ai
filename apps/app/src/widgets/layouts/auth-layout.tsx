@@ -2,17 +2,23 @@ import {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {getDemoSessionInfo, isDemoSessionExpired} from '@/features/auth/model/demo-session';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import useInterval from '@/shared/util/useInterval';
+import DemoSessionBanner from './demo-session-banner';
 
 export const AuthLayout = () => {
-    const [demoRemainTime, setDemoRemainTime] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
     const navigate = useNavigate();
     const {pathname} = useLocation();
+    const {t} = useTypedTranslation();
     const {
         state: {isAuth, accountMe, demoStartDate},
         actions: {handleLogout},
     } = useAuth();
+    const demoSessionInfo = getDemoSessionInfo(demoStartDate, currentTime);
+    const isDemoAccount = accountMe?.status === 'DEMO' || Boolean(demoStartDate);
 
     useEffect(() => {
         if (!isAuth) {
@@ -24,26 +30,45 @@ export const AuthLayout = () => {
         }
     }, [accountMe, isAuth, navigate, pathname]);
 
+    useEffect(() => {
+        setCurrentTime(Date.now());
+    }, [demoStartDate]);
+
+    useEffect(() => {
+        if (demoSessionInfo?.isExpired) {
+            void handleLogout();
+        }
+    }, [demoSessionInfo?.isExpired, handleLogout]);
+
     useInterval(
         () => {
-            if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() > 0) {
-                setDemoRemainTime(
-                    `듀팅 체험중 ${Math.ceil((new Date(demoStartDate).getTime() + 3540000 - new Date().getTime()) / 1000 / 60)}:${Math.ceil(
-                        ((new Date(demoStartDate).getTime() + 3540000 - new Date().getTime()) / 1000) % 60,
-                    )}`,
-                );
-            } else {
-                handleLogout();
+            const nextTime = Date.now();
+
+            if (isDemoSessionExpired(demoStartDate, nextTime)) {
+                void handleLogout();
+
+                return;
             }
+
+            setCurrentTime(nextTime);
         },
         demoStartDate ? 1000 : null,
     );
 
     return (
         isAuth && (
-            <div className="h-full w-full">
-                <Helmet title={demoRemainTime ?? '듀팅 | Dutying'} />
-                <Outlet />
+            <div className="flex h-full w-full flex-col">
+                <Helmet
+                    title={
+                        demoSessionInfo?.isActive
+                            ? t('feature.auth.demoSession.documentTitle', {countdown: demoSessionInfo.countdownLabel})
+                            : '듀팅 | Dutying'
+                    }
+                />
+                {isDemoAccount ? <DemoSessionBanner sessionInfo={demoSessionInfo} /> : null}
+                <div className="min-h-0 flex-1">
+                    <Outlet />
+                </div>
             </div>
         )
     );
