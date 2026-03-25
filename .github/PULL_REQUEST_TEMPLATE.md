@@ -18,14 +18,6 @@
 
 <br>
 
-## Changeset Checklist
-
-- [ ] 사용자 영향이 있는 웹 앱/공통 패키지 변경이면 changeset을 추가했습니다.
-- [ ] changeset이 필요 없으면 그 이유를 설명할 수 있습니다.
-- [ ] `pnpm run changeset:check` 또는 관련 검증을 확인했습니다.
-
-<br>
-
 ## To Reviewers
 
 - 특히 봐야 할 파일:

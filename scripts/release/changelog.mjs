@@ -5,7 +5,6 @@ const CHANGESET_DIRECTORY = '.changeset';
 const CHANGESET_README = 'README.md';
 const CHANGELOG_FILE = 'CHANGELOG.md';
 const ROOT_PACKAGE_FILE = 'package.json';
-export const NO_PENDING_CHANGESETS_ERROR = 'NO_PENDING_CHANGESETS';
 
 const RELEASE_TYPE_PRIORITY = {
     patch: 0,
@@ -96,9 +95,7 @@ export async function readPendingChangesets(rootDir) {
     );
 
     if (changesets.length === 0) {
-        const error = new Error('No pending changesets were found in .changeset/.');
-        error.code = NO_PENDING_CHANGESETS_ERROR;
-        throw error;
+        throw new Error('No pending changesets were found in .changeset/.');
     }
 
     return changesets;
@@ -170,7 +167,7 @@ function escapeRegExp(value) {
 export function upsertReleaseEntry(existingContent, entry, version) {
     const normalizedContent = normalizeLineEndings(existingContent).trim();
     const baseContent = normalizedContent === '' ? DEFAULT_CHANGELOG_CONTENT.trim() : normalizedContent;
-    const sectionPattern = new RegExp(`^## ${escapeRegExp(version)} - .*?(?=^## |$)`, 'ms');
+    const sectionPattern = new RegExp(`^## ${escapeRegExp(version)} - .*?(?=^## |\\Z)`, 'ms');
     const contentWithoutCurrentVersion = baseContent.replace(sectionPattern, '').trim();
     const firstReleaseHeadingIndex = contentWithoutCurrentVersion.search(/^## \d+\.\d+\.\d+ - /m);
 
