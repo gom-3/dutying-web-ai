@@ -201,4 +201,35 @@ describe('AuthLayout', () => {
         expect(screen.getByText('약 30분 남음')).toBeInTheDocument();
         expect(mockedUseInterval).toHaveBeenCalledWith(expect.any(Function), 1000);
     });
+
+    it('logs out immediately when the persisted demo start date is malformed', async () => {
+        const handleLogout = vi.fn();
+
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                accountMe: {
+                    status: 'DEMO',
+                },
+                demoStartDate: 'not-a-date',
+            },
+            actions: {
+                handleLogout,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(handleLogout).toHaveBeenCalled();
+        });
+    });
 });

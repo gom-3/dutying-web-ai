@@ -14,8 +14,6 @@ const DemoSessionBanner = ({sessionInfo}: TDemoSessionBannerProps) => {
 
     return (
         <section
-            role="status"
-            aria-live="polite"
             className={cn(
                 'border-b px-5 py-4 md:px-8',
                 isExpiringSoon ? 'border-[#FFD3D3] bg-[#FFF6F6]' : 'border-[#FFE0A3] bg-[linear-gradient(90deg,#FFF9EA_0%,#FFF3D6_100%)]',

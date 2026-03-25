@@ -18,6 +18,7 @@ export const AuthLayout = () => {
         actions: {handleLogout},
     } = useAuth();
     const demoSessionInfo = getDemoSessionInfo(demoStartDate, currentTime);
+    const isDemoSessionExpiredNow = isDemoSessionExpired(demoStartDate, currentTime);
     const isDemoAccount = accountMe?.status === 'DEMO' || Boolean(demoStartDate);
 
     useEffect(() => {
@@ -35,10 +36,10 @@ export const AuthLayout = () => {
     }, [demoStartDate]);
 
     useEffect(() => {
-        if (demoSessionInfo?.isExpired) {
+        if (isDemoSessionExpiredNow) {
             void handleLogout();
         }
-    }, [demoSessionInfo?.isExpired, handleLogout]);
+    }, [handleLogout, isDemoSessionExpiredNow]);
 
     useInterval(
         () => {

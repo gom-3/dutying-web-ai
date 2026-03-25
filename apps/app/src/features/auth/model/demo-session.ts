@@ -44,4 +44,4 @@ export const getDemoSessionInfo = (demoStartDate: string | null, now = Date.now(
 };
 
 export const isDemoSessionExpired = (demoStartDate: string | null, now = Date.now()) =>
-    getDemoSessionInfo(demoStartDate, now)?.isExpired ?? false;
+    demoStartDate ? (getDemoSessionInfo(demoStartDate, now)?.isExpired ?? true) : false;
