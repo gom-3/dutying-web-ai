@@ -25,7 +25,7 @@ function findButtonByText(doc: Document, text: string) {
 }
 
 function waitForMakeTutorialToResolve(targetButtonText: string) {
-    cy.document({timeout: TUTORIAL_TIMEOUT_MS}).then((doc) => {
+    cy.document({timeout: TUTORIAL_TIMEOUT_MS}).then({timeout: TUTORIAL_TIMEOUT_MS}, (doc) => {
         return new Cypress.Promise<void>((resolve, reject) => {
             if (!doc.body) {
                 reject(new Error('Tutorial state could not be checked because the document body is missing.'));
@@ -35,13 +35,19 @@ function waitForMakeTutorialToResolve(targetButtonText: string) {
             let settleTimer: number | null = null;
             let deadlineTimer: number | null = null;
             let skipRequested = false;
+            const clearSettleTimer = () => {
+                if (settleTimer !== null) {
+                    window.clearTimeout(settleTimer);
+                    settleTimer = null;
+                }
+            };
             const cleanup = () => {
                 if (observer) observer.disconnect();
-                if (settleTimer !== null) window.clearTimeout(settleTimer);
+                clearSettleTimer();
                 if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
             };
             const scheduleResolve = () => {
-                if (settleTimer !== null) window.clearTimeout(settleTimer);
+                clearSettleTimer();
 
                 settleTimer = window.setTimeout(() => {
                     cleanup();
@@ -62,6 +68,8 @@ function waitForMakeTutorialToResolve(targetButtonText: string) {
                     scheduleResolve();
                     return;
                 }
+
+                clearSettleTimer();
 
                 const skipButton = findButtonByText(doc, '건너뛰기');
 
