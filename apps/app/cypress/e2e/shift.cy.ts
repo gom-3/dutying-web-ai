@@ -16,6 +16,7 @@ function keyDownEvent(key: string, count: number, ctrl?: boolean, shift?: boolea
 }
 
 const PAGE_TIMEOUT_MS = 15000;
+const MAX_ADVANCE_ATTEMPTS = 8;
 
 function dismissTutorialIfPresent() {
     cy.get('body', {timeout: PAGE_TIMEOUT_MS}).then(($body) => {
@@ -25,6 +26,52 @@ function dismissTutorialIfPresent() {
 
         cy.findByRole('button', {name: '건너뛰기', timeout: PAGE_TIMEOUT_MS}).click({force: true});
         cy.get('#TutorialOverlay', {timeout: PAGE_TIMEOUT_MS}).should('not.exist');
+    });
+}
+
+function clickButton(label: RegExp | string) {
+    dismissTutorialIfPresent();
+    cy.contains('button', label, {timeout: PAGE_TIMEOUT_MS}).click({force: true});
+}
+
+function advanceToEditableShiftScreen(attempt = 0) {
+    if (attempt >= MAX_ADVANCE_ATTEMPTS) {
+        throw new Error('Timed out while navigating to an editable shift screen.');
+    }
+
+    dismissTutorialIfPresent();
+    cy.get('body', {timeout: PAGE_TIMEOUT_MS}).then(($body) => {
+        if ($body.find('#cell_sample').length > 0) {
+            return;
+        }
+
+        const bodyText = $body.text();
+
+        if (bodyText.includes('근무표 수정하기')) {
+            clickButton('근무표 수정하기');
+            advanceToEditableShiftScreen(attempt + 1);
+            return;
+        }
+
+        if (bodyText.includes('근무표 보러가기')) {
+            clickButton(/근무표 보러가기/);
+            advanceToEditableShiftScreen(attempt + 1);
+            return;
+        }
+
+        if (/근무표 생성하기|다음달 근무표 만들기|이번달 근무표 만들기/.test(bodyText)) {
+            clickButton(/근무표 생성하기|다음달 근무표 만들기|이번달 근무표 만들기/);
+            advanceToEditableShiftScreen(attempt + 1);
+            return;
+        }
+
+        if (bodyText.includes('다음')) {
+            clickButton(/^다음$/);
+            advanceToEditableShiftScreen(attempt + 1);
+            return;
+        }
+
+        throw new Error('Could not determine the next action to reach an editable shift screen.');
     });
 }
 
@@ -38,23 +85,7 @@ function openEditableShiftScreen() {
     });
 
     cy.location('pathname', {timeout: PAGE_TIMEOUT_MS}).should('match', /^\/(make|duty|refresh)/);
-
-    cy.get('body', {timeout: PAGE_TIMEOUT_MS}).then(($body) => {
-        if ($body.text().includes('근무표 보러가기')) {
-            cy.contains('button', /근무표 보러가기/, {timeout: PAGE_TIMEOUT_MS}).click();
-            cy.findByRole('button', {name: '근무표 수정하기', timeout: PAGE_TIMEOUT_MS}).click();
-            return;
-        }
-
-        cy.contains('button', /근무표 생성하기|다음달 근무표 만들기|이번달 근무표 만들기/, {
-            timeout: PAGE_TIMEOUT_MS,
-        }).click();
-        dismissTutorialIfPresent();
-        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
-        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
-        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
-    });
-
+    advanceToEditableShiftScreen();
     dismissTutorialIfPresent();
     cy.get('#cell_sample', {timeout: PAGE_TIMEOUT_MS}).click();
 }
