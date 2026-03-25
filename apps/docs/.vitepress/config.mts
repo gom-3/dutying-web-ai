@@ -1,6 +1,10 @@
 import {defineConfig} from 'vitepress';
 import {docsSiteLinks} from './site.mts';
 
+const docsTitle = 'Dutying Docs';
+const docsDescription = '듀팅 웹과 모바일 사용자 가이드를 함께 담기 위한 통합 문서 사이트';
+const docsOgImage = `${docsSiteLinks.docs}/og-image.png`;
+
 const webGuideSidebar = [
     {
         text: '개요',
@@ -29,14 +33,29 @@ const webGuideSidebar = [
 
 export default defineConfig({
     lang: 'ko-KR',
-    title: 'Dutying Docs',
-    description: '듀팅 웹과 모바일 사용자 가이드를 함께 담기 위한 통합 문서 사이트',
+    title: docsTitle,
+    description: docsDescription,
     cleanUrls: true,
     lastUpdated: true,
     srcExclude: ['README.md'],
+    head: [
+        ['link', {rel: 'icon', href: '/favicon.ico', sizes: 'any'}],
+        ['link', {rel: 'canonical', href: `${docsSiteLinks.docs}/`}],
+        ['meta', {name: 'title', content: docsTitle}],
+        ['meta', {property: 'og:type', content: 'website'}],
+        ['meta', {property: 'og:title', content: docsTitle}],
+        ['meta', {property: 'og:description', content: docsDescription}],
+        ['meta', {property: 'og:url', content: `${docsSiteLinks.docs}/`}],
+        ['meta', {property: 'og:image', content: docsOgImage}],
+        ['meta', {property: 'og:image:alt', content: '듀팅 사용자 가이드 대표 이미지'}],
+        ['meta', {name: 'twitter:card', content: 'summary_large_image'}],
+        ['meta', {name: 'twitter:title', content: docsTitle}],
+        ['meta', {name: 'twitter:description', content: docsDescription}],
+        ['meta', {name: 'twitter:image', content: docsOgImage}],
+    ],
     themeConfig: {
         logo: '/logo.svg',
-        siteTitle: 'Dutying Docs',
+        siteTitle: docsTitle,
         nav: [
             {text: '시작하기', link: '/getting-started/'},
             {text: '웹 사용자 가이드', link: '/web-guide/'},
