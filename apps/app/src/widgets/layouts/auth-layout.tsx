@@ -2,16 +2,18 @@ import {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {formatDemoSessionRemainingLabel, getDemoSessionRemainingMs} from '@/features/auth/model/demo-session';
 import ROUTE from '@/shared/constant/path';
 import useInterval from '@/shared/util/useInterval';
+import {DemoExpiredModal} from './demo-expired-modal';
 
 export const AuthLayout = () => {
     const [demoRemainTime, setDemoRemainTime] = useState<string | null>(null);
     const navigate = useNavigate();
     const {pathname} = useLocation();
     const {
-        state: {isAuth, accountMe, demoStartDate},
-        actions: {handleLogout},
+        state: {isAuth, isDemoExpired, accountMe, demoStartDate},
+        actions: {handleLogout, setDemoExpired, startDemoSignupTransition},
     } = useAuth();
 
     useEffect(() => {
@@ -26,14 +28,32 @@ export const AuthLayout = () => {
 
     useInterval(
         () => {
-            if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() > 0) {
-                setDemoRemainTime(
-                    `듀팅 체험중 ${Math.ceil((new Date(demoStartDate).getTime() + 3540000 - new Date().getTime()) / 1000 / 60)}:${Math.ceil(
-                        ((new Date(demoStartDate).getTime() + 3540000 - new Date().getTime()) / 1000) % 60,
-                    )}`,
-                );
-            } else {
-                handleLogout();
+            if (!demoStartDate) {
+                setDemoRemainTime(null);
+
+                if (isDemoExpired) {
+                    setDemoExpired(false);
+                }
+
+                return;
+            }
+
+            const remainingMs = getDemoSessionRemainingMs(demoStartDate);
+
+            if (remainingMs > 0) {
+                setDemoRemainTime(formatDemoSessionRemainingLabel(demoStartDate));
+
+                if (isDemoExpired) {
+                    setDemoExpired(false);
+                }
+
+                return;
+            }
+
+            setDemoRemainTime(null);
+
+            if (!isDemoExpired) {
+                setDemoExpired(true);
             }
         },
         demoStartDate ? 1000 : null,
@@ -42,7 +62,12 @@ export const AuthLayout = () => {
     return (
         isAuth && (
             <div className="h-full w-full">
-                <Helmet title={demoRemainTime ?? '듀팅 | Dutying'} />
+                <Helmet title={isDemoExpired ? '체험이 종료되었어요 | Dutying' : (demoRemainTime ?? '듀팅 | Dutying')} />
+                <DemoExpiredModal
+                    open={isDemoExpired}
+                    onPrimaryAction={() => startDemoSignupTransition()}
+                    onSecondaryAction={() => void handleLogout(ROUTE.ROOT)}
+                />
                 <Outlet />
             </div>
         )

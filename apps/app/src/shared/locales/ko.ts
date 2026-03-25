@@ -10,6 +10,22 @@ export const ko = {
         landing: {
             title: '근무표\n이제 더 간편하게!',
         },
+        login: {
+            title: '로그인',
+            description: '소셜 계정으로 듀팅을 시작해 보세요.',
+            kakaoCta: '카카오 계정으로 시작하기',
+            appleCta: 'Apple 계정으로 시작하기',
+            termsPrefix: '버튼을 누르면',
+            termsOfService: '서비스 약관,',
+            privacyPolicy: '개인정보 취급 방침',
+            termsSuffix: '에 동의하신 것으로 간주합니다.',
+            demoExpired: {
+                title: '회원가입하고 이어서 사용하기',
+                description: '체험 시간은 종료되었지만, 지금 가입하면 정식 계정 등록 절차를 바로 시작할 수 있어요.',
+                bannerTitle: '체험 종료 후 전환 안내',
+                bannerDescription: '정식 전환 API는 준비 중이라, 이번 단계에서는 로그인 후 회원가입 절차로 연결해 드려요.',
+            },
+        },
         register: {
             nurse: {
                 submitting: '처리 중...',

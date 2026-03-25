@@ -1,12 +1,13 @@
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import useRefresh from '@/features/refresh';
+import useRefresh, {REFRESH_DEMO_EXPIRED_REDIRECT_ERROR} from '@/features/refresh';
 import ROUTE from '@/shared/constant/path';
 import {render, waitFor} from '@/shared/util/test-utils';
 import RefreshPage from '../index';
 
 vi.mock('@/features/refresh', () => ({
     default: vi.fn(),
+    REFRESH_DEMO_EXPIRED_REDIRECT_ERROR: 'refresh_demo_expired_redirect',
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
@@ -99,5 +100,23 @@ describe('RefreshPage', () => {
         await waitFor(() => {
             expect(replaceSpy).toHaveBeenCalledWith(ROUTE.ROOT);
         });
+    });
+
+    it('does not overwrite the demo-expired signup redirect when refresh already redirected', async () => {
+        refreshSpy.mockRejectedValue(new Error(REFRESH_DEMO_EXPIRED_REDIRECT_ERROR));
+
+        render(
+            <MemoryRouter initialEntries={['/refresh?next=%2Fmake']}>
+                <Routes>
+                    <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(refreshSpy).toHaveBeenCalled();
+        });
+
+        expect(replaceSpy).not.toHaveBeenCalled();
     });
 });

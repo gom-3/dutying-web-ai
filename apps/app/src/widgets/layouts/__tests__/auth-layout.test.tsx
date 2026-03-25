@@ -3,6 +3,7 @@ import {describe, expect, it, vi, beforeEach} from 'vitest';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
+import useInterval from '@/shared/util/useInterval';
 import {AuthLayout} from '../auth-layout';
 
 vi.mock('@/features/auth', () => ({
@@ -14,19 +15,30 @@ vi.mock('@/shared/util/useInterval', () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseInterval = vi.mocked(useInterval);
+const defaultHandleLogout = vi.fn();
+const defaultSetDemoExpired = vi.fn();
+const defaultStartDemoSignupTransition = vi.fn();
 
 describe('AuthLayout', () => {
     beforeEach(() => {
+        defaultHandleLogout.mockReset();
+        defaultSetDemoExpired.mockReset();
+        defaultStartDemoSignupTransition.mockReset();
+        mockedUseInterval.mockReset();
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
+                isDemoExpired: false,
                 accountMe: {
                     status: 'WARD_SELECT_PENDING',
                 },
                 demoStartDate: null,
             },
             actions: {
-                handleLogout: vi.fn(),
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
             },
         } as never);
     });
@@ -35,11 +47,14 @@ describe('AuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: false,
+                isDemoExpired: false,
                 accountMe: null,
                 demoStartDate: null,
             },
             actions: {
-                handleLogout: vi.fn(),
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
             },
         } as never);
 
@@ -102,13 +117,16 @@ describe('AuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
+                isDemoExpired: false,
                 accountMe: {
                     status: 'LINKED',
                 },
                 demoStartDate: null,
             },
             actions: {
-                handleLogout: vi.fn(),
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
             },
         } as never);
 
@@ -128,5 +146,37 @@ describe('AuthLayout', () => {
         });
 
         expect(screen.queryByText('register page')).not.toBeInTheDocument();
+    });
+
+    it('opens the demo conversion modal instead of logging out when demo time expires', async () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                isDemoExpired: true,
+                accountMe: {
+                    status: 'DEMO',
+                },
+                demoStartDate: '2026-03-25T00:00:00.000Z',
+            },
+            actions: {
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('회원가입하고 이어서 사용')).toBeInTheDocument();
+        expect(defaultHandleLogout).not.toHaveBeenCalled();
     });
 });

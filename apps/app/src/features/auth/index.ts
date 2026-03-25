@@ -7,6 +7,7 @@ import useTutorialUseCase from '@/features/tutorial';
 import {AccountAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
+import {buildDemoSignupLoginPath, isDemoSessionExpired} from './model/demo-session';
 import {executeLoginRedirect, getLoginRedirectDecision} from './model/login-redirect';
 import useAuthStore from './model/store';
 
@@ -15,8 +16,20 @@ type THandleLoginOptions = {
 };
 
 const useAuth = (activeEffect = false) => {
-    const {accountMe, accountMeStatus, isAuth, accessToken, nurseId, accountId, wardId, demoStartDate, _loaded, setState, resetState} =
-        useAuthStore();
+    const {
+        accountMe,
+        accountMeStatus,
+        isAuth,
+        isDemoExpired,
+        accessToken,
+        nurseId,
+        accountId,
+        wardId,
+        demoStartDate,
+        _loaded,
+        setState,
+        resetState,
+    } = useAuthStore();
     const resetRequestShiftState = useRequestShiftStore((state) => state.resetState);
     const {pathname} = useLocation();
     const {setLoading} = useLoadingUseCase();
@@ -38,6 +51,7 @@ const useAuth = (activeEffect = false) => {
         setState('accountId', null);
         setState('nurseId', null);
         setState('wardId', null);
+        setState('isDemoExpired', false);
 
         if (!options?.preserveDemoStartDate) {
             setState('demoStartDate', null);
@@ -54,6 +68,12 @@ const useAuth = (activeEffect = false) => {
 
         sendEvent(events.auth.login);
     };
+    const setDemoExpired = (expired: boolean) => {
+        setState('isDemoExpired', expired);
+    };
+    const startDemoSignupTransition = (nextPath: string = ROUTE.REGISTER) => {
+        void handleLogout(buildDemoSignupLoginPath(nextPath));
+    };
     const demoTry = async () => {
         setLoading(true);
         initTutorial();
@@ -65,6 +85,7 @@ const useAuth = (activeEffect = false) => {
         setState('nurseId', data.accountResDto.nurseId);
         setState('wardId', data.accountResDto.wardId);
         setState('isAuth', true);
+        setState('isDemoExpired', false);
         setState('accountMeStatus', 'success');
         setState('demoStartDate', new Date().toISOString());
         navigate(ROUTE.MAKE);
@@ -96,11 +117,12 @@ const useAuth = (activeEffect = false) => {
 
     useEffect(() => {
         if (_loaded && activeEffect && accessToken) {
-            if (demoStartDate && new Date(demoStartDate).getTime() + 3540000 - new Date().getTime() <= 0) {
-                void handleLogout();
-            } else {
-                void handleGetAccountMe().catch(() => undefined);
-            }
+            setDemoExpired(isDemoSessionExpired(demoStartDate));
+            void handleGetAccountMe().catch(() => undefined);
+        }
+
+        if (_loaded && activeEffect && !accessToken) {
+            setDemoExpired(false);
         }
     }, [accessToken, activeEffect, demoStartDate, _loaded]);
 
@@ -109,6 +131,7 @@ const useAuth = (activeEffect = false) => {
             accountMe: accountMe === undefined ? null : accountMe,
             accountMeStatus,
             isAuth,
+            isDemoExpired,
             accessToken,
             nurseId,
             accountId,
@@ -120,6 +143,8 @@ const useAuth = (activeEffect = false) => {
             handleGetAccountMe,
             handleLogin,
             handleLogout,
+            setDemoExpired,
+            startDemoSignupTransition,
             demoTry,
         },
     };
