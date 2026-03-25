@@ -84,6 +84,7 @@ describe('useAuth', () => {
             accountMe: {accountId: 9, wardId: 99, nurseId: 19} as never,
             accountMeStatus: 'success',
             isAuth: true,
+            isDemoExpired: false,
             accessToken: 'old-token',
             accountId: 9,
             nurseId: 19,
@@ -149,5 +150,18 @@ describe('useAuth', () => {
             nurseId: 19,
             wardId: 99,
         });
+    });
+
+    it('marks the demo session as expired during bootstrap instead of logging out', () => {
+        useAuthStore.setState({
+            demoStartDate: '2026-02-01T00:00:00.000Z',
+            isDemoExpired: false,
+        });
+
+        vi.mocked(AccountAPI.getAccountMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
+
+        renderHook(() => useAuth(true));
+
+        expect(useAuthStore.getState().isDemoExpired).toBe(true);
     });
 });

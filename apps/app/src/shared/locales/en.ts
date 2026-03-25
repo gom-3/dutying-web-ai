@@ -12,6 +12,23 @@ export const en: TLocale = {
         landing: {
             title: 'Duty Schedule\nNow Easier!',
         },
+        login: {
+            title: 'Sign in',
+            description: 'Start Dutying with your social account.',
+            kakaoCta: 'Continue with Kakao',
+            appleCta: 'Continue with Apple',
+            termsPrefix: 'By continuing, you agree to the',
+            termsOfService: 'Terms of Service,',
+            privacyPolicy: 'Privacy Policy',
+            termsSuffix: '.',
+            demoExpired: {
+                title: 'Sign up and keep going',
+                description: 'Your demo time has ended, but you can immediately continue with the full signup flow.',
+                bannerTitle: 'Demo ended',
+                bannerDescription:
+                    'The full conversion API is still in progress, so for now we will guide you through login and signup first.',
+            },
+        },
         register: {
             nurse: {
                 submitting: 'Processing...',
