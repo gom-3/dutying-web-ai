@@ -5,7 +5,7 @@ import process from 'node:process';
 import {spawn} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 
-import {getNextReleaseVersion, readPendingChangesets, readRootVersion} from './changelog.mjs';
+import {getNextReleaseVersion, NO_PENDING_CHANGESETS_ERROR, readPendingChangesets, readRootVersion} from './changelog.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '../..');
@@ -61,7 +61,7 @@ async function hasPendingChangesets() {
     try {
         return await readPendingChangesets(rootDir);
     } catch (error) {
-        if (error.message === 'No pending changesets were found in .changeset/.') {
+        if (error.code === NO_PENDING_CHANGESETS_ERROR) {
             return [];
         }
 
@@ -76,7 +76,7 @@ function escapeRegExp(value) {
 async function readLatestReleaseSection(version) {
     const changelogPath = path.join(rootDir, 'CHANGELOG.md');
     const changelogContent = await readFile(changelogPath, 'utf8');
-    const sectionPattern = new RegExp(`^## ${escapeRegExp(version)} - .*?(?=^## |\\Z)`, 'ms');
+    const sectionPattern = new RegExp(`^## ${escapeRegExp(version)} - .*?(?=^## |$)`, 'ms');
     const match = changelogContent.match(sectionPattern);
 
     return match?.[0]?.trim() ?? null;

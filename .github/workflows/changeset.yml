@@ -4,7 +4,6 @@ on:
     pull_request:
         branches:
             - develop
-            - main
 
 concurrency:
     group: changeset-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -35,6 +34,4 @@ jobs:
               run: PUPPETEER_DOWNLOAD_BASE_URL="https://storage.googleapis.com/chrome-for-testing-public" pnpm install --frozen-lockfile
 
             - name: Validate changeset requirements
-              env:
-                  CHANGESET_BASE_REF: origin/${{ github.base_ref }}
               run: pnpm run changeset:check

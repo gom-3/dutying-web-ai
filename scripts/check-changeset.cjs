@@ -78,6 +78,10 @@ function readPackageJsonAt(filePath, ref) {
                 return null;
             }
 
+            if (error instanceof SyntaxError) {
+                throw new Error(`Invalid JSON in ${filePath}: ${error.message}`);
+            }
+
             throw error;
         }
     }
@@ -87,6 +91,10 @@ function readPackageJsonAt(filePath, ref) {
     } catch (error) {
         if (error.status === 128) {
             return null;
+        }
+
+        if (error instanceof SyntaxError) {
+            throw new Error(`Invalid JSON in ${filePath} at ${ref}: ${error.message}`);
         }
 
         throw error;
