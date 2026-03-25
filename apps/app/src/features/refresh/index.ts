@@ -4,6 +4,8 @@ import useAuth from '@/features/auth';
 import axiosInstance from '@/shared/api/client';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
+export const REFRESH_DEMO_EXPIRED_REDIRECT_ERROR = 'refresh_demo_expired_redirect';
+
 export default function useRefresh() {
     const {
         state: {isDemoExpired},
@@ -23,7 +25,7 @@ export default function useRefresh() {
         } catch {
             if (isDemoExpired) {
                 startDemoSignupTransition();
-                throw new Error('refresh_failed');
+                throw new Error(REFRESH_DEMO_EXPIRED_REDIRECT_ERROR);
             }
 
             toast.error(t('feature.auth.sessionExpired'));

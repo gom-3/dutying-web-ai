@@ -1,6 +1,6 @@
 import {useEffect} from 'react';
 import {useLocation} from 'react-router-dom';
-import useRefresh from '@/features/refresh';
+import useRefresh, {REFRESH_DEMO_EXPIRED_REDIRECT_ERROR} from '@/features/refresh';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -22,8 +22,12 @@ function RefreshPage() {
                 if (cancelled) return;
 
                 location.replace(next ?? ROUTE.MAKE);
-            } catch {
+            } catch (error) {
                 if (cancelled) return;
+
+                if (error instanceof Error && error.message === REFRESH_DEMO_EXPIRED_REDIRECT_ERROR) {
+                    return;
+                }
 
                 location.replace(ROUTE.ROOT);
             }
