@@ -1,6 +1,19 @@
 import {defineConfig} from 'vitepress';
 import {docsSiteLinks} from './site.mts';
 
+const docsTitle = 'Dutying Docs';
+const docsDescription = '듀팅 웹과 모바일 사용자 가이드를 함께 담기 위한 통합 문서 사이트';
+const docsOgImage = `${docsSiteLinks.docs}/og-image.png`;
+const getDocsRoutePath = (relativePath: string) => {
+    if (!relativePath || relativePath === 'index.md') {
+        return '/';
+    }
+
+    const routePath = `/${relativePath.replace(/\.md$/, '')}`;
+
+    return routePath.endsWith('/index') ? `${routePath.slice(0, -'index'.length)}` : routePath;
+};
+
 const webGuideSidebar = [
     {
         text: '개요',
@@ -29,14 +42,35 @@ const webGuideSidebar = [
 
 export default defineConfig({
     lang: 'ko-KR',
-    title: 'Dutying Docs',
-    description: '듀팅 웹과 모바일 사용자 가이드를 함께 담기 위한 통합 문서 사이트',
+    title: docsTitle,
+    description: docsDescription,
     cleanUrls: true,
     lastUpdated: true,
     srcExclude: ['README.md'],
+    head: [['link', {rel: 'icon', href: '/favicon.ico', sizes: 'any'}]],
+    transformHead: ({pageData}) => {
+        const pageUrl = new URL(getDocsRoutePath(pageData.relativePath), `${docsSiteLinks.docs}/`).toString();
+        const pageTitle = pageData.title && pageData.title !== docsTitle ? `${pageData.title} | ${docsTitle}` : docsTitle;
+        const pageDescription = pageData.description || docsDescription;
+
+        return [
+            ['link', {rel: 'canonical', href: pageUrl}],
+            ['meta', {name: 'title', content: pageTitle}],
+            ['meta', {property: 'og:type', content: 'website'}],
+            ['meta', {property: 'og:title', content: pageTitle}],
+            ['meta', {property: 'og:description', content: pageDescription}],
+            ['meta', {property: 'og:url', content: pageUrl}],
+            ['meta', {property: 'og:image', content: docsOgImage}],
+            ['meta', {property: 'og:image:alt', content: '듀팅 사용자 가이드 대표 이미지'}],
+            ['meta', {name: 'twitter:card', content: 'summary_large_image'}],
+            ['meta', {name: 'twitter:title', content: pageTitle}],
+            ['meta', {name: 'twitter:description', content: pageDescription}],
+            ['meta', {name: 'twitter:image', content: docsOgImage}],
+        ];
+    },
     themeConfig: {
         logo: '/logo.svg',
-        siteTitle: 'Dutying Docs',
+        siteTitle: docsTitle,
         nav: [
             {text: '시작하기', link: '/getting-started/'},
             {text: '웹 사용자 가이드', link: '/web-guide/'},
