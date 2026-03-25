@@ -15,11 +15,22 @@ function keyDownEvent(key: string, count: number, ctrl?: boolean, shift?: boolea
         .forEach(() => cy.get('body').trigger('keydown', {key, ctrlKey: ctrl, shiftKey: shift}));
 }
 
-function closeMakeTutorialIfVisible() {
+function closeMakeTutorialIfVisible(attempt = 0) {
     cy.get('body').then(($body) => {
-        if ($body.text().includes('건너뛰기')) {
-            cy.findByRole('button', {name: '건너뛰기'}).click();
+        const skipButton = $body.find('button').filter((_, element) => element.textContent?.includes('건너뛰기'));
+
+        if (skipButton.length > 0) {
+            cy.wrap(skipButton[0]).click({force: true});
+            cy.get('#TutorialOverlay').should('not.exist');
+            return;
         }
+
+        if (attempt >= 15) {
+            return;
+        }
+
+        cy.wait(200);
+        closeMakeTutorialIfVisible(attempt + 1);
     });
 }
 
