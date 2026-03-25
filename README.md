@@ -138,7 +138,7 @@ GitHub Actions:
 ## 릴리즈 메모
 
 - 모든 workspace는 동일한 버전을 사용합니다.
-- Changesets는 workspace 버전을 올리고, 루트 `package.json` 및 루트 `CHANGELOG.md`를 함께 동기화합니다.
+- Changesets는 workspace 버전, 각 workspace `CHANGELOG.md`, 루트 `package.json`, 루트 `CHANGELOG.md`를 함께 동기화합니다.
 - 로컬에서 release 기반을 점검할 때는 `pnpm run release:verify`를 먼저 실행합니다.
 - 일반적인 릴리즈 준비 순서:
 
@@ -150,7 +150,7 @@ pnpm run changeset:version
 
 ### GitHub Actions Release Automation
 
-- Pushes to `develop` run the release PR automation in [`.github/workflows/release-pr.yml`](./.github/workflows/release-pr.yml). It creates or updates a single release PR by running `pnpm run release:version` on top of pending `.changeset/*.md` files.
+- Pushes to `develop` run the release PR automation in [`.github/workflows/release-pr.yml`](./.github/workflows/release-pr.yml). It creates or updates a single release PR by running `pnpm run release:version` on top of pending `.changeset/*.md` files, including workspace changelog updates.
 - The release PR workflow also runs `pnpm run release:test` first so the custom root changelog helpers fail fast before the PR branch is updated.
 - Pushes to `main` run the GitHub release automation in [`.github/workflows/github-release.yml`](./.github/workflows/github-release.yml). It reads the root version, extracts the matching root changelog section, and creates the `v{version}` GitHub Release.
 - The repository keeps the existing branch strategy: merge feature work into `develop`, merge the generated release PR into `develop` when the next version is ready, cut `release/{version}` for QA, and merge that branch into `main` to publish the GitHub Release.

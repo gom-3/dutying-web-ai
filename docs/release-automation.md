@@ -18,6 +18,7 @@
 - Action:
     - runs `pnpm run release:version`
     - bumps aligned workspace versions through Changesets
+    - appends release notes to each changed workspace `CHANGELOG.md`
     - syncs the root `package.json` version
     - prepends the root `CHANGELOG.md`
     - removes consumed `.changeset/*.md` files in the release PR branch
