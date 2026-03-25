@@ -413,6 +413,19 @@ export const en: TLocale = {
     feature: {
         auth: {
             sessionExpired: 'Your login has expired. Please sign in again.',
+            demoSession: {
+                badge: 'Trial account',
+                signupRequired: 'Sign-up required',
+                expiringSoon: 'Expiring soon',
+                title: 'You are currently editing with a temporary trial account.',
+                titleExpiringSoon: 'Your trial session is about to end.',
+                description: 'This trial runs in a limited temporary session. Sign up before it ends if you want to keep using Dutying.',
+                descriptionExpiringSoon: 'The trial will end soon. You will need to sign up to keep using Dutying afterward.',
+                remainingLabel: 'Time left',
+                remainingApprox: 'About {{minutes}} min left',
+                remainingFallback: 'Trial in progress',
+                documentTitle: 'Trial {{countdown}} | Dutying',
+            },
         },
         registerWard: {
             shiftTypes: {

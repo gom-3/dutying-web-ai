@@ -408,6 +408,19 @@ export const ko = {
     feature: {
         auth: {
             sessionExpired: '로그인이 만료되었습니다. 다시 로그인해주세요.',
+            demoSession: {
+                badge: '체험 계정',
+                signupRequired: '회원가입 전환 필요',
+                expiringSoon: '곧 만료',
+                title: '지금은 체험용 임시 계정으로 근무표를 작성 중이에요.',
+                titleExpiringSoon: '체험 종료가 얼마 남지 않았어요.',
+                description: '체험은 제한 시간이 있는 임시 세션이에요. 계속 사용하려면 체험이 끝나기 전에 회원가입으로 전환해 주세요.',
+                descriptionExpiringSoon: '곧 체험이 종료돼요. 이후에도 계속 사용하려면 회원가입 전환이 필요해요.',
+                remainingLabel: '남은 시간',
+                remainingApprox: '약 {{minutes}}분 남음',
+                remainingFallback: '체험 진행 중',
+                documentTitle: '체험 {{countdown}} | 듀팅',
+            },
         },
         registerWard: {
             shiftTypes: {

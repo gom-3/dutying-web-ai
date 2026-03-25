@@ -2,19 +2,25 @@ import {useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
-import {formatDemoSessionRemainingLabel, getDemoSessionRemainingMs} from '@/features/auth/model/demo-session';
+import {getDemoSessionInfo, isDemoSessionExpired} from '@/features/auth/model/demo-session';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import useInterval from '@/shared/util/useInterval';
 import {DemoExpiredModal} from './demo-expired-modal';
+import DemoSessionBanner from './demo-session-banner';
 
 export const AuthLayout = () => {
-    const [demoRemainTime, setDemoRemainTime] = useState<string | null>(null);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
     const navigate = useNavigate();
     const {pathname} = useLocation();
+    const {t} = useTypedTranslation();
     const {
         state: {isAuth, isDemoExpired, accountMe, demoStartDate},
         actions: {handleLogout, setDemoExpired, startDemoSignupTransition},
     } = useAuth();
+    const demoSessionInfo = getDemoSessionInfo(demoStartDate, currentTime);
+    const isDemoSessionExpiredNow = isDemoSessionExpired(demoStartDate, currentTime);
+    const isDemoAccount = accountMe?.status === 'DEMO' || Boolean(demoStartDate);
 
     useEffect(() => {
         if (!isAuth) {
@@ -26,49 +32,56 @@ export const AuthLayout = () => {
         }
     }, [accountMe, isAuth, navigate, pathname]);
 
+    useEffect(() => {
+        setCurrentTime(Date.now());
+    }, [demoStartDate]);
+
+    useEffect(() => {
+        if (!demoStartDate) {
+            if (isDemoExpired) {
+                setDemoExpired(false);
+            }
+
+            return;
+        }
+
+        if (isDemoSessionExpiredNow !== isDemoExpired) {
+            setDemoExpired(isDemoSessionExpiredNow);
+        }
+    }, [demoStartDate, isDemoExpired, isDemoSessionExpiredNow, setDemoExpired]);
+
     useInterval(
         () => {
             if (!demoStartDate) {
-                setDemoRemainTime(null);
-
-                if (isDemoExpired) {
-                    setDemoExpired(false);
-                }
-
                 return;
             }
 
-            const remainingMs = getDemoSessionRemainingMs(demoStartDate);
-
-            if (remainingMs > 0) {
-                setDemoRemainTime(formatDemoSessionRemainingLabel(demoStartDate));
-
-                if (isDemoExpired) {
-                    setDemoExpired(false);
-                }
-
-                return;
-            }
-
-            setDemoRemainTime(null);
-
-            if (!isDemoExpired) {
-                setDemoExpired(true);
-            }
+            setCurrentTime(Date.now());
         },
         demoStartDate ? 1000 : null,
     );
 
     return (
         isAuth && (
-            <div className="h-full w-full">
-                <Helmet title={isDemoExpired ? '체험이 종료되었어요 | Dutying' : (demoRemainTime ?? '듀팅 | Dutying')} />
+            <div className="flex h-full w-full flex-col">
+                <Helmet
+                    title={
+                        isDemoExpired
+                            ? '체험이 종료되었어요 | Dutying'
+                            : demoSessionInfo?.isActive
+                              ? t('feature.auth.demoSession.documentTitle', {countdown: demoSessionInfo.countdownLabel})
+                              : '듀팅 | Dutying'
+                    }
+                />
                 <DemoExpiredModal
                     open={isDemoExpired}
                     onPrimaryAction={() => startDemoSignupTransition()}
                     onSecondaryAction={() => void handleLogout(ROUTE.ROOT)}
                 />
-                <Outlet />
+                {isDemoAccount && !isDemoExpired ? <DemoSessionBanner sessionInfo={demoSessionInfo} /> : null}
+                <div className="min-h-0 flex-1">
+                    <Outlet />
+                </div>
             </div>
         )
     );
