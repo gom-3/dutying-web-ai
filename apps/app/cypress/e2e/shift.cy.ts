@@ -15,82 +15,48 @@ function keyDownEvent(key: string, count: number, ctrl?: boolean, shift?: boolea
         .forEach(() => cy.get('body').trigger('keydown', {key, ctrlKey: ctrl, shiftKey: shift}));
 }
 
-const UI_SETTLE_DELAY_MS = 300;
-const TUTORIAL_TIMEOUT_MS = 10000;
+const PAGE_TIMEOUT_MS = 15000;
 
-function findButtonByText(doc: Document, text: string) {
-    return Array.from(doc.querySelectorAll('button')).find(
-        (button): button is HTMLButtonElement => button instanceof HTMLButtonElement && button.textContent?.includes(text),
-    );
+function dismissTutorialIfPresent() {
+    cy.get('body', {timeout: PAGE_TIMEOUT_MS}).then(($body) => {
+        if ($body.find('#TutorialOverlay').length === 0 && !$body.text().includes('건너뛰기')) {
+            return;
+        }
+
+        cy.findByRole('button', {name: '건너뛰기', timeout: PAGE_TIMEOUT_MS}).click({force: true});
+        cy.get('#TutorialOverlay', {timeout: PAGE_TIMEOUT_MS}).should('not.exist');
+    });
 }
 
-function waitForMakeTutorialToResolve(targetButtonText: string) {
-    cy.document({timeout: TUTORIAL_TIMEOUT_MS}).then({timeout: TUTORIAL_TIMEOUT_MS}, (doc) => {
-        return new Cypress.Promise<void>((resolve, reject) => {
-            if (!doc.body) {
-                reject(new Error('Tutorial state could not be checked because the document body is missing.'));
-                return;
-            }
-            let observer: MutationObserver | null = null;
-            let settleTimer: number | null = null;
-            let deadlineTimer: number | null = null;
-            let skipRequested = false;
-            const clearSettleTimer = () => {
-                if (settleTimer !== null) {
-                    window.clearTimeout(settleTimer);
-                    settleTimer = null;
-                }
-            };
-            const cleanup = () => {
-                if (observer) observer.disconnect();
-                clearSettleTimer();
-                if (deadlineTimer !== null) window.clearTimeout(deadlineTimer);
-            };
-            const scheduleResolve = () => {
-                clearSettleTimer();
+function openEditableShiftScreen() {
+    cy.findAllByText('근무표 작성 체험하기', {timeout: PAGE_TIMEOUT_MS}).first().click();
 
-                settleTimer = window.setTimeout(() => {
-                    cleanup();
-                    resolve();
-                }, UI_SETTLE_DELAY_MS);
-            };
-            const inspect = () => {
-                const targetButton = findButtonByText(doc, targetButtonText);
-
-                if (!targetButton) {
-                    return;
-                }
-
-                const overlay = doc.querySelector('#TutorialOverlay');
-
-                if (!overlay) {
-                    skipRequested = false;
-                    scheduleResolve();
-                    return;
-                }
-
-                clearSettleTimer();
-
-                const skipButton = findButtonByText(doc, '건너뛰기');
-
-                if (!skipButton || skipRequested) {
-                    return;
-                }
-
-                skipRequested = true;
-                skipButton.click();
-            };
-
-            observer = new MutationObserver(inspect);
-            observer.observe(doc.body, {childList: true, subtree: true, attributes: true});
-            deadlineTimer = window.setTimeout(() => {
-                cleanup();
-                reject(new Error(`Timed out waiting for tutorial state to resolve before "${targetButtonText}".`));
-            }, TUTORIAL_TIMEOUT_MS);
-
-            inspect();
-        });
+    cy.location('pathname', {timeout: PAGE_TIMEOUT_MS}).then((pathname) => {
+        if (pathname === '/login') {
+            login();
+        }
     });
+
+    cy.location('pathname', {timeout: PAGE_TIMEOUT_MS}).should('match', /^\/(make|duty|refresh)/);
+
+    cy.get('body', {timeout: PAGE_TIMEOUT_MS}).then(($body) => {
+        if ($body.text().includes('근무표 보러가기')) {
+            cy.contains('button', /근무표 보러가기/, {timeout: PAGE_TIMEOUT_MS}).click();
+            cy.findByRole('button', {name: '근무표 수정하기', timeout: PAGE_TIMEOUT_MS}).click();
+            return;
+        }
+
+        cy.contains('button', /근무표 생성하기|다음달 근무표 만들기|이번달 근무표 만들기/, {
+            timeout: PAGE_TIMEOUT_MS,
+        }).click();
+        dismissTutorialIfPresent();
+        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
+        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
+        cy.contains('button', /^다음$/, {timeout: PAGE_TIMEOUT_MS}).click();
+    });
+
+    dismissTutorialIfPresent();
+    cy.get('#cell_sample', {timeout: PAGE_TIMEOUT_MS}).click();
 }
 
 describe('근무 제작 페이지', () => {
@@ -99,10 +65,7 @@ describe('근무 제작 페이지', () => {
     });
 
     it('근무표 작성', () => {
-        cy.findAllByText('근무표 작성 체험하기').first().click();
-        waitForMakeTutorialToResolve('다음달 근무표 만들기');
-        cy.findByText('다음달 근무표 만들기').click();
-        cy.get('#cell_sample').click();
+        openEditableShiftScreen();
 
         {
             /**근무 입력 */
