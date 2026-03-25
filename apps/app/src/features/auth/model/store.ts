@@ -8,6 +8,7 @@ interface IState {
     accountMe: TAccount | null;
     accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
     isAuth: boolean;
+    isDemoExpired: boolean;
     accessToken: string | null;
     accountId: number | null;
     nurseId: number | null;
@@ -27,6 +28,7 @@ const initialState: IState = {
     accountMe: null,
     accountMeStatus: 'idle',
     isAuth: false,
+    isDemoExpired: false,
     accessToken: null,
     accountId: null,
     nurseId: null,

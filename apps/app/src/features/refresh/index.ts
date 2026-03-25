@@ -6,7 +6,8 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export default function useRefresh() {
     const {
-        actions: {handleLogout, handleLogin},
+        state: {isDemoExpired},
+        actions: {handleLogout, handleLogin, startDemoSignupTransition},
     } = useAuth();
     const {t} = useTypedTranslation();
     const refresh = useCallback(async () => {
@@ -20,11 +21,16 @@ export default function useRefresh() {
 
             return accessToken as string;
         } catch {
+            if (isDemoExpired) {
+                startDemoSignupTransition();
+                throw new Error('refresh_failed');
+            }
+
             toast.error(t('feature.auth.sessionExpired'));
             await handleLogout();
             throw new Error('refresh_failed');
         }
-    }, [handleLogin, handleLogout, t]);
+    }, [handleLogin, handleLogout, isDemoExpired, startDemoSignupTransition, t]);
 
     return {refresh};
 }
