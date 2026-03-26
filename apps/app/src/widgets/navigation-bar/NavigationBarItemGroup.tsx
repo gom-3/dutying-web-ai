@@ -1,4 +1,6 @@
 import {
+    AccountIcon,
+    AccountIconSelected,
     DutyIcon,
     DutyIconSelected,
     NurseIcon,
@@ -56,6 +58,12 @@ const sections: TNavSection[] = [
                 icon: SettingIcon,
                 selectedIcon: SettingIconSelected,
                 text: '근무 관리',
+            },
+            {
+                path: ROUTE.PROFILE,
+                icon: AccountIcon,
+                selectedIcon: AccountIconSelected,
+                text: '계정 관리',
             },
         ],
     },

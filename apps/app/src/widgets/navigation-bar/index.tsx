@@ -1,20 +1,15 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import {ProfileImage} from '@/entities/account/ui/profile-image';
-import useAuth from '@/features/auth';
 import {FoldIcon, LogoV2} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
 
 const NavigationBar = () => {
-    const {
-        state: {accountMe},
-    } = useAuth();
     const navigate = useNavigate();
     const [isFold, setIsFold] = useState(false);
 
-    // 접힘 상태: 사이드바는 숨기고 좌상단 fixed 버튼만 남김
+    // 펼친 상태: 사이드바는 숨기고 좌측 상단에 fixed 버튼만 유지
     if (isFold) {
         return (
             <button
@@ -65,15 +60,6 @@ const NavigationBar = () => {
                 </div>
 
                 <NavigationBarItemGroups />
-
-                <div className="flex-1" />
-
-                <div className="pb-[52px]">
-                    <button type="button" className="mx-auto flex w-full flex-col items-center" onClick={() => navigate(ROUTE.PROFILE)}>
-                        <ProfileImage className="h-[50px] w-[50px]" profileImg={{profileImgUrl: accountMe?.profileImgUrl}} />
-                        <div className="text-[16px] text-gray-4">{accountMe?.name}</div>
-                    </button>
-                </div>
             </div>
         </aside>
     );
