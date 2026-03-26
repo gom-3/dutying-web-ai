@@ -7,6 +7,22 @@ export const ko = {
             errorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
             retry: '다시 시도',
         },
+        navigationBar: {
+            expandAria: '사이드바 펼치기',
+            foldAria: '사이드바 접기',
+            home: '근무표',
+            sections: {
+                schedule: '근무표',
+                settings: '근무 설정',
+            },
+            items: {
+                make: '근무표 만들기',
+                request: '신청근무 관리',
+                member: '근무자 관리',
+                wardSettings: '근무 관리',
+                account: '계정 관리',
+            },
+        },
         landing: {
             title: '근무표\n이제 더 간편하게!',
         },
