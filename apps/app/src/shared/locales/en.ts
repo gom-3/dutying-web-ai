@@ -9,6 +9,22 @@ export const en: TLocale = {
             errorDescription: 'Please try again shortly. If the issue continues, refresh and check again.',
             retry: 'Retry',
         },
+        navigationBar: {
+            expandAria: 'Expand sidebar',
+            foldAria: 'Collapse sidebar',
+            home: 'Schedule',
+            sections: {
+                schedule: 'Schedule',
+                settings: 'Settings',
+            },
+            items: {
+                make: 'Create schedule',
+                request: 'Request shift management',
+                member: 'Member management',
+                wardSettings: 'Duty management',
+                account: 'Account management',
+            },
+        },
         landing: {
             title: 'Duty Schedule\nNow Easier!',
         },

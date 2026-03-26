@@ -1,4 +1,6 @@
 import {
+    AccountIcon,
+    AccountIconSelected,
     DutyIcon,
     DutyIconSelected,
     NurseIcon,
@@ -9,72 +11,81 @@ import {
     SettingIconSelected,
 } from '@/shared/assets/svg';
 import ROUTE, {type TRoute} from '@/shared/constant/path';
+import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import NavigationBarItem from './NavigationBarItem';
 
 type TNavItem = {
     path?: TRoute;
     icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
     selectedIcon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-    text: string;
+    textKey: TI18nKey;
     disabled?: boolean;
 };
 
 type TNavSection = {
-    label: string;
+    labelKey: TI18nKey;
     items: TNavItem[];
 };
 
 const sections: TNavSection[] = [
     {
-        label: '근무표',
+        labelKey: 'page.navigationBar.sections.schedule',
         items: [
             {
                 path: ROUTE.MAKE,
                 icon: DutyIcon,
                 selectedIcon: DutyIconSelected,
-                text: '근무표 만들기',
+                textKey: 'page.navigationBar.items.make',
             },
             {
                 path: ROUTE.REQUEST,
                 icon: RequestIcon,
                 selectedIcon: RequestIconSelected,
-                text: '신청근무 관리',
+                textKey: 'page.navigationBar.items.request',
             },
         ],
     },
     {
-        label: '근무 설정',
+        labelKey: 'page.navigationBar.sections.settings',
         items: [
             {
                 path: ROUTE.MEMBER,
                 icon: NurseIcon,
                 selectedIcon: NurseIconSelected,
-                text: '근무자 관리',
+                textKey: 'page.navigationBar.items.member',
             },
             {
                 path: ROUTE.WARD_SETTINGS,
                 icon: SettingIcon,
                 selectedIcon: SettingIconSelected,
-                text: '근무 관리',
+                textKey: 'page.navigationBar.items.wardSettings',
+            },
+            {
+                path: ROUTE.PROFILE,
+                icon: AccountIcon,
+                selectedIcon: AccountIconSelected,
+                textKey: 'page.navigationBar.items.account',
             },
         ],
     },
 ];
 const NavigationBarItemGroups = () => {
+    const {t} = useTypedTranslation();
+
     return (
         <nav className="w-full">
             {sections.map((section) => (
-                <div key={section.label}>
+                <div key={section.labelKey}>
                     <div className="my-6 h-px w-full bg-gray-6" />
-                    <div className="px-[20px] pb-[14px] text-[14px] font-medium text-gray-4">{section.label}</div>
+                    <div className="px-[20px] pb-[14px] text-[14px] font-medium text-gray-4">{t(section.labelKey)}</div>
                     <div className="mt-2 flex flex-col gap-2 px-[2px]">
                         {section.items.map((item) => (
                             <NavigationBarItem
-                                key={item.path ?? item.text}
+                                key={item.path ?? item.textKey}
                                 path={item.path}
                                 Icon={item.icon}
                                 SelectedIcon={item.selectedIcon}
-                                text={item.text}
+                                text={t(item.textKey)}
                                 disabled={item.disabled}
                             />
                         ))}
