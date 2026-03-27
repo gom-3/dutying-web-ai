@@ -1,8 +1,8 @@
-import {type TValues} from '@dutying/utils';
 import {create} from 'zustand';
 import {devtools, persist, type PersistStorage, type StorageValue} from 'zustand/middleware';
 import {type TAccount} from '@/entities/account';
 import {setAccessToken} from '@/shared/api/client';
+import {createStoreWriteHelpers} from '@/shared/util/create-store';
 
 interface IState {
     accountMe: TAccount | null;
@@ -18,7 +18,19 @@ interface IState {
 }
 
 interface IStore extends IState {
-    setState: (key: keyof IState, value: TValues<IState>) => void;
+    beginLogin: (accessToken: string, options?: {preserveDemoStartDate?: boolean}) => void;
+    applyDemoSession: (payload: {
+        accessToken: string;
+        accountId: number | null;
+        nurseId: number | null;
+        wardId: number | null;
+        demoStartDate: string;
+    }) => void;
+    setAccountMeLoading: () => void;
+    setAccountMeSuccess: (account: TAccount) => void;
+    setAccountMeError: () => void;
+    setDemoExpired: (expired: boolean) => void;
+    markHydrated: () => void;
     resetState: () => void;
 }
 
@@ -56,11 +68,59 @@ const authStoreStorage: PersistStorage<TPersistedAuthState> = {
 const useAuthStore = create<IStore>()(
     devtools(
         persist(
-            (set) => ({
-                ...initialState,
-                setState: (state, value) => set((prev) => ({...prev, [state]: value})),
-                resetState: () => set({...initialState, _loaded: true}),
-            }),
+            (set, get) => {
+                const {set: setField, patch} = createStoreWriteHelpers<IState, IStore>({
+                    set,
+                    get,
+                    initialState,
+                });
+
+                return {
+                    ...initialState,
+                    beginLogin: (accessToken, options) =>
+                        patch((prev) => ({
+                            accountMe: null,
+                            accountMeStatus: 'loading',
+                            isAuth: true,
+                            isDemoExpired: false,
+                            accessToken,
+                            accountId: null,
+                            nurseId: null,
+                            wardId: null,
+                            demoStartDate: options?.preserveDemoStartDate ? prev.demoStartDate : null,
+                        })),
+                    applyDemoSession: ({accessToken, accountId, nurseId, wardId, demoStartDate}) =>
+                        patch({
+                            accountMe: null,
+                            accessToken,
+                            accountId,
+                            nurseId,
+                            wardId,
+                            isAuth: true,
+                            isDemoExpired: false,
+                            accountMeStatus: 'success',
+                            demoStartDate,
+                        }),
+                    setAccountMeLoading: () => setField('accountMeStatus', 'loading'),
+                    setAccountMeSuccess: (account) =>
+                        patch({
+                            accountMe: account,
+                            wardId: account.wardId,
+                            accountId: account.accountId,
+                            nurseId: account.nurseId,
+                            isAuth: true,
+                            accountMeStatus: 'success',
+                        }),
+                    setAccountMeError: () => setField('accountMeStatus', 'error'),
+                    setDemoExpired: (expired) => setField('isDemoExpired', expired),
+                    markHydrated: () => setField('_loaded', true),
+                    resetState: () =>
+                        patch({
+                            ...initialState,
+                            _loaded: true,
+                        }),
+                };
+            },
             {
                 name: 'useAuthStore',
                 storage: authStoreStorage,
@@ -77,7 +137,7 @@ const useAuthStore = create<IStore>()(
                     };
                 },
                 onRehydrateStorage: (state) => (rehydratedState) => {
-                    (rehydratedState ?? state).setState('_loaded', true);
+                    (rehydratedState ?? state).markHydrated();
                 },
             },
         ),

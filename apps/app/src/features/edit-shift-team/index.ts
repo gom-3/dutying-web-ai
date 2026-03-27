@@ -14,8 +14,25 @@ import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const useEditShiftTeam = () => {
-    const {selectedNurseId, selectedNurseDrawerMode, isNurseDraftDirty, nurseSaveStatus, isAddingNurse, isDeletingNurse, patch} =
-        useEditNurseStore();
+    const {
+        selectedNurseId,
+        selectedNurseDrawerMode,
+        isNurseDraftDirty,
+        nurseSaveStatus,
+        isAddingNurse,
+        isDeletingNurse,
+        beginAddingNurse,
+        completeAddingNurse,
+        finishAddingNurse,
+        beginDeletingNurse,
+        completeDeletingNurse,
+        finishDeletingNurse,
+        selectNurse: selectNurseState,
+        beginSavingNurse,
+        completeSavingNurse,
+        failSavingNurse,
+        setNurseDraftDirty: setNurseDraftDirtyState,
+    } = useEditNurseStore();
     const {
         state: {wardId},
     } = useAuth();
@@ -42,9 +59,7 @@ const useEditShiftTeam = () => {
         async (shiftTeamId: number) => {
             if (!wardId) return;
 
-            patch({
-                isAddingNurse: true,
-            });
+            beginAddingNurse();
 
             try {
                 const nurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
@@ -58,52 +73,36 @@ const useEditShiftTeam = () => {
                     memo: '',
                 });
 
-                patch({
-                    selectedNurseId: nurse.nurseId,
-                    selectedNurseDrawerMode: 'create',
-                    isNurseDraftDirty: false,
-                    nurseSaveStatus: 'idle',
-                });
+                completeAddingNurse(nurse.nurseId);
 
                 toast.success('새 간호사를 추가했어요. 이름과 연락처를 확인한 뒤 저장해 주세요.');
                 await invalidateWard();
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 추가에 실패했습니다.');
             } finally {
-                patch({
-                    isAddingNurse: false,
-                });
+                finishAddingNurse();
             }
         },
-        [invalidateWard, patch, wardId],
+        [beginAddingNurse, completeAddingNurse, finishAddingNurse, invalidateWard, wardId],
     );
     const deleteNurse = useCallback(
         async (shiftTeamId: number, nurseId: number) => {
             if (!wardId) return;
 
-            patch({
-                isDeletingNurse: true,
-            });
+            beginDeletingNurse();
 
             try {
                 await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
-                patch({
-                    selectedNurseId: null,
-                    selectedNurseDrawerMode: 'edit',
-                    isNurseDraftDirty: false,
-                    nurseSaveStatus: 'idle',
-                });
+                completeDeletingNurse();
                 toast.success('간호사를 삭제했어요.');
                 await invalidateWard();
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 삭제에 실패했습니다.');
             } finally {
-                patch({
-                    isDeletingNurse: false,
-                });
+                finishDeletingNurse();
             }
         },
-        [invalidateWard, patch, wardId],
+        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, wardId],
     );
     const selectNurse = useCallback(
         (nurseId: number | null, mode: 'create' | 'edit' = 'edit') => {
@@ -120,45 +119,32 @@ const useEditShiftTeam = () => {
                 if (!isConfirmed) return false;
             }
 
-            patch({
-                selectedNurseId: nurseId,
-                selectedNurseDrawerMode: nurseId === null ? 'edit' : mode,
-                isNurseDraftDirty: false,
-                nurseSaveStatus: 'idle',
-            });
+            selectNurseState(nurseId, mode);
 
             return true;
         },
-        [isNurseDraftDirty, patch, selectedNurseId],
+        [isNurseDraftDirty, selectNurseState, selectedNurseId],
     );
     const updateNurse = useCallback(
         async (nurseId: number, updateNurseDTO: TUpdateNurseDTO) => {
-            patch({
-                nurseSaveStatus: 'saving',
-            });
+            beginSavingNurse();
 
             try {
                 await NurseAPI.updateNurse(nurseId, updateNurseDTO);
-                patch({
-                    isNurseDraftDirty: false,
-                    nurseSaveStatus: 'success',
-                    selectedNurseDrawerMode: 'edit',
-                });
+                completeSavingNurse();
 
                 await invalidateWardShiftAndRequest();
 
                 return true;
             } catch (error) {
-                patch({
-                    nurseSaveStatus: 'error',
-                });
+                failSavingNurse();
 
                 showActionErrorFeedback(error, '간호사 정보 수정에 실패했습니다.');
 
                 return false;
             }
         },
-        [invalidateWardShiftAndRequest, patch],
+        [beginSavingNurse, completeSavingNurse, failSavingNurse, invalidateWardShiftAndRequest],
     );
     const updateNurseShift = useCallback(
         async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) => {
@@ -347,18 +333,9 @@ const useEditShiftTeam = () => {
     );
     const setNurseDraftDirty = useCallback(
         (isDirty: boolean) => {
-            patch((prev) => {
-                if (prev.isNurseDraftDirty === isDirty) {
-                    return {};
-                }
-
-                return {
-                    isNurseDraftDirty: isDirty,
-                    nurseSaveStatus: isDirty && prev.nurseSaveStatus !== 'saving' ? 'idle' : prev.nurseSaveStatus,
-                };
-            });
+            setNurseDraftDirtyState(isDirty);
         },
-        [patch],
+        [setNurseDraftDirtyState],
     );
 
     return {

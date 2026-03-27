@@ -1,6 +1,6 @@
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {AccountAPI} from '@/shared/api';
+import {AccountAPI, AuthAPI} from '@/shared/api';
 import useAuth from '../index';
 import useAuthStore from '../model/store';
 
@@ -152,7 +152,7 @@ describe('useAuth', () => {
         });
     });
 
-    it('marks the demo session as expired during bootstrap instead of logging out', () => {
+    it('marks the demo session as expired during bootstrap instead of logging out', async () => {
         useAuthStore.setState({
             demoStartDate: '2026-02-01T00:00:00.000Z',
             isDemoExpired: false,
@@ -160,8 +160,79 @@ describe('useAuth', () => {
 
         vi.mocked(AccountAPI.getAccountMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
 
-        renderHook(() => useAuth(true));
+        await act(async () => {
+            renderHook(() => useAuth(true));
+            await Promise.resolve();
+        });
 
-        expect(useAuthStore.getState().isDemoExpired).toBe(true);
+        expect(useAuthStore.getState()).toMatchObject({
+            isAuth: true,
+            accessToken: 'old-token',
+            isDemoExpired: true,
+        });
+        expect(mockResetRequestShiftState).not.toHaveBeenCalled();
+    });
+
+    it('turns loading off again when demo bootstrap fails', async () => {
+        vi.mocked(AuthAPI.demoStart).mockRejectedValueOnce(new Error('demo failed'));
+
+        const {result} = renderHook(() => useAuth());
+
+        await expect(
+            act(async () => {
+                await result.current.actions.demoTry();
+            }),
+        ).rejects.toThrow('demo failed');
+
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockSetLoading).toHaveBeenNthCalledWith(2, false);
+    });
+
+    it('turns loading off again when tutorial initialization fails during demo bootstrap', async () => {
+        mockInitTutorial.mockImplementationOnce(() => {
+            throw new Error('tutorial failed');
+        });
+
+        const {result} = renderHook(() => useAuth());
+
+        await expect(
+            act(async () => {
+                await result.current.actions.demoTry();
+            }),
+        ).rejects.toThrow('tutorial failed');
+
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockSetLoading).toHaveBeenNthCalledWith(2, false);
+        expect(AuthAPI.demoStart).not.toHaveBeenCalled();
+    });
+
+    it('syncs the api client token before navigating after demo bootstrap', async () => {
+        vi.mocked(AuthAPI.demoStart).mockResolvedValueOnce({
+            accessToken: 'demo-token',
+            accountResDto: {
+                accountId: 12,
+                nurseId: 34,
+                wardId: 56,
+            },
+        } as never);
+
+        const {result} = renderHook(() => useAuth());
+
+        await act(async () => {
+            await result.current.actions.demoTry();
+        });
+
+        expect(useAuthStore.getState()).toMatchObject({
+            accountMe: null,
+            accessToken: 'demo-token',
+            accountId: 12,
+            nurseId: 34,
+            wardId: 56,
+            isAuth: true,
+            isDemoExpired: false,
+        });
+        expect(setAccessTokenMock).toHaveBeenCalledWith('demo-token');
+        expect(mockNavigate).toHaveBeenCalled();
+        expect(setAccessTokenMock.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
     });
 });

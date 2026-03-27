@@ -99,11 +99,8 @@ describe('useEditShiftTeam', () => {
     });
 
     it('keeps the draft dirty and exposes an error save status when updateNurse fails with an unknown error shape', async () => {
-        useEditNurseStore.getState().patch({
-            selectedNurseId: 11,
-            selectedNurseDrawerMode: 'create',
-            isNurseDraftDirty: true,
-        });
+        useEditNurseStore.getState().selectNurse(11, 'create');
+        useEditNurseStore.getState().setNurseDraftDirty(true);
         mockUpdateNurse.mockRejectedValue({response: {status: 500}});
 
         const {result} = renderHook(() => useEditShiftTeam());
@@ -137,10 +134,43 @@ describe('useEditShiftTeam', () => {
         expect(mockToastSuccess).not.toHaveBeenCalled();
     });
 
-    it('resets the deleting flag and preserves the current selection after deleteNurse fails', async () => {
-        useEditNurseStore.getState().patch({
-            selectedNurseId: 11,
+    it('keeps the adding flag on until ward invalidation finishes after addNurse succeeds', async () => {
+        let resolveInvalidate: (() => void) | undefined;
+
+        mockAddNurseIntoShiftTeam.mockResolvedValue({
+            nurseId: 22,
         });
+        mockInvalidateQueries.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveInvalidate = resolve;
+                }),
+        );
+
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        let actionPromise: Promise<void> | undefined;
+
+        await act(async () => {
+            actionPromise = result.current.actions.addNurse(10);
+            await Promise.resolve();
+        });
+
+        expect(result.current.state.isAddingNurse).toBe(true);
+        expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
+        expect(result.current.state.selectedNurseDrawerMode).toBe('create');
+
+        await act(async () => {
+            resolveInvalidate?.();
+            await actionPromise;
+        });
+
+        expect(result.current.state.isAddingNurse).toBe(false);
+        expect(mockToastSuccess).toHaveBeenCalledWith('새 간호사를 추가했어요. 이름과 연락처를 확인한 뒤 저장해 주세요.');
+    });
+
+    it('resets the deleting flag and preserves the current selection after deleteNurse fails', async () => {
+        useEditNurseStore.getState().selectNurse(11);
         mockRemoveNurseFromShiftTeam.mockRejectedValue({message: 'server error'});
 
         const {result} = renderHook(() => useEditShiftTeam());
@@ -153,5 +183,38 @@ describe('useEditShiftTeam', () => {
         expect(result.current.state.selectedNurse?.nurseId).toBe(11);
         expect(mockToastError).toHaveBeenCalledWith('간호사 삭제에 실패했습니다.');
         expect(mockToastSuccess).not.toHaveBeenCalled();
+    });
+
+    it('keeps the deleting flag on until ward invalidation finishes after deleteNurse succeeds', async () => {
+        let resolveInvalidate: (() => void) | undefined;
+
+        useEditNurseStore.getState().selectNurse(11);
+        mockRemoveNurseFromShiftTeam.mockResolvedValue(undefined);
+        mockInvalidateQueries.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveInvalidate = resolve;
+                }),
+        );
+
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        let actionPromise: Promise<void> | undefined;
+
+        await act(async () => {
+            actionPromise = result.current.actions.deleteNurse(10, 11);
+            await Promise.resolve();
+        });
+
+        expect(result.current.state.isDeletingNurse).toBe(true);
+        expect(result.current.state.selectedNurse).toBeUndefined();
+
+        await act(async () => {
+            resolveInvalidate?.();
+            await actionPromise;
+        });
+
+        expect(result.current.state.isDeletingNurse).toBe(false);
+        expect(mockToastSuccess).toHaveBeenCalledWith('간호사를 삭제했어요.');
     });
 });
