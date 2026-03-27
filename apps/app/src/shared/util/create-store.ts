@@ -33,11 +33,11 @@ type TOptions<S extends object, A extends object, TUnsafe extends boolean, TPers
 };
 
 function pickState<S extends object, TStore extends Record<keyof S, unknown>>(store: TStore, stateKeys: Array<keyof S>): S {
-    return stateKeys.reduce<S>((acc, key) => {
+    return stateKeys.reduce<Partial<S>>((acc, key) => {
         acc[key] = store[key] as unknown as S[typeof key];
 
         return acc;
-    }, {} as S);
+    }, {}) as S;
 }
 
 export function createStoreWriteHelpers<S extends object, TStore extends Record<keyof S, unknown>>({

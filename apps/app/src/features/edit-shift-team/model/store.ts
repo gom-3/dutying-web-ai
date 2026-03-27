@@ -68,17 +68,18 @@ const useEditNurseStore = createStore(initialState, {
             patch({
                 nurseSaveStatus: 'error',
             }),
-        setNurseDraftDirty: (isDirty: boolean) =>
-            patch((prev) => {
-                if (prev.isNurseDraftDirty === isDirty) {
-                    return {};
-                }
+        setNurseDraftDirty: (isDirty: boolean) => {
+            const prev = useEditNurseStore.getState();
 
-                return {
-                    isNurseDraftDirty: isDirty,
-                    nurseSaveStatus: isDirty && prev.nurseSaveStatus !== 'saving' ? 'idle' : prev.nurseSaveStatus,
-                };
-            }),
+            if (prev.isNurseDraftDirty === isDirty) {
+                return;
+            }
+
+            patch({
+                isNurseDraftDirty: isDirty,
+                nurseSaveStatus: isDirty && prev.nurseSaveStatus !== 'saving' ? 'idle' : prev.nurseSaveStatus,
+            });
+        },
     }),
 });
 

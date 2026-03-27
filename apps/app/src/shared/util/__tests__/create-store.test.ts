@@ -36,6 +36,8 @@ describe('createStore', () => {
             count: 1,
             label: 'updated',
         });
+        expect('unsafePatch' in useCounterStore.getState()).toBe(false);
+        expect('unsafeSetState' in useCounterStore.getState()).toBe(false);
     });
 
     it('supports narrowed persist payloads through custom partialize typing', () => {

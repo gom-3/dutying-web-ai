@@ -1,6 +1,6 @@
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {AccountAPI} from '@/shared/api';
+import {AccountAPI, AuthAPI} from '@/shared/api';
 import useAuth from '../index';
 import useAuthStore from '../model/store';
 
@@ -166,5 +166,20 @@ describe('useAuth', () => {
         });
 
         expect(useAuthStore.getState().isDemoExpired).toBe(true);
+    });
+
+    it('turns loading off again when demo bootstrap fails', async () => {
+        vi.mocked(AuthAPI.demoStart).mockRejectedValueOnce(new Error('demo failed'));
+
+        const {result} = renderHook(() => useAuth());
+
+        await expect(
+            act(async () => {
+                await result.current.actions.demoTry();
+            }),
+        ).rejects.toThrow('demo failed');
+
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockSetLoading).toHaveBeenNthCalledWith(2, false);
     });
 });

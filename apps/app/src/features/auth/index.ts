@@ -71,17 +71,20 @@ const useAuth = (activeEffect = false) => {
         setLoading(true);
         initTutorial();
 
-        const data = await AuthAPI.demoStart();
+        try {
+            const data = await AuthAPI.demoStart();
 
-        applyDemoSession({
-            accessToken: data.accessToken,
-            accountId: data.accountResDto.accountId,
-            nurseId: data.accountResDto.nurseId,
-            wardId: data.accountResDto.wardId,
-            demoStartDate: new Date().toISOString(),
-        });
-        navigate(ROUTE.MAKE);
-        setLoading(false);
+            applyDemoSession({
+                accessToken: data.accessToken,
+                accountId: data.accountResDto.accountId,
+                nurseId: data.accountResDto.nurseId,
+                wardId: data.accountResDto.wardId,
+                demoStartDate: new Date().toISOString(),
+            });
+            navigate(ROUTE.MAKE);
+        } finally {
+            setLoading(false);
+        }
     };
     const handleGetAccountMe = async () => {
         setAccountMeLoading();
