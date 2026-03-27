@@ -14,7 +14,7 @@ import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const useEditShiftTeam = () => {
-    const {selectedNurseId, selectedNurseDrawerMode, isNurseDraftDirty, nurseSaveStatus, isAddingNurse, isDeletingNurse, patch} =
+    const {selectedNurseId, selectedNurseDrawerMode, isNurseDraftDirty, nurseSaveStatus, isAddingNurse, isDeletingNurse, unsafePatch} =
         useEditNurseStore();
     const {
         state: {wardId},
@@ -42,7 +42,7 @@ const useEditShiftTeam = () => {
         async (shiftTeamId: number) => {
             if (!wardId) return;
 
-            patch({
+            unsafePatch({
                 isAddingNurse: true,
             });
 
@@ -58,7 +58,7 @@ const useEditShiftTeam = () => {
                     memo: '',
                 });
 
-                patch({
+                unsafePatch({
                     selectedNurseId: nurse.nurseId,
                     selectedNurseDrawerMode: 'create',
                     isNurseDraftDirty: false,
@@ -70,24 +70,24 @@ const useEditShiftTeam = () => {
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 추가에 실패했습니다.');
             } finally {
-                patch({
+                unsafePatch({
                     isAddingNurse: false,
                 });
             }
         },
-        [invalidateWard, patch, wardId],
+        [invalidateWard, unsafePatch, wardId],
     );
     const deleteNurse = useCallback(
         async (shiftTeamId: number, nurseId: number) => {
             if (!wardId) return;
 
-            patch({
+            unsafePatch({
                 isDeletingNurse: true,
             });
 
             try {
                 await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
-                patch({
+                unsafePatch({
                     selectedNurseId: null,
                     selectedNurseDrawerMode: 'edit',
                     isNurseDraftDirty: false,
@@ -98,12 +98,12 @@ const useEditShiftTeam = () => {
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 삭제에 실패했습니다.');
             } finally {
-                patch({
+                unsafePatch({
                     isDeletingNurse: false,
                 });
             }
         },
-        [invalidateWard, patch, wardId],
+        [invalidateWard, unsafePatch, wardId],
     );
     const selectNurse = useCallback(
         (nurseId: number | null, mode: 'create' | 'edit' = 'edit') => {
@@ -120,7 +120,7 @@ const useEditShiftTeam = () => {
                 if (!isConfirmed) return false;
             }
 
-            patch({
+            unsafePatch({
                 selectedNurseId: nurseId,
                 selectedNurseDrawerMode: nurseId === null ? 'edit' : mode,
                 isNurseDraftDirty: false,
@@ -129,17 +129,17 @@ const useEditShiftTeam = () => {
 
             return true;
         },
-        [isNurseDraftDirty, patch, selectedNurseId],
+        [isNurseDraftDirty, selectedNurseId, unsafePatch],
     );
     const updateNurse = useCallback(
         async (nurseId: number, updateNurseDTO: TUpdateNurseDTO) => {
-            patch({
+            unsafePatch({
                 nurseSaveStatus: 'saving',
             });
 
             try {
                 await NurseAPI.updateNurse(nurseId, updateNurseDTO);
-                patch({
+                unsafePatch({
                     isNurseDraftDirty: false,
                     nurseSaveStatus: 'success',
                     selectedNurseDrawerMode: 'edit',
@@ -149,7 +149,7 @@ const useEditShiftTeam = () => {
 
                 return true;
             } catch (error) {
-                patch({
+                unsafePatch({
                     nurseSaveStatus: 'error',
                 });
 
@@ -158,7 +158,7 @@ const useEditShiftTeam = () => {
                 return false;
             }
         },
-        [invalidateWardShiftAndRequest, patch],
+        [invalidateWardShiftAndRequest, unsafePatch],
     );
     const updateNurseShift = useCallback(
         async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) => {
@@ -347,7 +347,7 @@ const useEditShiftTeam = () => {
     );
     const setNurseDraftDirty = useCallback(
         (isDirty: boolean) => {
-            patch((prev) => {
+            unsafePatch((prev) => {
                 if (prev.isNurseDraftDirty === isDirty) {
                     return {};
                 }
@@ -358,7 +358,7 @@ const useEditShiftTeam = () => {
                 };
             });
         },
-        [patch],
+        [unsafePatch],
     );
 
     return {

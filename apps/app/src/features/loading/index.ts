@@ -1,10 +1,10 @@
 import {useLoadingStore} from './model/store';
 
 const useLoadingUseCase = () => {
-    const setState = useLoadingStore((state) => state.setState);
+    const setLoading = useLoadingStore((state) => state.setLoading);
 
     return {
-        setLoading: (loading: boolean) => setState('loading', loading),
+        setLoading,
     };
 };
 

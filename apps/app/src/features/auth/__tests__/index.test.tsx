@@ -152,7 +152,7 @@ describe('useAuth', () => {
         });
     });
 
-    it('marks the demo session as expired during bootstrap instead of logging out', () => {
+    it('marks the demo session as expired during bootstrap instead of logging out', async () => {
         useAuthStore.setState({
             demoStartDate: '2026-02-01T00:00:00.000Z',
             isDemoExpired: false,
@@ -160,7 +160,10 @@ describe('useAuth', () => {
 
         vi.mocked(AccountAPI.getAccountMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
 
-        renderHook(() => useAuth(true));
+        await act(async () => {
+            renderHook(() => useAuth(true));
+            await Promise.resolve();
+        });
 
         expect(useAuthStore.getState().isDemoExpired).toBe(true);
     });

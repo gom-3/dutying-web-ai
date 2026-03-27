@@ -14,6 +14,7 @@ const initialState = {
 const useEditNurseStore = createStore(initialState, {
     name: 'useEditNurseStore',
     persist: false,
+    unsafeMutators: true,
 });
 
 export default useEditNurseStore;

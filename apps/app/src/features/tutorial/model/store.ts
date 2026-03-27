@@ -8,4 +8,10 @@ const initialState = {
 
 export const useTutorialStore = createStore(initialState, {
     name: 'useTutorialStore',
+    actions: ({set, reset}) => ({
+        resetTutorial: reset,
+        setMakeTutorial: (showMakeTutorial: boolean) => set('showMakeTutorial', showMakeTutorial),
+        setRequestTutorial: (showRequestTutorial: boolean) => set('showRequestTutorial', showRequestTutorial),
+        setMemberTutorial: (showMemberTutorial: boolean) => set('showMemberTutorial', showMemberTutorial),
+    }),
 });

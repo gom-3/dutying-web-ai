@@ -2,20 +2,16 @@ import {useCallback} from 'react';
 import {useTutorialStore} from './model/store';
 
 const useTutorialUseCase = () => {
-    const setState = useTutorialStore((state) => state.setState);
-    const initState = useTutorialStore((state) => state.reset);
-    const setMakeTutorial = useCallback((showMakeTutorial: boolean) => setState('showMakeTutorial', showMakeTutorial), [setState]);
-    const setMemberTutorial = useCallback((showMemberTutorial: boolean) => setState('showMemberTutorial', showMemberTutorial), [setState]);
-    const setRequestTutorial = useCallback(
-        (showRequestTutorial: boolean) => setState('showRequestTutorial', showRequestTutorial),
-        [setState],
-    );
+    const initTutorial = useTutorialStore((state) => state.resetTutorial);
+    const setMakeTutorial = useTutorialStore((state) => state.setMakeTutorial);
+    const setMemberTutorial = useTutorialStore((state) => state.setMemberTutorial);
+    const setRequestTutorial = useTutorialStore((state) => state.setRequestTutorial);
 
     return {
-        initTutorial: initState,
-        setMakeTutorial,
-        setMemberTutorial,
-        setRequestTutorial,
+        initTutorial: useCallback(() => initTutorial(), [initTutorial]),
+        setMakeTutorial: useCallback((showMakeTutorial: boolean) => setMakeTutorial(showMakeTutorial), [setMakeTutorial]),
+        setMemberTutorial: useCallback((showMemberTutorial: boolean) => setMemberTutorial(showMemberTutorial), [setMemberTutorial]),
+        setRequestTutorial: useCallback((showRequestTutorial: boolean) => setRequestTutorial(showRequestTutorial), [setRequestTutorial]),
     };
 };
 
