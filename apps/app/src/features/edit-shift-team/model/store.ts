@@ -14,7 +14,72 @@ const initialState = {
 const useEditNurseStore = createStore(initialState, {
     name: 'useEditNurseStore',
     persist: false,
-    unsafeMutators: true,
+    actions: ({patch}) => ({
+        beginAddingNurse: () =>
+            patch({
+                isAddingNurse: true,
+            }),
+        completeAddingNurse: (selectedNurseId: number) =>
+            patch({
+                isAddingNurse: false,
+                selectedNurseId,
+                selectedNurseDrawerMode: 'create',
+                isNurseDraftDirty: false,
+                nurseSaveStatus: 'idle',
+            }),
+        failAddingNurse: () =>
+            patch({
+                isAddingNurse: false,
+            }),
+        beginDeletingNurse: () =>
+            patch({
+                isDeletingNurse: true,
+            }),
+        completeDeletingNurse: () =>
+            patch({
+                isDeletingNurse: false,
+                selectedNurseId: null,
+                selectedNurseDrawerMode: 'edit',
+                isNurseDraftDirty: false,
+                nurseSaveStatus: 'idle',
+            }),
+        failDeletingNurse: () =>
+            patch({
+                isDeletingNurse: false,
+            }),
+        selectNurse: (selectedNurseId: number | null, selectedNurseDrawerMode: TNurseDrawerMode = 'edit') =>
+            patch({
+                selectedNurseId,
+                selectedNurseDrawerMode: selectedNurseId === null ? 'edit' : selectedNurseDrawerMode,
+                isNurseDraftDirty: false,
+                nurseSaveStatus: 'idle',
+            }),
+        beginSavingNurse: () =>
+            patch({
+                nurseSaveStatus: 'saving',
+            }),
+        completeSavingNurse: () =>
+            patch({
+                isNurseDraftDirty: false,
+                nurseSaveStatus: 'success',
+                selectedNurseDrawerMode: 'edit',
+            }),
+        failSavingNurse: () =>
+            patch({
+                nurseSaveStatus: 'error',
+            }),
+        setNurseDraftDirty: (isDirty: boolean) =>
+            patch((prev) => {
+                if (prev.isNurseDraftDirty === isDirty) {
+                    return {};
+                }
+
+                return {
+                    isNurseDraftDirty: isDirty,
+                    nurseSaveStatus: isDirty && prev.nurseSaveStatus !== 'saving' ? 'idle' : prev.nurseSaveStatus,
+                };
+            }),
+    }),
 });
 
 export default useEditNurseStore;

@@ -22,13 +22,13 @@ export type TStoreOf<S extends object, A extends object = {}, TUnsafe extends bo
         reset: () => void;
     } & (TUnsafe extends true ? TUnsafeStoreMutators<S> : object);
 
-type TOptions<S extends object, A extends object, TUnsafe extends boolean> = {
+type TOptions<S extends object, A extends object, TUnsafe extends boolean, TPersistedState extends object> = {
     name: string;
     actions?: (helpers: TStoreWriteHelpers<S>) => A;
     persist?: boolean;
     devtools?: boolean;
     unsafeMutators?: TUnsafe;
-    persistOptions?: Omit<PersistOptions<TStoreOf<S, A, TUnsafe>, S>, 'name'>;
+    persistOptions?: Omit<PersistOptions<TStoreOf<S, A, TUnsafe>, TPersistedState>, 'name'>;
     equalityFn?: typeof shallow;
 };
 
@@ -70,9 +70,10 @@ export function createStoreWriteHelpers<S extends object, TStore extends Record<
 // - keep generic set/patch private to the store factory
 // - expose explicit actions from the public store API
 // - reserve unsafe mutators for temporary migration paths only
-export function createStore<S extends object, A extends object = {}, TUnsafe extends boolean = false>(
+// - allow persist partialize to narrow the stored shape when needed
+export function createStore<S extends object, A extends object = {}, TUnsafe extends boolean = false, TPersistedState extends object = S>(
     initialState: S,
-    opts: TOptions<S, A, TUnsafe>,
+    opts: TOptions<S, A, TUnsafe, TPersistedState>,
 ): UseBoundStore<StoreApi<TStoreOf<S, A, TUnsafe>>> {
     const {
         name,
@@ -106,11 +107,19 @@ export function createStore<S extends object, A extends object = {}, TUnsafe ext
         } as TStoreOf<S, A, TUnsafe>;
     };
     const withPersist = usePersist
-        ? (persist(baseCreator, {
-              name,
-              partialize: (state) => pickState<S, TStoreOf<S, A, TUnsafe>>(state, stateKeys),
-              ...persistOptions,
-          }) as StateCreator<TStoreOf<S, A, TUnsafe>>)
+        ? (() => {
+              const resolvedPersistOptions = {
+                  name,
+                  ...persistOptions,
+              } as PersistOptions<TStoreOf<S, A, TUnsafe>, TPersistedState>;
+
+              if (!resolvedPersistOptions.partialize) {
+                  resolvedPersistOptions.partialize = (state) =>
+                      pickState<S, TStoreOf<S, A, TUnsafe>>(state, stateKeys) as unknown as TPersistedState;
+              }
+
+              return persist(baseCreator, resolvedPersistOptions) as StateCreator<TStoreOf<S, A, TUnsafe>>;
+          })()
         : baseCreator;
     const withDevtools = useDevtools ? devtools(withPersist, {name}) : withPersist;
 

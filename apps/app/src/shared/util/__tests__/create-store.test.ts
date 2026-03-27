@@ -38,6 +38,48 @@ describe('createStore', () => {
         });
     });
 
+    it('supports narrowed persist payloads through custom partialize typing', () => {
+        const useSessionStore = createStore<
+            {token: string | null; profileId: number | null; transientError: string | null},
+            {setSession: (token: string, profileId: number) => void},
+            false,
+            {token: string | null; profileId: number | null}
+        >(
+            {
+                token: null,
+                profileId: null,
+                transientError: null,
+            },
+            {
+                name: 'useSessionStore',
+                persist: true,
+                actions: ({patch}) => ({
+                    setSession: (token, profileId) =>
+                        patch({
+                            token,
+                            profileId,
+                        }),
+                }),
+                persistOptions: {
+                    partialize: ({token, profileId}) => ({
+                        token,
+                        profileId,
+                    }),
+                },
+            },
+        );
+
+        useSessionStore.getState().setSession('token', 7);
+
+        const persisted = JSON.parse(localStorage.getItem('useSessionStore') ?? '{}');
+
+        expect(persisted.state).toEqual({
+            token: 'token',
+            profileId: 7,
+        });
+        expect(persisted.state.transientError).toBeUndefined();
+    });
+
     it('only exposes unsafe mutators when a store opts into the migration escape hatch', () => {
         const useDraftStore = createStore(
             {

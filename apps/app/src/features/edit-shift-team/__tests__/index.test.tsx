@@ -99,11 +99,8 @@ describe('useEditShiftTeam', () => {
     });
 
     it('keeps the draft dirty and exposes an error save status when updateNurse fails with an unknown error shape', async () => {
-        useEditNurseStore.getState().unsafePatch({
-            selectedNurseId: 11,
-            selectedNurseDrawerMode: 'create',
-            isNurseDraftDirty: true,
-        });
+        useEditNurseStore.getState().selectNurse(11, 'create');
+        useEditNurseStore.getState().setNurseDraftDirty(true);
         mockUpdateNurse.mockRejectedValue({response: {status: 500}});
 
         const {result} = renderHook(() => useEditShiftTeam());
@@ -138,9 +135,7 @@ describe('useEditShiftTeam', () => {
     });
 
     it('resets the deleting flag and preserves the current selection after deleteNurse fails', async () => {
-        useEditNurseStore.getState().unsafePatch({
-            selectedNurseId: 11,
-        });
+        useEditNurseStore.getState().selectNurse(11);
         mockRemoveNurseFromShiftTeam.mockRejectedValue({message: 'server error'});
 
         const {result} = renderHook(() => useEditShiftTeam());
