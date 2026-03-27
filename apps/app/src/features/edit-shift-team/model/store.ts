@@ -21,13 +21,12 @@ const useEditNurseStore = createStore(initialState, {
             }),
         completeAddingNurse: (selectedNurseId: number) =>
             patch({
-                isAddingNurse: false,
                 selectedNurseId,
                 selectedNurseDrawerMode: 'create',
                 isNurseDraftDirty: false,
                 nurseSaveStatus: 'idle',
             }),
-        failAddingNurse: () =>
+        finishAddingNurse: () =>
             patch({
                 isAddingNurse: false,
             }),
@@ -37,13 +36,12 @@ const useEditNurseStore = createStore(initialState, {
             }),
         completeDeletingNurse: () =>
             patch({
-                isDeletingNurse: false,
                 selectedNurseId: null,
                 selectedNurseDrawerMode: 'edit',
                 isNurseDraftDirty: false,
                 nurseSaveStatus: 'idle',
             }),
-        failDeletingNurse: () =>
+        finishDeletingNurse: () =>
             patch({
                 isDeletingNurse: false,
             }),

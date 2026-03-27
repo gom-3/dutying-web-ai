@@ -23,10 +23,10 @@ const useEditShiftTeam = () => {
         isDeletingNurse,
         beginAddingNurse,
         completeAddingNurse,
-        failAddingNurse,
+        finishAddingNurse,
         beginDeletingNurse,
         completeDeletingNurse,
-        failDeletingNurse,
+        finishDeletingNurse,
         selectNurse: selectNurseState,
         beginSavingNurse,
         completeSavingNurse,
@@ -80,10 +80,10 @@ const useEditShiftTeam = () => {
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 추가에 실패했습니다.');
             } finally {
-                failAddingNurse();
+                finishAddingNurse();
             }
         },
-        [beginAddingNurse, completeAddingNurse, failAddingNurse, invalidateWard, wardId],
+        [beginAddingNurse, completeAddingNurse, finishAddingNurse, invalidateWard, wardId],
     );
     const deleteNurse = useCallback(
         async (shiftTeamId: number, nurseId: number) => {
@@ -99,10 +99,10 @@ const useEditShiftTeam = () => {
             } catch (error) {
                 showActionErrorFeedback(error, '간호사 삭제에 실패했습니다.');
             } finally {
-                failDeletingNurse();
+                finishDeletingNurse();
             }
         },
-        [beginDeletingNurse, completeDeletingNurse, failDeletingNurse, invalidateWard, wardId],
+        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, wardId],
     );
     const selectNurse = useCallback(
         (nurseId: number | null, mode: 'create' | 'edit' = 'edit') => {
