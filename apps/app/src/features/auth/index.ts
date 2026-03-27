@@ -69,9 +69,9 @@ const useAuth = (activeEffect = false) => {
     };
     const demoTry = async () => {
         setLoading(true);
-        initTutorial();
 
         try {
+            initTutorial();
             const data = await AuthAPI.demoStart();
 
             applyDemoSession({
@@ -81,6 +81,7 @@ const useAuth = (activeEffect = false) => {
                 wardId: data.accountResDto.wardId,
                 demoStartDate: new Date().toISOString(),
             });
+            setAccessToken(data.accessToken);
             navigate(ROUTE.MAKE);
         } finally {
             setLoading(false);

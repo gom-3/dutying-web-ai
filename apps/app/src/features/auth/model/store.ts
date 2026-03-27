@@ -91,6 +91,7 @@ const useAuthStore = create<IStore>()(
                         })),
                     applyDemoSession: ({accessToken, accountId, nurseId, wardId, demoStartDate}) =>
                         patch({
+                            accountMe: null,
                             accessToken,
                             accountId,
                             nurseId,
