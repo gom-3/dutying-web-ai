@@ -35,7 +35,11 @@ export function FixedShifts() {
                 cells: row.cells.map((cell, colIdx) => {
                     const date = editorDoc.columns[colIdx];
 
-                    return date && editorDoc.fixedCells[`${row.workerId}|${date}`] ? cell : null;
+                    if (!date) return null;
+
+                    const key = `${row.workerId}|${date}`;
+
+                    return editorDoc.fixedCells[key] || editorDoc.requestCells[key] ? cell : null;
                 }),
             })),
         }),

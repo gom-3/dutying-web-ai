@@ -103,17 +103,14 @@ export function useShiftEditorCommands() {
                 continue;
             }
 
-            if (prev === value) continue;
+            const cellChanged = prev !== value;
+            const nextFixed = editorMode === 'fixed' ? value !== null : prevFixed;
+            const fixedChanged = prevFixed !== nextFixed;
 
-            changed.push({row, col, prev, next: value});
+            if (!cellChanged && !fixedChanged) continue;
 
-            if (editorMode === 'fixed') {
-                const nextFixed = value !== null;
-
-                if (prevFixed !== nextFixed) {
-                    fixedDelta.push({key, prev: prevFixed, next: nextFixed});
-                }
-            }
+            if (cellChanged) changed.push({row, col, prev, next: value});
+            if (fixedChanged) fixedDelta.push({key, prev: prevFixed, next: nextFixed});
         }
 
         if (source === 'user') {
@@ -188,15 +185,6 @@ export function useShiftEditorCommands() {
             setViolations(computeViolations(persisted.doc, dutyValidationInput));
         },
         discardPersisted: () => persistence.clear(),
-        setRequestCells: (requestCells: Record<string, true>) => {
-            const {doc} = getState();
-            const prevKeys = Object.keys(doc.requestCells);
-            const nextKeys = Object.keys(requestCells);
-
-            if (prevKeys.length === nextKeys.length && nextKeys.every((k) => doc.requestCells[k] === true)) return;
-
-            setDoc({...doc, requestCells});
-        },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
             const {doc} = getState();
 

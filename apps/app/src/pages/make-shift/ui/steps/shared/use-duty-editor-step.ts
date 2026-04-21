@@ -1,5 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
+import {type TDutyRequest, type TShift} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {
@@ -27,6 +28,44 @@ function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     return true;
 }
 
+function deriveRequestCells(
+    shift: TShift | undefined,
+    year: number,
+    month: number,
+): Map<string, string> {
+    if (!shift) return new Map();
+
+    const idToShortName = new Map<number, string>();
+
+    for (const t of shift.wardShiftTypes) {
+        idToShortName.set(t.wardShiftTypeId, t.shortName);
+    }
+
+    const monthStr = String(month).padStart(2, '0');
+    const result = new Map<string, string>();
+
+    for (const division of shift.divisionShiftNurses) {
+        for (const row of division) {
+            if (!row.shiftNurse.isWorker) continue;
+
+            const workerId = String(row.shiftNurse.shiftNurseId);
+
+            row.wardReqShiftList.forEach((wardShiftTypeId, idx) => {
+                if (wardShiftTypeId !== null) {
+                    const day = String(shift.days[idx].day).padStart(2, '0');
+                    const shortName = idToShortName.get(wardShiftTypeId);
+
+                    if (shortName) {
+                        result.set(`${workerId}|${year}-${monthStr}-${day}`, shortName);
+                    }
+                }
+            });
+        }
+    }
+
+    return result;
+}
+
 type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
 };
@@ -48,10 +87,6 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
     });
-    const requestListQuery = useQuery({
-        ...wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
-        enabled,
-    });
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
@@ -65,12 +100,42 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     useEffect(() => {
         if (!dutyQuery.data) return;
 
-        const nextDoc = shiftToDoc(dutyQuery.data, year, month);
+        const baseDoc = shiftToDoc(dutyQuery.data, year, month);
+        const requestValueMap = deriveRequestCells(dutyQuery.data, year, month);
+        const requestCells: Record<string, true> = {};
+
+        for (const [key, value] of requestValueMap.entries()) {
+            requestCells[key] = true;
+
+            const [workerId, date] = key.split('|');
+            const row = baseDoc.rows.find((r) => r.workerId === workerId);
+            const colIdx = baseDoc.columns.indexOf(date!);
+
+            if (row && colIdx !== -1 && row.cells[colIdx] === null) {
+                row.cells[colIdx] = value;
+            }
+        }
+
+        const nextDoc: TDutyDoc = {...baseDoc, requestCells};
         const persisted = commands.getPersisted();
         const hasContextChanged = hydratedContextKeyRef.current !== currentContextKey;
 
         if (persisted && isSameDutyDocShape(persisted.doc, nextDoc)) {
-            commands.hydrate(persisted);
+            // 보관된 데이터의 cells에도 신청 근무 데이터를 반영한다 (null인 경우만)
+            for (const [key, value] of requestValueMap.entries()) {
+                const [workerId, date] = key.split('|');
+                const row = persisted.doc.rows.find((r) => r.workerId === workerId);
+                const colIdx = persisted.doc.columns.indexOf(date!);
+
+                if (row && colIdx !== -1 && row.cells[colIdx] === null) {
+                    row.cells[colIdx] = value;
+                }
+            }
+
+            commands.hydrate({
+                ...persisted,
+                doc: {...persisted.doc, requestCells},
+            });
 
             if (hasContextChanged) onContextChanged?.();
 
@@ -85,38 +150,6 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
 
         hydratedContextKeyRef.current = currentContextKey;
     }, [commands, currentContextKey, dutyQuery.data, month, onContextChanged, year]);
-
-    useEffect(() => {
-        if (!dutyQuery.data || !requestListQuery.data) return;
-
-        const nurseIdToWorkerId = new Map<number, string>();
-
-        for (const division of dutyQuery.data.divisionShiftNurses) {
-            for (const row of division) {
-                if (!row.shiftNurse.isWorker) continue;
-
-                nurseIdToWorkerId.set(row.shiftNurse.nurseId, String(row.shiftNurse.shiftNurseId));
-            }
-        }
-
-        const monthStr = String(month).padStart(2, '0');
-        const requestCells: Record<string, true> = {};
-
-        for (const req of requestListQuery.data) {
-            if (req.isAccepted !== true) continue;
-
-            const workerId = nurseIdToWorkerId.get(req.nurseId);
-
-            if (!workerId) continue;
-
-            const day = String(req.date).padStart(2, '0');
-            const dateKey = `${year}-${monthStr}-${day}`;
-
-            requestCells[`${workerId}|${dateKey}`] = true;
-        }
-
-        commands.setRequestCells(requestCells);
-    }, [commands, dutyQuery.data, month, requestListQuery.data, year]);
 
     const focusEditor = () => {
         editorRef.current?.focus();
