@@ -171,6 +171,7 @@ function ShiftCalendar({
                 effectiveFocusDay={effectiveFocus?.day}
                 separateWeekendColor={separateWeekendColor}
                 shiftTypeColorStyle={shiftTypeColorStyle}
+                enableDragAndDrop={enableDragAndDrop}
             />
             <DragDropContext onDragEnd={handleDragEnd}>
                 <div
@@ -195,8 +196,10 @@ function ShiftCalendar({
                             onSelectNurse={onSelectNurse}
                             onUpdateCarry={onUpdateCarry}
                             workerRowMap={workerRowMap}
+                            doc={doc}
                             getCellShiftType={getCellShiftType}
                             idToType={idToType}
+                            shortNameToType={shortNameToType}
                             selection={selection}
                             selectionRect={selectionRect}
                             effectiveFocus={effectiveFocus}

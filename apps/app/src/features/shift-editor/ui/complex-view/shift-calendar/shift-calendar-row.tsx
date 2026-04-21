@@ -23,10 +23,9 @@ type TShiftCalendarRowProps = {
     onEditDivision?: (opts: {shiftNurseId: number; level: number; direction: 1 | -1}) => void;
     onSelectNurse?: (nurseId: number | null) => void;
     onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
-    docRowIndex: number;
-    docRow?: TDutyDoc['rows'][number];
-    getCellShiftType: (rowIndex: number, colIndex: number) => TWardShiftType | null;
+    doc: TDutyDoc;
     idToType: Map<number, TWardShiftType>;
+    shortNameToType: Map<string, TWardShiftType>;
     selection: TSelection | null;
     selectionRect: {top: number; left: number; bottom: number; right: number} | null;
     effectiveFocus: TShiftCalendarFocus | null;
@@ -51,8 +50,10 @@ export function ShiftCalendarRow({
     onUpdateCarry,
     docRowIndex,
     docRow,
+    doc,
     getCellShiftType,
     idToType,
+    shortNameToType,
     selection,
     selectionRect,
     effectiveFocus,
@@ -144,8 +145,8 @@ export function ShiftCalendarRow({
                         ))}
                     </div>
                     <div className="flex h-full px-4.25">
-                        {row.wardShiftList.map((_current, j) => {
-                            const request = row.wardReqShiftList[j];
+                        {doc.columns.map((_date, j) => {
+                            const request = row.wardReqShiftList[j] ?? null;
                             const dayType = shift.days[j]?.dayType ?? 'workday';
                             const weekendBg = getWeekendCellBg(dayType, separateWeekendColor);
                             const shiftType = getCellShiftType(docRowIndex, j);

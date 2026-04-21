@@ -127,14 +127,19 @@ export function useShiftEditorCommands() {
         };
         const inverseOps = invertOps(tx.ops);
         const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
-        const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
-        const nextHistory = pushHistory(history, entry);
 
         setDoc(nextDoc);
-        setHistory(nextHistory);
         setViolations(computeViolations(nextDoc, dutyValidationInput));
 
-        persistDoc(nextDoc, nextHistory);
+        if (editorMode !== 'fixed') {
+            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+            const nextHistory = pushHistory(history, entry);
+
+            setHistory(nextHistory);
+            persistDoc(nextDoc, nextHistory);
+        } else {
+            persistDoc(nextDoc, history);
+        }
     };
     const cmdSetSelectionValue = (value: TCellValue, source?: TTxSource) => {
         const {selection} = getState();
@@ -462,14 +467,19 @@ export function useShiftEditorCommands() {
             const tx: TTransaction<TOperation> = {ops: [op], source, timestamp: Date.now()};
             const inverseOps = invertOps(tx.ops);
             const nextDoc = applyOperation(doc, op);
-            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
-            const nextHistory = pushHistory(history, entry);
 
             setDoc(nextDoc);
-            setHistory(nextHistory);
             setViolations(computeViolations(nextDoc, dutyValidationInput));
 
-            persistDoc(nextDoc, nextHistory);
+            if (editorMode !== 'fixed') {
+                const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+                const nextHistory = pushHistory(history, entry);
+
+                setHistory(nextHistory);
+                persistDoc(nextDoc, nextHistory);
+            } else {
+                persistDoc(nextDoc, history);
+            }
         },
         undo: () => {
             const {doc, history, dutyValidationInput, selection} = getState();

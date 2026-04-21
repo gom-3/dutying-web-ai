@@ -24,6 +24,7 @@ type TDutyEditorStepCanvasProps = {
     showFaults: boolean;
     exportRef?: RefObject<HTMLDivElement | null>;
     exportMode?: boolean;
+    enableDragAndDrop?: boolean;
 };
 
 export function DutyEditorStepCanvas({
@@ -42,6 +43,7 @@ export function DutyEditorStepCanvas({
     showFaults,
     exportRef,
     exportMode = false,
+    enableDragAndDrop = false,
 }: TDutyEditorStepCanvasProps) {
     const {t} = useTypedTranslation();
 
@@ -69,6 +71,7 @@ export function DutyEditorStepCanvas({
                             disableInitialSelection: true,
                             violations: violationMap,
                             showLayer: {fault: showFaults, check: false, slash: false},
+                            enableDragAndDrop,
                         }}
                     />
                 </div>

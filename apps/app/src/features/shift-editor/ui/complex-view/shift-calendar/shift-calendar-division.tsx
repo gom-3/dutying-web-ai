@@ -23,8 +23,10 @@ type TShiftCalendarDivisionProps = {
     onSelectNurse?: (nurseId: number | null) => void;
     onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
     workerRowMap: Map<string, {row: TDutyDoc['rows'][number]; index: number}>;
+    doc: TDutyDoc;
     getCellShiftType: (rowIndex: number, colIndex: number) => TWardShiftType | null;
     idToType: Map<number, TWardShiftType>;
+    shortNameToType: Map<string, TWardShiftType>;
     selection: TSelection;
     selectionRect: TSelectionRect;
     effectiveFocus: TShiftCalendarFocus | null;
@@ -48,8 +50,10 @@ export function ShiftCalendarDivision({
     onSelectNurse,
     onUpdateCarry,
     workerRowMap,
+    doc,
     getCellShiftType,
     idToType,
+    shortNameToType,
     selection,
     selectionRect,
     effectiveFocus,
@@ -107,8 +111,10 @@ export function ShiftCalendarDivision({
                                     onUpdateCarry={onUpdateCarry}
                                     docRowIndex={docEntry?.index ?? -1}
                                     docRow={docEntry?.row}
+                                    doc={doc}
                                     getCellShiftType={getCellShiftType}
                                     idToType={idToType}
+                                    shortNameToType={shortNameToType}
                                     selection={selection}
                                     selectionRect={selectionRect}
                                     effectiveFocus={effectiveFocus}

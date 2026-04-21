@@ -12,10 +12,15 @@ export function FixedShifts() {
     const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
     const setEditorMode = useShiftEditorStore((s) => s.setEditorMode);
+    const editorMode = useShiftEditorStore((s) => s.editorMode);
 
     useEffect(() => {
-        setEditorMode('fixed');
+        if (editorMode !== 'fixed') {
+            setEditorMode('fixed');
+        }
+    }, [editorMode, setEditorMode]);
 
+    useEffect(() => {
         return () => setEditorMode('normal');
     }, [setEditorMode]);
 
