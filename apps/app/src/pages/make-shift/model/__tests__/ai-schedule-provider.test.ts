@@ -28,6 +28,8 @@ const request: TAiScheduleRequest = {
         columns: ['2026-03-01'],
         rows: [{workerId: '1', cells: ['D']}],
         workerMeta: {1: {name: '간호사 1'}},
+        fixedCells: {},
+        requestCells: {},
     },
 };
 const response = {

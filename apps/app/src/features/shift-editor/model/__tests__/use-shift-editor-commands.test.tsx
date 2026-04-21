@@ -15,6 +15,8 @@ function createDoc(): TDutyDoc {
             1: {name: 'Kim'},
             2: {name: 'Lee'},
         },
+        fixedCells: {},
+        requestCells: {},
     };
 }
 

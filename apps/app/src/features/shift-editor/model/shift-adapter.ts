@@ -49,7 +49,7 @@ export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc
             return {workerId, cells};
         });
 
-    return {columns, rows, workerMeta};
+    return {columns, rows, workerMeta, fixedCells: {}, requestCells: {}};
 }
 
 function cellToWardShiftTypeId(cell: TCellValue, maps: TWardShiftTypeMaps): number | null {

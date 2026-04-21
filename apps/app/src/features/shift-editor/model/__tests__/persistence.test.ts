@@ -7,6 +7,8 @@ const mockDoc: TDutyDoc = {
     columns: ['2026-03-01'],
     rows: [{workerId: '1', cells: [null]}],
     workerMeta: {1: {name: '간호사 1'}},
+    fixedCells: {},
+    requestCells: {},
 };
 const mockHistory: THistoryState = {
     past: [],

@@ -9,6 +9,7 @@ export function invertSetCellsOp(op: TSetCellsOp): TSetCellsOp {
             prev: cell.next,
             next: cell.prev,
         })),
+        fixedDelta: op.fixedDelta?.map((d) => ({key: d.key, prev: d.next, next: d.prev})),
     };
 }
 
@@ -30,7 +31,10 @@ export function invertOperation(op: TOperation): TOperation {
 }
 
 function applySetCellsOp(doc: TDutyDoc, op: TSetCellsOp): TDutyDoc {
-    if (op.cells.length === 0) return doc;
+    const hasCellChanges = op.cells.length > 0;
+    const hasFixedDelta = !!op.fixedDelta && op.fixedDelta.length > 0;
+
+    if (!hasCellChanges && !hasFixedDelta) return doc;
 
     // 필요한 row만 얕은 복사 (cells는 row마다 복사)
     const nextRows = doc.rows.slice();
@@ -56,7 +60,18 @@ function applySetCellsOp(doc: TDutyDoc, op: TSetCellsOp): TDutyDoc {
         r.cells[col] = next;
     }
 
-    return {...doc, rows: nextRows};
+    let nextFixedCells = doc.fixedCells;
+
+    if (hasFixedDelta) {
+        nextFixedCells = {...doc.fixedCells};
+
+        for (const {key, next} of op.fixedDelta!) {
+            if (next) nextFixedCells[key] = true;
+            else delete nextFixedCells[key];
+        }
+    }
+
+    return {...doc, rows: nextRows, fixedCells: nextFixedCells};
 }
 
 function applyReorderRowsOp(doc: TDutyDoc, op: TReorderRowsOp): TDutyDoc {

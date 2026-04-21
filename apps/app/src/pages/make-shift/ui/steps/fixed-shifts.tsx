@@ -1,5 +1,5 @@
-import {useRef} from 'react';
-import {useShiftImageExport} from '@/features/shift-editor';
+import {useEffect, useMemo, useRef} from 'react';
+import {useShiftEditorStore, useShiftImageExport} from '@/features/shift-editor';
 import {CameraIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
@@ -11,6 +11,14 @@ import {useDutyEditorStep} from './shared/use-duty-editor-step';
 export function FixedShifts() {
     const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
+    const setEditorMode = useShiftEditorStore((s) => s.setEditorMode);
+
+    useEffect(() => {
+        setEditorMode('fixed');
+
+        return () => setEditorMode('normal');
+    }, [setEditorMode]);
+
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
@@ -19,6 +27,20 @@ export function FixedShifts() {
         (s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null,
     );
     const {dutyQuery, editorDoc, violationMap, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
+    const fixedOnlyDoc = useMemo(
+        () => ({
+            ...editorDoc,
+            rows: editorDoc.rows.map((row) => ({
+                ...row,
+                cells: row.cells.map((cell, colIdx) => {
+                    const date = editorDoc.columns[colIdx];
+
+                    return date && editorDoc.fixedCells[`${row.workerId}|${date}`] ? cell : null;
+                }),
+            })),
+        }),
+        [editorDoc],
+    );
     const canExportImage = Boolean(dutyQuery.data) && !dutyQuery.isLoading && !dutyQuery.isError;
     const exportRef = useRef<HTMLDivElement>(null);
     const {isExporting, downloadImage} = useShiftImageExport({
@@ -63,7 +85,7 @@ export function FixedShifts() {
                 onRetry={dutyQuery.refetch}
                 loadingTitle={t('page.makeShift.fixedShifts.loading')}
                 errorTitle={t('page.makeShift.fixedShifts.error')}
-                editorDoc={editorDoc}
+                editorDoc={fixedOnlyDoc}
                 violationMap={violationMap}
                 editorRef={editorRef}
                 onKeyDown={onKeyDown}

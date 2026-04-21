@@ -34,6 +34,8 @@ function cloneDoc(doc: TDutyDoc): TDutyDoc {
             cells: [...row.cells],
         })),
         workerMeta: Object.fromEntries(Object.entries(doc.workerMeta).map(([workerId, meta]) => [workerId, {name: meta.name}])),
+        fixedCells: {...doc.fixedCells},
+        requestCells: {...doc.requestCells},
     };
 }
 
@@ -41,6 +43,8 @@ const EMPTY_DUTY_DOC: TDutyDoc = {
     columns: [],
     rows: [],
     workerMeta: {},
+    fixedCells: {},
+    requestCells: {},
 };
 
 export function useDutyHook() {

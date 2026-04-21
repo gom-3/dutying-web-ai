@@ -48,6 +48,10 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
     });
+    const requestListQuery = useQuery({
+        ...wardQueryOptions.requestList(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
+        enabled,
+    });
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
@@ -81,6 +85,38 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
 
         hydratedContextKeyRef.current = currentContextKey;
     }, [commands, currentContextKey, dutyQuery.data, month, onContextChanged, year]);
+
+    useEffect(() => {
+        if (!dutyQuery.data || !requestListQuery.data) return;
+
+        const nurseIdToWorkerId = new Map<number, string>();
+
+        for (const division of dutyQuery.data.divisionShiftNurses) {
+            for (const row of division) {
+                if (!row.shiftNurse.isWorker) continue;
+
+                nurseIdToWorkerId.set(row.shiftNurse.nurseId, String(row.shiftNurse.shiftNurseId));
+            }
+        }
+
+        const monthStr = String(month).padStart(2, '0');
+        const requestCells: Record<string, true> = {};
+
+        for (const req of requestListQuery.data) {
+            if (req.isAccepted !== true) continue;
+
+            const workerId = nurseIdToWorkerId.get(req.nurseId);
+
+            if (!workerId) continue;
+
+            const day = String(req.date).padStart(2, '0');
+            const dateKey = `${year}-${monthStr}-${day}`;
+
+            requestCells[`${workerId}|${dateKey}`] = true;
+        }
+
+        commands.setRequestCells(requestCells);
+    }, [commands, dutyQuery.data, month, requestListQuery.data, year]);
 
     const focusEditor = () => {
         editorRef.current?.focus();

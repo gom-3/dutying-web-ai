@@ -189,6 +189,6 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
         for (const r of rows) workerMeta[r.workerId] = {name: `간호사 ${r.workerId}`};
 
-        editorRef.current.init({columns, rows, workerMeta});
+        editorRef.current.init({columns, rows, workerMeta, fixedCells: {}, requestCells: {}});
     }, [wardId]);
 }

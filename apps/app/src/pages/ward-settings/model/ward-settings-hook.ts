@@ -10,6 +10,19 @@ import {showActionErrorFeedback} from '@/shared/util/feedback';
 export type TWardSettingsTab = 'shiftTypes' | 'constraints';
 type TQueryStatus = 'idle' | 'pending' | 'error' | 'success';
 
+function normalizeShiftTypes(input: unknown): TWardShiftType[] {
+    if (Array.isArray(input)) return input as TWardShiftType[];
+
+    if (input && typeof input === 'object') {
+        const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
+
+        if (Array.isArray(maybe.shiftTypes)) return maybe.shiftTypes as TWardShiftType[];
+        if (Array.isArray(maybe.wardShiftTypes)) return maybe.wardShiftTypes as TWardShiftType[];
+    }
+
+    return [];
+}
+
 export function useWardSettings() {
     const {
         state: {wardId},
@@ -125,7 +138,7 @@ export function useWardSettings() {
     return {
         state: {
             currentTab,
-            shiftTypes: shiftTypesQuery.data ?? [],
+            shiftTypes: normalizeShiftTypes(shiftTypesQuery.data),
             shiftTypesStatus,
             shiftTeams: shiftTeamsQuery.data ?? [],
             shiftTeamsStatus,

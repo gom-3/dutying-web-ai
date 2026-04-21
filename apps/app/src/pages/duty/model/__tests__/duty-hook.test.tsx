@@ -210,6 +210,8 @@ describe('useDutyHook', () => {
                 columns: ['2026-03-01'],
                 rows: [{workerId: '1', cells: ['D']}],
                 workerMeta: {'1': {name: 'Kim'}},
+                fixedCells: {},
+                requestCells: {},
             },
         };
         mockBuildWorkKeyMap.mockReturnValue({});
@@ -282,7 +284,7 @@ describe('useDutyHook', () => {
         const {result} = renderHook(() => useDutyHook());
 
         await waitFor(() => {
-            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}});
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}, fixedCells: {}, requestCells: {}});
             expect(mockCommands.discardPersisted).toHaveBeenCalled();
             expect(result.current.state.status).toBe('error');
             expect(result.current.state.shift).toBeNull();
@@ -297,7 +299,7 @@ describe('useDutyHook', () => {
         const {result} = renderHook(() => useDutyHook());
 
         await waitFor(() => {
-            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}});
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}, fixedCells: {}, requestCells: {}});
             expect(mockCommands.discardPersisted).toHaveBeenCalled();
             expect(result.current.state.status).toBe('success');
             expect(result.current.state.shift).toBeNull();
@@ -331,6 +333,8 @@ describe('useDutyHook', () => {
             columns: ['2026-03-01'],
             rows: [{workerId: '1', cells: ['D']}],
             workerMeta: {'1': {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
         });
         expect(restoredDoc).not.toBe(mockEditorState.doc);
         expect(restoredDoc.rows[0]).not.toBe(mockEditorState.doc.rows[0]);

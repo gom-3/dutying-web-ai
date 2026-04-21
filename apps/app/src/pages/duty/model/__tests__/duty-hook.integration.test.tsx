@@ -134,6 +134,8 @@ const initializedDoc: TDutyDoc = {
     columns: ['2025-07-01', '2025-07-02'],
     rows: [{workerId: '1', cells: ['D', null]}],
     workerMeta: {'1': {name: 'Kim'}},
+    fixedCells: {},
+    requestCells: {},
 };
 
 function resetDutyStore() {
@@ -231,6 +233,8 @@ describe('useDutyHook integration', () => {
             columns: ['stale'],
             rows: [{workerId: '99', cells: ['N']}],
             workerMeta: {'99': {name: 'Stale'}},
+            fixedCells: {},
+            requestCells: {},
         });
 
         let duty!: TDutyHookRender;
@@ -328,6 +332,8 @@ describe('useDutyHook integration', () => {
             columns: ['2025-07-01'],
             rows: [{workerId: '1', cells: ['D']}],
             workerMeta: {'1': {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
         });
         setQueryState({
             duty: {data: undefined, isPending: false, isError: true, refetch: mockRefetch},
@@ -341,8 +347,8 @@ describe('useDutyHook integration', () => {
         await flushHookEffects();
 
         expect(duty.result.current.state.status).toBe('error');
-        expect(duty.result.current.state.doc).toEqual({columns: [], rows: [], workerMeta: {}});
-        expect(useShiftEditorStore.getState().doc).toEqual({columns: [], rows: [], workerMeta: {}});
+        expect(duty.result.current.state.doc).toEqual({columns: [], rows: [], workerMeta: {}, fixedCells: {}, requestCells: {}});
+        expect(useShiftEditorStore.getState().doc).toEqual({columns: [], rows: [], workerMeta: {}, fixedCells: {}, requestCells: {}});
         expect(window.localStorage.getItem(SHIFT_EDITOR_STORAGE_KEY)).toBeNull();
     });
 });

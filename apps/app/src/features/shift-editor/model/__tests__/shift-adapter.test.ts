@@ -99,6 +99,8 @@ describe('shift-adapter', () => {
             columns: ['2026-03-01', '2026-03-02'],
             rows: [{workerId: '1', cells: ['O', 'D']}],
             workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
         };
 
         expect(docToWardShiftsDTO(doc, shift)).toEqual([
@@ -120,6 +122,8 @@ describe('shift-adapter', () => {
             columns: ['2026-03-01', '2026-03-02'],
             rows: [{workerId: '1', cells: ['O', 'TR']}],
             workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
         };
         const nextShift = docToShift(doc, shift);
 
@@ -133,6 +137,8 @@ describe('shift-adapter', () => {
             columns: ['2026-03-01', '2026-03-02'],
             rows: [{workerId: '1', cells: ['UNKNOWN', 'D']}],
             workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
         };
 
         expect(docToWardShiftsDTO(doc, shift)).toEqual([

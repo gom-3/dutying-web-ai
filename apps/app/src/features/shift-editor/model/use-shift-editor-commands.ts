@@ -1,4 +1,6 @@
+import toast from 'react-hot-toast';
 import {type TWardConstraint} from '@/entities';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {copySelection, pastePayload} from './clipboard';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import {applyOperation, invertOperation} from './operation';
@@ -57,6 +59,7 @@ function persistDoc(doc: TDutyDoc, history: THistoryState) {
  * (store 메서드를 직접 호출하지 않고 이 훅으로만 접근하는 “약한 규칙”)
  */
 export function useShiftEditorCommands() {
+    const {t} = useTypedTranslation();
     const setDutyValidationInput = useShiftEditorStore((s) => s.setDutyValidationInput);
     const setDutyRuleBoard = useShiftEditorStore((s) => s.setDutyRuleBoard);
     const setDoc = useShiftEditorStore((s) => s.setDoc);
@@ -65,27 +68,63 @@ export function useShiftEditorCommands() {
     const setViolations = useShiftEditorStore((s) => s.setViolations);
     const reset = useShiftEditorStore((s) => s.reset);
     const getState = () => useShiftEditorStore.getState();
+    const notifyFixedLocked = () => toast.error(t('page.makeShift.fixedShifts.lockedToast'));
+    const notifyRequestLocked = () => toast.error(t('page.makeShift.requests.lockedToast'));
     const cmdSetCells = (cells: TCellPos[], value: TCellValue, source: TTxSource = 'user') => {
-        const {doc, history, dutyValidationInput, selection} = getState();
+        const {doc, history, dutyValidationInput, selection, editorMode} = getState();
 
         if (cells.length === 0) return;
 
         const changed: Array<{row: number; col: number; prev: TCellValue; next: TCellValue}> = [];
+        const fixedDelta: Array<{key: string; prev: boolean; next: boolean}> = [];
+
+        let skippedByFixed = 0;
+        let skippedByRequest = 0;
 
         for (const {row, col} of cells) {
             if (row < 0 || row >= doc.rows.length || col < 0 || col >= doc.columns.length) continue;
 
-            const prev = doc.rows[row]?.cells[col] ?? null;
+            const r = doc.rows[row];
+
+            if (!r) continue;
+
+            const key = `${r.workerId}|${doc.columns[col]}`;
+            const prev = r.cells[col] ?? null;
+            const prevFixed = doc.fixedCells[key] === true;
+            const prevRequest = doc.requestCells[key] === true;
+
+            if (prevRequest) {
+                skippedByRequest += 1;
+                continue;
+            }
+
+            if (editorMode !== 'fixed' && prevFixed) {
+                skippedByFixed += 1;
+                continue;
+            }
 
             if (prev === value) continue;
 
             changed.push({row, col, prev, next: value});
+
+            if (editorMode === 'fixed') {
+                const nextFixed = value !== null;
+
+                if (prevFixed !== nextFixed) {
+                    fixedDelta.push({key, prev: prevFixed, next: nextFixed});
+                }
+            }
         }
 
-        if (changed.length === 0) return;
+        if (source === 'user') {
+            if (skippedByRequest > 0) notifyRequestLocked();
+            else if (skippedByFixed > 0) notifyFixedLocked();
+        }
+
+        if (changed.length === 0 && fixedDelta.length === 0) return;
 
         const tx: TTransaction<TOperation> = {
-            ops: [{kind: 'setCells', cells: changed}],
+            ops: [{kind: 'setCells', cells: changed, fixedDelta: fixedDelta.length > 0 ? fixedDelta : undefined}],
             source,
             timestamp: Date.now(),
         };
@@ -149,6 +188,15 @@ export function useShiftEditorCommands() {
             setViolations(computeViolations(persisted.doc, dutyValidationInput));
         },
         discardPersisted: () => persistence.clear(),
+        setRequestCells: (requestCells: Record<string, true>) => {
+            const {doc} = getState();
+            const prevKeys = Object.keys(doc.requestCells);
+            const nextKeys = Object.keys(requestCells);
+
+            if (prevKeys.length === nextKeys.length && nextKeys.every((k) => doc.requestCells[k] === true)) return;
+
+            setDoc({...doc, requestCells});
+        },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
             const {doc} = getState();
 
@@ -228,6 +276,11 @@ export function useShiftEditorCommands() {
                 if (!values) continue;
 
                 for (let col = 0; col < Math.min(values.length, doc.columns.length); col += 1) {
+                    const key = `${row.workerId}|${doc.columns[col]}`;
+
+                    if (doc.fixedCells[key] === true) continue;
+                    if (doc.requestCells[key] === true) continue;
+
                     const prev = row.cells[col] ?? null;
                     const next = values[col] ?? null;
 
@@ -292,14 +345,91 @@ export function useShiftEditorCommands() {
             return copySelection(doc, selection);
         },
         paste: (payload: TClipboardPayload, source: TTxSource = 'user') => {
-            const {doc, selection, history, dutyValidationInput} = getState();
+            const {doc, selection, history, dutyValidationInput, editorMode} = getState();
 
             if (!selection) return;
 
-            const op = pastePayload(payload, selection, doc);
+            const rawOp = pastePayload(payload, selection, doc);
 
-            if (op.cells.length === 0) return;
+            if (rawOp.cells.length === 0) return;
 
+            let filteredCells = rawOp.cells;
+            let skippedByRequest = 0;
+
+            {
+                const kept: typeof rawOp.cells = [];
+
+                for (const cell of rawOp.cells) {
+                    const r = doc.rows[cell.row];
+
+                    if (!r) continue;
+
+                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+
+                    if (doc.requestCells[key] === true) {
+                        skippedByRequest += 1;
+                        continue;
+                    }
+
+                    kept.push(cell);
+                }
+
+                filteredCells = kept;
+            }
+
+            if (editorMode !== 'fixed') {
+                const kept: typeof filteredCells = [];
+
+                let skippedByFixed = 0;
+
+                for (const cell of filteredCells) {
+                    const r = doc.rows[cell.row];
+
+                    if (!r) continue;
+
+                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+
+                    if (doc.fixedCells[key] === true) {
+                        skippedByFixed += 1;
+                        continue;
+                    }
+
+                    kept.push(cell);
+                }
+
+                filteredCells = kept;
+
+                if (source === 'user') {
+                    if (skippedByRequest > 0) notifyRequestLocked();
+                    else if (skippedByFixed > 0) notifyFixedLocked();
+                }
+            } else if (source === 'user' && skippedByRequest > 0) {
+                notifyRequestLocked();
+            }
+
+            const fixedDelta: Array<{key: string; prev: boolean; next: boolean}> = [];
+
+            if (editorMode === 'fixed') {
+                for (const cell of filteredCells) {
+                    const r = doc.rows[cell.row];
+
+                    if (!r) continue;
+
+                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+                    const prevFixed = doc.fixedCells[key] === true;
+                    const nextFixed = cell.next !== null;
+
+                    if (prevFixed !== nextFixed) fixedDelta.push({key, prev: prevFixed, next: nextFixed});
+                }
+            }
+
+            if (filteredCells.length === 0 && fixedDelta.length === 0) return;
+
+            const op: TSetCellsOp = {
+                kind: 'setCells',
+                cells: filteredCells,
+                fixedDelta: fixedDelta.length > 0 ? fixedDelta : undefined,
+            };
             const tx: TTransaction<TOperation> = {ops: [op], source, timestamp: Date.now()};
             const inverseOps = invertOps(tx.ops);
             const nextDoc = applyOperation(doc, op);

@@ -64,7 +64,16 @@ export function createShiftEditorPersistence(opts: {storageKey: string; saveDebo
 
                 if (!hist) return null;
 
-                return parsed;
+                if (!parsed.doc || typeof parsed.doc !== 'object') return null;
+
+                return {
+                    ...parsed,
+                    doc: {
+                        ...parsed.doc,
+                        fixedCells: parsed.doc.fixedCells ?? {},
+                        requestCells: parsed.doc.requestCells ?? {},
+                    },
+                };
             } catch {
                 return null;
             }

@@ -23,6 +23,8 @@ export type TDutyDoc = {
     columns: TDateKey[];
     rows: TDutyRow[];
     workerMeta: Record<string, {name: string}>;
+    fixedCells: Record<string /* `${workerId}|${date}` */, true>;
+    requestCells: Record<string /* `${workerId}|${date}` */, true>;
 };
 
 export type TPersisted = {
@@ -46,6 +48,11 @@ export type TSetCellsOp = {
         col: number;
         prev: TCellValue;
         next: TCellValue;
+    }>;
+    fixedDelta?: Array<{
+        key: string; // `${workerId}|${date}`
+        prev: boolean;
+        next: boolean;
     }>;
 };
 

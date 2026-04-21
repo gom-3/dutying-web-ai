@@ -118,6 +118,7 @@ export const ko = {
                     reject: '거절',
                     hold: '보류',
                 },
+                lockedToast: '신청 근무는 신청근무 탭에서만 수정할 수 있어요',
             },
             constraints: {
                 section: {
@@ -163,6 +164,7 @@ export const ko = {
             fixedShifts: {
                 loading: '근무표를 불러오는 중이에요',
                 error: '고정 근무 데이터를 불러오지 못했어요',
+                lockedToast: '고정 근무는 고정근무 탭에서만 수정할 수 있어요',
             },
             aiRefill: {
                 action: 'AI 다시 채우기',

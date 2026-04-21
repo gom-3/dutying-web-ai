@@ -122,6 +122,7 @@ export const en: TLocale = {
                     reject: 'Reject',
                     hold: 'Hold',
                 },
+                lockedToast: 'Requested shifts can only be edited from the Requests tab',
             },
             constraints: {
                 section: {
@@ -167,6 +168,7 @@ export const en: TLocale = {
             fixedShifts: {
                 loading: 'Loading the duty schedule',
                 error: 'Failed to load fixed shift data',
+                lockedToast: 'Fixed shifts can only be edited from the Fixed Shifts tab',
             },
             aiRefill: {
                 action: 'Refill with AI',

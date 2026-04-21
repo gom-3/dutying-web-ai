@@ -26,6 +26,8 @@ function createDoc(rowCells: Array<string | null>): TDutyDoc {
         columns: rowCells.map((_, index) => `2026-03-${String(index + 1).padStart(2, '0')}`),
         rows: [{workerId: 'worker-1', cells: rowCells}],
         workerMeta: {'worker-1': {name: 'Kim'}},
+        fixedCells: {},
+        requestCells: {},
     };
 }
 
