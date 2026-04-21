@@ -196,6 +196,7 @@ export const en: TLocale = {
                 },
                 previous: 'Previous step',
                 confirm: 'Confirm',
+                resetAction: 'Reset',
             },
         },
         duty: {

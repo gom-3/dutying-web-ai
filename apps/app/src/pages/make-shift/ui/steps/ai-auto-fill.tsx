@@ -197,14 +197,16 @@ export function AiAutofill() {
                             <HistoryNextIcon className="h-[26px] w-[26px] text-sub-2.5" />
                         </button>
                     </div>
-                    <button
-                        className="flex h-[42px] items-center rounded-[10px] border border-sub-4.5 bg-white px-5 font-apple text-base font-semibold text-sub-1 disabled:opacity-50"
-                        disabled={isAiGenerating || isWorking}
-                        onClick={() => commands.resetAutofilled()}
-                        type="button"
-                    >
-                        {t('page.makeShift.aiRefill.resetAction')}
-                    </button>
+                    {!import.meta.env.PROD && (
+                        <button
+                            className="flex h-[42px] items-center rounded-[10px] border border-sub-4.5 bg-white px-5 font-apple text-base font-semibold text-sub-1 disabled:opacity-50"
+                            disabled={isAiGenerating || isWorking}
+                            onClick={() => commands.resetAutofilled()}
+                            type="button"
+                        >
+                            {t('page.makeShift.aiRefill.resetAction')}
+                        </button>
+                    )}
                     <button
                         className="flex h-[42px] items-center gap-2 rounded-[10px] border border-sub-4.5 bg-white px-4 font-apple text-base font-semibold text-sub-1 disabled:opacity-50"
                         disabled={!dutyQuery.data || dutyQuery.isLoading || dutyQuery.isError || isExporting}

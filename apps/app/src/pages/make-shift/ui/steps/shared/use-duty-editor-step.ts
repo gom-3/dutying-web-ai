@@ -1,6 +1,6 @@
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef} from 'react';
-import {type TDutyRequest, type TShift} from '@/entities';
+import {type TShift} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {
