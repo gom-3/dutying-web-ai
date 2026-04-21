@@ -54,9 +54,16 @@ export const normalizeSkillLevelConfig = (config: Partial<TSkillLevelConfig> | u
 
 export const createAutoAssignedSkillLevels = (nurses: TSkillLevelNurse[], config: TSkillLevelConfig): Record<number, number> => {
     const normalizedConfig = normalizeSkillLevelConfig(config);
+    /**
+     * TODO : null 간호사를 앞/뒤 어디에 배치할지는 정책 판단이 필요합니다
+     * TNurse.employmentDate 타입은 string (non-null)으로 선언되어 있음 (packages/domain/src/nurse.ts:29)
+     * 그런데 실제 API 응답은 null을 허용 (shared/api/file/type.ts:28에서 employmentDate?: string | null)
+     * 입사일이 null인 간호사가 있으면 null.localeCompare(...) 호출로 TypeError 발생
+     * 이 에러가 Workers 컴포넌트 렌더링을 터뜨려서 → 빈 페이지로 보임
+     */
     const sortedNurses = nurses
         .map((nurse) => ({nurse}))
-        .sort((left, right) => left.nurse.employmentDate.localeCompare(right.nurse.employmentDate));
+        .sort((left, right) => (left.nurse.employmentDate ?? '').localeCompare(right.nurse.employmentDate ?? ''));
     const levelsByNurseId: Record<number, number> = {};
 
     sortedNurses.forEach(({nurse}, index) => {

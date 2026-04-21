@@ -10,9 +10,14 @@ import {TutorialPortal} from './TutorialPortal';
 const RequestTutorial = () => {
     const showRequestTutorial = useTutorialStore((state) => state.showRequestTutorial);
     const {setRequestTutorial} = useTutorialUseCase();
+    /**
+     * 로딩 완료 + 툴바가 DOM에 올라온 뒤에만 튜토리얼이 뜨도록 수정
+     */
     const {
+        state: {bootstrapStatus, shiftTeamsStatus, shiftTeams},
         actions: {toggleEditMode},
     } = useRequestShift();
+    const isToolbarReady = bootstrapStatus === 'success' && shiftTeamsStatus === 'success' && (shiftTeams?.length ?? 0) > 0;
     const {setState} = useRequestShiftStore();
     const config = useMemo<ITutorialConfig>(
         () => ({
@@ -65,7 +70,10 @@ const RequestTutorial = () => {
         }
     }, [showRequestTutorial]);
 
-    return <TutorialPortal open={showRequestTutorial} config={config} closeCallback={() => setRequestTutorial(false)} />;
+    /**
+     * 로딩 완료 + 툴바가 DOM에 올라온 뒤에만 튜토리얼이 뜨도록 수정
+     */
+    return <TutorialPortal open={showRequestTutorial && isToolbarReady} config={config} closeCallback={() => setRequestTutorial(false)} />;
 };
 
 export default RequestTutorial;

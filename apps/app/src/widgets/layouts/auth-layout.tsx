@@ -27,8 +27,17 @@ export const AuthLayout = () => {
             navigate(ROUTE.LOGIN);
         }
 
+        /**
+         * /register에서 "병동 생성" 클릭 → /register-ward로 이동
+         * AuthLayout effect가 다시 실행됨
+         * accountMe.status는 WARD_SELECT_PENDING(LINKED도 DEMO도 아님)
+         * pathname(/register-ward)이 허용 목록 [REGISTER, ONBOARDING_WARD_CREATE]에 없음
+         * → 즉시 /register로 되돌려짐
+         * [ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE] 추가
+         */
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
-            if (![ROUTE.REGISTER, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname)) navigate(ROUTE.REGISTER);
+            if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
+                navigate(ROUTE.REGISTER);
         }
     }, [accountMe, isAuth, navigate, pathname]);
 
