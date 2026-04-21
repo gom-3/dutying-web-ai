@@ -13,7 +13,7 @@ export function ShiftCalendarHeader({shift, effectiveFocusDay, separateWeekendCo
     return (
         <div className="z-20 flex items-center gap-5 py-[.75rem] pr-4">
             <div className="flex h-7.5 gap-5">
-                <div className="w-13.5 text-center font-apple text-[1rem] font-medium text-sub-3">{/* 구분 */}</div>
+                <div className="w-5 text-center font-apple text-[1rem] font-medium text-sub-3">{/* 구분 */}</div>
                 <div className="w-17.5 text-center font-apple text-[1rem] font-medium text-sub-3">이름</div>
                 <div className="w-7.5 text-center font-apple text-[1rem] font-medium text-sub-3">이월</div>
                 <div className="w-22.5 text-center font-apple text-[1rem] font-medium text-sub-3">전달 근무</div>
