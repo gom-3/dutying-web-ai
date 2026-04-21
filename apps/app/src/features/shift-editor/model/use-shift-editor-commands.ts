@@ -250,6 +250,47 @@ export function useShiftEditorCommands() {
         setCells: cmdSetCells,
         setSelectionValue: cmdSetSelectionValue,
         clearSelectionCells: (source?: TTxSource) => cmdSetSelectionValue(null, source),
+        resetAutofilled: (source: TTxSource = 'user') => {
+            const {doc, history, dutyValidationInput, selection} = getState();
+            const changed: TSetCellsOp['cells'] = [];
+
+            for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
+                const row = doc.rows[rowIdx];
+
+                if (!row) continue;
+
+                for (let col = 0; col < doc.columns.length; col += 1) {
+                    const key = `${row.workerId}|${doc.columns[col]}`;
+
+                    if (doc.fixedCells[key] === true) continue;
+                    if (doc.requestCells[key] === true) continue;
+
+                    const prev = row.cells[col] ?? null;
+
+                    if (prev === null) continue;
+
+                    changed.push({row: rowIdx, col, prev, next: null});
+                }
+            }
+
+            if (changed.length === 0) return;
+
+            const tx: TTransaction<TOperation> = {
+                ops: [{kind: 'setCells', cells: changed}],
+                source,
+                timestamp: Date.now(),
+            };
+            const inverseOps = invertOps(tx.ops);
+            const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+            const nextHistory = pushHistory(history, entry);
+
+            setDoc(nextDoc);
+            setHistory(nextHistory);
+            setViolations(computeViolations(nextDoc, dutyValidationInput));
+
+            persistDoc(nextDoc, nextHistory);
+        },
         applySchedule: (schedule: Record<string, TCellValue[]>, source: TTxSource = 'ai') => {
             const {doc, history, dutyValidationInput, selection} = getState();
             const changed: TSetCellsOp['cells'] = [];

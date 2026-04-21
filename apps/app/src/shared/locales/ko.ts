@@ -192,6 +192,7 @@ export const ko = {
                 },
                 previous: '이전 단계',
                 confirm: '확정하기',
+                resetAction: '초기화',
             },
         },
         duty: {
