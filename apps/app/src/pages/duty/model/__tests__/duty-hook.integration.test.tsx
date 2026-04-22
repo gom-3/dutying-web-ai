@@ -178,7 +178,7 @@ function readPersistedDraft() {
 
 function advancePersistenceDebounce() {
     act(() => {
-        vi.advanceTimersByTime(450);
+        vi.advanceTimersByTime(1600);
     });
 }
 

@@ -1,7 +1,7 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback, useMemo, useState} from 'react';
 import {type TDutyRequest, type TRequestShift, type TWardShiftType} from '@/entities';
-import {wardQueryOptions} from '@/entities/ward/model/queries';
+import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import WardAPI from '@/shared/api/ward';
 import {useMakeShiftStore} from './make-shift-store';
@@ -74,6 +74,7 @@ export function useRequestsShiftsHook() {
                 await Promise.all([
                     queryClient.invalidateQueries({queryKey: requestQueryKey}),
                     queryClient.invalidateQueries({queryKey: requestListQueryKey}),
+                    queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]}),
                 ]);
             } finally {
                 setUpdatingRequestId((prev) => (prev === wardReqShiftId ? null : prev));

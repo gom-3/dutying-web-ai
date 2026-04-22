@@ -2,6 +2,7 @@ import toast from 'react-hot-toast';
 import {type TWardConstraint} from '@/entities';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {copySelection, pastePayload} from './clipboard';
+import {useShiftEditorDraftStatusStore} from './draft-status-store';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
@@ -26,7 +27,16 @@ import type {
 import {createDutyValidator} from './validator';
 
 const DEFAULT_STORAGE_KEY = 'shift-editor:draft';
-const persistence = createShiftEditorPersistence({storageKey: DEFAULT_STORAGE_KEY, saveDebounceMs: 400});
+const DRAFT_SAVE_DEBOUNCE_MS = 1500;
+const persistence = createShiftEditorPersistence({
+    storageKey: DEFAULT_STORAGE_KEY,
+    saveDebounceMs: DRAFT_SAVE_DEBOUNCE_MS,
+    onStatusChange: (status) => useShiftEditorDraftStatusStore.getState().setStatus(status),
+});
+
+export function getShiftEditorDraftStorageKey(ctx: {wardId: number; shiftTeamId: number; year: number; month: number}): string {
+    return `${DEFAULT_STORAGE_KEY}:${ctx.wardId}:${ctx.shiftTeamId}:${ctx.year}:${ctx.month}`;
+}
 
 function computeViolations(doc: TDutyDoc, input: TDutyValidationInput | null): TViolation[] {
     if (!input) return [];
@@ -52,6 +62,10 @@ function pushHistory(history: THistoryState, entry: THistoryEntry): THistoryStat
 
 function persistDoc(doc: TDutyDoc, history: THistoryState) {
     persistence.save(doc, history);
+}
+
+function persistDocImmediate(doc: TDutyDoc, history: THistoryState) {
+    persistence.saveImmediate(doc, history);
 }
 
 /**
@@ -138,7 +152,7 @@ export function useShiftEditorCommands() {
             setHistory(nextHistory);
             persistDoc(nextDoc, nextHistory);
         } else {
-            persistDoc(nextDoc, history);
+            persistDocImmediate(nextDoc, history);
         }
     };
     const cmdSetSelectionValue = (value: TCellValue, source?: TTxSource) => {
@@ -190,6 +204,13 @@ export function useShiftEditorCommands() {
             setViolations(computeViolations(persisted.doc, dutyValidationInput));
         },
         discardPersisted: () => persistence.clear(),
+        setPersistenceKey: (key: string) => persistence.setStorageKey(key),
+        getCurrentPersistenceKey: () => persistence.storageKey,
+        persistImmediate: () => {
+            const {doc, history} = getState();
+
+            persistDocImmediate(doc, history);
+        },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
             const {doc} = getState();
 
@@ -478,7 +499,7 @@ export function useShiftEditorCommands() {
                 setHistory(nextHistory);
                 persistDoc(nextDoc, nextHistory);
             } else {
-                persistDoc(nextDoc, history);
+                persistDocImmediate(nextDoc, history);
             }
         },
         undo: () => {

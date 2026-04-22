@@ -8,6 +8,8 @@ export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
 export type TShiftTeamsStatus = 'idle' | 'pending' | 'success' | 'error';
 
 const STEP_STORAGE_KEY = 'make-shift:draft-step';
+const YEAR_STORAGE_KEY = 'make-shift:draft-year';
+const MONTH_STORAGE_KEY = 'make-shift:draft-month';
 
 function persistStep(step: TMakeShiftStep) {
     if (typeof window === 'undefined') return;
@@ -27,10 +29,30 @@ export function loadPersistedStep(): TMakeShiftStep | null {
     return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
 }
 
+function persistYearMonth(year: number, month: number) {
+    if (typeof window === 'undefined') return;
+
+    window.localStorage.setItem(YEAR_STORAGE_KEY, String(year));
+    window.localStorage.setItem(MONTH_STORAGE_KEY, String(month));
+}
+
+export function loadPersistedYearMonth(): {year: number; month: number} | null {
+    if (typeof window === 'undefined') return null;
+
+    const y = window.localStorage.getItem(YEAR_STORAGE_KEY);
+    const m = window.localStorage.getItem(MONTH_STORAGE_KEY);
+
+    if (!y || !m) return null;
+
+    return {year: Number(y), month: Number(m)};
+}
+
 export function clearPersistedStep() {
     if (typeof window === 'undefined') return;
 
     window.localStorage.removeItem(STEP_STORAGE_KEY);
+    window.localStorage.removeItem(YEAR_STORAGE_KEY);
+    window.localStorage.removeItem(MONTH_STORAGE_KEY);
 }
 
 export type TMakeShiftStore = {
@@ -38,6 +60,7 @@ export type TMakeShiftStore = {
     phase: TFlowPhase;
     currentStep: TMakeShiftStep;
     restoreDraftModalOpen: boolean;
+    isHydrated: boolean;
 
     // header (shared across overview / stepping)
     year: number;
@@ -70,6 +93,7 @@ export type TMakeShiftStore = {
     setShiftStatus: (status: TShiftStatus) => void;
     setShiftExists: (exists: boolean) => void;
     requestReload: () => void;
+    setHydrated: () => void;
 };
 
 export const useMakeShiftStore = create<TMakeShiftStore>()(
@@ -77,6 +101,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         phase: 'overview',
         currentStep: 1,
         restoreDraftModalOpen: false,
+        isHydrated: false,
 
         year: new Date().getFullYear(),
         month: new Date().getMonth() + 1,
@@ -95,6 +120,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 restoreDraftModalOpen: openRestoreDraftModal,
             }));
             persistStep(step);
+            const {year, month} = get();
+
+            persistYearMonth(year, month);
         },
         closeRestoreDraftModal: () => set(() => ({restoreDraftModalOpen: false})),
         resetToOverview: () =>
@@ -139,32 +167,40 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             persistStep(step);
         },
 
-        setYearMonth: ({year, month}) =>
+        setYearMonth: ({year, month}) => {
+            const nextMonth = Math.min(12, Math.max(1, month));
+
             set(() => ({
                 year,
-                month: Math.min(12, Math.max(1, month)),
-            })),
+                month: nextMonth,
+            }));
+            persistYearMonth(year, nextMonth);
+        },
         goPrevMonth: () => {
             const {year, month} = get();
 
             if (month <= 1) {
                 set(() => ({year: year - 1, month: 12}));
+                persistYearMonth(year - 1, 12);
 
                 return;
             }
 
             set(() => ({month: month - 1}));
+            persistYearMonth(year, month - 1);
         },
         goNextMonth: () => {
             const {year, month} = get();
 
             if (month >= 12) {
                 set(() => ({year: year + 1, month: 1}));
+                persistYearMonth(year + 1, 1);
 
                 return;
             }
 
             set(() => ({month: month + 1}));
+            persistYearMonth(year, month + 1);
         },
         setShiftTeams: (shiftTeams) => set(() => ({shiftTeams})),
         setShiftTeamsStatus: (shiftTeamsStatus) => set(() => ({shiftTeamsStatus})),
@@ -173,6 +209,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
         setShiftExists: (shiftExists) => set(() => ({shiftExists})),
         requestReload: () => set((state) => ({reloadToken: state.reloadToken + 1})),
+        setHydrated: () => set(() => ({isHydrated: true})),
     })),
 );
 

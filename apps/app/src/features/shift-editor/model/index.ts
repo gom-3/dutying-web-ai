@@ -4,6 +4,7 @@ export * from './shift-adapter';
 export * from './shift-to-excel';
 export * from './shift-to-image';
 export * from './use-shift-editor-commands';
+export * from './draft-status-store';
 export * from './use-shift-excel-export';
 export * from './use-shift-image-export';
 export * from './use-shift-editor-key-bindings';

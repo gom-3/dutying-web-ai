@@ -2,7 +2,7 @@ import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
 import {useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {useMakeShiftStore} from './make-shift-store';
+import {loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -33,6 +33,27 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
     const reloadToken = useMakeShiftStore((s) => s.reloadToken);
+    const isHydrated = useMakeShiftStore((s) => s.isHydrated);
+    const setHydrated = useMakeShiftStore((s) => s.setHydrated);
+    const startFromStep = useMakeShiftStore((s) => s.startFromStep);
+
+    useEffect(() => {
+        if (isHydrated || !wardId) return;
+
+        const savedStep = loadPersistedStep();
+        const savedYearMonth = loadPersistedYearMonth();
+
+        if (savedYearMonth && !searchParams.has('year') && !searchParams.has('month')) {
+            setYearMonth(savedYearMonth);
+        }
+
+        if (savedStep) {
+            // 이전에 작업 중이던 단계가 있다면 해당 단계로 바로 진입하고 복구 모달을 띄운다.
+            startFromStep({step: savedStep, openRestoreDraftModal: true});
+        }
+
+        setHydrated();
+    }, [isHydrated, startFromStep, wardId, setHydrated, searchParams, setYearMonth]);
 
     useEffect(() => {
         if (!wardId) {
@@ -50,12 +71,16 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         const queryYear = parsePositiveInt(searchParams.get('year'));
         const queryMonth = parsePositiveInt(searchParams.get('month'));
         const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
-        const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
-        const nextYear = queryYear ?? now.getFullYear();
-        const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
+
+        if (queryYear !== null || queryMonth !== null) {
+            const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
+            const nextYear = queryYear ?? now.getFullYear();
+            const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
+
+            setYearMonth({year: nextYear, month: nextMonth});
+        }
 
         initialQueryShiftTeamIdRef.current = queryShiftTeamId;
-        setYearMonth({year: nextYear, month: nextMonth});
     }, [searchParams, setYearMonth, wardId]);
 
     useEffect(() => {
@@ -169,26 +194,4 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             cancelled = true;
         };
     }, [currentShiftTeamId, reloadToken, shiftStatus, wardId]);
-
-    useEffect(() => {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-        const columns = Array.from({length: daysInMonth}, (_, i) => {
-            const d = String(i + 1).padStart(2, '0');
-            const m = String(currentMonth).padStart(2, '0');
-
-            return `${currentYear}-${m}-${d}`;
-        });
-        const rows = Array.from({length: 8}, (_, idx) => ({
-            workerId: String(idx + 1),
-            cells: Array.from({length: daysInMonth}, () => null),
-        }));
-        const workerMeta: Record<string, {name: string}> = {};
-
-        for (const r of rows) workerMeta[r.workerId] = {name: `간호사 ${r.workerId}`};
-
-        editorRef.current.init({columns, rows, workerMeta, fixedCells: {}, requestCells: {}});
-    }, [wardId]);
 }

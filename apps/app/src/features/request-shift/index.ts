@@ -2,7 +2,7 @@ import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect} from 'react';
 import {type TRequestShift} from '@/entities/shift';
 import {type TShiftTeam} from '@/entities/ward';
-import {wardQueryOptions} from '@/entities/ward/model/queries';
+import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
@@ -139,6 +139,7 @@ const useRequestShift = (activeEffect = false) => {
                 if (results.length > 0) {
                     await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
                     await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+                    await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
                 }
 
                 if (rejectedResults.length > 0) {

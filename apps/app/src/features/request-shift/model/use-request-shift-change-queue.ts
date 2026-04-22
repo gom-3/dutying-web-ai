@@ -4,6 +4,7 @@ import {useCallback, useEffect, useRef} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TRequestShift} from '@/entities/shift';
 import {type TWardShiftType} from '@/entities/ward';
+import {wardQueryKeys} from '@/entities/ward/model/queries';
 import {WardAPI} from '@/shared/api';
 import {getRequestShiftChangeEventMessage, getRequestShiftTypeIdAtFocus} from './request-shift';
 import {type TFocus} from './types';
@@ -116,6 +117,8 @@ export const useRequestShiftChangeQueue = ({
                 hasError = true;
             }
         }
+
+        await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
 
         if (hasError) {
             await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});

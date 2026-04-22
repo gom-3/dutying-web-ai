@@ -2,7 +2,13 @@ import {cn} from '@dutying/utils/style';
 import {useCallback, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
-import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore, useShiftImageExport} from '@/features/shift-editor';
+import {
+    docToWardShiftsDTO,
+    useShiftEditorCommands,
+    useShiftEditorDraftStatusStore,
+    useShiftEditorStore,
+    useShiftImageExport,
+} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {CameraIcon, HistoryBackIcon, HistoryNextIcon, InfoIcon, PlusIcon, SaveCompleteIcon, SavingIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -34,6 +40,7 @@ export function AiAutofill() {
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const history = useShiftEditorStore((s) => s.history);
+    const draftSaveStatus = useShiftEditorDraftStatusStore((s) => s.status);
     const useCase = useMakeShiftUseCase();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const [autoFillEnabled, setAutoFillEnabled] = useState(false);
@@ -70,8 +77,9 @@ export function AiAutofill() {
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
-    const savingLabel = isWorking ? '저장 중' : '저장 완료';
-    const SavingStatusIcon = isWorking ? SavingIcon : SaveCompleteIcon;
+    const isSaving = isWorking || draftSaveStatus === 'saving';
+    const savingLabel = isSaving ? '저장 중...' : '저장 완료';
+    const SavingStatusIcon = isSaving ? SavingIcon : SaveCompleteIcon;
     const canConfirm =
         !isWorking &&
         !isAiGenerating &&

@@ -6,6 +6,7 @@ import useAuth from '@/features/auth';
 import {
     buildWorkKeyMap,
     buildViolationMap,
+    getShiftEditorDraftStorageKey,
     shiftToDoc,
     type TDutyDoc,
     useShiftEditorCommands,
@@ -70,11 +71,6 @@ type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
 };
 
-/**
- * `onContextChanged` should be passed as a stable reference such as `useCallback`.
- * This hook includes the callback in the hydration effect dependency list, so changing
- * the callback identity will re-run the effect that compares `hydratedContextKeyRef.current`.
- */
 export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions = {}) {
     const {
         state: {wardId},
@@ -83,10 +79,12 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const enabled = wardId !== null && currentShiftTeamId !== null;
+
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
     });
+
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
@@ -95,10 +93,25 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
     const violationMap = useMemo(() => buildViolationMap(violations, editorDoc), [violations, editorDoc]);
     const hydratedContextKeyRef = useRef<string | null>(null);
+    const initialHydrationDoneRef = useRef(false);
+    const lastHydratedDutyDataRef = useRef<typeof dutyQuery.data | null>(null);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
 
     useEffect(() => {
-        if (!dutyQuery.data) return;
+        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null) return;
+
+        const nextPersistenceKey = getShiftEditorDraftStorageKey({wardId, shiftTeamId: currentShiftTeamId, year, month});
+        const currentPersistenceKey = commands.getCurrentPersistenceKey();
+
+        if (currentPersistenceKey !== nextPersistenceKey) {
+            commands.setPersistenceKey(nextPersistenceKey);
+        }
+
+        const hasContextChanged = hydratedContextKeyRef.current !== currentContextKey;
+        const hasDutyDataChanged = lastHydratedDutyDataRef.current !== dutyQuery.data;
+        const isStoreEmpty = editorDoc.columns.length === 0;
+
+        if (!hasContextChanged && !hasDutyDataChanged && !isStoreEmpty && initialHydrationDoneRef.current) return;
 
         const baseDoc = shiftToDoc(dutyQuery.data, year, month);
         const requestValueMap = deriveRequestCells(dutyQuery.data, year, month);
@@ -118,38 +131,52 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
 
         const nextDoc: TDutyDoc = {...baseDoc, requestCells};
         const persisted = commands.getPersisted();
-        const hasContextChanged = hydratedContextKeyRef.current !== currentContextKey;
 
         if (persisted && isSameDutyDocShape(persisted.doc, nextDoc)) {
-            // 보관된 데이터의 cells에도 신청 근무 데이터를 반영한다 (null인 경우만)
-            for (const [key, value] of requestValueMap.entries()) {
-                const [workerId, date] = key.split('|');
-                const row = persisted.doc.rows.find((r) => r.workerId === workerId);
-                const colIdx = persisted.doc.columns.indexOf(date!);
+            const mergedRows = persisted.doc.rows.map((row, rowIdx) => {
+                const baseRow = baseDoc.rows[rowIdx];
 
-                if (row && colIdx !== -1 && row.cells[colIdx] === null) {
-                    row.cells[colIdx] = value;
-                }
-            }
+                return {
+                    ...row,
+                    cells: row.cells.map((cell, colIdx) => {
+                        const date = persisted.doc.columns[colIdx];
+                        if (!date) return cell;
+
+                        const key = `${row.workerId}|${date}`;
+                        const requestValue = requestValueMap.get(key);
+
+                        if (requestValue !== undefined) return requestValue;
+
+                        if (persisted.doc.requestCells[key] === true && !requestCells[key]) {
+                            return baseRow?.cells[colIdx] ?? null;
+                        }
+
+                        return cell;
+                    }),
+                };
+            });
 
             commands.hydrate({
                 ...persisted,
-                doc: {...persisted.doc, requestCells},
+                doc: {
+                    ...persisted.doc,
+                    rows: mergedRows,
+                    fixedCells: persisted.doc.fixedCells ?? {},
+                    requestCells,
+                },
             });
 
-            if (hasContextChanged) onContextChanged?.();
-
-            hydratedContextKeyRef.current = currentContextKey;
-
-            return;
+            commands.persistImmediate();
+        } else {
+            commands.init(nextDoc);
         }
-
-        commands.init(nextDoc);
 
         if (hasContextChanged) onContextChanged?.();
 
         hydratedContextKeyRef.current = currentContextKey;
-    }, [commands, currentContextKey, dutyQuery.data, month, onContextChanged, year]);
+        lastHydratedDutyDataRef.current = dutyQuery.data;
+        initialHydrationDoneRef.current = true;
+    }, [commands, currentContextKey, currentShiftTeamId, dutyQuery.data, month, onContextChanged, wardId, year, editorDoc.columns.length]);
 
     const focusEditor = () => {
         editorRef.current?.focus();
