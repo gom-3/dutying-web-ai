@@ -69,6 +69,26 @@ function persistDocImmediate(doc: TDutyDoc, history: THistoryState) {
 }
 
 /**
+ * undo/redo 시 고정근무/신청근무로 잠긴 셀은 건너뛴다.
+ * 고정근무와 신청근무가 AI 자동 채우기 등 일반 편집보다 우선순위가 높기 때문이다.
+ */
+function filterOpAgainstLocks(op: TOperation, doc: TDutyDoc): TOperation {
+    if (op.kind !== 'setCells') return op;
+
+    const filteredCells = op.cells.filter(({row, col}) => {
+        const r = doc.rows[row];
+
+        if (!r) return false;
+
+        const key = `${r.workerId}|${doc.columns[col]}`;
+
+        return !(doc.fixedCells[key] === true || doc.requestCells[key] === true);
+    });
+
+    return {...op, cells: filteredCells};
+}
+
+/**
  * UI는 상태를 store에서 읽고, 변경은 이 command 훅에서만 수행하는 것을 권장.
  * (store 메서드를 직접 호출하지 않고 이 훅으로만 접근하는 “약한 규칙”)
  */
@@ -508,7 +528,7 @@ export function useShiftEditorCommands() {
 
             if (!entry) return;
 
-            const nextDoc = entry.inverseOps.reduce((d, op) => applyOperation(d, op), doc);
+            const nextDoc = entry.inverseOps.reduce((d, op) => applyOperation(d, filterOpAgainstLocks(op, d)), doc);
             const nextHistory: THistoryState = {
                 past: history.past.slice(0, -1),
                 future: history.future.concat(entry),
@@ -528,7 +548,7 @@ export function useShiftEditorCommands() {
 
             if (!entry) return;
 
-            const nextDoc = entry.tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+            const nextDoc = entry.tx.ops.reduce((d, op) => applyOperation(d, filterOpAgainstLocks(op, d)), doc);
             const nextPast = history.past.concat(entry);
             const trimmedPast = nextPast.length > history.maxDepth ? nextPast.slice(nextPast.length - history.maxDepth) : nextPast;
             const nextHistory: THistoryState = {
