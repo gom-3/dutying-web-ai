@@ -44,7 +44,7 @@ export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc
                 return type?.shortName ?? null;
             });
 
-            workerMeta[workerId] = {name: row.shiftNurse.name};
+            workerMeta[workerId] = {name: row.shiftNurse.name, nurseId: row.shiftNurse.nurseId};
 
             return {workerId, cells};
         });

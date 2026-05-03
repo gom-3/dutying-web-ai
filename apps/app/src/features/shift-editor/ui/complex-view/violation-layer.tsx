@@ -7,14 +7,25 @@ interface IViolationLayerProps {
     children?: React.ReactNode;
 }
 
+const LEVEL_STYLE: Record<TViolation['level'], {border: string; background: string}> = {
+    // 강 제약 (Step 2의 강 제약 조건 = error)
+    error: {border: '#FF0000', background: '#ff000033'},
+    // 약 제약 (Step 2의 약 제약 조건 = warning)
+    warning: {border: '#FFD900', background: '#EEFF004D'},
+};
+
 function ViolationLayer({violation, children}: IViolationLayerProps) {
+    const style = LEVEL_STYLE[violation.level];
+
     return (
         <>
             <div
                 style={{
                     width: `calc(2.125rem + 2.25rem * ${violation.cells.length - 1})`,
+                    borderColor: style.border,
+                    backgroundColor: style.background,
                 }}
-                className={`group absolute left-[.0625rem] z-10 h-8.5 rounded-[.5625rem] border-[.125rem] border-[#FF0000] bg-[#ff000033]`}
+                className="group absolute left-[.0625rem] z-10 h-8.5 rounded-[.5625rem] border-[.125rem]"
             >
                 <FaultDotIcon className="absolute top-[-0.85rem] right-0 h-[.75rem] w-[.75rem]" />
                 {children}

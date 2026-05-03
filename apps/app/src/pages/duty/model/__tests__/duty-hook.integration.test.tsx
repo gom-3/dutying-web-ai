@@ -133,7 +133,7 @@ const shift = {
 const initializedDoc: TDutyDoc = {
     columns: ['2025-07-01', '2025-07-02'],
     rows: [{workerId: '1', cells: ['D', null]}],
-    workerMeta: {'1': {name: 'Kim'}},
+    workerMeta: {'1': {name: 'Kim', nurseId: 100}},
     fixedCells: {},
     requestCells: {},
 };

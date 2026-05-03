@@ -161,10 +161,12 @@ export type TWardShiftsDTO = {
     wardShiftTypeId: number | null;
 }[];
 
-export type TGenerateAiAutofillScheduleDTO = {
-    year: number;
-    month: number;
-    schedule: Record<string, string[]>;
+export type TLlmGenerateScheduleStrategy = 'llm_flash' | 'llm_v1' | 'llm_premium';
+
+export type TLlmGenerateScheduleDTO = {
+    shift_team_id: number;
+    year_month: string;
+    strategy?: TLlmGenerateScheduleStrategy;
 };
 
 export type TUpdateShiftTeamDTO = {
