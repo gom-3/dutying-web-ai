@@ -2,7 +2,6 @@ import type {TAiScheduleResponse} from '@dutying/api/ward';
 import type {TDutyDoc} from '@/features/shift-editor';
 
 export type TAiScheduleRequest = {
-    wardId: number;
     shiftTeamId: number;
     year: number;
     month: number;

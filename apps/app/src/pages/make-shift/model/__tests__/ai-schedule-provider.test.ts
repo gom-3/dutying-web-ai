@@ -20,7 +20,6 @@ vi.mock('../ai-schedule-mock', () => ({
 }));
 
 const request: TAiScheduleRequest = {
-    wardId: 1,
     shiftTeamId: 2,
     year: 2026,
     month: 3,

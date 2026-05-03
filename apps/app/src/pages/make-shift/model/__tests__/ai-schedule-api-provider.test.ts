@@ -36,7 +36,6 @@ describe('apiAiScheduleProvider', () => {
         post.mockResolvedValue({data: response});
 
         const result = await apiAiScheduleProvider.generate({
-            wardId: 10,
             shiftTeamId: 20,
             year: 2026,
             month: 3,
@@ -85,7 +84,6 @@ describe('apiAiScheduleProvider', () => {
         post.mockResolvedValue({data: response});
 
         const result = await apiAiScheduleProvider.generate({
-            wardId: 10,
             shiftTeamId: 20,
             year: 2026,
             month: 3,

@@ -121,7 +121,6 @@ export function AiAutofill() {
 
         try {
             const result = await requestAiSchedule({
-                wardId: requestContext.wardId,
                 shiftTeamId: requestContext.shiftTeamId,
                 year: requestContext.year,
                 month: requestContext.month,
