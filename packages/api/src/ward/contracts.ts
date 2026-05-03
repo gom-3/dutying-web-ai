@@ -167,6 +167,14 @@ export type TGenerateAiAutofillScheduleDTO = {
     schedule: Record<string, string[]>;
 };
 
+export type TLlmGenerateScheduleStrategy = 'llm_flash' | 'llm_v1' | 'llm_premium';
+
+export type TLlmGenerateScheduleDTO = {
+    shift_team_id: number;
+    year_month: string;
+    strategy?: TLlmGenerateScheduleStrategy;
+};
+
 export type TUpdateShiftTeamDTO = {
     name: string;
 };
