@@ -9,12 +9,8 @@ function sortByPriority(nurses: TNurse[]): TNurse[] {
     return [...nurses].sort((a, b) => a.priority - b.priority);
 }
 
-export function sortDivisionNurses(teamNurses: TNurse[], divisionNum: number): TNurse[] {
+function sortDivisionNurses(teamNurses: TNurse[], divisionNum: number): TNurse[] {
     return sortByPriority(teamNurses.filter((n) => n.divisionNum === divisionNum));
-}
-
-export function workersInDivisionSorted(teamNurses: TNurse[], divisionNum: number): TNurse[] {
-    return sortDivisionNurses(teamNurses, divisionNum).filter((n) => n.isWorker);
 }
 
 /**
@@ -22,9 +18,7 @@ export function workersInDivisionSorted(teamNurses: TNurse[], divisionNum: numbe
  * 드래그로 순서를 바꾼 뒤에는 이 정렬을 다시 적용하지 않는다.
  */
 export function sortMakeShiftWorkersInitialOrder(workers: TNurse[]): TNurse[] {
-    const grouped = Object.entries(groupBy(workers, 'divisionNum')).sort(
-        (a, b) => Number.parseInt(a[0], 10) - Number.parseInt(b[0], 10),
-    );
+    const grouped = Object.entries(groupBy(workers, 'divisionNum')).sort((a, b) => Number.parseInt(a[0], 10) - Number.parseInt(b[0], 10));
 
     return grouped.flatMap(([, nurses]) => [...nurses].sort((a, b) => a.priority - b.priority));
 }
@@ -38,9 +32,7 @@ function workersInDivisionDisplayOrder(displayWorkers: TNurse[], divisionNum: nu
  */
 export function freshenMakeShiftDisplayWorkers(prevOrder: TNurse[], teamNurses: TNurse[]): TNurse[] {
     const map = new Map(teamNurses.map((n) => [n.nurseId, n]));
-    const next = prevOrder
-        .map((n) => map.get(n.nurseId))
-        .filter((n): n is TNurse => n != null && n.isWorker);
+    const next = prevOrder.map((n) => map.get(n.nurseId)).filter((n): n is TNurse => Boolean(n?.isWorker));
     const ids = new Set(next.map((n) => n.nurseId));
     const additions = sortMakeShiftWorkersInitialOrder(teamNurses.filter((n) => n.isWorker && !ids.has(n.nurseId)));
 
@@ -50,13 +42,14 @@ export function freshenMakeShiftDisplayWorkers(prevOrder: TNurse[], teamNurses: 
 /**
  * division 전체 순서(근무자+비근무자)에서 근무자만 재정렬한 결과로 merged 배열 생성.
  */
-export function mergeWorkerOrderIntoFullOrder(fullDivOrdered: TNurse[], reorderedWorkers: TNurse[]): TNurse[] {
+function mergeWorkerOrderIntoFullOrder(fullDivOrdered: TNurse[], reorderedWorkers: TNurse[]): TNurse[] {
     const queue = [...reorderedWorkers];
     const merged: TNurse[] = [];
 
     for (const n of fullDivOrdered) {
         if (n.isWorker) {
             const w = queue.shift();
+
             if (w) merged.push(w);
         } else {
             merged.push(n);
@@ -76,6 +69,7 @@ export function applyMakeShiftWorkerDrag(
     dstIdx: number,
 ): TNurse[] | null {
     const srcW = workersInDivisionDisplayOrder(displayWorkers, srcDiv);
+
     if (srcW[srcIdx]?.nurseId !== nurseId) return null;
 
     const grouped = getGroupedDivisionNurses(displayWorkers);
@@ -88,7 +82,8 @@ export function applyMakeShiftWorkerDrag(
     if (!srcList || !dstList) return null;
 
     const [moved] = srcList.splice(srcIdx, 1);
-    if (!moved || moved.nurseId !== nurseId) return null;
+
+    if (moved?.nurseId !== nurseId) return null;
 
     const toInsert = srcDiv === dstDiv ? moved : {...moved, divisionNum: dstDiv};
 
@@ -153,6 +148,7 @@ export function buildMakeShiftWorkerMovePayload(
     nextPriority: number;
 } | null {
     const moving = teamNurses.find((n) => n.nurseId === nurseId);
+
     if (!moving?.isWorker) return null;
 
     if (srcDiv === dstDiv && srcIdx === dstIdx) return null;
@@ -160,6 +156,7 @@ export function buildMakeShiftWorkerMovePayload(
     if (srcDiv !== dstDiv) {
         const destW = workersInDivisionDisplayOrder(displayWorkers, dstDiv);
         const srcW = workersInDivisionDisplayOrder(displayWorkers, srcDiv);
+
         if (srcW[srcIdx]?.nurseId !== nurseId) return null;
 
         const prevP = dstIdx === 0 ? 0 : destW[dstIdx - 1]!.priority;
@@ -181,15 +178,18 @@ export function buildMakeShiftWorkerMovePayload(
     }
 
     const workers = workersInDivisionDisplayOrder(displayWorkers, srcDiv);
+
     if (workers[srcIdx]?.nurseId !== nurseId) return null;
 
     const reordered = [...workers];
     const [removed] = reordered.splice(srcIdx, 1);
+
     reordered.splice(dstIdx, 0, removed!);
 
     const fullDiv = sortDivisionNurses(teamNurses, srcDiv);
     const merged = mergeWorkerOrderIntoFullOrder(fullDiv, reordered);
     const midx = merged.findIndex((n) => n.nurseId === nurseId);
+
     if (midx === -1) return null;
 
     return finalizePayload(merged, midx, nurseId, shiftTeamId, dstDiv);

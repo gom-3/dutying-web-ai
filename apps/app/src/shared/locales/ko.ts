@@ -155,7 +155,6 @@ export const ko = {
             },
             workers: {
                 totalCount: '총 {{count}}명',
-                sortByLevel: '숙련도 순',
                 column: {
                     name: '이름',
                     level: '숙련도',

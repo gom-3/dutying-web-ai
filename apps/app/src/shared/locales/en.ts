@@ -159,7 +159,6 @@ export const en: TLocale = {
             },
             workers: {
                 totalCount: 'Total {{count}}',
-                sortByLevel: 'Sort by level',
                 column: {
                     name: 'Name',
                     level: 'Level',
