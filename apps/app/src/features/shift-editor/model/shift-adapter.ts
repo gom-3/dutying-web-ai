@@ -27,6 +27,28 @@ export function buildWardShiftTypeMaps(shift: TShift): TWardShiftTypeMaps {
     return {idToType, shortNameToType};
 }
 
+/**
+ * API가 근무 배정이 없어도 날짜/골격만 채운 `TShift`를 줄 때가 있어,
+ * /duty 등에서 "근무표 없음"으로 취급할 때 사용한다.
+ */
+export function isDutyShiftWithoutAssignments(shift: TShift): boolean {
+    if (!shift.days?.length) return true;
+
+    const divisions = shift.divisionShiftNurses ?? [];
+
+    for (const division of divisions) {
+        for (const row of division) {
+            if (!row.shiftNurse.isWorker) continue;
+
+            for (const cell of row.wardShiftList ?? []) {
+                if (cell != null) return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc {
     const {idToType} = buildWardShiftTypeMaps(shift);
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));

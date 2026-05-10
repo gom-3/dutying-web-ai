@@ -7,14 +7,20 @@ import useLoadingUseCase from '@/features/loading';
 import {
     buildWorkKeyMap,
     docToWardShiftsDTO,
+    isDutyShiftWithoutAssignments,
     shiftToDoc,
-    type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
     useShiftExcelExport,
     useShiftEditorStore,
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
+import {
+    isDutyAtMaxFutureMonth,
+    isDutyCalendarViewAllowed,
+    isDutyPastStrictlyBeforeLastMonth,
+    isDutyViewingThisCalendarMonth,
+} from './duty-month-policy';
 import {buildMakeShiftPath, getNextYearMonth} from './duty-navigation';
 import {useDutyStore} from './duty-store';
 
@@ -75,6 +81,10 @@ export function useDutyHook() {
     const doc = useShiftEditorStore((s) => s.doc);
     const editorRef = useRef<HTMLDivElement>(null);
     const snapshotRef = useRef<TDutyDoc | null>(null);
+    const isDutyViewAllowed = isDutyCalendarViewAllowed(year, month);
+    const dutyAtMaxFutureMonth = isDutyAtMaxFutureMonth(year, month);
+    const dutyViewingThisCalendarMonth = isDutyViewingThisCalendarMonth(year, month);
+    const dutyPastStrictlyBeforeLastMonth = isDutyPastStrictlyBeforeLastMonth(year, month);
     const dutyQueryKey = wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month).queryKey;
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
@@ -92,13 +102,8 @@ export function useDutyHook() {
     });
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
-        enabled: wardId !== null && currentShiftTeamId !== null,
+        enabled: wardId !== null && currentShiftTeamId !== null && isDutyViewAllowed,
         refetchOnWindowFocus: false,
-    });
-    const constraintQuery = useQuery({
-        ...wardQueryOptions.constraint(wardId ?? -1, currentShiftTeamId ?? -1),
-        enabled: wardId !== null && currentShiftTeamId !== null,
-        staleTime: 1000 * 60 * 5,
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
@@ -131,6 +136,15 @@ export function useDutyHook() {
     }, [queryShiftTeamId, setCurrentShiftTeamId, setShiftTeams, shiftTeamsQuery.data]);
 
     useEffect(() => {
+        if (!isDutyViewAllowed) {
+            setStatus('success');
+            setShift(null);
+            commands.init(EMPTY_DUTY_DOC);
+            commands.discardPersisted();
+
+            return;
+        }
+
         if (dutyQuery.isPending) {
             setStatus('pending');
 
@@ -148,7 +162,9 @@ export function useDutyHook() {
 
         setStatus('success');
 
-        const nextShift = dutyQuery.data ?? null;
+        const rawShift = dutyQuery.data ?? null;
+        const nextShift =
+            rawShift != null && !isDutyShiftWithoutAssignments(rawShift) ? rawShift : null;
 
         setShift(nextShift);
 
@@ -161,23 +177,30 @@ export function useDutyHook() {
 
         commands.init(shiftToDoc(nextShift, year, month));
         commands.discardPersisted();
-    }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, month, setShift, setStatus, year]);
+    }, [
+        commands,
+        dutyQuery.data,
+        dutyQuery.isError,
+        dutyQuery.isPending,
+        isDutyViewAllowed,
+        month,
+        setShift,
+        setStatus,
+        year,
+    ]);
 
+    // 확정 근무표(/duty)에서는 규칙 검증·위반 UI를 쓰지 않는다(만들기 플로우 전용).
     useEffect(() => {
-        if (!constraintQuery.data) {
-            commands.setDutyValidationInput(null);
-
-            return;
-        }
-
-        commands.setDutyValidationInput({wardConstraint: constraintQuery.data});
-    }, [commands, constraintQuery.data]);
+        commands.setDutyValidationInput(null);
+    }, [commands]);
 
     const handleGoPrevMonth = () => {
         goPrevMonth();
         setReadonly(true);
     };
     const handleGoNextMonth = () => {
+        if (dutyAtMaxFutureMonth) return;
+
         goNextMonth();
         setReadonly(true);
     };
@@ -246,7 +269,6 @@ export function useDutyHook() {
         void Promise.all([
             shiftTeamsQuery.refetch(),
             currentShiftTeamId !== null ? dutyQuery.refetch() : Promise.resolve(),
-            currentShiftTeamId !== null ? constraintQuery.refetch() : Promise.resolve(),
         ]);
     };
 
@@ -264,6 +286,10 @@ export function useDutyHook() {
             status,
             isExportingExcel,
             doc,
+            isDutyViewAllowed,
+            dutyAtMaxFutureMonth,
+            dutyViewingThisCalendarMonth,
+            dutyPastStrictlyBeforeLastMonth,
         },
         refs: {
             editorRef,

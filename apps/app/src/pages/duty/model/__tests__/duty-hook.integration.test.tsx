@@ -154,7 +154,6 @@ function setQueryState(overrides?: Partial<typeof mockQueries>) {
     mockQueries = {
         shiftTeams: {data: shiftTeams, isPending: false, isError: false},
         duty: {data: shift, isPending: false, isError: false, refetch: mockRefetch},
-        constraint: {data: null, isPending: false, isError: false},
         ...overrides,
     };
 }
