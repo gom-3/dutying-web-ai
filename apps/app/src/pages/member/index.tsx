@@ -278,65 +278,65 @@ function MemberPage() {
                     </div>
 
                     <div className="mt-8 flex items-center justify-between">
-                    <div ref={sortMenuRef} className="relative">
-                        <button
-                            type="button"
-                            aria-haspopup="listbox"
-                            aria-expanded={sortMenuOpen}
-                            aria-label={t('page.member.sortListMenuAria')}
-                            className={cn(
-                                'flex items-center gap-1 rounded-[5px] px-2 py-1 font-apple text-[16px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                                sortMenuOpen ? 'text-sub-1 bg-white' : 'text-gray-3 hover:bg-white',
-                            )}
-                            onClick={() => {
-                                setTeamMenuOpen(false);
-                                setSortMenuOpen((prev) => !prev);
-                            }}
-                        >
-                            {nurseSortMode === 'skill' ? t('page.member.sortBySkill') : t('page.member.sortByPriorityOrder')}
-                            <ChevronDown
-                                aria-hidden="true"
-                                className={cn('size-5 transition-transform', sortMenuOpen && 'rotate-180')}
-                            />
-                        </button>
-                        {sortMenuOpen ? (
-                            <div
-                                role="listbox"
-                                className="absolute top-full left-0 z-20 mt-1 min-w-[220px] rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]"
+                        <div ref={sortMenuRef} className="relative">
+                            <button
+                                type="button"
+                                aria-haspopup="listbox"
+                                aria-expanded={sortMenuOpen}
+                                aria-label={t('page.member.sortListMenuAria')}
+                                className={cn(
+                                    'flex items-center gap-1 rounded-[5px] px-2 py-1 font-apple text-[16px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                                    sortMenuOpen ? 'bg-white text-sub-1' : 'text-gray-3 hover:bg-white',
+                                )}
+                                onClick={() => {
+                                    setTeamMenuOpen(false);
+                                    setSortMenuOpen((prev) => !prev);
+                                }}
                             >
-                                <button
-                                    type="button"
-                                    role="option"
-                                    aria-selected={nurseSortMode === 'skill'}
-                                    className={cn(
-                                        'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                                        nurseSortMode === 'skill' ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
-                                    )}
-                                    onClick={() => {
-                                        setNurseSortMode('skill');
-                                        setSortMenuOpen(false);
-                                    }}
+                                {nurseSortMode === 'skill' ? t('page.member.sortBySkill') : t('page.member.sortByPriorityOrder')}
+                                <ChevronDown
+                                    aria-hidden="true"
+                                    className={cn('size-5 transition-transform', sortMenuOpen && 'rotate-180')}
+                                />
+                            </button>
+                            {sortMenuOpen ? (
+                                <div
+                                    role="listbox"
+                                    className="absolute top-full left-0 z-20 mt-1 min-w-[220px] rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]"
                                 >
-                                    {t('page.member.sortBySkill')}
-                                </button>
-                                <button
-                                    type="button"
-                                    role="option"
-                                    aria-selected={nurseSortMode === 'priority'}
-                                    className={cn(
-                                        'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                                        nurseSortMode === 'priority' ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
-                                    )}
-                                    onClick={() => {
-                                        setNurseSortMode('priority');
-                                        setSortMenuOpen(false);
-                                    }}
-                                >
-                                    {t('page.member.sortByPriorityOrder')}
-                                </button>
-                            </div>
-                        ) : null}
-                    </div>
+                                    <button
+                                        type="button"
+                                        role="option"
+                                        aria-selected={nurseSortMode === 'skill'}
+                                        className={cn(
+                                            'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                            nurseSortMode === 'skill' ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                        )}
+                                        onClick={() => {
+                                            setNurseSortMode('skill');
+                                            setSortMenuOpen(false);
+                                        }}
+                                    >
+                                        {t('page.member.sortBySkill')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        role="option"
+                                        aria-selected={nurseSortMode === 'priority'}
+                                        className={cn(
+                                            'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                            nurseSortMode === 'priority' ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                        )}
+                                        onClick={() => {
+                                            setNurseSortMode('priority');
+                                            setSortMenuOpen(false);
+                                        }}
+                                    >
+                                        {t('page.member.sortByPriorityOrder')}
+                                    </button>
+                                </div>
+                            ) : null}
+                        </div>
                         <div className="flex items-center gap-1 font-apple text-[16px] text-main-1">
                             <span>{t('page.member.canMakeDuty')}</span>
                             <TooltipProvider>

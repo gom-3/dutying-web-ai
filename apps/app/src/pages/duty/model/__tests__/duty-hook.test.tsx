@@ -108,6 +108,7 @@ vi.mock('@/shared/api/ward', () => ({
 vi.mock('@/features/shift-editor', () => ({
     buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
     docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
+    isDutyShiftWithoutAssignments: () => false,
     shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
     useShiftEditorCommands: () => mockCommands,
     useShiftExcelExport: (options: {disabled?: boolean}) => ({
