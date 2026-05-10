@@ -76,7 +76,9 @@ export const en: TLocale = {
             navigation: {
                 previous: 'Previous',
                 next: 'Next',
+                saving: 'Saving…',
                 complete: 'Complete',
+                sequentialRequired: 'Please complete the steps in order.',
             },
             overview: {
                 loading: 'Loading duty schedule...',
@@ -90,6 +92,8 @@ export const en: TLocale = {
                 noTeamsTitle: 'No shift teams found.',
                 noTeamsDescription: 'Create a shift team first or check ward settings.',
             },
+            monthRangeTitle: 'You can’t create a schedule for this period',
+            monthRangeDescription: 'On Dutying, you can only create schedules for this month and the next month.',
             requests: {
                 title: 'Please confirm requested shifts',
                 descriptionPrefix: 'Accepted requests are',
@@ -99,6 +103,7 @@ export const en: TLocale = {
                 error: 'Failed to load requested shift data',
                 empty: 'There is no requested shift schedule for this month yet',
                 panelTitle: 'Request list',
+                summaryCountsAria: 'Summary of accepted, pending, and rejected requests',
                 count: '{{count}}',
                 badge: {
                     accepted: 'Accepted requests',
@@ -128,12 +133,12 @@ export const en: TLocale = {
                 section: {
                     strong: 'Hard constraints',
                     weak: 'Soft constraints',
-                    excluded: 'Excluded',
                 },
                 info: 'You can drag to reorder by your preferred priority.',
                 count: '{{count}}',
                 empty: 'No constraints to show.',
                 dragHandleAria: 'Drag to reorder',
+                excludeRuleAria: 'Disable this constraint',
                 violationCount: '{{count}}',
                 phrase: {
                     max: 'Max',
@@ -154,7 +159,6 @@ export const en: TLocale = {
             },
             workers: {
                 totalCount: 'Total {{count}}',
-                sortByLevel: 'Sort by level',
                 column: {
                     name: 'Name',
                     level: 'Level',
@@ -169,6 +173,7 @@ export const en: TLocale = {
                 loading: 'Loading the duty schedule',
                 error: 'Failed to load fixed shift data',
                 lockedToast: 'Fixed shifts can only be edited from the Fixed Shifts tab',
+                saveFailed: 'Failed to save. Please try again shortly.',
             },
             aiRefill: {
                 action: 'Refill with AI',
@@ -221,6 +226,12 @@ export const en: TLocale = {
             noTeamsDescription: 'Create a shift team and try again.',
             emptyTitle: 'No duty schedule for {{teamName}} in month {{month}}.',
             emptyDescription: 'Go to schedule creation to start the duty schedule for month {{month}}.',
+            createShiftFlow: 'Create schedule',
+            viewRangeTitle: 'This period is not available',
+            viewRangeDescription: 'You can only create and view schedules through the next month.',
+            emptyScheduleTitle: 'No {{month}} duty schedule for {{teamName}} yet',
+            emptyScheduleDescription: 'Create a schedule in the auto-generation flow.',
+            pastEmptyScheduleTitle: 'No {{month}} duty schedule for {{teamName}}',
         },
         request: {
             overview: {
@@ -307,6 +318,8 @@ export const en: TLocale = {
             deleteTeam: 'Delete team',
             teamMenu: 'Open team menu',
             sortBySkill: 'Sort by skill',
+            sortByPriorityOrder: 'Saved order',
+            sortListMenuAria: 'Open list sort options',
             canMakeDuty: 'Duty schedule',
             canMakeDutyTooltip: 'Only selected people can create the duty schedule.',
             emptyTeamTitle: 'There are no members in this team yet.',

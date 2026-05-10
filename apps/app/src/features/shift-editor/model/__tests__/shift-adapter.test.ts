@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
-import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, shiftToDoc} from '../shift-adapter';
+import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, isDutyShiftWithoutAssignments, shiftToDoc} from '../shift-adapter';
 
 function createShift(): TShift {
     return {
@@ -85,6 +85,31 @@ function createShift(): TShift {
 }
 
 describe('shift-adapter', () => {
+    it('detects empty shift payloads from API shape', () => {
+        expect(isDutyShiftWithoutAssignments(createShift())).toBe(false);
+
+        const noWorkers: TShift = {
+            ...createShift(),
+            divisionShiftNurses: [[]],
+        };
+
+        expect(isDutyShiftWithoutAssignments(noWorkers)).toBe(true);
+
+        const onlyNullCells: TShift = {
+            ...createShift(),
+            divisionShiftNurses: [
+                [
+                    {
+                        ...createShift().divisionShiftNurses[0]![0]!,
+                        wardShiftList: [null, null],
+                    },
+                ],
+            ],
+        };
+
+        expect(isDutyShiftWithoutAssignments(onlyNullCells)).toBe(true);
+    });
+
     it('converts only worker rows into editor doc', () => {
         const doc = shiftToDoc(createShift(), 2026, 3);
 

@@ -105,22 +105,27 @@ vi.mock('@/shared/api/ward', () => ({
     },
 }));
 
-vi.mock('@/features/shift-editor', () => ({
-    buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
-    docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
-    shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
-    useShiftEditorCommands: () => mockCommands,
-    useShiftExcelExport: (options: {disabled?: boolean}) => ({
-        isExporting: false,
-        exportExcel: () => {
-            if (!options.disabled) {
-                mockExportExcel();
-            }
-        },
-    }),
-    useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
-    useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
-}));
+vi.mock('@/features/shift-editor', async (importOriginal) => {
+    const actual = await importOriginal();
+
+    return {
+        ...actual,
+        buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
+        docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
+        shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
+        useShiftEditorCommands: () => mockCommands,
+        useShiftExcelExport: (options: {disabled?: boolean}) => ({
+            isExporting: false,
+            exportExcel: () => {
+                if (!options.disabled) {
+                    mockExportExcel();
+                }
+            },
+        }),
+        useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
+        useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
+    };
+});
 
 const shiftTeams = [
     {shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []},
@@ -188,7 +193,6 @@ function setQueryState(overrides?: Partial<typeof mockQueries>) {
     mockQueries = {
         shiftTeams: {data: shiftTeams, isPending: false, isError: false},
         duty: {data: shift, isPending: false, isError: false, refetch: mockRefetch},
-        constraint: {data: null, isPending: false, isError: false},
         ...overrides,
     };
 }
@@ -304,6 +308,36 @@ describe('useDutyHook', () => {
             expect(result.current.state.status).toBe('success');
             expect(result.current.state.shift).toBeNull();
         });
+    });
+
+    it('treats skeleton duty payload without assignments like no shift data', async () => {
+        mockShiftToDoc.mockClear();
+
+        const skeletonShift = {
+            ...shift,
+            divisionShiftNurses: [
+                [
+                    {
+                        ...shift.divisionShiftNurses[0]![0]!,
+                        wardShiftList: [null, null],
+                    },
+                ],
+            ],
+        };
+
+        setQueryState({
+            duty: {data: skeletonShift, isPending: false, isError: false, refetch: mockRefetch},
+        });
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.status).toBe('success');
+            expect(result.current.state.shift).toBeNull();
+            expect(mockCommands.init).toHaveBeenCalledWith({columns: [], rows: [], workerMeta: {}, fixedCells: {}, requestCells: {}});
+        });
+
+        expect(mockShiftToDoc).not.toHaveBeenCalled();
     });
 
     it('restores the edit snapshot on cancel even when the current doc was mutated later', async () => {

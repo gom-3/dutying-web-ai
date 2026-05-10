@@ -6,8 +6,10 @@ import {type TWardShiftType, type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
+import CountDutyByDay from './count-duty-by-day';
 import {ShiftCalendarDivision} from './shift-calendar/shift-calendar-division';
 import {ShiftCalendarHeader} from './shift-calendar/shift-calendar-header';
+import {SHIFT_CALENDAR_GRID_TEMPLATE_COLUMNS} from './shift-calendar/shift-calendar-layout';
 import {type TLayerFlags, type TShiftCalendarFocus} from './types';
 import type ViolationLayer from './violation-layer';
 
@@ -32,6 +34,8 @@ interface IShiftCalendarProps {
     onEditDivision?: (opts: {shiftNurseId: number; level: number; direction: 1 | -1}) => void;
     clearSelectionOnClickAway?: boolean;
     exportMode?: boolean;
+    /** 일별 합계를 일자 헤더 바로 아래에 두어 본문과 동일 가로 기준으로 맞춤 */
+    showCountByDay?: boolean;
 }
 
 function ShiftCalendar({
@@ -52,7 +56,8 @@ function ShiftCalendar({
     enableDivisionManagement = false,
     onEditDivision,
     clearSelectionOnClickAway = true,
-    exportMode = false,
+    exportMode: _exportMode = false,
+    showCountByDay = false,
 }: IShiftCalendarProps) {
     const {separateWeekendColor, shiftTypeColorStyle} = useUIConfigStore();
     const commands = useShiftEditorCommands();
@@ -110,6 +115,7 @@ function ShiftCalendar({
     }, [doc.rows, selection]);
     const effectiveFocus = focus ?? derivedFocus;
     const layerFlags: TLayerFlags = showLayer ?? {fault: false, check: false, slash: false};
+    const gridTemplateColumns = SHIFT_CALENDAR_GRID_TEMPLATE_COLUMNS;
 
     useEffect(() => {
         if (!effectiveFocus) return;
@@ -118,14 +124,6 @@ function ShiftCalendar({
         const container = containerRef.current;
 
         if (!focusRect || !container) return;
-
-        if (focusRect.x + focusRect.width > window.innerWidth) {
-            window.scroll({left: focusRect.left + container.scrollLeft});
-        }
-
-        if (focusRect.x - container.offsetLeft < 0) {
-            window.scroll({left: 0});
-        }
 
         if (focusRect.y + focusRect.height - container.offsetTop > container.clientHeight) {
             window.scroll({top: focusRect.top + container.scrollTop});
@@ -165,53 +163,59 @@ function ShiftCalendar({
     };
 
     return (
-        <div id="calendar" ref={clickAwayRef} className={cn('flex w-full flex-col', exportMode ? 'overflow-visible' : 'overflow-hidden')}>
-            <ShiftCalendarHeader
-                shift={shift}
-                effectiveFocusDay={effectiveFocus?.day}
-                separateWeekendColor={separateWeekendColor}
-                shiftTypeColorStyle={shiftTypeColorStyle}
-                enableDragAndDrop={enableDragAndDrop}
-            />
-            <DragDropContext onDragEnd={handleDragEnd}>
-                <div
-                    className={cn(
-                        '-mt-5 scrollbar-hide flex flex-col gap-[.3125rem] pt-5 pr-4 pb-8',
-                        exportMode ? 'overflow-visible' : 'overflow-x-hidden overflow-y-scroll',
-                    )}
-                    ref={containerRef}
-                >
-                    {divisions.map((division, level) => (
-                        <ShiftCalendarDivision
-                            key={level}
-                            level={level}
-                            rows={division.rows}
-                            shift={shift}
-                            readonly={readonly}
-                            folded={Boolean(foldedLevels?.[level])}
-                            enableDragAndDrop={enableDragAndDrop}
-                            enableDivisionManagement={enableDivisionManagement}
-                            onToggleFoldLevel={onToggleFoldLevel}
-                            onEditDivision={onEditDivision}
-                            onSelectNurse={onSelectNurse}
-                            onUpdateCarry={onUpdateCarry}
-                            workerRowMap={workerRowMap}
-                            doc={doc}
-                            getCellShiftType={getCellShiftType}
-                            idToType={idToType}
-                            shortNameToType={shortNameToType}
-                            selection={selection}
-                            selectionRect={selectionRect}
-                            effectiveFocus={effectiveFocus}
-                            layerFlags={layerFlags}
-                            violations={violations}
-                            separateWeekendColor={separateWeekendColor}
-                            focusedCellRef={focusedCellRef}
-                            onCellClick={handleCellClick}
-                        />
-                    ))}
-                </div>
-            </DragDropContext>
+        <div id="calendar" ref={clickAwayRef} className={cn('flex w-full flex-col overflow-visible')}>
+            {/* 헤더/로우가 동일한 padding 기준선을 공유해야 정렬이 정확히 맞습니다. */}
+            <div>
+                <ShiftCalendarHeader
+                    shift={shift}
+                    effectiveFocusDay={effectiveFocus?.day}
+                    separateWeekendColor={separateWeekendColor}
+                    shiftTypeColorStyle={shiftTypeColorStyle}
+                    gridTemplateColumns={gridTemplateColumns}
+                />
+                {showCountByDay && (
+                    <div className="z-20 w-full min-w-0">
+                        <CountDutyByDay shift={shift} doc={doc} gridTemplateColumns={gridTemplateColumns} variant="underDateHeader" />
+                    </div>
+                )}
+                <DragDropContext onDragEnd={handleDragEnd}>
+                    <div
+                        className="-mt-4 flex flex-col gap-px overflow-visible pt-4 pb-4"
+                        ref={containerRef}
+                    >
+                        {divisions.map((division, level) => (
+                            <ShiftCalendarDivision
+                                key={level}
+                                level={level}
+                                rows={division.rows}
+                                shift={shift}
+                                readonly={readonly}
+                                folded={Boolean(foldedLevels?.[level])}
+                                enableDragAndDrop={enableDragAndDrop}
+                                enableDivisionManagement={enableDivisionManagement}
+                                onToggleFoldLevel={onToggleFoldLevel}
+                                onEditDivision={onEditDivision}
+                                onSelectNurse={onSelectNurse}
+                                onUpdateCarry={onUpdateCarry}
+                                workerRowMap={workerRowMap}
+                                doc={doc}
+                                getCellShiftType={getCellShiftType}
+                                idToType={idToType}
+                                shortNameToType={shortNameToType}
+                                selection={selection}
+                                selectionRect={selectionRect}
+                                effectiveFocus={effectiveFocus}
+                                layerFlags={layerFlags}
+                                violations={violations}
+                                separateWeekendColor={separateWeekendColor}
+                                focusedCellRef={focusedCellRef}
+                                onCellClick={handleCellClick}
+                                gridTemplateColumns={gridTemplateColumns}
+                            />
+                        ))}
+                    </div>
+                </DragDropContext>
+            </div>
         </div>
     );
 }

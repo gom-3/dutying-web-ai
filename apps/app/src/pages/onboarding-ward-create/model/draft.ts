@@ -73,9 +73,9 @@ export type TOnboardingActionState = {
 };
 
 const SKILL_PALETTES: TSkillPalette[] = [
-    {id: 'warm', colors: ['#FFA395', '#FFC0B6', '#FFC795', '#FFE195', '#FFF0B0']},
-    {id: 'cool', colors: ['#9EC5FF', '#B7D6FF', '#CFE4FF', '#DFF0FF', '#ECF8FF']},
-    {id: 'violet', colors: ['#B18FFF', '#C8AEFF', '#D8C4FF', '#E9DCFF', '#F3EBFF']},
+    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'cool', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'violet', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
 ];
 const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
     levelCount: 5,

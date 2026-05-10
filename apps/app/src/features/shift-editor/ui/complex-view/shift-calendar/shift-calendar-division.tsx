@@ -35,6 +35,7 @@ type TShiftCalendarDivisionProps = {
     separateWeekendColor: boolean;
     focusedCellRef: RefObject<HTMLParagraphElement | null>;
     onCellClick: (rowIndex: number, colIndex: number) => void;
+    gridTemplateColumns: string;
 };
 
 export function ShiftCalendarDivision({
@@ -62,13 +63,14 @@ export function ShiftCalendarDivision({
     separateWeekendColor,
     focusedCellRef,
     onCellClick,
+    gridTemplateColumns,
 }: TShiftCalendarDivisionProps) {
     if (!rows.length) return null;
 
     if (folded) {
         return (
             <div
-                className="ml-5 flex h-7.5 w-[calc(100%-1.25rem)] cursor-pointer items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem]"
+                className="flex h-7.5 w-full min-w-0 cursor-pointer items-center gap-[.125rem] rounded-[.625rem] bg-sub-4.5 px-[.625rem]"
                 onClick={() => onToggleFoldLevel?.(level)}
             >
                 <FoldDutyIcon className="h-5.5 w-5.5 rotate-180" />
@@ -81,8 +83,8 @@ export function ShiftCalendarDivision({
     return (
         <Droppable droppableId={level.toString()} key={level.toString()}>
             {(provided) => (
-                <div ref={provided.innerRef} className="flex gap-5" {...provided.droppableProps}>
-                    <div className="relative ml-5 rounded-[1.25rem] shadow-banner">
+                <div ref={provided.innerRef} className="flex w-full min-w-0 gap-5" {...provided.droppableProps}>
+                    <div className="relative min-w-0 flex-1 rounded-[1.25rem] shadow-banner">
                         {!readonly && onToggleFoldLevel && (
                             <div className="absolute left-[-.9375rem] flex h-full w-7.5 items-center justify-center font-poppins font-light text-sub-2.5">
                                 <FoldDutyIcon
@@ -123,6 +125,7 @@ export function ShiftCalendarDivision({
                                     separateWeekendColor={separateWeekendColor}
                                     focusedCellRef={focusedCellRef}
                                     onCellClick={onCellClick}
+                                    gridTemplateColumns={gridTemplateColumns}
                                 />
                             );
                         })}

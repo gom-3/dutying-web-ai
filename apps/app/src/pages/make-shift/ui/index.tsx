@@ -1,8 +1,9 @@
 import {useNavigate} from 'react-router';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {isDutyViewingThisCalendarMonth, isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
-import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -15,6 +16,7 @@ export const MakeShiftPageView = () => {
     const useCase = useMakeShiftUseCase();
     const phase = useMakeShiftStore((s) => s.phase);
     const currentStep = useMakeShiftStore((s) => s.currentStep);
+    const maxReachedStep = useMakeShiftStore((s) => s.maxReachedStep);
     const year = useMakeShiftStore((s) => s.year);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
@@ -26,6 +28,8 @@ export const MakeShiftPageView = () => {
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
+    const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
+    const canOfferCreateFollowingMonth = isDutyViewingThisCalendarMonth(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
@@ -49,12 +53,22 @@ export const MakeShiftPageView = () => {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col px-10 py-10">
-            <MakeShiftHeader />
+        <div className="min-h-screen w-full overflow-x-auto">
+            {/* 최소 지원 폭 이하로 내려가면 "페이지 전체" 가로 스크롤 */}
+            <div className="flex min-h-screen min-w-[1280px] flex-col px-10 py-10">
+                <MakeShiftHeader />
 
-            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
-                {isOverview ? (
-                    <div className="flex flex-1 items-center justify-center px-10 py-16">
+                <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
+                    {!makeMonthAllowed ? (
+                        <div className="flex flex-1 items-center justify-center px-10 py-16">
+                            <DutyManagementStatusCard
+                                title={t('page.makeShift.monthRangeTitle')}
+                                description={t('page.makeShift.monthRangeDescription')}
+                                className="min-h-[360px] flex-1 border-0 bg-transparent"
+                            />
+                        </div>
+                    ) : isOverview ? (
+                        <div className="flex flex-1 items-center justify-center px-10 py-16">
                         {showNoTeamsState ? (
                             <PageState
                                 tone="empty"
@@ -90,9 +104,11 @@ export const MakeShiftPageView = () => {
                                     <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
                                         {t('page.makeShift.overview.viewShift', {month})}
                                     </ManagementActionButton>
-                                    <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
-                                        {t('page.makeShift.overview.createShift', {month: nextMonth})}
-                                    </ManagementActionButton>
+                                    {canOfferCreateFollowingMonth && (
+                                        <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
+                                            {t('page.makeShift.overview.createShift', {month: nextMonth})}
+                                        </ManagementActionButton>
+                                    )}
                                 </div>
                             </PageState>
                         ) : (
@@ -114,19 +130,31 @@ export const MakeShiftPageView = () => {
                                 </div>
                             </PageState>
                         )}
-                    </div>
-                ) : (
-                    <>
-                        <MakeShiftStepper currentStep={currentStep} onClickStep={useCase.goToStep} />
-                        <MakeShiftStepContent
-                            currentStep={currentStep}
-                            canPrev={canPrev}
-                            canNext={canNext}
-                            onPrev={useCase.prev}
-                            onNext={useCase.next}
-                        />
-                    </>
-                )}
+                        </div>
+                    ) : (
+                        <>
+                            {/*
+                             * Stepper는 흰 카드 폭 전체에 직접 배치한다 (분리선이 카드 좌우 가장자리까지 닿게).
+                             * 좌우 콘텐츠 패딩은 stepper 내부의 step list(`px-[clamp(...)]`)와 아래 step content에만 적용한다.
+                             */}
+                            <MakeShiftStepper
+                                currentStep={currentStep}
+                                maxReachedStep={maxReachedStep}
+                                onClickStep={useCase.goToStep}
+                            />
+
+                            <div className="w-full min-w-0 px-6 2xl:px-10">
+                                <MakeShiftStepContent
+                                    currentStep={currentStep}
+                                    canPrev={canPrev}
+                                    canNext={canNext}
+                                    onPrev={useCase.prev}
+                                    onNext={useCase.next}
+                                />
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -1,7 +1,9 @@
 import {useEffect, useMemo} from 'react';
+import useAuth from '@/features/auth';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
+import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';
@@ -9,6 +11,10 @@ import {TutorialPortal} from './TutorialPortal';
 const MemberTutorial = () => {
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const {setMemberTutorial} = useTutorialUseCase();
+    const {
+        state: {accountId},
+    } = useAuth();
+    const onTutorialClose = useTutorialDismissPersistence('member', accountId, setMemberTutorial);
     const {
         state: {shiftTeams},
         actions: {selectNurse},
@@ -67,7 +73,7 @@ const MemberTutorial = () => {
         }
     }, [showMemberTutorial]);
 
-    return <TutorialPortal open={showMemberTutorial} config={config} closeCallback={() => setMemberTutorial(false)} />;
+    return <TutorialPortal open={showMemberTutorial} config={config} closeCallback={onTutorialClose} />;
 };
 
 export default MemberTutorial;

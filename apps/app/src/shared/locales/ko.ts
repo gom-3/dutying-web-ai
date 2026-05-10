@@ -72,7 +72,9 @@ export const ko = {
             navigation: {
                 previous: '이전',
                 next: '다음',
+                saving: '저장 중…',
                 complete: '완료',
+                sequentialRequired: '순서대로 설정을 진행해 주세요!',
             },
             overview: {
                 loading: '근무표를 불러오는 중입니다...',
@@ -86,6 +88,8 @@ export const ko = {
                 noTeamsTitle: '생성된 근무팀이 없어요.',
                 noTeamsDescription: '근무팀을 먼저 만들거나 병동 설정을 확인해 주세요.',
             },
+            monthRangeTitle: '이 기간에는 근무표를 만들 수 없어요',
+            monthRangeDescription: '듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.',
             requests: {
                 title: '신청 근무를 확정해 주세요',
                 descriptionPrefix: '반영된 스케줄은',
@@ -95,6 +99,7 @@ export const ko = {
                 error: '신청 근무 데이터를 불러오지 못했어요',
                 empty: '이번 달 신청 근무표가 아직 없어요',
                 panelTitle: '신청 내역',
+                summaryCountsAria: '반영됨, 대기 중, 거절된 신청 건수 요약',
                 count: '{{count}}개',
                 badge: {
                     accepted: '반영된 신청 근무',
@@ -124,12 +129,12 @@ export const ko = {
                 section: {
                     strong: '강 제약 조건',
                     weak: '약 제약 조건',
-                    excluded: '제외',
                 },
                 info: '위치를 옮겨서 원하는 우선순위대로 정렬할 수 있어요',
                 count: '{{count}}개',
                 empty: '표시할 제약조건이 없습니다.',
                 dragHandleAria: '드래그하여 위치를 변경',
+                excludeRuleAria: '이 제약 조건 적용 해제',
                 violationCount: '{{count}}개',
                 phrase: {
                     max: '최대',
@@ -150,7 +155,6 @@ export const ko = {
             },
             workers: {
                 totalCount: '총 {{count}}명',
-                sortByLevel: '숙련도 순',
                 column: {
                     name: '이름',
                     level: '숙련도',
@@ -165,6 +169,7 @@ export const ko = {
                 loading: '근무표를 불러오는 중이에요',
                 error: '고정 근무 데이터를 불러오지 못했어요',
                 lockedToast: '고정 근무는 고정근무 탭에서만 수정할 수 있어요',
+                saveFailed: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
             },
             aiRefill: {
                 action: 'AI 다시 채우기',
@@ -217,6 +222,12 @@ export const ko = {
             noTeamsDescription: '근무팀을 만든 뒤 다시 확인해 주세요.',
             emptyTitle: '{{teamName}}의 {{month}}월 근무표가 없어요.',
             emptyDescription: '{{month}}월 근무표 생성 화면으로 이동해 일정을 시작할 수 있어요.',
+            createShiftFlow: '근무표 생성하기',
+            viewRangeTitle: '이 기간의 근무표는 볼 수 없어요',
+            viewRangeDescription: '다음 달까지의 근무표만 생성 및 조회할 수 있어요.',
+            emptyScheduleTitle: '{{teamName}} · {{month}}월 근무표가 아직 없어요',
+            emptyScheduleDescription: '자동 생성 플로우에서 근무표를 만들 수 있어요.',
+            pastEmptyScheduleTitle: '{{teamName}} · {{month}}월 근무표가 없어요',
         },
         request: {
             overview: {
@@ -303,6 +314,8 @@ export const ko = {
             deleteTeam: '팀 삭제하기',
             teamMenu: '팀 메뉴 열기',
             sortBySkill: '숙련도 순',
+            sortByPriorityOrder: '저장된 순서',
+            sortListMenuAria: '목록 정렬 기준 열기',
             canMakeDuty: '근무표 작성',
             canMakeDutyTooltip: '선택된 사람만 근무표를 작성할 수 있어요.',
             emptyTeamTitle: '아직 팀원이 없어요.',

@@ -13,11 +13,9 @@ interface IMakeShiftEditorViewProps {
     showToolbar?: boolean;
     showCalendar?: boolean;
     showCountByDay?: boolean;
-    showPanel?: boolean;
     showNurseEditModal?: boolean;
-    stickyBottom?: boolean;
     className?: string;
-    calendarProps?: Omit<ComponentProps<typeof ShiftCalendar>, 'shift' | 'doc'>;
+    calendarProps?: Omit<ComponentProps<typeof ShiftCalendar>, 'shift' | 'doc' | 'showCountByDay'>;
     toolbarProps?: Omit<
         ComponentProps<typeof Toolbar>,
         'shift' | 'onDownloadImage' | 'isDownloadingImage' | 'onDownloadExcel' | 'isDownloadingExcel'
@@ -31,7 +29,6 @@ export const MakeShiftEditorView = ({
     showCalendar = true,
     showCountByDay = true,
     showNurseEditModal = true,
-    stickyBottom = true,
     className,
     calendarProps,
     toolbarProps,
@@ -67,7 +64,6 @@ export const MakeShiftEditorView = ({
                     shift={shift}
                     doc={doc}
                     showCountByDay={showCountByDay}
-                    stickyBottom={stickyBottom}
                     exportMode={isExporting}
                     exportRef={exportRef}
                     calendarProps={calendarProps}

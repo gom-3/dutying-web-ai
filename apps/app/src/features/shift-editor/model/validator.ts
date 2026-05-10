@@ -164,7 +164,7 @@ const LEVEL_PRIORITY: Record<TDutyRuleLevel, number> = {error: 1, warning: 0};
  * store의 `TViolation[]`을 ShiftCalendar가 기대하는
  * `Map<string, TViolation>` (key: `${workerId},${col}`)으로 변환한다.
  *
- * ViolationLayer가 시작 셀에서 cells.length만큼 가로로 확장되므로,
+ * ViolationLayer는 일자 그리드에서 `grid-column` span으로 그려지며, 맵은 시작 셀에만 둔다.
  * 각 violation의 **첫 번째 셀(시작 위치)**에만 엔트리를 생성한다.
  * 같은 시작 셀에 여러 violation이 겹칠 경우 severity가 높은 것(error > warning)을 우선한다.
  */

@@ -2,7 +2,12 @@ import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
 import {useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
+import {
+    bumpMaxReachedStep,
+    loadDraftStep,
+    saveDraftStep,
+} from './make-shift-progress-storage';
+import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -36,24 +41,51 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const isHydrated = useMakeShiftStore((s) => s.isHydrated);
     const setHydrated = useMakeShiftStore((s) => s.setHydrated);
     const startFromStep = useMakeShiftStore((s) => s.startFromStep);
+    const setWardId = useMakeShiftStore((s) => s.setWardId);
+    const autoRestoreAttemptedRef = useRef(false);
+
+    useEffect(() => {
+        autoRestoreAttemptedRef.current = false;
+    }, [wardId]);
+
+    useEffect(() => {
+        setWardId(wardId);
+    }, [wardId, setWardId]);
 
     useEffect(() => {
         if (isHydrated || !wardId) return;
 
-        const savedStep = loadPersistedStep();
         const savedYearMonth = loadPersistedYearMonth();
 
         if (savedYearMonth && !searchParams.has('year') && !searchParams.has('month')) {
             setYearMonth(savedYearMonth);
         }
 
-        if (savedStep) {
-            // 이전에 작업 중이던 단계가 있다면 해당 단계로 바로 진입하고 복구 모달을 띄운다.
-            startFromStep({step: savedStep, openRestoreDraftModal: true});
-        }
-
         setHydrated();
-    }, [isHydrated, startFromStep, wardId, setHydrated, searchParams, setYearMonth]);
+    }, [isHydrated, wardId, setHydrated, searchParams, setYearMonth]);
+
+    useEffect(() => {
+        if (!wardId || !isHydrated || autoRestoreAttemptedRef.current || !currentShiftTeamId) return;
+
+        const st = useMakeShiftStore.getState();
+        const fromComposite = loadDraftStep(wardId, currentShiftTeamId, st.year, st.month);
+        const fromLegacy = loadPersistedStep();
+        const saved = fromComposite ?? fromLegacy;
+
+        if (!saved) return;
+
+        autoRestoreAttemptedRef.current = true;
+        startFromStep({
+            step: saved,
+            openRestoreDraftModal: editor.getPersisted() !== null,
+        });
+
+        if (!fromComposite && fromLegacy) {
+            saveDraftStep(wardId, currentShiftTeamId, st.year, st.month, saved);
+            bumpMaxReachedStep(wardId, currentShiftTeamId, st.year, st.month, saved);
+            clearPersistedStep();
+        }
+    }, [wardId, isHydrated, currentShiftTeamId, year, month, startFromStep, editor]);
 
     useEffect(() => {
         if (!wardId) {

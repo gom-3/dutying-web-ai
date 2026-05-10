@@ -1,34 +1,23 @@
-import {type ReactNode} from 'react';
-import {type TDutyRequest, type TRequestShift, type TWardShiftType} from '@/entities';
+import {cn} from '@dutying/utils/style';
+import {type TDutyRequest, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
+import {Check, Clock, X} from 'lucide-react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
-import PageState from '@/shared/ui/PageState';
-import StatusBadge from '@/shared/ui/StatusBadge';
-
-type TAcceptedRequestSummary = {
-    id: TDutyRequest['wardReqShiftId'];
-    nurseName: TDutyRequest['nurseName'];
-    date: TDutyRequest['date'];
-    wardShiftTypeId: TDutyRequest['wardShiftTypeId'];
-};
 
 type TDecisionAction = (wardReqShiftId: number, isAccepted: boolean | null) => void;
 
 type TRequestsShiftsHeaderProps = {
-    acceptedCount: number;
-    pendingCount: number;
-    rejectedCount: number;
     canPrev: boolean;
     canNext: boolean;
     onPrev: () => void;
     onNext: () => void;
 };
 
+const REQUESTS_NAV_BUTTON_CLASS =
+    'h-[clamp(30px,2.5vw,42px)] rounded-[clamp(8px,0.7vw,10px)] px-[clamp(12px,1.0vw,20px)] text-[clamp(11px,0.95vw,16px)] font-semibold';
+
 export function RequestsShiftsHeader({
-    acceptedCount,
-    pendingCount,
-    rejectedCount,
     canPrev,
     canNext,
     onPrev,
@@ -37,35 +26,36 @@ export function RequestsShiftsHeader({
     const {t} = useTypedTranslation();
 
     return (
-        <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="flex items-baseline gap-[20px]">
-                <div>
-                    <p className="font-apple text-[32px] font-semibold text-sub-1">{t('page.makeShift.requests.title')}</p>
-                    <p className="font-apple text-xl font-medium text-gray-3">
-                        {t('page.makeShift.requests.descriptionPrefix')}{' '}
-                        <span className="text-main-1">{t('page.makeShift.requests.descriptionHighlight')}</span>
-                        {t('page.makeShift.requests.descriptionSuffix')}
-                    </p>
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <StatusBadge label={t('page.makeShift.requests.badge.accepted')} tone="success" count={acceptedCount} />
-                        <StatusBadge label={t('page.makeShift.requests.badge.pending')} tone="brand" count={pendingCount} />
-                        <StatusBadge label={t('page.makeShift.requests.badge.rejected')} tone="neutral" count={rejectedCount} />
-                    </div>
-                </div>
+        <div className="make-shift-requests-header flex flex-wrap items-start justify-between gap-[clamp(14px,1.5vw,24px)]">
+            <div className="make-shift-requests-header__intro flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[clamp(12px,1.2vw,24px)] gap-y-[clamp(6px,0.55vw,10px)]">
+                <p className="make-shift-requests-header__title shrink-0 font-apple text-[clamp(20px,1.7vw,30px)] font-semibold text-sub-1">
+                    {t('page.makeShift.requests.title')}
+                </p>
+                <p className="make-shift-requests-header__description min-w-0 max-w-full font-apple text-[clamp(13px,1.1vw,20px)] font-medium leading-snug text-gray-3">
+                    {t('page.makeShift.requests.descriptionPrefix')}{' '}
+                    <span className="text-main-1">{t('page.makeShift.requests.descriptionHighlight')}</span>
+                    {t('page.makeShift.requests.descriptionSuffix')}
+                </p>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="make-shift-requests-header__actions flex items-center gap-[clamp(6px,0.55vw,12px)]">
                 <Button
                     variant="secondary"
                     size="md"
-                    className="h-[42px] rounded-[10px] px-5 font-semibold"
+                    className={`make-shift-requests-header__nav-button ${REQUESTS_NAV_BUTTON_CLASS}`}
                     onClick={onPrev}
                     disabled={!canPrev}
                     type="button"
                 >
                     {t('page.makeShift.navigation.previous')}
                 </Button>
-                <Button size="md" className="h-[42px] rounded-[10px] px-5 font-semibold" onClick={onNext} disabled={!canNext} type="button">
+                <Button
+                    size="md"
+                    className={`make-shift-requests-header__nav-button ${REQUESTS_NAV_BUTTON_CLASS}`}
+                    onClick={onNext}
+                    disabled={!canNext}
+                    type="button"
+                >
                     {t('page.makeShift.navigation.next')}
                 </Button>
             </div>
@@ -73,283 +63,123 @@ export function RequestsShiftsHeader({
     );
 }
 
-type TRequestsShiftBoardProps = {
-    loading: boolean;
-    error: boolean;
-    requestShift: TRequestShift | null;
-    wardShiftTypeMap: Map<number, TWardShiftType>;
-    separateWeekendColor: boolean;
-    onRetry: () => Promise<unknown>;
-};
-
-export function RequestsShiftBoard({
-    loading,
-    error,
-    requestShift,
-    wardShiftTypeMap,
-    separateWeekendColor,
-    onRetry,
-}: TRequestsShiftBoardProps) {
-    const {t} = useTypedTranslation();
-
-    if (loading) {
-        return <PageState tone="loading" title={t('page.makeShift.requests.loading')} description={t('page.state.loadingDescription')} />;
-    }
-
-    if (error) {
-        return (
-            <PageState
-                tone="error"
-                title={t('page.makeShift.requests.error')}
-                description={t('page.state.errorDescription')}
-                action={{label: t('page.state.retry'), onClick: () => void onRetry()}}
-            />
-        );
-    }
-
-    if (!requestShift) {
-        return <PageState tone="empty" title={t('page.makeShift.requests.empty')} description={t('page.state.emptyDescription')} />;
-    }
-
-    return (
-        <div id="make_requests_board" className="flex h-full min-h-0 flex-col">
-            <div className="scrollbar-default min-h-0 scroll-m-2 overflow-auto rounded-[15px] shadow-banner">
-                <div className="flex items-center px-5">
-                    <div className="w-24 shrink-0 text-center font-apple text-[1rem] font-medium text-sub-3">
-                        {t('page.makeShift.requests.table.name')}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="inline-flex rounded-[2.5rem] px-4 py-[.1875rem]">
-                            {requestShift.days.map((item, idx) => {
-                                const isSat = item.dayType === 'saturday';
-                                const isSun = item.dayType === 'sunday' || item.dayType === 'holiday';
-                                const textColor = isSun
-                                    ? 'text-red'
-                                    : isSat
-                                      ? separateWeekendColor
-                                          ? 'text-blue'
-                                          : 'text-red'
-                                      : 'text-sub-2.5';
-
-                                return (
-                                    <p key={idx} className={`w-9 flex-1 rounded-full text-center font-poppins text-[1rem] ${textColor}`}>
-                                        {item.day}
-                                    </p>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex flex-col">
-                    {requestShift.divisionShiftNurses.map((division, divisionIndex) => {
-                        if (division.length === 0) return null;
-
-                        return (
-                            <div key={divisionIndex} className="rounded-[20px] bg-white">
-                                <div className="min-w-0">
-                                    <div className="flex flex-col">
-                                        {division.map((row) => (
-                                            <div key={row.shiftNurse.shiftNurseId} className="flex h-10 items-center px-5">
-                                                <div className="w-24 shrink-0 truncate text-center font-apple text-[1.25rem] text-sub-1">
-                                                    {row.shiftNurse.name}
-                                                </div>
-                                                <div className="flex h-full min-w-max px-4.25">
-                                                    {row.wardReqShiftList.map((wardShiftTypeId, dateIdx) => {
-                                                        const dayType = requestShift.days[dateIdx]?.dayType;
-                                                        const isSat = dayType === 'saturday';
-                                                        const isSun = dayType === 'sunday' || dayType === 'holiday';
-                                                        const bg = isSun
-                                                            ? 'bg-[#FFE1E680]'
-                                                            : isSat
-                                                              ? separateWeekendColor
-                                                                  ? 'bg-[#E1E5FF80]'
-                                                                  : 'bg-[#FFE1E680]'
-                                                              : '';
-
-                                                        return (
-                                                            <div
-                                                                key={dateIdx}
-                                                                className={`flex h-full w-9 items-center justify-center px-[.25rem] ${bg}`}
-                                                            >
-                                                                <ShiftBadge shiftType={wardShiftTypeMap.get(wardShiftTypeId ?? -1)} />
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-type TRequestsDecisionPanelProps = {
-    acceptedRequestSummaries: TAcceptedRequestSummary[];
+type TRequestsPendingPanelProps = {
+    acceptedCount: number;
+    pendingCount: number;
+    rejectedCount: number;
     pendingRequests: TDutyRequest[];
-    rejectedRequests: TDutyRequest[];
     wardShiftTypeMap: Map<number, TWardShiftType>;
     updatingRequestId: number | null;
     onDecideRequest: TDecisionAction;
 };
 
-export function RequestsDecisionPanel({
-    acceptedRequestSummaries,
+const PENDING_ACTION_BTN =
+    'h-[clamp(22px,1.75vw,28px)] min-w-0 shrink-0 rounded-[clamp(5px,0.45cqw,8px)] px-[clamp(6px,0.55vw,10px)] text-[clamp(9px,0.72cqw,12px)] font-semibold leading-none';
+
+const REQUEST_SUMMARY_ICON_CLASS = 'size-[clamp(10px,0.9cqw,14px)] shrink-0 stroke-[2.25]';
+
+const REQUEST_SUMMARY_BADGE_CLASS =
+    'inline-flex items-center gap-[clamp(2px,0.2cqw,4px)] rounded-full border border-gray-6 bg-main-bg px-[clamp(5px,0.45cqw,8px)] py-[clamp(1px,0.12cqw,3px)]';
+
+/**
+ * 대기(미결정) 신청만 표시. 수락 / 거절만 제공하는 좁은 패널.
+ */
+export function RequestsPendingPanel({
+    acceptedCount,
+    pendingCount,
+    rejectedCount,
     pendingRequests,
-    rejectedRequests,
     wardShiftTypeMap,
     updatingRequestId,
     onDecideRequest,
-}: TRequestsDecisionPanelProps) {
+}: TRequestsPendingPanelProps) {
     const {t} = useTypedTranslation();
 
     return (
-        <div id="make_requests_decision_panel" className="w-[360px] shrink-0 rounded-[20px] bg-white shadow-banner">
-            <div className="border-b border-sub-4.5 px-6 py-4">
-                <p className="font-apple text-[1.25rem] font-semibold text-main-1">{t('page.makeShift.requests.panelTitle')}</p>
+        <div
+            id="make_requests_decision_panel"
+            className="make-shift-requests-pending flex w-[clamp(200px,17vw,280px)] shrink-0 flex-col overflow-hidden rounded-[clamp(10px,0.9cqw,16px)] bg-white shadow-banner"
+        >
+            <div className="make-shift-requests-pending__header flex min-h-0 items-center justify-between gap-[clamp(6px,0.5cqw,10px)] border-b border-sub-4.5 px-[clamp(8px,0.75cqw,12px)] py-[clamp(6px,0.55cqw,10px)]">
+                <p className="make-shift-requests-pending__title min-w-0 truncate font-apple text-[clamp(11px,0.88cqw,14px)] font-semibold leading-tight text-main-1">
+                    {t('page.makeShift.requests.panelTitle')}
+                </p>
+                <div
+                    className="make-shift-requests-pending__summary flex shrink-0 flex-nowrap items-center justify-end gap-[clamp(4px,0.35cqw,6px)]"
+                    aria-label={t('page.makeShift.requests.summaryCountsAria')}
+                >
+                    <span
+                        className={REQUEST_SUMMARY_BADGE_CLASS}
+                        title={t('page.makeShift.requests.badge.accepted')}
+                    >
+                        <Check className={cn(REQUEST_SUMMARY_ICON_CLASS, 'text-green-600')} aria-hidden />
+                        <span className="font-apple text-[clamp(9px,0.72cqw,12px)] font-semibold tabular-nums leading-none text-sub-1">
+                            {acceptedCount}
+                        </span>
+                    </span>
+                    <span
+                        className={REQUEST_SUMMARY_BADGE_CLASS}
+                        title={t('page.makeShift.requests.badge.pending')}
+                    >
+                        <Clock className={cn(REQUEST_SUMMARY_ICON_CLASS, 'text-main-1')} aria-hidden />
+                        <span className="font-apple text-[clamp(9px,0.72cqw,12px)] font-semibold tabular-nums leading-none text-sub-1">
+                            {pendingCount}
+                        </span>
+                    </span>
+                    <span
+                        className={REQUEST_SUMMARY_BADGE_CLASS}
+                        title={t('page.makeShift.requests.badge.rejected')}
+                    >
+                        <X className={cn(REQUEST_SUMMARY_ICON_CLASS, 'text-gray-4')} aria-hidden />
+                        <span className="font-apple text-[clamp(9px,0.72cqw,12px)] font-semibold tabular-nums leading-none text-sub-1">
+                            {rejectedCount}
+                        </span>
+                    </span>
+                </div>
             </div>
 
-            <div className="scrollbar-hide max-h-[calc(100vh-22rem)] overflow-y-auto px-6 py-4">
-                <RequestsDecisionSection
-                    title={t('page.makeShift.requests.section.accepted')}
-                    count={acceptedRequestSummaries.length}
-                    emptyLabel={t('page.makeShift.requests.emptyAccepted')}
-                    items={acceptedRequestSummaries}
-                    renderActions={(item) => (
-                        <Button
-                            variant="secondary"
-                            size="sm"
-                            className="h-8 rounded-[10px] px-3 text-sm font-semibold"
-                            onClick={() => onDecideRequest(item.id, null)}
-                            disabled={updatingRequestId === item.id}
-                            type="button"
-                        >
-                            {t('page.makeShift.requests.action.hold')}
-                        </Button>
-                    )}
-                    renderBadge={(item) => <ShiftBadge shiftType={wardShiftTypeMap.get(item.wardShiftTypeId ?? -1)} />}
-                />
-
-                <RequestsDecisionSection
-                    className="mt-6"
-                    title={t('page.makeShift.requests.section.pending')}
-                    count={pendingRequests.length}
-                    emptyLabel={t('page.makeShift.requests.emptyPending')}
-                    items={pendingRequests}
-                    renderActions={(item) => (
-                        <div className="flex items-center gap-1">
-                            <Button
-                                size="sm"
-                                className="h-8 rounded-[10px] px-3 text-sm font-semibold"
-                                onClick={() => onDecideRequest(item.wardReqShiftId, true)}
-                                disabled={updatingRequestId === item.wardReqShiftId}
-                                type="button"
-                            >
-                                {t('page.makeShift.requests.action.accept')}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                className="h-8 rounded-[10px] px-3 text-sm font-semibold"
-                                onClick={() => onDecideRequest(item.wardReqShiftId, false)}
-                                disabled={updatingRequestId === item.wardReqShiftId}
-                                type="button"
-                            >
-                                {t('page.makeShift.requests.action.reject')}
-                            </Button>
-                        </div>
-                    )}
-                    renderBadge={(item) => <ShiftBadge shiftType={wardShiftTypeMap.get(item.wardShiftTypeId ?? -1)} isOnlyRequest />}
-                />
-
-                <RequestsDecisionSection
-                    className="mt-6"
-                    title={t('page.makeShift.requests.section.rejected')}
-                    count={rejectedRequests.length}
-                    emptyLabel={t('page.makeShift.requests.emptyRejected')}
-                    items={rejectedRequests}
-                    renderActions={(item) => (
-                        <div className="flex items-center gap-1">
-                            <Button
-                                size="sm"
-                                className="h-8 rounded-[10px] px-3 text-sm font-semibold"
-                                onClick={() => onDecideRequest(item.wardReqShiftId, true)}
-                                disabled={updatingRequestId === item.wardReqShiftId}
-                                type="button"
-                            >
-                                {t('page.makeShift.requests.action.accept')}
-                            </Button>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                className="h-8 rounded-[10px] px-3 text-sm font-semibold"
-                                onClick={() => onDecideRequest(item.wardReqShiftId, null)}
-                                disabled={updatingRequestId === item.wardReqShiftId}
-                                type="button"
-                            >
-                                {t('page.makeShift.requests.action.hold')}
-                            </Button>
-                        </div>
-                    )}
-                    renderBadge={(item) => <ShiftBadge shiftType={wardShiftTypeMap.get(item.wardShiftTypeId ?? -1)} isOnlyRequest />}
-                />
-            </div>
-        </div>
-    );
-}
-
-type TRequestsDecisionSectionItem = TAcceptedRequestSummary | TDutyRequest;
-
-type TRequestsDecisionSectionProps<TItem extends TRequestsDecisionSectionItem> = {
-    className?: string;
-    title: string;
-    count: number;
-    emptyLabel: string;
-    items: TItem[];
-    renderBadge: (item: TItem) => ReactNode;
-    renderActions: (item: TItem) => ReactNode;
-};
-
-function RequestsDecisionSection<TItem extends TRequestsDecisionSectionItem>({
-    className,
-    title,
-    count,
-    emptyLabel,
-    items,
-    renderBadge,
-    renderActions,
-}: TRequestsDecisionSectionProps<TItem>) {
-    const {t} = useTypedTranslation();
-
-    return (
-        <div className={className}>
-            <div className="flex items-center justify-between">
-                <p className="font-apple text-base font-semibold text-sub-1">{title}</p>
-                <p className="font-apple text-sm font-medium text-gray-4">{t('page.makeShift.requests.count', {count})}</p>
-            </div>
-
-            <div className="mt-3 space-y-2">
-                {items.length === 0 ? (
-                    <p className="font-apple text-sm font-medium text-gray-4">{emptyLabel}</p>
+            <div className="make-shift-requests-pending__body flex min-h-0 flex-1 flex-col gap-[clamp(5px,0.45cqw,8px)] overflow-y-auto px-[clamp(6px,0.55cqw,10px)] py-[clamp(6px,0.55cqw,10px)]">
+                {pendingRequests.length === 0 ? (
+                    <p className="make-shift-requests-pending__empty font-apple text-[clamp(10px,0.78cqw,13px)] font-medium leading-snug text-gray-4">
+                        {t('page.makeShift.requests.emptyPending')}
+                    </p>
                 ) : (
-                    items.map((item) => (
+                    pendingRequests.map((item) => (
                         <div
-                            key={'wardReqShiftId' in item ? item.wardReqShiftId : item.id}
-                            className="flex items-center gap-3 rounded-[10px] border border-gray-6 px-3 py-2"
+                            key={item.wardReqShiftId}
+                            className="make-shift-requests-pending__row flex items-center gap-[clamp(4px,0.35cqw,6px)] rounded-[clamp(6px,0.5cqw,10px)] border border-gray-6 bg-main-bg px-[clamp(5px,0.45cqw,8px)] py-[clamp(4px,0.35cqw,6px)]"
                         >
                             <div className="min-w-0 flex-1">
-                                <p className="truncate font-apple text-sm font-medium text-sub-1">
+                                <p className="truncate font-apple text-[clamp(10px,0.78cqw,13px)] font-medium leading-tight text-sub-1">
                                     {t('page.makeShift.requests.itemLabel', {name: item.nurseName, date: item.date})}
                                 </p>
                             </div>
-                            {renderBadge(item)}
-                            {renderActions(item)}
+                            <ShiftBadge
+                                shiftType={wardShiftTypeMap.get(item.wardShiftTypeId ?? -1)}
+                                isOnlyRequest
+                                className="!size-[clamp(16px,1.35cqw,22px)] shrink-0 !rounded-[clamp(3px,0.28cqw,5px)] !text-[clamp(8px,0.65cqw,11px)] leading-none"
+                            />
+                            <div className="flex shrink-0 items-center gap-[clamp(2px,0.2cqw,4px)]">
+                                <Button
+                                    size="sm"
+                                    className={PENDING_ACTION_BTN}
+                                    onClick={() => onDecideRequest(item.wardReqShiftId, true)}
+                                    disabled={updatingRequestId === item.wardReqShiftId}
+                                    type="button"
+                                >
+                                    {t('page.makeShift.requests.action.accept')}
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className={PENDING_ACTION_BTN}
+                                    onClick={() => onDecideRequest(item.wardReqShiftId, false)}
+                                    disabled={updatingRequestId === item.wardReqShiftId}
+                                    type="button"
+                                >
+                                    {t('page.makeShift.requests.action.reject')}
+                                </Button>
+                            </div>
                         </div>
                     ))
                 )}

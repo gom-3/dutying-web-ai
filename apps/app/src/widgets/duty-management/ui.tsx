@@ -22,6 +22,10 @@ type TMonthTeamHeaderProps = {
     emptyLabel: string;
     formatMonthLabel: (year: number, month: number) => string;
     disabled?: boolean;
+    /** 이전 달 네비게이션 비활성 (/make는 이번 달보다 이전으로 이동 불가). */
+    prevMonthDisabled?: boolean;
+    /** 다음 달 네비게이션 비활성 (확정 근무표는 이번 달·다음 달까지만). */
+    nextMonthDisabled?: boolean;
 };
 
 const managementActionVariants = cva(
@@ -72,6 +76,8 @@ export function DutyManagementMonthTeamHeader({
     emptyLabel,
     formatMonthLabel,
     disabled = false,
+    prevMonthDisabled = false,
+    nextMonthDisabled = false,
 }: TMonthTeamHeaderProps) {
     return (
         <div className="flex flex-wrap items-center gap-4">
@@ -80,7 +86,7 @@ export function DutyManagementMonthTeamHeader({
                     type="button"
                     className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
                     onClick={onPrevMonth}
-                    disabled={disabled}
+                    disabled={disabled || prevMonthDisabled}
                     aria-label={prevLabel}
                 >
                     <ChevronLeftIcon />
@@ -90,7 +96,7 @@ export function DutyManagementMonthTeamHeader({
                     type="button"
                     className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
                     onClick={onNextMonth}
-                    disabled={disabled}
+                    disabled={disabled || nextMonthDisabled}
                     aria-label={nextLabel}
                 >
                     <ChevronRightIcon />

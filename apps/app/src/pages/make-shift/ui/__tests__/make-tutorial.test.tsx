@@ -26,6 +26,13 @@ vi.mock('@/features/tutorial', () => ({
     }),
 }));
 
+vi.mock('@/features/auth', () => ({
+    default: () => ({
+        state: {accountId: null as number | null},
+        actions: {},
+    }),
+}));
+
 vi.mock('../../model/make-shift-store', () => ({
     useMakeShiftStore: (selector: (state: typeof makeShiftStoreState) => unknown) => selector(makeShiftStoreState),
 }));

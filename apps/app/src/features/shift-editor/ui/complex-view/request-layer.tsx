@@ -1,5 +1,5 @@
 import {type TWardShiftType} from '@/entities';
-import {ChatIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
+import {RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
 
 interface IProps {
     request: TWardShiftType;
@@ -11,36 +11,19 @@ interface IProps {
 function RequestLayer({isAccept, request, showCheck, showSlash}: IProps) {
     return isAccept
         ? showCheck && (
-              <div
-                  className={`bg-[#06e73833]'} absolute top-[50%] left-[.0625rem] z-10 flex h-8.5 w-8.5 translate-y-[-50%] justify-center rounded-[.5625rem] border-[.125rem] border-[#06E738]`}
-              >
-                  <RequestCheckIcon className="absolute top-[-0.85rem] right-0 h-[.75rem] w-[.75rem]" />
+              <div className="absolute inset-y-0.5 left-[.0625rem] right-[.0625rem] z-10">
+                  <div className="absolute inset-0 z-10 rounded-[.5625rem] border-[.125rem] border-[#06E738] bg-[#06e73833]" aria-hidden />
+                  <RequestCheckIcon className="pointer-events-none absolute -top-0.5 right-0 z-20 h-3 w-3" />
               </div>
           )
         : showSlash && (
-              <>
-                  <div
-                      className={`bg-[#0027f433]'} absolute top-[50%] left-[.0625rem] z-10 flex h-8.5 w-8.5 translate-y-[-50%] justify-center rounded-[.5625rem] border-[.125rem] border-[#0027F4]`}
-                  >
-                      <RequestSlashIcon className="absolute top-[-0.85rem] right-0 h-[.75rem] w-[.75rem]" />
-                      <div className="invisible relative -top-5.25 z-1 flex justify-center group-hover:visible">
-                          <ChatIcon className="absolute h-5 w-4.25" fill={request.color} />
-                          <p className="absolute font-poppins text-[.6rem] text-white">{request.shortName}</p>
-                      </div>
-                  </div>
-                  <div className="invisible absolute -bottom-6.5 z-10 rounded-[.3125rem] bg-white px-2 py-1 font-apple text-[.875rem] whitespace-nowrap text-sub-2 shadow-banner group-hover:visible">
-                      <div
-                          className="absolute -top-1.5 left-[50%] h-0 w-0 translate-x-[-50%]"
-                          style={{
-                              borderTop: '.625rem solid none',
-                              borderLeft: '.4375rem solid transparent',
-                              borderRight: '.4375rem solid transparent',
-                              borderBottom: '.625rem solid white',
-                          }}
-                      />
+              <div className="group absolute inset-y-0.5 left-[.0625rem] right-[.0625rem] z-10">
+                  <div className="absolute inset-0 z-10 rounded-[.5625rem] border-[.125rem] border-[#0027F4] bg-[#0027f433]" aria-hidden />
+                  <RequestSlashIcon className="pointer-events-none absolute -top-0.5 right-0 z-20 h-3 w-3" />
+                  <div className="pointer-events-none invisible absolute top-[calc(100%+0.25rem)] left-1/2 z-[100] w-max max-w-[min(42rem,calc(100vw-2rem))] -translate-x-1/2 rounded-md bg-white px-2.5 py-1.5 text-left font-apple text-xs leading-snug whitespace-normal text-sub-1 shadow-lg ring-1 ring-black/10 group-hover:visible">
                       신청 근무 {request.name}가 반영되지 않았습니다.
                   </div>
-              </>
+              </div>
           );
 }
 

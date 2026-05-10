@@ -54,7 +54,10 @@ const useEditShiftTeam = () => {
         await queryClient.invalidateQueries({queryKey: wardQueryKey});
         await queryClient.invalidateQueries({queryKey: shiftQueryKey});
         await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-    }, [queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey]);
+        if (wardId) {
+            await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'shiftTeamNurses', wardId]});
+        }
+    }, [queryClient, requestShiftQueryKey, shiftQueryKey, wardId, wardQueryKey]);
     const addNurse = useCallback(
         async (shiftTeamId: number) => {
             if (!wardId) return;
