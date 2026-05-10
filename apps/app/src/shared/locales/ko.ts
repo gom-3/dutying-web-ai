@@ -99,6 +99,7 @@ export const ko = {
                 error: '신청 근무 데이터를 불러오지 못했어요',
                 empty: '이번 달 신청 근무표가 아직 없어요',
                 panelTitle: '신청 내역',
+                summaryCountsAria: '반영됨, 대기 중, 거절된 신청 건수 요약',
                 count: '{{count}}개',
                 badge: {
                     accepted: '반영된 신청 근무',
@@ -128,12 +129,12 @@ export const ko = {
                 section: {
                     strong: '강 제약 조건',
                     weak: '약 제약 조건',
-                    excluded: '제외',
                 },
                 info: '위치를 옮겨서 원하는 우선순위대로 정렬할 수 있어요',
                 count: '{{count}}개',
                 empty: '표시할 제약조건이 없습니다.',
                 dragHandleAria: '드래그하여 위치를 변경',
+                excludeRuleAria: '이 제약 조건 적용 해제',
                 violationCount: '{{count}}개',
                 phrase: {
                     max: '최대',
@@ -314,6 +315,8 @@ export const ko = {
             deleteTeam: '팀 삭제하기',
             teamMenu: '팀 메뉴 열기',
             sortBySkill: '숙련도 순',
+            sortByPriorityOrder: '저장된 순서',
+            sortListMenuAria: '목록 정렬 기준 열기',
             canMakeDuty: '근무표 작성',
             canMakeDutyTooltip: '선택된 사람만 근무표를 작성할 수 있어요.',
             emptyTeamTitle: '아직 팀원이 없어요.',

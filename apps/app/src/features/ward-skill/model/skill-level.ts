@@ -16,12 +16,30 @@ export type TWardSkillSettings = {
     frozenLevelsByNurseId: Record<number, number>;
 };
 
+/**
+ * 숙련도 배지(LV.n) 공통 스타일 — 레벨별 배경·글자색 (LV.5 최고 ~ LV.1 최저 그라데이션)
+ * paletteId와 무관하게 동일하게 적용한다.
+ */
+export const SKILL_LEVEL_BADGE_THEME: Record<1 | 2 | 3 | 4 | 5, {background: string; text: string}> = {
+    1: {background: '#FFF3B8', text: '#A69A41'},
+    2: {background: '#FFE9B8', text: '#A68B41'},
+    3: {background: '#FFD8B8', text: '#A66F41'},
+    4: {background: '#FFC7B8', text: '#A65241'},
+    5: {background: '#FFB3A7', text: '#A63D32'},
+};
+
+export function getSkillLevelBadgeStyle(level: number): {background: string; text: string} {
+    const clamped = Math.max(1, Math.min(5, Math.round(level))) as keyof typeof SKILL_LEVEL_BADGE_THEME;
+
+    return SKILL_LEVEL_BADGE_THEME[clamped];
+}
+
 const STORAGE_KEY = 'ward-skill-settings:v1';
 const DEFAULT_UNASSIGNED_SKILL_LEVEL = 1;
 const SKILL_PALETTES: TSkillPalette[] = [
-    {id: 'warm', colors: ['#FFA395', '#FFC0B6', '#FFC795', '#FFE195', '#FFF0B0']},
-    {id: 'cool', colors: ['#9EC5FF', '#B7D6FF', '#CFE4FF', '#DFF0FF', '#ECF8FF']},
-    {id: 'violet', colors: ['#B18FFF', '#C8AEFF', '#D8C4FF', '#E9DCFF', '#F3EBFF']},
+    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'cool', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'violet', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
 ];
 
 export const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
@@ -63,7 +81,12 @@ export const createAutoAssignedSkillLevels = (nurses: TSkillLevelNurse[], config
      */
     const sortedNurses = nurses
         .map((nurse) => ({nurse}))
-        .sort((left, right) => (left.nurse.employmentDate ?? '').localeCompare(right.nurse.employmentDate ?? ''));
+        .sort((left, right) => {
+            const byDate = (left.nurse.employmentDate ?? '').localeCompare(right.nurse.employmentDate ?? '');
+            if (byDate !== 0) return byDate;
+            /** 동일 입사일때 ward/팀 내 배열 순서(드래그·낙관적 업데이트)에 따라 LV가 뒤바뀌지 않도록 고정한다 */
+            return left.nurse.nurseId - right.nurse.nurseId;
+        });
     const levelsByNurseId: Record<number, number> = {};
 
     sortedNurses.forEach(({nurse}, index) => {

@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {Draggable, Droppable} from '@hello-pangea/dnd';
-import {ChevronDown} from 'lucide-react';
+import {ChevronDown, Minus} from 'lucide-react';
 import {type ReactNode} from 'react';
 import {type TDutyRuleMeta, DUTY_RULE_META} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleKey} from '@/features/shift-editor/model/types';
@@ -8,7 +8,7 @@ import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {type useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';
 
-type TBucket = 'error' | 'warning' | 'excluded';
+type TActiveBucket = 'error' | 'warning';
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
 
 type TConstraintSectionProps = {
@@ -114,11 +114,13 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
 
 type TConstraintBucketListProps = {
     t: TTypedT;
-    bucket: TBucket;
+    bucket: TActiveBucket;
     ruleKeys: TDutyRuleKey[];
     ruleViolationCount: Map<string, number>;
     wardConstraint: Record<string, unknown> | null;
     onUpdateRuleValue: (meta: TDutyRuleMeta, nextValue: number) => void;
+    onExcludeRule: (ruleKey: TDutyRuleKey) => void;
+    disabled?: boolean;
 };
 
 export function ConstraintBucketList({
@@ -128,6 +130,8 @@ export function ConstraintBucketList({
     ruleViolationCount,
     wardConstraint,
     onUpdateRuleValue,
+    onExcludeRule,
+    disabled = false,
 }: TConstraintBucketListProps) {
     return (
         <Droppable droppableId={bucket}>
@@ -138,7 +142,6 @@ export function ConstraintBucketList({
                     className={cn(
                         'make-shift-constraints__bucket',
                         `make-shift-constraints__bucket--${bucket}`,
-                        bucket === 'excluded' && 'min-h-[10px]',
                         snapshot.isDraggingOver && 'bg-[#f0ecff]',
                     )}
                 >
@@ -196,6 +199,15 @@ export function ConstraintBucketList({
                                                               )
                                                             : null}
                                                     </div>
+                                                    <button
+                                                        type="button"
+                                                        aria-label={t('page.makeShift.constraints.excludeRuleAria')}
+                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] flex size-[clamp(28px,2.5vw,40px)] shrink-0 items-center justify-center rounded-[clamp(6px,0.55vw,8px)] border border-gray-5 text-gray-3 hover:border-main-4 hover:bg-gray-7 hover:text-main-1 disabled:opacity-40"
+                                                        disabled={disabled}
+                                                        onClick={() => onExcludeRule(key)}
+                                                    >
+                                                        <Minus className="size-[clamp(14px,1.2vw,20px)]" strokeWidth={2.2} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         )}

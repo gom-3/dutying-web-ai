@@ -16,12 +16,17 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     const {t} = useTypedTranslation();
     const stepConfig = MAKE_SHIFT_STEP_CONFIG[currentStep];
     const StepComponent = stepConfig.Component;
+    /** 스텝 1·2·3: wide 래퍼에서도 상단 여백을 narrow와 맞추기 위해 pt를 한 단계 키움(스텝 4·5는 기존 유지). */
+    const roomierTopForEarlySteps = currentStep <= 3;
+    const wideTopPadding = roomierTopForEarlySteps ? 'pt-[clamp(16px,1.6vw,32px)]' : 'pt-[clamp(8px,0.8vw,16px)]';
 
     if (stepConfig.layout === 'wide') {
         return (
             // wide layout(신청 근무 확정 / 고정 근무 / AI 자동 채우기 등): 자식이 자체적으로 상단 패딩(pt)을 가질 수 있어
             // 여기서는 stepper와 사이의 최소 여백, 페이지 하단의 최소 여백만 화면 폭에 비례해 둔다.
-            <div className="make-shift-step-content make-shift-step-content--wide flex w-full flex-1 flex-col pt-[clamp(8px,0.8vw,16px)] pb-[clamp(12px,1.2vw,24px)]">
+            <div
+                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-0 flex-1 flex-col ${wideTopPadding} pb-[clamp(12px,1.2vw,24px)]`}
+            >
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>
@@ -32,8 +37,8 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
 
     return (
         // narrow layout(근무자 확인 / 제약 조건 / 신청 근무 확정 등): 좌측 intro + 우측 step 본문.
-        // wide layout과 통일된 톤(AI 자동 채우기 페이지 기준)으로 모든 사이즈를 clamp() 반응형 처리.
-        <div className="make-shift-step-content make-shift-step-content--narrow flex flex-1 gap-[clamp(20px,2.0vw,40px)] pt-[clamp(16px,2.2vw,42px)] pl-[clamp(20px,3.0vw,59px)]">
+        // 상단은 wide와 동일한 pt 한 번 + intro 타이틀 기준 같은 간격을 한 번 더 (pt 합 ≈ clamp(16px,1.6vw,32px)).
+        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-0 flex-1 gap-[clamp(20px,2.0vw,40px)] pt-[clamp(16px,1.6vw,32px)] pb-[clamp(12px,1.2vw,24px)]">
             <div className="make-shift-step-content__intro w-[clamp(280px,30vw,440px)] shrink-0">
                 <p className="make-shift-step-content__intro-title font-apple text-[clamp(20px,1.7vw,30px)] font-semibold text-sub-1">
                     {intro ? t(intro.titleKey) : ''}

@@ -1,8 +1,8 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
-import {ChevronDown} from 'lucide-react';
 import {type ComponentProps} from 'react';
 import {type TNurse} from '@/entities';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
+import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementStatusCard} from '@/widgets/duty-management/ui';
@@ -26,7 +26,7 @@ function ShiftTypeBadge({code}: {code: string}) {
 
     return (
         <div
-            className="make-shift-workers__shift-type-badge flex shrink-0 size-[clamp(16px,1.4vw,22px)] items-center justify-center rounded-[clamp(3px,0.35vw,5px)] font-apple text-[clamp(10px,0.9vw,15px)] font-medium"
+            className="make-shift-workers__shift-type-badge flex shrink-0 size-[clamp(14px,1.2vw,19px)] items-center justify-center rounded-[clamp(3px,0.35vw,5px)] font-apple text-[clamp(9px,0.82vw,14px)] font-medium"
             style={{backgroundColor: style.bg, color: style.text}}
         >
             {code}
@@ -40,26 +40,6 @@ export function buildShiftCodes(nurse: TNurse) {
         .map((shift) => shift.shortName || shift.name)
         .map((name) => name.trim().toUpperCase())
         .filter((code) => code.length > 0);
-}
-
-export function WorkersHeader({totalCount, onSortByLevel}: {totalCount: number; onSortByLevel: () => void}) {
-    const {t} = useTypedTranslation();
-
-    return (
-        <div className="make-shift-workers__header flex items-center justify-between">
-            <p className="make-shift-workers__total text-gray-2 font-apple text-[clamp(13px,1.2vw,20px)] font-semibold">
-                {t('page.makeShift.workers.totalCount', {count: totalCount})}
-            </p>
-            <button
-                type="button"
-                className="make-shift-workers__sort-button flex items-center gap-[clamp(2px,0.2vw,4px)] rounded-[clamp(4px,0.4vw,5px)] px-[clamp(4px,0.5vw,8px)] py-[clamp(2px,0.25vw,4px)] font-apple text-[clamp(11px,0.95vw,16px)] font-medium text-gray-3 hover:bg-white"
-                onClick={onSortByLevel}
-            >
-                {t('page.makeShift.workers.sortByLevel')}
-                <ChevronDown className="size-[clamp(14px,1.2vw,20px)]" />
-            </button>
-        </div>
-    );
 }
 
 /**
@@ -76,7 +56,7 @@ export function WorkersTableHeader() {
 
     return (
         <div
-            className={`make-shift-workers__table-header mt-[clamp(8px,0.85vw,12px)] grid items-center ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} text-[clamp(11px,0.95vw,16px)] text-gray-3`}
+            className={`make-shift-workers__table-header grid items-center ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} text-[clamp(11px,0.95vw,16px)] text-gray-3`}
             style={{gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS}}
         >
             <div />
@@ -97,42 +77,40 @@ export function WorkersTableHeader() {
 }
 
 type TWorkersListProps = {
-    workers: TNurse[];
+    grouped: TGroupedDivisionNurses;
+    shiftTeamId: number;
     levelsByNurseId: Record<number, number>;
     skillConfig: TSkillConfig;
 };
 
-export function WorkersList({workers, levelsByNurseId, skillConfig}: TWorkersListProps) {
-    const {t} = useTypedTranslation();
-
+export function WorkersList({grouped, shiftTeamId, levelsByNurseId, skillConfig}: TWorkersListProps) {
     return (
-        <Droppable droppableId="workers">
-            {(provided) => (
-                <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="make-shift-workers__list mt-[clamp(10px,1.0vw,16px)] flex flex-col gap-[clamp(8px,0.85vw,12px)]"
-                >
-                    {workers.length === 0 ? (
-                        <DutyManagementStatusCard
-                            title={t('page.makeShift.workers.emptyTitle')}
-                            description={t('page.makeShift.workers.emptyDescription')}
-                            className="min-h-[220px] border-solid"
-                        />
-                    ) : null}
-                    {workers.map((nurse, index) => (
-                        <WorkerRow
-                            key={nurse.nurseId}
-                            nurse={nurse}
-                            index={index}
-                            level={levelsByNurseId[nurse.nurseId]}
-                            skillConfig={skillConfig}
-                        />
-                    ))}
-                    {provided.placeholder}
+        <div className="make-shift-workers__list-wrapper mt-[clamp(4px,0.5vw,10px)] flex flex-col gap-[clamp(10px,0.9vw,16px)]">
+            {grouped.map(([division, divisionWorkers]) => (
+                <div key={`${shiftTeamId},${division}`} className="make-shift-workers__division-block">
+                    <Droppable droppableId={`${shiftTeamId},${division}`}>
+                        {(provided) => (
+                            <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className="make-shift-workers__list flex flex-col gap-[clamp(4px,0.45vw,8px)]"
+                            >
+                                {divisionWorkers.map((nurse, index) => (
+                                    <WorkerRow
+                                        key={nurse.nurseId}
+                                        nurse={nurse}
+                                        index={index}
+                                        level={levelsByNurseId[nurse.nurseId]}
+                                        skillConfig={skillConfig}
+                                    />
+                                ))}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
                 </div>
-            )}
-        </Droppable>
+            ))}
+        </div>
     );
 }
 
@@ -149,15 +127,21 @@ function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
     const memo = nurse.memo?.trim();
 
     return (
-        <Draggable draggableId={`nurse-${nurse.nurseId}`} index={index}>
-            {(dragProvided, dragSnapshot) => (
+        <Draggable draggableId={String(nurse.nurseId)} index={index}>
+            {(dragProvided, dragSnapshot) => {
+                const {style: dragStyle, ...draggableProps} = dragProvided.draggableProps;
+
+                return (
                 <div
                     ref={dragProvided.innerRef}
-                    {...dragProvided.draggableProps}
-                    className={`make-shift-workers__row grid h-[clamp(36px,3.4vw,52px)] items-center rounded-[clamp(8px,0.7vw,10px)] border border-gray-6 bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} ${
+                    {...draggableProps}
+                    className={`make-shift-workers__row grid h-[clamp(28px,2.75vw,42px)] items-center rounded-[clamp(8px,0.7vw,10px)] border border-gray-6 bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} ${
                         dragSnapshot.isDragging ? 'opacity-95' : ''
                     }`}
-                    style={{gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS}}
+                    style={{
+                        ...(dragStyle ?? {}),
+                        gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS,
+                    }}
                 >
                     <button
                         type="button"
@@ -165,20 +149,19 @@ function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
                         className="make-shift-workers__row-drag-handle cursor-grab active:cursor-grabbing"
                         {...dragProvided.dragHandleProps}
                     >
-                        <SixDotsIcon className="size-[clamp(16px,1.6vw,24px)]" />
+                        <SixDotsIcon className="size-[clamp(14px,1.35vw,20px)]" />
                     </button>
-                    <p className="make-shift-workers__row-name font-apple text-[clamp(13px,1.2vw,20px)] font-medium text-sub-1">
+                    <p className="make-shift-workers__row-name font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
                         {nurse.name}
                     </p>
                     <div className="make-shift-workers__row-level flex justify-center">
                         {/*
-                         * SkillBadge 기본 사이즈(h-5, text-[14px], min-w-11)를 화면 폭에 맞춰 축소.
-                         * twMerge가 마지막 클래스를 우선 적용해서 안전하게 override 됨.
+                         * SkillBadge: 공통 숙련도 테마 + 반응형 크기 override
                          */}
                         <SkillBadge
                             level={level}
                             config={skillConfig}
-                            className="make-shift-workers__skill-badge h-[clamp(16px,1.4vw,20px)] min-w-[clamp(32px,3.2vw,44px)] text-[clamp(10px,0.9vw,14px)]"
+                            className="make-shift-workers__skill-badge h-[clamp(14px,1.25vw,18px)] min-w-[clamp(28px,3.0vw,40px)] text-[clamp(9px,0.82vw,13px)]"
                         />
                     </div>
                     <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.2vw,4px)]">
@@ -188,11 +171,12 @@ function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
                             <span className="font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">-</span>
                         )}
                     </div>
-                    <p className="make-shift-workers__row-memo text-center font-apple text-[clamp(13px,1.2vw,20px)] font-medium text-sub-1">
+                    <p className="make-shift-workers__row-memo text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
                         {memo || '-'}
                     </p>
                 </div>
-            )}
+                );
+            }}
         </Draggable>
     );
 }

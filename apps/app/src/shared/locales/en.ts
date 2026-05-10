@@ -103,6 +103,7 @@ export const en: TLocale = {
                 error: 'Failed to load requested shift data',
                 empty: 'There is no requested shift schedule for this month yet',
                 panelTitle: 'Request list',
+                summaryCountsAria: 'Summary of accepted, pending, and rejected requests',
                 count: '{{count}}',
                 badge: {
                     accepted: 'Accepted requests',
@@ -132,12 +133,12 @@ export const en: TLocale = {
                 section: {
                     strong: 'Hard constraints',
                     weak: 'Soft constraints',
-                    excluded: 'Excluded',
                 },
                 info: 'You can drag to reorder by your preferred priority.',
                 count: '{{count}}',
                 empty: 'No constraints to show.',
                 dragHandleAria: 'Drag to reorder',
+                excludeRuleAria: 'Disable this constraint',
                 violationCount: '{{count}}',
                 phrase: {
                     max: 'Max',
@@ -318,6 +319,8 @@ export const en: TLocale = {
             deleteTeam: 'Delete team',
             teamMenu: 'Open team menu',
             sortBySkill: 'Sort by skill',
+            sortByPriorityOrder: 'Saved order',
+            sortListMenuAria: 'Open list sort options',
             canMakeDuty: 'Duty schedule',
             canMakeDutyTooltip: 'Only selected people can create the duty schedule.',
             emptyTeamTitle: 'There are no members in this team yet.',
