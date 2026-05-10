@@ -60,7 +60,10 @@ export function Workers() {
     };
 
     return (
-        <div id="make_workers_step" className="rounded-[15px] bg-gray-7 p-[30px]">
+        <div
+            id="make_workers_step"
+            className="make-shift-workers rounded-[clamp(10px,1.0vw,15px)] bg-gray-7 p-[clamp(14px,2.0vw,30px)]"
+        >
             <WorkersHeader totalCount={totalCount} onSortByLevel={sortByLevel} />
             <WorkersTableHeader />
 

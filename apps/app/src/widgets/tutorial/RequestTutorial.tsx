@@ -1,8 +1,10 @@
 import {useEffect, useMemo} from 'react';
+import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
+import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';
@@ -10,6 +12,10 @@ import {TutorialPortal} from './TutorialPortal';
 const RequestTutorial = () => {
     const showRequestTutorial = useTutorialStore((state) => state.showRequestTutorial);
     const {setRequestTutorial} = useTutorialUseCase();
+    const {
+        state: {accountId},
+    } = useAuth();
+    const onTutorialClose = useTutorialDismissPersistence('request', accountId, setRequestTutorial);
     /**
      * 로딩 완료 + 툴바가 DOM에 올라온 뒤에만 튜토리얼이 뜨도록 수정
      */
@@ -73,7 +79,7 @@ const RequestTutorial = () => {
     /**
      * 로딩 완료 + 툴바가 DOM에 올라온 뒤에만 튜토리얼이 뜨도록 수정
      */
-    return <TutorialPortal open={showRequestTutorial && isToolbarReady} config={config} closeCallback={() => setRequestTutorial(false)} />;
+    return <TutorialPortal open={showRequestTutorial && isToolbarReady} config={config} closeCallback={onTutorialClose} />;
 };
 
 export default RequestTutorial;

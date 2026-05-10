@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {getSkillPalette, type TSkillLevelConfig} from '../model/skill-level';
 
 interface ISkillBadgeProps {
@@ -21,7 +22,10 @@ function SkillBadge({level, config, className = ''}: ISkillBadgeProps) {
 
     return (
         <div
-            className={`inline-flex h-5 min-w-11 items-center justify-center rounded-[3px] px-1.5 font-poppins text-[14px] font-medium ${className}`}
+            className={cn(
+                'inline-flex h-5 min-w-11 items-center justify-center rounded-[3px] px-1.5 font-poppins text-[14px] font-medium',
+                className,
+            )}
             style={{backgroundColor: color, color: textColor}}
         >
             LV. {safeLevel}

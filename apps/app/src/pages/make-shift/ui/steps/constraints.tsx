@@ -64,7 +64,7 @@ export function Constraints() {
 
     return (
         <DragDropContext onDragEnd={onDragEnd}>
-            <div id="make_constraints_step" className="w-full">
+            <div id="make_constraints_step" className="make-shift-constraints w-full">
                 <ConstraintSection
                     title={t('page.makeShift.constraints.section.strong')}
                     countLabel={t('page.makeShift.constraints.count', {count: strongCount})}
@@ -83,7 +83,7 @@ export function Constraints() {
                     />
                 </ConstraintSection>
 
-                <div className="mt-6">
+                <div className="make-shift-constraints__section-spacer mt-[clamp(14px,1.6vw,24px)]">
                     <ConstraintSection
                         title={t('page.makeShift.constraints.section.weak')}
                         countLabel={t('page.makeShift.constraints.count', {count: weakCount})}
@@ -103,7 +103,7 @@ export function Constraints() {
                     </ConstraintSection>
                 </div>
 
-                <div className="mt-8">
+                <div className="make-shift-constraints__section-spacer mt-[clamp(20px,2.0vw,32px)]">
                     <ConstraintSection
                         title={t('page.makeShift.constraints.section.excluded')}
                         countLabel={t('page.makeShift.constraints.count', {count: excludedCount})}

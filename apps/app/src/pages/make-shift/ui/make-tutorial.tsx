@@ -1,6 +1,8 @@
 import {useMemo} from 'react';
+import useAuth from '@/features/auth';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
+import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import {TutorialPortal} from '@/widgets/tutorial/TutorialPortal';
@@ -13,6 +15,10 @@ const MakeTutorial = () => {
     const currentStep = useMakeShiftStore((state) => state.currentStep);
     const useCase = useMakeShiftUseCase();
     const {setMakeTutorial} = useTutorialUseCase();
+    const {
+        state: {accountId},
+    } = useAuth();
+    const onTutorialClose = useTutorialDismissPersistence('make', accountId, setMakeTutorial);
     const initialStepIndex = currentStep === 1 ? 0 : currentStep;
     const config = useMemo<ITutorialConfig>(
         () => ({
@@ -75,7 +81,7 @@ const MakeTutorial = () => {
         <TutorialPortal
             open={showMakeTutorial && phase === 'stepping'}
             config={config}
-            closeCallback={() => setMakeTutorial(false)}
+            closeCallback={onTutorialClose}
             initialStepIndex={initialStepIndex}
         />
     );

@@ -1,18 +1,38 @@
-import {useEffect, useMemo, useRef} from 'react';
-import {useShiftEditorStore, useShiftImageExport} from '@/features/shift-editor';
-import {CameraIcon} from '@/shared/assets/svg';
+import {useQueryClient} from '@tanstack/react-query';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import toast from 'react-hot-toast';
+import {wardQueryOptions} from '@/entities/ward/model/queries';
+import useAuth from '@/features/auth';
+import {docToWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
+import {type TViolation} from '@/features/shift-editor/model';
+import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
-import {DutyEditorStepCanvas} from './shared/duty-editor-step-canvas';
+import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
+
+/**
+ * 고정 근무 화면에서는 violation을 절대 표시하지 않으므로,
+ * 매 렌더마다 새 Map을 만들지 않도록 모듈 스코프에서 한 번만 만들어 재사용한다.
+ */
+const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
 export function FixedShifts() {
     const {t} = useTypedTranslation();
+    const queryClient = useQueryClient();
+    const {
+        state: {wardId},
+    } = useAuth();
+    const year = useMakeShiftStore((s) => s.year);
+    const month = useMakeShiftStore((s) => s.month);
+    const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const useCase = useMakeShiftUseCase();
     const setEditorMode = useShiftEditorStore((s) => s.setEditorMode);
     const editorMode = useShiftEditorStore((s) => s.editorMode);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (editorMode !== 'fixed') {
@@ -24,14 +44,54 @@ export function FixedShifts() {
         return () => setEditorMode('normal');
     }, [setEditorMode]);
 
-    const year = useMakeShiftStore((s) => s.year);
-    const month = useMakeShiftStore((s) => s.month);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const currentShiftTeamName = useMakeShiftStore(
-        (s) => s.shiftTeams.find((team) => team.shiftTeamId === s.currentShiftTeamId)?.name ?? null,
-    );
-    const {dutyQuery, editorDoc, violationMap, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
+    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
+
+    const handleNext = useCallback(async () => {
+        if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
+
+        setIsSaving(true);
+
+        try {
+            const dto = docToWardShiftsDTO(editorDoc, dutyQuery.data);
+
+            await WardAPI.updateShifts(wardId, dto);
+            await queryClient.invalidateQueries({
+                queryKey: wardQueryOptions.duty(wardId, currentShiftTeamId ?? -1, year, month).queryKey,
+            });
+            useCase.next();
+        } catch {
+            toast.error(t('page.makeShift.fixedShifts.saveFailed'));
+        } finally {
+            setIsSaving(false);
+        }
+    }, [
+        wardId,
+        dutyQuery.data,
+        canNext,
+        isSaving,
+        editorDoc,
+        queryClient,
+        currentShiftTeamId,
+        year,
+        month,
+        useCase,
+        t,
+    ]);
+
+    const nextDisabled =
+        wardId === null ||
+        !canNext ||
+        isSaving ||
+        dutyQuery.isLoading ||
+        dutyQuery.isError ||
+        dutyQuery.data === undefined;
+
+    /**
+     * 고정 근무 화면에서는 fixedCells / requestCells 로 마킹된 셀만 보여준다.
+     * (그 외 셀은 비워서 사용자가 "고정해야 할 부분"에만 집중하도록.)
+     */
     const fixedOnlyDoc = useMemo(
         () => ({
             ...editorDoc,
@@ -50,60 +110,64 @@ export function FixedShifts() {
         }),
         [editorDoc],
     );
-    const canExportImage = Boolean(dutyQuery.data) && !dutyQuery.isLoading && !dutyQuery.isError;
-    const exportRef = useRef<HTMLDivElement>(null);
-    const {isExporting, downloadImage} = useShiftImageExport({
-        targetRef: exportRef,
-        year,
-        month,
-        teamName: currentShiftTeamName,
-        disabled: !canExportImage,
-    });
 
     return (
-        <div id="make_fixed_shifts_step" className="scrollbar-hide flex min-h-0 flex-1 flex-col overflow-scroll">
-            <div className="flex flex-wrap items-start justify-between gap-6">
-                <div>
-                    <p className="font-apple text-[32px] font-semibold text-sub-1">고정할 근무를 선택해 주세요</p>
-                </div>
+        <div
+            id="make_fixed_shifts_step"
+            className="fixed-shifts-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(16px,1.6vw,28px)] outline-none"
+            ref={editorRef}
+            onKeyDown={onKeyDown}
+            onPaste={onPaste}
+            tabIndex={0}
+        >
+            {/* 상단 툴바: 제목 + 액션 버튼 */}
+            <div className="fixed-shifts-toolbar flex w-full min-w-0 items-center justify-between gap-[clamp(8px,0.8vw,16px)]">
+                <h1 className="fixed-shifts-toolbar__title font-apple text-[clamp(20px,1.7vw,30px)] font-semibold whitespace-nowrap text-sub-1">
+                    고정할 근무를 선택해 주세요
+                </h1>
 
-                <div className="flex items-center gap-3">
+                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-[clamp(6px,0.55vw,12px)]">
                     <ManagementActionButton
-                        variant="outline"
+                        variant="neutral"
                         size="sm"
-                        onClick={() => void downloadImage()}
-                        disabled={!canExportImage || isExporting}
+                        onClick={() => useCase.prev()}
+                        disabled={!canPrev}
                     >
-                        <span className="flex items-center gap-2">
-                            <CameraIcon className="h-5 w-5 stroke-main-1" />
-                            {isExporting ? '이미지 저장 중' : '이미지 저장'}
-                        </span>
+                        {t('page.makeShift.navigation.previous')}
                     </ManagementActionButton>
-                    <ManagementActionButton variant="neutral" size="sm" onClick={() => useCase.prev()} disabled={!canPrev}>
-                        이전
-                    </ManagementActionButton>
-                    <ManagementActionButton size="sm" onClick={() => useCase.next()} disabled={!canNext}>
-                        다음
+                    <ManagementActionButton size="sm" onClick={() => void handleNext()} disabled={nextDisabled}>
+                        {isSaving ? t('page.makeShift.navigation.saving') : t('page.makeShift.navigation.next')}
                     </ManagementActionButton>
                 </div>
             </div>
-            <DutyEditorStepCanvas
-                duty={dutyQuery.data}
-                isLoading={dutyQuery.isLoading}
-                isError={dutyQuery.isError}
-                onRetry={dutyQuery.refetch}
-                loadingTitle={t('page.makeShift.fixedShifts.loading')}
-                errorTitle={t('page.makeShift.fixedShifts.error')}
-                editorDoc={fixedOnlyDoc}
-                violationMap={violationMap}
-                editorRef={editorRef}
-                onKeyDown={onKeyDown}
-                onPaste={onPaste}
-                onFocusEditor={focusEditor}
-                showFaults
-                exportRef={exportRef}
-                exportMode={isExporting}
-            />
+
+            {dutyQuery.isLoading && (
+                <PageState
+                    tone="loading"
+                    title={t('page.makeShift.fixedShifts.loading')}
+                    description={t('page.state.loadingDescription')}
+                />
+            )}
+            {dutyQuery.isError && (
+                <PageState
+                    tone="error"
+                    title={t('page.makeShift.fixedShifts.error')}
+                    description={t('page.state.errorDescription')}
+                    action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                />
+            )}
+            {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
+                <div className="fixed-shifts-calendar-wrap w-full min-w-0">
+                    <MakeShiftCalendar
+                        shift={dutyQuery.data}
+                        doc={fixedOnlyDoc}
+                        // 고정 근무 화면에서는 위반(violation) 표시를 항상 끈다.
+                        violationMap={EMPTY_VIOLATION_MAP}
+                        showFaults={false}
+                        onCellClick={focusEditor}
+                    />
+                </div>
+            )}
         </div>
     );
 }

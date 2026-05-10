@@ -26,29 +26,35 @@ export function ConstraintSection({title, countLabel, isOpen, onToggle, disabled
 
     return (
         <>
-            <div className="flex items-center justify-between">
+            <div className="make-shift-constraints__section-header flex items-center justify-between">
                 {collapsible ? (
                     <button
                         type="button"
-                        className="flex items-center gap-2 font-apple text-[24px] font-bold text-sub-2 disabled:opacity-50"
+                        className="make-shift-constraints__section-title flex items-center gap-[clamp(4px,0.5vw,8px)] font-apple text-[clamp(16px,1.4vw,24px)] font-bold text-sub-2 disabled:opacity-50"
                         onClick={onToggle}
                         disabled={disabled}
                     >
                         {title}
-                        <ChevronDown className={cn('h-6 w-6 transition-transform', isOpen ? 'rotate-180' : 'rotate-0')} />
+                        <ChevronDown
+                            className={cn('size-[clamp(16px,1.4vw,24px)] transition-transform', isOpen ? 'rotate-180' : 'rotate-0')}
+                        />
                     </button>
                 ) : (
-                    <p className="font-apple text-[24px] font-bold text-gray-4">{title}</p>
+                    <p className="make-shift-constraints__section-title font-apple text-[clamp(16px,1.4vw,24px)] font-bold text-gray-4">
+                        {title}
+                    </p>
                 )}
-                <p className="font-apple text-[20px] font-medium text-gray-4">{countLabel}</p>
+                <p className="make-shift-constraints__section-count font-apple text-[clamp(13px,1.2vw,20px)] font-medium text-gray-4">
+                    {countLabel}
+                </p>
             </div>
 
             {collapsible && !isOpen ? null : (
-                <div className="mt-4 rounded-[15px] bg-gray-7 p-[30px]">
+                <div className="make-shift-constraints__section-body mt-[clamp(10px,1.0vw,16px)] rounded-[clamp(10px,1.0vw,15px)] bg-gray-7 p-[clamp(14px,2.0vw,30px)]">
                     {infoLabel ? (
-                        <div className="mb-[18px] flex items-center gap-2">
-                            <InfoIcon className="h-6 w-6" />
-                            <p className="font-apple text-base font-semibold text-main-1">{infoLabel}</p>
+                        <div className="make-shift-constraints__section-info mb-[clamp(10px,1.2vw,18px)] flex items-center gap-[clamp(4px,0.5vw,8px)]">
+                            <InfoIcon className="size-[clamp(16px,1.4vw,24px)]" />
+                            <p className="font-apple text-[clamp(11px,0.95vw,16px)] font-semibold text-main-1">{infoLabel}</p>
                         </div>
                     ) : null}
                     {children}
@@ -67,14 +73,16 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
             value={value ?? ''}
             onChange={(e) => onChange(parseInt(e.target.value, 10))}
             options={options}
-            className="mx-[.3125rem] h-11 w-16.75"
-            selectClassName="rounded-[5px] px-[15px] py-[7px] outline-[0.5px] outline-main-4 text-main-1"
+            className="make-shift-constraints__rule-editor-select mx-[clamp(3px,0.3vw,5px)] h-[clamp(28px,2.4vw,44px)] w-[clamp(48px,4.6vw,67px)]"
+            selectClassName="rounded-[5px] px-[clamp(8px,0.85vw,15px)] py-[clamp(4px,0.45vw,7px)] outline-[0.5px] outline-main-4 text-main-1 text-[clamp(11px,0.95vw,16px)]"
         />
     );
+    const editorClass =
+        'make-shift-constraints__rule-editor ml-[clamp(4px,0.5vw,8px)] flex items-center text-[clamp(13px,1.1vw,20px)] text-main-1 whitespace-nowrap';
 
     if (meta.kind === 'maxDays') {
         return (
-            <div className="ml-2 flex items-center text-[1.25rem] text-main-1">
+            <div className={editorClass}>
                 {t('page.makeShift.constraints.phrase.max')}
                 {select}
                 {t('page.makeShift.constraints.phrase.day')}
@@ -84,7 +92,7 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
 
     if (meta.kind === 'minDays') {
         return (
-            <div className="ml-2 flex items-center text-[1.25rem] text-main-1">
+            <div className={editorClass}>
                 {t('page.makeShift.constraints.phrase.min')}
                 {select}
                 {t('page.makeShift.constraints.phrase.day')}
@@ -94,7 +102,7 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
 
     if (meta.kind === 'daysOnly') {
         return (
-            <div className="ml-2 flex items-center text-[1.25rem] text-main-1">
+            <div className={editorClass}>
                 {select}
                 {t('page.makeShift.constraints.phrase.day')}
             </div>
@@ -127,14 +135,19 @@ export function ConstraintBucketList({
                 <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={cn(bucket === 'excluded' && 'min-h-[10px]', snapshot.isDraggingOver && 'bg-[#f0ecff]')}
+                    className={cn(
+                        'make-shift-constraints__bucket',
+                        `make-shift-constraints__bucket--${bucket}`,
+                        bucket === 'excluded' && 'min-h-[10px]',
+                        snapshot.isDraggingOver && 'bg-[#f0ecff]',
+                    )}
                 >
                     {ruleKeys.length === 0 ? (
-                        <div className="rounded-[10px] bg-white px-6 py-5 text-center font-apple text-sm text-gray-4">
+                        <div className="make-shift-constraints__empty rounded-[clamp(8px,0.7vw,10px)] bg-white px-[clamp(14px,1.5vw,24px)] py-[clamp(12px,1.25vw,20px)] text-center font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">
                             {t('page.makeShift.constraints.empty')}
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-3">
+                        <div className="make-shift-constraints__rule-list flex flex-col gap-[clamp(8px,0.85vw,12px)]">
                             {ruleKeys.map((key, index) => {
                                 const meta = DUTY_RULE_META[key];
                                 const label = t(meta.labelKey);
@@ -147,31 +160,36 @@ export function ConstraintBucketList({
                                             <div
                                                 ref={dragProvided.innerRef}
                                                 {...dragProvided.draggableProps}
-                                                className={cn('flex items-center gap-5', dragSnapshot.isDragging && 'opacity-95')}
+                                                className={cn(
+                                                    'make-shift-constraints__rule flex items-center gap-[clamp(10px,1.1vw,20px)]',
+                                                    dragSnapshot.isDragging && 'opacity-95',
+                                                )}
                                             >
-                                                <div className="w-10 text-center font-apple text-[28px] text-gray-3">{index + 1}</div>
-                                                <div className="flex h-[62px] flex-1 items-center rounded-[10px] bg-white px-5">
+                                                <div className="make-shift-constraints__rule-index w-[clamp(24px,2.6vw,40px)] text-center font-apple text-[clamp(16px,1.6vw,28px)] text-gray-3">
+                                                    {index + 1}
+                                                </div>
+                                                <div className="make-shift-constraints__rule-card flex h-[clamp(44px,4.0vw,62px)] flex-1 items-center rounded-[clamp(8px,0.7vw,10px)] bg-white px-[clamp(12px,1.3vw,20px)]">
                                                     <button
                                                         type="button"
                                                         aria-label={t('page.makeShift.constraints.dragHandleAria')}
-                                                        className="mr-4 cursor-grab active:cursor-grabbing"
+                                                        className="make-shift-constraints__rule-drag-handle mr-[clamp(8px,0.85vw,16px)] cursor-grab active:cursor-grabbing"
                                                         {...dragProvided.dragHandleProps}
                                                     >
-                                                        <SixDotsIcon className="h-6 w-6" />
+                                                        <SixDotsIcon className="size-[clamp(16px,1.5vw,24px)]" />
                                                     </button>
-                                                    <div className="min-w-0 flex-1">
-                                                        <div className="flex items-center gap-3">
-                                                            <p className="truncate font-apple text-[20px] font-medium text-sub-1">
+                                                    <div className="make-shift-constraints__rule-info min-w-0 flex-1">
+                                                        <div className="flex items-center gap-[clamp(6px,0.65vw,12px)]">
+                                                            <p className="make-shift-constraints__rule-label truncate font-apple text-[clamp(13px,1.1vw,20px)] font-medium text-sub-1">
                                                                 {label}
                                                             </p>
                                                             {count > 0 ? (
-                                                                <span className="rounded-full bg-main-light px-2 py-0.5 font-apple text-xs font-medium text-main-1">
+                                                                <span className="make-shift-constraints__rule-violation-count rounded-full bg-main-light px-[clamp(4px,0.5vw,8px)] py-[clamp(1px,0.15vw,2px)] font-apple text-[clamp(9px,0.7vw,12px)] font-medium text-main-1">
                                                                     {t('page.makeShift.constraints.violationCount', {count})}
                                                                 </span>
                                                             ) : null}
                                                         </div>
                                                     </div>
-                                                    <div className="shrink-0">
+                                                    <div className="make-shift-constraints__rule-editor-slot shrink-0">
                                                         {wardConstraint
                                                             ? renderRuleEditor(t, meta, value, (nextValue) =>
                                                                   onUpdateRuleValue(meta, nextValue),

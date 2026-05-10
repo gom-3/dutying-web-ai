@@ -5,13 +5,13 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {
     buildWorkKeyMap,
-    buildViolationMap,
     getShiftEditorDraftStorageKey,
     shiftToDoc,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
     useShiftEditorStore,
+    useViolationMap,
 } from '@/features/shift-editor';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 
@@ -86,12 +86,11 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     });
 
     const editorDoc = useShiftEditorStore((s) => s.doc);
-    const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
     const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
-    const violationMap = useMemo(() => buildViolationMap(violations, editorDoc), [violations, editorDoc]);
+    const violationMap = useViolationMap(editorDoc);
     const hydratedContextKeyRef = useRef<string | null>(null);
     const initialHydrationDoneRef = useRef(false);
     const lastHydratedDutyDataRef = useRef<typeof dutyQuery.data | null>(null);

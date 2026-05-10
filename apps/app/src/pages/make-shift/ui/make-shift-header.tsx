@@ -1,4 +1,8 @@
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {
+    isMakeShiftMonthAtOrAfterNextCalendarMonth,
+    isMakeShiftMonthAtOrBeforeThisCalendarMonth,
+} from '@/shared/lib/shift-calendar-month-policy';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../model/make-shift-store';
 
@@ -11,6 +15,8 @@ export function MakeShiftHeader() {
     const goPrevMonth = useMakeShiftStore((s) => s.goPrevMonth);
     const goNextMonth = useMakeShiftStore((s) => s.goNextMonth);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
+    const prevMonthDisabled = isMakeShiftMonthAtOrBeforeThisCalendarMonth(year, month);
+    const nextMonthDisabled = isMakeShiftMonthAtOrAfterNextCalendarMonth(year, month);
 
     return (
         <DutyManagementMonthTeamHeader
@@ -25,6 +31,8 @@ export function MakeShiftHeader() {
             onSelectShiftTeam={setCurrentShiftTeamId}
             emptyLabel={t('page.makeShift.overview.noTeamsLabel')}
             formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
+            prevMonthDisabled={prevMonthDisabled}
+            nextMonthDisabled={nextMonthDisabled}
         />
     );
 }

@@ -15,7 +15,9 @@ function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}:
     return (
         <div
             className={twMerge(
-                'flex h-7 w-7 items-center justify-center rounded-[.4063rem] text-center font-poppins text-[1.25rem] text-white',
+                // 캘린더가 컨테이너 폭에 맞춰 줄어들 때 배지도 함께 축소될 수 있어야 합니다.
+                // 기본값은 기존과 동일한 시각 크기(28px, 20px) 범위에서 clamp로 반응형 처리합니다.
+                'flex size-[clamp(16px,1.45vw,26px)] items-center justify-center rounded-[.375rem] text-center font-poppins text-[clamp(9px,0.82vw,18px)] leading-none text-white',
                 isOnlyRequest && 'opacity-60',
                 className,
             )}

@@ -19,7 +19,9 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
 
     if (stepConfig.layout === 'wide') {
         return (
-            <div className="flex flex-1 flex-col px-10 pt-[42px] pb-10">
+            // wide layout(신청 근무 확정 / 고정 근무 / AI 자동 채우기 등): 자식이 자체적으로 상단 패딩(pt)을 가질 수 있어
+            // 여기서는 stepper와 사이의 최소 여백, 페이지 하단의 최소 여백만 화면 폭에 비례해 둔다.
+            <div className="make-shift-step-content make-shift-step-content--wide flex w-full flex-1 flex-col pt-[clamp(8px,0.8vw,16px)] pb-[clamp(12px,1.2vw,24px)]">
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>
@@ -29,14 +31,18 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     const intro = stepConfig.intro;
 
     return (
-        <div className="flex flex-1 gap-10 pt-[42px] pl-[59px]">
-            <div className="w-[440px] shrink-0">
-                <p className="font-apple text-[32px] font-semibold text-sub-1">{intro ? t(intro.titleKey) : ''}</p>
-                <div className="mt-6 font-apple text-xl leading-[1.72] font-medium text-gray-3">
+        // narrow layout(근무자 확인 / 제약 조건 / 신청 근무 확정 등): 좌측 intro + 우측 step 본문.
+        // wide layout과 통일된 톤(AI 자동 채우기 페이지 기준)으로 모든 사이즈를 clamp() 반응형 처리.
+        <div className="make-shift-step-content make-shift-step-content--narrow flex flex-1 gap-[clamp(20px,2.0vw,40px)] pt-[clamp(16px,2.2vw,42px)] pl-[clamp(20px,3.0vw,59px)]">
+            <div className="make-shift-step-content__intro w-[clamp(280px,30vw,440px)] shrink-0">
+                <p className="make-shift-step-content__intro-title font-apple text-[clamp(20px,1.7vw,30px)] font-semibold text-sub-1">
+                    {intro ? t(intro.titleKey) : ''}
+                </p>
+                <div className="make-shift-step-content__intro-description mt-[clamp(12px,1.2vw,24px)] font-apple text-[clamp(13px,1.1vw,20px)] leading-[1.72] font-medium text-gray-3">
                     {intro ? renderMultilineText(t(intro.descriptionKey)) : null}
                 </div>
 
-                <div className="mt-[82px] flex items-center gap-8">
+                <div className="make-shift-step-content__intro-actions mt-[clamp(28px,4.2vw,82px)] flex items-center gap-[clamp(12px,1.6vw,32px)]">
                     <ManagementActionButton variant="neutral" size="sm" onClick={onPrev} disabled={!canPrev}>
                         {t('page.makeShift.navigation.previous')}
                     </ManagementActionButton>
@@ -46,7 +52,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                 </div>
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div className="make-shift-step-content__main min-w-0 flex-1">
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>

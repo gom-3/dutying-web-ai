@@ -72,7 +72,9 @@ export const ko = {
             navigation: {
                 previous: '이전',
                 next: '다음',
+                saving: '저장 중…',
                 complete: '완료',
+                sequentialRequired: '순서대로 설정을 진행해 주세요!',
             },
             overview: {
                 loading: '근무표를 불러오는 중입니다...',
@@ -86,6 +88,8 @@ export const ko = {
                 noTeamsTitle: '생성된 근무팀이 없어요.',
                 noTeamsDescription: '근무팀을 먼저 만들거나 병동 설정을 확인해 주세요.',
             },
+            monthRangeTitle: '이 기간에는 근무표를 만들 수 없어요',
+            monthRangeDescription: '듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.',
             requests: {
                 title: '신청 근무를 확정해 주세요',
                 descriptionPrefix: '반영된 스케줄은',
@@ -165,6 +169,7 @@ export const ko = {
                 loading: '근무표를 불러오는 중이에요',
                 error: '고정 근무 데이터를 불러오지 못했어요',
                 lockedToast: '고정 근무는 고정근무 탭에서만 수정할 수 있어요',
+                saveFailed: '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
             },
             aiRefill: {
                 action: 'AI 다시 채우기',
@@ -217,6 +222,12 @@ export const ko = {
             noTeamsDescription: '근무팀을 만든 뒤 다시 확인해 주세요.',
             emptyTitle: '{{teamName}}의 {{month}}월 근무표가 없어요.',
             emptyDescription: '{{month}}월 근무표 생성 화면으로 이동해 일정을 시작할 수 있어요.',
+            createShiftFlow: '근무표 생성하기',
+            viewRangeTitle: '이 기간의 근무표는 볼 수 없어요',
+            viewRangeDescription: '다음 달까지의 근무표만 생성 및 조회할 수 있어요.',
+            emptyScheduleTitle: '{{teamName}} · {{month}}월 근무표가 아직 없어요',
+            emptyScheduleDescription: '자동 생성 플로우에서 근무표를 만들 수 있어요.',
+            pastEmptyScheduleTitle: '{{teamName}} · {{month}}월 근무표가 없어요',
         },
         request: {
             overview: {

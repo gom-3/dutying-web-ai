@@ -1,16 +1,28 @@
+import {cn} from '@dutying/utils/style';
 import {useMemo} from 'react';
 import {type TShift, type TWardShiftType} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, useShiftEditorStore} from '@/features/shift-editor/model';
+import {SHIFT_CALENDAR_DAY_GRID_CLASSNAME} from '@/features/shift-editor/ui/complex-view/shift-calendar/shift-calendar-layout';
 
 interface ICountDutyByDayProps {
     shift: TShift;
     doc: TDutyDoc;
     focusDay?: number | null;
     className?: string;
+    gridTemplateColumns: string;
+    /** 일자 헤더 바로 아래: 별도 카드·그림자 없이 표 헤더 연장선에 맞춤 */
+    variant?: 'underDateHeader' | 'card';
 }
 
-function CountDutyByDay({shift, doc, focusDay = null, className}: ICountDutyByDayProps) {
+function CountDutyByDay({
+    shift,
+    doc,
+    focusDay = null,
+    className,
+    gridTemplateColumns,
+    variant = 'underDateHeader',
+}: ICountDutyByDayProps) {
     const selection = useShiftEditorStore((s) => s.selection);
     const {shiftTypeColorStyle} = useUIConfigStore();
     const effectiveFocusDay = useMemo(() => {
@@ -39,37 +51,54 @@ function CountDutyByDay({shift, doc, focusDay = null, className}: ICountDutyByDa
             return shortNameToType.get(cell)?.wardShiftTypeId === wardShiftTypeId;
         }).length;
 
+    const isCard = variant === 'card';
+
     return (
-        <div id="count_by_day" className={`rounded-[1.25rem] bg-[#FDFCFE] shadow-[0rem_-0.25rem_2.125rem_0rem_#EDE9F5] ${className ?? ''}`}>
-            {countedShiftTypes.map((wardShiftType, index) => (
+        <div
+            id="count_by_day"
+            className={cn(
+                'w-full min-w-0',
+                isCard && 'overflow-hidden rounded-[1.25rem] bg-[#FDFCFE] shadow-[0rem_-0.25rem_2.125rem_0rem_#EDE9F5]',
+                !isCard && 'border-t-[.0625rem] border-[#E0E0E0] bg-[#FDFCFE]',
+                className,
+            )}
+        >
+            {countedShiftTypes.map((wardShiftType) => (
                 <div
                     key={wardShiftType.wardShiftTypeId}
-                    className="flex h-10 items-center justify-center gap-5 border-b-[.0625rem] border-[#E0E0E0] last:border-none"
+                    className="grid h-8 w-full min-w-0 max-w-full items-center gap-x-2 border-b-[.0625rem] border-[#E0E0E0] last:border-b-0"
+                    style={{gridTemplateColumns}}
                 >
-                    <div
-                        className={`flex h-full w-12.5 items-center justify-center font-poppins text-[1.5rem] ${
-                            index === 0 && 'rounded-tl-[1.25rem]'
-                        } ${index === countedShiftTypes.length - 1 && 'rounded-bl-[1.25rem]'} `}
-                        style={
-                            shiftTypeColorStyle === 'background'
-                                ? {backgroundColor: wardShiftType.color, color: 'white'}
-                                : {color: wardShiftType.color, backgroundColor: 'white'}
-                        }
-                    >
-                        {wardShiftType.shortName}
+                    <div className="min-w-0" />
+                    <div className="min-w-0" />
+                    <div className="flex min-w-0 items-center justify-center">
+                        <div
+                            className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[.3125rem] font-poppins text-[clamp(10px,0.72vw,15px)] leading-none"
+                            style={
+                                shiftTypeColorStyle === 'background'
+                                    ? {backgroundColor: wardShiftType.color, color: 'white'}
+                                    : {color: wardShiftType.color, backgroundColor: 'white'}
+                            }
+                        >
+                            {wardShiftType.shortName}
+                        </div>
                     </div>
-                    <div className="flex h-full px-4 text-center">
-                        {shift.days.map((_date, i) => (
-                            <p
+                    <div
+                        className={SHIFT_CALENDAR_DAY_GRID_CLASSNAME}
+                        style={{gridTemplateColumns: `repeat(${doc.columns.length}, minmax(0, 1fr))`}}
+                    >
+                        {doc.columns.map((_date, i) => (
+                            <div
                                 key={i}
-                                className={`flex w-9 flex-1 items-center justify-center font-poppins text-[1.25rem] text-sub-2 ${
+                                className={`relative flex h-full min-h-0 w-full min-w-0 items-center justify-center px-[.125rem] font-poppins text-[clamp(9px,0.65vw,12px)] tabular-nums text-sub-2 ${
                                     effectiveFocusDay === i ? 'bg-main-4' : ''
                                 }`}
                             >
                                 {getCountByDay(i, wardShiftType.wardShiftTypeId)}
-                            </p>
+                            </div>
                         ))}
                     </div>
+                    <div className="min-w-0" aria-hidden />
                 </div>
             ))}
         </div>

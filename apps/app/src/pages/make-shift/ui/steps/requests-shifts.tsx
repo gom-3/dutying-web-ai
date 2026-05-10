@@ -27,7 +27,7 @@ export function RequestsShifts() {
     );
 
     return (
-        <div id="make_requests_step" className="flex min-h-0 flex-1 flex-col">
+        <div id="make_requests_step" className="make-shift-requests flex min-h-0 flex-1 flex-col">
             <RequestsShiftsHeader
                 acceptedCount={acceptedRequestSummaries.length}
                 pendingCount={pendingRequests.length}
@@ -38,8 +38,8 @@ export function RequestsShifts() {
                 onNext={useCase.next}
             />
 
-            <div className="mt-6 flex min-h-0 flex-1 gap-6">
-                <div className="min-w-0 flex-1">
+            <div className="make-shift-requests__body mt-[clamp(14px,1.6vw,24px)] flex min-h-0 flex-1 gap-[clamp(14px,1.6vw,24px)]">
+                <div className="make-shift-requests__board-area min-w-0 flex-1">
                     <RequestsShiftBoard
                         loading={loading}
                         error={error}

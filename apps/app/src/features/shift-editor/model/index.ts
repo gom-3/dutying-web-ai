@@ -9,3 +9,4 @@ export * from './use-shift-excel-export';
 export * from './use-shift-image-export';
 export * from './use-shift-editor-key-bindings';
 export {buildViolationMap} from './validator';
+export {useViolationMap} from './use-duty-violation-map';
