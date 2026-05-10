@@ -105,23 +105,27 @@ vi.mock('@/shared/api/ward', () => ({
     },
 }));
 
-vi.mock('@/features/shift-editor', () => ({
-    buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
-    docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
-    isDutyShiftWithoutAssignments: () => false,
-    shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
-    useShiftEditorCommands: () => mockCommands,
-    useShiftExcelExport: (options: {disabled?: boolean}) => ({
-        isExporting: false,
-        exportExcel: () => {
-            if (!options.disabled) {
-                mockExportExcel();
-            }
-        },
-    }),
-    useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
-    useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
-}));
+vi.mock('@/features/shift-editor', async (importOriginal) => {
+    const actual = await importOriginal();
+
+    return {
+        ...actual,
+        buildWorkKeyMap: (...args: unknown[]) => mockBuildWorkKeyMap(...args),
+        docToWardShiftsDTO: (...args: unknown[]) => mockDocToWardShiftsDTO(...args),
+        shiftToDoc: (...args: unknown[]) => mockShiftToDoc(...args),
+        useShiftEditorCommands: () => mockCommands,
+        useShiftExcelExport: (options: {disabled?: boolean}) => ({
+            isExporting: false,
+            exportExcel: () => {
+                if (!options.disabled) {
+                    mockExportExcel();
+                }
+            },
+        }),
+        useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
+        useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
+    };
+});
 
 const shiftTeams = [
     {shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []},
