@@ -96,6 +96,7 @@ export const en: TLocale = {
             monthRangeDescription: 'On Dutying, you can only create schedules for this month and the next month.',
             requests: {
                 title: 'Please confirm requested shifts',
+                descriptionLine: 'Approved requests are fixed on the schedule.',
                 descriptionPrefix: 'Accepted requests are',
                 descriptionHighlight: 'locked into the schedule',
                 descriptionSuffix: '.',
@@ -135,6 +136,7 @@ export const en: TLocale = {
                     weak: 'Soft constraints',
                 },
                 info: 'You can drag to reorder by your preferred priority.',
+                infoTooltipAria: 'About constraint priority',
                 count: '{{count}}',
                 empty: 'No constraints to show.',
                 dragHandleAria: 'Drag to reorder',
@@ -177,6 +179,9 @@ export const en: TLocale = {
             },
             aiRefill: {
                 action: 'Refill with AI',
+                firstFill: 'Fill with AI',
+                toolbarTitle: 'Finish your schedule',
+                toolbarHint: 'AI can help you complete it more easily.',
                 retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',

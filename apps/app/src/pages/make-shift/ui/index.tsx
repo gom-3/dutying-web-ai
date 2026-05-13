@@ -55,7 +55,7 @@ export const MakeShiftPageView = () => {
     return (
         <div className="min-h-screen w-full overflow-x-auto">
             {/* 최소 지원 폭 이하로 내려가면 "페이지 전체" 가로 스크롤 */}
-            <div className="flex min-h-screen min-w-[1280px] flex-col px-10 py-10">
+            <div className="flex min-h-screen min-w-[1280px] flex-col px-10 py-4">
                 <MakeShiftHeader />
 
                 <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
@@ -69,67 +69,69 @@ export const MakeShiftPageView = () => {
                         </div>
                     ) : isOverview ? (
                         <div className="flex flex-1 items-center justify-center px-10 py-16">
-                        {showNoTeamsState ? (
-                            <PageState
-                                tone="empty"
-                                title={t('page.makeShift.overview.noTeamsTitle')}
-                                description={t('page.makeShift.overview.noTeamsDescription')}
-                                className="py-0"
-                            />
-                        ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
-                            <PageState
-                                tone="loading"
-                                title={
-                                    shiftStatus === 'pending' ? t('page.makeShift.overview.loading') : t('page.makeShift.overview.checking')
-                                }
-                                description={t('page.state.loadingDescription')}
-                                className="py-0"
-                            />
-                        ) : shiftStatus === 'error' ? (
-                            <PageState
-                                tone="error"
-                                title={t('page.makeShift.overview.error')}
-                                description={t('page.state.errorDescription')}
-                                action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
-                                className="py-0"
-                            />
-                        ) : hasCurrentMonthShift ? (
-                            <PageState
-                                tone="empty"
-                                title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                description={t('page.state.emptyDescription')}
-                                className="py-0"
-                            >
-                                <div className="mt-1 flex flex-wrap justify-center gap-4">
-                                    <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
-                                        {t('page.makeShift.overview.viewShift', {month})}
-                                    </ManagementActionButton>
-                                    {canOfferCreateFollowingMonth && (
-                                        <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
-                                            {t('page.makeShift.overview.createShift', {month: nextMonth})}
+                            {showNoTeamsState ? (
+                                <PageState
+                                    tone="empty"
+                                    title={t('page.makeShift.overview.noTeamsTitle')}
+                                    description={t('page.makeShift.overview.noTeamsDescription')}
+                                    className="py-0"
+                                />
+                            ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
+                                <PageState
+                                    tone="loading"
+                                    title={
+                                        shiftStatus === 'pending'
+                                            ? t('page.makeShift.overview.loading')
+                                            : t('page.makeShift.overview.checking')
+                                    }
+                                    description={t('page.state.loadingDescription')}
+                                    className="py-0"
+                                />
+                            ) : shiftStatus === 'error' ? (
+                                <PageState
+                                    tone="error"
+                                    title={t('page.makeShift.overview.error')}
+                                    description={t('page.state.errorDescription')}
+                                    action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
+                                    className="py-0"
+                                />
+                            ) : hasCurrentMonthShift ? (
+                                <PageState
+                                    tone="empty"
+                                    title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                    description={t('page.state.emptyDescription')}
+                                    className="py-0"
+                                >
+                                    <div className="mt-1 flex flex-wrap justify-center gap-4">
+                                        <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
+                                            {t('page.makeShift.overview.viewShift', {month})}
                                         </ManagementActionButton>
-                                    )}
-                                </div>
-                            </PageState>
-                        ) : (
-                            <PageState
-                                tone="empty"
-                                title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
-                                description={t('page.state.emptyDescription')}
-                                className="py-0"
-                            >
-                                <div className="mt-1 flex justify-center">
-                                    <ManagementActionButton
-                                        variant="secondary"
-                                        size="lg"
-                                        onClick={handleCreateCurrentMonth}
-                                        disabled={currentShiftTeamId === null}
-                                    >
-                                        {t('page.makeShift.overview.createShift', {month})}
-                                    </ManagementActionButton>
-                                </div>
-                            </PageState>
-                        )}
+                                        {canOfferCreateFollowingMonth && (
+                                            <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
+                                                {t('page.makeShift.overview.createShift', {month: nextMonth})}
+                                            </ManagementActionButton>
+                                        )}
+                                    </div>
+                                </PageState>
+                            ) : (
+                                <PageState
+                                    tone="empty"
+                                    title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
+                                    description={t('page.state.emptyDescription')}
+                                    className="py-0"
+                                >
+                                    <div className="mt-1 flex justify-center">
+                                        <ManagementActionButton
+                                            variant="secondary"
+                                            size="lg"
+                                            onClick={handleCreateCurrentMonth}
+                                            disabled={currentShiftTeamId === null}
+                                        >
+                                            {t('page.makeShift.overview.createShift', {month})}
+                                        </ManagementActionButton>
+                                    </div>
+                                </PageState>
+                            )}
                         </div>
                     ) : (
                         <>
@@ -137,11 +139,7 @@ export const MakeShiftPageView = () => {
                              * Stepper는 흰 카드 폭 전체에 직접 배치한다 (분리선이 카드 좌우 가장자리까지 닿게).
                              * 좌우 콘텐츠 패딩은 stepper 내부의 step list(`px-[clamp(...)]`)와 아래 step content에만 적용한다.
                              */}
-                            <MakeShiftStepper
-                                currentStep={currentStep}
-                                maxReachedStep={maxReachedStep}
-                                onClickStep={useCase.goToStep}
-                            />
+                            <MakeShiftStepper currentStep={currentStep} maxReachedStep={maxReachedStep} onClickStep={useCase.goToStep} />
 
                             <div className="w-full min-w-0 px-6 2xl:px-10">
                                 <MakeShiftStepContent

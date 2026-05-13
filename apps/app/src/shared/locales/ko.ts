@@ -92,6 +92,7 @@ export const ko = {
             monthRangeDescription: '듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.',
             requests: {
                 title: '신청 근무를 확정해 주세요',
+                descriptionLine: '승인된 신청 근무는 근무표에 고정돼요',
                 descriptionPrefix: '반영된 스케줄은',
                 descriptionHighlight: '근무표에 고정',
                 descriptionSuffix: '됩니다.',
@@ -131,6 +132,7 @@ export const ko = {
                     weak: '약 제약 조건',
                 },
                 info: '위치를 옮겨서 원하는 우선순위대로 정렬할 수 있어요',
+                infoTooltipAria: '제약 조건 우선순위 안내',
                 count: '{{count}}개',
                 empty: '표시할 제약조건이 없습니다.',
                 dragHandleAria: '드래그하여 위치를 변경',
@@ -173,7 +175,10 @@ export const ko = {
             },
             aiRefill: {
                 action: 'AI 다시 채우기',
-                retry: 'AI 다시 시도',
+                firstFill: 'AI 채우기',
+                toolbarTitle: '최종 근무표를 작성해 주세요',
+                toolbarHint: 'AI의 도움을 받아 더 쉽게 작성할 수 있어요',
+                retry: 'AI 다시 채우기',
                 generating: 'AI 채우는 중...',
                 intro: '실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.',
                 loading: '근무표를 불러오는 중이에요',

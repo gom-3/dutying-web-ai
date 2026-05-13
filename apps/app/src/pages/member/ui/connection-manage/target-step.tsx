@@ -105,7 +105,7 @@ function ConnectionManageTargetStep({
                         <div className="relative flex w-full items-center justify-between rounded-t-[.9375rem] bg-sub-2 px-5 py-[.875rem]">
                             <div className="flex flex-col gap-[.3125rem]">
                                 <h2 className="font-apple text-[1.5rem] font-semibold text-white">{shiftTeam.name}</h2>
-                                <div className="flex items-center">
+                                <div className="flex items-center text-white">
                                     <PersonIcon className="h-4 w-4" />
                                     <p className="font-poppins text-[.75rem] text-white">{shiftTeam.nurses.length}</p>
                                 </div>

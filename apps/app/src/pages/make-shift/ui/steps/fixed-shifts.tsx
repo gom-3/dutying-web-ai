@@ -8,9 +8,10 @@ import {type TViolation} from '@/features/shift-editor/model';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import Button from '@/shared/ui/form-controls/Button';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
 
@@ -47,7 +48,6 @@ export function FixedShifts() {
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const {dutyQuery, editorDoc, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
-
     const handleNext = useCallback(async () => {
         if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
 
@@ -66,28 +66,9 @@ export function FixedShifts() {
         } finally {
             setIsSaving(false);
         }
-    }, [
-        wardId,
-        dutyQuery.data,
-        canNext,
-        isSaving,
-        editorDoc,
-        queryClient,
-        currentShiftTeamId,
-        year,
-        month,
-        useCase,
-        t,
-    ]);
-
+    }, [wardId, dutyQuery.data, canNext, isSaving, editorDoc, queryClient, currentShiftTeamId, year, month, useCase, t]);
     const nextDisabled =
-        wardId === null ||
-        !canNext ||
-        isSaving ||
-        dutyQuery.isLoading ||
-        dutyQuery.isError ||
-        dutyQuery.data === undefined;
-
+        wardId === null || !canNext || isSaving || dutyQuery.isLoading || dutyQuery.isError || dutyQuery.data === undefined;
     /**
      * 고정 근무 화면에서는 fixedCells / requestCells 로 마킹된 셀만 보여준다.
      * (그 외 셀은 비워서 사용자가 "고정해야 할 부분"에만 집중하도록.)
@@ -114,7 +95,7 @@ export function FixedShifts() {
     return (
         <div
             id="make_fixed_shifts_step"
-            className="fixed-shifts-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(16px,1.6vw,28px)] outline-none"
+            className="fixed-shifts-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none"
             ref={editorRef}
             onKeyDown={onKeyDown}
             onPaste={onPaste}
@@ -126,18 +107,26 @@ export function FixedShifts() {
                     고정할 근무를 선택해 주세요
                 </h1>
 
-                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-[clamp(6px,0.55vw,12px)]">
-                    <ManagementActionButton
-                        variant="neutral"
-                        size="sm"
+                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-[clamp(12px,1.1vw,24px)]">
+                    <Button
+                        variant="secondary"
+                        size="md"
+                        type="button"
+                        className={`cursor-pointer disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                         onClick={() => useCase.prev()}
                         disabled={!canPrev}
                     >
                         {t('page.makeShift.navigation.previous')}
-                    </ManagementActionButton>
-                    <ManagementActionButton size="sm" onClick={() => void handleNext()} disabled={nextDisabled}>
+                    </Button>
+                    <Button
+                        size="md"
+                        type="button"
+                        className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
+                        onClick={() => void handleNext()}
+                        disabled={nextDisabled}
+                    >
                         {isSaving ? t('page.makeShift.navigation.saving') : t('page.makeShift.navigation.next')}
-                    </ManagementActionButton>
+                    </Button>
                 </div>
             </div>
 

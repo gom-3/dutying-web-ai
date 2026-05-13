@@ -15,10 +15,12 @@ describe('ai-autofill-state', () => {
     });
 
     it('에러 상태에서는 재시도 액션을 노출해야 한다', () => {
-        expect(getAiAutofillActionLabel('idle')).toBe('action');
-        expect(getAiAutofillActionLabel('loading')).toBe('generating');
-        expect(getAiAutofillActionLabel('error')).toBe('retry');
-        expect(getAiAutofillActionLabel('success')).toBe('action');
+        expect(getAiAutofillActionLabel('idle', false)).toBe('firstFill');
+        expect(getAiAutofillActionLabel('idle', true)).toBe('action');
+        expect(getAiAutofillActionLabel('success', false)).toBe('firstFill');
+        expect(getAiAutofillActionLabel('success', true)).toBe('action');
+        expect(getAiAutofillActionLabel('loading', false)).toBe('generating');
+        expect(getAiAutofillActionLabel('error', false)).toBe('retry');
     });
 
     it('상태별 톤을 구분해야 한다', () => {

@@ -154,10 +154,7 @@ export function Workers() {
                     className="inline-flex items-center gap-[clamp(3px,0.35vw,6px)] font-apple text-[clamp(12px,1.05vw,17px)] font-semibold text-sub-2"
                     aria-label={t('page.makeShift.workers.totalCount', {count: workerCount})}
                 >
-                    <PersonIcon
-                        aria-hidden
-                        className="size-[clamp(14px,1.15vw,18px)] shrink-0 [&>g]:fill-current"
-                    />
+                    <PersonIcon aria-hidden className="size-[clamp(14px,1.15vw,18px)] shrink-0" />
                     <span className="tabular-nums">{workerCount}</span>
                 </span>
             </div>
@@ -174,7 +171,7 @@ export function Workers() {
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         <WorkersList
                             grouped={grouped}
-                            shiftTeamId={currentShiftTeamId}
+                            shiftTeamId={currentShiftTeamId!}
                             levelsByNurseId={levelsByNurseId}
                             skillConfig={skillConfig}
                         />

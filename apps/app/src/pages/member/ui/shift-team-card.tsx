@@ -84,7 +84,7 @@ function ShiftTeamCard({
                         </button>
                     )}
 
-                    <div className="flex items-center">
+                    <div className="flex items-center text-white">
                         <PersonIcon className="h-4 w-4" />
                         <p className="font-poppins text-[.75rem] text-white">{shiftTeam.nurses.length}</p>
                     </div>
@@ -116,7 +116,7 @@ function ShiftTeamCard({
                             aria-label={t('page.member.shiftTeamList.card.addNurse')}
                         >
                             {isAddingNurse ? '간호사 추가 중...' : t('page.member.shiftTeamList.card.addNurse')}
-                            <InfoIcon className="peer h-5 w-5" />
+                            <InfoIcon className="peer h-5 w-5 text-sub-2.5" />
                             <div className="invisible absolute top-[50%] -right-86 z-30 flex w-91 translate-y-[-50%] items-center gap-[.5rem] rounded-[.3125rem] bg-white px-2 py-1 font-apple text-[.875rem] text-sub-2 shadow-shadow-2 peer-hover:visible">
                                 <div
                                     className="absolute top-[50%] left-[-.4375rem] h-0 w-0 translate-y-[-50%]"

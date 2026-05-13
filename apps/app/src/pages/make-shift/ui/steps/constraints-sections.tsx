@@ -7,6 +7,7 @@ import {type TDutyRuleKey} from '@/features/shift-editor/model/types';
 import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {type useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';
+import {Tooltip, TooltipContent, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 
 type TActiveBucket = 'error' | 'warning';
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
@@ -18,43 +19,85 @@ type TConstraintSectionProps = {
     onToggle?: () => void;
     disabled?: boolean;
     infoLabel?: string;
+    infoTooltipAria: string;
     children: ReactNode;
 };
 
-export function ConstraintSection({title, countLabel, isOpen, onToggle, disabled = false, infoLabel, children}: TConstraintSectionProps) {
+export function ConstraintSection({
+    title,
+    countLabel,
+    isOpen,
+    onToggle,
+    disabled = false,
+    infoLabel,
+    infoTooltipAria,
+    children,
+}: TConstraintSectionProps) {
     const collapsible = typeof isOpen === 'boolean' && onToggle;
 
     return (
         <>
-            <div className="make-shift-constraints__section-header flex items-center justify-between">
+            <div className="make-shift-constraints__section-header flex min-h-[clamp(36px,3.0vw,46px)] items-center justify-between gap-[clamp(8px,0.7vw,14px)]">
                 {collapsible ? (
                     <button
                         type="button"
-                        className="make-shift-constraints__section-title flex items-center gap-[clamp(4px,0.5vw,8px)] font-apple text-[clamp(16px,1.4vw,24px)] font-bold text-sub-2 disabled:opacity-50"
+                        className="make-shift-constraints__section-title flex min-w-0 items-center gap-[clamp(4px,0.5vw,8px)] font-apple text-[clamp(13px,1.2vw,21px)] font-bold text-sub-2 disabled:opacity-50"
                         onClick={onToggle}
                         disabled={disabled}
                     >
                         {title}
                         <ChevronDown
-                            className={cn('size-[clamp(16px,1.4vw,24px)] transition-transform', isOpen ? 'rotate-180' : 'rotate-0')}
+                            className={cn(
+                                'size-[clamp(15px,1.25vw,21px)] shrink-0 transition-transform',
+                                isOpen ? 'rotate-180' : 'rotate-0',
+                            )}
                         />
                     </button>
                 ) : (
-                    <p className="make-shift-constraints__section-title font-apple text-[clamp(16px,1.4vw,24px)] font-bold text-gray-4">
+                    <p className="make-shift-constraints__section-title font-apple text-[clamp(13px,1.2vw,21px)] font-bold text-gray-4">
                         {title}
                     </p>
                 )}
-                <p className="make-shift-constraints__section-count font-apple text-[clamp(13px,1.2vw,20px)] font-medium text-gray-4">
-                    {countLabel}
-                </p>
+                <div className="make-shift-constraints__section-meta flex shrink-0 items-center gap-[clamp(8px,0.65vw,12px)]">
+                    <p className="make-shift-constraints__section-count font-apple text-[clamp(12px,1.05vw,17px)] font-semibold text-sub-2">
+                        {countLabel}
+                    </p>
+                </div>
             </div>
 
             {collapsible && !isOpen ? null : (
-                <div className="make-shift-constraints__section-body mt-[clamp(10px,1.0vw,16px)] rounded-[clamp(10px,1.0vw,15px)] bg-gray-7 p-[clamp(14px,2.0vw,30px)]">
+                <div
+                    className={cn(
+                        'make-shift-constraints__section-body mt-[clamp(4px,0.45vw,8px)] rounded-[clamp(10px,1.0vw,15px)] bg-gray-7 px-[clamp(12px,1.8vw,26px)]',
+                        infoLabel ? 'pt-[clamp(4px,0.35vw,7px)] pb-[clamp(8px,1.05vw,16px)]' : 'py-[clamp(8px,1.1vw,18px)]',
+                    )}
+                >
                     {infoLabel ? (
-                        <div className="make-shift-constraints__section-info mb-[clamp(10px,1.2vw,18px)] flex items-center gap-[clamp(4px,0.5vw,8px)]">
-                            <InfoIcon className="size-[clamp(16px,1.4vw,24px)]" />
-                            <p className="font-apple text-[clamp(11px,0.95vw,16px)] font-semibold text-main-1">{infoLabel}</p>
+                        <div
+                            className="make-shift-constraints__section-body-info grid grid-cols-[clamp(22px,2.4vw,36px)_minmax(0,1fr)] items-center gap-x-[clamp(10px,1.1vw,20px)] pt-[clamp(5px,0.45vw,9px)] pb-[clamp(5px,0.45vw,9px)]"
+                        >
+                            <div aria-hidden className="w-full" />
+                            <div className="flex min-w-0 justify-end">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <button
+                                            type="button"
+                                            className="make-shift-constraints__section-info-trigger text-sub-3 outline-none transition-colors hover:text-gray-4 focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
+                                            aria-label={infoTooltipAria}
+                                        >
+                                            <InfoIcon className="size-[clamp(13px,1.12vw,19px)] shrink-0" />
+                                        </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent
+                                        side="top"
+                                        align="start"
+                                        sideOffset={6}
+                                        className="max-w-none whitespace-nowrap border border-gray-5 bg-white px-[clamp(10px,0.9vw,14px)] py-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(11px,0.95vw,14px)] leading-none font-medium text-sub-1 shadow-md"
+                                    >
+                                        {infoLabel}
+                                    </TooltipContent>
+                                </Tooltip>
+                            </div>
                         </div>
                     ) : null}
                     {children}
@@ -73,8 +116,8 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
             value={value ?? ''}
             onChange={(e) => onChange(parseInt(e.target.value, 10))}
             options={options}
-            className="make-shift-constraints__rule-editor-select mx-[clamp(3px,0.3vw,5px)] h-[clamp(28px,2.4vw,44px)] w-[clamp(48px,4.6vw,67px)]"
-            selectClassName="rounded-[5px] px-[clamp(8px,0.85vw,15px)] py-[clamp(4px,0.45vw,7px)] outline-[0.5px] outline-main-4 text-main-1 text-[clamp(11px,0.95vw,16px)]"
+            className="make-shift-constraints__rule-editor-select mx-[clamp(3px,0.3vw,5px)] h-[clamp(22px,1.85vw,30px)] w-[clamp(44px,4.2vw,60px)]"
+            selectClassName="rounded-[5px] px-[clamp(6px,0.65vw,12px)] py-[clamp(2px,0.25vw,5px)] outline-[0.5px] outline-main-4 text-main-1 text-[clamp(10px,0.85vw,14px)]"
         />
     );
     const editorClass =
@@ -135,15 +178,11 @@ export function ConstraintBucketList({
 }: TConstraintBucketListProps) {
     return (
         <Droppable droppableId={bucket}>
-            {(provided, snapshot) => (
+            {(provided) => (
                 <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={cn(
-                        'make-shift-constraints__bucket',
-                        `make-shift-constraints__bucket--${bucket}`,
-                        snapshot.isDraggingOver && 'bg-[#f0ecff]',
-                    )}
+                    className={cn('make-shift-constraints__bucket', `make-shift-constraints__bucket--${bucket}`)}
                 >
                     {ruleKeys.length === 0 ? (
                         <div className="make-shift-constraints__empty rounded-[clamp(8px,0.7vw,10px)] bg-white px-[clamp(14px,1.5vw,24px)] py-[clamp(12px,1.25vw,20px)] text-center font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">
@@ -164,14 +203,14 @@ export function ConstraintBucketList({
                                                 ref={dragProvided.innerRef}
                                                 {...dragProvided.draggableProps}
                                                 className={cn(
-                                                    'make-shift-constraints__rule flex items-center gap-[clamp(10px,1.1vw,20px)]',
+                                                    'make-shift-constraints__rule flex h-[clamp(28px,2.75vw,42px)] items-center gap-[clamp(10px,1.1vw,20px)]',
                                                     dragSnapshot.isDragging && 'opacity-95',
                                                 )}
                                             >
-                                                <div className="make-shift-constraints__rule-index w-[clamp(24px,2.6vw,40px)] text-center font-apple text-[clamp(16px,1.6vw,28px)] text-gray-3">
+                                                <div className="make-shift-constraints__rule-index w-[clamp(22px,2.4vw,36px)] text-center font-apple text-[clamp(14px,1.45vw,26px)] text-gray-4">
                                                     {index + 1}
                                                 </div>
-                                                <div className="make-shift-constraints__rule-card flex h-[clamp(44px,4.0vw,62px)] flex-1 items-center rounded-[clamp(8px,0.7vw,10px)] bg-white px-[clamp(12px,1.3vw,20px)]">
+                                                <div className="make-shift-constraints__rule-card flex h-full min-h-0 flex-1 items-center rounded-[clamp(8px,0.7vw,10px)] bg-white px-[clamp(12px,1.3vw,20px)]">
                                                     <button
                                                         type="button"
                                                         aria-label={t('page.makeShift.constraints.dragHandleAria')}
@@ -202,11 +241,14 @@ export function ConstraintBucketList({
                                                     <button
                                                         type="button"
                                                         aria-label={t('page.makeShift.constraints.excludeRuleAria')}
-                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] flex size-[clamp(28px,2.5vw,40px)] shrink-0 items-center justify-center rounded-[clamp(6px,0.55vw,8px)] border border-gray-5 text-gray-3 hover:border-main-4 hover:bg-gray-7 hover:text-main-1 disabled:opacity-40"
+                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] grid size-[clamp(18px,1.55vw,26px)] shrink-0 place-items-center rounded-full border border-gray-5 bg-white text-gray-4 transition-colors hover:border-gray-4 hover:bg-gray-7 hover:text-gray-3 disabled:opacity-40"
                                                         disabled={disabled}
                                                         onClick={() => onExcludeRule(key)}
                                                     >
-                                                        <Minus className="size-[clamp(14px,1.2vw,20px)]" strokeWidth={2.2} />
+                                                        <Minus
+                                                            className="size-[clamp(10px,0.82vw,14px)] shrink-0 stroke-[1.85]"
+                                                            aria-hidden
+                                                        />
                                                     </button>
                                                 </div>
                                             </div>

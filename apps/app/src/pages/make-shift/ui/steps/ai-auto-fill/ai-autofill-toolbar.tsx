@@ -15,18 +15,13 @@ type TAiAutofillToolbarProps = {
     onAiFill: () => void;
     isAiGenerating: boolean;
     aiStatus: TAiAutofillStatus;
+    hasCompletedAiFill: boolean;
     onConfirm: () => void;
     canConfirm: boolean;
 };
 
 /**
- * 사진 레퍼런스에 맞춘 상단 툴바.
- *
- * 좌: 제목 1개
- * 우: [자동 채우기 토글] [잘못된 근무 토글] | [undo/redo] | [AI 다시 채우기] [확정하기]
- *
- * 자동 채우기 토글: ON이면 AI·수동 등 전체 근무가 보이고, OFF이면 고정 근무(fixedCells)만 캘린더에 표시된다.
- * 모든 글자 크기는 clamp() 기반. 가로 폭이 줄어들면 함께 줄어든다.
+ * 상단 툴바: 신청 근무 확정 탭과 같이 제목 + 보조 문구(좌), 컨트롤(우).
  */
 export function AiAutofillToolbar({
     autoFillEnabled,
@@ -40,17 +35,23 @@ export function AiAutofillToolbar({
     onAiFill,
     isAiGenerating,
     aiStatus,
+    hasCompletedAiFill,
     onConfirm,
     canConfirm,
 }: TAiAutofillToolbarProps) {
     const {t} = useTypedTranslation();
-    const aiActionLabel = getAiAutofillActionLabel(aiStatus);
+    const aiActionKey = getAiAutofillActionLabel(aiStatus, hasCompletedAiFill);
 
     return (
-        <div className="ai-autofill-toolbar flex w-full min-w-0 items-center justify-between gap-[clamp(8px,0.8vw,16px)]">
-            <h1 className="ai-autofill-toolbar__title font-apple text-[clamp(20px,1.7vw,30px)] font-semibold whitespace-nowrap text-sub-1">
-                AI가 채운 근무표를 수정해 보세요
-            </h1>
+        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-wrap items-center justify-between gap-[clamp(10px,0.9vw,16px)]">
+            <div className="ai-autofill-toolbar__titles flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[clamp(12px,1.2vw,24px)] gap-y-[clamp(4px,0.4vw,8px)]">
+                <h1 className="ai-autofill-toolbar__title shrink-0 font-apple text-[clamp(20px,1.7vw,30px)] font-semibold text-sub-1">
+                    {t('page.makeShift.aiRefill.toolbarTitle')}
+                </h1>
+                <p className="ai-autofill-toolbar__hint max-w-full min-w-0 font-apple text-[clamp(13px,1.1vw,20px)] leading-snug font-medium text-gray-3">
+                    {t('page.makeShift.aiRefill.toolbarHint')}
+                </p>
+            </div>
 
             <div className="ai-autofill-toolbar__actions flex shrink-0 items-center gap-[clamp(6px,0.55vw,10px)]">
                 <ToggleChip
@@ -86,20 +87,10 @@ export function AiAutofillToolbar({
                 />
 
                 <span className="ai-autofill-toolbar__history flex items-center gap-[2px]">
-                    <IconButton
-                        className="ai-autofill-toolbar__history-undo"
-                        onClick={onUndo}
-                        disabled={!canUndo}
-                        ariaLabel="undo"
-                    >
+                    <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="undo">
                         <HistoryBackIcon className="size-full" />
                     </IconButton>
-                    <IconButton
-                        className="ai-autofill-toolbar__history-redo"
-                        onClick={onRedo}
-                        disabled={!canRedo}
-                        ariaLabel="redo"
-                    >
+                    <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="redo">
                         <HistoryNextIcon className="size-full" />
                     </IconButton>
                 </span>
@@ -117,12 +108,12 @@ export function AiAutofillToolbar({
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill',
                         'flex shrink-0 items-center gap-[clamp(4px,0.4vw,8px)] rounded-[12px] px-[clamp(12px,1vw,18px)]',
                         'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] font-semibold whitespace-nowrap text-white',
-                        'shadow-[0_2px_10px_0_rgba(102,61,250,0.25)] disabled:opacity-60',
+                        'disabled:opacity-60',
                     )}
                     style={{backgroundImage: 'linear-gradient(105deg, #B53DFA 0%, #663DFA 100%)'}}
                 >
                     <SparkleIcon className="size-[clamp(13px,1.1vw,17px)]" />
-                    {t(`page.makeShift.aiRefill.${aiActionLabel}`)}
+                    {t(`page.makeShift.aiRefill.${aiActionKey}`)}
                 </button>
 
                 <button
@@ -159,7 +150,7 @@ function ToggleChip({
             type="button"
             onClick={onClick}
             className={cn(
-                'flex shrink-0 items-center gap-[clamp(3px,0.35vw,6px)] rounded-[6px] border whitespace-nowrap',
+                'flex shrink-0 cursor-pointer items-center gap-[clamp(3px,0.35vw,6px)] rounded-[6px] border whitespace-nowrap',
                 'h-[clamp(20px,1.7vw,26px)] px-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(9px,0.72vw,12px)]',
                 active ? 'border-gray-5 bg-white text-sub-2' : 'border-gray-5 bg-gray-6 text-sub-2.5 opacity-90',
                 className,
@@ -190,7 +181,7 @@ function IconButton({
             disabled={disabled}
             aria-label={ariaLabel}
             className={cn(
-                'grid size-[clamp(18px,1.5vw,24px)] shrink-0 place-items-center rounded-[6px] text-sub-2.5 hover:bg-gray-7 disabled:opacity-40 disabled:hover:bg-transparent',
+                'grid size-[clamp(18px,1.5vw,24px)] shrink-0 cursor-pointer place-items-center rounded-[6px] text-sub-2.5 hover:bg-gray-7 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
                 className,
             )}
         >
