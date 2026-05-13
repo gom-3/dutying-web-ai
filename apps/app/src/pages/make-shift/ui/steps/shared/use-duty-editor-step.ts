@@ -89,7 +89,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
-    const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
+    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap});
     const violationMap = useViolationMap(editorDoc);
     const hydratedContextKeyRef = useRef<string | null>(null);
     const initialHydrationDoneRef = useRef(false);
@@ -186,7 +186,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         editorDoc,
         editorRef,
         onKeyDown,
-        onPaste,
+        onPasteCapture,
         violationMap,
         focusEditor,
     };

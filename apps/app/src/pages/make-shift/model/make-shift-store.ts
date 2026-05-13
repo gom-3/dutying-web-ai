@@ -74,6 +74,8 @@ export type TMakeShiftStore = {
     // overview status (MVP)
     shiftStatus: TShiftStatus;
     shiftExists: boolean;
+    /** 근무자 칸이 모두 채워진 상태(만들기 플로 진입 불가). */
+    shiftFullyAssigned: boolean;
     reloadToken: number;
 
     // actions (no business logic beyond state transitions)
@@ -95,6 +97,7 @@ export type TMakeShiftStore = {
 
     setShiftStatus: (status: TShiftStatus) => void;
     setShiftExists: (exists: boolean) => void;
+    setShiftFullyAssigned: (fully: boolean) => void;
     requestReload: () => void;
     setHydrated: () => void;
 };
@@ -103,6 +106,13 @@ function readMaxReached(wardId: number | null, shiftTeamId: number | null, year:
     if (!wardId || !shiftTeamId) return 1;
 
     return loadMaxReachedStep(wardId, shiftTeamId, year, month);
+}
+
+/** 헤더로 연·월이 바뀌면 만들기 단계(stepping)를 끊고 개요로 보낸다(다른 달 플로우가 그대로 이어지지 않게). */
+function exitingSteppingIfNeeded(phase: TFlowPhase): Partial<Pick<TMakeShiftStore, 'phase' | 'currentStep' | 'restoreDraftModalOpen'>> {
+    if (phase !== 'stepping') return {};
+
+    return {phase: 'overview', currentStep: 1, restoreDraftModalOpen: false};
 }
 
 export const useMakeShiftStore = create<TMakeShiftStore>()(
@@ -122,6 +132,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         shiftStatus: 'idle',
         shiftExists: false,
+        shiftFullyAssigned: false,
         reloadToken: 0,
 
         setWardId: (wardId) => {
@@ -134,7 +145,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         },
 
         startFromStep: ({step, openRestoreDraftModal}) => {
-            const {wardId, currentShiftTeamId, year, month} = get();
+            const {wardId, currentShiftTeamId, year, month, shiftFullyAssigned, shiftStatus} = get();
+
+            if (shiftStatus === 'success' && shiftFullyAssigned) return;
 
             set(() => ({
                 phase: 'stepping',
@@ -209,17 +222,19 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         setYearMonth: ({year, month}) => {
             const nextMonth = Math.min(12, Math.max(1, month));
-            const {wardId, currentShiftTeamId} = get();
+            const {wardId, currentShiftTeamId, phase} = get();
 
             set(() => ({
                 year,
                 month: nextMonth,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nextMonth),
+                shiftFullyAssigned: false,
+                ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nextMonth);
         },
         goPrevMonth: () => {
-            const {year, month, wardId, currentShiftTeamId} = get();
+            const {year, month, wardId, currentShiftTeamId, phase} = get();
 
             if (month <= 1) {
                 const ny = year - 1;
@@ -229,6 +244,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     year: ny,
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
+                    shiftFullyAssigned: false,
+                    ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
 
@@ -240,11 +257,13 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
+                shiftFullyAssigned: false,
+                ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
         },
         goNextMonth: () => {
-            const {year, month, wardId, currentShiftTeamId} = get();
+            const {year, month, wardId, currentShiftTeamId, phase} = get();
 
             if (month >= 12) {
                 const ny = year + 1;
@@ -254,6 +273,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     year: ny,
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
+                    shiftFullyAssigned: false,
+                    ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
 
@@ -265,6 +286,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
+                shiftFullyAssigned: false,
+                ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
         },
@@ -277,6 +300,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 set(() => ({
                     currentShiftTeamId,
                     maxReachedStep: 1,
+                    shiftFullyAssigned: false,
                 }));
 
                 return;
@@ -294,11 +318,13 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 currentShiftTeamId,
                 maxReachedStep: maxReached,
                 currentStep,
+                shiftFullyAssigned: false,
             }));
         },
 
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
         setShiftExists: (shiftExists) => set(() => ({shiftExists})),
+        setShiftFullyAssigned: (shiftFullyAssigned) => set(() => ({shiftFullyAssigned})),
         requestReload: () => set((state) => ({reloadToken: state.reloadToken + 1})),
         setHydrated: () => set(() => ({isHydrated: true})),
     })),

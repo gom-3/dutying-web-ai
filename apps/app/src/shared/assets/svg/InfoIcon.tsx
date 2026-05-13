@@ -1,16 +1,18 @@
 import type {SVGProps} from 'react';
 
 const SvgInfoIcon = (props: SVGProps<SVGSVGElement>) => (
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 26 26" {...props}>
-        <g stroke="#93939D" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} clipPath="url(#info_icon_svg__a)">
-            <path d="M1.913 17.592a12 12 0 1 1 22.173-9.184 12 12 0 0 1-22.173 9.184ZM13 9.596h.012" />
-            <path d="M11.753 13.464h1.245v5.16h1.246" />
-        </g>
-        <defs>
-            <clipPath id="info_icon_svg__a">
-                <path fill="#fff" d="M0 0h26v26H0z" />
-            </clipPath>
-        </defs>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 26" fill="none" {...props}>
+        <circle
+            cx="13"
+            cy="13"
+            r="10.75"
+            fill="currentColor"
+            fillOpacity={0.22}
+            stroke="currentColor"
+            strokeWidth={2}
+        />
+        <circle cx="13" cy="9.6" r="1.35" fill="currentColor" />
+        <rect x="11.35" y="13.25" width="3.3" height="5.5" rx="1.65" fill="currentColor" />
     </svg>
 );
 

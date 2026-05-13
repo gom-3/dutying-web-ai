@@ -4,6 +4,7 @@ import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-edit
 import {type TDutyRuleMeta} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleKey} from '@/features/shift-editor/model/types';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {TooltipProvider} from '@/shared/ui/primitives/tooltip';
 import {ConstraintBucketList, ConstraintSection} from './constraints-sections';
 
 type TDragBucket = 'error' | 'warning';
@@ -78,50 +79,54 @@ export function Constraints() {
     const disabled = dutyValidationInput === null || board === null;
 
     return (
-        <DragDropContext onDragEnd={onDragEnd}>
-            <div id="make_constraints_step" className="make-shift-constraints w-full">
-                <ConstraintSection
-                    title={t('page.makeShift.constraints.section.strong')}
-                    countLabel={t('page.makeShift.constraints.count', {count: strongCount})}
-                    isOpen={open.error}
-                    onToggle={() => setOpen((state) => ({...state, error: !state.error}))}
-                    disabled={disabled}
-                    infoLabel={t('page.makeShift.constraints.info')}
-                >
-                    <ConstraintBucketList
-                        t={t}
-                        bucket="error"
-                        ruleKeys={board?.error ?? []}
-                        ruleViolationCount={ruleViolationCount}
-                        wardConstraint={wardConstraint}
-                        onUpdateRuleValue={updateRuleValue}
-                        onExcludeRule={(key) => excludeRule('error', key)}
-                        disabled={disabled}
-                    />
-                </ConstraintSection>
-
-                <div className="make-shift-constraints__section-spacer mt-[clamp(14px,1.6vw,24px)]">
+        <TooltipProvider delayDuration={200}>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <div id="make_constraints_step" className="make-shift-constraints w-full">
                     <ConstraintSection
-                        title={t('page.makeShift.constraints.section.weak')}
-                        countLabel={t('page.makeShift.constraints.count', {count: weakCount})}
-                        isOpen={open.warning}
-                        onToggle={() => setOpen((state) => ({...state, warning: !state.warning}))}
+                        title={t('page.makeShift.constraints.section.strong')}
+                        countLabel={t('page.makeShift.constraints.count', {count: strongCount})}
+                        isOpen={open.error}
+                        onToggle={() => setOpen((state) => ({...state, error: !state.error}))}
                         disabled={disabled}
                         infoLabel={t('page.makeShift.constraints.info')}
+                        infoTooltipAria={t('page.makeShift.constraints.infoTooltipAria')}
                     >
                         <ConstraintBucketList
                             t={t}
-                            bucket="warning"
-                            ruleKeys={board?.warning ?? []}
+                            bucket="error"
+                            ruleKeys={board?.error ?? []}
                             ruleViolationCount={ruleViolationCount}
                             wardConstraint={wardConstraint}
                             onUpdateRuleValue={updateRuleValue}
-                            onExcludeRule={(key) => excludeRule('warning', key)}
+                            onExcludeRule={(key) => excludeRule('error', key)}
                             disabled={disabled}
                         />
                     </ConstraintSection>
+
+                    <div className="make-shift-constraints__section-spacer mt-[clamp(14px,1.6vw,24px)]">
+                        <ConstraintSection
+                            title={t('page.makeShift.constraints.section.weak')}
+                            countLabel={t('page.makeShift.constraints.count', {count: weakCount})}
+                            isOpen={open.warning}
+                            onToggle={() => setOpen((state) => ({...state, warning: !state.warning}))}
+                            disabled={disabled}
+                            infoLabel={t('page.makeShift.constraints.info')}
+                            infoTooltipAria={t('page.makeShift.constraints.infoTooltipAria')}
+                        >
+                            <ConstraintBucketList
+                                t={t}
+                                bucket="warning"
+                                ruleKeys={board?.warning ?? []}
+                                ruleViolationCount={ruleViolationCount}
+                                wardConstraint={wardConstraint}
+                                onUpdateRuleValue={updateRuleValue}
+                                onExcludeRule={(key) => excludeRule('warning', key)}
+                                disabled={disabled}
+                            />
+                        </ConstraintSection>
+                    </div>
                 </div>
-            </div>
-        </DragDropContext>
+            </DragDropContext>
+        </TooltipProvider>
     );
 }

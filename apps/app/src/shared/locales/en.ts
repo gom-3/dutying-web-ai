@@ -5,7 +5,7 @@ export const en: TLocale = {
         state: {
             loadingTitle: 'Preparing the screen',
             loadingDescription: 'Please wait a moment.',
-            emptyDescription: 'Content will appear here once it becomes available.',
+            emptyDescription: 'Follow the on-screen guidance to continue.',
             errorDescription: 'Please try again shortly. If the issue continues, refresh and check again.',
             retry: 'Retry',
         },
@@ -83,6 +83,8 @@ export const en: TLocale = {
             overview: {
                 loading: 'Loading duty schedule...',
                 shiftExists: '{{teamName}} has a schedule for {{month}}.',
+                shiftPartialFill: "{{teamName}}'s {{month}} schedule still has empty slots.",
+                fullyAssignedCantStart: "This month's schedule is fully filled. You can't start the creation flow here.",
                 shiftEmpty: "{{teamName}}'s {{month}} schedule is empty.",
                 checking: 'Checking schedule status.',
                 error: 'Failed to check the schedule status.',
@@ -96,6 +98,7 @@ export const en: TLocale = {
             monthRangeDescription: 'On Dutying, you can only create schedules for this month and the next month.',
             requests: {
                 title: 'Please confirm requested shifts',
+                descriptionLine: 'Approved requests are fixed on the schedule.',
                 descriptionPrefix: 'Accepted requests are',
                 descriptionHighlight: 'locked into the schedule',
                 descriptionSuffix: '.',
@@ -135,6 +138,7 @@ export const en: TLocale = {
                     weak: 'Soft constraints',
                 },
                 info: 'You can drag to reorder by your preferred priority.',
+                infoTooltipAria: 'About constraint priority',
                 count: '{{count}}',
                 empty: 'No constraints to show.',
                 dragHandleAria: 'Drag to reorder',
@@ -177,6 +181,9 @@ export const en: TLocale = {
             },
             aiRefill: {
                 action: 'Refill with AI',
+                firstFill: 'Fill with AI',
+                toolbarTitle: 'Finish your schedule',
+                toolbarHint: 'AI can help you complete it more easily.',
                 retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',

@@ -1,11 +1,9 @@
-import {useCallback, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
-import {
-    docToWardShiftsDTO,
-    useShiftEditorCommands,
-    useShiftEditorStore,
-} from '@/features/shift-editor';
+import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {buildDutyPath} from '@/pages/duty/model/duty-navigation';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -23,6 +21,7 @@ import {AiAutofillToolbar} from './ai-autofill-toolbar';
  */
 export function AiAutofill() {
     const {t} = useTypedTranslation();
+    const navigate = useNavigate();
     const {
         state: {wardId},
     } = useAuth();
@@ -39,13 +38,14 @@ export function AiAutofill() {
     const [isWorking, setIsWorking] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
+    const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
     const {
         dutyQuery,
         editorRef,
         editorDoc: hydratedDoc,
         onKeyDown,
-        onPaste,
+        onPasteCapture,
         violationMap,
         focusEditor,
     } = useDutyEditorStep({onContextChanged: resetAiStatus});
@@ -54,11 +54,14 @@ export function AiAutofill() {
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
+    useEffect(() => {
+        setHasCompletedAiFill(false);
+    }, [wardId, currentShiftTeamId, year, month]);
+
     const calendarDoc = useMemo(
         () => (autoFillEnabled ? hydratedDoc : maskDutyDocNonFixedCells(hydratedDoc)),
         [autoFillEnabled, hydratedDoc],
     );
-
     const canConfirm =
         !isWorking &&
         !isAiGenerating &&
@@ -76,6 +79,7 @@ export function AiAutofill() {
 
             await WardAPI.updateShifts(wardId, dto);
             useCase.complete();
+            navigate(buildDutyPath({year, month, shiftTeamId: currentShiftTeamId}));
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'));
         } finally {
@@ -123,6 +127,7 @@ export function AiAutofill() {
 
             commands.applySchedule(result.response.schedule, 'ai');
             setAiStatus('success');
+            setHasCompletedAiFill(true);
         } finally {
             if (aiRequestSeqRef.current === requestSeq) {
                 setIsAiGenerating(false);
@@ -133,10 +138,10 @@ export function AiAutofill() {
     return (
         <div
             id="make_ai_autofill_step"
-            className="ai-autofill-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(16px,1.6vw,28px)] outline-none"
+            className="ai-autofill-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
             ref={editorRef}
             onKeyDown={onKeyDown}
-            onPaste={onPaste}
+            onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
             <AiAutofillToolbar
@@ -151,16 +156,13 @@ export function AiAutofill() {
                 onAiFill={handleAiFill}
                 isAiGenerating={isAiGenerating}
                 aiStatus={aiStatus}
+                hasCompletedAiFill={hasCompletedAiFill}
                 onConfirm={handleConfirm}
                 canConfirm={canConfirm}
             />
 
             {dutyQuery.isLoading && (
-                <PageState
-                    tone="loading"
-                    title={t('page.makeShift.aiRefill.loading')}
-                    description={t('page.state.loadingDescription')}
-                />
+                <PageState tone="loading" title={t('page.makeShift.aiRefill.loading')} description={t('page.state.loadingDescription')} />
             )}
             {dutyQuery.isError && (
                 <PageState

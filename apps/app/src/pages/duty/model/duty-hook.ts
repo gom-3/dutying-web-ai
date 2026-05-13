@@ -89,6 +89,12 @@ export function useDutyHook() {
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
     const queryShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
+
+    // URL 맥락(연·월·팀)으로 들어올 때마다 보기 전용. (다른 화면에서 수정 모드로 나갔다 와도 편집 모드가 유지되지 않게)
+    useEffect(() => {
+        setReadonly(true);
+    }, [wardId, queryYear, queryMonth, queryShiftTeamId, setReadonly]);
+
     const bootstrapStatus =
         !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'))
             ? 'pending'
@@ -106,7 +112,7 @@ export function useDutyHook() {
         refetchOnWindowFocus: false,
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
-    const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
+    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap});
     const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({
         month,
         shift,
@@ -307,7 +313,7 @@ export function useDutyHook() {
             exportExcel: handleExportExcel,
             retry: handleRetry,
             onKeyDown,
-            onPaste,
+            onPasteCapture,
         },
     };
 }

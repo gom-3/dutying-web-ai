@@ -114,7 +114,7 @@ function Toolbar({
             />
 
             <InfoIcon
-                className="h-6.5 w-6.5 cursor-pointer"
+                className="h-6.5 w-6.5 cursor-pointer text-sub-2.5"
                 onClick={() => {
                     setOpenInfo((prev) => !prev);
                     sendEvent(events.makePage.toolbar.openShiftInfoModal);

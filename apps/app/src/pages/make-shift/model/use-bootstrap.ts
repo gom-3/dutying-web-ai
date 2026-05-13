@@ -1,6 +1,10 @@
 import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
-import {useShiftEditorCommands} from '@/features/shift-editor';
+import {
+    isDutyShiftFullyAssigned,
+    isDutyShiftWithoutAssignments,
+    useShiftEditorCommands,
+} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {
     bumpMaxReachedStep,
@@ -28,6 +32,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
     const setShiftStatus = useMakeShiftStore((s) => s.setShiftStatus);
     const setShiftExists = useMakeShiftStore((s) => s.setShiftExists);
+    const setShiftFullyAssigned = useMakeShiftStore((s) => s.setShiftFullyAssigned);
     const setShiftTeams = useMakeShiftStore((s) => s.setShiftTeams);
     const setShiftTeamsStatus = useMakeShiftStore((s) => s.setShiftTeamsStatus);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
@@ -41,7 +46,10 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const isHydrated = useMakeShiftStore((s) => s.isHydrated);
     const setHydrated = useMakeShiftStore((s) => s.setHydrated);
     const startFromStep = useMakeShiftStore((s) => s.startFromStep);
+    const resetToOverview = useMakeShiftStore((s) => s.resetToOverview);
     const setWardId = useMakeShiftStore((s) => s.setWardId);
+    const phase = useMakeShiftStore((s) => s.phase);
+    const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const autoRestoreAttemptedRef = useRef(false);
 
     useEffect(() => {
@@ -123,6 +131,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
                 setShiftTeamsStatus('idle');
                 setShiftStatus('idle');
                 setShiftExists(false);
+                setShiftFullyAssigned(false);
                 setShiftTeams([]);
                 setCurrentShiftTeamId(null);
 
@@ -151,7 +160,16 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [reloadToken, setCurrentShiftTeamId, setShiftExists, setShiftStatus, setShiftTeams, setShiftTeamsStatus, wardId]);
+    }, [
+        reloadToken,
+        setCurrentShiftTeamId,
+        setShiftExists,
+        setShiftFullyAssigned,
+        setShiftStatus,
+        setShiftTeams,
+        setShiftTeamsStatus,
+        wardId,
+    ]);
 
     useEffect(() => {
         if (!wardId) return;
@@ -173,12 +191,14 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             if (!wardId || !currentShiftTeamId) {
                 setShiftStatus('idle');
                 setShiftExists(false);
+                setShiftFullyAssigned(false);
 
                 return;
             }
 
             setShiftStatus('pending');
             setShiftExists(false);
+            setShiftFullyAssigned(false);
 
             try {
                 const shift = await WardAPI.getShift(wardId, currentShiftTeamId, year, month);
@@ -186,9 +206,14 @@ export function useMakeShiftBootstrap(wardId: number | null) {
                 if (cancelled) return;
 
                 setShiftStatus('success');
-                setShiftExists(Boolean(shift));
+                // 근무표 존재: 최소 1칸 이상 배정이 있을 때만 true (`/duty`와 동일 — `isDutyShiftWithoutAssignments` 역).
+                setShiftExists(!isDutyShiftWithoutAssignments(shift));
+                setShiftFullyAssigned(isDutyShiftFullyAssigned(shift));
             } catch {
-                if (!cancelled) setShiftStatus('error');
+                if (!cancelled) {
+                    setShiftStatus('error');
+                    setShiftFullyAssigned(false);
+                }
             }
         };
 
@@ -197,7 +222,22 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [currentShiftTeamId, month, reloadToken, setShiftExists, setShiftStatus, wardId, year]);
+    }, [
+        currentShiftTeamId,
+        month,
+        reloadToken,
+        setShiftExists,
+        setShiftFullyAssigned,
+        setShiftStatus,
+        wardId,
+        year,
+    ]);
+
+    useEffect(() => {
+        if (shiftStatus !== 'success' || !shiftFullyAssigned || phase !== 'stepping') return;
+
+        resetToOverview();
+    }, [phase, resetToOverview, shiftFullyAssigned, shiftStatus]);
 
     useEffect(() => {
         let cancelled = false;

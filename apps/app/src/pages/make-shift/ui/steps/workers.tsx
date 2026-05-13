@@ -154,10 +154,7 @@ export function Workers() {
                     className="inline-flex items-center gap-[clamp(3px,0.35vw,6px)] font-apple text-[clamp(12px,1.05vw,17px)] font-semibold text-sub-2"
                     aria-label={t('page.makeShift.workers.totalCount', {count: workerCount})}
                 >
-                    <PersonIcon
-                        aria-hidden
-                        className="size-[clamp(14px,1.15vw,18px)] shrink-0 [&>g]:fill-current"
-                    />
+                    <PersonIcon aria-hidden className="size-[clamp(14px,1.15vw,18px)] shrink-0" />
                     <span className="tabular-nums">{workerCount}</span>
                 </span>
             </div>
@@ -170,7 +167,7 @@ export function Workers() {
                         description={t('page.makeShift.workers.emptyDescription')}
                         className="mt-[clamp(4px,0.5vw,10px)] min-h-[220px] border-solid"
                     />
-                ) : (
+                ) : currentShiftTeamId !== null ? (
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         <WorkersList
                             grouped={grouped}
@@ -179,7 +176,7 @@ export function Workers() {
                             skillConfig={skillConfig}
                         />
                     </DragDropContext>
-                )}
+                ) : null}
             </div>
         </div>
     );

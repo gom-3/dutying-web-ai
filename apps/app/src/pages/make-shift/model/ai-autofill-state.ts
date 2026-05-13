@@ -27,14 +27,17 @@ export function getAiAutofillStatusTone(status: TAiAutofillStatus): 'neutral' | 
     }
 }
 
-export function getAiAutofillActionLabel(status: TAiAutofillStatus): 'action' | 'retry' | 'generating' {
+export function getAiAutofillActionLabel(
+    status: TAiAutofillStatus,
+    hasCompletedAiFill: boolean,
+): 'action' | 'retry' | 'generating' | 'firstFill' {
     switch (status) {
         case 'loading':
             return 'generating';
         case 'error':
             return 'retry';
         default:
-            return 'action';
+            return hasCompletedAiFill ? 'action' : 'firstFill';
     }
 }
 

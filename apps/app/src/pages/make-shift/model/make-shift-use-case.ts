@@ -26,8 +26,15 @@ export function useMakeShiftUseCase() {
     }, []);
 
     const start = useCallback(() => {
-        const persisted = editor.getPersisted();
         const s = useMakeShiftStore.getState();
+
+        if (s.shiftStatus === 'success' && s.shiftFullyAssigned) {
+            showValidationFeedback(t('page.makeShift.overview.fullyAssignedCantStart'));
+
+            return;
+        }
+
+        const persisted = editor.getPersisted();
         const saved =
             s.wardId && s.currentShiftTeamId
                 ? loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) ?? loadPersistedStep()
@@ -35,7 +42,7 @@ export function useMakeShiftUseCase() {
         const step = saved ?? 1;
 
         startFromStep({step, openRestoreDraftModal: persisted !== null});
-    }, [editor, startFromStep]);
+    }, [editor, startFromStep, t]);
     const confirmRestoreDraft = useCallback(() => {
         const persisted = editor.getPersisted();
 

@@ -49,6 +49,30 @@ export function isDutyShiftWithoutAssignments(shift: TShift): boolean {
     return true;
 }
 
+/** 모든 근무자(worker) 행의 날짜별 칸이 비어 있지 않을 때 true (골격만 있는 응답 / 미배정 칸이 하나라도 있으면 false). */
+export function isDutyShiftFullyAssigned(shift: TShift): boolean {
+    if (!shift.days?.length) return false;
+
+    const dayCount = shift.days.length;
+    const divisions = shift.divisionShiftNurses ?? [];
+    let seenWorker = false;
+
+    for (const division of divisions) {
+        for (const row of division) {
+            if (!row.shiftNurse.isWorker) continue;
+
+            seenWorker = true;
+            const list = row.wardShiftList ?? [];
+
+            for (let j = 0; j < dayCount; j += 1) {
+                if (list[j] == null) return false;
+            }
+        }
+    }
+
+    return seenWorker;
+}
+
 export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc {
     const {idToType} = buildWardShiftTypeMaps(shift);
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));

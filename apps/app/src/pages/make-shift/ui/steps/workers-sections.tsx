@@ -169,9 +169,15 @@ function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
                                 <span className="font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">-</span>
                             )}
                         </div>
-                        <p className="make-shift-workers__row-memo text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
-                            {memo || '-'}
-                        </p>
+                        <div className="make-shift-workers__row-memo flex min-w-0 items-center justify-center">
+                            {memo ? (
+                                <p className="min-w-0 truncate text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
+                                    {memo}
+                                </p>
+                            ) : (
+                                <span className="text-[clamp(10px,0.85vw,14px)] font-normal text-gray-4">-</span>
+                            )}
+                        </div>
                     </div>
                 );
             }}

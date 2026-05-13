@@ -6,19 +6,18 @@ type TStepState = 'prev' | 'current' | 'next';
 
 const STEP_CIRCLE_BASE =
     'flex shrink-0 items-center justify-center rounded-full font-poppins font-medium leading-none size-[clamp(20px,1.6vw,26px)] text-[clamp(11px,0.85vw,14px)]';
-const STEP_LABEL_BASE =
-    'whitespace-nowrap font-apple leading-none text-[clamp(13px,1.05vw,18px)]';
+const STEP_LABEL_BASE = 'whitespace-nowrap font-apple text-[clamp(13px,1.05vw,18px)] leading-[1.05]';
 
 function StepCircle({state, step}: {state: TStepState; step: number}) {
     if (state === 'current') {
         return <div className={`${STEP_CIRCLE_BASE} bg-main-1 text-white`}>{step}</div>;
     }
 
-    /*
-     * 사진 기준: prev / next 모두 동일한 옅은 회색 배경 + 흰 숫자.
-     * 현재 단계(current)만 보라색으로 강조해서 시각적 위계를 단순화한다.
-     */
-    return <div className={`${STEP_CIRCLE_BASE} bg-gray-4 text-white`}>{step}</div>;
+    if (state === 'prev') {
+        return <div className={`${STEP_CIRCLE_BASE} bg-gray-4 text-white`}>{step}</div>;
+    }
+
+    return <div className={`${STEP_CIRCLE_BASE} border-[1.5px] border-current bg-transparent text-gray-3`}>{step}</div>;
 }
 
 export function MakeShiftStepper({
@@ -46,11 +45,10 @@ export function MakeShiftStepper({
              * - 컨테이너의 padding-y는 0으로 두고 각 step button이 직접 py-... 를 가져 button의 bottom = 분리선 위치가 되도록 한다.
              *   (그래야 button 내부의 absolute indicator를 -bottom-px 로 두는 것만으로 회색 분리선과 정확히 같은 줄에 겹쳐 그려진다.)
              */}
-            <div className="make-shift-stepper__list flex w-full flex-wrap items-stretch justify-around">
+            <div className="make-shift-stepper__list flex w-full flex-wrap items-center justify-around">
                 {([1, 2, 3, 4, 5] as const).map((step) => {
                     const clickable = step !== currentStep && step <= maxReachedStep;
-                    const state: TStepState =
-                        step < currentStep ? 'prev' : step === currentStep ? 'current' : 'next';
+                    const state: TStepState = step < currentStep ? 'prev' : step === currentStep ? 'current' : 'next';
 
                     return (
                         <button
@@ -59,13 +57,13 @@ export function MakeShiftStepper({
                             onClick={() => clickable && onClickStep(step)}
                             data-step={step}
                             data-step-state={state}
-                            className={`make-shift-stepper__step relative flex items-center gap-[clamp(6px,0.55vw,10px)] py-[clamp(12px,1.1vw,20px)] ${
+                            className={`make-shift-stepper__step relative flex items-center gap-[clamp(6px,0.55vw,10px)] py-[clamp(10px,0.95vw,18px)] ${
                                 clickable ? 'cursor-pointer' : 'cursor-default'
                             }`}
                         >
                             <StepCircle state={state} step={step} />
                             <span
-                                className={`make-shift-stepper__label ${STEP_LABEL_BASE} ${
+                                className={`make-shift-stepper__label flex items-center ${STEP_LABEL_BASE} ${
                                     state === 'current' ? 'font-semibold text-main-1' : 'font-medium text-gray-3'
                                 }`}
                             >
