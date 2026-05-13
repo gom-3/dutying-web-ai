@@ -167,16 +167,16 @@ export function Workers() {
                         description={t('page.makeShift.workers.emptyDescription')}
                         className="mt-[clamp(4px,0.5vw,10px)] min-h-[220px] border-solid"
                     />
-                ) : (
+                ) : currentShiftTeamId !== null ? (
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         <WorkersList
                             grouped={grouped}
-                            shiftTeamId={currentShiftTeamId!}
+                            shiftTeamId={currentShiftTeamId}
                             levelsByNurseId={levelsByNurseId}
                             skillConfig={skillConfig}
                         />
                     </DragDropContext>
-                )}
+                ) : null}
             </div>
         </div>
     );
