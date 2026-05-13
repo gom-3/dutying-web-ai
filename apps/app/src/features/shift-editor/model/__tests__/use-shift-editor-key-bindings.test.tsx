@@ -18,15 +18,20 @@ vi.mock('../use-shift-editor-commands', () => ({
     useShiftEditorCommands: () => commands,
 }));
 
-vi.mock('../store', () => ({
-    useShiftEditorStore: (selector: (state: {doc: {columns: string[]; rows: unknown[]}}) => unknown) =>
-        selector({
-            doc: {
-                columns: ['2026-03-01'],
-                rows: [{workerId: '1', cells: [null]}],
-            },
-        }),
-}));
+vi.mock('../store', () => {
+    const state = {
+        doc: {
+            columns: ['2026-03-01'],
+            rows: [{workerId: '1', cells: [null]}],
+        },
+        selection: {type: 'single' as const, anchor: {row: 0, col: 0}},
+    };
+    const useShiftEditorStore = (selector: (s: typeof state) => unknown) => selector(state);
+
+    return {
+        useShiftEditorStore: Object.assign(useShiftEditorStore, {getState: () => state}),
+    };
+});
 
 function createKeyboardEvent(
     key: string,
@@ -98,6 +103,16 @@ describe('useShiftEditorKeyBindings', () => {
         expect(commands.clearSelectionCells).toHaveBeenCalledTimes(1);
     });
 
+    it('moves the selection with Tab / Shift+Tab like spreadsheet column navigation', async () => {
+        const {result} = renderHook(() => useShiftEditorKeyBindings());
+
+        await result.current.onKeyDown(createKeyboardEvent('Tab'));
+        await result.current.onKeyDown(createKeyboardEvent('Tab', {shiftKey: true}));
+
+        expect(commands.moveSelection).toHaveBeenNthCalledWith(1, 'right', false, false);
+        expect(commands.moveSelection).toHaveBeenNthCalledWith(2, 'left', false, false);
+    });
+
     it('interprets Korean IME keys through the work key map', async () => {
         const {result} = renderHook(() =>
             useShiftEditorKeyBindings({
@@ -108,6 +123,7 @@ describe('useShiftEditorKeyBindings', () => {
         await result.current.onKeyDown(createKeyboardEvent('ㅇ'));
 
         expect(commands.setSelectionValue).toHaveBeenCalledWith('D');
+        expect(commands.moveSelection).toHaveBeenCalledWith('right', false, false);
     });
 
     it('copies and cuts selected cells through the clipboard API', async () => {
@@ -130,21 +146,18 @@ describe('useShiftEditorKeyBindings', () => {
         expect(commands.clearSelectionCells).toHaveBeenCalledTimes(1);
     });
 
-    it('pastes normalized TSV from both keydown and onPaste handlers', async () => {
+    it('pastes normalized TSV from onPasteCapture only (Ctrl+V does not use readText)', async () => {
         const {result} = renderHook(() => useShiftEditorKeyBindings());
 
         await result.current.onKeyDown(createKeyboardEvent('v', {ctrlKey: true}));
-        result.current.onPaste(createPasteEvent('A\tB\r\nC'));
 
-        expect(commands.paste).toHaveBeenNthCalledWith(1, {
-            width: 2,
-            height: 2,
-            cells: [
-                ['O', 'N'],
-                ['E', null],
-            ],
-        });
-        expect(commands.paste).toHaveBeenNthCalledWith(2, {
+        expect(commands.paste).not.toHaveBeenCalled();
+        expect(navigator.clipboard.readText).not.toHaveBeenCalled();
+
+        result.current.onPasteCapture(createPasteEvent('A\tB\r\nC'));
+
+        expect(commands.paste).toHaveBeenCalledTimes(1);
+        expect(commands.paste).toHaveBeenCalledWith({
             width: 2,
             height: 2,
             cells: [

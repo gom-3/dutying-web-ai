@@ -7,7 +7,7 @@ export function ShiftEditorGrid() {
     const selection = useShiftEditorStore((s) => s.selection);
     const violations = useShiftEditorStore((s) => s.violations);
     const commands = useShiftEditorCommands();
-    const {onKeyDown, onPaste} = useShiftEditorKeyBindings({
+    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({
         // TODO: 사용자별 주입 지점 (예: settings)
         workKeyMap: {d: 'D', e: 'E', n: 'N', o: 'O'},
     });
@@ -27,7 +27,7 @@ export function ShiftEditorGrid() {
     }, [selection]);
 
     return (
-        <div className="flex w-full flex-col gap-2 overflow-auto outline-none" tabIndex={0} onKeyDown={onKeyDown} onPaste={onPaste}>
+        <div className="flex w-full flex-col gap-2 overflow-auto outline-none" tabIndex={0} onKeyDown={onKeyDown} onPasteCapture={onPasteCapture}>
             <div className="flex items-center gap-2">
                 <button
                     className="h-9 rounded-lg bg-sub-5 px-3 font-apple text-sm text-sub-2.5"

@@ -106,7 +106,7 @@ export function useDutyHook() {
         refetchOnWindowFocus: false,
     });
     const workKeyMap = useMemo(() => buildWorkKeyMap(shift ?? undefined), [shift]);
-    const {onKeyDown, onPaste} = useShiftEditorKeyBindings({workKeyMap});
+    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap});
     const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({
         month,
         shift,
@@ -307,7 +307,7 @@ export function useDutyHook() {
             exportExcel: handleExportExcel,
             retry: handleRetry,
             onKeyDown,
-            onPaste,
+            onPasteCapture,
         },
     };
 }

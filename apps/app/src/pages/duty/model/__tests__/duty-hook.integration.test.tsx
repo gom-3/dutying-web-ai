@@ -34,7 +34,7 @@ vi.mock('@/features/shift-editor', async () => {
         ...actual,
         useShiftEditorKeyBindings: () => ({
             onKeyDown: vi.fn(),
-            onPaste: vi.fn(),
+            onPasteCapture: vi.fn(),
         }),
     };
 });

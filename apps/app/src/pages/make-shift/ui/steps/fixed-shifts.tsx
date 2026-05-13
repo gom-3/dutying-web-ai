@@ -47,7 +47,7 @@ export function FixedShifts() {
 
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPaste, focusEditor} = useDutyEditorStep();
+    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor} = useDutyEditorStep();
     const handleNext = useCallback(async () => {
         if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
 
@@ -98,7 +98,7 @@ export function FixedShifts() {
             className="fixed-shifts-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none"
             ref={editorRef}
             onKeyDown={onKeyDown}
-            onPaste={onPaste}
+            onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
             {/* 상단 툴바: 제목 + 액션 버튼 */}

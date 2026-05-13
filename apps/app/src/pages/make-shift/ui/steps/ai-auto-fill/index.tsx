@@ -42,7 +42,7 @@ export function AiAutofill() {
         editorRef,
         editorDoc: hydratedDoc,
         onKeyDown,
-        onPaste,
+        onPasteCapture,
         violationMap,
         focusEditor,
     } = useDutyEditorStep({onContextChanged: resetAiStatus});
@@ -137,7 +137,7 @@ export function AiAutofill() {
             className="ai-autofill-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
             ref={editorRef}
             onKeyDown={onKeyDown}
-            onPaste={onPaste}
+            onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
             <AiAutofillToolbar

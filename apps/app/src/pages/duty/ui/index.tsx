@@ -174,7 +174,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                 className="mt-6 w-full min-w-0 flex-1 outline-none"
                                 tabIndex={0}
                                 onKeyDown={state.readonly ? undefined : handlers.onKeyDown}
-                                onPaste={state.readonly ? undefined : handlers.onPaste}
+                                onPasteCapture={state.readonly ? undefined : handlers.onPasteCapture}
                             >
                                 <MakeShiftCalendar
                                     shift={state.shift}

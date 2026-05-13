@@ -122,7 +122,7 @@ vi.mock('@/features/shift-editor', async (importOriginal) => {
                 }
             },
         }),
-        useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPaste: vi.fn()}),
+        useShiftEditorKeyBindings: () => ({onKeyDown: vi.fn(), onPasteCapture: vi.fn()}),
         useShiftEditorStore: (selector: (state: typeof mockEditorState) => unknown) => selector(mockEditorState),
     };
 });

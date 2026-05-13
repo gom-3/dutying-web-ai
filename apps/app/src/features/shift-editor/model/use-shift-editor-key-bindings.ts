@@ -57,13 +57,16 @@ function tsvToPayload(text: string): TClipboardPayload {
         .replace(/\r/g, '')
         .split('\n')
         .filter((x) => x.length > 0)
-        .map((x) => x.split('\t'));
+        .map((line) => line.split('\t').map((cell) => cell.trim()));
     const height = rows.length;
     const width = Math.max(0, ...rows.map((r) => r.length));
     const cells = rows.map((r) => {
         const row: (string | null)[] = [];
 
-        for (let i = 0; i < width; i++) row.push(r[i] ? r[i]! : null);
+        for (let i = 0; i < width; i++) {
+            const raw = r[i];
+            row.push(raw !== undefined && raw !== '' ? raw : null);
+        }
 
         return row;
     });
@@ -101,6 +104,14 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
             const key = normalizeKey(native.key);
             const dir = toDirection(native.key);
             const mod = isMetaOrCtrl(native);
+
+            // Tab: 엑셀처럼 오른쪽 셀(Shift+Tab은 왼쪽)
+            if (native.key === 'Tab') {
+                e.preventDefault();
+                commands.moveSelection(native.shiftKey ? 'left' : 'right', false, false);
+
+                return;
+            }
 
             // 방향키 이동 / Shift+방향키 범위 / Ctrl(Cmd)+방향키 끝까지
             if (dir) {
@@ -143,11 +154,13 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
                 return;
             }
 
-            // clipboard (기본: Ctrl/Cmd + X/C/V)
-            const isClipboardKey = key === 'c' || key === 'x' || key === 'v';
+            // clipboard: 복사/잘라내기만 키다운에서 처리. 붙여넣기는 onPaste(clipboardData)만 사용한다.
+            // (readText는 권한/HTTP 컨텍스트에 따라 실패해 일부 칸만 반영되는 증상이 난다.)
             const allowPlain = allowUnmodifiedClipboardShortcuts && !native.altKey && !native.shiftKey && !mod;
+            const usePlainCopyCut = allowPlain && (key === 'c' || key === 'x');
+            const useModCopyCut = mod && (key === 'c' || key === 'x');
 
-            if ((mod && isClipboardKey) || allowPlain) {
+            if (useModCopyCut || usePlainCopyCut) {
                 if (key === 'c') {
                     e.preventDefault();
 
@@ -185,21 +198,11 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
 
                     return;
                 }
+            }
 
-                if (key === 'v') {
-                    e.preventDefault();
-
-                    try {
-                        const text = await navigator.clipboard.readText();
-                        const payload = tsvToPayload(text);
-
-                        commands.paste(payload);
-                    } catch {
-                        // ignore
-                    }
-
-                    return;
-                }
+            if (allowPlain && key === 'v') {
+                // 수정 없이 v만 허용할 때는 붙여넣기를 onPaste에 맡김
+                return;
             }
 
             // 사용자 근무 키 입력 (modifier 없이)
@@ -208,7 +211,14 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
 
                 if (value !== undefined) {
                     e.preventDefault();
+                    const selBefore = useShiftEditorStore.getState().selection;
+
                     commands.setSelectionValue(value);
+
+                    // 단일 셀: 엑셀처럼 입력 후 오른쪽 칸으로 이동
+                    if (selBefore?.type === 'single') {
+                        commands.moveSelection('right', false, false);
+                    }
                 }
             }
 
@@ -229,5 +239,8 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
         [commands],
     );
 
-    return {onKeyDown, onPaste};
+    /** 포커스가 에디터 자식(일자 셀 버튼 등)에 있어도 먼저 가로채기 위해 컨테이너에 연결한다. */
+    const onPasteCapture = onPaste;
+
+    return {onKeyDown, onPaste, onPasteCapture};
 }

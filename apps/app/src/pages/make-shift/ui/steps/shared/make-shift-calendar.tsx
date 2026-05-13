@@ -597,6 +597,7 @@ function CalendarRowLeft({
                             <button
                                 key={j}
                                 type="button"
+                                tabIndex={-1}
                                 data-day-index={j}
                                 data-selected={isSelected || undefined}
                                 data-violation-rule={cellViolation?.ruleId}
