@@ -149,13 +149,6 @@ export const MakeShiftPageView = () => {
                         </div>
                     ) : (
                         <>
-                            {hasAssignedCells && (
-                                <div className="flex flex-wrap items-center justify-end gap-3 border-b border-gray-6 px-6 py-3 2xl:px-10">
-                                    <ManagementActionButton variant="secondary" size="md" onClick={handleGoDuty}>
-                                        {t('page.makeShift.overview.viewShift', {month})}
-                                    </ManagementActionButton>
-                                </div>
-                            )}
                             {/*
                              * Stepper는 흰 카드 폭 전체에 직접 배치한다 (분리선이 카드 좌우 가장자리까지 닿게).
                              * 좌우 콘텐츠 패딩은 stepper 내부의 step list(`px-[clamp(...)]`)와 아래 step content에만 적용한다.
