@@ -1,9 +1,9 @@
 import {useNavigate} from 'react-router';
-import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isDutyViewingThisCalendarMonth, isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import {buildDutyPath} from '@/pages/duty/model/duty-navigation';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -32,17 +32,12 @@ export const MakeShiftPageView = () => {
     const canOfferCreateFollowingMonth = isDutyViewingThisCalendarMonth(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    /** `useMakeShiftBootstrap`: 실제 배정 1칸 이상일 때만 true (`isDutyShiftWithoutAssignments`와 동일 기준). */
     const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
     const handleGoDuty = () => {
-        const params = new URLSearchParams({
-            year: String(year),
-            month: String(month),
-            shiftTeamId: String(currentShiftTeamId ?? ''),
-        });
-
-        navigate(`${ROUTE.DUTY}?${params.toString()}`);
+        navigate(buildDutyPath({year, month, shiftTeamId: currentShiftTeamId}));
     };
     const handleCreateCurrentMonth = () => {
         useCase.start();
@@ -135,6 +130,13 @@ export const MakeShiftPageView = () => {
                         </div>
                     ) : (
                         <>
+                            {hasCurrentMonthShift && (
+                                <div className="flex flex-wrap items-center justify-end gap-3 border-b border-gray-6 px-6 py-3 2xl:px-10">
+                                    <ManagementActionButton variant="secondary" size="md" onClick={handleGoDuty}>
+                                        {t('page.makeShift.overview.viewShift', {month})}
+                                    </ManagementActionButton>
+                                </div>
+                            )}
                             {/*
                              * Stepper는 흰 카드 폭 전체에 직접 배치한다 (분리선이 카드 좌우 가장자리까지 닿게).
                              * 좌우 콘텐츠 패딩은 stepper 내부의 step list(`px-[clamp(...)]`)와 아래 step content에만 적용한다.

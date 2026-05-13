@@ -1,6 +1,6 @@
 import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
-import {useShiftEditorCommands} from '@/features/shift-editor';
+import {isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {
     bumpMaxReachedStep,
@@ -186,7 +186,8 @@ export function useMakeShiftBootstrap(wardId: number | null) {
                 if (cancelled) return;
 
                 setShiftStatus('success');
-                setShiftExists(Boolean(shift));
+                // 근무표 존재: 최소 1칸 이상 배정이 있을 때만 true (`/duty`와 동일 — `isDutyShiftWithoutAssignments` 역).
+                setShiftExists(!isDutyShiftWithoutAssignments(shift));
             } catch {
                 if (!cancelled) setShiftStatus('error');
             }
