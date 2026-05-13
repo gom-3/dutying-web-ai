@@ -65,7 +65,6 @@ export function RequestsShifts() {
                         <PageState
                             tone="empty"
                             title={t('page.makeShift.requests.empty')}
-                            description={t('page.state.emptyDescription')}
                         />
                     )}
                 </div>

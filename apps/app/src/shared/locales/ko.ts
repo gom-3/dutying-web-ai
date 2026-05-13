@@ -3,7 +3,7 @@ export const ko = {
         state: {
             loadingTitle: '화면을 준비하고 있어요',
             loadingDescription: '잠시만 기다려 주세요.',
-            emptyDescription: '조건이 충족되면 여기에 내용이 표시됩니다.',
+            emptyDescription: '화면 안내에 따라 진행해 주세요.',
             errorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
             retry: '다시 시도',
         },
@@ -79,6 +79,8 @@ export const ko = {
             overview: {
                 loading: '근무표를 불러오는 중입니다...',
                 shiftExists: '{{teamName}}의 {{month}}월 근무표가 존재합니다.',
+                shiftPartialFill: '{{teamName}}의 {{month}}월 근무표에 빈 칸이 남아 있어요',
+                fullyAssignedCantStart: '이번 달 근무표가 모두 채워져 있어 여기서는 만들기를 진행할 수 없어요.',
                 shiftEmpty: '{{teamName}}의 {{month}}월 근무표가 비어있어요',
                 checking: '근무표 상태를 확인 중입니다.',
                 error: '근무표 상태를 확인하지 못했어요.',

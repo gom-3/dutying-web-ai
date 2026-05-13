@@ -20,6 +20,7 @@ export const MakeShiftPageView = () => {
     const year = useMakeShiftStore((s) => s.year);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
+    const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
@@ -32,8 +33,9 @@ export const MakeShiftPageView = () => {
     const canOfferCreateFollowingMonth = isDutyViewingThisCalendarMonth(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
-    /** `useMakeShiftBootstrap`: 실제 배정 1칸 이상일 때만 true (`isDutyShiftWithoutAssignments`와 동일 기준). */
-    const hasCurrentMonthShift = shiftStatus === 'success' && shiftExists;
+    /** 배정 1칸 이상 (`isDutyShiftWithoutAssignments` 역). 전부 채움은 `shiftFullyAssigned`. */
+    const hasAssignedCells = shiftStatus === 'success' && shiftExists;
+    const isMakeFlowBlocked = shiftStatus === 'success' && shiftFullyAssigned;
     const nextMonth = month === 12 ? 1 : month + 1;
     const nextYear = month === 12 ? year + 1 : year;
     const handleGoDuty = () => {
@@ -90,11 +92,10 @@ export const MakeShiftPageView = () => {
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
                                     className="py-0"
                                 />
-                            ) : hasCurrentMonthShift ? (
+                            ) : isMakeFlowBlocked ? (
                                 <PageState
                                     tone="empty"
                                     title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
-                                    description={t('page.state.emptyDescription')}
                                     className="py-0"
                                 >
                                     <div className="mt-1 flex flex-wrap justify-center gap-4">
@@ -108,11 +109,29 @@ export const MakeShiftPageView = () => {
                                         )}
                                     </div>
                                 </PageState>
+                            ) : hasAssignedCells ? (
+                                <PageState
+                                    tone="empty"
+                                    title={t('page.makeShift.overview.shiftPartialFill', {teamName: currentShiftTeamName, month})}
+                                    className="py-0"
+                                >
+                                    <div className="mt-1 flex flex-wrap justify-center gap-4">
+                                        <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
+                                            {t('page.makeShift.overview.viewShift', {month})}
+                                        </ManagementActionButton>
+                                        <ManagementActionButton
+                                            size="lg"
+                                            onClick={handleCreateCurrentMonth}
+                                            disabled={currentShiftTeamId === null}
+                                        >
+                                            {t('page.makeShift.overview.createShift', {month})}
+                                        </ManagementActionButton>
+                                    </div>
+                                </PageState>
                             ) : (
                                 <PageState
                                     tone="empty"
                                     title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
-                                    description={t('page.state.emptyDescription')}
                                     className="py-0"
                                 >
                                     <div className="mt-1 flex justify-center">
@@ -130,7 +149,7 @@ export const MakeShiftPageView = () => {
                         </div>
                     ) : (
                         <>
-                            {hasCurrentMonthShift && (
+                            {hasAssignedCells && (
                                 <div className="flex flex-wrap items-center justify-end gap-3 border-b border-gray-6 px-6 py-3 2xl:px-10">
                                     <ManagementActionButton variant="secondary" size="md" onClick={handleGoDuty}>
                                         {t('page.makeShift.overview.viewShift', {month})}

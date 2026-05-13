@@ -5,7 +5,7 @@ export const en: TLocale = {
         state: {
             loadingTitle: 'Preparing the screen',
             loadingDescription: 'Please wait a moment.',
-            emptyDescription: 'Content will appear here once it becomes available.',
+            emptyDescription: 'Follow the on-screen guidance to continue.',
             errorDescription: 'Please try again shortly. If the issue continues, refresh and check again.',
             retry: 'Retry',
         },
@@ -83,6 +83,8 @@ export const en: TLocale = {
             overview: {
                 loading: 'Loading duty schedule...',
                 shiftExists: '{{teamName}} has a schedule for {{month}}.',
+                shiftPartialFill: "{{teamName}}'s {{month}} schedule still has empty slots.",
+                fullyAssignedCantStart: "This month's schedule is fully filled. You can't start the creation flow here.",
                 shiftEmpty: "{{teamName}}'s {{month}} schedule is empty.",
                 checking: 'Checking schedule status.',
                 error: 'Failed to check the schedule status.',

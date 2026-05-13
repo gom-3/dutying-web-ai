@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
-import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, isDutyShiftWithoutAssignments, shiftToDoc} from '../shift-adapter';
+import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, shiftToDoc} from '../shift-adapter';
 
 function createShift(): TShift {
     return {
@@ -108,6 +108,31 @@ describe('shift-adapter', () => {
         };
 
         expect(isDutyShiftWithoutAssignments(onlyNullCells)).toBe(true);
+    });
+
+    it('detects fully assigned worker grids', () => {
+        expect(isDutyShiftFullyAssigned(createShift())).toBe(false);
+
+        const full: TShift = {
+            ...createShift(),
+            divisionShiftNurses: [
+                [
+                    {
+                        ...createShift().divisionShiftNurses[0]![0]!,
+                        wardShiftList: [10, 20],
+                    },
+                ],
+            ],
+        };
+
+        expect(isDutyShiftFullyAssigned(full)).toBe(true);
+
+        const noWorkers: TShift = {
+            ...createShift(),
+            divisionShiftNurses: [[]],
+        };
+
+        expect(isDutyShiftFullyAssigned(noWorkers)).toBe(false);
     });
 
     it('converts only worker rows into editor doc', () => {

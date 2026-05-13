@@ -74,6 +74,8 @@ export type TMakeShiftStore = {
     // overview status (MVP)
     shiftStatus: TShiftStatus;
     shiftExists: boolean;
+    /** 근무자 칸이 모두 채워진 상태(만들기 플로 진입 불가). */
+    shiftFullyAssigned: boolean;
     reloadToken: number;
 
     // actions (no business logic beyond state transitions)
@@ -95,6 +97,7 @@ export type TMakeShiftStore = {
 
     setShiftStatus: (status: TShiftStatus) => void;
     setShiftExists: (exists: boolean) => void;
+    setShiftFullyAssigned: (fully: boolean) => void;
     requestReload: () => void;
     setHydrated: () => void;
 };
@@ -129,6 +132,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         shiftStatus: 'idle',
         shiftExists: false,
+        shiftFullyAssigned: false,
         reloadToken: 0,
 
         setWardId: (wardId) => {
@@ -141,7 +145,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         },
 
         startFromStep: ({step, openRestoreDraftModal}) => {
-            const {wardId, currentShiftTeamId, year, month} = get();
+            const {wardId, currentShiftTeamId, year, month, shiftFullyAssigned, shiftStatus} = get();
+
+            if (shiftStatus === 'success' && shiftFullyAssigned) return;
 
             set(() => ({
                 phase: 'stepping',
@@ -222,6 +228,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 year,
                 month: nextMonth,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nextMonth),
+                shiftFullyAssigned: false,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nextMonth);
@@ -237,6 +244,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     year: ny,
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
+                    shiftFullyAssigned: false,
                     ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
@@ -249,6 +257,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
+                shiftFullyAssigned: false,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
@@ -264,6 +273,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     year: ny,
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
+                    shiftFullyAssigned: false,
                     ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
@@ -276,6 +286,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
+                shiftFullyAssigned: false,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
@@ -289,6 +300,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 set(() => ({
                     currentShiftTeamId,
                     maxReachedStep: 1,
+                    shiftFullyAssigned: false,
                 }));
 
                 return;
@@ -306,11 +318,13 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 currentShiftTeamId,
                 maxReachedStep: maxReached,
                 currentStep,
+                shiftFullyAssigned: false,
             }));
         },
 
         setShiftStatus: (shiftStatus) => set(() => ({shiftStatus})),
         setShiftExists: (shiftExists) => set(() => ({shiftExists})),
+        setShiftFullyAssigned: (shiftFullyAssigned) => set(() => ({shiftFullyAssigned})),
         requestReload: () => set((state) => ({reloadToken: state.reloadToken + 1})),
         setHydrated: () => set(() => ({isHydrated: true})),
     })),
