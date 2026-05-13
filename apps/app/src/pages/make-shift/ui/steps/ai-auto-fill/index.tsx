@@ -1,7 +1,9 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {buildDutyPath} from '@/pages/duty/model/duty-navigation';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -19,6 +21,7 @@ import {AiAutofillToolbar} from './ai-autofill-toolbar';
  */
 export function AiAutofill() {
     const {t} = useTypedTranslation();
+    const navigate = useNavigate();
     const {
         state: {wardId},
     } = useAuth();
@@ -76,6 +79,7 @@ export function AiAutofill() {
 
             await WardAPI.updateShifts(wardId, dto);
             useCase.complete();
+            navigate(buildDutyPath({year, month, shiftTeamId: currentShiftTeamId}));
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'));
         } finally {
