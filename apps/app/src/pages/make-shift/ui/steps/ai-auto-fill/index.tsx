@@ -96,6 +96,10 @@ export function AiAutofill() {
         setIsAiGenerating(true);
         setAiStatus('loading');
 
+        const progressToastId = 'make-shift-ai-fill-progress';
+
+        toast.loading(t('page.makeShift.aiRefill.progressToast'), {id: progressToastId});
+
         try {
             const result = await requestAiSchedule({
                 shiftTeamId: requestContext.shiftTeamId,
@@ -129,6 +133,8 @@ export function AiAutofill() {
             setAiStatus('success');
             setHasCompletedAiFill(true);
         } finally {
+            toast.dismiss(progressToastId);
+
             if (aiRequestSeqRef.current === requestSeq) {
                 setIsAiGenerating(false);
             }

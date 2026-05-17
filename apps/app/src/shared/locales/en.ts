@@ -186,6 +186,7 @@ export const en: TLocale = {
                 toolbarHint: 'AI can help you complete it more easily.',
                 retry: 'Retry AI fill',
                 generating: 'Filling with AI...',
+                progressToast: 'AI fill in progress',
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',
                 loading: 'Loading the duty schedule',
                 error: 'Failed to load the duty schedule',
