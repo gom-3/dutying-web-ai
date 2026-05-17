@@ -115,11 +115,11 @@ export function DutyManagementMonthTeamHeader({
                                 onClick={() => onSelectShiftTeam(team.shiftTeamId)}
                                 disabled={disabled}
                                 className={cn(
-                                    'flex h-[32px] items-center justify-center rounded-[10px] px-[16px] py-[6px] transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                    'box-border grid h-[32px] min-h-[32px] max-h-[32px] place-items-center rounded-[10px] px-[16px] py-0 font-apple text-[14px] leading-none font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                                     selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
                                 )}
                             >
-                                <p className="font-apple text-base leading-normal font-medium">{team.name}</p>
+                                <span className="block leading-none">{team.name}</span>
                             </button>
                         );
                     })}
