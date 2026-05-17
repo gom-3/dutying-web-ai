@@ -4,10 +4,10 @@ import {ChevronDown, Minus} from 'lucide-react';
 import {type ReactNode} from 'react';
 import {type TDutyRuleMeta, DUTY_RULE_META} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleKey} from '@/features/shift-editor/model/types';
-import {InfoIcon, SixDotsIcon} from '@/shared/assets/svg';
+import {SixDotsIcon} from '@/shared/assets/svg';
 import {type useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Select from '@/shared/ui/form-controls/Select';
-import {Tooltip, TooltipContent, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
+import {ConstraintSectionInfo} from './constraints-section-info';
 
 type TActiveBucket = 'error' | 'warning';
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
@@ -78,25 +78,7 @@ export function ConstraintSection({
                         >
                             <div aria-hidden className="w-full" />
                             <div className="flex min-w-0 justify-end">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            className="make-shift-constraints__section-info-trigger text-sub-3 outline-none transition-colors hover:text-gray-4 focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
-                                            aria-label={infoTooltipAria}
-                                        >
-                                            <InfoIcon className="size-[clamp(13px,1.12vw,19px)] shrink-0" />
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent
-                                        side="top"
-                                        align="start"
-                                        sideOffset={6}
-                                        className="max-w-none whitespace-nowrap border border-gray-5 bg-white px-[clamp(10px,0.9vw,14px)] py-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(11px,0.95vw,14px)] leading-none font-medium text-sub-1 shadow-md"
-                                    >
-                                        {infoLabel}
-                                    </TooltipContent>
-                                </Tooltip>
+                                <ConstraintSectionInfo label={infoLabel} ariaLabel={infoTooltipAria} />
                             </div>
                         </div>
                     ) : null}
@@ -241,12 +223,13 @@ export function ConstraintBucketList({
                                                     <button
                                                         type="button"
                                                         aria-label={t('page.makeShift.constraints.excludeRuleAria')}
-                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] grid size-[clamp(18px,1.55vw,26px)] shrink-0 place-items-center rounded-full border border-gray-5 bg-white text-gray-4 transition-colors hover:border-gray-4 hover:bg-gray-7 hover:text-gray-3 disabled:opacity-40"
+                                                        title={t('page.makeShift.constraints.excludeRuleAria')}
+                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] grid size-[clamp(13px,1.15vw,18px)] shrink-0 place-items-center rounded-full border border-gray-5 bg-white text-gray-4 transition-colors hover:border-gray-4 hover:bg-gray-7 hover:text-gray-3 disabled:opacity-40"
                                                         disabled={disabled}
                                                         onClick={() => onExcludeRule(key)}
                                                     >
                                                         <Minus
-                                                            className="size-[clamp(10px,0.82vw,14px)] shrink-0 stroke-[1.85]"
+                                                            className="size-[clamp(7px,0.65vw,10px)] shrink-0 stroke-[1.85]"
                                                             aria-hidden
                                                         />
                                                     </button>
