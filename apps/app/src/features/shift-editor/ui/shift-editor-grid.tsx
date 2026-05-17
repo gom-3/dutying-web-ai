@@ -30,28 +30,28 @@ export function ShiftEditorGrid() {
         <div className="flex w-full flex-col gap-2 overflow-auto outline-none" tabIndex={0} onKeyDown={onKeyDown} onPasteCapture={onPasteCapture}>
             <div className="flex items-center gap-2">
                 <button
-                    className="h-9 rounded-lg bg-sub-5 px-3 font-apple text-sm text-sub-2.5"
+                    className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-sub-2.5"
                     onClick={() => commands.undo()}
                     type="button"
                 >
                     Undo
                 </button>
                 <button
-                    className="h-9 rounded-lg bg-sub-5 px-3 font-apple text-sm text-sub-2.5"
+                    className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-sub-2.5"
                     onClick={() => commands.redo()}
                     type="button"
                 >
                     Redo
                 </button>
                 <button
-                    className="h-9 rounded-lg bg-main-2 px-3 font-apple text-sm text-white"
+                    className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-white"
                     onClick={() => commands.setSelectionValue('D')}
                     type="button"
                 >
                     선택에 D 입력
                 </button>
                 <button
-                    className="h-9 rounded-lg bg-sub-5 px-3 font-apple text-sm text-sub-2.5"
+                    className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-sub-2.5"
                     onClick={() => commands.clearSelectionCells()}
                     type="button"
                 >

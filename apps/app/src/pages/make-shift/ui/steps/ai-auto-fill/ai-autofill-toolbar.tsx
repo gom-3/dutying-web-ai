@@ -106,9 +106,9 @@ export function AiAutofillToolbar({
                     disabled={isAiGenerating}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill',
-                        'flex shrink-0 items-center gap-[clamp(4px,0.4vw,8px)] rounded-[12px] px-[clamp(12px,1vw,18px)]',
-                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] font-semibold whitespace-nowrap text-white',
-                        'disabled:opacity-60',
+                        'box-border inline-flex shrink-0 cursor-pointer items-center justify-center gap-[clamp(4px,0.4vw,8px)] rounded-[12px] px-[clamp(12px,1vw,18px)] py-0',
+                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] leading-none font-semibold whitespace-nowrap text-white',
+                        'disabled:cursor-not-allowed disabled:opacity-60',
                     )}
                     style={{backgroundImage: 'linear-gradient(105deg, #B53DFA 0%, #663DFA 100%)'}}
                 >
@@ -122,9 +122,9 @@ export function AiAutofillToolbar({
                     disabled={!canConfirm}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--confirm',
-                        'flex shrink-0 items-center justify-center rounded-[12px] bg-[#0A0F15] px-[clamp(14px,1.1vw,20px)]',
-                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] font-semibold whitespace-nowrap text-white',
-                        'disabled:opacity-50',
+                        'box-border inline-flex shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-[#0A0F15] px-[clamp(14px,1.1vw,20px)] py-0',
+                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] leading-none font-semibold whitespace-nowrap text-white',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
                     )}
                 >
                     {t('page.makeShift.aiRefill.confirm')}
@@ -150,8 +150,8 @@ function ToggleChip({
             type="button"
             onClick={onClick}
             className={cn(
-                'flex shrink-0 cursor-pointer items-center gap-[clamp(3px,0.35vw,6px)] rounded-[6px] border whitespace-nowrap',
-                'h-[clamp(20px,1.7vw,26px)] px-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(9px,0.72vw,12px)]',
+                'box-border inline-flex shrink-0 cursor-pointer items-center justify-center gap-[clamp(3px,0.35vw,6px)] rounded-[6px] border whitespace-nowrap',
+                'h-[clamp(20px,1.7vw,26px)] px-[clamp(6px,0.55vw,10px)] py-0 font-apple text-[clamp(9px,0.72vw,12px)] leading-none',
                 active ? 'border-gray-5 bg-white text-sub-2' : 'border-gray-5 bg-gray-6 text-sub-2.5 opacity-90',
                 className,
             )}
