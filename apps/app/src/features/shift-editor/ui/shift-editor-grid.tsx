@@ -1,11 +1,11 @@
 import {useMemo} from 'react';
-import {useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '../model';
+import {useScheduleDisplayViolations, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '../model';
 import {normalizeSelection} from '../model/selection';
 
 export function ShiftEditorGrid() {
     const doc = useShiftEditorStore((s) => s.doc);
     const selection = useShiftEditorStore((s) => s.selection);
-    const violations = useShiftEditorStore((s) => s.llmViolations);
+    const violations = useScheduleDisplayViolations();
     const commands = useShiftEditorCommands();
     const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({
         // TODO: 사용자별 주입 지점 (예: settings)

@@ -8,7 +8,6 @@ import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
-import {aiValidationToViolations} from '../../../model/ai-validation-to-violations';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
@@ -132,7 +131,7 @@ export function AiAutofill() {
             }
 
             commands.applySchedule(result.response.schedule, 'ai');
-            commands.setLlmViolations(aiValidationToViolations(result.response.validation, useShiftEditorStore.getState().doc));
+            commands.setScheduleValidationFromApi(result.response.validation, result.response.generation_id);
             setAiStatus('success');
             setHasCompletedAiFill(true);
         } finally {

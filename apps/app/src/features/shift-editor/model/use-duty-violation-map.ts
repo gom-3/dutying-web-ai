@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {mergeServerScheduleViolations} from './merge-schedule-violations';
-import {useShiftEditorStore} from './store';
+import {useScheduleDisplayViolations} from './use-schedule-display-violations';
 import type {TDutyDoc, TViolation} from './types';
 import {buildViolationMapAll} from './validator';
 
@@ -15,10 +15,10 @@ export type TScheduleViolationView = {
  * - team: division 일자 열 전체 span (별도 오버레이)
  */
 export function useViolationMap(doc: TDutyDoc): TScheduleViolationView {
-    const llmViolations = useShiftEditorStore((s) => s.llmViolations);
+    const displayViolations = useScheduleDisplayViolations(doc);
 
     return useMemo(() => {
-        const all = mergeServerScheduleViolations(llmViolations);
+        const all = mergeServerScheduleViolations(displayViolations);
         const teamViolations = all.filter((violation) => violation.scope === 'team');
         const nurseViolations = all.filter((violation) => violation.scope !== 'team');
 
@@ -26,5 +26,5 @@ export function useViolationMap(doc: TDutyDoc): TScheduleViolationView {
             violationMap: buildViolationMapAll(nurseViolations, doc),
             teamViolations,
         };
-    }, [llmViolations, doc]);
+    }, [displayViolations, doc]);
 }

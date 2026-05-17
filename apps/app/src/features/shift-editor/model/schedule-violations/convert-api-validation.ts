@@ -1,5 +1,5 @@
 import type {TAiConstraintViolation, TAiValidation} from '@dutying/api/ward';
-import type {TCellPos, TDutyDoc, TViolation} from '@/features/shift-editor';
+import type {TCellPos, TDutyDoc, TViolation} from '../types';
 
 function formatViolationMessage(item: TAiConstraintViolation): string {
     const title = item.title?.trim();
@@ -53,6 +53,7 @@ function toViolation(
     item: TAiConstraintViolation,
     level: TViolation['level'],
     cells: TCellPos[],
+    scope: TViolation['scope'],
 ): TViolation | null {
     if (cells.length === 0) return null;
 
@@ -61,7 +62,7 @@ function toViolation(
         message: formatViolationMessage(item),
         level,
         cells,
-        scope: 'nurse',
+        scope,
     };
 }
 
@@ -78,20 +79,19 @@ function violationFromApiItem(doc: TDutyDoc, item: TAiConstraintViolation, level
         if (row === null) return [];
 
         const cells = dayRangeToCells(row, range.startDay, range.endDay, doc.columns.length);
-        const violation = toViolation(item, level, cells);
+        const violation = toViolation(item, level, cells, 'nurse');
 
         return violation ? [violation] : [];
     }
 
     const cells = dayRangeToCells(0, range.startDay, range.endDay, doc.columns.length);
-    const violation = toViolation(item, level, cells);
+    const violation = toViolation(item, level, cells, 'team');
 
-    if (!violation) return [];
-
-    return [{...violation, scope: 'team'}];
+    return violation ? [violation] : [];
 }
 
-export function aiValidationToViolations(validation: TAiValidation, doc: TDutyDoc): TViolation[] {
+/** API validation → 캘린더 표시용 TViolation[] (현재 doc 행/열에 맞춰 매핑) */
+export function violationsFromApiValidation(validation: TAiValidation, doc: TDutyDoc): TViolation[] {
     const hard = validation.hard_constraints_violated.flatMap((item) => violationFromApiItem(doc, item, 'error'));
     const soft = validation.soft_constraints_violated.flatMap((item) => violationFromApiItem(doc, item, 'warning'));
 

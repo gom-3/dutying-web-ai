@@ -2,7 +2,7 @@ import {useState} from 'react';
 import {twMerge} from 'tailwind-merge';
 import {events, sendEvent} from '@/analytics';
 import {type TShift} from '@/entities';
-import {useShiftEditorStore} from '@/features/shift-editor/model';
+import {useScheduleDisplayViolations, useShiftEditorStore} from '@/features/shift-editor/model';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IPanelProps {
@@ -38,7 +38,7 @@ function getHistoryLabel(
  */
 function Panel({shift, readonly = false}: IPanelProps) {
     const {t} = useTypedTranslation();
-    const violations = useShiftEditorStore((s) => s.llmViolations);
+    const violations = useScheduleDisplayViolations();
     const history = useShiftEditorStore((s) => s.history);
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');

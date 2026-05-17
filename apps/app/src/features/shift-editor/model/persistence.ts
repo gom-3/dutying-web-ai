@@ -1,3 +1,5 @@
+import {migratePersistedViolations} from './schedule-violations';
+import type {TScheduleViolationPersisted} from './schedule-violations';
 import type {TDutyDoc, THistoryState, TPersisted} from './types';
 
 export type TDraftSaveStatus = 'idle' | 'saving' | 'saved';
@@ -5,8 +7,8 @@ export type TDraftSaveStatus = 'idle' | 'saving' | 'saved';
 export type TShiftEditorPersistence = {
     readonly storageKey: string;
     saveDebounceMs: number;
-    save: (doc: TDutyDoc, history: THistoryState) => void;
-    saveImmediate: (doc: TDutyDoc, history: THistoryState) => void;
+    save: (doc: TDutyDoc, history: THistoryState, scheduleViolations?: TScheduleViolationPersisted) => void;
+    saveImmediate: (doc: TDutyDoc, history: THistoryState, scheduleViolations?: TScheduleViolationPersisted) => void;
     load: () => TPersisted | null;
     clear: () => void;
     setStorageKey: (key: string) => void;
@@ -25,6 +27,8 @@ function deserializeHistory(raw: string): THistoryState | null {
     }
 }
 
+const emptyScheduleViolations: TScheduleViolationPersisted = {validationSnapshot: null};
+
 export function createShiftEditorPersistence(opts: {
     storageKey: string;
     saveDebounceMs?: number;
@@ -34,16 +38,17 @@ export function createShiftEditorPersistence(opts: {
 
     let currentKey = opts.storageKey;
     let timer: number | null = null;
-    let pending: {doc: TDutyDoc; history: THistoryState; key: string} | null = null;
+    let pending: {doc: TDutyDoc; history: THistoryState; scheduleViolations: TScheduleViolationPersisted; key: string} | null = null;
 
     const emitStatus = (status: TDraftSaveStatus) => {
         onStatusChange?.(status);
     };
 
-    const saveNow = (doc: TDutyDoc, history: THistoryState, key: string) => {
+    const saveNow = (doc: TDutyDoc, history: THistoryState, scheduleViolations: TScheduleViolationPersisted, key: string) => {
         const persisted: TPersisted = {
             doc,
             history: serializeHistory(history),
+            scheduleViolations,
             savedAt: Date.now(),
         };
 
@@ -61,7 +66,7 @@ export function createShiftEditorPersistence(opts: {
         cancelTimer();
 
         if (pending) {
-            saveNow(pending.doc, pending.history, pending.key);
+            saveNow(pending.doc, pending.history, pending.scheduleViolations, pending.key);
             pending = null;
             emitStatus('saved');
         }
@@ -72,23 +77,23 @@ export function createShiftEditorPersistence(opts: {
             return currentKey;
         },
         saveDebounceMs,
-        save: (doc, history) => {
-            pending = {doc, history, key: currentKey};
+        save: (doc, history, scheduleViolations = emptyScheduleViolations) => {
+            pending = {doc, history, scheduleViolations, key: currentKey};
             cancelTimer();
             emitStatus('saving');
 
             timer = window.setTimeout(() => {
-                if (pending) saveNow(pending.doc, pending.history, pending.key);
+                if (pending) saveNow(pending.doc, pending.history, pending.scheduleViolations, pending.key);
 
                 pending = null;
                 timer = null;
                 emitStatus('saved');
             }, saveDebounceMs);
         },
-        saveImmediate: (doc, history) => {
+        saveImmediate: (doc, history, scheduleViolations = emptyScheduleViolations) => {
             cancelTimer();
             pending = null;
-            saveNow(doc, history, currentKey);
+            saveNow(doc, history, scheduleViolations, currentKey);
             emitStatus('saved');
         },
         load: () => {
@@ -109,6 +114,8 @@ export function createShiftEditorPersistence(opts: {
 
                 if (!parsed.doc || typeof parsed.doc !== 'object') return null;
 
+                const scheduleViolations = migratePersistedViolations(parsed);
+
                 return {
                     ...parsed,
                     doc: {
@@ -116,6 +123,7 @@ export function createShiftEditorPersistence(opts: {
                         fixedCells: parsed.doc.fixedCells ?? {},
                         requestCells: parsed.doc.requestCells ?? {},
                     },
+                    scheduleViolations,
                 };
             } catch {
                 return null;

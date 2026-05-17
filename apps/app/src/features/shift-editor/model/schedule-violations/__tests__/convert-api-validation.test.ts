@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import type {TAiValidation} from '@dutying/api/ward';
-import {aiValidationToViolations} from '../ai-validation-to-violations';
-import type {TDutyDoc} from '@/features/shift-editor';
+import type {TDutyDoc} from '../../types';
+import {violationsFromApiValidation} from '../convert-api-validation';
 
 const doc: TDutyDoc = {
     columns: Array.from({length: 5}, (_, i) => `2026-05-0${i + 1}`),
@@ -17,7 +17,7 @@ const doc: TDutyDoc = {
     requestCells: {},
 };
 
-describe('aiValidationToViolations', () => {
+describe('violationsFromApiValidation', () => {
     it('maps nurse-specific soft violations to warning level with nurse row', () => {
         const validation: TAiValidation = {
             valid: false,
@@ -35,7 +35,7 @@ describe('aiValidationToViolations', () => {
             warnings: [],
         };
 
-        const violations = aiValidationToViolations(validation, doc);
+        const violations = violationsFromApiValidation(validation, doc);
 
         expect(violations).toEqual([
             {
@@ -69,7 +69,7 @@ describe('aiValidationToViolations', () => {
             warnings: [],
         };
 
-        const violations = aiValidationToViolations(validation, doc);
+        const violations = violationsFromApiValidation(validation, doc);
 
         expect(violations).toHaveLength(1);
         expect(violations[0]).toMatchObject({

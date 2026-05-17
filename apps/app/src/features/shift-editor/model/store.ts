@@ -1,5 +1,6 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
+import type {TScheduleValidationSnapshot} from './schedule-violations';
 import type {TDutyDoc, TDutyRuleBoard, TDutyValidationInput, THistoryState, TSelection, TViolation} from './types';
 
 export type TEditorMode = 'normal' | 'fixed';
@@ -8,8 +9,10 @@ export type TShiftEditorStore = {
     // state (data only)
     doc: TDutyDoc;
     selection: TSelection | null;
-    /** LLM generate API `validation`에서 변환한 위반. 수동 편집 시 비운다. */
-    llmViolations: TViolation[];
+    /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
+    scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
+    /** 구 드래프트 호환: snapshot 없을 때만 사용 */
+    legacyDisplayViolations: TViolation[];
     history: THistoryState;
     dutyValidationInput: TDutyValidationInput | null;
     dutyRuleBoard: TDutyRuleBoard | null;
@@ -18,7 +21,8 @@ export type TShiftEditorStore = {
     // primitive setters (no business rules here)
     setDoc: (doc: TDutyDoc) => void;
     setSelection: (selection: TSelection | null) => void;
-    setLlmViolations: (violations: TViolation[]) => void;
+    setScheduleValidationSnapshot: (snapshot: TScheduleValidationSnapshot | null) => void;
+    setLegacyDisplayViolations: (violations: TViolation[]) => void;
     setHistory: (history: THistoryState) => void;
     setDutyValidationInput: (input: TDutyValidationInput | null) => void;
     setDutyRuleBoard: (board: TDutyRuleBoard | null) => void;
@@ -34,7 +38,8 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
     devtools((set) => ({
         doc: emptyDoc,
         selection: null,
-        llmViolations: [],
+        scheduleValidationSnapshot: null,
+        legacyDisplayViolations: [],
         history: initialHistory,
         dutyValidationInput: null,
         dutyRuleBoard: null,
@@ -42,7 +47,8 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
 
         setDoc: (doc) => set(() => ({doc})),
         setSelection: (selection) => set(() => ({selection})),
-        setLlmViolations: (llmViolations) => set(() => ({llmViolations})),
+        setScheduleValidationSnapshot: (scheduleValidationSnapshot) => set(() => ({scheduleValidationSnapshot})),
+        setLegacyDisplayViolations: (legacyDisplayViolations) => set(() => ({legacyDisplayViolations})),
         setHistory: (history) => set(() => ({history})),
         setDutyValidationInput: (dutyValidationInput) => set(() => ({dutyValidationInput})),
         setDutyRuleBoard: (dutyRuleBoard) => set(() => ({dutyRuleBoard})),
@@ -54,7 +60,8 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
             set(() => ({
                 doc: emptyDoc,
                 selection: null,
-                llmViolations: [],
+                scheduleValidationSnapshot: null,
+                legacyDisplayViolations: [],
                 history: {past: [], future: [], maxDepth},
                 dutyValidationInput: null,
                 dutyRuleBoard: null,

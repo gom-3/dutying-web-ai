@@ -1,3 +1,4 @@
+import type {TAiValidation} from '@dutying/api/ward';
 import toast from 'react-hot-toast';
 import {type TWardConstraint} from '@/entities';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -6,6 +7,12 @@ import {useShiftEditorDraftStatusStore} from './draft-status-store';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
+import {
+    createScheduleValidationSnapshot,
+    migratePersistedViolations,
+    toScheduleViolationPersisted,
+    type TScheduleViolationPersisted,
+} from './schedule-violations';
 import {getCellsInSelection, makeSelectAllSelection, moveSelection as moveSelectionModel, moveSelectionToEdge} from './selection';
 import {useShiftEditorStore} from './store';
 import type {
@@ -36,10 +43,6 @@ export function getShiftEditorDraftStorageKey(ctx: {wardId: number; shiftTeamId:
     return `${DEFAULT_STORAGE_KEY}:${ctx.wardId}:${ctx.shiftTeamId}:${ctx.year}:${ctx.month}`;
 }
 
-function clearLlmViolationsUnlessAi(source: TTxSource, setLlmViolations: (violations: TViolation[]) => void) {
-    if (source !== 'ai') setLlmViolations([]);
-}
-
 function invertOps(ops: TOperation[]): TOperation[] {
     return ops
         .slice()
@@ -54,12 +57,19 @@ function pushHistory(history: THistoryState, entry: THistoryEntry): THistoryStat
     return {past: trimmedPast, future: [], maxDepth: history.maxDepth};
 }
 
-function persistDoc(doc: TDutyDoc, history: THistoryState) {
-    persistence.save(doc, history);
+function scheduleViolationsFromState(state: {
+    scheduleValidationSnapshot: ReturnType<typeof useShiftEditorStore.getState>['scheduleValidationSnapshot'];
+    legacyDisplayViolations: TViolation[];
+}): TScheduleViolationPersisted {
+    return toScheduleViolationPersisted(state.scheduleValidationSnapshot, state.legacyDisplayViolations);
 }
 
-function persistDocImmediate(doc: TDutyDoc, history: THistoryState) {
-    persistence.saveImmediate(doc, history);
+function persistDoc(doc: TDutyDoc, history: THistoryState, scheduleViolations: TScheduleViolationPersisted) {
+    persistence.save(doc, history, scheduleViolations);
+}
+
+function persistDocImmediate(doc: TDutyDoc, history: THistoryState, scheduleViolations: TScheduleViolationPersisted) {
+    persistence.saveImmediate(doc, history, scheduleViolations);
 }
 
 /**
@@ -93,7 +103,8 @@ export function useShiftEditorCommands() {
     const setDoc = useShiftEditorStore((s) => s.setDoc);
     const setHistory = useShiftEditorStore((s) => s.setHistory);
     const setSelection = useShiftEditorStore((s) => s.setSelection);
-    const setLlmViolations = useShiftEditorStore((s) => s.setLlmViolations);
+    const setScheduleValidationSnapshot = useShiftEditorStore((s) => s.setScheduleValidationSnapshot);
+    const setLegacyDisplayViolations = useShiftEditorStore((s) => s.setLegacyDisplayViolations);
     const reset = useShiftEditorStore((s) => s.reset);
     const getState = () => useShiftEditorStore.getState();
     const notifyFixedLocked = () => toast.error(t('page.makeShift.fixedShifts.lockedToast'));
@@ -157,16 +168,15 @@ export function useShiftEditorCommands() {
         const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
 
         setDoc(nextDoc);
-        clearLlmViolationsUnlessAi(source, setLlmViolations);
 
         if (editorMode !== 'fixed') {
             const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
             const nextHistory = pushHistory(history, entry);
 
             setHistory(nextHistory);
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         } else {
-            persistDocImmediate(nextDoc, history);
+            persistDocImmediate(nextDoc, history, scheduleViolationsFromState(getState()));
         }
     };
     const cmdSetSelectionValue = (value: TCellValue, source?: TTxSource) => {
@@ -194,7 +204,9 @@ export function useShiftEditorCommands() {
             setDoc(doc);
             setSelection(null);
             setHistory(nextHistory);
-            persistDoc(doc, nextHistory);
+            setScheduleValidationSnapshot(null);
+            setLegacyDisplayViolations([]);
+            persistDoc(doc, nextHistory, {validationSnapshot: null});
         },
         getPersisted: (): TPersisted | null => persistence.load(),
         hydrate: (persisted: TPersisted) => {
@@ -213,6 +225,11 @@ export function useShiftEditorCommands() {
             setDoc(persisted.doc);
             setSelection(null);
             setHistory(appliedHistory);
+            const scheduleViolations =
+                persisted.scheduleViolations ?? migratePersistedViolations(persisted);
+
+            setScheduleValidationSnapshot(scheduleViolations.validationSnapshot);
+            setLegacyDisplayViolations(scheduleViolations.legacyDisplayViolations ?? []);
         },
         discardPersisted: () => persistence.clear(),
         setPersistenceKey: (key: string) => persistence.setStorageKey(key),
@@ -220,7 +237,18 @@ export function useShiftEditorCommands() {
         persistImmediate: () => {
             const {doc, history} = getState();
 
-            persistDocImmediate(doc, history);
+            persistDocImmediate(doc, history, scheduleViolationsFromState(getState()));
+        },
+        /** AI generate 등 서버 validation 스냅샷 저장 — 표시는 현재 doc 기준으로 재변환 */
+        setScheduleValidationFromApi: (validation: TAiValidation, generationId?: number) => {
+            const snapshot = createScheduleValidationSnapshot(validation, generationId);
+
+            setScheduleValidationSnapshot(snapshot);
+            setLegacyDisplayViolations([]);
+
+            const {doc, history} = getState();
+
+            persistDocImmediate(doc, history, {validationSnapshot: snapshot});
         },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
             const {doc} = getState();
@@ -321,9 +349,8 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         applySchedule: (schedule: Record<string, TCellValue[]>, source: TTxSource = 'ai') => {
             const {doc, history, dutyValidationInput, selection} = getState();
@@ -367,11 +394,9 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
-        setLlmViolations,
         reorderRowsByName: (source: TTxSource = 'user') => {
             const {doc, history, dutyValidationInput, selection} = getState();
 
@@ -399,9 +424,8 @@ export function useShiftEditorCommands() {
             setDoc(nextDoc);
             setSelection(null);
             setHistory(nextHistory);
-            setLlmViolations([]);
 
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         copy: (): TClipboardPayload | null => {
             const {doc, selection} = getState();
@@ -499,16 +523,15 @@ export function useShiftEditorCommands() {
             const nextDoc = applyOperation(doc, op);
 
             setDoc(nextDoc);
-            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
             if (editorMode !== 'fixed') {
                 const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
                 const nextHistory = pushHistory(history, entry);
 
                 setHistory(nextHistory);
-                persistDoc(nextDoc, nextHistory);
+                persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
             } else {
-                persistDocImmediate(nextDoc, history);
+                persistDocImmediate(nextDoc, history, scheduleViolationsFromState(getState()));
             }
         },
         undo: () => {
@@ -526,10 +549,9 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setLlmViolations([]);
             setSelection(entry.selectionBefore ?? selection);
 
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         redo: () => {
             const {doc, history, dutyValidationInput, selection} = getState();
@@ -548,10 +570,9 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setLlmViolations([]);
             setSelection(entry.selectionAfter ?? selection);
 
-            persistDoc(nextDoc, nextHistory);
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
     };
 }
