@@ -190,3 +190,27 @@ export function buildViolationMap(violations: TViolation[], doc: TDutyDoc): Map<
 
     return map;
 }
+
+/**
+ * 서버 validation 위반을 모두 캘린더에 표시한다.
+ * key: `${workerId},${startCol},${ruleId}` — 시작 셀·ruleId 조합마다 하나씩.
+ */
+export function buildViolationMapAll(violations: TViolation[], doc: TDutyDoc): Map<string, TViolation> {
+    const map = new Map<string, TViolation>();
+
+    for (const v of violations) {
+        if (v.scope === 'team') continue;
+
+        const startCell = v.cells[0];
+
+        if (!startCell) continue;
+
+        const workerId = doc.rows[startCell.row]?.workerId;
+
+        if (!workerId) continue;
+
+        map.set(`${workerId},${startCell.col},${v.ruleId}`, v);
+    }
+
+    return map;
+}

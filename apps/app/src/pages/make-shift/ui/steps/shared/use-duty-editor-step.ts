@@ -90,7 +90,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     const editorRef = useRef<HTMLDivElement>(null);
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
     const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap});
-    const violationMap = useViolationMap(editorDoc);
+    const {violationMap, teamViolations} = useViolationMap(editorDoc);
     const hydratedContextKeyRef = useRef<string | null>(null);
     const initialHydrationDoneRef = useRef(false);
     const lastHydratedDutyDataRef = useRef<typeof dutyQuery.data | null>(null);
@@ -188,6 +188,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         onKeyDown,
         onPasteCapture,
         violationMap,
+        teamViolations,
         focusEditor,
     };
 }

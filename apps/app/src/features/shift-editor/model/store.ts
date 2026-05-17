@@ -8,7 +8,8 @@ export type TShiftEditorStore = {
     // state (data only)
     doc: TDutyDoc;
     selection: TSelection | null;
-    violations: TViolation[];
+    /** LLM generate API `validation`에서 변환한 위반. 수동 편집 시 비운다. */
+    llmViolations: TViolation[];
     history: THistoryState;
     dutyValidationInput: TDutyValidationInput | null;
     dutyRuleBoard: TDutyRuleBoard | null;
@@ -17,7 +18,7 @@ export type TShiftEditorStore = {
     // primitive setters (no business rules here)
     setDoc: (doc: TDutyDoc) => void;
     setSelection: (selection: TSelection | null) => void;
-    setViolations: (violations: TViolation[]) => void;
+    setLlmViolations: (violations: TViolation[]) => void;
     setHistory: (history: THistoryState) => void;
     setDutyValidationInput: (input: TDutyValidationInput | null) => void;
     setDutyRuleBoard: (board: TDutyRuleBoard | null) => void;
@@ -33,7 +34,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
     devtools((set) => ({
         doc: emptyDoc,
         selection: null,
-        violations: [],
+        llmViolations: [],
         history: initialHistory,
         dutyValidationInput: null,
         dutyRuleBoard: null,
@@ -41,7 +42,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
 
         setDoc: (doc) => set(() => ({doc})),
         setSelection: (selection) => set(() => ({selection})),
-        setViolations: (violations) => set(() => ({violations})),
+        setLlmViolations: (llmViolations) => set(() => ({llmViolations})),
         setHistory: (history) => set(() => ({history})),
         setDutyValidationInput: (dutyValidationInput) => set(() => ({dutyValidationInput})),
         setDutyRuleBoard: (dutyRuleBoard) => set(() => ({dutyRuleBoard})),
@@ -53,7 +54,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
             set(() => ({
                 doc: emptyDoc,
                 selection: null,
-                violations: [],
+                llmViolations: [],
                 history: {past: [], future: [], maxDepth},
                 dutyValidationInput: null,
                 dutyRuleBoard: null,

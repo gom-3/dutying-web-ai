@@ -70,11 +70,15 @@ export type TTransaction<Op> = {
     timestamp: number;
 };
 
+export type TViolationScope = 'nurse' | 'team';
+
 export type TViolation = {
     ruleId: string;
     message: string;
     cells: TCellPos[];
     level: 'warning' | 'error';
+    /** team: division 일자 열 전체. nurse(기본): 해당 간호사 행만 */
+    scope?: TViolationScope;
 };
 
 export type TDutyRuleLevel = TViolation['level'];

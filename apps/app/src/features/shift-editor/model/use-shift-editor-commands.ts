@@ -24,8 +24,6 @@ import type {
     TTxSource,
     TViolation,
 } from './types';
-import {createDutyValidator} from './validator';
-
 const DEFAULT_STORAGE_KEY = 'shift-editor:draft';
 const DRAFT_SAVE_DEBOUNCE_MS = 1500;
 const persistence = createShiftEditorPersistence({
@@ -38,12 +36,8 @@ export function getShiftEditorDraftStorageKey(ctx: {wardId: number; shiftTeamId:
     return `${DEFAULT_STORAGE_KEY}:${ctx.wardId}:${ctx.shiftTeamId}:${ctx.year}:${ctx.month}`;
 }
 
-function computeViolations(doc: TDutyDoc, input: TDutyValidationInput | null): TViolation[] {
-    if (!input) return [];
-
-    const validator = createDutyValidator(input);
-
-    return validator(doc as never) as TViolation[];
+function clearLlmViolationsUnlessAi(source: TTxSource, setLlmViolations: (violations: TViolation[]) => void) {
+    if (source !== 'ai') setLlmViolations([]);
 }
 
 function invertOps(ops: TOperation[]): TOperation[] {
@@ -99,7 +93,7 @@ export function useShiftEditorCommands() {
     const setDoc = useShiftEditorStore((s) => s.setDoc);
     const setHistory = useShiftEditorStore((s) => s.setHistory);
     const setSelection = useShiftEditorStore((s) => s.setSelection);
-    const setViolations = useShiftEditorStore((s) => s.setViolations);
+    const setLlmViolations = useShiftEditorStore((s) => s.setLlmViolations);
     const reset = useShiftEditorStore((s) => s.reset);
     const getState = () => useShiftEditorStore.getState();
     const notifyFixedLocked = () => toast.error(t('page.makeShift.fixedShifts.lockedToast'));
@@ -163,7 +157,7 @@ export function useShiftEditorCommands() {
         const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
 
         setDoc(nextDoc);
-        setViolations(computeViolations(nextDoc, dutyValidationInput));
+        clearLlmViolationsUnlessAi(source, setLlmViolations);
 
         if (editorMode !== 'fixed') {
             const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
@@ -200,8 +194,6 @@ export function useShiftEditorCommands() {
             setDoc(doc);
             setSelection(null);
             setHistory(nextHistory);
-            setViolations(computeViolations(doc, dutyValidationInput));
-
             persistDoc(doc, nextHistory);
         },
         getPersisted: (): TPersisted | null => persistence.load(),
@@ -221,7 +213,6 @@ export function useShiftEditorCommands() {
             setDoc(persisted.doc);
             setSelection(null);
             setHistory(appliedHistory);
-            setViolations(computeViolations(persisted.doc, dutyValidationInput));
         },
         discardPersisted: () => persistence.clear(),
         setPersistenceKey: (key: string) => persistence.setStorageKey(key),
@@ -235,7 +226,6 @@ export function useShiftEditorCommands() {
             const {doc} = getState();
 
             setDutyValidationInput(input);
-            setViolations(computeViolations(doc, input));
 
             // constraints board는 input을 기반으로 UI에서 드래그/편집하기 쉽도록 별도로 유지한다.
             // - 기존 board가 없을 때만 초기화 (사용자가 이미 정렬/제외를 바꾼 경우 유지)
@@ -263,7 +253,6 @@ export function useShiftEditorCommands() {
             const {doc} = getState();
 
             setDutyValidationInput(nextInput);
-            setViolations(computeViolations(doc, nextInput));
         },
         setWardConstraint: (wardConstraint: TWardConstraint) => {
             const {dutyValidationInput, doc} = getState();
@@ -276,7 +265,6 @@ export function useShiftEditorCommands() {
             };
 
             setDutyValidationInput(nextInput);
-            setViolations(computeViolations(doc, nextInput));
         },
         select: (cell: TCellPos) => setSelection({type: 'single', anchor: cell}),
         clearSelection: () => setSelection(null),
@@ -333,7 +321,7 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
             persistDoc(nextDoc, nextHistory);
         },
@@ -379,10 +367,11 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
             persistDoc(nextDoc, nextHistory);
         },
+        setLlmViolations,
         reorderRowsByName: (source: TTxSource = 'user') => {
             const {doc, history, dutyValidationInput, selection} = getState();
 
@@ -410,7 +399,7 @@ export function useShiftEditorCommands() {
             setDoc(nextDoc);
             setSelection(null);
             setHistory(nextHistory);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            setLlmViolations([]);
 
             persistDoc(nextDoc, nextHistory);
         },
@@ -510,7 +499,7 @@ export function useShiftEditorCommands() {
             const nextDoc = applyOperation(doc, op);
 
             setDoc(nextDoc);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            clearLlmViolationsUnlessAi(source, setLlmViolations);
 
             if (editorMode !== 'fixed') {
                 const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
@@ -537,7 +526,7 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            setLlmViolations([]);
             setSelection(entry.selectionBefore ?? selection);
 
             persistDoc(nextDoc, nextHistory);
@@ -559,7 +548,7 @@ export function useShiftEditorCommands() {
 
             setDoc(nextDoc);
             setHistory(nextHistory);
-            setViolations(computeViolations(nextDoc, dutyValidationInput));
+            setLlmViolations([]);
             setSelection(entry.selectionAfter ?? selection);
 
             persistDoc(nextDoc, nextHistory);

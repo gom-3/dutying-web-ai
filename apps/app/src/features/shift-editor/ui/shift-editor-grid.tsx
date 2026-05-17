@@ -5,7 +5,7 @@ import {normalizeSelection} from '../model/selection';
 export function ShiftEditorGrid() {
     const doc = useShiftEditorStore((s) => s.doc);
     const selection = useShiftEditorStore((s) => s.selection);
-    const violations = useShiftEditorStore((s) => s.violations);
+    const violations = useShiftEditorStore((s) => s.llmViolations);
     const commands = useShiftEditorCommands();
     const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({
         // TODO: 사용자별 주입 지점 (예: settings)

@@ -24,28 +24,35 @@ export type TShiftResponse = TShift;
 export type TRequestShiftResponse = TRequestShift;
 export type TDutyRequestResponse = TDutyRequest;
 
-export type TAiHardConstraintViolation = {
-    severity: 'HARD';
-    constraint: string;
-    rule: string;
-    date: string;
-    shift: string;
-    required: number;
-    actual: number;
+export type TAiConstraintViolationPeriod = {
+    start_day: number;
+    end_day: number;
+    start_date?: string;
+    end_date?: string;
+    label?: string;
 };
 
-export type TAiSoftConstraintViolation = {
-    severity: 'SOFT';
-    constraint: string;
-    rule: string;
-    nurse_id: string;
-    night_count: number;
+/** LLM generate API `validation.*_constraints_violated` 항목 (dev/prod 공통 확장 필드) */
+export type TAiConstraintViolation = {
+    id: string;
+    type?: string;
+    severity: 'HARD' | 'SOFT';
+    constraint?: string;
+    title?: string;
+    message: string;
+    rule?: string;
+    nurse_id?: string | null;
+    nurse_name?: string | null;
+    shift?: string;
+    period?: TAiConstraintViolationPeriod;
+    affected_days?: number[];
+    detected_day?: number;
 };
 
 export type TAiValidation = {
     valid: boolean;
-    hard_constraints_violated: TAiHardConstraintViolation[];
-    soft_constraints_violated: TAiSoftConstraintViolation[];
+    hard_constraints_violated: TAiConstraintViolation[];
+    soft_constraints_violated: TAiConstraintViolation[];
     warnings: string[];
 };
 

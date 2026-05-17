@@ -38,7 +38,7 @@ function getHistoryLabel(
  */
 function Panel({shift, readonly = false}: IPanelProps) {
     const {t} = useTypedTranslation();
-    const violations = useShiftEditorStore((s) => s.violations);
+    const violations = useShiftEditorStore((s) => s.llmViolations);
     const history = useShiftEditorStore((s) => s.history);
     const [open, setOpen] = useState(false);
     const [currentTab, setCurrentTab] = useState('histories');

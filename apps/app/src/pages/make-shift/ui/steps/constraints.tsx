@@ -14,15 +14,8 @@ export function Constraints() {
     const editor = useShiftEditorCommands();
     const dutyValidationInput = useShiftEditorStore((s) => s.dutyValidationInput);
     const board = useShiftEditorStore((s) => s.dutyRuleBoard);
-    const violations = useShiftEditorStore((s) => s.violations);
     const [open, setOpen] = useState<{error: boolean; warning: boolean}>({error: false, warning: true});
-    const ruleViolationCount = useMemo(() => {
-        const map = new Map<string, number>();
-
-        for (const v of violations) map.set(v.ruleId, (map.get(v.ruleId) ?? 0) + 1);
-
-        return map;
-    }, [violations]);
+    const ruleViolationCount = useMemo(() => new Map<string, number>(), []);
     const onDragEnd = (result: DropResult) => {
         if (!board) return;
 
