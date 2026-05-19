@@ -38,5 +38,9 @@ export function isOnboardingWardCreatePreviewAllowed(): boolean {
     if (override === 'true') return true;
     if (override === 'false') return false;
 
-    return import.meta.env.DEV || isNonProductionAppDomain();
+    const hostname = getAppHostname();
+
+    if (hostname && PRODUCTION_APP_HOSTS.has(hostname)) return false;
+
+    return import.meta.env.DEV || isNonProductionAppDomain(hostname ?? '');
 }
