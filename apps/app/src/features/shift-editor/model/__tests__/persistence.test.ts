@@ -1,6 +1,8 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {createScheduleValidationSnapshot} from '../schedule-violations';
 import {createShiftEditorPersistence} from '../persistence';
-import {type TDutyDoc, type THistoryState} from '../types';
+import {type TDutyDoc, type THistoryState, type TViolation} from '../types';
+import type {TAiValidation} from '@dutying/api/ward';
 
 const storageKey = 'shift-editor:draft:test';
 const mockDoc: TDutyDoc = {
@@ -15,6 +17,31 @@ const mockHistory: THistoryState = {
     future: [],
     maxDepth: 50,
 };
+const mockValidation: TAiValidation = {
+    valid: false,
+    hard_constraints_violated: [],
+    soft_constraints_violated: [
+        {
+            id: 'test',
+            severity: 'SOFT',
+            message: 'test violation',
+            nurse_id: '1',
+            period: {start_day: 1, end_day: 1},
+        },
+    ],
+    warnings: [],
+};
+const mockScheduleViolations = {
+    validationSnapshot: createScheduleValidationSnapshot(mockValidation, 42),
+};
+const mockLegacyViolations: TViolation[] = [
+    {
+        ruleId: 'llm.test',
+        message: 'test violation',
+        level: 'warning',
+        cells: [{row: 0, col: 0}],
+    },
+];
 
 describe('createShiftEditorPersistence', () => {
     beforeEach(() => {
@@ -33,7 +60,7 @@ describe('createShiftEditorPersistence', () => {
             saveDebounceMs: 400,
         });
 
-        persistence.save(mockDoc, mockHistory);
+        persistence.save(mockDoc, mockHistory, mockScheduleViolations);
         vi.advanceTimersByTime(400);
 
         const raw = window.localStorage.getItem(storageKey);
@@ -42,6 +69,7 @@ describe('createShiftEditorPersistence', () => {
         expect(JSON.parse(raw!)).toEqual({
             doc: mockDoc,
             history: JSON.stringify(mockHistory),
+            scheduleViolations: mockScheduleViolations,
             savedAt: expect.any(Number),
         });
     });
@@ -52,13 +80,34 @@ describe('createShiftEditorPersistence', () => {
             saveDebounceMs: 400,
         });
 
-        persistence.save(mockDoc, mockHistory);
+        persistence.save(mockDoc, mockHistory, mockScheduleViolations);
         vi.advanceTimersByTime(400);
 
         expect(persistence.load()).toEqual({
             doc: mockDoc,
             history: JSON.stringify(mockHistory),
+            scheduleViolations: mockScheduleViolations,
             savedAt: expect.any(Number),
+        });
+    });
+
+    it('구 llmViolations 드래프트를 legacy로 마이그레이션해야 한다', () => {
+        window.localStorage.setItem(
+            storageKey,
+            JSON.stringify({
+                doc: mockDoc,
+                history: JSON.stringify(mockHistory),
+                llmViolations: mockLegacyViolations,
+                savedAt: Date.now(),
+            }),
+        );
+
+        const persistence = createShiftEditorPersistence({storageKey, saveDebounceMs: 400});
+        const loaded = persistence.load();
+
+        expect(loaded?.scheduleViolations).toEqual({
+            validationSnapshot: null,
+            legacyDisplayViolations: mockLegacyViolations,
         });
     });
 

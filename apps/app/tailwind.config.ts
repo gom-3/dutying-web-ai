@@ -35,9 +35,11 @@ export default {
                 blue: '#436DFF',
             },
             fontFamily: {
-                poppins: ['Poppins', 'sans-serif'],
-                apple: ['Apple-SDG', 'sans-serif'],
-                line: ['LINESeedKR', 'sans-serif'],
+                sans: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+                pretendard: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+                poppins: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+                apple: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
+                line: ['Pretendard Variable', 'Pretendard', 'sans-serif'],
             },
             boxShadow: {
                 banner: '0rem .25rem 2.125rem #EDE9F5',

@@ -6,7 +6,7 @@ type TStepState = 'prev' | 'current' | 'next';
 
 const STEP_CIRCLE_BASE =
     'flex shrink-0 items-center justify-center rounded-full font-poppins font-medium leading-none size-[clamp(20px,1.6vw,26px)] text-[clamp(11px,0.85vw,14px)]';
-const STEP_LABEL_BASE = 'whitespace-nowrap font-apple text-[clamp(13px,1.05vw,18px)] leading-[1.05]';
+const STEP_LABEL_BASE = 'inline-flex items-center whitespace-nowrap font-apple text-[clamp(13px,1.05vw,18px)] leading-none';
 
 function StepCircle({state, step}: {state: TStepState; step: number}) {
     if (state === 'current') {
@@ -57,7 +57,7 @@ export function MakeShiftStepper({
                             onClick={() => clickable && onClickStep(step)}
                             data-step={step}
                             data-step-state={state}
-                            className={`make-shift-stepper__step relative flex items-center gap-[clamp(6px,0.55vw,10px)] py-[clamp(10px,0.95vw,18px)] ${
+                            className={`make-shift-stepper__step relative flex items-center gap-[clamp(6px,0.55vw,10px)] py-[clamp(10px,0.95vw,18px)] leading-none ${
                                 clickable ? 'cursor-pointer' : 'cursor-default'
                             }`}
                         >

@@ -182,6 +182,7 @@ export const ko = {
                 toolbarHint: 'AI의 도움을 받아 더 쉽게 작성할 수 있어요',
                 retry: 'AI 다시 채우기',
                 generating: 'AI 채우는 중...',
+                progressToast: 'AI 채우기 진행 중',
                 intro: '실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.',
                 loading: '근무표를 불러오는 중이에요',
                 error: '근무표를 불러오지 못했어요',

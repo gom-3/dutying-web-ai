@@ -1,13 +1,30 @@
 import {useMemo} from 'react';
-import {useShiftEditorStore} from './store';
-import type {TDutyDoc} from './types';
-import {buildViolationMap} from './validator';
+import {mergeServerScheduleViolations} from './merge-schedule-violations';
+import {useScheduleDisplayViolations} from './use-schedule-display-violations';
+import type {TDutyDoc, TViolation} from './types';
+import {buildViolationMapAll} from './validator';
+
+export type TScheduleViolationView = {
+    violationMap: Map<string, TViolation>;
+    teamViolations: TViolation[];
+};
 
 /**
- * 편집기 store의 violations를 doc 형상에 맞춰 ShiftCalendar / MakeShiftCalendar용 Map으로 변환.
+ * 서버(LLM API) validation 위반을 캘린더용으로 변환.
+ * - nurse: 행·일자 span
+ * - team: division 일자 열 전체 span (별도 오버레이)
  */
-export function useViolationMap(doc: TDutyDoc) {
-    const violations = useShiftEditorStore((s) => s.violations);
+export function useViolationMap(doc: TDutyDoc): TScheduleViolationView {
+    const displayViolations = useScheduleDisplayViolations(doc);
 
-    return useMemo(() => buildViolationMap(violations, doc), [violations, doc]);
+    return useMemo(() => {
+        const all = mergeServerScheduleViolations(displayViolations);
+        const teamViolations = all.filter((violation) => violation.scope === 'team');
+        const nurseViolations = all.filter((violation) => violation.scope !== 'team');
+
+        return {
+            violationMap: buildViolationMapAll(nurseViolations, doc),
+            teamViolations,
+        };
+    }, [displayViolations, doc]);
 }

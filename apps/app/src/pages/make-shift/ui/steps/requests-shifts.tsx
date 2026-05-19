@@ -12,7 +12,7 @@ export function RequestsShifts() {
     const useCase = useMakeShiftUseCase();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const {dutyQuery, editorDoc, violationMap} = useDutyEditorStep();
+    const {dutyQuery, editorDoc, violationMap, teamViolations} = useDutyEditorStep();
     const {
         state: {acceptedRequests, pendingRequests, rejectedRequests, wardShiftTypeMap},
         status: {loading: requestsLoading, error: requestsError, updatingRequestId},

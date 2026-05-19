@@ -1,4 +1,6 @@
+import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
 import {useOnboardingWardWizard} from './model';
@@ -13,6 +15,9 @@ import WizardButton from './ui/wizard-button';
 
 function OnboardingWardCreatePage() {
     const navigate = useNavigate();
+    const {
+        state: {accountMe},
+    } = useAuth();
     const {
         draft,
         activeTeamId,
@@ -44,6 +49,13 @@ function OnboardingWardCreatePage() {
     } = useOnboardingWardWizard();
     const isSubmitting = submissionStatus === 'submitting';
     const isSuccess = submissionStatus === 'success';
+
+    useEffect(() => {
+        if (accountMe && accountMe.status !== 'WARD_SELECT_PENDING') {
+            navigate(ROUTE.REGISTER);
+        }
+    }, [accountMe, navigate]);
+
     const stepContent = (() => {
         switch (draft.currentStep) {
             case 1:

@@ -1,4 +1,5 @@
 import {type TWardConstraint} from '@/entities';
+import type {TScheduleViolationPersisted} from './schedule-violations';
 
 export type TCellValue = string | null;
 export type TWorkKeyMap = Record<string, TCellValue>;
@@ -30,6 +31,10 @@ export type TDutyDoc = {
 export type TPersisted = {
     doc: TDutyDoc;
     history: string;
+    /** 서버 validation 스냅샷 — doc·history와 함께 드래프트로 보관 */
+    scheduleViolations?: TScheduleViolationPersisted;
+    /** @deprecated scheduleViolations 사용 */
+    llmViolations?: TViolation[];
     savedAt: number;
 };
 
@@ -70,11 +75,15 @@ export type TTransaction<Op> = {
     timestamp: number;
 };
 
+export type TViolationScope = 'nurse' | 'team';
+
 export type TViolation = {
     ruleId: string;
     message: string;
     cells: TCellPos[];
     level: 'warning' | 'error';
+    /** team: division 일자 열 전체. nurse(기본): 해당 간호사 행만 */
+    scope?: TViolationScope;
 };
 
 export type TDutyRuleLevel = TViolation['level'];

@@ -4,6 +4,7 @@ import {type TNurse} from '@/entities';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
+import {formatNurseDisplayName} from './shared/format-nurse-display-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
@@ -149,8 +150,11 @@ function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
                         >
                             <SixDotsIcon className="size-[clamp(14px,1.35vw,20px)]" />
                         </button>
-                        <p className="make-shift-workers__row-name font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
-                            {nurse.name}
+                        <p
+                            className="make-shift-workers__row-name min-w-0 truncate whitespace-nowrap text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1"
+                            title={nurse.name}
+                        >
+                            {formatNurseDisplayName(nurse.name)}
                         </p>
                         <div className="make-shift-workers__row-level flex justify-center">
                             {/*

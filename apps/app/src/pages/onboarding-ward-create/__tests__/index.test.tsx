@@ -47,6 +47,16 @@ vi.mock('@/features/register', () => ({
     }),
 }));
 
+vi.mock('@/features/auth', () => ({
+    default: () => ({
+        state: {
+            accountMe: {
+                status: 'WARD_SELECT_PENDING',
+            },
+        },
+    }),
+}));
+
 vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
         t: (key: string, values?: Record<string, string | number>) => {

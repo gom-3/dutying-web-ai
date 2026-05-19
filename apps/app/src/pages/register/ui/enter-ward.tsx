@@ -145,13 +145,13 @@ function EnterWard() {
                                               setCodeList([null, null, null, null, null, null]);
                                               setOpen(false);
                                           }}
-                                          className="h-17.5 flex-1 rounded-[.625rem] bg-sub-4 font-apple text-[1.5rem] font-semibold text-sub-2"
+                                          className="box-border h-17.5 flex-1 rounded-[.625rem] bg-sub-4 py-0 font-apple text-[1.5rem] leading-none font-semibold text-sub-2"
                                       >
                                           다시 입력
                                       </button>
                                       <button
                                           onClick={() => ward && enterWard(ward.wardId)}
-                                          className="h-17.5 flex-1 rounded-[.625rem] bg-main-1 font-apple text-[1.5rem] font-semibold text-white"
+                                          className="box-border h-17.5 flex-1 rounded-[.625rem] bg-main-1 py-0 font-apple text-[1.5rem] leading-none font-semibold text-white"
                                       >
                                           입장
                                       </button>

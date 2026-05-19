@@ -22,7 +22,7 @@ function SelectEnterOrCreate() {
             <div className="flex w-full gap-7.5">
                 <div
                     className="group flex-1 cursor-pointer rounded-[.9375rem] bg-white p-[1.875rem_1.25rem_1.25rem_1.875rem] shadow-banner hover:bg-main-1"
-                    onClick={() => naviagte(ROUTE.REGISTER_WARD)}
+                    onClick={() => naviagte(ROUTE.ONBOARDING_WARD_CREATE)}
                 >
                     <h2 className="font-apple text-[1.75rem] font-bold text-main-1 group-hover:text-white">병동 생성</h2>
                     <p className="font-apple text-[1rem] text-main-2 group-hover:text-main-4">병동을 새로 생성합니다.</p>
