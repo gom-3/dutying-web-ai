@@ -1,6 +1,7 @@
 import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
+import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
 import {useOnboardingWardWizard} from './model';
@@ -51,6 +52,8 @@ function OnboardingWardCreatePage() {
     const isSuccess = submissionStatus === 'success';
 
     useEffect(() => {
+        if (isOnboardingWardCreatePreviewAllowed()) return;
+
         if (accountMe && accountMe.status !== 'WARD_SELECT_PENDING') {
             navigate(ROUTE.REGISTER);
         }
