@@ -101,6 +101,15 @@ slice-name/
 - feature slice 예시: [`apps/app/src/features/shift-editor`](apps/app/src/features/shift-editor)
 - packages 예시: [`packages/api`](packages/api), [`packages/domain`](packages/domain), [`packages/utils`](packages/utils)
 
+## 로컬 개발 환경
+
+공통 요구 사항: **Node.js 22.x**, **pnpm 10.12.4**, 저장소 루트 `.env`(팀 공유), `hosts`에 `local.app.dutying.net` 매핑.
+
+- **Windows 10/11** 노트북·데스크톱: [Windows 개발 환경 설정](docs/windows-development-setup.md) — 클론, `pnpm install`, hosts, `.env`, `pnpm dev` 절차와 문제 해결
+- **macOS / Linux**: 동일한 루트 `.env`·hosts·명령어를 사용합니다. 호스트 편집 경로만 OS별로 다릅니다 (`/etc/hosts`).
+
+로컬 메인 앱 URL: **https://local.app.dutying.net:3000**
+
 ## 개발 명령어
 
 ```bash
