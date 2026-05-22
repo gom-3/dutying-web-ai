@@ -4,6 +4,7 @@ import {ChevronDown, Pencil, Plus} from 'lucide-react';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {Input} from '@/shared/ui/primitives/input';
 import type {TOnboardingNurseDraft, TOnboardingStep, TOnboardingWardDraft, TSortMode} from '../../model';
+import {sortNursesByMode} from '../../model/sort';
 import {ShiftBadge, SkillBadge} from './badges';
 import TeamTabs from './team-tabs';
 
@@ -36,10 +37,7 @@ function NurseStep({
 }: INurseStepProps) {
     const activeShiftTypes = draft.shiftTypes.filter((shiftType) => shiftType.shortName);
     const currentNurses = draft.nurses.filter((nurse) => nurse.teamId === selectedTeamId);
-    const sortedNurses =
-        sortMode === 'employmentDate'
-            ? [...currentNurses].sort((left, right) => left.employmentDate.localeCompare(right.employmentDate))
-            : currentNurses;
+    const sortedNurses = sortNursesByMode(currentNurses, sortMode);
 
     return (
         <div className="space-y-4">
@@ -86,7 +84,8 @@ function NurseStep({
                         className="bg-transparent pr-4 font-apple text-[16px] text-gray-3 outline-none"
                     >
                         <option value="manual">수동 정렬</option>
-                        <option value="employmentDate">연차순</option>
+                        <option value="name">가나다순</option>
+                        <option value="skill">숙련도순</option>
                     </select>
                     <ChevronDown className="h-4 w-4 text-gray-3" />
                 </div>
