@@ -1,23 +1,82 @@
-import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+﻿import {cn} from '@dutying/utils/style';
+import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type TMakeShiftStep} from '../model/make-shift-store';
-import {MAKE_SHIFT_STEP_CONFIG} from './make-shift-step-config';
 
-type TStepState = 'prev' | 'current' | 'next';
+type TStepState = 'done' | 'current' | 'available' | 'locked';
+type TStepMeta = {
+    labelKey: TI18nKey;
+    captionKey: TI18nKey;
+};
 
-const STEP_CIRCLE_BASE =
-    'flex shrink-0 items-center justify-center rounded-full font-poppins font-medium leading-none size-[clamp(20px,1.6vw,26px)] text-[clamp(11px,0.85vw,14px)]';
-const STEP_LABEL_BASE = 'inline-flex items-center whitespace-nowrap font-apple text-[clamp(13px,1.05vw,18px)] leading-none';
+const MAKE_SHIFT_STEPS: TMakeShiftStep[] = [1, 2, 3, 4, 5, 6];
+const MAKE_SHIFT_STEP_META: Record<TMakeShiftStep, TStepMeta> = {
+    1: {
+        labelKey: 'page.makeShift.steps.workers.label',
+        captionKey: 'page.makeShift.steps.workers.caption',
+    },
+    2: {
+        labelKey: 'page.makeShift.steps.constraints.label',
+        captionKey: 'page.makeShift.steps.constraints.caption',
+    },
+    3: {
+        labelKey: 'page.makeShift.steps.requests.label',
+        captionKey: 'page.makeShift.steps.requests.caption',
+    },
+    4: {
+        labelKey: 'page.makeShift.steps.fixedShifts.label',
+        captionKey: 'page.makeShift.steps.fixedShifts.caption',
+    },
+    5: {
+        labelKey: 'page.makeShift.steps.aiAutofill.label',
+        captionKey: 'page.makeShift.steps.aiAutofill.caption',
+    },
+    6: {
+        labelKey: 'page.makeShift.steps.confirmedShifts.label',
+        captionKey: 'page.makeShift.steps.confirmedShifts.caption',
+    },
+};
 
-function StepCircle({state, step}: {state: TStepState; step: number}) {
-    if (state === 'current') {
-        return <div className={`${STEP_CIRCLE_BASE} bg-main-1 text-white`}>{step}</div>;
-    }
+function getStepState(step: TMakeShiftStep, currentStep: TMakeShiftStep, maxReachedStep: TMakeShiftStep): TStepState {
+    if (step < currentStep) return 'done';
 
-    if (state === 'prev') {
-        return <div className={`${STEP_CIRCLE_BASE} bg-gray-4 text-white`}>{step}</div>;
-    }
+    if (step === currentStep) return 'current';
 
-    return <div className={`${STEP_CIRCLE_BASE} border-[1.5px] border-current bg-transparent text-gray-3`}>{step}</div>;
+    return step <= maxReachedStep ? 'available' : 'locked';
+}
+
+function StepConnector({active, side}: {active: boolean; side: 'left' | 'right'}) {
+    return (
+        <span
+            aria-hidden
+            className={cn(
+                'absolute top-[13px] h-0.5 overflow-hidden bg-gray-6',
+                side === 'left' ? 'right-[calc(50%+20px)] left-0' : 'right-0 left-[calc(50%+20px)]',
+            )}
+        >
+            <span
+                className={cn(
+                    'block h-full bg-[#DCD2FF] transition-transform duration-300 ease-out motion-reduce:transition-none',
+                    side === 'left' ? 'origin-right' : 'origin-left',
+                    active ? 'scale-x-100' : 'scale-x-0',
+                )}
+            />
+        </span>
+    );
+}
+
+function StepCheckIcon() {
+    return (
+        <svg aria-hidden viewBox="0 0 16 16" className="h-3.5 w-3.5">
+            <path
+                d="M3.5 8.1 6.5 11 12.5 5"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.1"
+            />
+        </svg>
+    );
 }
 
 export function MakeShiftStepper({
@@ -30,63 +89,100 @@ export function MakeShiftStepper({
     onClickStep: (step: TMakeShiftStep) => void;
 }) {
     const {t} = useTypedTranslation();
+    const isConfirmedStep = currentStep === 6;
+    const showConfirmedStep = isConfirmedStep || maxReachedStep >= 6;
 
     return (
-        <div
-            id="make_stepper"
-            // 사진 기준: stepper 하단에 매우 옅은 1px 분리선만 둔다 (이전 2px 진한 라인 → 1px gray-6).
-            // current step의 강조 underline은 이 분리선 라인 "위에" 정확히 겹쳐 그려진다 (두 선이 따로 보이지 않게).
-            className="make-shift-stepper relative w-full border-b border-gray-6"
-        >
-            {/*
-             * 정렬 전략:
-             * - justify-around(=space-around): 각 step 양옆에 동일한 공간을 자동 분배. 양 끝에는 그 절반씩이 자연스럽게 생기므로
-             *   1번이 컨테이너 왼쪽 끝에, 5번이 오른쪽 끝에 바짝 붙지 않는다 (별도 좌우 padding 불필요).
-             * - 컨테이너의 padding-y는 0으로 두고 각 step button이 직접 py-... 를 가져 button의 bottom = 분리선 위치가 되도록 한다.
-             *   (그래야 button 내부의 absolute indicator를 -bottom-px 로 두는 것만으로 회색 분리선과 정확히 같은 줄에 겹쳐 그려진다.)
-             */}
-            <div className="make-shift-stepper__list flex w-full flex-wrap items-center justify-around">
-                {([1, 2, 3, 4, 5] as const).map((step) => {
-                    const clickable = step !== currentStep && step <= maxReachedStep;
-                    const state: TStepState = step < currentStep ? 'prev' : step === currentStep ? 'current' : 'next';
+        <nav id="make_stepper" className="make-shift-stepper w-full px-3 pt-8" aria-label={t('page.makeShift.progress.ariaLabel')}>
+            <div className="relative pb-6 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-['']">
+                <ol
+                    className="grid px-1 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none"
+                    style={{
+                        gridTemplateColumns: showConfirmedStep ? 'repeat(6, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr)) minmax(0, 0fr)',
+                    }}
+                >
+                    {MAKE_SHIFT_STEPS.map((step) => {
+                        const stepMeta = MAKE_SHIFT_STEP_META[step];
+                        const state = getStepState(step, currentStep, maxReachedStep);
+                        const isFinalConfirmedStep = step === 6 && state === 'current';
+                        const isStepHidden = step === 6 && !showConfirmedStep;
+                        const clickable = !isConfirmedStep && step !== currentStep && state !== 'locked';
+                        const showRightConnector = step !== 6 && (step !== 5 || showConfirmedStep);
 
-                    return (
-                        <button
-                            key={step}
-                            type="button"
-                            onClick={() => clickable && onClickStep(step)}
-                            data-step={step}
-                            data-step-state={state}
-                            className={`make-shift-stepper__step relative flex items-center gap-[clamp(6px,0.55vw,10px)] py-[clamp(10px,0.95vw,18px)] leading-none ${
-                                clickable ? 'cursor-pointer' : 'cursor-default'
-                            }`}
-                        >
-                            <StepCircle state={state} step={step} />
-                            <span
-                                className={`make-shift-stepper__label flex items-center ${STEP_LABEL_BASE} ${
-                                    state === 'current' ? 'font-semibold text-main-1' : 'font-medium text-gray-3'
-                                }`}
+                        return (
+                            <li
+                                key={step}
+                                className={cn(
+                                    'relative flex min-w-0 justify-center transition-[opacity,transform,max-width] duration-300 ease-out motion-reduce:transition-none',
+                                    isStepHidden
+                                        ? 'pointer-events-none max-w-0 scale-90 overflow-hidden opacity-0'
+                                        : 'max-w-[999px] scale-100 overflow-visible opacity-100',
+                                )}
                             >
-                                {t(MAKE_SHIFT_STEP_CONFIG[step].labelKey)}
-                            </span>
-
-                            {state === 'current' && (
-                                /*
-                                 * 사진 기준 강조선:
-                                 * - 위치: -bottom-px → 컨테이너의 border-b(1px)와 indicator의 가장 아래 1px이 정확히 같은 라인.
-                                 *   결과적으로 회색 분리선이 보라색 굵은 선으로 "교체"된 것처럼 보이고 두 줄로 분리되지 않는다.
-                                 * - 폭: inset-x-0 → step 영역(원+라벨) 폭만큼만 강조.
-                                 * - 두께: clamp(2px,0.18vw,3px) → 분리선보다 굵게.
-                                 */
-                                <span
-                                    aria-hidden
-                                    className="make-shift-stepper__active-indicator pointer-events-none absolute inset-x-0 -bottom-px z-[1] h-[clamp(2px,0.18vw,3px)] rounded-full bg-main-1"
-                                />
-                            )}
-                        </button>
-                    );
-                })}
+                                {step !== 1 && <StepConnector side="left" active={step <= currentStep} />}
+                                {showRightConnector && <StepConnector side="right" active={step < currentStep} />}
+                                <button
+                                    type="button"
+                                    disabled={state === 'locked' || isConfirmedStep}
+                                    onClick={() => clickable && onClickStep(step)}
+                                    data-step={step}
+                                    data-step-state={state}
+                                    aria-current={state === 'current' ? 'step' : undefined}
+                                    className={cn(
+                                        'group relative z-10 flex w-full min-w-0 flex-col items-center gap-2.5 px-1 text-center transition-colors duration-200 ease-out',
+                                        state === 'done' && 'text-sub-2',
+                                        state === 'current' && (isFinalConfirmedStep ? 'text-[#167A52]' : 'text-main-1'),
+                                        state === 'available' && 'text-sub-2',
+                                        state === 'locked' && 'cursor-not-allowed text-gray-4',
+                                        clickable ? 'cursor-pointer' : 'cursor-default',
+                                    )}
+                                >
+                                    <span className="grid size-7 place-items-center">
+                                        <span
+                                            className={cn(
+                                                'grid place-items-center rounded-[8px] font-poppins leading-none font-semibold transition-[background-color,color,transform] duration-300 ease-out motion-reduce:transition-none',
+                                                state === 'current'
+                                                    ? `size-7 ${isFinalConfirmedStep ? 'bg-[#20A66A]' : 'bg-main-1'} text-[12px] text-white`
+                                                    : 'size-6 text-[11px]',
+                                                state === 'current' && 'motion-safe:scale-110',
+                                                state === 'done' && 'bg-[#DCD2FF] text-main-1 group-hover:motion-safe:scale-105',
+                                                state === 'available' &&
+                                                    'bg-main-light text-main-1 group-hover:bg-main-1 group-hover:text-white group-hover:motion-safe:scale-105',
+                                                state === 'locked' && 'bg-gray-7 text-gray-4',
+                                            )}
+                                        >
+                                            {state === 'done' || isFinalConfirmedStep ? <StepCheckIcon /> : step}
+                                        </span>
+                                    </span>
+                                    <span className="flex max-w-full min-w-0 flex-col items-center gap-1">
+                                        <span
+                                            className={cn(
+                                                'max-w-full min-w-0 truncate font-apple text-[12px] leading-none font-semibold transition-[color,transform] duration-200 ease-out motion-reduce:transition-none',
+                                                state === 'current' &&
+                                                    `${isFinalConfirmedStep ? 'text-[#167A52]' : 'text-main-1'} motion-safe:-translate-y-0.5`,
+                                                state === 'locked' && 'text-gray-4',
+                                            )}
+                                        >
+                                            {t(stepMeta.labelKey)}
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                'max-w-full min-w-0 translate-y-1 truncate font-apple text-[11px] leading-none font-medium text-gray-4 opacity-0 transition-[color,opacity,transform] duration-200',
+                                                'group-hover:translate-y-0 group-hover:opacity-100 group-focus:translate-y-0 group-focus:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100',
+                                                state === 'current' &&
+                                                    `translate-y-0 opacity-100 ${isFinalConfirmedStep ? 'text-[#167A52]/70' : 'text-main-1/70'}`,
+                                                state === 'locked' && 'text-gray-4',
+                                            )}
+                                        >
+                                            {t(stepMeta.captionKey)}
+                                        </span>
+                                    </span>
+                                </button>
+                            </li>
+                        );
+                    })}
+                </ol>
             </div>
-        </div>
+        </nav>
     );
 }

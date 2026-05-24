@@ -1,9 +1,8 @@
-import {groupBy} from 'lodash-es';
+﻿import {groupBy} from 'lodash-es';
 import type {TNurse, TWaitingNurse} from '@/entities/nurse';
 import type {TShiftTeam} from '@/entities/ward';
 
 export type TConnectionManageStep = 0 | 1 | 2 | 3;
-
 export type TConnectMode = 'link' | 'add';
 export type TConnectionManageSubmitStatus = 'idle' | 'loading' | 'success' | 'error';
 
@@ -52,6 +51,36 @@ interface IGetConnectionManageResultCopyParams {
     targetLabel?: string | null;
 }
 
+function getObjectParticle(word: string) {
+    const trimmed = word.trim();
+    const lastChar = trimmed.charAt(trimmed.length - 1);
+
+    if (!lastChar) return '을';
+
+    const code = lastChar.charCodeAt(0);
+    const isHangulSyllable = code >= 0xac00 && code <= 0xd7a3;
+
+    if (!isHangulSyllable) return '을';
+
+    const hasBatchim = (code - 0xac00) % 28 !== 0;
+
+    return hasBatchim ? '을' : '를';
+}
+
+function getLinkFailureDescription(targetLabel?: string | null) {
+    if (!targetLabel) {
+        return '선택한 간호사 계정에 연결하지 못했어요. 다시 시도해 주세요.';
+    }
+
+    const [targetNurseName, targetTeamName] = targetLabel.split('·').map((text) => text.trim());
+
+    if (targetNurseName && targetTeamName) {
+        return `${targetTeamName}의 ${targetNurseName} 계정에 연결하지 못했어요. 다시 시도해 주세요.`;
+    }
+
+    return `${targetLabel} 계정에 연결하지 못했어요. 다시 시도해 주세요.`;
+}
+
 export function getConnectionManageResultCopy({
     submitStatus,
     connectMode,
@@ -59,15 +88,15 @@ export function getConnectionManageResultCopy({
     targetLabel,
 }: IGetConnectionManageResultCopyParams) {
     const safeWaitingNurseName = waitingNurseName ?? '선택한 간호사';
-    const safeTargetLabel = targetLabel ?? (connectMode === 'link' ? '선택한 간호사 계정' : '선택한 팀');
+    const safeTargetLabel = targetLabel ?? (connectMode === 'link' ? '선택한 간호사' : '선택한 팀');
 
     if (submitStatus === 'loading') {
         return {
-            title: connectMode === 'link' ? '기존 계정과 연결하고 있어요' : '선택한 팀으로 이동을 반영하고 있어요',
+            title: connectMode === 'link' ? '기존 계정에 연결하고 있어요' : '선택한 팀으로 추가하고 있어요',
             description:
                 connectMode === 'link'
-                    ? `${safeWaitingNurseName} 신청 정보를 ${safeTargetLabel} 계정에 연결하고 있습니다. 잠시만 기다려 주세요.`
-                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가하고 있습니다. 팀과 관계 변경이 반영될 때까지 잠시만 기다려 주세요.`,
+                    ? `${safeWaitingNurseName} 신청 정보를 ${safeTargetLabel} 계정에 연결하고 있어요. 잠시만 기다려 주세요.`
+                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀으로 추가하고 있어요. 잠시만 기다려 주세요.`,
         };
     }
 
@@ -76,16 +105,16 @@ export function getConnectionManageResultCopy({
             title: connectMode === 'link' ? '기존 계정과 연결했어요' : '팀 추가를 완료했어요',
             description:
                 connectMode === 'link'
-                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했습니다. 이제 기존 계정에서 팀과 관계 정보를 이어서 확인할 수 있어요.`
-                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가했습니다. 근무자 관리에서 새 관계와 팀 배치를 바로 확인할 수 있어요.`,
+                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했어요.`
+                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가했어요.`,
         };
     }
 
     return {
-        title: connectMode === 'link' ? '기존 계정과 연결하지 못했어요' : '팀 추가를 완료하지 못했어요',
+        title: connectMode === 'link' ? '기존 계정에 연결하지 못했어요' : '팀에 추가하지 못했어요',
         description:
             connectMode === 'link'
-                ? `${safeTargetLabel} 계정과 연결하지 못했습니다. 다시 시도하거나 이전 단계로 돌아가 다른 계정을 선택해 주세요.`
-                : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가하지 못했습니다. 다시 시도하거나 이전 단계로 돌아가 다른 팀을 선택해 주세요.`,
+                ? getLinkFailureDescription(targetLabel)
+                : `${safeWaitingNurseName}${getObjectParticle(safeWaitingNurseName)} ${safeTargetLabel}에 추가하지 못했어요. 다시 시도해 주세요.`,
     };
 }

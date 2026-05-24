@@ -1,9 +1,10 @@
-import {twMerge} from 'tailwind-merge';
+﻿import {cn} from '@dutying/utils/style';
+import {Check, Search} from 'lucide-react';
+import {useMemo, useState} from 'react';
 import {type TWaitingNurse} from '@/entities/nurse';
 import {type TShiftTeam} from '@/entities/ward';
-import {CheckedIcon, MoreIcon, PersonIcon, UncheckedIcon2, UnlinkedIcon} from '@/shared/assets/svg';
+import {PersonIcon} from '@/shared/assets/svg';
 import type {TConnectMode} from '../../model/connection-manage';
-import {getConnectionManageTargetLabel, getGroupedDivisionNurses} from '../../model/connection-manage';
 
 interface IConnectionManageTargetStepProps {
     currentWaitingNurse: TWaitingNurse | null;
@@ -18,6 +19,17 @@ interface IConnectionManageTargetStepProps {
     onSelectShiftTeam: (shiftTeamId: number) => void;
 }
 
+type TLinkFilter = 'all' | `team:${number}`;
+
+const normalizeText = (value?: string | null) => (value ?? '').trim();
+const normalizePhone = (value?: string | null) => (value ?? '').replace(/\D/g, '');
+const formatPhone = (phone?: string | null) => {
+    const normalized = normalizePhone(phone);
+    if (normalized.length !== 11) return phone ?? '-';
+
+    return `${normalized.slice(0, 3)}-${normalized.slice(3, 7)}-${normalized.slice(7, 11)}`;
+};
+
 function ConnectionManageTargetStep({
     currentWaitingNurse,
     shiftTeams,
@@ -30,143 +42,221 @@ function ConnectionManageTargetStep({
     onSelectLinkNurse,
     onSelectShiftTeam,
 }: IConnectionManageTargetStepProps) {
-    const targetLabel = getConnectionManageTargetLabel({
-        connectMode,
-        shiftTeams,
-        toLinkNurseId,
-        toAddShiftTeamId,
-    });
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [linkFilter, setLinkFilter] = useState<TLinkFilter>('all');
+
+    const waitingName = normalizeText(currentWaitingNurse?.name);
+    const waitingPhone = normalizePhone(currentWaitingNurse?.phoneNum);
+    const teamTabs = shiftTeams?.map((team) => ({key: `team:${team.shiftTeamId}` as const, label: team.name, teamId: team.shiftTeamId})) ?? [];
+    const modalWidth = useMemo(() => {
+        if (connectMode !== 'link') {
+            return 620;
+        }
+
+        const filterLabels = ['전체', ...teamTabs.map((tab) => tab.label)];
+        const chipWidths = filterLabels.reduce((sum, label) => {
+            const textWidth = Math.max(52, label.length * 9);
+
+            return sum + textWidth + 28;
+        }, 0);
+        const gaps = Math.max(0, filterLabels.length - 1) * 8;
+        const horizontalPadding = 48;
+        const calculated = chipWidths + gaps + horizontalPadding;
+
+        return Math.min(900, Math.max(620, calculated));
+    }, [connectMode, teamTabs]);
+    const allNurseRows = useMemo(
+        () =>
+            (shiftTeams ?? []).flatMap((shiftTeam) =>
+                shiftTeam.nurses.map((nurse) => ({
+                    nurseId: nurse.nurseId,
+                    name: nurse.name,
+                    phoneNum: nurse.phoneNum,
+                    isConnected: nurse.isConnected,
+                    shiftTeamId: shiftTeam.shiftTeamId,
+                    shiftTeamName: shiftTeam.name,
+                })),
+            ),
+        [shiftTeams],
+    );
+    const recommendedRows = useMemo(
+        () =>
+            allNurseRows.filter(
+                (row) =>
+                    !row.isConnected &&
+                    (normalizeText(row.name) === waitingName || (waitingPhone && normalizePhone(row.phoneNum) === waitingPhone)),
+            ),
+        [allNurseRows, waitingName, waitingPhone],
+    );
+    const filteredRows = useMemo(() => {
+        const keyword = normalizeText(searchKeyword).toLowerCase();
+        const keywordDigits = keyword.replace(/\D/g, '');
+
+        const unconnectedRows = allNurseRows.filter((row) => !row.isConnected);
+        const recommendedNurseIdSet = new Set(recommendedRows.map((row) => row.nurseId));
+        const baseByFilter =
+            linkFilter === 'all'
+                ? unconnectedRows
+                : unconnectedRows.filter((row) => row.shiftTeamId === Number(linkFilter.replace('team:', '')));
+
+        const filteredByKeyword = !keyword
+            ? baseByFilter
+            : baseByFilter.filter((row) => {
+                  const name = normalizeText(row.name).toLowerCase();
+                  const phone = normalizePhone(row.phoneNum);
+
+                  return name.includes(keyword) || (keywordDigits ? phone.includes(keywordDigits) : false);
+              });
+
+        if (linkFilter !== 'all') {
+            return filteredByKeyword;
+        }
+
+        return [...filteredByKeyword].sort((a, b) => {
+            const aRecommended = recommendedNurseIdSet.has(a.nurseId) ? 0 : 1;
+            const bRecommended = recommendedNurseIdSet.has(b.nurseId) ? 0 : 1;
+
+            return aRecommended - bRecommended;
+        });
+    }, [allNurseRows, linkFilter, recommendedRows, searchKeyword]);
 
     return (
         <div
-            className="h-[83%] min-h-225.75 w-[40%] min-w-190 rounded-[1.25rem] bg-white px-10.5 py-8.75"
+            className="w-full rounded-[16px] bg-white px-6 py-5"
+            style={{maxWidth: `${modalWidth}px`}}
             onClick={(event) => event.stopPropagation()}
         >
             <div className="flex items-center justify-between">
-                <h1 className="font-apple text-[1.75rem] font-semibold text-text-1">
-                    {connectMode === 'link' ? '연동할 간호사를 선택해 주세요.' : '팀을 선택해 주세요.'}
+                <h1 className="font-apple text-[22px] font-semibold text-sub-1">
+                    {connectMode === 'link'
+                        ? '연결할 기존 간호사를 선택해 주세요'
+                        : `${currentWaitingNurse?.name ?? '간호사'}님이 소속될 팀을 선택해 주세요`}
                 </h1>
-                <div className="ml-auto flex gap-5">
-                    <button
-                        className="flex h-7.5 items-center rounded-[1.875rem] border-[.0625rem] border-sub-3 px-[.75rem] font-apple text-[1rem] text-sub-3"
-                        onClick={onBack}
-                    >
-                        이전
-                    </button>
-                    <button
-                        disabled={isNextDisabled}
-                        className="flex h-7.5 items-center rounded-[1.875rem] border-[.0625rem] border-main-1 px-[.75rem] font-apple text-[1rem] text-main-1 disabled:border-sub-3 disabled:text-sub-3"
-                        onClick={onNext}
-                    >
-                        다음
-                    </button>
-                </div>
             </div>
-            <p className="pt-[.375rem] font-apple text-[1rem] font-medium text-sub-3">
-                {connectMode === 'link'
-                    ? '미연동 상태인 간호사 목록 중에 일치하는 계정을 선택해주세요.'
-                    : '팀을 선택해주시면 해당 팀에 계정이 추가됩니다.'}
-            </p>
-            <div className="mt-6 rounded-[1rem] border border-main-3/40 bg-main-4/35 px-5 py-4">
-                <p className="font-apple text-[.9375rem] font-semibold text-main-1">선택 결과 미리보기</p>
-                <p className="mt-2 font-apple text-[1rem] leading-6 text-sub-1">
-                    {targetLabel
-                        ? connectMode === 'link'
-                            ? `${currentWaitingNurse?.name ?? '선택한 간호사'} 신청이 ${targetLabel} 계정에 연결됩니다.`
-                            : `${currentWaitingNurse?.name ?? '선택한 간호사'}님이 ${targetLabel} 팀에 추가됩니다.`
-                        : connectMode === 'link'
-                          ? '대상 계정을 선택하면 어떤 계정으로 연결되는지 바로 확인할 수 있어요.'
-                          : '팀을 선택하면 어느 팀으로 추가되는지 바로 확인할 수 있어요.'}
-                </p>
-            </div>
-            <div
-                className={`mb-8 scrollbar-hide flex h-[calc(100%-9.5rem)] items-start gap-10 overflow-y-scroll ${
-                    connectMode === 'add' ? 'pt-25.5' : ''
-                }`}
-            >
-                {shiftTeams?.map((shiftTeam) => (
-                    <div
-                        className={twMerge(
-                            'relative mt-5.5 flex w-75 flex-col rounded-2xl border-[.0625rem] border-sub-4.5 shadow-banner',
-                            toAddShiftTeamId === shiftTeam.shiftTeamId && 'border-[.125rem] border-main-1',
-                        )}
-                        key={shiftTeam.shiftTeamId}
-                    >
-                        {connectMode === 'add' ? (
-                            toAddShiftTeamId === shiftTeam.shiftTeamId ? (
-                                <CheckedIcon className="absolute -top-6 left-[50%] h-9 w-9 translate-x-[-50%] -translate-y-full cursor-pointer" />
-                            ) : (
-                                <UncheckedIcon2
-                                    className="absolute -top-6 left-[50%] h-9 w-9 translate-x-[-50%] -translate-y-full cursor-pointer"
-                                    onClick={() => onSelectShiftTeam(shiftTeam.shiftTeamId)}
-                                />
-                            )
-                        ) : null}
-                        <div className="relative flex w-full items-center justify-between rounded-t-[.9375rem] bg-sub-2 px-5 py-[.875rem]">
-                            <div className="flex flex-col gap-[.3125rem]">
-                                <h2 className="font-apple text-[1.5rem] font-semibold text-white">{shiftTeam.name}</h2>
-                                <div className="flex items-center text-white">
-                                    <PersonIcon className="h-4 w-4" />
-                                    <p className="font-poppins text-[.75rem] text-white">{shiftTeam.nurses.length}</p>
-                                </div>
-                            </div>
-                            <MoreIcon className="h-7.5 w-7.5 cursor-pointer" />
-                        </div>
-                        {shiftTeam.nurses.length === 0 && (
-                            <div className="flex h-14 w-full cursor-pointer items-center justify-center select-none">
-                                <h3 className="font-apple text-[1.25rem] font-semibold text-sub-2.5">아직 간호사가 없습니다!</h3>
-                            </div>
-                        )}
-                        {getGroupedDivisionNurses(shiftTeam.nurses).map(([, divisionNurses], divisionIndex) => (
-                            <div key={divisionIndex} className="border-b-[.0938rem] border-sub-2.5 last:border-none">
-                                {divisionNurses.map((nurse) => (
-                                    <div
-                                        key={nurse.nurseId}
-                                        className={`group relative flex h-14 w-full ${
-                                            nurse.isConnected ? 'cursor-default' : 'cursor-pointer'
-                                        } items-center justify-center select-none ${
-                                            toLinkNurseId === nurse.nurseId
-                                                ? 'bg-main-4 text-main-1 underline underline-offset-2'
-                                                : 'bg-white text-sub-1'
-                                        } ${
-                                            shiftTeam.nurses.findIndex((shiftTeamNurse) => shiftTeamNurse.nurseId === nurse.nurseId) ===
-                                            shiftTeam.nurses.length - 1
-                                                ? 'rounded-b-[.9375rem]'
-                                                : 'border-b-[.0313rem] border-b-sub-4.5'
-                                        }`}
-                                        onClick={() => {
-                                            if (!nurse.isConnected) {
-                                                onSelectLinkNurse(nurse.nurseId);
-                                            }
-                                        }}
-                                    >
-                                        <div className="peer relative font-apple text-[1.25rem] font-semibold text-sub-1">
-                                            {nurse.name}
-                                            {!nurse.isConnected && (
-                                                <div className="absolute top-0 right-[-.3125rem] h-[.3125rem] w-[.3125rem] rounded-full bg-red"></div>
-                                            )}
-                                        </div>
-                                        {!nurse.isConnected && (
-                                            <div className="invisible absolute top-0 z-30 flex translate-y-[-60%] items-center gap-[.5rem] rounded-[.3125rem] bg-white px-2 py-1 font-apple text-[.875rem] whitespace-nowrap text-sub-2 shadow-shadow-2 peer-hover:visible">
-                                                <div
-                                                    className="absolute -bottom-1.5 left-[50%] h-0 w-0 translate-x-[-50%]"
-                                                    style={{
-                                                        borderTop: '.625rem solid white',
-                                                        borderLeft: '.4375rem solid transparent',
-                                                        borderRight: '.4375rem solid transparent',
-                                                        borderBottom: '.625rem solid none',
-                                                    }}
-                                                />
-                                                연동 되지 않은 가상의 프로필입니다.
-                                                <UnlinkedIcon className="h-5 w-5" />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+
+            {connectMode === 'link' ? (
+                <div className="mt-4">
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#93A0B5]" />
+                        <input
+                            value={searchKeyword}
+                            onChange={(event) => {
+                                setSearchKeyword(event.target.value);
+                                setLinkFilter('all');
+                            }}
+                            placeholder="이름 또는 전화번호로 검색"
+                            className="h-10 w-full rounded-[10px] border border-[#D9E0EC] bg-white pr-3 pl-9 font-apple text-[14px] text-sub-1 outline-none focus:border-main-2"
+                        />
+                    </div>
+
+                    <div className="mt-3 flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setLinkFilter('all')}
+                            className={cn(
+                                'shrink-0 rounded-full px-3 py-1.5 font-apple text-[13px] font-semibold transition-colors',
+                                linkFilter === 'all' ? 'bg-main-1 text-white' : 'bg-[#EEF2F7] text-[#6E7A90]',
+                            )}
+                        >
+                            전체
+                        </button>
+                        {teamTabs.map((teamTab) => (
+                            <button
+                                key={teamTab.key}
+                                type="button"
+                                onClick={() => setLinkFilter(teamTab.key)}
+                                className={cn(
+                                    'shrink-0 rounded-full px-3 py-1.5 font-apple text-[13px] font-semibold transition-colors',
+                                    linkFilter === teamTab.key ? 'bg-main-1 text-white' : 'bg-[#EEF2F7] text-[#6E7A90]',
+                                )}
+                            >
+                                {teamTab.label}
+                            </button>
                         ))}
                     </div>
-                ))}
+
+                    <div className="mt-3 space-y-2">
+                        {filteredRows.length === 0 ? (
+                            <div className="rounded-[10px] bg-[#F7F9FC] px-3 py-6 text-center font-apple text-[14px] text-gray-3">
+                                {searchKeyword ? '검색어를 바꾸면 간호사를 찾을 수 있어요.' : '팀에 간호사를 추가하면 선택할 수 있어요.'}
+                            </div>
+                        ) : (
+                            filteredRows.map((row) => (
+                                <button
+                                    key={row.nurseId}
+                                    type="button"
+                                    className={cn(
+                                        'flex h-12 w-full items-center rounded-[10px] px-3 text-left',
+                                        toLinkNurseId === row.nurseId ? 'bg-main-light' : 'bg-[#F7F9FC] hover:bg-[#EDF2F9]',
+                                    )}
+                                    onClick={() => onSelectLinkNurse(row.nurseId)}
+                                >
+                                    <span className="w-[120px] truncate font-apple text-[14px] font-semibold text-sub-1">{row.name}</span>
+                                    <span className="w-[120px] font-poppins text-[13px] text-[#6E7A90]">{formatPhone(row.phoneNum)}</span>
+                                    <span className="truncate font-apple text-[13px] text-[#7F8AA0]">{row.shiftTeamName}</span>
+                                    {toLinkNurseId === row.nurseId ? <Check className="ml-auto h-4 w-4 text-main-1" strokeWidth={3} /> : null}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                </div>
+            ) : (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                    {shiftTeams?.map((shiftTeam) => (
+                        <button
+                            key={shiftTeam.shiftTeamId}
+                            type="button"
+                            className={cn(
+                                'flex items-center rounded-[10px] border px-2 py-3.5 text-left',
+                                toAddShiftTeamId === shiftTeam.shiftTeamId
+                                    ? 'border-main-1 bg-main-light'
+                                    : 'border-[#DDE3EE] bg-white hover:bg-[#F8FAFD]',
+                            )}
+                            onClick={() => onSelectShiftTeam(shiftTeam.shiftTeamId)}
+                        >
+                            <p
+                                className={cn(
+                                    'font-apple text-[15px] font-semibold',
+                                    toAddShiftTeamId === shiftTeam.shiftTeamId ? 'text-main-1' : 'text-sub-1',
+                                )}
+                            >
+                                {shiftTeam.name}
+                            </p>
+                            <span
+                                className={cn(
+                                    'ml-auto inline-flex items-center gap-1 font-poppins text-[13px] font-semibold',
+                                    toAddShiftTeamId === shiftTeam.shiftTeamId ? 'text-main-1' : 'text-[#7F8AA0]',
+                                )}
+                            >
+                                <PersonIcon
+                                    className={cn(
+                                        'h-[16px] w-[16px]',
+                                        toAddShiftTeamId === shiftTeam.shiftTeamId ? 'text-main-1' : 'text-[#7F8AA0]',
+                                    )}
+                                />
+                                {shiftTeam.nurses.length}
+                            </span>
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            <div className="mt-6 flex items-center gap-3">
+                <button
+                    type="button"
+                    className="h-11 w-[34%] rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                    onClick={onBack}
+                >
+                    이전
+                </button>
+                <button
+                    type="button"
+                    disabled={isNextDisabled}
+                    className="h-11 w-[66%] rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2 disabled:opacity-40"
+                    onClick={onNext}
+                >
+                    완료
+                </button>
             </div>
         </div>
     );
