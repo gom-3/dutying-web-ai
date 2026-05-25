@@ -1,7 +1,10 @@
+import {CalendarPlus, PlayCircle} from 'lucide-react';
+import {Trans} from 'react-i18next';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import {loadDraftStep} from '../model/make-shift-progress-storage';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -22,14 +25,19 @@ export const MakeShiftPageView = () => {
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const wardId = useMakeShiftStore((s) => s.wardId);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
+    const draftStep = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
+    const hasConfirmedDraft = draftStep === 6;
+    const hasIncompleteDraft = shiftStatus === 'success' && !shiftExists && !shiftFullyAssigned && draftStep !== null && draftStep < 6;
     /** 배정 1칸 이상 (`isDutyShiftWithoutAssignments` 역). 전부 채움은 `shiftFullyAssigned`. */
-    const shouldEnterExistingShiftFlow = shiftStatus === 'success' && (shiftExists || shiftFullyAssigned);
+    const shouldEnterExistingShiftFlow = shiftStatus === 'success' && (shiftExists || shiftFullyAssigned || hasConfirmedDraft);
     const handleCreateCurrentMonth = () => {
         useCase.start();
     };
@@ -78,6 +86,46 @@ export const MakeShiftPageView = () => {
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
                                     className="py-0"
                                 />
+                            ) : hasIncompleteDraft ? (
+                                <PageState
+                                    tone="empty"
+                                    title={
+                                        <Trans
+                                            i18nKey="page.makeShift.overview.shiftDraft"
+                                            values={{teamName: currentShiftTeamName, month}}
+                                            components={{
+                                                team: <span className="text-main-1" />,
+                                                month: <span className="text-main-1" />,
+                                            }}
+                                        />
+                                    }
+                                    description={t('page.makeShift.overview.shiftDraftDescription')}
+                                    className="py-0"
+                                    titlePlacement="aboveIcon"
+                                    titleClassName="mb-6"
+                                    visual={
+                                        <img
+                                            src="/img/continue-schedule-nurse.png"
+                                            alt=""
+                                            aria-hidden="true"
+                                            decoding="async"
+                                            className="h-[192px] w-auto object-contain select-none"
+                                        />
+                                    }
+                                >
+                                    <div className="mt-1 flex justify-center">
+                                        <ManagementActionButton
+                                            variant="primary"
+                                            size="md"
+                                            onClick={handleCreateCurrentMonth}
+                                            disabled={currentShiftTeamId === null}
+                                            className="h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
+                                        >
+                                            <PlayCircle className="size-[17px]" strokeWidth={2.2} aria-hidden="true" />
+                                            {t('page.makeShift.overview.continueShift')}
+                                        </ManagementActionButton>
+                                    </div>
+                                </PageState>
                             ) : shouldEnterExistingShiftFlow ? (
                                 <PageState
                                     tone="loading"
@@ -89,16 +137,38 @@ export const MakeShiftPageView = () => {
                             ) : (
                                 <PageState
                                     tone="empty"
-                                    title={t('page.makeShift.overview.shiftEmpty', {teamName: currentShiftTeamName, month})}
+                                    title={
+                                        <Trans
+                                            i18nKey="page.makeShift.overview.shiftEmpty"
+                                            values={{teamName: currentShiftTeamName, month}}
+                                            components={{
+                                                team: <span className="text-main-1" />,
+                                                month: <span className="text-main-1" />,
+                                            }}
+                                        />
+                                    }
                                     className="py-0"
+                                    titlePlacement="aboveIcon"
+                                    titleClassName="mb-6"
+                                    visual={
+                                        <img
+                                            src="/img/empty-schedule-nurse.png"
+                                            alt=""
+                                            aria-hidden="true"
+                                            decoding="async"
+                                            className="h-[210px] w-auto object-contain select-none"
+                                        />
+                                    }
                                 >
                                     <div className="mt-1 flex justify-center">
                                         <ManagementActionButton
-                                            variant="secondary"
-                                            size="lg"
+                                            variant="primary"
+                                            size="md"
                                             onClick={handleCreateCurrentMonth}
                                             disabled={currentShiftTeamId === null}
+                                            className="h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
                                         >
+                                            <CalendarPlus className="size-[17px]" strokeWidth={2.2} aria-hidden="true" />
                                             {t('page.makeShift.overview.createShift', {month})}
                                         </ManagementActionButton>
                                     </div>
@@ -111,7 +181,11 @@ export const MakeShiftPageView = () => {
                              * Stepper는 흰 카드 폭 전체에 직접 배치한다 (분리선이 카드 좌우 가장자리까지 닿게).
                              * 좌우 콘텐츠 패딩은 stepper 내부의 step list(`px-[clamp(...)]`)와 아래 step content에만 적용한다.
                              */}
-                            <MakeShiftStepper currentStep={currentStep} maxReachedStep={maxReachedStep} onClickStep={useCase.goToStep} />
+                            <MakeShiftStepper
+                                currentStep={currentStep}
+                                maxReachedStep={visibleMaxReachedStep}
+                                onClickStep={useCase.goToStep}
+                            />
 
                             <div className="w-full min-w-0 px-3 2xl:px-4">
                                 <MakeShiftStepContent

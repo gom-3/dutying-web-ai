@@ -1,4 +1,5 @@
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
@@ -45,6 +46,7 @@ type TRequestNurseGroup = {
 const REQUEST_DATE_GROUP_PAGE_SIZE = 4;
 const REQUEST_NURSE_GROUP_PAGE_SIZE = 4;
 const REQUEST_ROW_PAGE_SIZE = 9;
+const PENDING_REQUEST_DISMISS_DELAY_MS = 500;
 const REVIEW_PANEL_SURFACE_CLASS_NAME = 'bg-gray-7';
 const REVIEW_ROW_SURFACE_CLASS_NAME = 'bg-white';
 const WEEKDAY_LABELS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -94,7 +96,7 @@ const getRequestShiftType = (request: TDutyRequest, wardShiftTypeMap: Map<number
 };
 const getActionButtonClassName = ({active, tone}: {active: boolean; tone: 'accept' | 'reject'}) =>
     twMerge(
-        'h-8 min-w-0 rounded-[10px] px-2 font-apple text-[12px] font-semibold transition-colors disabled:cursor-wait disabled:opacity-60',
+        'h-8 min-w-0 cursor-pointer rounded-[10px] px-2 font-apple text-[12px] font-semibold transition-colors disabled:cursor-wait disabled:opacity-60',
         active && tone === 'accept' && 'bg-main-1 text-white hover:bg-main-2',
         active && tone === 'reject' && 'bg-gray-3 text-white hover:bg-sub-2',
         !active && 'bg-[#EDF2F7] text-gray-3 hover:bg-[#E4ECF5] hover:text-sub-1',
@@ -148,19 +150,29 @@ export default function RequestDutyRequestPanel({
     const {t} = useTypedTranslation();
     const [reviewMode, setReviewMode] = useState<TReviewMode>(defaultReviewMode);
     const [requestPageIndex, setRequestPageIndex] = useState(0);
+    const [exitingPendingRequestById, setExitingPendingRequestById] = useState<Record<number, TDutyRequest>>({});
+    const exitingPendingRequestTimerByIdRef = useRef(new Map<number, number>());
     const isRequestActionLocked = updatingRequestId !== null;
     const isBulkUpdating = updatingRequestId === -1;
     const displayedRequestList = canEdit ? dutyRequestList : dutyRequestList?.filter((request) => request.isAccepted === true);
     const panelTitle = canEdit ? t('page.request.panel.editTitle') : t('page.request.panel.readonlyTitle');
     const emptyTitle = canEdit ? t('page.request.panel.emptyTitleEdit') : t('page.request.panel.emptyTitleReadonly');
     const emptyDescription = canEdit ? t('page.request.panel.emptyDescriptionEdit') : t('page.request.panel.emptyDescriptionReadonly');
-    const sortedRequestList = useMemo(
-        () => [...(displayedRequestList ?? [])].sort(reviewMode === 'date' ? sortByDateThenRequest : sortByRequestDate),
-        [displayedRequestList, reviewMode],
-    );
+    const sortedRequestList = useMemo(() => {
+        const requestById = new Map((displayedRequestList ?? []).map((request) => [request.wardReqShiftId, request]));
+
+        for (const request of Object.values(exitingPendingRequestById)) {
+            requestById.set(request.wardReqShiftId, {...requestById.get(request.wardReqShiftId), ...request});
+        }
+
+        return [...requestById.values()].sort(reviewMode === 'date' ? sortByDateThenRequest : sortByRequestDate);
+    }, [displayedRequestList, exitingPendingRequestById, reviewMode]);
     const pendingRequestList = useMemo(
-        () => sortedRequestList.filter((request) => request.isAccepted === null).sort(sortByRequestDate),
-        [sortedRequestList],
+        () =>
+            sortedRequestList
+                .filter((request) => request.isAccepted === null || exitingPendingRequestById[request.wardReqShiftId] !== undefined)
+                .sort(sortByRequestDate),
+        [exitingPendingRequestById, sortedRequestList],
     );
     const panelDisplayTitle = canEdit ? `${panelTitle} (${pendingRequestList.length})` : panelTitle;
     const requestDateGroups = useMemo(() => {
@@ -246,6 +258,33 @@ export default function RequestDutyRequestPanel({
     ];
     const pendingEmptyTitle = t('page.request.panel.pendingEmptyTitle');
     const pendingEmptyDescription = t('page.request.panel.pendingEmptyDescription');
+    const queuePendingRequestDismissal = (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
+        if (reviewMode !== 'pending' || dutyRequest.isAccepted !== null) return;
+
+        const previousTimer = exitingPendingRequestTimerByIdRef.current.get(dutyRequest.wardReqShiftId);
+
+        if (previousTimer !== undefined) {
+            window.clearTimeout(previousTimer);
+        }
+
+        setExitingPendingRequestById((current) => ({
+            ...current,
+            [dutyRequest.wardReqShiftId]: {...dutyRequest, isAccepted: nextAccepted},
+        }));
+
+        const nextTimer = window.setTimeout(() => {
+            exitingPendingRequestTimerByIdRef.current.delete(dutyRequest.wardReqShiftId);
+            setExitingPendingRequestById((current) => {
+                const next = {...current};
+
+                delete next[dutyRequest.wardReqShiftId];
+
+                return next;
+            });
+        }, PENDING_REQUEST_DISMISS_DELAY_MS);
+
+        exitingPendingRequestTimerByIdRef.current.set(dutyRequest.wardReqShiftId, nextTimer);
+    };
     const decideRequest = async (dutyRequest: TDutyRequest, nextAccepted: boolean | null) => {
         if (isRequestActionLocked) return;
 
@@ -255,10 +294,33 @@ export default function RequestDutyRequestPanel({
 
         if (nextAccepted !== null) {
             onAcceptAnalytics(nextAccepted);
+            queuePendingRequestDismissal(dutyRequest, nextAccepted);
+            toast.success(
+                nextAccepted
+                    ? t('page.request.panel.acceptedToast', {
+                          nurseName: dutyRequest.nurseName,
+                          shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
+                      })
+                    : t('page.request.panel.rejectedToast', {
+                          nurseName: dutyRequest.nurseName,
+                          shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
+                      }),
+            );
         }
     };
+
+    useEffect(
+        () => () => {
+            for (const timerId of exitingPendingRequestTimerByIdRef.current.values()) {
+                window.clearTimeout(timerId);
+            }
+        },
+        [],
+    );
+
     const renderRequestRow = (dutyRequest: TDutyRequest, labelMode: TRequestRowLabelMode) => {
         const requestFocus = getRequestFocus(dutyRequest, shiftNurseIdByNurseId);
+        const isExitingPendingRequest = exitingPendingRequestById[dutyRequest.wardReqShiftId] !== undefined;
         const isUpdating = updatingRequestId === dutyRequest.wardReqShiftId || isBulkUpdating;
         const isAccepted = dutyRequest.isAccepted === true;
         const isRejected = dutyRequest.isAccepted === false;
@@ -278,7 +340,7 @@ export default function RequestDutyRequestPanel({
                     'flex min-w-0 items-center gap-2 rounded-[12px] px-2.5 py-2 transition-colors',
                     REVIEW_ROW_SURFACE_CLASS_NAME,
                     requestFocus && 'hover:bg-[#FBFDFF]',
-                    isUpdating && 'opacity-70',
+                    (isUpdating || isExitingPendingRequest) && 'opacity-70',
                 )}
             >
                 <button
@@ -314,7 +376,7 @@ export default function RequestDutyRequestPanel({
                         <button
                             type="button"
                             className={getActionButtonClassName({active: isAccepted, tone: 'accept'})}
-                            disabled={isRequestActionLocked}
+                            disabled={isRequestActionLocked || isExitingPendingRequest}
                             aria-pressed={isAccepted}
                             onClick={() => void decideRequest(dutyRequest, isAccepted ? null : true)}
                         >
@@ -323,7 +385,7 @@ export default function RequestDutyRequestPanel({
                         <button
                             type="button"
                             className={getActionButtonClassName({active: isRejected, tone: 'reject'})}
-                            disabled={isRequestActionLocked}
+                            disabled={isRequestActionLocked || isExitingPendingRequest}
                             aria-pressed={isRejected}
                             onClick={() => void decideRequest(dutyRequest, isRejected ? null : false)}
                         >
@@ -350,8 +412,9 @@ export default function RequestDutyRequestPanel({
                             <button
                                 key={option.value}
                                 type="button"
+                                id={option.value === 'pending' ? 'nurse_request_pending_toggle' : undefined}
                                 className={twMerge(
-                                    'relative h-8 rounded-[9px] px-2 font-apple text-[12px] font-semibold transition-colors',
+                                    'relative h-8 cursor-pointer rounded-[9px] px-2 font-apple text-[12px] font-semibold transition-colors',
                                     reviewMode === option.value ? 'bg-white text-sub-1' : 'text-gray-4 hover:text-sub-1',
                                 )}
                                 aria-pressed={reviewMode === option.value}
@@ -457,7 +520,7 @@ export default function RequestDutyRequestPanel({
                             <div className="mt-2 flex items-center justify-between gap-2">
                                 <button
                                     type="button"
-                                    className="h-9 rounded-full bg-gray-7 px-4 font-apple text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6/60 disabled:cursor-not-allowed disabled:text-gray-4 disabled:opacity-50"
+                                    className="h-9 cursor-pointer rounded-full bg-gray-7 px-4 font-apple text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6/60 disabled:cursor-not-allowed disabled:text-gray-4 disabled:opacity-50"
                                     disabled={currentPageIndex === 0}
                                     onClick={() => setRequestPageIndex((current) => Math.max(current - 1, 0))}
                                 >
@@ -468,7 +531,7 @@ export default function RequestDutyRequestPanel({
                                 </span>
                                 <button
                                     type="button"
-                                    className="h-9 rounded-full bg-gray-7 px-4 font-apple text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6/60 disabled:cursor-not-allowed disabled:text-gray-4 disabled:opacity-50"
+                                    className="h-9 cursor-pointer rounded-full bg-gray-7 px-4 font-apple text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6/60 disabled:cursor-not-allowed disabled:text-gray-4 disabled:opacity-50"
                                     disabled={currentPageIndex === lastPageIndex}
                                     onClick={() => setRequestPageIndex((current) => Math.min(current + 1, lastPageIndex))}
                                 >

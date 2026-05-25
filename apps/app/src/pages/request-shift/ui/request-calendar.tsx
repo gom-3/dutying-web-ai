@@ -79,7 +79,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
                         <RequestCalendarGrid
                             requestShift={requestShift}
                             focus={focus}
-                            readonly={!canEditRequests}
+                            readonly
                             separateWeekendColor={separateWeekendColor}
                             wardShiftTypeMap={wardShiftTypeMap}
                             dutyRequestLookup={dutyRequestLookup}

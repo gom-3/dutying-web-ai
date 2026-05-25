@@ -577,7 +577,7 @@ const validateWardIdentity = (draft: TOnboardingWardDraft, step: 1): TOnboarding
     const wardName = draft.wardName.trim();
     const hospitalName = draft.hospitalName.trim();
 
-    if (!wardName && !hospitalName) {
+    if (!hospitalName) {
         issues.push({code: 'missing-hospital-name', step});
     }
 

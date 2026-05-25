@@ -53,7 +53,7 @@ describe('RegisterWard', () => {
 
         await user.type(screen.getAllByRole('textbox')[0], '듀팅병원');
         await user.type(screen.getAllByRole('textbox')[1], '중환자실');
-        await user.click(screen.getByRole('button', {name: '저장'}));
+        await user.click(screen.getByRole('button', {name: '병동 저장'}));
 
         expect(mockCreateWard).not.toHaveBeenCalled();
         expect(screen.getByRole('alert')).toHaveTextContent('근무 이름을 입력해 주세요.');

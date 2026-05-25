@@ -168,6 +168,7 @@ export function FixedShifts() {
                         // 고정 근무 화면에서는 위반(violation) 표시를 항상 끈다.
                         violationMap={EMPTY_VIOLATION_MAP}
                         showFaults={false}
+                        tutorialCellId="make_fixed_shift_sample_cell"
                         onCellClick={focusEditor}
                     />
                 </div>

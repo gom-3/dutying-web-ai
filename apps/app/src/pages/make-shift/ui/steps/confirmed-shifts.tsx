@@ -1,12 +1,15 @@
 import {useQuery} from '@tanstack/react-query';
-import {Component, useMemo, type ReactNode} from 'react';
+import {Download} from 'lucide-react';
+import {Component, useMemo, useRef, type ReactNode} from 'react';
+import {events, sendEvent} from '@/analytics';
 import {type TShift} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
-import {shiftToDoc, type TViolation} from '@/features/shift-editor';
+import {shiftToDoc, type TViolation, useShiftImageExport} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
@@ -26,6 +29,7 @@ function toConfirmedDoc(shift: TShift | null | undefined, year: number, month: n
 
 export function ConfirmedShifts() {
     const {t} = useTypedTranslation();
+    const calendarExportRef = useRef<HTMLDivElement>(null);
     const {
         state: {wardId},
     } = useAuth();
@@ -44,11 +48,21 @@ export function ConfirmedShifts() {
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.confirmedShifts.fallbackTeamName');
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
     const doc = useMemo(() => toConfirmedDoc(shift, year, month), [month, shift, year]);
+    const {isExporting, downloadImage} = useShiftImageExport({
+        targetRef: calendarExportRef,
+        year,
+        month,
+        teamName,
+        disabled: !shift || !doc,
+    });
     const calendarResetKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}:${shift ? 'ready' : 'empty'}`;
+    const imageActionLabel = isExporting
+        ? t('page.makeShift.confirmedShifts.imageActionLoading')
+        : t('page.makeShift.confirmedShifts.imageAction');
 
     return (
         <div id="make_confirmed_shifts_step" className="confirmed-shifts-root flex w-full min-w-0 flex-col gap-3 pt-3 outline-none">
-            <div className="confirmed-shifts-toolbar flex w-full min-w-0 flex-wrap items-start justify-between gap-3">
+            <div className="confirmed-shifts-toolbar flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
                 <div className="min-w-0">
                     <h1 className="confirmed-shifts-toolbar__title font-apple text-[28px] leading-tight font-bold text-sub-1">
                         {t('page.makeShift.confirmedShifts.title', {teamName, month})}
@@ -58,12 +72,43 @@ export function ConfirmedShifts() {
                     </p>
                 </div>
 
-                <div className="confirmed-shifts-toolbar__actions flex shrink-0 items-center gap-2 pt-0.5">
+                <div className="confirmed-shifts-toolbar__actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <TooltipProvider delayDuration={120}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="secondary"
+                                    size="md"
+                                    type="button"
+                                    aria-label={imageActionLabel}
+                                    title={imageActionLabel}
+                                    className="size-10 cursor-pointer rounded-[12px] border border-gray-6 bg-white p-0 text-gray-3 shadow-none hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-1 focus-visible:ring-main-1 focus-visible:ring-offset-0 disabled:bg-gray-7 disabled:text-gray-4"
+                                    onClick={() => {
+                                        void downloadImage();
+                                        sendEvent(events.makePage.toolbar.downloadImage);
+                                    }}
+                                    disabled={!shift || !doc || isExporting}
+                                >
+                                    <Download
+                                        className={`size-5 ${isExporting ? 'animate-pulse' : ''}`}
+                                        strokeWidth={1.8}
+                                        aria-hidden="true"
+                                    />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent
+                                side="top"
+                                className="rounded-full bg-[#1C2331] px-3 py-1.5 text-[12px] font-semibold text-white"
+                            >
+                                {imageActionLabel}
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                     <Button
                         variant="secondary"
                         size="md"
                         type="button"
-                        className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
+                        className={`min-w-[112px] cursor-pointer border-0 px-5 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                         onClick={useCase.editConfirmed}
                     >
                         {t('page.makeShift.confirmedShifts.editAction')}
@@ -96,7 +141,7 @@ export function ConfirmedShifts() {
                 />
             )}
             {shift && doc && (
-                <div className="confirmed-shifts-calendar-wrap w-full min-w-0">
+                <div ref={calendarExportRef} className="confirmed-shifts-calendar-wrap w-full min-w-0">
                     <ConfirmedCalendarBoundary
                         resetKey={calendarResetKey}
                         fallback={

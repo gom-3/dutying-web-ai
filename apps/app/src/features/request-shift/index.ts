@@ -16,11 +16,9 @@ import {countPendingDutyRequests} from './model/pending-request-count';
 import {
     createInitialFoldedLevels,
     createWardShiftTypeMap,
-    findDutyRequestByFocus,
     getAdjacentRequestShiftDate,
     getRequestShiftBootstrapStatus,
     getRequestShiftMonthChangeDecision,
-    getRequestShiftTypeIdAtFocus,
     shouldResetFoldedLevelsOnRequestLoad,
     shouldSyncFoldedLevelsLength,
 } from './model/request-shift';
@@ -233,27 +231,6 @@ const useRequestShift = (activeEffect = false) => {
 
         return true;
     };
-    const changeFocusedShift = useCallback(
-        (shiftTypeId: number | null) => {
-            if (!wardId || !focus || !requestShift) return;
-
-            if (getRequestShiftTypeIdAtFocus(requestShift, focus) === shiftTypeId) return;
-
-            const requestDutyRequest = findDutyRequestByFocus(linkedDutyRequestList, requestShift, focus);
-
-            if (requestDutyRequest && requestDutyRequest.wardShiftTypeId !== shiftTypeId && !confirm('신청을 거절할까요?')) return;
-
-            if (requestDutyRequest) {
-                void acceptRequest(
-                    requestDutyRequest.wardReqShiftId,
-                    shiftTypeId === null ? null : requestDutyRequest.wardShiftTypeId === shiftTypeId,
-                );
-            }
-
-            void changeRequestShift(focus, shiftTypeId);
-        },
-        [acceptRequest, changeRequestShift, focus, linkedDutyRequestList, requestShift, wardId],
-    );
     const foldLevel = (level: number) => {
         if (!requestShift || !foldedLevels) return;
 
@@ -267,7 +244,6 @@ const useRequestShift = (activeEffect = false) => {
         activeEffect,
         focus,
         requestShift,
-        changeFocusedShift,
         setFocus: (nextFocus) => setState('focus', nextFocus),
     });
 

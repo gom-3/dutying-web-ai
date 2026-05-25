@@ -1,6 +1,7 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router';
+import {getWardDisplayCode, getWardDisplayTitle} from '@/entities/ward';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useLoadingUseCase from '@/features/loading';
@@ -13,6 +14,7 @@ import {
     useShiftEditorKeyBindings,
     useShiftExcelExport,
     useShiftEditorStore,
+    type TDutyDoc,
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {
@@ -189,8 +191,7 @@ export function useDutyHook() {
         setStatus('success');
 
         const rawShift = dutyQuery.data ?? null;
-        const nextShift =
-            rawShift != null && !isDutyShiftWithoutAssignments(rawShift) ? rawShift : null;
+        const nextShift = rawShift != null && !isDutyShiftWithoutAssignments(rawShift) ? rawShift : null;
 
         setShift(nextShift);
 
@@ -203,17 +204,7 @@ export function useDutyHook() {
 
         commands.init(shiftToDoc(nextShift, year, month));
         commands.discardPersisted();
-    }, [
-        commands,
-        dutyQuery.data,
-        dutyQuery.isError,
-        dutyQuery.isPending,
-        isDutyViewAllowed,
-        month,
-        setShift,
-        setStatus,
-        year,
-    ]);
+    }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, isDutyViewAllowed, month, setShift, setStatus, year]);
 
     // 확정 근무표(/duty)에서는 규칙 검증·위반 UI를 쓰지 않는다(만들기 플로우 전용).
     useEffect(() => {
@@ -299,10 +290,7 @@ export function useDutyHook() {
             return;
         }
 
-        void Promise.all([
-            shiftTeamsQuery.refetch(),
-            currentShiftTeamId !== null ? dutyQuery.refetch() : Promise.resolve(),
-        ]);
+        void Promise.all([shiftTeamsQuery.refetch(), currentShiftTeamId !== null ? dutyQuery.refetch() : Promise.resolve()]);
     };
 
     return {
@@ -324,7 +312,8 @@ export function useDutyHook() {
             dutyViewingThisCalendarMonth,
             dutyPastStrictlyBeforeLastMonth,
             showOnboardingWardCreatedModal,
-            wardCode: wardQuery.data?.code ?? '',
+            wardCode: getWardDisplayCode(wardQuery.data, ''),
+            wardTitle: getWardDisplayTitle(wardQuery.data),
         },
         refs: {
             editorRef,

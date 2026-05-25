@@ -44,13 +44,14 @@ function getStepState(step: TMakeShiftStep, currentStep: TMakeShiftStep, maxReac
     return step <= maxReachedStep ? 'available' : 'locked';
 }
 
-function StepConnector({active, side}: {active: boolean; side: 'left' | 'right'}) {
+function StepConnector({active, dimmed, side}: {active: boolean; dimmed?: boolean; side: 'left' | 'right'}) {
     return (
         <span
             aria-hidden
             className={cn(
-                'absolute top-[13px] h-0.5 overflow-hidden bg-gray-6',
+                'absolute top-[13px] h-0.5 overflow-hidden bg-gray-6 transition-[opacity,filter] duration-200 ease-out',
                 side === 'left' ? 'right-[calc(50%+20px)] left-0' : 'right-0 left-[calc(50%+20px)]',
+                dimmed && 'opacity-[0.18] saturate-0',
             )}
         >
             <span
@@ -105,6 +106,7 @@ export function MakeShiftStepper({
                         const stepMeta = MAKE_SHIFT_STEP_META[step];
                         const state = getStepState(step, currentStep, maxReachedStep);
                         const isFinalConfirmedStep = step === 6 && state === 'current';
+                        const isDimmedByConfirmedStep = isConfirmedStep && step < 6;
                         const isStepHidden = step === 6 && !showConfirmedStep;
                         const clickable = !isConfirmedStep && step !== currentStep && state !== 'locked';
                         const showRightConnector = step !== 6 && (step !== 5 || showConfirmedStep);
@@ -119,8 +121,8 @@ export function MakeShiftStepper({
                                         : 'max-w-[999px] scale-100 overflow-visible opacity-100',
                                 )}
                             >
-                                {step !== 1 && <StepConnector side="left" active={step <= currentStep} />}
-                                {showRightConnector && <StepConnector side="right" active={step < currentStep} />}
+                                {step !== 1 && <StepConnector side="left" active={step <= currentStep} dimmed={isConfirmedStep} />}
+                                {showRightConnector && <StepConnector side="right" active={step < currentStep} dimmed={isConfirmedStep} />}
                                 <button
                                     type="button"
                                     disabled={state === 'locked' || isConfirmedStep}
@@ -129,11 +131,12 @@ export function MakeShiftStepper({
                                     data-step-state={state}
                                     aria-current={state === 'current' ? 'step' : undefined}
                                     className={cn(
-                                        'group relative z-10 flex w-full min-w-0 flex-col items-center gap-2.5 px-1 text-center transition-colors duration-200 ease-out',
+                                        'group relative z-10 flex w-full min-w-0 flex-col items-center gap-2.5 px-1 text-center transition-[color,opacity,filter] duration-200 ease-out',
                                         state === 'done' && 'text-sub-2',
                                         state === 'current' && (isFinalConfirmedStep ? 'text-[#167A52]' : 'text-main-1'),
                                         state === 'available' && 'text-sub-2',
                                         state === 'locked' && 'cursor-not-allowed text-gray-4',
+                                        isDimmedByConfirmedStep && 'opacity-[0.18] saturate-0',
                                         clickable ? 'cursor-pointer' : 'cursor-default',
                                     )}
                                 >

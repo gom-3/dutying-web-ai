@@ -160,3 +160,35 @@ export const createMoveNurseOrderPayload = ({
                 : destinationDivisionNurses[destinationIndex].priority,
     };
 };
+
+export const createMoveNurseToTeamPayload = ({
+    shiftTeams,
+    nurseId,
+    destinationShiftTeamId,
+}: {
+    shiftTeams: TShiftTeam[];
+    nurseId: number;
+    destinationShiftTeamId: number;
+}): TMoveNurseOrderPayload | null => {
+    const sourceShiftTeam = shiftTeams.find((shiftTeam) => shiftTeam.nurses.some((nurse) => nurse.nurseId === nurseId));
+    const destinationShiftTeam = shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === destinationShiftTeamId);
+
+    if (!sourceShiftTeam || !destinationShiftTeam) return null;
+
+    if (sourceShiftTeam.shiftTeamId === destinationShiftTeam.shiftTeamId) return null;
+
+    const destinationNurses = [...destinationShiftTeam.nurses]
+        .filter((nurse) => nurse.nurseId !== nurseId)
+        .sort((left, right) => left.divisionNum - right.divisionNum || left.priority - right.priority);
+    const lastNurse = destinationNurses[destinationNurses.length - 1];
+    const prevPriority = lastNurse?.priority ?? 0;
+
+    return {
+        nurseId,
+        sourceShiftTeamId: sourceShiftTeam.shiftTeamId,
+        destinationShiftTeamId: destinationShiftTeam.shiftTeamId,
+        divisionNum: lastNurse?.divisionNum ?? 1,
+        prevPriority,
+        nextPriority: prevPriority + DIVISION_PRIORITY_GAP,
+    };
+};

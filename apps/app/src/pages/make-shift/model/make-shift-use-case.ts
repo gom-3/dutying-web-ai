@@ -1,10 +1,18 @@
 import {useCallback} from 'react';
 import {type TShift} from '@/entities';
-import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {getShiftEditorDraftStorageKey, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showValidationFeedback} from '@/shared/util/feedback';
 import {clearMakeShiftProgress, loadDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
-import {canGoNext, canGoPrev, clearPersistedStep, loadPersistedStep, useMakeShiftStore, type TMakeShiftStep} from './make-shift-store';
+import {
+    canGoNext,
+    canGoPrev,
+    clearPersistedStep,
+    hasRequiredWorkerForSchedule,
+    loadPersistedStep,
+    useMakeShiftStore,
+    type TMakeShiftStep,
+} from './make-shift-store';
 
 export function useMakeShiftUseCase() {
     const {t} = useTypedTranslation();
@@ -18,6 +26,22 @@ export function useMakeShiftUseCase() {
     const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
     const editConfirmedSchedule = useMakeShiftStore((s) => s.editConfirmedSchedule);
     const requestReload = useMakeShiftStore((s) => s.requestReload);
+    const syncEditorPersistenceKey = useCallback(() => {
+        const s = useMakeShiftStore.getState();
+
+        if (!s.wardId || !s.currentShiftTeamId) return s;
+
+        editor.setPersistenceKey(
+            getShiftEditorDraftStorageKey({
+                wardId: s.wardId,
+                shiftTeamId: s.currentShiftTeamId,
+                year: s.year,
+                month: s.month,
+            }),
+        );
+
+        return s;
+    }, [editor]);
     const clearProgressState = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
@@ -28,7 +52,7 @@ export function useMakeShiftUseCase() {
         clearPersistedStep();
     }, []);
     const start = useCallback(() => {
-        const s = useMakeShiftStore.getState();
+        const s = syncEditorPersistenceKey();
         const persisted = editor.getPersisted();
         const saved =
             s.wardId && s.currentShiftTeamId
@@ -36,16 +60,19 @@ export function useMakeShiftUseCase() {
                 : loadPersistedStep();
         const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : (saved ?? 1);
 
-        startFromStep({step, openRestoreDraftModal: persisted !== null});
-    }, [editor, startFromStep]);
+        startFromStep({step, openRestoreDraftModal: step === 6 ? false : persisted !== null});
+    }, [editor, startFromStep, syncEditorPersistenceKey]);
     const confirmRestoreDraft = useCallback(() => {
+        syncEditorPersistenceKey();
+
         const persisted = editor.getPersisted();
 
         if (persisted) editor.hydrate(persisted);
 
         closeRestoreDraftModal();
-    }, [closeRestoreDraftModal, editor]);
+    }, [closeRestoreDraftModal, editor, syncEditorPersistenceKey]);
     const declineRestoreDraft = useCallback(() => {
+        syncEditorPersistenceKey();
         editor.discardPersisted();
 
         const s = useMakeShiftStore.getState();
@@ -58,7 +85,7 @@ export function useMakeShiftUseCase() {
         clearPersistedStep();
         useMakeShiftStore.setState({currentStep: 1, maxReachedStep: 1});
         closeRestoreDraftModal();
-    }, [closeRestoreDraftModal, editor]);
+    }, [closeRestoreDraftModal, editor, syncEditorPersistenceKey]);
     const complete = useCallback(() => {
         clearProgressState();
         editor.discardPersisted();
@@ -85,15 +112,28 @@ export function useMakeShiftUseCase() {
     const next = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
-        if (!canGoNext(s)) return;
+        if (!canGoNext(s)) {
+            if (s.currentStep === 1 && !hasRequiredWorkerForSchedule(s)) {
+                showValidationFeedback(t('page.makeShift.navigation.workerRequired'));
+            }
+
+            return;
+        }
 
         goNext();
-    }, [goNext]);
+    }, [goNext, t]);
     const jump = useCallback(
         (step: TMakeShiftStep) => {
-            const {currentStep, maxReachedStep} = useMakeShiftStore.getState();
+            const state = useMakeShiftStore.getState();
+            const {currentStep, maxReachedStep} = state;
 
             if (currentStep === 6) return;
+
+            if (currentStep === 1 && step > 1 && !hasRequiredWorkerForSchedule(state)) {
+                showValidationFeedback(t('page.makeShift.navigation.workerRequired'));
+
+                return;
+            }
 
             if (step > maxReachedStep) {
                 showValidationFeedback(t('page.makeShift.navigation.sequentialRequired'));

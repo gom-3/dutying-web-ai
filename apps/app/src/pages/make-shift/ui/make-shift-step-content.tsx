@@ -2,6 +2,7 @@ import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
+import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../model/make-shift-events';
 import {type TMakeShiftStep} from '../model/make-shift-store';
 import {MAKE_SHIFT_STEP_CONFIG} from './make-shift-step-config';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from './make-shift-step-nav';
@@ -14,6 +15,28 @@ type TMakeShiftStepContentProps = {
     onPrev: () => void;
     onNext: () => void;
 };
+
+function ImportantIntroBadge() {
+    return (
+        <span className="mx-1 inline-flex h-6 translate-y-[-1px] items-center justify-center rounded-full bg-[#FFF3D6] px-2 font-apple text-[12px] font-bold text-[#B86E00] ring-1 ring-[#FFD88A]">
+            중요
+        </span>
+    );
+}
+
+function StepIntroDescription({currentStep, description}: {currentStep: TMakeShiftStep; description: string}) {
+    if (currentStep === 2) {
+        return (
+            <div className="mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                <p>
+                    꼭 지켜야 할 조건은 <ImportantIntroBadge /> 버튼을 켜 주세요.
+                </p>
+            </div>
+        );
+    }
+
+    return <p className="mt-4 font-apple text-[16px] leading-[28px] font-medium whitespace-pre-line text-gray-3">{description}</p>;
+}
 
 export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onNext}: TMakeShiftStepContentProps) {
     const {t} = useTypedTranslation();
@@ -49,6 +72,13 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     }
 
     const intro = stepConfig.intro;
+    const handleNext = () => {
+        if (currentStep === 2 && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT));
+        }
+
+        onNext();
+    };
 
     return (
         <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-0 flex-1 gap-4 pt-7 pb-3">
@@ -57,11 +87,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                     <p className="make-shift-step-content__intro-title font-apple text-[28px] leading-tight font-bold text-sub-1">
                         {intro ? t(intro.titleKey) : ''}
                     </p>
-                    {intro && (
-                        <p className="mt-4 font-apple text-[16px] leading-[28px] font-medium whitespace-pre-line text-gray-3">
-                            {t(intro.descriptionKey)}
-                        </p>
-                    )}
+                    {intro && <StepIntroDescription currentStep={currentStep} description={t(intro.descriptionKey)} />}
                 </div>
 
                 <div className="make-shift-step-content__intro-actions mt-8 flex items-center justify-end gap-2">
@@ -81,7 +107,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                     <Button
                         size="md"
                         type="button"
-                        onClick={() => runTransition('next', onNext)}
+                        onClick={() => runTransition('next', handleNext)}
                         disabled={!canNext || transitioning !== null}
                         className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                     >

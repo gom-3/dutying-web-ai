@@ -2,11 +2,8 @@ import {type TViolation} from '@/features/shift-editor/model';
 import {MakeShiftCalendar} from '@/pages/make-shift/ui/steps/shared/make-shift-calendar';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {
-    DutyManagementMonthTeamHeader,
-    DutyManagementStatusCard,
-    ManagementActionButton,
-} from '@/widgets/duty-management/ui';
+import {DutyManagementMonthTeamHeader, DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {type TDutyHook} from '../model/duty-hook';
 
 /** /duty에서는 규칙 위반을 표시하지 않으므로 빈 맵만 전달한다. */
@@ -25,47 +22,17 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
     const showShiftTeamsErrorState = state.shiftTeamsStatus === 'error';
     const teamsReady = state.shiftTeamsStatus === 'success' && state.shiftTeams.length > 0;
-    const showLoadingState =
-        state.shiftTeamsStatus === 'pending' || (teamsReady && state.isDutyViewAllowed && state.status === 'pending');
+    const showLoadingState = state.shiftTeamsStatus === 'pending' || (teamsReady && state.isDutyViewAllowed && state.status === 'pending');
     const headerDisabled = showBootstrapLoadingState || showBootstrapErrorState || !teamsReady;
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-[#FAF8FB] px-10 py-10">
-            {state.showOnboardingWardCreatedModal ? (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-6">
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="onboarding-ward-created-modal-title"
-                        aria-describedby="onboarding-ward-created-modal-description"
-                        className="w-full max-w-[520px] rounded-[20px] bg-white px-8 py-7"
-                    >
-                        <h2 id="onboarding-ward-created-modal-title" className="font-apple text-[28px] font-semibold text-sub-1">
-                            병동 생성을 마쳤어요
-                        </h2>
-                        <p
-                            id="onboarding-ward-created-modal-description"
-                            className="mt-3 whitespace-pre-line font-apple text-[18px] text-gray-3"
-                        >
-                            {'병동코드를 소속 간호사에게 공유하면\n병동 참여, 게시판, 신청근무 등 병동 기능을 함께 사용할 수 있어요.'}
-                        </p>
-                        <div className="mt-5 rounded-[12px] border border-main-4 bg-main-light px-5 py-4">
-                            <p className="font-apple text-[14px] font-medium text-gray-3">병동코드</p>
-                            <p className="mt-1 text-center font-poppins text-[28px] font-extrabold tracking-[0.08em] text-main-1">
-                                {wardCodeLabel}
-                            </p>
-                        </div>
-                        <div className="mt-7 flex justify-end gap-3">
-                            <ManagementActionButton variant="neutral" onClick={handlers.dismissOnboardingWardCreatedModal}>
-                                나중에
-                            </ManagementActionButton>
-                            <ManagementActionButton onClick={handlers.startNextMonthMakeFromOnboarding}>
-                                다음달 근무표 생성하기
-                            </ManagementActionButton>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
+            <WardCodeGuideModal
+                open={state.showOnboardingWardCreatedModal}
+                wardCode={wardCodeLabel}
+                wardTitle={state.wardTitle}
+                onClose={handlers.dismissOnboardingWardCreatedModal}
+            />
             <DutyManagementMonthTeamHeader
                 year={state.year}
                 month={state.month}
@@ -125,16 +92,13 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                         className="py-0"
                     />
                 )}
-                {!showBootstrapLoadingState &&
-                    !showBootstrapErrorState &&
-                    teamsReady &&
-                    !state.isDutyViewAllowed && (
-                        <DutyManagementStatusCard
-                            title={t('page.duty.viewRangeTitle')}
-                            description={t('page.duty.viewRangeDescription')}
-                            className="min-h-[360px] flex-1 border-0 bg-transparent"
-                        />
-                    )}
+                {!showBootstrapLoadingState && !showBootstrapErrorState && teamsReady && !state.isDutyViewAllowed && (
+                    <DutyManagementStatusCard
+                        title={t('page.duty.viewRangeTitle')}
+                        description={t('page.duty.viewRangeDescription')}
+                        className="min-h-[360px] flex-1 border-0 bg-transparent"
+                    />
+                )}
                 {!showBootstrapLoadingState &&
                     !showBootstrapErrorState &&
                     teamsReady &&
@@ -184,9 +148,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                                                 onClick={handlers.exportExcel}
                                                 disabled={state.isExportingExcel}
                                             >
-                                                {state.isExportingExcel
-                                                    ? t('page.duty.exportExcelLoading')
-                                                    : t('page.duty.exportExcel')}
+                                                {state.isExportingExcel ? t('page.duty.exportExcelLoading') : t('page.duty.exportExcel')}
                                             </ManagementActionButton>
                                             <ManagementActionButton onClick={handlers.enableEdit}>
                                                 {t('page.duty.editShift')}

@@ -15,12 +15,15 @@ type TPageStateAction = {
 
 type TPageStateProps = {
     tone: TPageStateTone;
-    title: string;
+    title: ReactNode;
     description?: string;
     action?: TPageStateAction;
     layout?: TPageStateLayout;
     loadingColor?: TPageStateLoadingColor;
     className?: string;
+    titleClassName?: string;
+    titlePlacement?: 'aboveIcon' | 'belowIcon';
+    visual?: ReactNode;
     children?: ReactNode;
 };
 
@@ -53,8 +56,31 @@ const loadingColorClassName: Record<TPageStateLoadingColor, string> = {
     white: 'text-white',
 };
 
-function PageState({tone, title, description, action, layout = 'panel', loadingColor = 'purple', className, children}: TPageStateProps) {
+function PageState({
+    tone,
+    title,
+    description,
+    action,
+    layout = 'panel',
+    loadingColor = 'purple',
+    className,
+    titleClassName,
+    titlePlacement = 'belowIcon',
+    visual,
+    children,
+}: TPageStateProps) {
     const isLoading = tone === 'loading';
+    const titleElement = (
+        <h2
+            className={cn(
+                'font-apple text-[20px] leading-[1.45] font-semibold tracking-normal break-keep text-sub-1',
+                titlePlacement === 'aboveIcon' ? 'mb-10' : 'mt-4',
+                titleClassName,
+            )}
+        >
+            {title}
+        </h2>
+    );
 
     if (isLoading) {
         return (
@@ -73,11 +99,17 @@ function PageState({tone, title, description, action, layout = 'panel', loadingC
                 role={tone === 'error' ? 'alert' : 'status'}
                 aria-live={tone === 'error' ? 'assertive' : 'polite'}
             >
-                <div className={cn('mx-auto flex size-12 items-center justify-center rounded-[16px]', iconWrapperClassName[tone])}>
-                    <PageStateIcon tone={tone} />
-                </div>
+                {titlePlacement === 'aboveIcon' ? titleElement : null}
 
-                <h2 className="mt-4 font-apple text-[20px] font-semibold tracking-[-0.02em] text-sub-1">{title}</h2>
+                {visual ? (
+                    <div className="mx-auto flex justify-center">{visual}</div>
+                ) : (
+                    <div className={cn('mx-auto flex size-12 items-center justify-center rounded-[16px]', iconWrapperClassName[tone])}>
+                        <PageStateIcon tone={tone} />
+                    </div>
+                )}
+
+                {titlePlacement === 'belowIcon' ? titleElement : null}
                 {description ? <p className="mt-2 font-apple text-[14px] leading-6 text-gray-3">{description}</p> : null}
 
                 {action ? (
@@ -89,8 +121,8 @@ function PageState({tone, title, description, action, layout = 'panel', loadingC
                             size="md"
                             className={cn(
                                 tone === 'error'
-                                    ? 'h-auto rounded-none px-0 font-semibold text-main-1 no-underline hover:bg-transparent hover:text-main-2 hover:no-underline'
-                                    : 'h-11 rounded-[14px] px-5 font-semibold',
+                                    ? 'h-auto cursor-pointer rounded-none px-0 font-semibold text-main-1 no-underline hover:bg-transparent hover:text-main-2 hover:no-underline'
+                                    : 'h-11 cursor-pointer rounded-[14px] px-5 font-semibold',
                             )}
                             disabled={isLoading}
                         >

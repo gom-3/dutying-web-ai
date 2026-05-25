@@ -107,7 +107,7 @@ export function AiAutofill() {
 
         const progressToastId = 'make-shift-ai-fill-progress';
 
-        toast.loading(t('page.makeShift.aiRefill.progressToast'), {id: progressToastId});
+        toast.loading(t('page.makeShift.aiRefill.progressToast'), {id: progressToastId, duration: Infinity});
 
         try {
             const result = await requestAiSchedule({

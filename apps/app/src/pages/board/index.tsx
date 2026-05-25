@@ -20,6 +20,7 @@ import useAuth from '@/features/auth';
 import {BoardAPI, isBoardMockEnabled, MOCK_BOARD_WARD_ID} from '@/shared/api';
 import {type TCreateWardBoardPostDTO, type TWardBoardComment, type TWardBoardDeadline, type TWardBoardPost} from '@/shared/api/board';
 import PageState from '@/shared/ui/PageState';
+import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
 const POST_PAGE_SIZE = 40;
 const POST_LIST_TITLE_MAX_LENGTH = 24;
@@ -437,7 +438,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
     };
 
     return (
-        <div ref={pickerRef} className="relative grid max-w-[300px] gap-1.5">
+        <div id="board_composer_deadline_picker" ref={pickerRef} className="relative grid max-w-[300px] gap-1.5">
             <span className="text-[13px] font-semibold text-sub-2">마감일</span>
             <button
                 type="button"
@@ -706,7 +707,7 @@ function DeadlineCalendar({
 
 function BoardPage() {
     const {
-        state: {wardId, accountMeStatus, _loaded, isAuth},
+        state: {wardId, accountId, accountMeStatus, _loaded, isAuth},
         actions: {handleGetAccountMe},
     } = useAuth();
     const queryClient = useQueryClient();
@@ -796,7 +797,7 @@ function BoardPage() {
     useEffect(() => {
         if (!previewImageUrl) return undefined;
 
-        const handleKeyDown = (event: KeyboardEvent) => {
+        const handleKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key === 'Escape') {
                 setPreviewImageUrl(null);
             }
@@ -1102,6 +1103,7 @@ function BoardPage() {
     };
     const canSubmitComment = commentDraft.trim().length > 0 && Boolean(selectedPostId);
     const isCommentBusy = createCommentMutation.isPending || createReplyMutation.isPending;
+    const boardTutorialMode: TBoardTutorialMode = isComposerOpen ? 'composer' : selectedPost ? 'detail' : 'list';
 
     if (bootstrapPending) {
         return (
@@ -1146,6 +1148,7 @@ function BoardPage() {
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                     <p className="text-[14px] leading-6 text-gray-3">공지, 요청, 마감 체크를 한곳에서 관리해요.</p>
                     <button
+                        id="board_create_button"
                         type="button"
                         className="inline-flex h-10 items-center rounded-[8px] bg-sub-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#3A3A42]"
                         onClick={() => {
@@ -1161,10 +1164,11 @@ function BoardPage() {
             </div>
 
             <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(420px,1.25fr)_320px]">
-                <section className="flex min-h-[520px] min-w-0 flex-col rounded-[8px] bg-white p-3">
+                <section id="board_post_list" className="flex min-h-[520px] min-w-0 flex-col rounded-[8px] bg-white p-3">
                     <div className="mb-2 flex items-center justify-between px-1">
                         <h2 className="text-[15px] font-semibold text-sub-1">게시글</h2>
                         <button
+                            id="board_search_button"
                             type="button"
                             className={cn(
                                 'grid h-8 w-8 place-items-center rounded-[8px] transition-colors',
@@ -1243,7 +1247,7 @@ function BoardPage() {
 
                 <section className="min-h-[520px] min-w-0 rounded-[8px] bg-white p-5">
                     {isComposerOpen ? (
-                        <form className="flex h-full min-h-0 flex-col" onSubmit={handleCreatePost} noValidate>
+                        <form id="board_composer_panel" className="flex h-full min-h-0 flex-col" onSubmit={handleCreatePost} noValidate>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-[13px] font-semibold text-gray-3">새 게시글</p>
@@ -1264,110 +1268,117 @@ function BoardPage() {
                             </div>
 
                             <div className="mt-5 grid gap-4">
-                                <label className="grid gap-1.5">
-                                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                                        제목
-                                        <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
-                                    </span>
-                                    <input
-                                        ref={postTitleInputRef}
-                                        value={postDraft.title}
-                                        onChange={(event) => setPostDraft((current) => ({...current, title: event.target.value}))}
-                                        maxLength={100}
-                                        aria-required="true"
-                                        aria-invalid={isPostTitleInvalid}
-                                        className={cn(
-                                            'h-11 rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
-                                            isPostTitleInvalid
-                                                ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
-                                                : 'ring-transparent focus:ring-main-3',
-                                        )}
-                                        placeholder="제목을 입력해 주세요"
-                                    />
-                                </label>
-                                <label className="grid gap-1.5">
-                                    <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                                        내용
-                                        <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
-                                    </span>
-                                    <textarea
-                                        ref={postContentTextareaRef}
-                                        value={postDraft.content}
-                                        onChange={(event) => setPostDraft((current) => ({...current, content: event.target.value}))}
-                                        maxLength={POST_CONTENT_MAX_LENGTH}
-                                        aria-required="true"
-                                        aria-invalid={isPostContentInvalid}
-                                        className={cn(
-                                            'min-h-[220px] resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3.5 py-3 text-[15px] leading-6 text-sub-1 ring-1 transition outline-none focus:bg-white',
-                                            isPostContentInvalid
-                                                ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
-                                                : 'ring-transparent focus:ring-main-3',
-                                        )}
-                                        placeholder="공유할 내용을 입력해 주세요"
-                                    />
-                                    <span className="justify-self-end text-[11px] font-medium text-gray-4">
-                                        {postDraft.content.length}/{POST_CONTENT_MAX_LENGTH}
-                                    </span>
-                                </label>
-                                <div className="grid gap-2">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <span className="text-[13px] font-semibold text-sub-2">사진</span>
-                                        <span className="font-poppins text-[11px] font-semibold text-gray-4">
-                                            {postImageAttachments.length}/{POST_IMAGE_MAX_COUNT}
+                                <div id="board_composer_required_fields" className="grid gap-4">
+                                    <label className="grid gap-1.5">
+                                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                                            제목
+                                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
                                         </span>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {postImageAttachments.map((attachment) => (
-                                            <div
-                                                key={attachment.id}
-                                                className="group relative h-20 w-20 overflow-hidden rounded-[8px] bg-gray-7"
-                                            >
-                                                <img src={attachment.url} alt="" className="h-full w-full object-cover" />
+                                        <input
+                                            ref={postTitleInputRef}
+                                            value={postDraft.title}
+                                            onChange={(event) => setPostDraft((current) => ({...current, title: event.target.value}))}
+                                            maxLength={100}
+                                            aria-required="true"
+                                            aria-invalid={isPostTitleInvalid}
+                                            className={cn(
+                                                'h-11 rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                                isPostTitleInvalid
+                                                    ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
+                                                    : 'ring-transparent focus:ring-main-3',
+                                            )}
+                                            placeholder="제목을 입력해 주세요"
+                                        />
+                                    </label>
+                                    <label className="grid gap-1.5">
+                                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                                            내용
+                                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
+                                        </span>
+                                        <textarea
+                                            ref={postContentTextareaRef}
+                                            value={postDraft.content}
+                                            onChange={(event) => setPostDraft((current) => ({...current, content: event.target.value}))}
+                                            maxLength={POST_CONTENT_MAX_LENGTH}
+                                            aria-required="true"
+                                            aria-invalid={isPostContentInvalid}
+                                            className={cn(
+                                                'min-h-[220px] resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3.5 py-3 text-[15px] leading-6 text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                                isPostContentInvalid
+                                                    ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
+                                                    : 'ring-transparent focus:ring-main-3',
+                                            )}
+                                            placeholder="공유할 내용을 입력해 주세요"
+                                        />
+                                        <span className="justify-self-end text-[11px] font-medium text-gray-4">
+                                            {postDraft.content.length}/{POST_CONTENT_MAX_LENGTH}
+                                        </span>
+                                    </label>
+                                </div>
+                                <div id="board_composer_options" className="grid gap-4">
+                                    <div className="grid gap-2">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="text-[13px] font-semibold text-sub-2">사진</span>
+                                            <span className="font-poppins text-[11px] font-semibold text-gray-4">
+                                                {postImageAttachments.length}/{POST_IMAGE_MAX_COUNT}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {postImageAttachments.map((attachment) => (
+                                                <div
+                                                    key={attachment.id}
+                                                    className="group relative h-20 w-20 overflow-hidden rounded-[8px] bg-gray-7"
+                                                >
+                                                    <img src={attachment.url} alt="" className="h-full w-full object-cover" />
+                                                    <button
+                                                        type="button"
+                                                        className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-black/55 text-white transition-colors hover:bg-black/70"
+                                                        onClick={() => handleRemovePostImage(attachment.id)}
+                                                        aria-label={`${attachment.name} 삭제`}
+                                                        title={`${attachment.name} 삭제`}
+                                                    >
+                                                        <X className="size-3" aria-hidden="true" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {postImageAttachments.length < POST_IMAGE_MAX_COUNT ? (
                                                 <button
                                                     type="button"
-                                                    className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-black/55 text-white transition-colors hover:bg-black/70"
-                                                    onClick={() => handleRemovePostImage(attachment.id)}
-                                                    aria-label={`${attachment.name} 삭제`}
-                                                    title={`${attachment.name} 삭제`}
+                                                    className="flex h-20 min-w-20 flex-col items-center justify-center gap-1 rounded-[8px] bg-gray-7 px-3 text-gray-3 transition-colors hover:bg-[#F2F4F6] hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-50"
+                                                    onClick={() => postImageInputRef.current?.click()}
+                                                    disabled={isPostImageReading}
                                                 >
-                                                    <X className="size-3" aria-hidden="true" />
+                                                    <ImagePlus className="size-5" strokeWidth={1.8} aria-hidden="true" />
+                                                    <span className="text-[12px] font-semibold">
+                                                        {isPostImageReading ? '첨부 중' : '추가'}
+                                                    </span>
                                                 </button>
-                                            </div>
-                                        ))}
-                                        {postImageAttachments.length < POST_IMAGE_MAX_COUNT ? (
-                                            <button
-                                                type="button"
-                                                className="flex h-20 min-w-20 flex-col items-center justify-center gap-1 rounded-[8px] bg-gray-7 px-3 text-gray-3 transition-colors hover:bg-[#F2F4F6] hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-50"
-                                                onClick={() => postImageInputRef.current?.click()}
-                                                disabled={isPostImageReading}
-                                            >
-                                                <ImagePlus className="size-5" strokeWidth={1.8} aria-hidden="true" />
-                                                <span className="text-[12px] font-semibold">{isPostImageReading ? '첨부 중' : '추가'}</span>
-                                            </button>
-                                        ) : null}
+                                            ) : null}
+                                        </div>
+                                        <input
+                                            ref={postImageInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            className="hidden"
+                                            onChange={(event) => void handleSelectPostImages(event.currentTarget.files)}
+                                        />
+                                        <div className="flex items-center justify-between gap-3 text-[11px] font-medium">
+                                            <span className={postImageError ? 'text-[#E85D75]' : 'text-gray-4'}>
+                                                {postImageError || `최대 ${POST_IMAGE_MAX_COUNT}장 · 장당 ${POST_IMAGE_MAX_SIZE_MB}MB`}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <input
-                                        ref={postImageInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={(event) => void handleSelectPostImages(event.currentTarget.files)}
+                                    <DeadlinePicker
+                                        value={postDraft.deadlineDate}
+                                        onChange={(deadlineDate) => setPostDraft((current) => ({...current, deadlineDate}))}
                                     />
-                                    <div className="flex items-center justify-between gap-3 text-[11px] font-medium">
-                                        <span className={postImageError ? 'text-[#E85D75]' : 'text-gray-4'}>
-                                            {postImageError || `최대 ${POST_IMAGE_MAX_COUNT}장 · 장당 ${POST_IMAGE_MAX_SIZE_MB}MB`}
-                                        </span>
-                                    </div>
                                 </div>
-                                <DeadlinePicker
-                                    value={postDraft.deadlineDate}
-                                    onChange={(deadlineDate) => setPostDraft((current) => ({...current, deadlineDate}))}
-                                />
                             </div>
 
                             <div className="mt-4 flex justify-end">
                                 <button
+                                    id="board_composer_submit"
                                     type="submit"
                                     className="h-10 rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
                                     disabled={createPostMutation.isPending || isPostImageReading}
@@ -1377,7 +1388,7 @@ function BoardPage() {
                             </div>
                         </form>
                     ) : selectedPost ? (
-                        <div className="flex h-full min-h-0 flex-col">
+                        <div id="board_detail_panel" className="flex h-full min-h-0 flex-col">
                             <div className="flex flex-wrap items-start justify-between gap-4">
                                 <div className="min-w-0 flex-1">
                                     {selectedPost.isNotice ? (
@@ -1425,7 +1436,7 @@ function BoardPage() {
                                 </div>
                             </div>
 
-                            <div className="mt-5 flex flex-wrap items-center gap-4">
+                            <div id="board_post_actions" className="mt-5 flex flex-wrap items-center gap-4">
                                 <button
                                     type="button"
                                     className={cn(
@@ -1502,7 +1513,12 @@ function BoardPage() {
                                     <div className="mt-6 rounded-[8px] bg-gray-7 px-4 py-3">
                                         <div className="flex flex-wrap items-center justify-between gap-2">
                                             <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="size-4 text-[#217A43]" aria-hidden="true" />
+                                                <span
+                                                    className="grid size-4 place-items-center rounded-full bg-[#217A43] text-white"
+                                                    aria-hidden="true"
+                                                >
+                                                    <Check className="size-3" strokeWidth={3} />
+                                                </span>
                                                 <span className="text-[14px] font-semibold text-sub-1">
                                                     체크 {selectedPost.checkCount ?? 0}명
                                                 </span>
@@ -1525,7 +1541,7 @@ function BoardPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-[15px] font-semibold text-sub-1">댓글 {selectedPost.commentCount ?? 0}</h3>
                                     </div>
-                                    <div className="mt-2 flex items-start gap-1.5">
+                                    <div id="board_comment_form" className="mt-2 flex items-start gap-1.5">
                                         <textarea
                                             ref={commentTextareaRef}
                                             value={commentDraft}
@@ -1577,14 +1593,24 @@ function BoardPage() {
                             <PageState
                                 tone="empty"
                                 title="게시글을 선택해 주세요"
-                                description="목록에서 글을 열면 체크 현황과 댓글을 볼 수 있어요."
                                 className="py-0"
+                                titlePlacement="aboveIcon"
+                                titleClassName="mb-3"
+                                visual={
+                                    <img
+                                        src="/img/board-empty-nurse.png"
+                                        alt=""
+                                        aria-hidden="true"
+                                        draggable={false}
+                                        className="h-auto w-[153px] object-contain"
+                                    />
+                                }
                             />
                         </div>
                     )}
                 </section>
 
-                <div className="min-w-0">
+                <div id="board_deadline_calendar" className="min-w-0">
                     <DeadlineCalendar
                         year={calendarMonth.year}
                         month={calendarMonth.month}
@@ -1597,6 +1623,11 @@ function BoardPage() {
                     />
                 </div>
             </div>
+            <BoardTutorial
+                accountId={accountId}
+                canStart={postsQuery.isSuccess && deadlinesQuery.isSuccess && !previewImageUrl}
+                mode={boardTutorialMode}
+            />
             {previewImageUrl ? (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"

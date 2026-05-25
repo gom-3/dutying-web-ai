@@ -111,6 +111,28 @@ const useRegister = () => {
         setLoading(true);
 
         try {
+            if (accountMe.status === 'WARD_SELECT_PENDING' && accountMe.nurseId) {
+                await AccountAPI.editAccount({
+                    accountId,
+                    name: createNurseDTO.name,
+                    ...createNurseDTO.profileImg,
+                });
+
+                const currentNurse = await NurseAPI.getNurse(accountMe.nurseId);
+
+                await NurseAPI.updateNurse(accountMe.nurseId, {
+                    ...currentNurse,
+                    name: createNurseDTO.name,
+                    phoneNum: createNurseDTO.phoneNum,
+                    gender: createNurseDTO.gender,
+                    employmentDate: createNurseDTO.employmentDate,
+                    isWorker: createNurseDTO.isWorker,
+                });
+                await handleGetAccountMe();
+
+                return;
+            }
+
             if (accountMe.status === 'NURSE_INFO_PENDING') {
                 // 모바일에서 계정 초기 등록을 이미 마친 경우 계정 정보를 수정한다.
                 await AccountAPI.editAccount({

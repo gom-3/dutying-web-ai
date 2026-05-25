@@ -1,7 +1,6 @@
 export {default as LogoV2} from './LogoV2';
 export {default as LogoV2Black} from './LogoV2Black';
 export {default as LogoSymbolPurple} from './LogoSymbolPurple';
-export {default as LogoWordmarkPurple} from './LogoWordmarkPurple';
 export {default as AppstoreGrayIcon} from './AppstoreGrayIcon';
 export {default as AppstoreIcon} from './AppstoreIcon';
 export {default as AccountIcon} from './AccountIcon';

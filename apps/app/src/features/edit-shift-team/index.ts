@@ -377,7 +377,12 @@ const useEditShiftTeam = () => {
                 queryClient.setQueryData<TWard>(
                     wardQueryKey,
                     produce(oldWard, (draft) => {
-                        const sourceNurses = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId)!.nurses;
+                        const sourceShiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
+                        const destinationShiftTeam = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === nextShiftTeamId);
+
+                        if (!sourceShiftTeam || !destinationShiftTeam) return;
+
+                        const sourceNurses = sourceShiftTeam.nurses;
                         const nurse = sourceNurses.find((nurse) => nurse.nurseId === nurseId)!;
 
                         sourceNurses.splice(
@@ -385,14 +390,25 @@ const useEditShiftTeam = () => {
                             1,
                         );
 
-                        const destinationNurses = draft.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === nextShiftTeamId)!.nurses;
-                        const index = destinationNurses.findIndex((x) => x.priority === nextPriority);
+                        const destinationNurses = destinationShiftTeam.nurses;
+                        const nextPriorityIndex = destinationNurses.findIndex((x) => x.priority === nextPriority);
+                        const prevPriorityIndex = destinationNurses.findIndex((x) => x.priority === prevPriority);
+                        const insertIndex =
+                            nextPriorityIndex !== -1
+                                ? nextPriorityIndex
+                                : prevPriorityIndex === -1
+                                  ? destinationNurses.length
+                                  : prevPriorityIndex + 1;
 
-                        destinationNurses.splice(index === -1 ? 0 : index, 0, {
+                        destinationNurses.splice(insertIndex, 0, {
                             ...nurse,
+                            shiftTeamId: nextShiftTeamId,
                             divisionNum,
                             priority: (prevPriority + nextPriority) / 2,
                         });
+
+                        sourceShiftTeam.nurseCnt = sourceShiftTeam.nurses.length;
+                        destinationShiftTeam.nurseCnt = destinationShiftTeam.nurses.length;
                     }),
                 );
             }
@@ -476,12 +492,18 @@ const useEditShiftTeam = () => {
                     patchYearMonth,
                 );
                 await invalidateWardShiftAndRequest();
-            } catch {
-                if (!oldShift || !oldReqShift || !oldWard) return;
 
-                queryClient.setQueryData(wardQueryKey, oldWard);
-                queryClient.setQueryData(shiftQueryKey, oldShift);
-                queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
+                return true;
+            } catch (error) {
+                if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
+
+                if (oldShift) queryClient.setQueryData(shiftQueryKey, oldShift);
+
+                if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
+
+                showActionErrorFeedback(error, '간호사를 이동하지 못했어요.');
+
+                return false;
             }
         },
         [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey],
@@ -547,5 +569,3 @@ const useEditShiftTeam = () => {
 };
 
 export default useEditShiftTeam;
-
-

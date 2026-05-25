@@ -1,7 +1,6 @@
-﻿import {produce} from 'immer';
+import {produce} from 'immer';
+import {CornerDownLeft, Plus, X} from 'lucide-react';
 import {type Dispatch, type SetStateAction} from 'react';
-import {Plus} from 'lucide-react';
-import {CancelIcon, EnterIcon, XIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IRegisterWardShiftTeamsSectionProps {
@@ -12,7 +11,12 @@ interface IRegisterWardShiftTeamsSectionProps {
 function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWardShiftTeamsSectionProps) {
     const {t} = useTypedTranslation();
     const appendClipboardTextToNurse = async (index: number) => {
-        const nurses = (await navigator.clipboard.readText()).split('\n').map((x) => x.replace(/\r/g, ''));
+        const nurses = (await navigator.clipboard.readText())
+            .split('\n')
+            .map((value) => value.replace(/\r/g, '').trim())
+            .filter(Boolean);
+
+        if (nurses.length === 0) return;
 
         setShiftTeams(
             produce(shiftTeams, (draft) => {
@@ -22,12 +26,15 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
     };
 
     return (
-        <div className="mt-5 w-full shrink-0 rounded-[1.25rem] bg-white px-11.25 py-7.5 shadow-banner">
-            <div className="mb-6.25 flex items-center">
-                <p className="font-apple text-[1.25rem] font-medium text-sub-3">{t('feature.registerWard.shiftTeams.title')}</p>
-                <p className="ml-6 font-apple text-[1rem] text-main-2">{t('feature.registerWard.shiftTeams.excludeMe')}</p>
-                <div
-                    className="ml-auto flex cursor-pointer gap-[.625rem]"
+        <section className="mt-4 rounded-[24px] bg-white p-6">
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h2 className="text-[20px] font-semibold text-sub-1">{t('feature.registerWard.shiftTeams.title')}</h2>
+                    <p className="mt-1 text-xs leading-5 text-gray-3">팀별 간호사 이름을 입력해요. 본인은 자동으로 연결돼요.</p>
+                </div>
+                <button
+                    type="button"
+                    className="h-9 shrink-0 cursor-pointer gap-1.5 rounded-[12px] bg-gray-7 px-3 text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-6"
                     onClick={() => {
                         setShiftTeams(
                             produce(shiftTeams, (draft) => {
@@ -36,92 +43,99 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                         );
                     }}
                 >
-                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#CFD6DF] transition-colors group-hover:bg-[#EEF2F6]">
-                        <Plus className="h-[12px] w-[12px] text-[#4F5A71]" strokeWidth={3} />
-                    </span>
-                    <p className="font-apple text-[1rem] font-medium text-main-2">{t('feature.registerWard.shiftTeams.addTeam')}</p>
-                </div>
+                    <Plus className="h-4 w-4" />팀 추가
+                </button>
             </div>
-            {shiftTeams.map((shiftTeam, index) => (
-                <div key={index} className="mt-5">
-                    <div className="flex justify-between">
-                        <div className="flex">
-                            <div className="flex h-9 w-45 items-center justify-center gap-[.75rem] rounded-t-[.625rem] bg-sub-2 font-apple text-white">
-                                <p className="text-[1.25rem] font-medium">
+
+            <div className="mt-4 space-y-3">
+                {shiftTeams.map((shiftTeam, index) => (
+                    <article key={index} className="rounded-[16px] bg-gray-7 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <h3 className="text-[16px] font-semibold text-sub-1">
                                     {t('feature.registerWard.shiftTeams.teamName', {index: index + 1})}
+                                </h3>
+                                <p className="mt-1 text-xs text-gray-3">
+                                    {t('feature.registerWard.shiftTeams.count', {count: shiftTeam.length})}
                                 </p>
-                                <p className="text-[.875rem]">{t('feature.registerWard.shiftTeams.count', {count: shiftTeam.length})}</p>
                             </div>
-                        </div>
-                        <CancelIcon
-                            className="h-6 w-6 cursor-pointer self-center"
-                            onClick={() => {
-                                setShiftTeams(
-                                    produce(shiftTeams, (draft) => {
-                                        draft.splice(index, 1);
-                                    }),
-                                );
-                            }}
-                        />
-                    </div>
-                    <div className="flex w-full flex-wrap gap-[.625rem] rounded-[.625rem] rounded-tl-none border-[.0313rem] border-sub-3 bg-main-bg p-7.5">
-                        {shiftTeam.map((name, nameIndex) => (
-                            <div
-                                key={nameIndex}
-                                className="flex h-7 items-center gap-[.25rem] rounded-[.3125rem] border-[.0313rem] border-main-2 bg-main-4 px-[.5rem]"
+                            <button
+                                type="button"
+                                className="h-9 w-9 cursor-pointer rounded-full bg-white text-gray-3 transition-colors hover:bg-[#FFF1F6] hover:text-red disabled:cursor-not-allowed disabled:opacity-40"
+                                onClick={() => {
+                                    setShiftTeams(
+                                        produce(shiftTeams, (draft) => {
+                                            draft.splice(index, 1);
+                                        }),
+                                    );
+                                }}
+                                disabled={shiftTeams.length === 1}
+                                aria-label={`${index + 1}팀 삭제`}
+                                title={`${index + 1}팀 삭제`}
                             >
-                                <p className="font-apple text-[1rem] text-sub-1">{name}</p>
-                                <XIcon
-                                    className="h-4.5 w-4.5 cursor-pointer"
-                                    onClick={() => {
-                                        setShiftTeams(
-                                            produce(shiftTeams, (draft) => {
-                                                draft[index].splice(nameIndex, 1);
-                                            }),
-                                        );
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {shiftTeam.map((name, nameIndex) => (
+                                <span key={`${name}-${nameIndex}`} className="flex h-8 items-center gap-1 rounded-[10px] bg-white px-3">
+                                    <span className="text-sm font-medium text-sub-1">{name}</span>
+                                    <button
+                                        type="button"
+                                        className="h-5 w-5 cursor-pointer rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-gray-3"
+                                        onClick={() => {
+                                            setShiftTeams(
+                                                produce(shiftTeams, (draft) => {
+                                                    draft[index].splice(nameIndex, 1);
+                                                }),
+                                            );
+                                        }}
+                                        aria-label={`${name} 삭제`}
+                                    >
+                                        <X className="h-3.5 w-3.5" />
+                                    </button>
+                                </span>
+                            ))}
+                            <label className="flex h-8 min-w-32 items-center gap-1 rounded-[10px] bg-white px-3">
+                                <input
+                                    aria-label={`${index + 1}팀 간호사 이름 추가`}
+                                    placeholder={t('feature.registerWard.shiftTeams.addNamePlaceholder')}
+                                    className="min-w-0 flex-1 bg-transparent text-sm font-medium text-sub-1 outline-none placeholder:text-gray-4"
+                                    onKeyDown={(e) => {
+                                        if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+                                            e.preventDefault();
+                                            void appendClipboardTextToNurse(index);
+
+                                            return;
+                                        }
+
+                                        if (e.nativeEvent.isComposing) return;
+
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+
+                                            const value = e.currentTarget.value.trim();
+
+                                            if (!value) return;
+
+                                            e.currentTarget.value = '';
+                                            setShiftTeams(
+                                                produce(shiftTeams, (draft) => {
+                                                    draft[index].push(value);
+                                                }),
+                                            );
+                                        }
                                     }}
                                 />
-                            </div>
-                        ))}
-                        <p className="flex h-7 w-27 items-center justify-center rounded-[.3125rem] border-[.0625rem] border-main-1 bg-white font-apple text-[1rem] text-sub-1">
-                            <input
-                                placeholder={t('feature.registerWard.shiftTeams.addNamePlaceholder')}
-                                className="w-[70%] focus:outline-none"
-                                onKeyDown={(e) => {
-                                    if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
-                                        e.preventDefault();
-                                        appendClipboardTextToNurse(index);
-
-                                        return;
-                                    }
-
-                                    if (e.nativeEvent.isComposing) return;
-
-                                    if (e.currentTarget.value === '') return;
-
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-
-                                        const value = e.currentTarget.value;
-
-                                        e.currentTarget.value = '';
-                                        setShiftTeams(
-                                            produce(shiftTeams, (draft) => {
-                                                draft[index].push(value);
-                                            }),
-                                        );
-                                    }
-                                }}
-                            />
-                            <EnterIcon className="h-6 w-6" />
-                        </p>
-                    </div>
-                </div>
-            ))}
-        </div>
+                                <CornerDownLeft className="h-4 w-4 shrink-0 text-gray-4" />
+                            </label>
+                        </div>
+                    </article>
+                ))}
+            </div>
+        </section>
     );
 }
 
 export default RegisterWardShiftTeamsSection;
-
-

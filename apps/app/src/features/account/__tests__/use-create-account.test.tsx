@@ -47,7 +47,7 @@ describe('useCreateAccount', () => {
         expect(result.current.createAccountFeedback.message).toBe('계정 정보를 저장했어요.');
     });
 
-    it('marks validation failure without submitting when validation callback runs', () => {
+    it('keeps validation failure feedback empty without submitting', () => {
         const submit = vi.fn();
         const {result} = renderHook(() =>
             useCreateAccount({
@@ -60,8 +60,8 @@ describe('useCreateAccount', () => {
         });
 
         expect(submit).not.toHaveBeenCalled();
-        expect(result.current.createAccountStatus).toBe('failure');
-        expect(result.current.createAccountFeedback.message).toBe('입력한 계정 정보를 다시 확인해 주세요.');
+        expect(result.current.createAccountStatus).toBe('idle');
+        expect(result.current.createAccountFeedback.message).toBeNull();
     });
 
     it('classifies handled api errors as failure', async () => {

@@ -58,6 +58,116 @@ describe('NavigationBar', () => {
         expect(screen.getAllByRole('button', {name: '근무표'})).toHaveLength(1);
     });
 
+    it('근무 운영 섹션 위에 병원/병동명과 병동코드를 노출한다', () => {
+        mockUseEditWard.mockReturnValueOnce({
+            state: {
+                ward: {
+                    hospitalName: '듀팅병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    shiftTeams: [],
+                },
+                watingNurses: [],
+            },
+        });
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('듀팅병원')).toBeInTheDocument();
+        expect(screen.getByText('중환자실')).toBeInTheDocument();
+        expect(screen.getByText('ABC123')).toBeInTheDocument();
+        expect(screen.queryByText('듀팅병원 / 중환자실')).not.toBeInTheDocument();
+        expect(screen.queryByText('#ABC123')).not.toBeInTheDocument();
+    });
+
+    it('병동명이 없으면 병원명을 대표 이름으로 노출한다', () => {
+        mockUseEditWard.mockReturnValueOnce({
+            state: {
+                ward: {
+                    hospitalName: '듀팅병원',
+                    code: 'ABC123',
+                    shiftTeams: [],
+                },
+                watingNurses: [],
+            },
+        });
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('듀팅병원')).toBeInTheDocument();
+        expect(screen.getByText('ABC123')).toBeInTheDocument();
+    });
+
+    it('사이드바를 접으면 병동정보와 병동코드를 노출하지 않는다', async () => {
+        mockUseEditWard.mockReturnValue({
+            state: {
+                ward: {
+                    hospitalName: '듀팅병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    shiftTeams: [],
+                },
+                watingNurses: [],
+            },
+        });
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: '사이드바 접기'}));
+
+        expect(screen.queryByText('듀팅병원')).not.toBeInTheDocument();
+        expect(screen.queryByText('중환자실')).not.toBeInTheDocument();
+        expect(screen.queryByText('ABC123')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '병동코드 ABC123 안내 보기'})).not.toBeInTheDocument();
+    });
+
+    it('병동코드를 누르면 간호사 공유 안내 모달을 연다', async () => {
+        mockUseEditWard.mockReturnValueOnce({
+            state: {
+                ward: {
+                    hospitalName: '듀팅병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    shiftTeams: [],
+                },
+                watingNurses: [],
+            },
+        });
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: '병동코드 ABC123 안내 보기'}));
+
+        const dialog = screen.getByRole('dialog', {name: '소속 간호사에게 병동코드를 알려주세요'});
+
+        expect(dialog).toBeInTheDocument();
+        expect(screen.getByText('듀팅병원 중환자실 병동코드')).toBeInTheDocument();
+        expect(screen.getByText('간호사가 앱에서 바로 신청해요')).toBeInTheDocument();
+        expect(screen.getByText('확정 근무표를 바로 공유해요')).toBeInTheDocument();
+        expect(screen.getByText('병동채팅으로 빠르게 맞춰요')).toBeInTheDocument();
+        expect(screen.getByText('게시판 공지 확인까지 챙겨요')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '병동코드 안내 닫기'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '듀팅 병동코드 입력 방법 보기'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '닫기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '듀팅 병동코드 복사하기'})).not.toBeInTheDocument();
+    });
+
     it('설정 섹션에 계정 메뉴를 노출하고 하단 프로필 영역은 렌더링하지 않는다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>

@@ -39,7 +39,11 @@ vi.mock('../ui/register-nurse', () => ({
 }));
 
 vi.mock('../ui/select-enter-or-create', () => ({
-    default: () => <div>select-enter-or-create</div>,
+    default: ({onBack}: {onBack?: () => void}) => (
+        <button type="button" onClick={onBack}>
+            select-enter-or-create
+        </button>
+    ),
 }));
 
 vi.mock('../ui/pending-enter', () => ({
@@ -92,5 +96,21 @@ describe('RegisterPage', () => {
         render(<RegisterPage />);
 
         expect(screen.getByText('select-enter-or-create')).toBeInTheDocument();
+    });
+
+    it('shows the nurse info step when going back from ward selection', async () => {
+        const user = userEvent.setup();
+
+        mockAuthState = {
+            accountMe: {status: 'WARD_SELECT_PENDING'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        await user.click(screen.getByRole('button', {name: 'select-enter-or-create'}));
+
+        expect(screen.getByText('register-nurse')).toBeInTheDocument();
     });
 });

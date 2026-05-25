@@ -17,7 +17,7 @@ import {
 } from '../model';
 
 describe('OnboardingWardCreatePage model', () => {
-    it('requires at least one ward identity name on the first step', () => {
+    it('requires hospital name and keeps ward name optional on the first step', () => {
         const initialDraft = createInitialDraft();
 
         expect(getStepValidation(initialDraft, 1).issues).toEqual([{code: 'missing-hospital-name', step: 1}]);
@@ -28,6 +28,13 @@ describe('OnboardingWardCreatePage model', () => {
         };
 
         expect(getStepValidation(withHospitalName, 1).isValid).toBe(true);
+
+        const withInvalidWardName = {
+            ...withHospitalName,
+            wardName: '중환자실!',
+        };
+
+        expect(getStepValidation(withInvalidWardName, 1).issues).toEqual([{code: 'invalid-ward-name', step: 1}]);
     });
 
     it('returns validation issues for invalid shift types', () => {
@@ -272,6 +279,7 @@ describe('OnboardingWardCreatePage model', () => {
             ...withAllTeamNurses,
             currentStep: 4 as const,
             hospitalName: '듀팅병원',
+            wardName: '중환자실',
         };
         const validShiftDraft = updateShiftTypeDraft(step4Draft, step4Draft.shiftTypes[0]!.id, {name: '데이 근무'});
         const validNurseDraft = updateNurseDraft(validShiftDraft, validShiftDraft.nurses[0]!.id, {name: '홍길동'});
@@ -291,6 +299,7 @@ describe('OnboardingWardCreatePage model', () => {
             ...withAllTeamNurses,
             currentStep: 4,
             hospitalName: '듀팅병원',
+            wardName: '중환자실',
         });
 
         expect(getStepValidation(invalidShiftDraft, 3).isValid).toBe(false);

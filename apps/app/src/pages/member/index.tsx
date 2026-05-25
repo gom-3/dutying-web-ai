@@ -1,4 +1,5 @@
-﻿import {cn} from '@dutying/utils/style';
+﻿import {DateUtil} from '@dutying/utils/date';
+import {cn} from '@dutying/utils/style';
 import {
     DragDropContext,
     Draggable,
@@ -7,14 +8,15 @@ import {
     type DraggableProvidedDraggableProps,
     type DropResult,
 } from '@hello-pangea/dnd';
-import {Check, ChevronDown, ChevronRight, Copy, Link2, Plus, Trash2, X} from 'lucide-react';
+import {Check, ChevronDown, ChevronRight, Copy, Info, Link2, Plus, Trash2, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
+import {useSearchParams} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import {type TNurse} from '@/entities';
-import useEditWard from '@/features/edit-ward';
+import {getWardDisplayCode, getWardDisplayTitle, type TNurse} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
+import useEditWard from '@/features/edit-ward';
 import {
     createWardSkillSettings,
     getWardSkillSettings,
@@ -28,6 +30,9 @@ import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
+import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
+import {NURSE_ROLE_HELP, hasPrecepteeMemo, setPrecepteeMemo, type TNurseRoleHelpType} from './model/nurse-role';
+import {createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
 import MemberSkillLevelModal from './ui/member-skill-level-modal';
 import NurseDetailPanel from './ui/nurse-detail-panel';
@@ -36,6 +41,13 @@ type TMemberNurseSortMode = 'manual' | 'name' | 'skill';
 type TManualOrderByTeamId = Record<number, number[]>;
 
 const getMemberManualOrderStorageKey = (wardId: number | null) => `member:manual-order:${wardId ?? 'unknown'}`;
+const parsePositiveInt = (value: string | null): number | null => {
+    if (!value) return null;
+
+    const parsed = Number(value);
+
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+};
 const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId => {
     if (!value) return {};
 
@@ -47,9 +59,7 @@ const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId =>
 
             if (Number.isNaN(numericTeamId)) return [];
 
-            const normalizedNurseIds = nurseIds
-                .map((nurseId) => Number(nurseId))
-                .filter((nurseId) => Number.isInteger(nurseId));
+            const normalizedNurseIds = nurseIds.map((nurseId) => Number(nurseId)).filter((nurseId) => Number.isInteger(nurseId));
 
             return [[numericTeamId, normalizedNurseIds]] as const;
         });
@@ -64,9 +74,9 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(60px,0.85fr)_minmax(72px,1.05fr)_minmax(72px,0.9fr)_minmax(72px,0.9fr)_minmax(60px,0.8fr)_minmax(84px,0.95fr)_44px]';
+    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(56px,0.78fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_minmax(82px,0.9fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(72px,1.05fr)_minmax(72px,0.9fr)_minmax(72px,0.9fr)_minmax(60px,0.8fr)_minmax(84px,0.95fr)_44px]';
+    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_minmax(82px,0.9fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; label: string}[] = [
     {value: 'manual', label: '임의순'},
     {value: 'name', label: '가나다순'},
@@ -131,8 +141,46 @@ const getWorkerBoundaryIndex = (orderedNurseIds: number[], isWorkerByNurseId: Ma
     return firstOffIndex === -1 ? orderedNurseIds.length : firstOffIndex;
 };
 
+function MemberRoleHeaderHelp({
+    type,
+    openedType,
+    onToggle,
+}: {
+    type: TNurseRoleHelpType;
+    openedType: TNurseRoleHelpType | null;
+    onToggle: (type: TNurseRoleHelpType) => void;
+}) {
+    const help = NURSE_ROLE_HELP[type];
+    const isOpen = openedType === type;
+
+    return (
+        <span className="group relative inline-flex items-center justify-center gap-1">
+            <span>{help.label}</span>
+            <button
+                type="button"
+                aria-label={`${help.label} 설명`}
+                aria-expanded={isOpen}
+                className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                onClick={() => onToggle(type)}
+            >
+                <Info className="h-3 w-3" />
+            </button>
+            <span
+                role="tooltip"
+                className={cn(
+                    'pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-[218px] -translate-x-1/2 rounded-[8px] bg-[#242428] px-3 py-2 text-left font-apple text-[12px] leading-5 text-white opacity-0 shadow-[0px_10px_24px_rgba(23,23,28,0.18)] transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
+                    isOpen && 'opacity-100',
+                )}
+            >
+                {help.description}
+            </span>
+        </span>
+    );
+}
+
 function MemberPage() {
     const {t} = useTypedTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const {
         state: {watingNurses},
     } = useEditWard();
@@ -144,6 +192,7 @@ function MemberPage() {
             addNurse,
             deleteNurse,
             deleteShiftTeam,
+            moveNurseOrder,
             updateShiftTeam,
             updateNurse,
             updateNurseShift,
@@ -159,11 +208,13 @@ function MemberPage() {
     const [pendingWorkerByNurseId, setPendingWorkerByNurseId] = useState<Record<number, boolean>>({});
     const [manualOrderByTeamId, setManualOrderByTeamId] = useState<Record<number, number[]>>({});
     const [skillModalOpen, setSkillModalOpen] = useState(false);
+    const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelpType | null>(null);
     const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
     const [editingTeamName, setEditingTeamName] = useState('');
     const [activeIndicatorStyle, setActiveIndicatorStyle] = useState<{left: number; width: number} | null>(null);
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
     const [connectionManageModalOpen, setConnectionManageModalOpen] = useState(false);
+    const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
     const [drawerStartOffset, setDrawerStartOffset] = useState(0);
     const hasInitializedSelectionRef = useRef(false);
     const rowRefByNurseId = useRef<Record<number, HTMLDivElement | null>>({});
@@ -176,6 +227,7 @@ function MemberPage() {
     const tabButtonRefByTeamId = useRef<Record<number, HTMLButtonElement | null>>({});
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
+    const requestedShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
 
     useEffect(() => {
         setSkillSettings(getWardSkillSettings(wardId));
@@ -241,13 +293,33 @@ function MemberPage() {
                 : (left: TNurse, right: TNurse) => compareMemberNurseSkill(left, right, levelsByNurseId as Record<number, number>);
 
         return [...onNurses].sort(comparator).concat([...offNurses].sort(comparator));
-    }, [activeShiftTeam?.nurses, activeShiftTeam?.shiftTeamId, levelsByNurseId, manualOrderByTeamId, nurseSortMode, pendingWorkerByNurseId]);
+    }, [
+        activeShiftTeam?.nurses,
+        activeShiftTeam?.shiftTeamId,
+        levelsByNurseId,
+        manualOrderByTeamId,
+        nurseSortMode,
+        pendingWorkerByNurseId,
+    ]);
     const activeTeamNurseCount = activeShiftTeam?.nurseCnt ?? activeShiftTeam?.nurses.length ?? 0;
     const isActiveTeamEmpty = activeTeamNurseCount === 0;
 
     useEffect(() => {
         if (!shiftTeams?.length) {
             setActiveShiftTeamId(null);
+            return;
+        }
+
+        const requestedShiftTeam = requestedShiftTeamId
+            ? shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === requestedShiftTeamId)
+            : null;
+
+        if (requestedShiftTeam) {
+            if (activeShiftTeamId !== requestedShiftTeam.shiftTeamId) {
+                selectNurse(null);
+                setActiveShiftTeamId(requestedShiftTeam.shiftTeamId);
+            }
+
             return;
         }
 
@@ -269,7 +341,7 @@ function MemberPage() {
         }
 
         setActiveShiftTeamId(shiftTeams[0].shiftTeamId);
-    }, [activeShiftTeamId, selectedNurse, shiftTeams]);
+    }, [activeShiftTeamId, requestedShiftTeamId, selectNurse, selectedNurse, shiftTeams]);
 
     useEffect(() => {
         if (!sortMenuOpen) return;
@@ -479,6 +551,11 @@ function MemberPage() {
 
         selectNurse(null);
         setActiveShiftTeamId(shiftTeamId);
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+
+        nextSearchParams.set('shiftTeamId', String(shiftTeamId));
+        setSearchParams(nextSearchParams, {replace: true});
     };
     const handleSaveSkillSettings = (nextConfig: TWardSkillSettings['config']) => {
         if (!wardId) return;
@@ -589,7 +666,7 @@ function MemberPage() {
     const handleUpdateNurse = async (nurse: TNurse, nextNurse: TNurse) => {
         const isWorkerChanged = nurse.isWorker !== nextNurse.isWorker;
 
-        if (isWorkerChanged) {
+        if (isWorkerChanged && nurse.shiftTeamId != null) {
             setPendingWorkerByNurseId((prev) => ({...prev, [nurse.nurseId]: nextNurse.isWorker}));
             // Reorder immediately so the row transitions once into the target worker group.
             reorderNurseForWorkerToggle(nurse.shiftTeamId, nurse.nurseId, nextNurse.isWorker);
@@ -598,7 +675,7 @@ function MemberPage() {
         const saved = await updateNurse(nurse.nurseId, nextNurse);
 
         if (!saved) {
-            if (isWorkerChanged) {
+            if (isWorkerChanged && nurse.shiftTeamId != null) {
                 // Roll back local manual ordering if the worker toggle failed to persist.
                 reorderNurseForWorkerToggle(nurse.shiftTeamId, nurse.nurseId, nurse.isWorker);
                 setPendingWorkerByNurseId((prev) => {
@@ -668,55 +745,113 @@ function MemberPage() {
 
         await addNurse(activeShiftTeam.shiftTeamId);
     };
+    const handleMoveSelectedNurseToTeam = async (nextShiftTeamId: number) => {
+        if (!selectedNurse || !shiftTeams) return false;
+
+        const payload = createMoveNurseToTeamPayload({
+            shiftTeams,
+            nurseId: selectedNurse.nurseId,
+            destinationShiftTeamId: nextShiftTeamId,
+        });
+        const destinationShiftTeam = shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === nextShiftTeamId);
+
+        if (!payload || !destinationShiftTeam) return false;
+
+        const moved = await moveNurseOrder(
+            payload.nurseId,
+            payload.sourceShiftTeamId,
+            payload.destinationShiftTeamId,
+            payload.divisionNum,
+            payload.prevPriority,
+            payload.nextPriority,
+            DateUtil.getDateString(new Date(), 'yyyy-MM'),
+        );
+
+        if (!moved) return false;
+
+        setNurseSortMode('manual');
+        setActiveShiftTeamId(nextShiftTeamId);
+        setManualOrderByTeamId((prev) => {
+            const sourceTeam = shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === payload.sourceShiftTeamId);
+            const sourceOrder = prev[payload.sourceShiftTeamId] ?? sourceTeam?.nurses.map((nurse) => nurse.nurseId) ?? [];
+            const destinationOrder = prev[payload.destinationShiftTeamId] ?? destinationShiftTeam.nurses.map((nurse) => nurse.nurseId);
+
+            return {
+                ...prev,
+                [payload.sourceShiftTeamId]: sourceOrder.filter((nurseId) => nurseId !== selectedNurse.nurseId),
+                [payload.destinationShiftTeamId]: [
+                    ...destinationOrder.filter((nurseId) => nurseId !== selectedNurse.nurseId),
+                    selectedNurse.nurseId,
+                ],
+            };
+        });
+
+        sendEvent(events.memberPage.moveNurse);
+        toast.success(
+            `${selectedNurse.name.trim() ? selectedNurse.name : '선택한 간호사'}를 ${destinationShiftTeam.name} 팀으로 이동했어요.`,
+        );
+
+        return true;
+    };
     const totalNurseCount = allNurses.length;
     const connectedNurseCount = allNurses.filter((nurse) => nurse.isConnected).length;
     const unconnectedNurseCount = Math.max(0, totalNurseCount - connectedNurseCount);
     const hospitalName = ward?.hospitalName?.trim() || '-';
     const wardName = ward?.name?.trim() || '-';
+    const wardGuideTitle = getWardDisplayTitle(ward);
+    const wardGuideCode = getWardDisplayCode(ward, '-');
 
     return (
         <div className="min-h-screen bg-[#FAF8FB] [&_button:not(:disabled)]:cursor-pointer">
-            {showDeleteTeamModal && activeShiftTeam ? createPortal(
-                <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]">
-                    <div role="dialog" aria-modal="true" className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5">
-                        <p className="font-apple text-[20px] font-semibold text-sub-1">팀을 삭제할까요?</p>
-                        <p className="mt-2 font-apple text-[15px] text-gray-3">
-                            <span className="font-semibold text-sub-1">{activeShiftTeam.name}</span>
-                            {` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`}
-                        </p>
-                        <div className="mt-6 flex items-center gap-3">
-                            <button
-                                type="button"
-                                className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                onClick={() => setShowDeleteTeamModal(false)}
-                            >
-                                닫기
-                            </button>
-                            <button
-                                type="button"
-                                className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
-                                onClick={async () => {
-                                    setShowDeleteTeamModal(false);
+            <WardCodeGuideModal
+                open={wardCodeGuideOpen}
+                wardCode={wardGuideCode}
+                wardTitle={wardGuideTitle}
+                onClose={() => setWardCodeGuideOpen(false)}
+            />
+            {showDeleteTeamModal && activeShiftTeam
+                ? createPortal(
+                      <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]">
+                          <div role="dialog" aria-modal="true" className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5">
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">팀을 삭제할까요?</p>
+                              <p className="mt-2 font-apple text-[15px] text-gray-3">
+                                  <span className="font-semibold text-sub-1">{activeShiftTeam.name}</span>
+                                  {` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`}
+                              </p>
+                              <div className="mt-6 flex items-center gap-3">
+                                  <button
+                                      type="button"
+                                      className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                      onClick={() => setShowDeleteTeamModal(false)}
+                                  >
+                                      닫기
+                                  </button>
+                                  <button
+                                      type="button"
+                                      className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                                      onClick={async () => {
+                                          setShowDeleteTeamModal(false);
 
-                                    if (selectedNurse?.shiftTeamId === activeShiftTeam.shiftTeamId) {
-                                        const canClose = selectNurse(null);
+                                          if (selectedNurse?.shiftTeamId === activeShiftTeam.shiftTeamId) {
+                                              const canClose = selectNurse(null);
 
-                                        if (!canClose) {
-                                            return;
-                                        }
-                                    }
+                                              if (!canClose) {
+                                                  return;
+                                              }
+                                          }
 
-                                    await deleteShiftTeam(activeShiftTeam.shiftTeamId);
-                                    toast.success(`${activeShiftTeam.name} 팀을 삭제했어요.`);
-                                }}
-                            >
-                                삭제하기
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                modalRoot,
-            ) : null}
+                                          await deleteShiftTeam(activeShiftTeam.shiftTeamId);
+                                          toast.success(`${activeShiftTeam.name} 팀을 삭제했어요.`);
+                                      }}
+                                  >
+                                      삭제하기
+                                  </button>
+                              </div>
+                          </div>
+                      </div>,
+                      modalRoot,
+                  )
+                : null}
             <div ref={layoutRowRef} className="flex min-h-screen min-w-0 gap-5 overflow-visible px-10 pt-[52px] pb-14">
                 <section className="min-w-0 flex-1">
                     <div id="ward_info" className="flex items-center justify-between gap-10">
@@ -726,34 +861,59 @@ function MemberPage() {
                         <div className="flex min-w-[370px] items-center gap-2">
                             <div className="flex h-[46px] items-center justify-center rounded-[10px] bg-white px-4">
                                 <div className="flex min-w-0 items-center justify-center gap-2 pr-4">
-                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">{hospitalName}</span>
-                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">{wardName}</span>
+                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">
+                                        {hospitalName}
+                                    </span>
+                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">
+                                        {wardName}
+                                    </span>
                                 </div>
                                 <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
                                 <div className="flex min-w-0 items-center justify-center gap-3 pl-4">
                                     <div className="flex items-baseline gap-2 whitespace-nowrap">
                                         <span className="font-apple text-[14px] font-normal text-[#8A94A8]">전체 인원</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">{totalNurseCount}</span>
+                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                            {totalNurseCount}
+                                        </span>
                                     </div>
                                     <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
                                     <div className="flex items-baseline gap-2 whitespace-nowrap">
                                         <span className="font-apple text-[14px] font-normal text-[#8A94A8]">연동됨</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">{connectedNurseCount}</span>
+                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                            {connectedNurseCount}
+                                        </span>
                                     </div>
                                     <div className="flex items-baseline gap-2 whitespace-nowrap">
                                         <span className="font-apple text-[14px] font-normal text-[#8A94A8]">미연동</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">{unconnectedNurseCount}</span>
+                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                            {unconnectedNurseCount}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex h-[46px] items-center rounded-[10px] border border-[#D6DDEA] bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.02)]">
+                            <div
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`병동코드 ${wardGuideCode} 안내 보기`}
+                                className="flex h-[46px] cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1"
+                                onClick={() => setWardCodeGuideOpen(true)}
+                                onKeyDown={(event) => {
+                                    if (event.target !== event.currentTarget) return;
+                                    if (event.key !== 'Enter' && event.key !== ' ') return;
+
+                                    event.preventDefault();
+                                    setWardCodeGuideOpen(true);
+                                }}
+                            >
                                 <span className="font-apple text-[14px] text-[#8A94A8]">병동 코드</span>
-                                <span className="ml-2 font-poppins text-[16px] font-bold text-main-1">{ward?.code ?? '-'}</span>
+                                <span className="ml-2 font-poppins text-[16px] font-bold text-main-1">{wardGuideCode}</span>
                                 <button
                                     type="button"
                                     className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded text-[#8A94A8] transition-colors hover:bg-[#F2F4F8] hover:text-[#657084] focus-visible:outline-2 focus-visible:outline-main-1"
                                     aria-label="병동 코드 복사"
-                                    onClick={async () => {
+                                    onClick={async (event) => {
+                                        event.stopPropagation();
+
                                         if (!ward?.code) return;
 
                                         await navigator.clipboard.writeText(ward.code);
@@ -778,6 +938,7 @@ function MemberPage() {
                             </button>
                         </div>
                         <button
+                            id="member_skill_settings_button"
                             type="button"
                             className="ml-auto flex h-[42px] items-center gap-2 rounded-[8px] bg-gray-6 px-4 font-apple text-[16px] font-medium text-sub-2 transition-colors hover:bg-gray-5 focus-visible:outline-2 focus-visible:outline-main-1"
                             onClick={() => setSkillModalOpen(true)}
@@ -791,12 +952,12 @@ function MemberPage() {
                     <div className="mt-8">
                         <div
                             id="shift_team_list"
-                            className="flex h-[42px] w-full items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] px-2 py-1"
+                            className="flex w-full items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5"
                         >
                             <div ref={tabListRef} className="relative flex flex-1 items-center justify-start gap-1">
                                 {activeIndicatorStyle ? (
                                     <span
-                                        className="pointer-events-none absolute top-1/2 z-0 h-[31px] -translate-y-1/2 rounded-[10px] bg-white transition-[left,width] duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-[left,width]"
+                                        className="pointer-events-none absolute top-1/2 z-0 h-8 -translate-y-1/2 rounded-[9px] bg-white transition-[left,width] duration-250 ease-out will-change-[left,width]"
                                         style={{
                                             left: activeIndicatorStyle.left,
                                             width: activeIndicatorStyle.width,
@@ -816,7 +977,7 @@ function MemberPage() {
                                             }}
                                             aria-pressed={isActive}
                                             className={cn(
-                                                'relative z-10 flex h-[31px] shrink-0 items-center justify-center gap-1 rounded-[10px] px-3.5 font-apple text-[14px] leading-none font-semibold',
+                                                'relative z-10 flex h-8 shrink-0 items-center justify-center gap-1 rounded-[9px] px-3.5 font-apple text-[14px] leading-none font-semibold',
                                                 isActive ? 'text-[#111827]' : 'text-[#AEB7C7] hover:text-[#D2D9E5]',
                                             )}
                                             onClick={() => {
@@ -870,7 +1031,7 @@ function MemberPage() {
                             </div>
                             <button
                                 type="button"
-                                className="group ml-2 shrink-0 rounded-[8px] px-2 py-1 font-apple text-[14px] font-medium text-[#D2D9E5] transition-colors hover:text-white"
+                                className="group ml-2 flex h-8 shrink-0 items-center rounded-[9px] px-2 font-apple text-[14px] font-medium text-[#D2D9E5] transition-colors hover:text-white"
                                 onClick={() => void handleCreateShiftTeam()}
                             >
                                 <span className="inline-flex items-center gap-2">
@@ -881,7 +1042,6 @@ function MemberPage() {
                                 </span>
                             </button>
                         </div>
-
                     </div>
 
                     {!isActiveTeamEmpty ? (
@@ -907,7 +1067,11 @@ function MemberPage() {
                                                     setSortMenuOpen((prev) => !prev);
                                                 }}
                                             >
-                                                <span>{selectedSortOption?.label ?? availableSortOptions[0]?.label ?? MEMBER_SORT_OPTIONS[0].label}</span>
+                                                <span>
+                                                    {selectedSortOption?.label ??
+                                                        availableSortOptions[0]?.label ??
+                                                        MEMBER_SORT_OPTIONS[0].label}
+                                                </span>
                                                 <ChevronDown
                                                     aria-hidden="true"
                                                     className={cn('h-4 w-4 shrink-0 transition-transform', sortMenuOpen && 'rotate-180')}
@@ -963,7 +1127,20 @@ function MemberPage() {
                                 <span className="text-center">{t('page.member.table.name')}</span>
                                 {isSkillFeatureEnabled ? <span className="text-center">{t('page.member.table.level')}</span> : null}
                                 <span className="text-center">{t('page.member.table.shiftTypes')}</span>
-                                <span className="text-center">프리셉터</span>
+                                <span className="flex justify-center text-center">
+                                    <MemberRoleHeaderHelp
+                                        type="preceptor"
+                                        openedType={openedRoleHelp}
+                                        onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
+                                    />
+                                </span>
+                                <span className="flex justify-center text-center">
+                                    <MemberRoleHeaderHelp
+                                        type="preceptee"
+                                        openedType={openedRoleHelp}
+                                        onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
+                                    />
+                                </span>
                                 <span className="text-center">{t('page.member.table.isWorker')}</span>
                                 <span className="text-center">{t('page.member.table.connection')}</span>
                                 <span className="text-center whitespace-nowrap">근무표 관리자</span>
@@ -1070,6 +1247,7 @@ function MemberPage() {
                                 {t('page.member.deleteTeam')}
                             </button>
                             <button
+                                id="member_add_nurse_button"
                                 type="button"
                                 disabled={!activeShiftTeam || isAddingNurse}
                                 className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
@@ -1093,6 +1271,7 @@ function MemberPage() {
                                 {t('page.member.deleteTeam')}
                             </button>
                             <button
+                                id="member_add_nurse_button"
                                 type="button"
                                 disabled={!activeShiftTeam || isAddingNurse}
                                 className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
@@ -1110,8 +1289,8 @@ function MemberPage() {
                 <div
                     id="nurse_edit_drawer"
                     className={cn(
-                        'sticky self-start shrink-0 overflow-hidden transition-[width,margin] duration-300 ease-out',
-                        selectedNurse ? 'ml-5 w-[420px]' : 'ml-0 w-0',
+                        'sticky shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-out',
+                        selectedNurse ? 'ml-5 w-[400px]' : 'ml-0 w-0',
                     )}
                     style={{top: '12px', marginTop: `${drawerStartOffset}px`}}
                 >
@@ -1150,6 +1329,8 @@ function MemberPage() {
                             }}
                             skillConfig={skillConfig}
                             skillLevel={levelsByNurseId[selectedNurse.nurseId]}
+                            shiftTeams={shiftTeams}
+                            onMoveShiftTeam={handleMoveSelectedNurseToTeam}
                             wardShiftTypes={ward?.wardShiftTypes}
                             wardCode={ward?.code}
                         />
@@ -1227,6 +1408,7 @@ function MemberNurseRow({
         return new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.name, shiftType.color]));
     }, [wardShiftTypes]);
     const isPreceptor = Boolean(nurse.isWardManager);
+    const isPreceptee = hasPrecepteeMemo(nurse.memo);
     const fadedClass = isWorker ? '' : 'opacity-55';
 
     useEffect(() => {
@@ -1268,212 +1450,247 @@ function MemberNurseRow({
                 )}
                 onClick={onSelect}
             >
-            <button
-                type="button"
-                {...dragHandleProps}
-                onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect();
-                }}
-                className={cn('flex h-5 w-5 items-center justify-center text-gray-4 transition-colors hover:text-gray-3', fadedClass)}
-                aria-label="드래그해서 순서 변경"
-            >
-                <SixDotsIcon className="h-3.5 w-3.5" />
-            </button>
-            <Input
-                value={nameDraft}
-                disabled={isBusy}
-                onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect();
-                }}
-                onChange={(event) => setNameDraft(event.target.value)}
-                onBlur={async () => {
-                    const nextName = nameDraft.trim();
+                <button
+                    type="button"
+                    {...dragHandleProps}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onSelect();
+                    }}
+                    className={cn('flex h-5 w-5 items-center justify-center text-gray-4 transition-colors hover:text-gray-3', fadedClass)}
+                    aria-label="드래그해서 순서 변경"
+                >
+                    <SixDotsIcon className="h-3.5 w-3.5" />
+                </button>
+                <Input
+                    value={nameDraft}
+                    disabled={isBusy}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                        onSelect();
+                    }}
+                    onChange={(event) => setNameDraft(event.target.value)}
+                    onBlur={async () => {
+                        const nextName = nameDraft.trim();
 
-                    if (!nextName || nextName === nurse.name) {
-                        setNameDraft(nurse.name);
+                        if (!nextName || nextName === nurse.name) {
+                            setNameDraft(nurse.name);
 
-                        return;
-                    }
+                            return;
+                        }
 
-                    const saved = await onUpdateNurse(nurse.nurseId, {...nurse, name: nextName});
+                        const saved = await onUpdateNurse(nurse.nurseId, {...nurse, name: nextName});
 
-                    if (!saved) {
-                        setNameDraft(nurse.name);
-                    }
-                }}
-                variant="flush"
-                fieldSize="default"
-                className={cn('min-w-0 text-center text-[16px] font-medium text-sub-1', fadedClass)}
-                placeholder="-"
-                maxLength={30}
-            />
-            {isSkillFeatureEnabled ? (
-                <div className="flex justify-center">
-                    <div ref={skillMenuRef} className="relative">
-                        <button
-                            type="button"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onSelect();
-                                setSkillMenuOpen((prev) => !prev);
-                            }}
-                            className="inline-flex items-center gap-1"
-                        >
-                            <SkillBadge
-                                level={isSkillUnselected ? null : skillLevel}
-                                config={skillConfig}
-                                label={isSkillUnselected ? '선택안함' : undefined}
-                                backgroundColor={isSkillUnselected ? '#E5E7EB' : undefined}
-                                textColor={isSkillUnselected ? '#6B7280' : undefined}
-                            />
-                            <ChevronDown className={cn('h-3 w-3 text-gray-4 transition-transform', skillMenuOpen && 'rotate-180')} />
-                        </button>
-                        {skillMenuOpen ? (
-                            <div className="absolute top-full left-1/2 z-30 mt-2 min-w-[120px] -translate-x-1/2 rounded-[10px] border border-gray-6 bg-white p-2 opacity-100 shadow-[0px_12px_28px_rgba(61,70,88,0.18)]">
-                                <div className="space-y-1.5">
-                                    <button
-                                        type="button"
-                                        className="flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7"
-                                        onClick={(event) => {
-                                            event.stopPropagation();
-                                            onSaveSkillLevel(null);
-                                            setSkillMenuOpen(false);
-                                        }}
-                                    >
-                                        <SkillBadge
-                                            level={null}
-                                            config={skillConfig}
-                                            label="선택안함"
-                                            backgroundColor="#E5E7EB"
-                                            textColor="#6B7280"
-                                        />
-                                    </button>
-                                    {Array.from({length: skillConfig.levelCount}, (_, index) => skillConfig.levelCount - index).map((level) => (
+                        if (!saved) {
+                            setNameDraft(nurse.name);
+                        }
+                    }}
+                    variant="flush"
+                    fieldSize="default"
+                    className={cn('min-w-0 text-center text-[16px] font-medium text-sub-1', fadedClass)}
+                    placeholder="-"
+                    maxLength={30}
+                />
+                {isSkillFeatureEnabled ? (
+                    <div className="flex justify-center">
+                        <div ref={skillMenuRef} className="relative">
+                            <button
+                                type="button"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onSelect();
+                                    setSkillMenuOpen((prev) => !prev);
+                                }}
+                                className="inline-flex items-center gap-1"
+                            >
+                                <SkillBadge
+                                    level={isSkillUnselected ? null : skillLevel}
+                                    config={skillConfig}
+                                    label={isSkillUnselected ? '선택안함' : undefined}
+                                    backgroundColor={isSkillUnselected ? '#E5E7EB' : undefined}
+                                    textColor={isSkillUnselected ? '#6B7280' : undefined}
+                                />
+                                <ChevronDown className={cn('h-3 w-3 text-gray-4 transition-transform', skillMenuOpen && 'rotate-180')} />
+                            </button>
+                            {skillMenuOpen ? (
+                                <div className="absolute top-full left-1/2 z-30 mt-2 min-w-[120px] -translate-x-1/2 rounded-[10px] border border-gray-6 bg-white p-2 opacity-100 shadow-[0px_12px_28px_rgba(61,70,88,0.18)]">
+                                    <div className="space-y-1.5">
                                         <button
-                                            key={level}
                                             type="button"
                                             className="flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                onSaveSkillLevel(level);
+                                                onSaveSkillLevel(null);
                                                 setSkillMenuOpen(false);
                                             }}
                                         >
-                                            <SkillBadge level={level} config={skillConfig} />
+                                            <SkillBadge
+                                                level={null}
+                                                config={skillConfig}
+                                                label="선택안함"
+                                                backgroundColor="#E5E7EB"
+                                                textColor="#6B7280"
+                                            />
                                         </button>
-                                    ))}
+                                        {Array.from({length: skillConfig.levelCount}, (_, index) => skillConfig.levelCount - index).map(
+                                            (level) => (
+                                                <button
+                                                    key={level}
+                                                    type="button"
+                                                    className="flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onSaveSkillLevel(level);
+                                                        setSkillMenuOpen(false);
+                                                    }}
+                                                >
+                                                    <SkillBadge level={level} config={skillConfig} />
+                                                </button>
+                                            ),
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ) : null}
+                            ) : null}
+                        </div>
                     </div>
-                </div>
-            ) : null}
-            <div className={cn('flex flex-wrap items-center justify-center gap-1', fadedClass)}>
-                {nurse.nurseShiftTypes.length > 0 ? (
-                    nurse.nurseShiftTypes.map((shiftType) => {
-                        const selected = shiftType.isPossible;
-                        const baseColor = shiftTypeColorByName.get(shiftType.name) ?? '#BFC7D4';
-                        const badgeBackgroundColor = selected ? baseColor : tintHexColor(baseColor, 0.45);
+                ) : null}
+                <div className={cn('flex flex-wrap items-center justify-center gap-1', fadedClass)}>
+                    {nurse.nurseShiftTypes.length > 0 ? (
+                        nurse.nurseShiftTypes.map((shiftType) => {
+                            const selected = shiftType.isPossible;
+                            const baseColor = shiftTypeColorByName.get(shiftType.name) ?? '#BFC7D4';
+                            const badgeBackgroundColor = selected ? baseColor : tintHexColor(baseColor, 0.45);
 
-                        return (
-                            <button
-                                key={shiftType.nurseShiftTypeId}
-                                type="button"
-                                aria-pressed={selected}
-                                onClick={async (event) => {
-                                    event.stopPropagation();
-                                    onSelect();
+                            return (
+                                <button
+                                    key={shiftType.nurseShiftTypeId}
+                                    type="button"
+                                    aria-pressed={selected}
+                                    onClick={async (event) => {
+                                        event.stopPropagation();
+                                        onSelect();
 
-                                    if (isBusy) return;
+                                        if (isBusy) return;
 
-                                    await onUpdateNurseShift(nurse.nurseId, shiftType.nurseShiftTypeId, {isPossible: !selected});
-                                }}
-                                className={cn(
-                                    'group relative cursor-pointer rounded-[7px] p-[1px] transition-opacity duration-150 ease-out focus-visible:outline-2 focus-visible:outline-main-1/35',
-                                    selected ? 'opacity-100' : 'opacity-55 hover:opacity-100',
-                                )}
-                            >
+                                        await onUpdateNurseShift(nurse.nurseId, shiftType.nurseShiftTypeId, {isPossible: !selected});
+                                    }}
+                                    className={cn(
+                                        'group relative cursor-pointer rounded-[7px] p-[1px] transition-opacity duration-150 ease-out focus-visible:outline-2 focus-visible:outline-main-1/35',
+                                        selected ? 'opacity-100' : 'opacity-55 hover:opacity-100',
+                                    )}
+                                >
                                     <span
                                         className={cn(
                                             'flex h-[19px] min-w-[19px] items-center justify-center rounded-[4px] transition-[max-width,padding,gap] duration-150',
                                             selected
-                                            ? 'max-w-[53px] gap-0.5 px-1'
-                                            : 'max-w-[19px] gap-0 overflow-hidden px-[2px] group-hover:max-w-[53px] group-hover:gap-0.5 group-hover:px-1',
-                                    )}
-                                    style={{backgroundColor: badgeBackgroundColor}}
-                                >
-                                    <span
-                                        className={cn(
-                                            'flex h-[9px] items-center justify-center overflow-hidden transition-[width,opacity] duration-150',
-                                            selected ? 'w-[9px] opacity-100' : 'w-0 opacity-0 group-hover:w-[9px] group-hover:opacity-75',
+                                                ? 'max-w-[53px] gap-0.5 px-1'
+                                                : 'max-w-[19px] gap-0 overflow-hidden px-[2px] group-hover:max-w-[53px] group-hover:gap-0.5 group-hover:px-1',
                                         )}
+                                        style={{backgroundColor: badgeBackgroundColor}}
                                     >
-                                        <Check
+                                        <span
                                             className={cn(
-                                                'h-[9px] w-[9px] shrink-0 text-white transition-all duration-150',
+                                                'flex h-[9px] items-center justify-center overflow-hidden transition-[width,opacity] duration-150',
                                                 selected
-                                                    ? 'scale-100 opacity-100'
-                                                    : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-75',
+                                                    ? 'w-[9px] opacity-100'
+                                                    : 'w-0 opacity-0 group-hover:w-[9px] group-hover:opacity-75',
                                             )}
-                                            strokeWidth={3}
-                                        />
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    'h-[9px] w-[9px] shrink-0 text-white transition-all duration-150',
+                                                    selected
+                                                        ? 'scale-100 opacity-100'
+                                                        : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-75',
+                                                )}
+                                                strokeWidth={3}
+                                            />
+                                        </span>
+                                        <span className="font-poppins text-[12px] leading-none font-medium whitespace-nowrap text-white transition-transform duration-150">
+                                            {shiftType.shortName || '-'}
+                                        </span>
                                     </span>
-                                    <span className="font-poppins text-[12px] leading-none font-medium whitespace-nowrap text-white transition-transform duration-150">
-                                        {shiftType.shortName || '-'}
-                                    </span>
-                                </span>
-                            </button>
-                        );
-                    })
-                ) : (
-                    <span className="font-apple text-[16px] text-gray-4">-</span>
-                )}
-            </div>
-            <div className={cn('flex items-center justify-center', fadedClass)}>
-                <button
-                    type="button"
-                    role="checkbox"
-                    aria-checked={isPreceptor}
+                                </button>
+                            );
+                        })
+                    ) : (
+                        <span className="font-apple text-[16px] text-gray-4">-</span>
+                    )}
+                </div>
+                <div className={cn('flex items-center justify-center', fadedClass)}>
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isPreceptor}
+                        aria-label={`${nurse.name || '간호사'} 프리셉터`}
                         className={cn(
                             'group flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                             isPreceptor
                                 ? 'border-main-1 bg-main-1 text-white'
                                 : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
                         )}
-                    onClick={async (event) => {
-                        event.stopPropagation();
-                        onSelect();
-                        await onUpdateNurse(nurse.nurseId, {
-                            ...nurse,
-                            isWardManager: !isPreceptor,
-                        });
-                    }}
-                >
-                    <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
-                </button>
-            </div>
-            <div className={cn('flex justify-center', fadedClass)}>
-                <Switch
-                    checked={isWorker}
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        onSelect();
-                    }}
-                    onCheckedChange={async (checked) => {
-                        if (isBusy) {
-                            return;
-                        }
+                        onClick={async (event) => {
+                            event.stopPropagation();
+                            onSelect();
+                            const nextIsPreceptor = !isPreceptor;
 
-                        onSelect();
-                        await onUpdateNurse(nurse.nurseId, {...nurse, isWorker: checked});
-                    }}
-                    className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
-                    thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
-                    aria-label={`${nurse.name} worker`}
-                />
-            </div>
+                            await onUpdateNurse(nurse.nurseId, {
+                                ...nurse,
+                                isWardManager: nextIsPreceptor,
+                                memo: nextIsPreceptor ? setPrecepteeMemo(nurse.memo, false) : nurse.memo,
+                            });
+                        }}
+                    >
+                        <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
+                    </button>
+                </div>
+                <div className={cn('flex items-center justify-center', fadedClass)}>
+                    <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={isPreceptee}
+                        aria-label={`${nurse.name || '간호사'} 프리셉티`}
+                        className={cn(
+                            'group flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                            isPreceptee
+                                ? 'border-main-1 bg-main-1 text-white'
+                                : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
+                        )}
+                        onClick={async (event) => {
+                            event.stopPropagation();
+                            onSelect();
+                            const nextIsPreceptee = !isPreceptee;
+
+                            await onUpdateNurse(nurse.nurseId, {
+                                ...nurse,
+                                isWardManager: nextIsPreceptee ? false : nurse.isWardManager,
+                                memo: setPrecepteeMemo(nurse.memo, nextIsPreceptee),
+                            });
+                        }}
+                    >
+                        <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
+                    </button>
+                </div>
+                <div className={cn('flex justify-center', fadedClass)}>
+                    <Switch
+                        checked={isWorker}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onSelect();
+                        }}
+                        onCheckedChange={async (checked) => {
+                            if (isBusy) {
+                                return;
+                            }
+
+                            onSelect();
+                            await onUpdateNurse(nurse.nurseId, {...nurse, isWorker: checked});
+                        }}
+                        className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                        thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
+                        aria-label={`${nurse.name} worker`}
+                    />
+                </div>
                 <div className={cn('flex justify-center', fadedClass)}>
                     <button
                         type="button"
@@ -1516,60 +1733,62 @@ function MemberNurseRow({
                     </button>
                 </div>
                 <div className={cn('flex w-full justify-end pr-1', fadedClass)}>
-                <button
-                    type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                    onClick={(event) => {
-                        event.stopPropagation();
-                        setDeleteConfirmModalOpen(true);
-                    }}
-                >
-                    <X className="h-3.5 w-3.5" />
-                </button>
+                    <button
+                        type="button"
+                        className="flex h-7 w-7 items-center justify-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            setDeleteConfirmModalOpen(true);
+                        }}
+                    >
+                        <X className="h-3.5 w-3.5" />
+                    </button>
                 </div>
             </div>
-            {deleteConfirmModalOpen ? createPortal(
-                <div
-                    className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/45 px-4"
-                    onClick={() => setDeleteConfirmModalOpen(false)}
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <p className="font-apple text-[20px] font-semibold text-sub-1">간호사를 삭제할까요?</p>
-                        <p className="mt-2 font-apple text-[15px] text-gray-3">
-                            <span className="font-semibold text-sub-1">{nurse.name || '선택한 간호사'}</span>
-                            {' 삭제 후에는 되돌릴 수 없어요.'}
-                        </p>
-                        <div className="mt-6 flex items-center gap-3">
-                            <button
-                                type="button"
-                                className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                onClick={() => setDeleteConfirmModalOpen(false)}
-                            >
-                                닫기
-                            </button>
-                            <button
-                                type="button"
-                                className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
-                                onClick={async () => {
-                                    setDeleteConfirmModalOpen(false);
+            {deleteConfirmModalOpen
+                ? createPortal(
+                      <div
+                          className="fixed inset-0 z-[1002] flex items-center justify-center bg-black/45 px-4"
+                          onClick={() => setDeleteConfirmModalOpen(false)}
+                      >
+                          <div
+                              role="dialog"
+                              aria-modal="true"
+                              className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
+                              onClick={(event) => event.stopPropagation()}
+                          >
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">간호사를 삭제할까요?</p>
+                              <p className="mt-2 font-apple text-[15px] text-gray-3">
+                                  <span className="font-semibold text-sub-1">{nurse.name || '선택한 간호사'}</span>
+                                  {' 삭제 후에는 되돌릴 수 없어요.'}
+                              </p>
+                              <div className="mt-6 flex items-center gap-3">
+                                  <button
+                                      type="button"
+                                      className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                      onClick={() => setDeleteConfirmModalOpen(false)}
+                                  >
+                                      닫기
+                                  </button>
+                                  <button
+                                      type="button"
+                                      className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                                      onClick={async () => {
+                                          setDeleteConfirmModalOpen(false);
 
-                                    if (!nurse.shiftTeamId) return;
+                                          if (!nurse.shiftTeamId) return;
 
-                                    await onDeleteNurse(nurse.shiftTeamId, nurse.nurseId);
-                                }}
-                            >
-                                삭제하기
-                            </button>
-                        </div>
-                    </div>
-                </div>,
-                modalRoot,
-            ) : null}
+                                          await onDeleteNurse(nurse.shiftTeamId, nurse.nurseId);
+                                      }}
+                                  >
+                                      삭제하기
+                                  </button>
+                              </div>
+                          </div>
+                      </div>,
+                      modalRoot,
+                  )
+                : null}
             {disconnectConfirmModalOpen
                 ? createPortal(
                       <div
@@ -1635,7 +1854,7 @@ function MemberNurseRow({
                         </h2>
                         <p
                             id={`member-connection-modal-description-${nurse.nurseId}`}
-                            className="mt-3 whitespace-pre-line font-apple text-[18px] text-gray-3"
+                            className="mt-3 font-apple text-[18px] whitespace-pre-line text-gray-3"
                         >
                             간호사에게 병동코드를 전달하면 듀팅앱에서 등록 후 병동에 참여할 수 있어요.
                         </p>

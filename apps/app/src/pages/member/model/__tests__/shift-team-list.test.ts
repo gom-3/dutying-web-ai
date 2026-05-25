@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {type TNurse} from '@/entities/nurse';
 import {type TShiftTeam} from '@/entities/ward';
-import {createMoveNurseOrderPayload} from '../shift-team-list';
+import {createMoveNurseOrderPayload, createMoveNurseToTeamPayload} from '../shift-team-list';
 
 const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'shiftTeamId' | 'divisionNum' | 'priority' | 'name'>): TNurse => ({
     nurseId: params.nurseId,
@@ -126,5 +126,59 @@ describe('createMoveNurseOrderPayload', () => {
                 draggableId: '1',
             }),
         ).toBeNull();
+    });
+});
+
+describe('createMoveNurseToTeamPayload', () => {
+    it('returns null when the target team is the current team', () => {
+        expect(
+            createMoveNurseToTeamPayload({
+                shiftTeams: createShiftTeams(),
+                nurseId: 1,
+                destinationShiftTeamId: 10,
+            }),
+        ).toBeNull();
+    });
+
+    it('appends the nurse to the last division of the target team', () => {
+        expect(
+            createMoveNurseToTeamPayload({
+                shiftTeams: createShiftTeams(),
+                nurseId: 4,
+                destinationShiftTeamId: 10,
+            }),
+        ).toEqual({
+            nurseId: 4,
+            sourceShiftTeamId: 20,
+            destinationShiftTeamId: 10,
+            divisionNum: 2,
+            prevPriority: 300,
+            nextPriority: 2324,
+        });
+    });
+
+    it('creates a first-position payload for an empty target team', () => {
+        expect(
+            createMoveNurseToTeamPayload({
+                shiftTeams: [
+                    ...createShiftTeams(),
+                    {
+                        shiftTeamId: 30,
+                        name: 'C team',
+                        nurseCnt: 0,
+                        nurses: [],
+                    },
+                ],
+                nurseId: 1,
+                destinationShiftTeamId: 30,
+            }),
+        ).toEqual({
+            nurseId: 1,
+            sourceShiftTeamId: 10,
+            destinationShiftTeamId: 30,
+            divisionNum: 1,
+            prevPriority: 0,
+            nextPriority: 2024,
+        });
     });
 });
