@@ -9,17 +9,18 @@ const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+const TEST_IDENTITY_NAME = '테스트 병동';
 const typedTranslations = {
     'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
-    'page.onboardingWardCreate.skillLevelModal.description': '기준은 자유롭게 정할 수 있어요',
+    'page.onboardingWardCreate.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
     'page.onboardingWardCreate.skillLevelModal.colorLabel': '색상',
     'page.onboardingWardCreate.skillLevelModal.high': '높음',
     'page.onboardingWardCreate.skillLevelModal.low': '낮음',
     'page.onboardingWardCreate.skillLevelModal.levelLabel': '숙련도',
     'page.onboardingWardCreate.skillLevelModal.categoryLabel': '구분',
     'page.onboardingWardCreate.skillLevelModal.autoAssign': '자동 배정',
-    'page.onboardingWardCreate.skillLevelModal.autoAssignTooltip': '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정합니다.',
-    'page.onboardingWardCreate.skillLevelModal.cancel': '취소',
+    'page.onboardingWardCreate.skillLevelModal.autoAssignTooltip': '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정해요.',
+    'page.onboardingWardCreate.skillLevelModal.cancel': '닫기',
     'page.onboardingWardCreate.skillLevelModal.complete': '완료',
 } as const;
 
@@ -86,15 +87,28 @@ vi.mock('@/shared/api', async () => {
 });
 
 const prepareValidFinalStep = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+    await user.clear(screen.getByLabelText(/병원명 또는 병동명/));
+    await user.type(screen.getByLabelText(/병원명 또는 병동명/), TEST_IDENTITY_NAME);
     await user.click(screen.getByRole('button', {name: '다음'}));
+};
 
+const moveToShiftTypeStep = async (user: ReturnType<typeof userEvent.setup>) => {
+    await prepareValidFinalStep(user);
+    await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+};
+
+const moveToNurseStep = async (user: ReturnType<typeof userEvent.setup>) => {
+    await moveToShiftTypeStep(user);
+    await user.click(screen.getByRole('button', {name: '다음'}));
+};
+
+const prepareValidCreationState = async (user: ReturnType<typeof userEvent.setup>) => {
+    await moveToNurseStep(user);
     await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
     await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
     await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
     await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
     await user.click(screen.getByRole('button', {name: /간호사 1팀/}));
-    await user.click(screen.getByRole('button', {name: '다음'}));
 };
 
 describe('OnboardingWardCreatePage', () => {
@@ -109,6 +123,7 @@ describe('OnboardingWardCreatePage', () => {
     it('uploads a file, injects parsed data, and moves through onboarding steps', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockResolvedValue({
@@ -140,7 +155,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
-        expect(screen.getByText('근무 유형')).toBeInTheDocument();
+        expect(screen.getByText('근무명')).toBeInTheDocument();
         expect(screen.getByDisplayValue('데이')).toBeInTheDocument();
         expect(screen.getByDisplayValue('오프')).toBeInTheDocument();
 
@@ -153,6 +168,7 @@ describe('OnboardingWardCreatePage', () => {
     it('shows upload warnings when the parse api partially succeeds', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockResolvedValue({
@@ -173,6 +189,7 @@ describe('OnboardingWardCreatePage', () => {
     it('shows upload error guidance when the parse api fails', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
@@ -187,79 +204,192 @@ describe('OnboardingWardCreatePage', () => {
         expect(toastError).toHaveBeenCalledWith('업로드한 파일 형식이 올바르지 않습니다.');
     });
 
-    it('disables next in step 2 when a shift type is invalid', async () => {
+    it('blocks next in step 1 when identity name is empty and shows toast on click', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
-        await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        const nextButton = screen.getByRole('button', {name: '다음'});
 
-        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+        expect(nextButton).toHaveAttribute('aria-disabled', 'true');
+
+        await user.click(nextButton);
+
+        expect(toastError).toHaveBeenCalledWith('병원명 또는 병동명을 입력해 주세요.');
     });
 
-    it('disables next in step 3 when any team has no nurses', async () => {
+    it('disables next in step 3 when a shift type is invalid', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
-        await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '다음'}));
+        await moveToShiftTypeStep(user);
+        await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
+
+        expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('disables next in step 3 when shift names are duplicated', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const shiftNameInputs = screen.getAllByPlaceholderText('근무명');
+
+        await user.clear(shiftNameInputs[1] as HTMLInputElement);
+        await user.type(shiftNameInputs[1] as HTMLInputElement, '데이');
+
+        expect(screen.getAllByText('중복된 근무명은 사용할 수 없어요.')).toHaveLength(2);
+        expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('auto formats numeric shift time input to HH:mm', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const dayStartTimeInput = screen.getAllByDisplayValue('07:00')[0] as HTMLInputElement;
+
+        await user.clear(dayStartTimeInput);
+        await user.type(dayStartTimeInput, '1200');
+
+        expect(dayStartTimeInput).toHaveValue('12:00');
+    });
+
+    it('disables next in step 3 when shift time order is invalid', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const dayStartTimeInput = screen.getAllByDisplayValue('07:00')[0] as HTMLInputElement;
+        const dayEndTimeInput = screen.getAllByDisplayValue('15:00')[0] as HTMLInputElement;
+
+        await user.clear(dayStartTimeInput);
+        await user.type(dayStartTimeInput, '1200');
+        await user.clear(dayEndTimeInput);
+        await user.type(dayEndTimeInput, '1100');
+
+        expect(screen.getByText('퇴근 시간은 출근 시간보다 늦어야 해요.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('prevents adding more than 10 shift types', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const addShiftButton = screen.getByRole('button', {name: '근무 유형 추가하기'});
+
+        for (let index = 0; index < 6; index += 1) {
+            await user.click(addShiftButton);
+        }
+
+        expect(screen.getAllByPlaceholderText('근무명')).toHaveLength(10);
+
+        await user.click(addShiftButton);
+
+        expect(screen.getAllByPlaceholderText('근무명')).toHaveLength(10);
+    });
+
+    it('removes empty teams before completion instead of blocking submit', async () => {
+        const user = userEvent.setup();
+
+        mockCreateWard.mockResolvedValue(undefined);
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToNurseStep(user);
         await user.click(screen.getByRole('button', {name: /팀 추가하기/}));
 
-        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '완료'})).toHaveAttribute('aria-disabled', 'false');
+
+        await user.click(screen.getByRole('button', {name: '완료'}));
+
+        await waitFor(() => {
+            expect(mockCreateWard).toHaveBeenCalledTimes(1);
+        });
+        const [submittedPayload] = mockCreateWard.mock.calls[0] as [Record<string, unknown>, unknown?];
+        const submittedShiftTeams = submittedPayload.shiftTeams as {nurseNames: string[]}[];
+
+        expect(submittedShiftTeams).toHaveLength(1);
+        expect(submittedShiftTeams[0]).toEqual(expect.objectContaining({nurseNames: ['홍길동', '김하늘', '이서윤', '박연우']}));
     });
 
-    it('disables next in step 3 when a nurse name is empty', async () => {
+    it('shows team delete confirm modal and deletes team with nurses', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
-        await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '다음'}));
+        await moveToNurseStep(user);
+
+        await user.click(screen.getByRole('button', {name: '팀 삭제하기'}));
+
+        const confirmDialog = screen.getByRole('dialog');
+
+        expect(within(confirmDialog).getByText('팀을 삭제할까요?')).toBeInTheDocument();
+        expect(within(confirmDialog).getByText(/팀을 삭제하면 소속 간호사/)).toBeInTheDocument();
+
+        await user.click(within(confirmDialog).getByRole('button', {name: '삭제하기'}));
+
+        await waitFor(() => {
+            expect(toastSuccess).toHaveBeenCalledWith('팀을 삭제했어요. 팀에 속한 간호사도 함께 삭제했어요.');
+        });
+        expect(screen.queryByRole('button', {name: /간호사 1팀/})).not.toBeInTheDocument();
+    });
+
+    it('disables next in step 4 when a nurse name is empty', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToNurseStep(user);
 
         const nurseInputs = screen.getAllByDisplayValue(/홍길동|김하늘|박연우|이서윤/);
 
         await user.clear(nurseInputs[0] as HTMLInputElement);
 
-        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+        expect(screen.getByRole('button', {name: '완료'})).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('allows skip to bypass validation and move to the next step', async () => {
+    it('keeps next disabled on upload step until a file is uploaded', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
-        await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        await prepareValidFinalStep(user);
 
-        expect(screen.getByRole('button', {name: '다음'})).toBeDisabled();
+        const nextButton = screen.getByRole('button', {name: '다음'});
 
-        await user.click(screen.getByRole('button', {name: '건너뛰기'}));
+        expect(nextButton).toHaveAttribute('aria-disabled', 'true');
 
-        expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
+        await user.click(nextButton);
+
+        expect(toastError).toHaveBeenCalledWith('근무표 파일을 업로드하거나 건너뛰기를 눌러주세요.');
     });
 
-    it('disables completion when step 2 remains invalid after skipping ahead', async () => {
+    it('shows skip only on upload step and moves to the next step when clicked', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
-        await user.click(screen.getByRole('button', {name: '다음'}));
-        await user.click(screen.getByRole('button', {name: '근무 추가하기'}));
+        await prepareValidFinalStep(user);
+
+        expect(screen.getByRole('button', {name: '건너뛰기'})).toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '건너뛰기'}));
 
-        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
-        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
-        await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
-        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
-
-        await user.click(screen.getByRole('button', {name: '다음'}));
-
-        expect(screen.getByRole('button', {name: '완료'})).toBeDisabled();
+        expect(screen.getByText('근무명')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
     });
 
-    it('shows submitting and success UI when ward creation succeeds', async () => {
+    it('shows toast and auto navigates to duty after ward creation succeeds', async () => {
         const user = userEvent.setup();
 
         let resolveCreateWard!: () => void;
@@ -273,20 +403,23 @@ describe('OnboardingWardCreatePage', () => {
 
         render(<OnboardingWardCreatePage />);
 
-        await prepareValidFinalStep(user);
+        await prepareValidCreationState(user);
         await user.click(screen.getByRole('button', {name: '숙련도 설정'}));
-        await user.selectOptions(screen.getByDisplayValue('5단계'), '3');
+
+        const skillLevelDialog = screen.getByRole('dialog');
+
+        await user.click(within(skillLevelDialog).getByRole('button', {name: '숙련도 단계'}));
+        await user.click(within(skillLevelDialog).getByRole('option', {name: '3단계'}));
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '완료'}));
 
         expect(screen.getAllByText((content) => content.includes('LV. 3')).length).toBeGreaterThan(0);
 
         await user.click(screen.getByRole('button', {name: '완료'}));
 
-        expect(screen.getByTestId('ward-create-submitting')).toBeInTheDocument();
         expect(mockCreateWard).toHaveBeenCalledWith(
             expect.objectContaining({
-                name: '듀팅 병동',
-                hospitalName: '듀팅 병원',
+                name: TEST_IDENTITY_NAME,
+                hospitalName: TEST_IDENTITY_NAME,
                 shiftTeams: expect.any(Array),
                 wardShiftTypes: expect.any(Array),
             }),
@@ -296,18 +429,19 @@ describe('OnboardingWardCreatePage', () => {
         resolveCreateWard();
 
         await waitFor(() => {
-            expect(screen.getByTestId('ward-create-success')).toBeInTheDocument();
+            expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.');
         });
 
-        expect(screen.getByRole('button', {name: '근무표 만들러 가기'})).toBeInTheDocument();
-        expect(toastSuccess).toHaveBeenCalledWith('병동 생성을 완료했어요.');
-
-        await user.click(screen.getByRole('button', {name: '근무표 만들러 가기'}));
-
-        expect(mockNavigate).toHaveBeenCalledWith('/make');
+        expect(screen.queryByTestId('ward-create-success')).not.toBeInTheDocument();
+        await waitFor(
+            () => {
+                expect(mockNavigate).toHaveBeenCalledWith('/duty?onboardingWardCreated=1', {replace: true});
+            },
+            {timeout: 2_000},
+        );
     }, 10_000);
 
-    it('shows retryable error UI when ward creation fails', async () => {
+    it('shows toast only and allows retry when ward creation fails', async () => {
         const user = userEvent.setup();
 
         mockCreateWard.mockRejectedValueOnce(new Error('서버 오류입니다.'));
@@ -315,20 +449,22 @@ describe('OnboardingWardCreatePage', () => {
 
         render(<OnboardingWardCreatePage />);
 
-        await prepareValidFinalStep(user);
+        await prepareValidCreationState(user);
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         await waitFor(() => {
-            expect(screen.getByTestId('ward-create-error')).toBeInTheDocument();
+            expect(toastError).toHaveBeenCalledWith('서버 오류입니다.');
         });
 
-        expect(screen.getByText('서버 오류입니다.')).toBeInTheDocument();
+        expect(screen.queryByTestId('ward-create-error')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: '완료'}));
 
-        await user.click(screen.getByRole('button', {name: '다시 시도'}));
-
-        await waitFor(() => {
-            expect(screen.getByTestId('ward-create-success')).toBeInTheDocument();
-        });
+        await waitFor(
+            () => {
+                expect(mockNavigate).toHaveBeenCalledWith('/duty?onboardingWardCreated=1', {replace: true});
+            },
+            {timeout: 2_000},
+        );
 
         expect(mockCreateWard).toHaveBeenCalledTimes(2);
     });

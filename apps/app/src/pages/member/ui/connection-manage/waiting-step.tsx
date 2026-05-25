@@ -1,75 +1,76 @@
+﻿import {X} from 'lucide-react';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TWaitingNurse} from '@/entities/nurse';
-import {CancelIcon} from '@/shared/assets/svg';
 import {getWaitingNurseSummary} from '../../model/connection-manage';
 
 interface IConnectionManageWaitingStepProps {
     waitingNurses: TWaitingNurse[] | undefined;
     onClose: () => void;
     onAccept: (waitingNurse: TWaitingNurse) => void;
-    onReject: (nurseId: number) => void;
+    onReject: (waitingNurseId: number) => void;
 }
 
 function ConnectionManageWaitingStep({waitingNurses, onClose, onAccept, onReject}: IConnectionManageWaitingStepProps) {
     return (
-        <div
-            className="h-[44%] min-h-117.5 w-[40%] min-w-190 rounded-[1.25rem] bg-white px-10.5 py-8.75"
-            onClick={(event) => event.stopPropagation()}
-        >
+        <div className="relative w-full max-w-[620px] rounded-[16px] bg-white px-6 py-5" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="font-apple text-[1.75rem] font-semibold text-text-1">연동 관리</h1>
-                </div>
-                <CancelIcon className="h-7.5 w-7.5" onClick={onClose} />
+                <h1 className="font-apple text-[22px] font-semibold text-sub-1">간호사가 병동 연동을 요청했어요</h1>
+                <button
+                    type="button"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#8A94A8] transition-colors hover:bg-[#F3F4F6] hover:text-[#5F6878]"
+                    onClick={onClose}
+                    aria-label="닫기"
+                >
+                    <X className="h-5 w-5" />
+                </button>
             </div>
-            <div className="h-full overflow-hidden pt-10.5">
-                <p className="font-apple text-[1rem] font-medium text-sub-3">신청 내역</p>
-                {waitingNurses?.length === 0 ? (
-                    <div className="flex h-[calc(100%-80px)] items-center justify-center font-apple text-[1.7rem] text-sub-2">
-                        연동 신청을 한 간호사가 없습니다.
-                    </div>
-                ) : (
-                    <div className="mt-6 scrollbar-hide flex h-[calc(100%-5.9375rem)] flex-col gap-4 overflow-scroll">
-                        {waitingNurses?.map((waitingNurse) => {
-                            const waitingNurseSummary = getWaitingNurseSummary(waitingNurse);
 
-                            return (
-                                <div
-                                    key={waitingNurse.waitingNurseId}
-                                    className="flex h-18 shrink-0 items-center rounded-[.625rem] border-[.0625rem] border-sub-4.5 bg-main-bg px-5"
-                                >
-                                    <ProfileImage className="h-8 w-8" profileImg={{profileImgUrl: waitingNurse.profileImgUrl}} />
-                                    <p className="ml-[.625rem] font-apple text-[1.5rem] font-medium text-sub-1">{waitingNurse.name}</p>
-                                    <div
-                                        className={`ml-8 flex h-5 w-7 items-center justify-center rounded-[.3125rem] bg-sub-5 font-apple text-[.875rem] ${
-                                            waitingNurse.gender === '남' ? 'text-[#A2A6F5]' : 'text-[#F5A2C5]'
-                                        }`}
-                                    >
-                                        {waitingNurse.gender}
-                                    </div>
-                                    <p className="ml-4 font-poppins text-[1.25rem] font-medium text-sub-1">
-                                        {waitingNurseSummary.formattedPhoneNumber}
-                                    </p>
-                                    <div className="ml-auto flex h-11.5 w-36.5 items-center justify-center gap-[.125rem] rounded-[.3125rem] border-[.0313rem] border-sub-4 bg-sub-5 p-[.125rem]">
-                                        <button
-                                            className="flex h-9.5 flex-1 items-center justify-center rounded-[.3125rem] font-poppins text-[1.5rem] text-sub-2.5 hover:bg-main-1 hover:text-white"
-                                            onClick={() => onAccept(waitingNurse)}
-                                        >
-                                            수락
-                                        </button>
-                                        <button
-                                            className="flex h-9.5 flex-1 items-center justify-center rounded-[.3125rem] font-poppins text-[1.5rem] text-sub-2.5 hover:bg-sub-2 hover:text-white"
-                                            onClick={() => confirm('정말 거절하시겠습니까?') && onReject(waitingNurse.nurseId)}
-                                        >
-                                            거절
-                                        </button>
-                                    </div>
+            <p className="mt-1 font-apple text-[14px] text-gray-3">수락하면 병동 소속 간호사로 등록돼요.</p>
+
+            {waitingNurses?.length === 0 ? (
+                <div className="mt-4 flex h-[140px] items-center justify-center rounded-[10px] bg-[#F8FAFC] font-apple text-[15px] text-gray-3">
+                    연동 요청이 들어오면 여기에 보여요.
+                </div>
+            ) : (
+                <div className="mt-4 max-h-[440px] space-y-2 overflow-y-auto">
+                    {waitingNurses?.map((waitingNurse) => {
+                        const waitingNurseSummary = getWaitingNurseSummary(waitingNurse);
+
+                        return (
+                            <div
+                                key={waitingNurse.waitingNurseId}
+                                className="flex items-center gap-3 rounded-[10px] border border-[#E3E8F1] bg-[#F9FBFE] px-4 py-3"
+                            >
+                                <ProfileImage
+                                    className="h-9 w-9"
+                                    name={waitingNurse.name}
+                                    profileImg={{profileImgUrl: waitingNurse.profileImgUrl}}
+                                />
+                                <div className="min-w-0">
+                                    <p className="truncate font-apple text-[15px] font-semibold text-sub-1">{waitingNurse.name}</p>
+                                    <p className="font-poppins text-[13px] text-[#7E8798]">{waitingNurseSummary.formattedPhoneNumber}</p>
                                 </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+                                <div className="ml-auto flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        className="h-9 rounded-[8px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
+                                        onClick={() => onAccept(waitingNurse)}
+                                    >
+                                        수락
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="h-9 rounded-[8px] px-3 font-apple text-[14px] font-semibold text-[#5E6678] transition-colors hover:bg-[#E1E7F0]"
+                                        onClick={() => onReject(waitingNurse.waitingNurseId)}
+                                    >
+                                        거절
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

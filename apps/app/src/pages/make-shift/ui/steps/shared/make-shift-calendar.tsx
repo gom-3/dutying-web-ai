@@ -44,7 +44,7 @@ const VIOLATION_STYLE: Record<TViolation['level'], {border: string; background: 
     warning: {border: '#FFD900', background: 'rgba(238,255,0,0.3)'},
 };
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 1, warning: 0};
-const NAME_COL = 'clamp(48px,3.6cqw,68px)';
+const NAME_COL = 'clamp(64px,4.4cqw,76px)';
 const CARRY_COL = 'clamp(20px,1.5cqw,26px)';
 const LAST_COL = 'clamp(74px,5.4cqw,98px)';
 /**
@@ -92,7 +92,7 @@ const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] l
  * - 최소값을 둬서 사이드바 등으로 컨테이너만 좁아졌을 때도 셀·배지 사이에 숨통이 남게 한다.
  * - 배지는 래퍼(SHIFT_BADGE_CELL_WRAP)로 가용 폭을 넘지 않게 하고, 내부는 ShiftBadge에 size-full.
  */
-const DAY_CELL_PADDING_X = 'clamp(3px,0.35cqw,6px)';
+const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const LAST_SHIFTS_GAP = 'clamp(1px,0.15cqw,3px)';
 /** 위반 박스 — 네 면 동일 여백 (좌우와 같은 규칙으로 상하도 맞춤) */
 const VIOLATION_INSET = 'clamp(1px,0.1cqw,2px)';
@@ -124,9 +124,9 @@ const SHIFT_BADGE_SUMMARY_ROW =
 /** 일자 그리드 셀 래퍼: 한 변 = min(셀 안쪽 폭, cqw 기반 clamp 상한). */
 /** violation 오버레이(z-[5]~[8])보다 위 — 배지 배경색이 위반 하이라이트에 가리지 않도록 */
 const SHIFT_BADGE_CELL_WRAP =
-    'make-shift-calendar__shift-badge-wrap relative z-[20] flex aspect-square w-[min(100%,clamp(22px,2.35cqw,38px))] max-h-[clamp(22px,2.35cqw,38px)] min-w-0 shrink-0 items-center justify-center';
+    'make-shift-calendar__shift-badge-wrap relative z-[20] flex size-[clamp(16px,1.45vw,26px)] min-w-0 shrink-0 items-center justify-center';
 const SHIFT_BADGE_CELL_BADGE =
-    'make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[clamp(4px,0.52cqw,9px)] text-[clamp(12px,1.15cqw,21px)] leading-none';
+    'make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[.375rem] text-[clamp(9px,0.82vw,18px)] leading-none';
 /**
  * 전달 근무 컬럼(LAST_COL)에 4개가 동시에 들어가는 좁은 영역용 배지.
  * 큰 화면에서도 LAST_COL을 넘지 않도록 max를 22px로 제한.
@@ -275,12 +275,24 @@ export function MakeShiftCalendar({
 
         return map;
     }, [doc]);
-    const summaryColumns = useMemo(() => {
-        const counted = shift.wardShiftTypes.filter((t) => t.isCounted);
-        const off = shift.wardShiftTypes.find((t) => t.isOff);
+    const summaryShiftTypes = useMemo(() => {
+        const usedTypeIds = new Set<number>();
 
-        return {counted, off};
-    }, [shift.wardShiftTypes]);
+        for (const row of doc.rows) {
+            for (const cell of row.cells) {
+                if (!cell) continue;
+
+                const type = shortNameToType.get(cell);
+
+                if (type?.isCounted) {
+                    usedTypeIds.add(type.wardShiftTypeId);
+                }
+            }
+        }
+
+        return shift.wardShiftTypes.filter((type) => type.isCounted && usedTypeIds.has(type.wardShiftTypeId));
+    }, [doc.rows, shift.wardShiftTypes, shortNameToType]);
+    const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
     const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : LEFT_GRID_TEMPLATE_COLUMNS;
 
@@ -296,12 +308,12 @@ export function MakeShiftCalendar({
             //     <row-left>  (이름·이월·전달근무·일자) — division 카드 내부에 들어감
             //     <row-summary>(D/E/N/O/WO 합계) — 카드 밖, 우측에 분리 배치
             //   </row>
-            className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-[clamp(8px,0.7cqw,14px)]"
+            className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-2"
         >
             {/* HEADER */}
             <div
-                className="make-shift-calendar__header flex w-full min-w-0 items-center py-[clamp(4px,0.4cqw,8px)]"
-                style={{gap: isSimplified ? 0 : DIVISION_TO_SUMMARY_GAP}}
+                className="make-shift-calendar__header flex w-full min-w-0 items-center py-1"
+                style={{gap: isSimplified || !hasSummaryShiftTypes ? 0 : DIVISION_TO_SUMMARY_GAP}}
             >
                 <div
                     className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
@@ -322,7 +334,7 @@ export function MakeShiftCalendar({
                     )}
 
                     <div
-                        className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[clamp(14px,1.4cqw,22px)] border border-gray-5 px-0 py-0"
+                        className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-1.5 py-1"
                         style={{gridTemplateColumns: `repeat(${shift.days.length}, minmax(0, 1fr))`}}
                     >
                         {shift.days.map((d, j) => (
@@ -331,7 +343,7 @@ export function MakeShiftCalendar({
                                 className={cn(
                                     'make-shift-calendar__day-header-cell',
                                     'min-w-0 rounded-full text-center font-poppins tabular-nums',
-                                    'text-[clamp(8px,0.65cqw,12px)]',
+                                    'text-[12px] leading-5 font-semibold',
                                     d.dayType === 'saturday'
                                         ? separateWeekendColor
                                             ? 'text-blue'
@@ -347,7 +359,7 @@ export function MakeShiftCalendar({
                     </div>
                 </div>
 
-                {!isSimplified && (
+                {!isSimplified && hasSummaryShiftTypes && (
                     /*
                      * 사진 기준: 헤더 우측 D/E/N/O/WO 라벨은 박스 없이
                      * 모두 동일한 회색의 "컬럼 헤더" 텍스트 라벨이다.
@@ -357,37 +369,26 @@ export function MakeShiftCalendar({
                         className="make-shift-calendar__type-summary-header flex shrink-0 items-center"
                         style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
                     >
-                        {summaryColumns.counted.map((type) => (
+                        {summaryShiftTypes.map((type) => (
                             <div
                                 key={type.wardShiftTypeId}
                                 className={cn(
                                     'make-shift-calendar__type-summary-badge',
-                                    'grid place-items-center font-poppins text-[clamp(10px,0.82cqw,14px)] leading-none font-medium text-sub-2.5',
+                                    'grid place-items-center font-poppins text-[clamp(10px,0.82cqw,14px)] leading-none font-medium',
                                     SUMMARY_CELL_HEIGHT,
                                     SUMMARY_CELL_WIDTH,
                                 )}
+                                style={{color: type.color}}
                             >
                                 {type.shortName}
                             </div>
                         ))}
-                        {summaryColumns.off && (
-                            <div
-                                className={cn(
-                                    'make-shift-calendar__type-summary-badge make-shift-calendar__type-summary-badge--off',
-                                    'grid place-items-center font-poppins text-[clamp(9px,0.78cqw,13px)] leading-none font-medium text-sub-2.5',
-                                    SUMMARY_CELL_HEIGHT,
-                                    SUMMARY_CELL_WIDTH,
-                                )}
-                            >
-                                WO
-                            </div>
-                        )}
                     </div>
                 )}
             </div>
 
             {/* BODY: division-level별로 카드 + 우측 합계가 나란히 배치 */}
-            <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-[clamp(10px,0.85cqw,18px)]">
+            <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
                 {shift.divisionShiftNurses.map((division, level) => {
                     const rows = division.filter((r) => r.shiftNurse.isWorker);
 
@@ -398,13 +399,13 @@ export function MakeShiftCalendar({
                             key={level}
                             data-division-level={level}
                             className="make-shift-calendar__division flex w-full min-w-0 items-stretch"
-                            style={{gap: isSimplified ? 0 : DIVISION_TO_SUMMARY_GAP}}
+                            style={{gap: isSimplified || !hasSummaryShiftTypes ? 0 : DIVISION_TO_SUMMARY_GAP}}
                         >
                             {/*
                              * 카드 상·하만 DIVISION_PADDING_Y(첫·끝 행 래퍼). 좌는 이름 열만 인셋, 일자는 우측까지.
                              * 행 그리드는 items-stretch → 주말 셀이 행 높이 전체를 칠함(행 안에서 잘리지 않음).
                              */}
-                            <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[clamp(14px,1.2cqw,20px)] bg-white shadow-banner">
+                            <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
                                 {showFaults && teamViolations.length > 0 && (
                                     <DivisionTeamViolationOverlay
                                         violations={teamViolations}
@@ -455,7 +456,7 @@ export function MakeShiftCalendar({
                                 })}
                             </div>
 
-                            {!isSimplified && (
+                            {!isSimplified && hasSummaryShiftTypes && (
                                 /* 우측 합계: 카드와 동일 DIVISION_PADDING_Y로 세로 정렬 */
                                 <div
                                     className="make-shift-calendar__division-summary flex shrink-0 flex-col"
@@ -473,8 +474,7 @@ export function MakeShiftCalendar({
                                                 cells={docEntry.row.cells}
                                                 days={shift.days}
                                                 shortNameToType={shortNameToType}
-                                                countedTypes={summaryColumns.counted}
-                                                offType={summaryColumns.off ?? null}
+                                                summaryShiftTypes={summaryShiftTypes}
                                             />
                                         );
                                     })}
@@ -486,7 +486,9 @@ export function MakeShiftCalendar({
             </div>
 
             {/* FOOTER: 일자별 D / E / N 합계 — simplified 에서는 생략 */}
-            {!isSimplified && <DailySummary shift={shift} doc={doc} shortNameToType={shortNameToType} />}
+            {!isSimplified && hasSummaryShiftTypes && (
+                <DailySummary doc={doc} shortNameToType={shortNameToType} summaryShiftTypes={summaryShiftTypes} />
+            )}
         </div>
     );
 }
@@ -595,9 +597,7 @@ function CalendarRowLeft({
     const primaryViolation = (items: TViolation[] | undefined) => {
         if (!items || items.length === 0) return undefined;
 
-        return [...items].sort(
-            (a, b) => VIOLATION_LEVEL_PRIORITY[b.level] - VIOLATION_LEVEL_PRIORITY[a.level],
-        )[0];
+        return [...items].sort((a, b) => VIOLATION_LEVEL_PRIORITY[b.level] - VIOLATION_LEVEL_PRIORITY[a.level])[0];
     };
     const showViolationTipFromTarget = (target: HTMLButtonElement, v: TViolation) => {
         const r = target.getBoundingClientRect();
@@ -630,7 +630,7 @@ function CalendarRowLeft({
                 }}
             >
                 <div
-                    className="make-shift-calendar__row-name flex min-h-0 min-w-0 items-center justify-center truncate whitespace-nowrap text-center font-apple text-[clamp(12px,1.05cqw,16px)] leading-none text-sub-1"
+                    className="make-shift-calendar__row-name flex min-h-0 min-w-0 items-center justify-center truncate text-center font-apple text-[clamp(12px,1.05cqw,16px)] leading-none whitespace-nowrap text-sub-1"
                     title={nurseName}
                 >
                     {formatNurseDisplayName(nurseName)}
@@ -642,7 +642,7 @@ function CalendarRowLeft({
                             <div
                                 className={cn(
                                     'make-shift-calendar__row-carry-value',
-                                    'grid size-[clamp(20px,1.8cqw,28px)] place-items-center border border-gray-6 bg-main-bg font-poppins text-[clamp(12px,1.05cqw,16px)] leading-none text-sub-2 tabular-nums',
+                                    'grid size-[clamp(20px,1.8cqw,28px)] place-items-center bg-main-bg font-poppins text-[clamp(12px,1.05cqw,16px)] leading-none text-sub-2 tabular-nums',
                                     CARRY_ROUNDED,
                                 )}
                             >
@@ -724,6 +724,7 @@ function CalendarRowLeft({
                                         ...cellViolation,
                                         message: cellViolationTitle ?? cellViolation.message,
                                     });
+
                                     if (cellViolation) {
                                         setHoveredViolationKey(`${shiftNurseId},${cellViolation.cells[0]!.col},${cellViolation.ruleId}`);
                                     }
@@ -752,7 +753,7 @@ function CalendarRowLeft({
                                     <ShiftBadge
                                         shiftType={shiftType}
                                         isOnlyRequest={shiftType === null && reqType !== null}
-                                        className={cn(SHIFT_BADGE_CELL_BADGE, isSelected && 'outline outline-[1.5px] outline-main-1')}
+                                        className={cn(SHIFT_BADGE_CELL_BADGE, isSelected && 'outline outline-2 outline-main-1')}
                                     />
                                 </span>
                             </button>
@@ -798,7 +799,7 @@ function CalendarRowLeft({
                 createPortal(
                     <div
                         role="tooltip"
-                        className="pointer-events-none fixed z-[99999] box-border w-max max-w-[min(24rem,calc(100vw-1rem))] -translate-x-1/2 rounded-md border border-gray-6 bg-white px-2.5 py-1.5 text-left font-apple text-xs leading-snug whitespace-normal text-sub-1 shadow-lg"
+                        className="pointer-events-none fixed z-[99999] box-border w-max max-w-[min(24rem,calc(100vw-1rem))] -translate-x-1/2 rounded-md bg-white px-2.5 py-1.5 text-left font-apple text-xs leading-snug whitespace-normal text-sub-1"
                         style={{left: violationTip.left, top: violationTip.top}}
                     >
                         {violationTip.message}
@@ -813,15 +814,14 @@ type TCalendarRowSummaryProps = {
     cells: TDutyDoc['rows'][number]['cells'];
     days: TShift['days'];
     shortNameToType: Map<string, TWardShiftType>;
-    countedTypes: TWardShiftType[];
-    offType: TWardShiftType | null;
+    summaryShiftTypes: TWardShiftType[];
 };
 
 /**
  * 행의 우측 합계 (D/E/N/O/WO) — division 카드 밖에 분리되어 배치된다.
  * 좌측 행과 동일한 height로 vertically 정렬된다.
  */
-function CalendarRowSummary({cells, days, shortNameToType, countedTypes, offType}: TCalendarRowSummaryProps) {
+function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes}: TCalendarRowSummaryProps) {
     const countByType = (typeId: number) =>
         cells.filter((cell, j) => {
             const t = cell ? shortNameToType.get(cell) : null;
@@ -831,22 +831,13 @@ function CalendarRowSummary({cells, days, shortNameToType, countedTypes, offType
 
             return day != null;
         }).length;
-    const offCount =
-        offType == null
-            ? 0
-            : cells.filter((cell, j) => {
-                  const t = cell ? shortNameToType.get(cell) : null;
-                  const day = days[j];
-
-                  return Boolean(t?.isOff) && day?.dayType !== 'workday';
-              }).length;
 
     return (
         <div
             className={cn('make-shift-calendar__row-summary flex shrink-0 items-center', ROW_SUMMARY_HEIGHT)}
             style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
         >
-            {countedTypes.map((t) => (
+            {summaryShiftTypes.map((t) => (
                 <div
                     key={t.wardShiftTypeId}
                     className={cn(
@@ -856,33 +847,24 @@ function CalendarRowSummary({cells, days, shortNameToType, countedTypes, offType
                         SUMMARY_CELL_HEIGHT,
                         SUMMARY_CELL_WIDTH,
                     )}
+                    style={{color: t.color}}
                 >
                     {countByType(t.wardShiftTypeId)}
                 </div>
             ))}
-            {offType && (
-                <div
-                    className={cn(
-                        'make-shift-calendar__row-summary-count make-shift-calendar__row-summary-count--off',
-                        'grid place-items-center',
-                        SUMMARY_COUNT_TEXT_CLASS,
-                        SUMMARY_CELL_HEIGHT,
-                        SUMMARY_CELL_WIDTH,
-                    )}
-                >
-                    {offCount}
-                </div>
-            )}
         </div>
     );
 }
 
-function DailySummary({shift, doc, shortNameToType}: {shift: TShift; doc: TDutyDoc; shortNameToType: Map<string, TWardShiftType>}) {
-    /*
-     * 사진 기준: daily-summary는 isCounted 타입만 표시하고 off는 표시하지 않는다.
-     * (사진의 하단 합계도 D / E / N 만 있고 O / WO 행은 없음.)
-     */
-    const counted = useMemo(() => shift.wardShiftTypes.filter((t) => t.isCounted && !t.isOff), [shift.wardShiftTypes]);
+function DailySummary({
+    doc,
+    shortNameToType,
+    summaryShiftTypes,
+}: {
+    doc: TDutyDoc;
+    shortNameToType: Map<string, TWardShiftType>;
+    summaryShiftTypes: TWardShiftType[];
+}) {
     const countByDay = (j: number, typeId: number) =>
         doc.rows.filter((row) => {
             const cell = row.cells[j] ?? null;
@@ -893,70 +875,58 @@ function DailySummary({shift, doc, shortNameToType}: {shift: TShift; doc: TDutyD
         }).length;
 
     return (
-        // 사진 기준: 카드/그림자/모서리 없음. body 카드와 시각적으로 분리되어 라벨+숫자만 떠있는 형태.
-        // body division과 동일한 좌(card-area 폭) / 우(row-summary 폭) 분리 구조를 유지해서
-        // 라벨(D/E/N)과 일자별 숫자가 위쪽 헤더·body의 일자 컬럼과 정확히 정렬된다.
-        //
-        // 행 높이는 배지·숫자에 맞추고, 행 간 세로 gap만 row-summary 가로 gap(SUMMARY_GAP)과 동일.
         <div
             className="make-shift-daily-summary mt-[clamp(4px,0.35cqw,8px)] flex w-full min-w-0 items-stretch"
             style={{gap: DIVISION_TO_SUMMARY_GAP}}
         >
             <div
                 className="make-shift-daily-summary__rows flex min-w-0 flex-1 flex-col"
-                // body division-card와 동일한 수평 인셋(좌만, 일자는 우측까지)으로 컬럼 정렬.
-                // 행 간 세로 gap = row-summary 열 간 가로 gap(SUMMARY_GAP).
                 style={{paddingLeft: DIVISION_PADDING_X, paddingRight: 0, gap: SUMMARY_GAP}}
             >
-                {counted.map((type) => {
-                    return (
-                        <div
-                            key={type.wardShiftTypeId}
-                            data-shift-type-id={type.wardShiftTypeId}
-                            className={cn(
-                                'make-shift-daily-summary__row grid w-full min-w-0 items-center',
-                                DAILY_SUMMARY_ROW_HEIGHT,
-                            )}
-                            style={{gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS, columnGap: ROW_GAP_X}}
-                        >
-                            <div />
-                            <div />
-                            <div className="make-shift-daily-summary__label flex items-center justify-end">
-                                <ShiftBadge
-                                    shiftType={type}
-                                    className={cn('make-shift-daily-summary__label-badge', SHIFT_BADGE_SUMMARY_ROW)}
-                                />
-                            </div>
+                {summaryShiftTypes.map((type) => (
+                    <div
+                        key={type.wardShiftTypeId}
+                        data-shift-type-id={type.wardShiftTypeId}
+                        className={cn('make-shift-daily-summary__row grid w-full min-w-0 items-center', DAILY_SUMMARY_ROW_HEIGHT)}
+                        style={{gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS, columnGap: ROW_GAP_X}}
+                    >
+                        <div />
+                        <div />
+                        <div className="make-shift-daily-summary__label flex items-center justify-end">
                             <div
-                                className="make-shift-daily-summary__cells grid h-full min-w-0 items-center px-0"
-                                style={{gridTemplateColumns: `repeat(${doc.columns.length}, minmax(0, 1fr))`}}
+                                className={cn(
+                                    'make-shift-daily-summary__label-badge',
+                                    'grid place-items-center font-poppins font-semibold',
+                                    SHIFT_BADGE_SUMMARY_ROW,
+                                )}
+                                style={{color: type.color}}
                             >
-                                {doc.columns.map((_d, j) => (
-                                    <div
-                                        key={j}
-                                        data-day-index={j}
-                                        className={cn(
-                                            'make-shift-daily-summary__cell grid h-full min-w-0 place-items-center',
-                                            SUMMARY_COUNT_TEXT_CLASS,
-                                        )}
-                                    >
-                                        {countByDay(j, type.wardShiftTypeId)}
-                                    </div>
-                                ))}
+                                {type.shortName}
                             </div>
                         </div>
-                    );
-                })}
+                        <div
+                            className="make-shift-daily-summary__cells grid h-full min-w-0 items-center px-0"
+                            style={{gridTemplateColumns: `repeat(${doc.columns.length}, minmax(0, 1fr))`}}
+                        >
+                            {doc.columns.map((_d, j) => (
+                                <div
+                                    key={j}
+                                    data-day-index={j}
+                                    className={cn(
+                                        'make-shift-daily-summary__cell grid h-full min-w-0 place-items-center',
+                                        SUMMARY_COUNT_TEXT_CLASS,
+                                    )}
+                                    style={{color: type.color}}
+                                >
+                                    {countByDay(j, type.wardShiftTypeId)}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
             </div>
 
-            {/*
-             * 우측: body division-card와 동일한 폭으로 정렬되도록 row-summary 폭만큼 빈 spacer를 둔다.
-             * 폭 계산은 row-summary와 동일한 룰(counted 개수 + (offType ? 1 : 0))로 한다.
-             */}
-            <DailySummarySpacer
-                countedCount={shift.wardShiftTypes.filter((t) => t.isCounted).length}
-                hasOff={shift.wardShiftTypes.some((t) => t.isOff)}
-            />
+            <DailySummarySpacer count={summaryShiftTypes.length} />
         </div>
     );
 }
@@ -969,16 +939,14 @@ function DailySummary({shift, doc, shortNameToType}: {shift: TShift; doc: TDutyD
  * row-summary는 counted + off를 모두 표시하므로 spacer도 동일 폭을 갖는다.
  * (daily-summary 본문은 off를 표시하지 않지만 spacer는 정렬용이라 포함해야 함.)
  */
-function DailySummarySpacer({countedCount, hasOff}: {countedCount: number; hasOff: boolean}) {
-    const totalCount = countedCount + (hasOff ? 1 : 0);
-
+function DailySummarySpacer({count}: {count: number}) {
     return (
         <div
             className="make-shift-daily-summary__spacer flex shrink-0 items-center"
             style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
             aria-hidden
         >
-            {Array.from({length: totalCount}).map((_, i) => (
+            {Array.from({length: count}).map((_, i) => (
                 <div key={i} className={cn(SUMMARY_CELL_HEIGHT, SUMMARY_CELL_WIDTH)} />
             ))}
         </div>

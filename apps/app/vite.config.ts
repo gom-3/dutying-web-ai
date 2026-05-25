@@ -42,7 +42,6 @@ const dependencies = {
     'react-helmet': 'react-helmet',
     'react-hook-form': 'react-hook-form',
     'react-hot-toast': 'react-hot-toast',
-    'react-loader-spinner': 'react-loader-spinner',
     'ts-pattern': 'ts-pattern',
     yup: 'yup',
     zustand: 'zustand',
@@ -54,6 +53,7 @@ const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
     const appSiteUrl = stripTrailingSlash(env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL || defaultAppSiteUrl);
+    const isWindows = process.platform === 'win32';
 
     return {
         envDir: workspaceRoot,
@@ -73,12 +73,16 @@ export default defineConfig(({mode}) => {
                 babel: {
                     plugins: [
                         ['babel-plugin-react-compiler'],
-                        [
-                            '@locator/babel-jsx/dist',
-                            {
-                                env: 'development',
-                            },
-                        ],
+                        ...(!isWindows
+                            ? [
+                                  [
+                                      '@locator/babel-jsx/dist',
+                                      {
+                                          env: 'development',
+                                      },
+                                  ] as const,
+                              ]
+                            : []),
                     ],
                 },
             }),

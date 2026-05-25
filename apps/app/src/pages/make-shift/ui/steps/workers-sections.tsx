@@ -4,8 +4,9 @@ import {type TNurse} from '@/entities';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
-import {formatNurseDisplayName} from './shared/format-nurse-display-name';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {Switch} from '@/shared/ui/primitives/switch';
+import {formatNurseDisplayName} from './shared/format-nurse-display-name';
 
 const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     D: {bg: '#4dc2ad', text: '#ffffff'},
@@ -13,14 +14,16 @@ const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     N: {bg: '#3580ff', text: '#ffffff'},
     O: {bg: '#465b7a', text: '#ffffff'},
 };
+const WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL =
+    'minmax(136px,1.2fr) clamp(58px,4.8vw,76px) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
+const WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL =
+    'minmax(136px,1.2fr) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
+const WORKERS_GRID_GAP = 'gap-[clamp(8px,0.85vw,14px)]';
+const WORKERS_ROW_PADDING_X = 'px-[clamp(12px,1.2vw,18px)]';
+const MEMO_PREVIEW_LENGTH = 20;
 
 type TSkillConfig = ComponentProps<typeof SkillBadge>['config'];
 
-/**
- * 정사각형 색상 배지(D/E/N/O 등). make-shift-calendar의 SHIFT_BADGE와 동일한 정책:
- *   - `size-`로 width=height 강제(정사각형 불변)
- *   - flex 컨테이너 안에서 `shrink-0`로 폭 줄어들지 않게 함
- */
 function ShiftTypeBadge({code}: {code: string}) {
     const style = SHIFT_TYPE_STYLE[code] ?? {bg: '#939ba9', text: '#ffffff'};
 
@@ -42,33 +45,40 @@ export function buildShiftCodes(nurse: TNurse) {
         .filter((code) => code.length > 0);
 }
 
-/**
- * 컬럼 폭과 row의 grid template은 동일하게 유지해야 정렬이 맞음.
- * 변경 시 WORKER_ROW_GRID_TEMPLATE_COLUMNS도 함께 변경.
- */
-const WORKERS_GRID_TEMPLATE_COLUMNS = 'clamp(16px,1.6vw,24px) clamp(90px,9.5vw,140px) clamp(54px,5.5vw,80px) clamp(140px,14vw,200px) 1fr';
-const WORKERS_GRID_GAP = 'gap-[clamp(12px,1.6vw,24px)]';
-const WORKERS_ROW_PADDING_X = 'px-[clamp(8px,0.85vw,12px)]';
+function getWorkerGridTemplateColumns(showSkill: boolean) {
+    return showSkill ? WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL : WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL;
+}
 
-export function WorkersTableHeader() {
+function formatMemoPreview(memo: string) {
+    return memo.length > MEMO_PREVIEW_LENGTH ? `${memo.slice(0, MEMO_PREVIEW_LENGTH)}...` : memo;
+}
+
+export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
     const {t} = useTypedTranslation();
 
     return (
         <div
-            className={`make-shift-workers__table-header grid items-center ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} text-[clamp(11px,0.95vw,16px)] text-gray-3`}
-            style={{gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS}}
+            className={`make-shift-workers__table-header grid h-8 items-center ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} font-apple text-[12px] font-semibold text-gray-4`}
+            style={{gridTemplateColumns: getWorkerGridTemplateColumns(showSkill)}}
         >
-            <div />
-            <p className="make-shift-workers__col-label make-shift-workers__col-label--name font-apple">
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--name text-left">
                 {t('page.makeShift.workers.column.name')}
             </p>
-            <p className="make-shift-workers__col-label make-shift-workers__col-label--level text-center font-apple">
-                {t('page.makeShift.workers.column.level')}
-            </p>
-            <p className="make-shift-workers__col-label make-shift-workers__col-label--shift-types text-center font-apple">
+            {showSkill ? (
+                <p className="make-shift-workers__col-label make-shift-workers__col-label--level text-center">
+                    {t('page.makeShift.workers.column.level')}
+                </p>
+            ) : null}
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--shift-types text-center">
                 {t('page.makeShift.workers.column.shiftTypes')}
             </p>
-            <p className="make-shift-workers__col-label make-shift-workers__col-label--memo text-center font-apple">
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--preceptor text-center">
+                {t('page.makeShift.workers.column.preceptor')}
+            </p>
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--is-worker text-center">
+                {t('page.makeShift.workers.column.isWorker')}
+            </p>
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--memo text-center">
                 {t('page.makeShift.workers.column.memo')}
             </p>
         </div>
@@ -80,11 +90,26 @@ type TWorkersListProps = {
     shiftTeamId: number;
     levelsByNurseId: Record<number, number>;
     skillConfig: TSkillConfig;
+    isBusy: boolean;
+    getWorkerState: (nurse: TNurse) => boolean;
+    onToggleWorker: (nurse: TNurse, checked: boolean) => void;
+    setRowRef: (nurseId: number, element: HTMLDivElement | null) => void;
 };
 
-export function WorkersList({grouped, shiftTeamId, levelsByNurseId, skillConfig}: TWorkersListProps) {
+export function WorkersList({
+    grouped,
+    shiftTeamId,
+    levelsByNurseId,
+    skillConfig,
+    isBusy,
+    getWorkerState,
+    onToggleWorker,
+    setRowRef,
+}: TWorkersListProps) {
+    const showSkill = skillConfig.enabled;
+
     return (
-        <div className="make-shift-workers__list-wrapper mt-[clamp(4px,0.5vw,10px)] flex flex-col gap-[clamp(10px,0.9vw,16px)]">
+        <div className="make-shift-workers__list-wrapper mt-2 flex flex-col gap-2">
             {grouped.map(([division, divisionWorkers]) => (
                 <div key={`${shiftTeamId},${division}`} className="make-shift-workers__division-block">
                     <Droppable droppableId={`${shiftTeamId},${division}`}>
@@ -92,7 +117,7 @@ export function WorkersList({grouped, shiftTeamId, levelsByNurseId, skillConfig}
                             <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className="make-shift-workers__list flex flex-col gap-[clamp(4px,0.45vw,8px)]"
+                                className="make-shift-workers__list flex flex-col gap-1.5"
                             >
                                 {divisionWorkers.map((nurse, index) => (
                                     <WorkerRow
@@ -101,6 +126,11 @@ export function WorkersList({grouped, shiftTeamId, levelsByNurseId, skillConfig}
                                         index={index}
                                         level={levelsByNurseId[nurse.nurseId]}
                                         skillConfig={skillConfig}
+                                        showSkill={showSkill}
+                                        isWorker={getWorkerState(nurse)}
+                                        isBusy={isBusy}
+                                        onToggleWorker={onToggleWorker}
+                                        setRowRef={setRowRef}
                                     />
                                 ))}
                                 {provided.placeholder}
@@ -118,65 +148,106 @@ type TWorkerRowProps = {
     index: number;
     level: number | undefined;
     skillConfig: TSkillConfig;
+    showSkill: boolean;
+    isWorker: boolean;
+    isBusy: boolean;
+    onToggleWorker: (nurse: TNurse, checked: boolean) => void;
+    setRowRef: (nurseId: number, element: HTMLDivElement | null) => void;
 };
 
-function WorkerRow({nurse, index, level, skillConfig}: TWorkerRowProps) {
+function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBusy, onToggleWorker, setRowRef}: TWorkerRowProps) {
     const {t} = useTypedTranslation();
     const shiftCodes = buildShiftCodes(nurse);
     const memo = nurse.memo?.trim();
+    const memoPreview = memo ? formatMemoPreview(memo) : '';
+    const fadedClass = isWorker ? '' : 'opacity-55';
 
     return (
-        <Draggable draggableId={String(nurse.nurseId)} index={index}>
+        <Draggable draggableId={String(nurse.nurseId)} index={index} isDragDisabled={!isWorker}>
             {(dragProvided, dragSnapshot) => {
                 const {style: dragStyle, ...draggableProps} = dragProvided.draggableProps;
 
                 return (
                     <div
-                        ref={dragProvided.innerRef}
+                        ref={(element) => {
+                            dragProvided.innerRef(element);
+                            setRowRef(nurse.nurseId, element);
+                        }}
                         {...draggableProps}
-                        className={`make-shift-workers__row grid h-[clamp(28px,2.75vw,42px)] items-center rounded-[clamp(8px,0.7vw,10px)] border border-gray-6 bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} ${
+                        className={`make-shift-workers__row grid min-h-11 items-center rounded-[12px] bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} transition-colors hover:bg-[#FBFDFF] ${
                             dragSnapshot.isDragging ? 'opacity-95' : ''
                         }`}
                         style={{
                             ...(dragStyle ?? {}),
-                            gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS,
+                            gridTemplateColumns: getWorkerGridTemplateColumns(showSkill),
                         }}
                     >
-                        <button
-                            type="button"
-                            aria-label={t('page.makeShift.workers.dragHandleAria')}
-                            className="make-shift-workers__row-drag-handle cursor-grab active:cursor-grabbing"
-                            {...dragProvided.dragHandleProps}
-                        >
-                            <SixDotsIcon className="size-[clamp(14px,1.35vw,20px)]" />
-                        </button>
-                        <p
-                            className="make-shift-workers__row-name min-w-0 truncate whitespace-nowrap text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1"
-                            title={nurse.name}
-                        >
-                            {formatNurseDisplayName(nurse.name)}
-                        </p>
-                        <div className="make-shift-workers__row-level flex justify-center">
-                            {/*
-                             * SkillBadge: 공통 숙련도 테마 + 반응형 크기 override
-                             */}
-                            <SkillBadge
-                                level={level}
-                                config={skillConfig}
-                                className="make-shift-workers__skill-badge h-[clamp(14px,1.25vw,18px)] min-w-[clamp(28px,3.0vw,40px)] text-[clamp(9px,0.82vw,13px)]"
-                            />
+                        <div className="make-shift-workers__row-name flex min-w-0 items-center gap-3 pl-1">
+                            <button
+                                type="button"
+                                aria-label={t('page.makeShift.workers.dragHandleAria')}
+                                disabled={!isWorker}
+                                className={`make-shift-workers__row-drag-handle grid size-8 shrink-0 place-items-center rounded-[9px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-35 ${
+                                    isWorker ? 'cursor-grab active:cursor-grabbing' : ''
+                                }`}
+                                {...dragProvided.dragHandleProps}
+                            >
+                                <SixDotsIcon className="size-[clamp(13px,1.25vw,18px)]" />
+                            </button>
+                            <p
+                                className={`min-w-0 truncate text-left font-apple text-[clamp(12px,1.1vw,18px)] font-semibold whitespace-nowrap text-sub-1 ${fadedClass}`}
+                                title={nurse.name}
+                            >
+                                {formatNurseDisplayName(nurse.name)}
+                            </p>
                         </div>
-                        <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.2vw,4px)]">
+                        {showSkill ? (
+                            <div className={`make-shift-workers__row-level flex justify-center ${fadedClass}`}>
+                                <SkillBadge
+                                    level={level}
+                                    config={skillConfig}
+                                    className="make-shift-workers__skill-badge h-[clamp(14px,1.25vw,18px)] min-w-[clamp(28px,3.0vw,40px)] text-[clamp(9px,0.82vw,13px)]"
+                                />
+                            </div>
+                        ) : null}
+                        <div
+                            className={`make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(3px,0.3vw,6px)] ${fadedClass}`}
+                        >
                             {shiftCodes.length > 0 ? (
                                 shiftCodes.map((code) => <ShiftTypeBadge key={`${nurse.nurseId}-${code}`} code={code} />)
                             ) : (
                                 <span className="font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">-</span>
                             )}
                         </div>
-                        <div className="make-shift-workers__row-memo flex min-w-0 items-center justify-center">
+                        <div className={`make-shift-workers__row-preceptor flex items-center justify-center ${fadedClass}`}>
+                            {nurse.isWardManager ? (
+                                <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
+                                    {t('page.makeShift.workers.preceptorActive')}
+                                </span>
+                            ) : (
+                                <span className="text-[clamp(10px,0.85vw,14px)] font-normal text-gray-4">-</span>
+                            )}
+                        </div>
+                        <div className={`make-shift-workers__row-is-worker flex justify-center ${fadedClass}`}>
+                            <Switch
+                                checked={isWorker}
+                                disabled={isBusy}
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                }}
+                                onCheckedChange={(checked) => onToggleWorker(nurse, checked)}
+                                className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                                thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
+                                aria-label={`${nurse.name} ${t('page.makeShift.workers.column.isWorker')}`}
+                            />
+                        </div>
+                        <div className={`make-shift-workers__row-memo flex min-w-0 items-center justify-center ${fadedClass}`}>
                             {memo ? (
-                                <p className="min-w-0 truncate text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1">
-                                    {memo}
+                                <p
+                                    className="min-w-0 truncate text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1"
+                                    title={memo}
+                                >
+                                    {memoPreview}
                                 </p>
                             ) : (
                                 <span className="text-[clamp(10px,0.85vw,14px)] font-normal text-gray-4">-</span>

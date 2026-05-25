@@ -1,4 +1,4 @@
-import {cn} from '@dutying/utils/style';
+﻿import {cn} from '@dutying/utils/style';
 import {cva, type VariantProps} from 'class-variance-authority';
 import * as React from 'react';
 import {ChevronLeftIcon, ChevronRightIcon} from '@/shared/assets/svg';
@@ -22,10 +22,11 @@ type TMonthTeamHeaderProps = {
     emptyLabel: string;
     formatMonthLabel: (year: number, month: number) => string;
     disabled?: boolean;
-    /** 이전 달 네비게이션 비활성 (/make는 이번 달보다 이전으로 이동 불가). */
+    /** Disable moving to a previous month when the caller owns month policy. */
     prevMonthDisabled?: boolean;
-    /** 다음 달 네비게이션 비활성 (확정 근무표는 이번 달·다음 달까지만). */
+    /** Disable moving to a next month when the caller owns month policy. */
     nextMonthDisabled?: boolean;
+    teamTone?: 'default' | 'darkSegmented';
 };
 
 const managementActionVariants = cva(
@@ -78,23 +79,44 @@ export function DutyManagementMonthTeamHeader({
     disabled = false,
     prevMonthDisabled = false,
     nextMonthDisabled = false,
+    teamTone = 'default',
 }: TMonthTeamHeaderProps) {
+    const isDarkSegmented = teamTone === 'darkSegmented';
+    const shouldShowTeamSwitcher = shiftTeams.length !== 1;
+
     return (
-        <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
+        <div className={cn('flex flex-wrap items-center', isDarkSegmented ? 'gap-2' : 'gap-4')}>
+            <div className={cn('flex items-center', isDarkSegmented ? 'gap-1' : 'gap-2')}>
                 <button
                     type="button"
-                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
+                    className={cn(
+                        'grid size-9 place-items-center transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
+                        isDarkSegmented
+                            ? 'rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 disabled:hover:text-gray-4'
+                            : 'rounded-[10px] text-gray-5 hover:bg-main-light hover:text-main-1 disabled:hover:text-gray-5',
+                    )}
                     onClick={onPrevMonth}
                     disabled={disabled || prevMonthDisabled}
                     aria-label={prevLabel}
                 >
                     <ChevronLeftIcon />
                 </button>
-                <div className="font-apple text-2xl font-semibold text-main-1">{formatMonthLabel(year, month)}</div>
+                <div
+                    className={cn(
+                        'text-center font-apple font-semibold',
+                        isDarkSegmented ? 'min-w-[112px] text-[20px] text-sub-1' : 'text-2xl text-main-1',
+                    )}
+                >
+                    {formatMonthLabel(year, month)}
+                </div>
                 <button
                     type="button"
-                    className="grid size-9 place-items-center rounded-[10px] text-gray-5 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-5"
+                    className={cn(
+                        'grid size-9 place-items-center transition-colors disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
+                        isDarkSegmented
+                            ? 'rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 disabled:hover:text-gray-4'
+                            : 'rounded-[10px] text-gray-5 hover:bg-main-light hover:text-main-1 disabled:hover:text-gray-5',
+                    )}
                     onClick={onNextMonth}
                     disabled={disabled || nextMonthDisabled}
                     aria-label={nextLabel}
@@ -103,32 +125,62 @@ export function DutyManagementMonthTeamHeader({
                 </button>
             </div>
 
-            <div className="max-w-full rounded-[10px] bg-main-light px-[10px] py-[7px]">
-                <div className="scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap">
-                    {shiftTeams.map((team) => {
-                        const selected = team.shiftTeamId === currentShiftTeamId;
+            {shouldShowTeamSwitcher ? (
+                <div
+                    className={cn(
+                        'max-w-full',
+                        isDarkSegmented ? 'rounded-[12px] bg-[#3D4658] p-0.5' : 'rounded-[10px] bg-main-light px-[10px] py-[7px]',
+                    )}
+                >
+                    <div
+                        className={cn(
+                            'scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap',
+                            isDarkSegmented && 'overflow-visible',
+                        )}
+                    >
+                        {shiftTeams.map((team) => {
+                            const selected = team.shiftTeamId === currentShiftTeamId;
 
-                        return (
-                            <button
-                                key={team.shiftTeamId}
-                                type="button"
-                                onClick={() => onSelectShiftTeam(team.shiftTeamId)}
-                                disabled={disabled}
+                            return (
+                                <button
+                                    key={team.shiftTeamId}
+                                    type="button"
+                                    onClick={() => onSelectShiftTeam(team.shiftTeamId)}
+                                    disabled={disabled}
+                                    className={cn(
+                                        isDarkSegmented
+                                            ? cn(
+                                                  'box-border grid h-8 max-h-8 min-h-8 min-w-[92px] place-items-center rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                                  selected
+                                                      ? 'bg-white text-sub-1'
+                                                      : 'text-[#B8C0CF] hover:text-white disabled:hover:bg-transparent',
+                                              )
+                                            : cn(
+                                                  'rounded-[8px] px-4 py-1.5 font-apple text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                                  selected
+                                                      ? 'bg-main-1 text-white'
+                                                      : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
+                                              ),
+                                    )}
+                                >
+                                    <span className="block leading-none">{team.name}</span>
+                                </button>
+                            );
+                        })}
+
+                        {shiftTeams.length === 0 && (
+                            <div
                                 className={cn(
-                                    'box-border grid h-[32px] min-h-[32px] max-h-[32px] place-items-center rounded-[10px] px-[16px] py-0 font-apple text-[14px] leading-none font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                                    selected ? 'bg-main-1 text-white' : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
+                                    'px-4 py-1.5 font-apple text-[14px] font-medium',
+                                    isDarkSegmented ? 'text-[#AEB7C7]' : 'text-gray-3',
                                 )}
                             >
-                                <span className="block leading-none">{team.name}</span>
-                            </button>
-                        );
-                    })}
-
-                    {shiftTeams.length === 0 && (
-                        <div className="px-4 py-1.5 font-apple text-base font-medium text-gray-3">{emptyLabel}</div>
-                    )}
+                                {emptyLabel}
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            ) : null}
         </div>
     );
 }
@@ -136,11 +188,12 @@ export function DutyManagementMonthTeamHeader({
 type TStatusCardProps = {
     title: string;
     description?: string;
+    descriptionClassName?: string;
     actions?: React.ReactNode;
     className?: string;
 };
 
-export function DutyManagementStatusCard({title, description, actions, className}: TStatusCardProps) {
+export function DutyManagementStatusCard({title, description, descriptionClassName, actions, className}: TStatusCardProps) {
     return (
         <div
             className={cn(
@@ -149,7 +202,11 @@ export function DutyManagementStatusCard({title, description, actions, className
             )}
         >
             <p className="font-apple text-[28px] font-semibold text-sub-1">{title}</p>
-            {description && <p className="mt-3 max-w-[480px] font-apple text-base leading-7 font-medium text-gray-3">{description}</p>}
+            {description && (
+                <p className={cn('mt-3 max-w-[480px] font-apple text-base leading-7 font-medium text-gray-3', descriptionClassName)}>
+                    {description}
+                </p>
+            )}
             {actions && <div className="mt-8 flex flex-wrap items-center justify-center gap-3">{actions}</div>}
         </div>
     );

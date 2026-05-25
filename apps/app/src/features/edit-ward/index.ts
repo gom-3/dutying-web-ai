@@ -1,6 +1,6 @@
 import {type TCreateShiftTypeDTO, type TEditWardDTO} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {useCallback} from 'react';
+import {useCallback, useMemo} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -25,6 +25,27 @@ const useEditWard = () => {
         ...wardWaitingNursesQueryOptions,
         enabled: !!wardId,
     });
+    const waitingNursesForView = useMemo(() => {
+        if (watingNurses?.length) {
+            return watingNurses;
+        }
+
+        if (!import.meta.env.DEV) {
+            return watingNurses;
+        }
+
+        return [
+            {
+                waitingNurseId: 999001,
+                nurseId: 999001,
+                name: '테스트 간호사',
+                gender: '여',
+                phoneNum: '01012345678',
+                employmentDate: null,
+                profileImgUrl: '',
+            },
+        ];
+    }, [watingNurses]);
     const editWardSetting = useCallback(
         async (editWardDTO: TEditWardDTO) => {
             if (!wardId) return;
@@ -33,7 +54,7 @@ const useEditWard = () => {
                 await WardAPI.editWard(wardId, editWardDTO);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
             } catch (error) {
-                showActionErrorFeedback(error, '근무 설정 수정에 실패했습니다.');
+                showActionErrorFeedback(error, '근무 설정을 수정하지 못했어요.');
             }
         },
         [queryClient, wardId, wardQueryKey],
@@ -79,7 +100,7 @@ const useEditWard = () => {
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '팀 추가에 실패했습니다.');
+                showActionErrorFeedback(error, '팀을 추가하지 못했어요.');
 
                 return false;
             }
@@ -99,7 +120,7 @@ const useEditWard = () => {
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '기존 간호사 계정 연결에 실패했습니다.');
+                showActionErrorFeedback(error, '기존 간호사 계정에 연결하지 못했어요.');
 
                 return false;
             }
@@ -124,7 +145,7 @@ const useEditWard = () => {
         },
         state: {
             ward,
-            watingNurses,
+            watingNurses: waitingNursesForView,
         },
         actions: {
             editWardSetting,

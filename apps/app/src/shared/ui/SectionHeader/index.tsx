@@ -15,7 +15,7 @@ function SectionHeader({title, description, className, titleClassName, descripti
                 {title}
             </h1>
             {description ? (
-                <p className={cn('font-apple text-[20px] font-medium text-gray-3', descriptionClassName)}>{description}</p>
+                <p className={cn('font-apple text-[20px] font-medium text-gray-3 whitespace-nowrap', descriptionClassName)}>{description}</p>
             ) : null}
         </div>
     );

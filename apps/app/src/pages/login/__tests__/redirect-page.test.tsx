@@ -7,8 +7,9 @@ vi.mock('@/features/auth', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('react-loader-spinner', () => ({
-    TailSpin: () => <div>spinner</div>,
+vi.mock('react-loading', () => ({
+    __esModule: true,
+    default: () => <div>spinner</div>,
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);

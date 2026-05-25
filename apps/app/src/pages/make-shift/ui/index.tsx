@@ -1,9 +1,7 @@
-import {useNavigate} from 'react-router';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {isDutyViewingThisCalendarMonth, isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
+import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {buildDutyPath} from '@/pages/duty/model/duty-navigation';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
@@ -11,7 +9,6 @@ import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
 
 export const MakeShiftPageView = () => {
-    const navigate = useNavigate();
     const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
     const phase = useMakeShiftStore((s) => s.phase);
@@ -25,37 +22,25 @@ export const MakeShiftPageView = () => {
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
-    const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const isOverview = phase === 'overview';
     const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
-    const canOfferCreateFollowingMonth = isDutyViewingThisCalendarMonth(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     /** 배정 1칸 이상 (`isDutyShiftWithoutAssignments` 역). 전부 채움은 `shiftFullyAssigned`. */
-    const hasAssignedCells = shiftStatus === 'success' && shiftExists;
-    const isMakeFlowBlocked = shiftStatus === 'success' && shiftFullyAssigned;
-    const nextMonth = month === 12 ? 1 : month + 1;
-    const nextYear = month === 12 ? year + 1 : year;
-    const handleGoDuty = () => {
-        navigate(buildDutyPath({year, month, shiftTeamId: currentShiftTeamId}));
-    };
+    const shouldEnterExistingShiftFlow = shiftStatus === 'success' && (shiftExists || shiftFullyAssigned);
     const handleCreateCurrentMonth = () => {
-        useCase.start();
-    };
-    const handleCreateNextMonth = () => {
-        setYearMonth({year: nextYear, month: nextMonth});
         useCase.start();
     };
 
     return (
         <div className="min-h-screen w-full overflow-x-auto">
-            {/* 최소 지원 폭 이하로 내려가면 "페이지 전체" 가로 스크롤 */}
-            <div className="flex min-h-screen min-w-[1280px] flex-col px-10 py-4">
+            {/* /request와 같은 외곽 밀도. 근무표는 31일 폭이 필요해 최소 폭만 유지한다. */}
+            <div className="mx-auto flex min-h-screen max-w-none min-w-[1280px] flex-col px-10 pt-4 pb-3">
                 <MakeShiftHeader />
 
-                <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white">
+                <div className="mt-2 flex flex-1 flex-col rounded-[18px] bg-white">
                     {!makeMonthAllowed ? (
                         <div className="flex flex-1 items-center justify-center px-10 py-16">
                             <DutyManagementStatusCard
@@ -76,6 +61,7 @@ export const MakeShiftPageView = () => {
                             ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
                                 <PageState
                                     tone="loading"
+                                    loadingColor="purple"
                                     title={
                                         shiftStatus === 'pending'
                                             ? t('page.makeShift.overview.loading')
@@ -92,42 +78,14 @@ export const MakeShiftPageView = () => {
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
                                     className="py-0"
                                 />
-                            ) : isMakeFlowBlocked ? (
+                            ) : shouldEnterExistingShiftFlow ? (
                                 <PageState
-                                    tone="empty"
-                                    title={t('page.makeShift.overview.shiftExists', {teamName: currentShiftTeamName, month})}
+                                    tone="loading"
+                                    loadingColor="purple"
+                                    title={t('page.makeShift.overview.loading')}
+                                    description={t('page.state.loadingDescription')}
                                     className="py-0"
-                                >
-                                    <div className="mt-1 flex flex-wrap justify-center gap-4">
-                                        <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
-                                            {t('page.makeShift.overview.viewShift', {month})}
-                                        </ManagementActionButton>
-                                        {canOfferCreateFollowingMonth && (
-                                            <ManagementActionButton size="lg" onClick={handleCreateNextMonth}>
-                                                {t('page.makeShift.overview.createShift', {month: nextMonth})}
-                                            </ManagementActionButton>
-                                        )}
-                                    </div>
-                                </PageState>
-                            ) : hasAssignedCells ? (
-                                <PageState
-                                    tone="empty"
-                                    title={t('page.makeShift.overview.shiftPartialFill', {teamName: currentShiftTeamName, month})}
-                                    className="py-0"
-                                >
-                                    <div className="mt-1 flex flex-wrap justify-center gap-4">
-                                        <ManagementActionButton variant="secondary" size="lg" onClick={handleGoDuty}>
-                                            {t('page.makeShift.overview.viewShift', {month})}
-                                        </ManagementActionButton>
-                                        <ManagementActionButton
-                                            size="lg"
-                                            onClick={handleCreateCurrentMonth}
-                                            disabled={currentShiftTeamId === null}
-                                        >
-                                            {t('page.makeShift.overview.createShift', {month})}
-                                        </ManagementActionButton>
-                                    </div>
-                                </PageState>
+                                />
                             ) : (
                                 <PageState
                                     tone="empty"
@@ -155,7 +113,7 @@ export const MakeShiftPageView = () => {
                              */}
                             <MakeShiftStepper currentStep={currentStep} maxReachedStep={maxReachedStep} onClickStep={useCase.goToStep} />
 
-                            <div className="w-full min-w-0 px-6 2xl:px-10">
+                            <div className="w-full min-w-0 px-3 2xl:px-4">
                                 <MakeShiftStepContent
                                     currentStep={currentStep}
                                     canPrev={canPrev}

@@ -1,9 +1,9 @@
+import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useNavigate} from 'react-router';
 import toast from 'react-hot-toast';
+import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
-import {docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
-import {buildDutyPath} from '@/pages/duty/model/duty-navigation';
+import {docToShift, docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -21,7 +21,7 @@ import {AiAutofillToolbar} from './ai-autofill-toolbar';
  */
 export function AiAutofill() {
     const {t} = useTypedTranslation();
-    const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const {
         state: {wardId},
     } = useAuth();
@@ -75,15 +75,23 @@ export function AiAutofill() {
 
         setIsWorking(true);
 
+        const progressToastId = 'make-shift-confirm-progress';
+
+        toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
+
         try {
             const dto = docToWardShiftsDTO(editorDoc, dutyQuery.data);
+            const nextShift = docToShift(editorDoc, dutyQuery.data);
+            const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId ?? -1, year, month).queryKey;
 
             await WardAPI.updateShifts(wardId, dto);
-            useCase.complete();
-            navigate(buildDutyPath({year, month, shiftTeamId: currentShiftTeamId}));
+            useCase.confirm(nextShift);
+            queryClient.setQueryData(queryKey, nextShift);
+            void queryClient.invalidateQueries({queryKey});
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'));
         } finally {
+            toast.dismiss(progressToastId);
             setIsWorking(false);
         }
     };
@@ -146,7 +154,7 @@ export function AiAutofill() {
     return (
         <div
             id="make_ai_autofill_step"
-            className="ai-autofill-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
+            className="ai-autofill-root flex w-full min-w-0 flex-col gap-3 pt-3 outline-none"
             ref={editorRef}
             onKeyDown={onKeyDown}
             onPasteCapture={onPasteCapture}
@@ -166,11 +174,17 @@ export function AiAutofill() {
                 aiStatus={aiStatus}
                 hasCompletedAiFill={hasCompletedAiFill}
                 onConfirm={handleConfirm}
+                isConfirming={isWorking}
                 canConfirm={canConfirm}
             />
 
             {dutyQuery.isLoading && (
-                <PageState tone="loading" title={t('page.makeShift.aiRefill.loading')} description={t('page.state.loadingDescription')} />
+                <PageState
+                    tone="loading"
+                    loadingColor="purple"
+                    title={t('page.makeShift.aiRefill.loading')}
+                    description={t('page.state.loadingDescription')}
+                />
             )}
             {dutyQuery.isError && (
                 <PageState
@@ -189,6 +203,9 @@ export function AiAutofill() {
                     showFaults={showFaults}
                     onCellClick={focusEditor}
                 />
+            )}
+            {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
+                <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>
     );

@@ -1,10 +1,10 @@
-import {DragDropContext} from '@hello-pangea/dnd';
+﻿import {DragDropContext} from '@hello-pangea/dnd';
 import {useEffect} from 'react';
 import {useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import {useTutorialStore} from '@/features/tutorial/model/store';
-import {PlusIcon} from '@/shared/assets/svg';
+import {Plus} from 'lucide-react';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import useShiftTeamListController from '../model/use-shift-team-list-controller-hook';
@@ -49,7 +49,9 @@ function ShiftTeamList() {
                         sendEvent(events.memberPage.createShiftTeam);
                     }}
                 >
-                    <PlusIcon className="h-6 w-6 stroke-main-2" />
+                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#CFD6DF] transition-colors group-hover:bg-[#EEF2F6]">
+                        <Plus className="h-[12px] w-[12px] text-[#4F5A71]" strokeWidth={3} />
+                    </span>
                     {t('page.member.shiftTeamList.addTeam')}
                 </button>
             </div>
@@ -84,3 +86,5 @@ function ShiftTeamList() {
 }
 
 export default ShiftTeamList;
+
+

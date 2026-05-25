@@ -33,6 +33,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
             goToMethodSelection,
             goToTargetSelection,
             handleSelectWaitingNurse,
+            handleAutoConnectWaitingNurse,
             handleCompleteSelection,
             retryCompleteSelection,
         },
@@ -48,11 +49,21 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         toLinkNurseId,
         toAddShiftTeamId,
     });
+    const normalizePhone = (phoneNum?: string | null) => (phoneNum ?? '').replace(/\D/g, '');
+    const normalizeName = (name?: string | null) => (name ?? '').trim();
+    const handleAcceptWaitingNurse = (waitingNurse: (typeof watingNurses)[number]) => {
+        const waitingName = normalizeName(waitingNurse.name);
+        const allTeamNurses = shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [];
+        const hasSameNameNurse = allTeamNurses.some((nurse) => normalizeName(nurse.name) === waitingName);
+
+        handleSelectWaitingNurse(waitingNurse);
+        setConnectMode(hasSameNameNurse ? 'link' : 'add');
+    };
 
     return open
         ? createPortal(
               <div
-                  className="fixed top-0 left-0 z-1001 flex h-screen w-screen items-center justify-center bg-[#00000099] backdrop-blur-[.125rem]"
+                  className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px] [&_button:not(:disabled)]:cursor-pointer"
                   onClick={handleClose}
               >
                   {match(step)
@@ -60,7 +71,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
                           <ConnectionManageWaitingStep
                               waitingNurses={watingNurses}
                               onClose={handleClose}
-                              onAccept={handleSelectWaitingNurse}
+                              onAccept={handleAcceptWaitingNurse}
                               onReject={cancelWaiting}
                           />
                       ))
@@ -68,9 +79,10 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
                           <ConnectionManageMethodStep
                               currentWaitingNurse={currentWaitingNurse}
                               connectMode={connectMode}
-                              onBack={goToWaitingList}
-                              onNext={goToTargetSelection}
-                              onChangeConnectMode={setConnectMode}
+                              onSelectConnectMode={(mode) => {
+                                  setConnectMode(mode);
+                                  goToTargetSelection();
+                              }}
                           />
                       ))
                       .with(2, () => (

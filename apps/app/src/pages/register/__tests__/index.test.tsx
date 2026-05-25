@@ -20,8 +20,9 @@ vi.mock('react-router', () => ({
     useNavigate: () => mockNavigate,
 }));
 
-vi.mock('react-loader-spinner', () => ({
-    TailSpin: () => <div>spinner</div>,
+vi.mock('react-loading', () => ({
+    __esModule: true,
+    default: () => <div>spinner</div>,
 }));
 
 vi.mock('@/features/auth', () => ({
@@ -60,7 +61,7 @@ describe('RegisterPage', () => {
     it('shows a loading spinner while account bootstrap is pending', () => {
         render(<RegisterPage />);
 
-        expect(screen.getByText('spinner')).toBeInTheDocument();
+        expect(screen.getByLabelText('loading')).toBeInTheDocument();
     });
 
     it('shows a retryable error state when account bootstrap fails', async () => {

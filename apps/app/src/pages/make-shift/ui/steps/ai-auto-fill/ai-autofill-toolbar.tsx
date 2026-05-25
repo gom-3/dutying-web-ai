@@ -1,5 +1,8 @@
 import {cn} from '@dutying/utils/style';
-import {HistoryBackIcon, HistoryNextIcon} from '@/shared/assets/svg';
+import {AlertTriangle, Check, Eye, EyeOff, Redo2, Undo2, type LucideIcon} from 'lucide-react';
+import type {ReactNode} from 'react';
+import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getAiAutofillActionLabel, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 
@@ -17,12 +20,17 @@ type TAiAutofillToolbarProps = {
     aiStatus: TAiAutofillStatus;
     hasCompletedAiFill: boolean;
     onConfirm: () => void;
+    isConfirming: boolean;
     canConfirm: boolean;
 };
 
-/**
- * 상단 툴바: 신청 근무 확정 탭과 같이 제목 + 보조 문구(좌), 컨트롤(우).
- */
+const AI_ACTION_LABEL_KEYS = {
+    action: 'page.makeShift.aiRefill.action',
+    firstFill: 'page.makeShift.aiRefill.firstFill',
+    generating: 'page.makeShift.aiRefill.generating',
+    retry: 'page.makeShift.aiRefill.retry',
+} as const;
+
 export function AiAutofillToolbar({
     autoFillEnabled,
     onToggleAutoFill,
@@ -37,126 +45,128 @@ export function AiAutofillToolbar({
     aiStatus,
     hasCompletedAiFill,
     onConfirm,
+    isConfirming,
     canConfirm,
 }: TAiAutofillToolbarProps) {
     const {t} = useTypedTranslation();
-    const aiActionKey = getAiAutofillActionLabel(aiStatus, hasCompletedAiFill);
+    const actionLabelKey = AI_ACTION_LABEL_KEYS[getAiAutofillActionLabel(aiStatus, hasCompletedAiFill)];
 
     return (
-        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-wrap items-center justify-between gap-[clamp(10px,0.9vw,16px)]">
-            <div className="ai-autofill-toolbar__titles flex min-w-0 flex-1 flex-wrap items-baseline gap-x-[clamp(12px,1.2vw,24px)] gap-y-[clamp(4px,0.4vw,8px)]">
-                <h1 className="ai-autofill-toolbar__title shrink-0 font-apple text-[clamp(20px,1.7vw,30px)] font-semibold text-sub-1">
+        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
+            <div className="ai-autofill-toolbar__titles min-w-0">
+                <h1 className="ai-autofill-toolbar__title shrink-0 font-apple text-[28px] leading-tight font-bold whitespace-nowrap text-sub-1">
                     {t('page.makeShift.aiRefill.toolbarTitle')}
                 </h1>
-                <p className="ai-autofill-toolbar__hint max-w-full min-w-0 font-apple text-[clamp(13px,1.1vw,20px)] leading-snug font-medium text-gray-3">
-                    {t('page.makeShift.aiRefill.toolbarHint')}
+                <p className="ai-autofill-toolbar__subtitle mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                    {t('page.makeShift.aiRefill.toolbarSubTitle')}
                 </p>
             </div>
 
-            <div className="ai-autofill-toolbar__actions flex shrink-0 items-center gap-[clamp(6px,0.55vw,10px)]">
-                <ToggleChip
-                    className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--auto-fill"
-                    active={autoFillEnabled}
-                    onClick={onToggleAutoFill}
-                >
-                    자동 채우기 {autoFillEnabled ? 'ON' : 'OFF'}
-                </ToggleChip>
+            <div
+                id="make_ai_autofill_actions"
+                className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2"
+            >
+                <div className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1">
+                    <ToggleIconButton
+                        className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--auto-fill"
+                        active={autoFillEnabled}
+                        onClick={onToggleAutoFill}
+                        ariaLabel={t(autoFillEnabled ? 'page.makeShift.aiRefill.viewAll' : 'page.makeShift.aiRefill.fixedOnly')}
+                        icon={autoFillEnabled ? Eye : EyeOff}
+                    />
 
-                <ToggleChip
-                    className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--faults"
-                    active={showFaults}
-                    onClick={onToggleFaults}
-                >
-                    <span
-                        className={cn(
-                            'ai-autofill-toolbar__fault-swatches flex shrink-0 items-center gap-[1px] transition-opacity',
-                            showFaults ? 'opacity-100' : 'opacity-0',
-                        )}
-                        aria-hidden
-                    >
-                        <span className="ai-autofill-toolbar__fault-swatch--error size-[clamp(8px,0.65vw,12px)] rounded-[2px] border border-[#FF0000] bg-[#FF000080]" />
-                        <span className="ai-autofill-toolbar__fault-swatch--medium size-[clamp(8px,0.65vw,12px)] rounded-[2px] border border-[#FF8800] bg-[#FF88004D]" />
-                        <span className="ai-autofill-toolbar__fault-swatch--warning size-[clamp(8px,0.65vw,12px)] rounded-[2px] border border-[#FFD900] bg-[#EEFF004D]" />
-                    </span>
-                    잘못된 근무 {showFaults ? 'ON' : 'OFF'}
-                </ToggleChip>
+                    <ToggleIconButton
+                        className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--faults"
+                        active={showFaults}
+                        onClick={onToggleFaults}
+                        ariaLabel={t(showFaults ? 'page.makeShift.aiRefill.showingFaults' : 'page.makeShift.aiRefill.hidingFaults')}
+                        icon={AlertTriangle}
+                    />
+                </div>
 
-                <span
-                    className="ai-autofill-toolbar__divider mx-[clamp(2px,0.3vw,8px)] inline-flex h-[clamp(14px,1.2vw,18px)] w-px shrink-0 bg-gray-6"
-                    aria-hidden
-                />
-
-                <span className="ai-autofill-toolbar__history flex items-center gap-[2px]">
-                    <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="undo">
-                        <HistoryBackIcon className="size-full" />
+                <span className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1">
+                    <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="Undo">
+                        <Undo2 className="size-3.5" aria-hidden />
                     </IconButton>
-                    <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="redo">
-                        <HistoryNextIcon className="size-full" />
+                    <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
+                        <Redo2 className="size-3.5" aria-hidden />
                     </IconButton>
                 </span>
-
-                <span
-                    className="ai-autofill-toolbar__divider mx-[clamp(2px,0.3vw,8px)] inline-flex h-[clamp(14px,1.2vw,18px)] w-px shrink-0 bg-gray-6"
-                    aria-hidden
-                />
 
                 <button
                     type="button"
                     onClick={onAiFill}
                     disabled={isAiGenerating}
+                    aria-busy={isAiGenerating}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill',
-                        'box-border inline-flex shrink-0 cursor-pointer items-center justify-center gap-[clamp(4px,0.4vw,8px)] rounded-[12px] px-[clamp(12px,1vw,18px)] py-0',
-                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] leading-none font-semibold whitespace-nowrap text-white',
-                        'disabled:cursor-not-allowed disabled:opacity-60',
+                        'inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 rounded-[13px] px-4 py-0',
+                        'bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white',
+                        'transition-[filter,transform] duration-150',
+                        'hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
+                        'disabled:cursor-not-allowed disabled:opacity-70 disabled:grayscale',
                     )}
-                    style={{backgroundImage: 'linear-gradient(105deg, #B53DFA 0%, #663DFA 100%)'}}
                 >
-                    <SparkleIcon className="size-[clamp(13px,1.1vw,17px)]" />
-                    {t(`page.makeShift.aiRefill.${aiActionKey}`)}
+                    {isAiGenerating ? (
+                        <BouncingDots className="w-5 shrink-0 text-white" />
+                    ) : (
+                        <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="size-4 shrink-0 object-contain" />
+                    )}
+                    <span className="truncate">{t(actionLabelKey)}</span>
                 </button>
 
                 <button
                     type="button"
                     onClick={onConfirm}
                     disabled={!canConfirm}
+                    aria-busy={isConfirming}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--confirm',
-                        'box-border inline-flex shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-[#0A0F15] px-[clamp(14px,1.1vw,20px)] py-0',
-                        'h-[clamp(30px,2.5vw,40px)] font-apple text-[clamp(12px,0.95vw,16px)] leading-none font-semibold whitespace-nowrap text-white',
-                        'disabled:cursor-not-allowed disabled:opacity-50',
+                        'inline-flex min-h-[43px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[13px] bg-[#34383F] px-4 py-0',
+                        'font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white transition-colors duration-150',
+                        'hover:bg-[#2B3036] focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none active:bg-[#24282E]',
+                        'disabled:cursor-not-allowed disabled:bg-gray-5 disabled:text-white/70',
                     )}
                 >
-                    {t('page.makeShift.aiRefill.confirm')}
+                    {isConfirming ? (
+                        <BouncingDots className="w-5 shrink-0 text-white" />
+                    ) : (
+                        <Check className="size-3.5" strokeWidth={2.4} aria-hidden />
+                    )}
+                    {isConfirming ? t('page.makeShift.navigation.saving') : t('page.makeShift.aiRefill.confirm')}
                 </button>
             </div>
         </div>
     );
 }
 
-function ToggleChip({
+function ToggleIconButton({
     active,
     onClick,
+    ariaLabel,
     className,
-    children,
+    icon: Icon,
 }: {
     active: boolean;
     onClick: () => void;
+    ariaLabel: string;
     className?: string;
-    children: React.ReactNode;
+    icon: LucideIcon;
 }) {
     return (
         <button
             type="button"
             onClick={onClick}
+            aria-label={ariaLabel}
+            aria-pressed={active}
             className={cn(
-                'box-border inline-flex shrink-0 cursor-pointer items-center justify-center gap-[clamp(3px,0.35vw,6px)] rounded-[6px] border whitespace-nowrap',
-                'h-[clamp(20px,1.7vw,26px)] px-[clamp(6px,0.55vw,10px)] py-0 font-apple text-[clamp(9px,0.72vw,12px)] leading-none',
-                active ? 'border-gray-5 bg-white text-sub-2' : 'border-gray-5 bg-gray-6 text-sub-2.5 opacity-90',
+                'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] transition-colors duration-150',
+                'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                active ? 'bg-white text-sub-1' : 'text-gray-3',
                 className,
             )}
         >
-            {children}
+            <Icon className="size-3.5" aria-hidden />
         </button>
     );
 }
@@ -172,7 +182,7 @@ function IconButton({
     disabled?: boolean;
     ariaLabel: string;
     className?: string;
-    children: React.ReactNode;
+    children: ReactNode;
 }) {
     return (
         <button
@@ -181,28 +191,13 @@ function IconButton({
             disabled={disabled}
             aria-label={ariaLabel}
             className={cn(
-                'grid size-[clamp(18px,1.5vw,24px)] shrink-0 cursor-pointer place-items-center rounded-[6px] text-sub-2.5 hover:bg-gray-7 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent',
+                'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] text-gray-3 transition-colors duration-150',
+                'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-3',
                 className,
             )}
         >
             {children}
         </button>
-    );
-}
-
-function SparkleIcon({className}: {className?: string}) {
-    return (
-        <svg
-            className={cn('ai-autofill-toolbar__cta-icon--sparkle', className)}
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden
-        >
-            <path
-                d="M8 1.5L9.4 5.3C9.6 5.8 10 6.2 10.5 6.4L14 7.7L10.5 9.2C10 9.4 9.6 9.8 9.4 10.3L8 14L6.6 10.3C6.4 9.8 6 9.4 5.5 9.2L2 7.7L5.5 6.4C6 6.2 6.4 5.8 6.6 5.3L8 1.5Z"
-                fill="white"
-            />
-        </svg>
     );
 }

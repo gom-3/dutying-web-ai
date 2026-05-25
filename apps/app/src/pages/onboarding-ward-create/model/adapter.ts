@@ -301,11 +301,17 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
     };
 };
 
-export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWardDTO => ({
-    name: draft.wardName,
-    hospitalName: draft.hospitalName,
-    wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
-    shiftTeams: draft.teams.map((team) => ({
-        nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
-    })),
-});
+export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWardDTO => {
+    const normalizedWardName = draft.wardName.trim();
+    const normalizedHospitalName = draft.hospitalName.trim();
+    const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
+
+    return {
+        name: normalizedWardName || normalizedHospitalName || fallbackName,
+        hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
+        wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
+        shiftTeams: draft.teams.map((team) => ({
+            nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
+        })),
+    };
+};

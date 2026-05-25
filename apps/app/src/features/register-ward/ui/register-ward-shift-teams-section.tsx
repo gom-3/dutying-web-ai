@@ -1,6 +1,7 @@
-import {produce} from 'immer';
+﻿import {produce} from 'immer';
 import {type Dispatch, type SetStateAction} from 'react';
-import {CancelIcon, EnterIcon, PlusIcon, XIcon} from '@/shared/assets/svg';
+import {Plus} from 'lucide-react';
+import {CancelIcon, EnterIcon, XIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IRegisterWardShiftTeamsSectionProps {
@@ -35,7 +36,9 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                         );
                     }}
                 >
-                    <PlusIcon className="h-6 w-6 stroke-main-2" />
+                    <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#CFD6DF] transition-colors group-hover:bg-[#EEF2F6]">
+                        <Plus className="h-[12px] w-[12px] text-[#4F5A71]" strokeWidth={3} />
+                    </span>
                     <p className="font-apple text-[1rem] font-medium text-main-2">{t('feature.registerWard.shiftTeams.addTeam')}</p>
                 </div>
             </div>
@@ -120,3 +123,5 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
 }
 
 export default RegisterWardShiftTeamsSection;
+
+

@@ -1,3 +1,4 @@
+import type {DropResult} from '@hello-pangea/dnd';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
@@ -135,5 +136,270 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft).toEqual(initialDraft);
         expect(toastError).toHaveBeenCalledWith('엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있어요.');
         expect(toastSuccess).not.toHaveBeenCalled();
+    });
+});
+
+describe('useOnboardingWardWizard sorting and drag behavior', () => {
+    it('switches back to manual and keeps off nurses below on nurses when dragging during 가나다 순', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.setSortMode('name');
+        });
+
+        const activeTeamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.handleNurseDragEnd({
+                source: {droppableId: activeTeamId, index: 0},
+                destination: {droppableId: activeTeamId, index: 3},
+            } as DropResult);
+        });
+
+        expect(result.current.sortMode).toBe('manual');
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '이서윤',
+            '홍길동',
+            '김하늘',
+            '박연우',
+        ]);
+    });
+
+    it('inserts nurse right below the last on nurse when isWorker is turned off in manual sort', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const targetNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '홍길동');
+
+        expect(targetNurse).toBeDefined();
+
+        act(() => {
+            result.current.updateNurse(targetNurse?.id ?? '', {isWorker: false});
+        });
+
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '김하늘',
+            '이서윤',
+            '홍길동',
+            '박연우',
+        ]);
+    });
+
+    it('keeps the moved nurse at the top of off group when multiple off nurses exist', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const targetNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '김하늘');
+
+        expect(targetNurse).toBeDefined();
+
+        act(() => {
+            result.current.updateNurse(targetNurse?.id ?? '', {isWorker: false});
+        });
+
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '홍길동',
+            '이서윤',
+            '김하늘',
+            '박연우',
+        ]);
+    });
+
+    it('inserts off nurse at the bottom of on group when isWorker is turned on in manual sort', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const offNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '박연우');
+        const onToOffNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '김하늘');
+
+        expect(offNurse).toBeDefined();
+        expect(onToOffNurse).toBeDefined();
+
+        act(() => {
+            result.current.updateNurse(onToOffNurse?.id ?? '', {isWorker: false});
+        });
+
+        act(() => {
+            result.current.updateNurse(offNurse?.id ?? '', {isWorker: true});
+        });
+
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '홍길동',
+            '이서윤',
+            '박연우',
+            '김하늘',
+        ]);
+    });
+
+    it('keeps order unchanged when manual drag tries to cross the on/off boundary', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.handleNurseDragEnd({
+                source: {droppableId: activeTeamId, index: 0},
+                destination: {droppableId: activeTeamId, index: 3},
+            } as DropResult);
+        });
+
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '홍길동',
+            '김하늘',
+            '이서윤',
+            '박연우',
+        ]);
+    });
+
+    it('deletes nurse and shows delete toast', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const targetNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '김하늘');
+
+        expect(targetNurse).toBeDefined();
+
+        act(() => {
+            result.current.deleteNurse(targetNurse?.id ?? '');
+        });
+
+        expect(result.current.draft.nurses.some((nurse) => nurse.id === targetNurse?.id)).toBe(false);
+        expect(toastSuccess).toHaveBeenCalledWith('간호사를 삭제했어요.');
+    });
+
+    it('does not move nurse order when isWorker is turned off in non-manual sort', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const targetNurse = result.current.draft.nurses.find((nurse) => nurse.teamId === activeTeamId && nurse.name === '홍길동');
+
+        expect(targetNurse).toBeDefined();
+
+        act(() => {
+            result.current.setSortMode('name');
+        });
+
+        act(() => {
+            result.current.updateNurse(targetNurse?.id ?? '', {isWorker: false});
+        });
+
+        expect(result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).map((nurse) => nurse.name)).toEqual([
+            '홍길동',
+            '김하늘',
+            '이서윤',
+            '박연우',
+        ]);
+    });
+});
+
+describe('useOnboardingWardWizard skill config behavior', () => {
+    beforeEach(() => {
+        toastSuccess.mockReset();
+        toastError.mockReset();
+    });
+
+    it('applies updated skill config to nurse list and shows 안내 toast', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.saveSkillConfig({
+                levelCount: 3,
+                paletteId: 'cool',
+                autoAssign: false,
+            });
+        });
+
+        expect(result.current.draft.skillLevelConfig).toEqual({
+            levelCount: 3,
+            paletteId: 'cool',
+            autoAssign: false,
+        });
+        expect(result.current.draft.nurses.map((nurse) => nurse.level)).toEqual([3, 3, 1, 2]);
+        expect(toastSuccess).toHaveBeenCalledWith('숙련도 설정이 간호사 목록에 반영됐어요.');
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('disables skill config and shows 안내 toast', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.saveSkillConfig({
+                levelCount: 3,
+                paletteId: 'cool',
+                autoAssign: false,
+            });
+        });
+
+        act(() => {
+            result.current.disableSkillConfig();
+        });
+
+        expect(result.current.isSkillLevelEnabled).toBe(false);
+        expect(toastSuccess).toHaveBeenCalledWith('숙련도 설정을 사용하지 않아요.');
+        expect(toastError).not.toHaveBeenCalled();
+    });
+});
+
+describe('useOnboardingWardWizard add nurse behavior', () => {
+    beforeEach(() => {
+        toastSuccess.mockReset();
+        toastError.mockReset();
+    });
+
+    it('adds nurse to the active team and shows team-specific toast', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const activeTeamId = result.current.activeTeamId;
+        const activeTeamName = result.current.draft.teams.find((team) => team.id === activeTeamId)?.name ?? '선택한 팀';
+        const previousNurseCount = result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
+
+        act(() => {
+            result.current.addNurse();
+        });
+
+        const nextNurseCount = result.current.draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
+
+        expect(nextNurseCount).toBe(previousNurseCount + 1);
+        expect(toastSuccess).toHaveBeenCalledWith(`${activeTeamName}에 간호사를 추가했어요.`, {position: 'bottom-center'});
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('auto-creates a team and adds a nurse when no team exists', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.deleteActiveTeam();
+        });
+        act(() => {
+            result.current.deleteActiveTeam();
+        });
+        act(() => {
+            result.current.deleteActiveTeam();
+        });
+
+        expect(result.current.draft.teams).toHaveLength(0);
+        expect(result.current.draft.nurses).toHaveLength(0);
+
+        act(() => {
+            result.current.addNurse();
+        });
+
+        expect(result.current.draft.teams).toHaveLength(1);
+        expect(result.current.draft.nurses).toHaveLength(1);
+        expect(result.current.draft.nurses[0]?.teamId).toBe(result.current.draft.teams[0]?.id);
+        expect(toastSuccess).toHaveBeenCalledWith('간호사 1팀을 추가하고 간호사도 등록했어요.', {position: 'bottom-center'});
+    });
+});
+
+describe('useOnboardingWardWizard add team behavior', () => {
+    beforeEach(() => {
+        toastSuccess.mockReset();
+        toastError.mockReset();
+    });
+
+    it('adds a new team and shows bottom toast guidance', () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const previousTeamCount = result.current.draft.teams.length;
+
+        act(() => {
+            result.current.addTeam();
+        });
+
+        expect(result.current.draft.teams).toHaveLength(previousTeamCount + 1);
+        expect(toastSuccess).toHaveBeenCalledWith('간호사 4팀을 추가했어요.', {position: 'bottom-center'});
+        expect(toastError).not.toHaveBeenCalled();
     });
 });

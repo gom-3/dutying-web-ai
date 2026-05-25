@@ -7,6 +7,7 @@ import {useDutyStore} from '../duty-store';
 
 const {
     mockNavigate,
+    mockSetSearchParams,
     mockInvalidateQueries,
     mockSetLoading,
     mockUpdateShifts,
@@ -20,6 +21,7 @@ const {
     mockCommands,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
+    mockSetSearchParams: vi.fn(),
     mockInvalidateQueries: vi.fn(),
     mockSetLoading: vi.fn(),
     mockUpdateShifts: vi.fn(),
@@ -80,7 +82,7 @@ vi.mock('@tanstack/react-query', async () => {
 
 vi.mock('react-router', () => ({
     useNavigate: () => mockNavigate,
-    useSearchParams: () => [mockSearchParams, vi.fn()],
+    useSearchParams: () => [mockSearchParams, mockSetSearchParams],
 }));
 
 vi.mock('@/features/auth', () => ({
@@ -200,6 +202,7 @@ function setQueryState(overrides?: Partial<typeof mockQueries>) {
 describe('useDutyHook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockSetSearchParams.mockReset();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         resetDutyStore();
         mockSearchParams = new URLSearchParams();
@@ -564,5 +567,40 @@ describe('useDutyHook', () => {
         });
 
         expect(mockNavigate).toHaveBeenCalledWith('/make?year=2027&month=1&shiftTeamId=20');
+    });
+
+    it('opens onboarding-created modal from query flag and clears the flag from url', async () => {
+        mockSearchParams = new URLSearchParams('onboardingWardCreated=1');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.showOnboardingWardCreatedModal).toBe(true);
+        });
+
+        expect(mockSetSearchParams).toHaveBeenCalledTimes(1);
+
+        const [nextParams, options] = mockSetSearchParams.mock.calls[0] as [URLSearchParams, {replace: boolean}];
+
+        expect(nextParams.get('onboardingWardCreated')).toBeNull();
+        expect(options).toEqual({replace: true});
+    });
+
+    it('starts next month make flow when onboarding-created modal confirm is clicked', async () => {
+        mockSearchParams = new URLSearchParams('year=2026&month=3&shiftTeamId=20&onboardingWardCreated=1');
+
+        const {result} = renderHook(() => useDutyHook());
+
+        await waitFor(() => {
+            expect(result.current.state.showOnboardingWardCreatedModal).toBe(true);
+            expect(result.current.state.currentShiftTeamId).toBe(20);
+        });
+
+        act(() => {
+            result.current.handlers.startNextMonthMakeFromOnboarding();
+        });
+
+        expect(result.current.state.showOnboardingWardCreatedModal).toBe(false);
+        expect(mockNavigate).toHaveBeenCalledWith('/make?year=2026&month=4&shiftTeamId=20');
     });
 });

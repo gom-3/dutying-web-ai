@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {Draggable, Droppable} from '@hello-pangea/dnd';
-import {ChevronDown, Minus} from 'lucide-react';
+import {ChevronDown} from 'lucide-react';
 import {type ReactNode} from 'react';
 import {type TDutyRuleMeta, DUTY_RULE_META} from '@/features/shift-editor/model/duty-constraints';
 import {type TDutyRuleKey} from '@/features/shift-editor/model/types';
@@ -73,9 +73,7 @@ export function ConstraintSection({
                     )}
                 >
                     {infoLabel ? (
-                        <div
-                            className="make-shift-constraints__section-body-info grid grid-cols-[clamp(22px,2.4vw,36px)_minmax(0,1fr)] items-center gap-x-[clamp(10px,1.1vw,20px)] pt-[clamp(5px,0.45vw,9px)] pb-[clamp(5px,0.45vw,9px)]"
-                        >
+                        <div className="make-shift-constraints__section-body-info grid grid-cols-[clamp(22px,2.4vw,36px)_minmax(0,1fr)] items-center gap-x-[clamp(10px,1.1vw,20px)] pt-[clamp(5px,0.45vw,9px)] pb-[clamp(5px,0.45vw,9px)]">
                             <div aria-hidden className="w-full" />
                             <div className="flex min-w-0 justify-end">
                                 <ConstraintSectionInfo label={infoLabel} ariaLabel={infoTooltipAria} />
@@ -99,7 +97,7 @@ export function renderRuleEditor(t: TTypedT, meta: TDutyRuleMeta, value: number 
             onChange={(e) => onChange(parseInt(e.target.value, 10))}
             options={options}
             className="make-shift-constraints__rule-editor-select mx-[clamp(3px,0.3vw,5px)] h-[clamp(22px,1.85vw,30px)] w-[clamp(44px,4.2vw,60px)]"
-            selectClassName="rounded-[5px] px-[clamp(6px,0.65vw,12px)] py-[clamp(2px,0.25vw,5px)] outline-[0.5px] outline-main-4 text-main-1 text-[clamp(10px,0.85vw,14px)]"
+            selectClassName="rounded-[5px] bg-main-light px-[clamp(6px,0.65vw,12px)] py-[clamp(2px,0.25vw,5px)] text-main-1 text-[clamp(10px,0.85vw,14px)]"
         />
     );
     const editorClass =
@@ -224,14 +222,11 @@ export function ConstraintBucketList({
                                                         type="button"
                                                         aria-label={t('page.makeShift.constraints.excludeRuleAria')}
                                                         title={t('page.makeShift.constraints.excludeRuleAria')}
-                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] grid size-[clamp(13px,1.15vw,18px)] shrink-0 place-items-center rounded-full border border-gray-5 bg-white text-gray-4 transition-colors hover:border-gray-4 hover:bg-gray-7 hover:text-gray-3 disabled:opacity-40"
+                                                        className="make-shift-constraints__rule-exclude ml-[clamp(6px,0.6vw,10px)] inline-flex h-[clamp(24px,2.1vw,30px)] shrink-0 items-center gap-1 rounded-full bg-gray-7 px-[clamp(7px,0.75vw,10px)] font-apple text-[clamp(10px,0.85vw,12px)] font-semibold text-gray-4 transition-colors hover:bg-gray-6/60 hover:text-sub-1 disabled:opacity-40"
                                                         disabled={disabled}
                                                         onClick={() => onExcludeRule(key)}
                                                     >
-                                                        <Minus
-                                                            className="size-[clamp(7px,0.65vw,10px)] shrink-0 stroke-[1.85]"
-                                                            aria-hidden
-                                                        />
+                                                        <span>{t('page.makeShift.constraints.exclude')}</span>
                                                     </button>
                                                 </div>
                                             </div>

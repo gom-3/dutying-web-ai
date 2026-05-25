@@ -22,13 +22,10 @@ export const createShiftNurseIdByNurseId = (requestShift: TRequestShift) =>
 export const createConnectedNurseIdSet = (currentShiftTeam: TShiftTeam) =>
     new Set(currentShiftTeam.nurses.filter((nurse) => nurse.isConnected).map((nurse) => nurse.nurseId));
 
-export const getUnresolvedRequestCount = (dutyRequestStatus: string, dutyRequestList: TDutyRequest[] | undefined) =>
-    dutyRequestStatus === 'success' ? (dutyRequestList?.filter((request) => request.isAccepted === null).length ?? 0) : 0;
-
 export const getDutyRequestStatusLabel = (isAccepted: boolean | null) => {
-    if (isAccepted === true) return '수락됨';
+    if (isAccepted === true) return '반영됨';
 
-    if (isAccepted === false) return '거절됨';
+    if (isAccepted === false) return '제외됨';
 
     return '확인 필요';
 };
@@ -51,11 +48,11 @@ export const getDutyRequestStatusDescription = ({
     }
 
     if (requestFocus === null) {
-        return '현재 팀에 연결된 간호사 정보가 없어 달력 위치로는 바로 이동할 수 없어요.';
+        return '현재 팀에 연결된 간호사 정보를 확인하면 달력 위치로 바로 이동할 수 있어요.';
     }
 
     if (readonly) {
-        return '패널에서는 바로 처리할 수 있고, 수정하기를 누르면 해당 날짜 위치도 함께 확인할 수 있어요.';
+        return '수정할 수 없는 달이라 신청 근무 위치만 확인할 수 있어요.';
     }
 
     return '이름을 누르면 해당 날짜로 이동해 검토할 수 있어요.';
@@ -134,22 +131,8 @@ export const getRequestCalendarDivisionAction = ({
     return null;
 };
 
-export const getRequestCalendarRowClassName = ({
-    rowIndex,
-    rowCount,
-    isFocusedRow,
-}: {
-    rowIndex: number;
-    rowCount: number;
-    isFocusedRow: boolean;
-}) => {
-    const isLastRow = rowIndex === rowCount - 1;
-    const isSingleRow = rowIndex === 0 && isLastRow;
-
-    return `relative flex h-[3.1875rem] items-center gap-5 ${
-        isSingleRow ? 'rounded-[1.25rem]' : rowIndex === 0 ? 'rounded-t-[1.25rem]' : isLastRow ? 'rounded-b-[1.25rem]' : ''
-    } ${isFocusedRow ? 'bg-main-4' : 'bg-white'}`;
-};
+export const getRequestCalendarRowClassName = ({isFocusedRow}: {isFocusedRow: boolean}) =>
+    `relative flex h-11 w-full items-center gap-2 transition-colors ${isFocusedRow ? 'bg-main-light' : 'bg-white'}`;
 
 export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType'], isFocused: boolean, separateWeekendColor: boolean) => {
     if (dayType === 'saturday') {
@@ -183,7 +166,7 @@ export const getDayCellClass = (
     }
 
     if (isFocusedDay) {
-        classes.push('bg-main-4');
+        classes.push('bg-main-light');
     }
 
     return classes.join(' ');

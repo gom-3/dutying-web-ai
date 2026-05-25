@@ -68,8 +68,8 @@ const RequestShiftPage = () => {
                           : null;
 
     return (
-        <div className="flex min-h-screen w-full flex-col px-5 py-5 md:px-10 md:py-10">
-            <div className="flex flex-1 flex-col rounded-[20px] bg-white px-5 py-6 shadow-banner md:px-10 md:py-8">
+        <div className="mx-auto flex min-h-screen w-full max-w-none flex-col px-10 pt-4 pb-3">
+            <div className="flex min-h-0 flex-1 flex-col">
                 {shouldShowToolbar ? <Toolbar /> : null}
 
                 {pageState ? (

@@ -15,7 +15,7 @@ function parseStep(raw: string | null): TMakeShiftStep | null {
 
     const n = Number(raw);
 
-    return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
+    return n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
 }
 
 /** 예전 단일 키에서 읽기 (마이그레이션용). */
@@ -60,15 +60,9 @@ export function saveMaxReachedStep(wardId: number, shiftTeamId: number, year: nu
     window.localStorage.setItem(buildMakeShiftMaxKey(wardId, shiftTeamId, year, month), String(step));
 }
 
-export function bumpMaxReachedStep(
-    wardId: number,
-    shiftTeamId: number,
-    year: number,
-    month: number,
-    step: TMakeShiftStep,
-): TMakeShiftStep {
+export function bumpMaxReachedStep(wardId: number, shiftTeamId: number, year: number, month: number, step: TMakeShiftStep): TMakeShiftStep {
     const prev = loadMaxReachedStep(wardId, shiftTeamId, year, month);
-    const next = (Math.max(prev, step) as TMakeShiftStep);
+    const next = Math.max(prev, step) as TMakeShiftStep;
 
     saveMaxReachedStep(wardId, shiftTeamId, year, month, next);
 

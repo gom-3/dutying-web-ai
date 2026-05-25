@@ -10,7 +10,7 @@ const inputVariants = cva(
                 default:
                     'rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:ring-1 focus-visible:ring-ring',
                 foundation:
-                    'rounded-[10px] border border-gray-5 bg-white px-3 text-[18px] text-sub-1 shadow-none focus-visible:border-main-1',
+                    'rounded-[10px] border border-gray-5 bg-white px-3 text-[18px] text-sub-1 shadow-none focus-visible:border-2 focus-visible:border-main-1',
                 flush: 'border-none bg-transparent px-0 shadow-none focus-visible:ring-0',
             },
             fieldSize: {

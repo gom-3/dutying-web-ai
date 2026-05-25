@@ -33,6 +33,7 @@ export function MakeShiftHeader() {
             formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
             prevMonthDisabled={prevMonthDisabled}
             nextMonthDisabled={nextMonthDisabled}
+            teamTone="darkSegmented"
         />
     );
 }

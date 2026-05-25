@@ -1,9 +1,9 @@
-import {TailSpin} from 'react-loader-spinner';
 import {Navigate, useNavigate} from 'react-router';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth';
 import {FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
+import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 import PendingEnter from './ui/pending-enter';
 import RegisterNurse from './ui/register-nurse';
@@ -26,7 +26,7 @@ function RegisterPage() {
             </div>
             {isAccountBootstrapPending ? (
                 <div className="flex h-screen w-screen flex-col items-center justify-center">
-                    <TailSpin color="#844AFF" />
+                    <LoadingSpinner size={56} />
                 </div>
             ) : isAccountBootstrapError ? (
                 <div className="flex h-screen w-screen items-center justify-center px-8">

@@ -32,6 +32,7 @@ export type TSkillLevelConfig = {
     levelCount: number;
     paletteId: string;
     autoAssign: boolean;
+    levelLabels?: Record<number, string>;
 };
 
 export type TOnboardingWardDraft = {
@@ -46,13 +47,21 @@ export type TOnboardingWardDraft = {
 };
 
 export type TOnboardingValidationIssueCode =
+    | 'missing-hospital-name'
+    | 'invalid-ward-name'
+    | 'invalid-hospital-name'
     | 'empty-shift-types'
     | 'missing-shift-name'
+    | 'duplicate-shift-name'
     | 'missing-shift-short-name'
+    | 'duplicate-shift-short-name'
     | 'missing-shift-time'
+    | 'invalid-shift-time-format'
+    | 'invalid-shift-time-order'
     | 'empty-team'
     | 'empty-team-nurses'
-    | 'missing-nurse-name';
+    | 'missing-nurse-name'
+    | 'invalid-nurse-name';
 
 export type TOnboardingValidationIssue = {
     code: TOnboardingValidationIssueCode;
@@ -73,9 +82,10 @@ export type TOnboardingActionState = {
 };
 
 const SKILL_PALETTES: TSkillPalette[] = [
-    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
-    {id: 'cool', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
-    {id: 'violet', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
+    {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
+    {id: 'violet', colors: ['#E8D9FF', '#D8C3FF', '#C4A8FF', '#A382F5']},
+    {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
 const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
     levelCount: 5,
@@ -84,7 +94,18 @@ const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
 };
 const MIN_STEP = 1;
 const MAX_STEP = 4;
-const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [2, 3, 4];
+
+export const MAX_ONBOARDING_TEAMS = 8;
+export const MAX_ONBOARDING_SHIFT_TYPES = 10;
+export const MAX_ONBOARDING_NURSES = 40;
+export const MAX_ONBOARDING_NURSE_NAME_LENGTH = 20;
+
+const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 3, 4];
+const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
+const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
+const KOREAN_SYLLABLE_REGEX = /[가-힣]/g;
+const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
+const NAME_SEPARATOR_REGEX = /[\s.'\-・·]/g;
 
 let nextId = 0;
 
@@ -177,15 +198,6 @@ const createBaseNurses = (shiftTypes: TOnboardingWardShiftType[], teams: TOnboar
         }),
         createNurse({
             teamId: firstTeamId,
-            name: '박연우',
-            memo: '',
-            isWorker: false,
-            employmentDate: '2022-02-01',
-            possibleShiftTypeIds: shiftTypeIds,
-            level: 3,
-        }),
-        createNurse({
-            teamId: firstTeamId,
             name: '이서윤',
             memo: '나이트킵',
             isWorker: true,
@@ -193,12 +205,66 @@ const createBaseNurses = (shiftTypes: TOnboardingWardShiftType[], teams: TOnboar
             possibleShiftTypeIds: shiftTypeIds,
             level: 2,
         }),
+        createNurse({
+            teamId: firstTeamId,
+            name: '박연우',
+            memo: '',
+            isWorker: false,
+            employmentDate: '2022-02-01',
+            possibleShiftTypeIds: shiftTypeIds,
+            level: 3,
+        }),
     ];
 };
 
 export const skillPalettes = SKILL_PALETTES;
 
 export const getSkillPalette = (paletteId: string) => skillPalettes.find((palette) => palette.id === paletteId) ?? skillPalettes[0];
+
+const normalizeSkillPaletteId = (paletteId: string) =>
+    skillPalettes.some((palette) => palette.id === paletteId) ? paletteId : skillPalettes[0].id;
+const isValidNurseName = (name: string): boolean => {
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+        return false;
+    }
+
+    if (KOREAN_JAMO_REGEX.test(trimmedName)) {
+        return false;
+    }
+
+    if (trimmedName.length > MAX_ONBOARDING_NURSE_NAME_LENGTH) {
+        return false;
+    }
+
+    const compactName = trimmedName.replace(NAME_SEPARATOR_REGEX, '');
+
+    if (!compactName) {
+        return false;
+    }
+
+    const koreanSyllableCount = compactName.match(KOREAN_SYLLABLE_REGEX)?.length ?? 0;
+
+    if (/^[가-힣]+$/u.test(compactName) && koreanSyllableCount < 2) {
+        return false;
+    }
+
+    return true;
+};
+const parseShiftTimeToMinutes = (value: string): number | null => {
+    const normalizedValue = value.trim();
+
+    if (!SHIFT_TIME_FORMAT_REGEX.test(normalizedValue)) return null;
+
+    const [hour, minute] = normalizedValue.split(':').map(Number);
+
+    if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return hour * 60 + minute;
+};
 
 export const createEmptyShiftType = (): TOnboardingWardShiftType =>
     createShiftType({
@@ -219,7 +285,7 @@ export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShif
         memo: '',
         isWorker: true,
         employmentDate: '2024-01-01',
-        possibleShiftTypeIds: shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id),
+        possibleShiftTypeIds: shiftTypes.map((shiftType) => shiftType.id),
         level: null,
     });
 
@@ -231,8 +297,8 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
     return {
         currentStep: 1,
         uploadedFileName: null,
-        wardName: '듀팅 병동',
-        hospitalName: '듀팅 병원',
+        wardName: '',
+        hospitalName: '',
         shiftTypes,
         teams,
         nurses: applySkillLevels(nurses, DEFAULT_SKILL_LEVEL_CONFIG),
@@ -292,10 +358,16 @@ export const updateShiftTypeDraft = (
     shiftTypes: draft.shiftTypes.map((shiftType) => (shiftType.id === shiftTypeId ? {...shiftType, ...updater} : shiftType)),
 });
 
-export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
-    ...draft,
-    shiftTypes: [...draft.shiftTypes, createEmptyShiftType()],
-});
+export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => {
+    if (draft.shiftTypes.length >= MAX_ONBOARDING_SHIFT_TYPES) {
+        return draft;
+    }
+
+    return {
+        ...draft,
+        shiftTypes: [...draft.shiftTypes, createEmptyShiftType()],
+    };
+};
 
 export const deleteShiftTypeDraft = (draft: TOnboardingWardDraft, shiftTypeId: string): TOnboardingWardDraft => ({
     ...draft,
@@ -315,10 +387,46 @@ export const updateNurseDraft = (
     nurses: draft.nurses.map((nurse) => (nurse.id === nurseId ? {...nurse, ...updater} : nurse)),
 });
 
+export const updateTeamNameDraft = (draft: TOnboardingWardDraft, teamId: string, teamName: string): TOnboardingWardDraft => {
+    const trimmedName = teamName.trim();
+
+    if (!trimmedName) {
+        return draft;
+    }
+
+    const duplicated = draft.teams.some((team) => team.id !== teamId && team.name.trim() === trimmedName);
+
+    if (duplicated) {
+        return draft;
+    }
+
+    return {
+        ...draft,
+        teams: draft.teams.map((team) => (team.id === teamId ? {...team, name: trimmedName} : team)),
+    };
+};
+
 export const addTeamDraft = (draft: TOnboardingWardDraft) => {
+    if (draft.teams.length >= MAX_ONBOARDING_TEAMS) {
+        return {
+            draft,
+            addedTeamId: null,
+        };
+    }
+
+    const existingTeamNames = new Set(draft.teams.map((team) => team.name.trim()));
+
+    let nextTeamNumber = draft.teams.length + 1;
+    let nextTeamName = `간호사 ${nextTeamNumber}팀`;
+
+    while (existingTeamNames.has(nextTeamName)) {
+        nextTeamNumber += 1;
+        nextTeamName = `간호사 ${nextTeamNumber}팀`;
+    }
+
     const team = {
         id: `team-new-${draft.teams.length + 1}`,
-        name: `간호사 ${draft.teams.length + 1}팀`,
+        name: nextTeamName,
     };
 
     return {
@@ -340,6 +448,17 @@ export const addNurseDraft = (draft: TOnboardingWardDraft, teamId: string): TOnb
         nurses: [...draft.nurses, createEmptyNurse(teamId, draft.shiftTypes)],
     };
 };
+
+export const deleteTeamDraft = (draft: TOnboardingWardDraft, teamId: string): TOnboardingWardDraft => ({
+    ...draft,
+    teams: draft.teams.filter((team) => team.id !== teamId),
+    nurses: draft.nurses.filter((nurse) => nurse.teamId !== teamId),
+});
+
+export const deleteNurseDraft = (draft: TOnboardingWardDraft, nurseId: string): TOnboardingWardDraft => ({
+    ...draft,
+    nurses: draft.nurses.filter((nurse) => nurse.id !== nurseId),
+});
 
 export const reorderNursesWithinTeam = (
     draft: TOnboardingWardDraft,
@@ -369,36 +488,110 @@ export const reorderNursesWithinTeam = (
     };
 };
 
-export const saveSkillLevelConfig = (draft: TOnboardingWardDraft, config: TSkillLevelConfig): TOnboardingWardDraft => ({
-    ...draft,
-    skillLevelConfig: config,
-    nurses: applySkillLevels(draft.nurses, config),
-});
+export const saveSkillLevelConfig = (draft: TOnboardingWardDraft, config: TSkillLevelConfig): TOnboardingWardDraft => {
+    const normalizedConfig = {
+        ...config,
+        paletteId: normalizeSkillPaletteId(config.paletteId),
+    };
+
+    return {
+        ...draft,
+        skillLevelConfig: normalizedConfig,
+        nurses: applySkillLevels(draft.nurses, normalizedConfig),
+    };
+};
 
 const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationIssue[] => {
     const issues: TOnboardingValidationIssue[] = [];
+    const shiftNameCountByValue = new Map<string, number>();
+    const shiftShortNameCountByValue = new Map<string, number>();
+    const step: TOnboardingStep = 3;
 
     if (draft.shiftTypes.length === 0) {
-        issues.push({code: 'empty-shift-types', step: 2});
+        issues.push({code: 'empty-shift-types', step});
     }
 
     draft.shiftTypes.forEach((shiftType) => {
-        if (!shiftType.name.trim()) {
-            issues.push({code: 'missing-shift-name', step: 2, targetId: shiftType.id});
+        const normalizedName = shiftType.name.trim().toLocaleLowerCase();
+        const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+
+        if (normalizedName) {
+            shiftNameCountByValue.set(normalizedName, (shiftNameCountByValue.get(normalizedName) ?? 0) + 1);
         }
 
-        if (!shiftType.shortName.trim()) {
-            issues.push({code: 'missing-shift-short-name', step: 2, targetId: shiftType.id});
+        if (normalizedShortName) {
+            shiftShortNameCountByValue.set(normalizedShortName, (shiftShortNameCountByValue.get(normalizedShortName) ?? 0) + 1);
+        }
+    });
+
+    draft.shiftTypes.forEach((shiftType) => {
+        const normalizedName = shiftType.name.trim().toLocaleLowerCase();
+        const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+
+        if (!normalizedName) {
+            issues.push({code: 'missing-shift-name', step, targetId: shiftType.id});
+        } else if ((shiftNameCountByValue.get(normalizedName) ?? 0) > 1) {
+            issues.push({code: 'duplicate-shift-name', step, targetId: shiftType.id});
         }
 
-        if (!shiftType.isOff && (!shiftType.startTime.trim() || !shiftType.endTime.trim())) {
-            issues.push({code: 'missing-shift-time', step: 2, targetId: shiftType.id});
+        if (!normalizedShortName) {
+            issues.push({code: 'missing-shift-short-name', step, targetId: shiftType.id});
+        } else if ((shiftShortNameCountByValue.get(normalizedShortName) ?? 0) > 1) {
+            issues.push({code: 'duplicate-shift-short-name', step, targetId: shiftType.id});
+        }
+
+        if (shiftType.isOff) {
+            return;
+        }
+
+        const normalizedStartTime = shiftType.startTime.trim();
+        const normalizedEndTime = shiftType.endTime.trim();
+
+        if (!normalizedStartTime || !normalizedEndTime) {
+            issues.push({code: 'missing-shift-time', step, targetId: shiftType.id});
+
+            return;
+        }
+
+        const startMinutes = parseShiftTimeToMinutes(normalizedStartTime);
+        const endMinutes = parseShiftTimeToMinutes(normalizedEndTime);
+
+        if (startMinutes == null || endMinutes == null) {
+            issues.push({code: 'invalid-shift-time-format', step, targetId: shiftType.id});
+
+            return;
+        }
+
+        const isEndEarlierThanStart = endMinutes < startMinutes;
+        const isSameTime = endMinutes === startMinutes;
+
+        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) {
+            issues.push({code: 'invalid-shift-time-order', step, targetId: shiftType.id});
         }
     });
 
     return issues;
 };
-const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 3 | 4): TOnboardingValidationIssue[] => {
+const validateWardIdentity = (draft: TOnboardingWardDraft, step: 1): TOnboardingValidationIssue[] => {
+    const issues: TOnboardingValidationIssue[] = [];
+    const wardName = draft.wardName.trim();
+    const hospitalName = draft.hospitalName.trim();
+
+    if (!wardName && !hospitalName) {
+        issues.push({code: 'missing-hospital-name', step});
+    }
+
+    if (wardName && !WARD_IDENTITY_REGEX.test(wardName)) {
+        issues.push({code: 'invalid-ward-name', step});
+    }
+
+    if (hospitalName && !WARD_IDENTITY_REGEX.test(hospitalName)) {
+        issues.push({code: 'invalid-hospital-name', step});
+    }
+
+    return issues;
+};
+const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 4): TOnboardingValidationIssue[] => {
     const issues: TOnboardingValidationIssue[] = [];
 
     if (draft.teams.length === 0) {
@@ -415,6 +608,8 @@ const validateTeamsAndNurses = (draft: TOnboardingWardDraft, step: 3 | 4): TOnbo
         nurses.forEach((nurse) => {
             if (!nurse.name.trim()) {
                 issues.push({code: 'missing-nurse-name', step, targetId: nurse.id});
+            } else if (!isValidNurseName(nurse.name)) {
+                issues.push({code: 'invalid-nurse-name', step, targetId: nurse.id});
             }
         });
     });
@@ -427,12 +622,14 @@ export const getStepValidation = (draft: TOnboardingWardDraft, step = draft.curr
 
     switch (step) {
         case 1:
-            issues = [];
+            issues = validateWardIdentity(draft, step);
             break;
         case 2:
-            issues = validateShiftTypes(draft);
+            issues = [];
             break;
         case 3:
+            issues = validateShiftTypes(draft);
+            break;
         case 4:
             issues = validateTeamsAndNurses(draft, step);
             break;
@@ -451,6 +648,9 @@ export const canGoNext = (draft: TOnboardingWardDraft): boolean => draft.current
 
 export const canComplete = (draft: TOnboardingWardDraft): boolean =>
     draft.currentStep === MAX_STEP && REQUIRED_COMPLETION_STEPS.every((step) => getStepValidation(draft, step).isValid);
+
+export const getCompletionValidationIssues = (draft: TOnboardingWardDraft): TOnboardingValidationIssue[] =>
+    REQUIRED_COMPLETION_STEPS.flatMap((step) => getStepValidation(draft, step).issues);
 
 export const getActionState = (draft: TOnboardingWardDraft): TOnboardingActionState => ({
     canGoPrev: canGoPrev(draft),

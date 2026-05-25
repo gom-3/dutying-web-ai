@@ -19,6 +19,7 @@ type TDutyPageViewProps = {
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
+    const wardCodeLabel = state.wardCode || '확인 중';
     const showBootstrapLoadingState = state.bootstrapStatus === 'pending';
     const showBootstrapErrorState = state.bootstrapStatus === 'error';
     const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
@@ -29,7 +30,42 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const headerDisabled = showBootstrapLoadingState || showBootstrapErrorState || !teamsReady;
 
     return (
-        <div className="flex min-h-screen w-full flex-col px-10 py-10">
+        <div className="flex min-h-screen w-full flex-col bg-[#FAF8FB] px-10 py-10">
+            {state.showOnboardingWardCreatedModal ? (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-6">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="onboarding-ward-created-modal-title"
+                        aria-describedby="onboarding-ward-created-modal-description"
+                        className="w-full max-w-[520px] rounded-[20px] bg-white px-8 py-7"
+                    >
+                        <h2 id="onboarding-ward-created-modal-title" className="font-apple text-[28px] font-semibold text-sub-1">
+                            병동 생성을 마쳤어요
+                        </h2>
+                        <p
+                            id="onboarding-ward-created-modal-description"
+                            className="mt-3 whitespace-pre-line font-apple text-[18px] text-gray-3"
+                        >
+                            {'병동코드를 소속 간호사에게 공유하면\n병동 참여, 게시판, 신청근무 등 병동 기능을 함께 사용할 수 있어요.'}
+                        </p>
+                        <div className="mt-5 rounded-[12px] border border-main-4 bg-main-light px-5 py-4">
+                            <p className="font-apple text-[14px] font-medium text-gray-3">병동코드</p>
+                            <p className="mt-1 text-center font-poppins text-[28px] font-extrabold tracking-[0.08em] text-main-1">
+                                {wardCodeLabel}
+                            </p>
+                        </div>
+                        <div className="mt-7 flex justify-end gap-3">
+                            <ManagementActionButton variant="neutral" onClick={handlers.dismissOnboardingWardCreatedModal}>
+                                나중에
+                            </ManagementActionButton>
+                            <ManagementActionButton onClick={handlers.startNextMonthMakeFromOnboarding}>
+                                다음달 근무표 생성하기
+                            </ManagementActionButton>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
             <DutyManagementMonthTeamHeader
                 year={state.year}
                 month={state.month}
@@ -46,7 +82,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 nextMonthDisabled={!state.isDutyViewAllowed || state.dutyAtMaxFutureMonth}
             />
 
-            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-white px-10 py-7">
+            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-[#FAF8FB] px-10 py-7">
                 {showBootstrapLoadingState && (
                     <PageState
                         tone="loading"
