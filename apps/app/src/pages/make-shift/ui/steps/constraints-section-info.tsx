@@ -24,7 +24,7 @@ export function ConstraintSectionInfo({label, ariaLabel}: TConstraintSectionInfo
             <TooltipTrigger asChild>
                 <button
                     type="button"
-                    className="make-shift-constraints__section-info-trigger bg-transparent text-sub-3 outline-none transition-colors hover:bg-transparent hover:text-gray-4 focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
+                    className="make-shift-constraints__section-info-trigger bg-transparent text-sub-3 transition-colors outline-none hover:bg-transparent hover:text-gray-4 focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2"
                     aria-label={ariaLabel}
                     aria-expanded={open}
                     onClick={() => setPinned((prev) => !prev)}
@@ -38,7 +38,7 @@ export function ConstraintSectionInfo({label, ariaLabel}: TConstraintSectionInfo
                 side="top"
                 align="start"
                 sideOffset={6}
-                className="max-w-none whitespace-nowrap border border-gray-5 bg-white px-[clamp(10px,0.9vw,14px)] py-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(11px,0.95vw,14px)] leading-none font-medium text-sub-1 shadow-md"
+                className="max-w-none bg-white px-[clamp(10px,0.9vw,14px)] py-[clamp(6px,0.55vw,10px)] font-apple text-[clamp(11px,0.95vw,14px)] leading-none font-medium whitespace-nowrap text-sub-1"
                 onPointerDown={(e) => e.preventDefault()}
             >
                 {label}

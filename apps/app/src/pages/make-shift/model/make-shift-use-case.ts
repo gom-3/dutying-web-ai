@@ -1,4 +1,5 @@
 import {useCallback} from 'react';
+import {type TShift} from '@/entities';
 import {useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showValidationFeedback} from '@/shared/util/feedback';
@@ -14,6 +15,8 @@ export function useMakeShiftUseCase() {
     const goPrev = useMakeShiftStore((s) => s.goPrev);
     const goNext = useMakeShiftStore((s) => s.goNext);
     const goToStep = useMakeShiftStore((s) => s.goToStep);
+    const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
+    const editConfirmedSchedule = useMakeShiftStore((s) => s.editConfirmedSchedule);
     const requestReload = useMakeShiftStore((s) => s.requestReload);
     const clearProgressState = useCallback(() => {
         const s = useMakeShiftStore.getState();
@@ -24,7 +27,6 @@ export function useMakeShiftUseCase() {
 
         clearPersistedStep();
     }, []);
-
     const start = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
@@ -37,7 +39,7 @@ export function useMakeShiftUseCase() {
         const persisted = editor.getPersisted();
         const saved =
             s.wardId && s.currentShiftTeamId
-                ? loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) ?? loadPersistedStep()
+                ? (loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) ?? loadPersistedStep())
                 : loadPersistedStep();
         const step = saved ?? 1;
 
@@ -52,6 +54,7 @@ export function useMakeShiftUseCase() {
     }, [closeRestoreDraftModal, editor]);
     const declineRestoreDraft = useCallback(() => {
         editor.discardPersisted();
+
         const s = useMakeShiftStore.getState();
 
         if (s.wardId && s.currentShiftTeamId) {
@@ -60,15 +63,25 @@ export function useMakeShiftUseCase() {
         }
 
         clearPersistedStep();
-        useMakeShiftStore.setState({maxReachedStep: 1});
-        goToStep(1);
+        useMakeShiftStore.setState({currentStep: 1, maxReachedStep: 1});
         closeRestoreDraftModal();
-    }, [closeRestoreDraftModal, editor, goToStep]);
+    }, [closeRestoreDraftModal, editor]);
     const complete = useCallback(() => {
         clearProgressState();
         editor.discardPersisted();
         resetToOverview();
     }, [clearProgressState, editor, resetToOverview]);
+    const confirm = useCallback(
+        (shiftSnapshot?: TShift | null) => {
+            confirmSchedule(shiftSnapshot);
+            editor.discardPersisted();
+        },
+        [confirmSchedule, editor],
+    );
+    const editConfirmed = useCallback(() => {
+        editor.discardPersisted();
+        editConfirmedSchedule();
+    }, [editConfirmedSchedule, editor]);
     const prev = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
@@ -85,7 +98,9 @@ export function useMakeShiftUseCase() {
     }, [goNext]);
     const jump = useCallback(
         (step: TMakeShiftStep) => {
-            const {maxReachedStep} = useMakeShiftStore.getState();
+            const {currentStep, maxReachedStep} = useMakeShiftStore.getState();
+
+            if (currentStep === 6) return;
 
             if (step > maxReachedStep) {
                 showValidationFeedback(t('page.makeShift.navigation.sequentialRequired'));
@@ -116,6 +131,8 @@ export function useMakeShiftUseCase() {
         declineRestoreDraft,
         closeRestoreDraftModal: closeModal,
         complete,
+        confirm,
+        editConfirmed,
         prev,
         next,
         goToStep: jump,

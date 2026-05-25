@@ -16,13 +16,19 @@ import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import TextField from '@/shared/ui/form-controls/TextField';
 
+const NURSE_NAME_MAX_LENGTH = 20;
+const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
+const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
+const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const schema = yup
     .object()
     .shape({
         name: yup
             .string()
+            .transform((value) => value?.trim() ?? '')
             .required()
-            .matches(/^[a-z|A-Z|ㄱ-ㅎ|ㅏ-ㅣ|가-힣|\s]{1,50}$/),
+            .max(NURSE_NAME_MAX_LENGTH)
+            .matches(NURSE_NAME_ALLOWED_REGEXP),
         phoneNum: yup
             .string()
             .required()
@@ -145,9 +151,22 @@ function RegisterNurse() {
                             id="name"
                             className="h-15 py-4.25 font-apple text-[1.5rem] font-medium text-sub-1"
                             error={match(errors.name?.type)
-                                .with('matches', () => '이름은 1~50자 한/영문에 숫자나 특수문자를 사용할 수 없습니다.')
+                                .with(
+                                    'matches',
+                                    'max',
+                                    () => "이름은 20자 이하, 한글/영문/일문과 공백(-, ' , ·, ・ 포함)만 입력할 수 있어요.",
+                                )
                                 .otherwise(() => undefined)}
-                            {...register('name')}
+                            maxLength={NURSE_NAME_MAX_LENGTH}
+                            {...register('name', {
+                                onChange: (event: ChangeEvent<HTMLInputElement>) => {
+                                    const sanitizedValue = sanitizeNurseNameInput(event.target.value);
+
+                                    if (sanitizedValue !== event.target.value) {
+                                        event.target.value = sanitizedValue;
+                                    }
+                                },
+                            })}
                         />
                     </div>
                     <div className="flex gap-11.25">

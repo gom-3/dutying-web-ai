@@ -34,8 +34,10 @@ const MemberTutorial = () => {
                     info: '여기에서 근무팀에 속한 간호사 정보를 확인할 수 있어요.',
                     infoBoxAlignment: 'left',
                     onNextStep: () => {
-                        if (shiftTeams) {
-                            selectNurse(shiftTeams[0].nurses[0].nurseId);
+                        const firstNurseId = shiftTeams?.[0]?.nurses?.[0]?.nurseId;
+
+                        if (typeof firstNurseId === 'number') {
+                            selectNurse(firstNurseId);
                         }
                     },
                 },

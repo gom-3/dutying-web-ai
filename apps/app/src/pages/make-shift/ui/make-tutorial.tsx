@@ -26,7 +26,7 @@ const MakeTutorial = () => {
                 {
                     highlightIds: ['make_stepper'],
                     title: '근무표 만들기',
-                    info: '근무표 작성은 5단계로 나뉘어 진행됩니다. 현재 위치를 보면서 이전 단계로 돌아가 수정할 수 있어요.',
+                    info: '위쪽 진행선을 보면서 5단계를 차례대로 진행해요. 완료한 단계는 다시 돌아가 수정할 수 있어요.',
                     infoBoxAlignment: 'center',
                 },
                 {
@@ -47,7 +47,7 @@ const MakeTutorial = () => {
                 {
                     highlightIds: ['make_requests_step', 'make_requests_decision_panel'],
                     title: '근무표 만들기',
-                    info: '신청 근무를 보면서 수락, 보류, 거절을 정리해 주세요. 오른쪽 패널에서 빠르게 상태를 바꿀 수 있어요.',
+                    info: '신청 근무를 보면서 수락하거나 거절해 주세요. 오른쪽 패널에서 아직 검토하지 않은 신청만 빠르게 처리할 수 있어요.',
                     infoBoxAlignment: 'right',
                     onPrevStep: useCase.prev,
                     onNextStep: useCase.next,
@@ -63,10 +63,10 @@ const MakeTutorial = () => {
                 {
                     highlightIds: ['make_ai_autofill_actions'],
                     title: '근무표 만들기',
-                    info: '마지막으로 AI 자동 채우기 결과를 검토하고 저장합니다. 저장 전 상태 카드에서 수정 여부와 오류를 다시 확인해 주세요.',
+                    info: '마지막으로 자동 채우기 결과와 오류 표시를 확인한 뒤 근무표를 확정해요.',
                     infoBoxAlignment: 'right',
                     onPrevStep: useCase.prev,
-                    ctaText: '메뉴얼 보러가기',
+                    ctaText: '매뉴얼 보러가기',
                     ctaUrl: RUNTIME_CONFIG.docs.makeTutorial,
                 },
             ],

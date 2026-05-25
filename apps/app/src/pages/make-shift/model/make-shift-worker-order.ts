@@ -32,9 +32,9 @@ function workersInDivisionDisplayOrder(displayWorkers: TNurse[], divisionNum: nu
  */
 export function freshenMakeShiftDisplayWorkers(prevOrder: TNurse[], teamNurses: TNurse[]): TNurse[] {
     const map = new Map(teamNurses.map((n) => [n.nurseId, n]));
-    const next = prevOrder.map((n) => map.get(n.nurseId)).filter((n): n is TNurse => Boolean(n?.isWorker));
+    const next = prevOrder.map((n) => map.get(n.nurseId)).filter((n): n is TNurse => Boolean(n));
     const ids = new Set(next.map((n) => n.nurseId));
-    const additions = sortMakeShiftWorkersInitialOrder(teamNurses.filter((n) => n.isWorker && !ids.has(n.nurseId)));
+    const additions = sortMakeShiftWorkersInitialOrder(teamNurses.filter((n) => !ids.has(n.nurseId)));
 
     return [...next, ...additions];
 }

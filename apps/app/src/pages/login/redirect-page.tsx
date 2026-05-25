@@ -1,8 +1,8 @@
 import qs from 'qs';
 import {useEffect} from 'react';
-import {TailSpin} from 'react-loader-spinner';
 import useAuth from '@/features/auth';
 import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
+import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 
 const RedirectPage = () => {
     const {
@@ -22,7 +22,7 @@ const RedirectPage = () => {
     return (
         <div className="flex h-screen w-screen flex-col items-center justify-center">
             로그인중입니다.
-            <TailSpin color="#844AFF" />
+            <LoadingSpinner size={56} />
         </div>
     );
 };

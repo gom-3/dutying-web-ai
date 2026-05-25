@@ -47,6 +47,26 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
         setCurrentWaitingNurse(waitingNurse);
         setStep(1);
     };
+    const handleAutoConnectWaitingNurse = useCallback(
+        async (waitingNurse: TWaitingNurse, matchedNurseId: number) => {
+            const requestId = submitRequestIdRef.current + 1;
+
+            submitRequestIdRef.current = requestId;
+            setCurrentWaitingNurse(waitingNurse);
+            setConnectMode('link');
+            setToLinkNurseId(matchedNurseId);
+            setToAddShiftTeamId(null);
+            setStep(3);
+            setSubmitStatus('loading');
+
+            const isSuccess = await connectWaitingNurses(waitingNurse.waitingNurseId, matchedNurseId);
+
+            if (isActiveSubmitRequest(requestId)) {
+                setSubmitStatus(isSuccess ? 'success' : 'error');
+            }
+        },
+        [connectWaitingNurses, isActiveSubmitRequest],
+    );
     const handleCompleteSelection = useCallback(async () => {
         if (!currentWaitingNurse) return;
 
@@ -130,6 +150,7 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
             goToMethodSelection,
             goToTargetSelection,
             handleSelectWaitingNurse,
+            handleAutoConnectWaitingNurse,
             handleCompleteSelection,
             retryCompleteSelection,
         },

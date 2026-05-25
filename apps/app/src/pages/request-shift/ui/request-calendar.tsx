@@ -1,28 +1,23 @@
-import {type DropResult} from '@hello-pangea/dnd';
-import {useCallback, useRef} from 'react';
+import {useCallback, useMemo, useRef} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {events, sendEvent} from '@/analytics';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
-import useEditShiftTeam from '@/features/edit-shift-team';
+import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
-import Card from '@/shared/ui/Card';
+import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward-skill/model/skill-level';
 import RequestCalendarGrid from './request-calendar/request-calendar-grid';
 import RequestCalendarHeader from './request-calendar/request-calendar-header';
 import RequestDutyRequestPanel from './request-calendar/request-duty-request-panel';
 import {useRequestCalendarFocusScroll} from './request-calendar/use-request-calendar-focus-scroll';
-import {
-    createConnectedNurseIdSet,
-    createDutyRequestLookup,
-    createShiftNurseIdByNurseId,
-    getMoveNurseOrderPayload,
-    getUnresolvedRequestCount,
-    getYearMonthLabel,
-} from './request-calendar/utils';
+import {createConnectedNurseIdSet, createDutyRequestLookup, createShiftNurseIdByNurseId} from './request-calendar/utils';
 
-export default function ShiftCalendar() {
+type TRequestCalendarProps = {
+    defaultReviewMode?: 'date' | 'request' | 'pending' | 'nurse';
+};
+
+export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps = {}) {
     const {
         state: {
-            readonly,
             year,
             month,
             requestShift,
@@ -30,52 +25,22 @@ export default function ShiftCalendar() {
             dutyRequestStatus,
             updatingRequestId,
             focus,
-            foldedLevels,
             wardShiftTypeMap,
             currentShiftTeam,
+            shiftTeams,
+            editAvailability,
         },
-        actions: {changeFocus, foldLevel, acceptRequest, acceptRequests, retry},
+        actions: {changeFocus, acceptRequest, acceptRequests, retry},
     } = useRequestShift();
     const {
-        state: {shiftTeams},
-        actions: {selectNurse, moveNurseOrder, editDivision},
-    } = useEditShiftTeam();
+        state: {wardId},
+    } = useAuth();
     const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
     const focusedCellRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const clickAwayRef = useOnclickOutside(() => {
         changeFocus(null);
-        selectNurse(null);
     });
-    const handleDragEnd = useCallback(
-        ({source, destination, draggableId}: DropResult) => {
-            if (!destination || !shiftTeams || !requestShift || !currentShiftTeam) return null;
-
-            if (source.droppableId === destination.droppableId && destination.index === source.index) return;
-
-            const movePayload = getMoveNurseOrderPayload({
-                source,
-                destination,
-                draggableId,
-                requestShift,
-            });
-
-            if (!movePayload) return;
-
-            moveNurseOrder(
-                movePayload.nurseId,
-                currentShiftTeam.shiftTeamId,
-                currentShiftTeam.shiftTeamId,
-                movePayload.destinationDivisionNum,
-                movePayload.prevPriority,
-                movePayload.nextPriority,
-                getYearMonthLabel(year, month),
-            );
-
-            sendEvent(events.requestPage.calendar.moveNurse);
-        },
-        [currentShiftTeam, month, moveNurseOrder, requestShift, shiftTeams, year],
-    );
     const handleSelectCell = useCallback(
         (nextFocus: Parameters<typeof changeFocus>[0]) => {
             changeFocus(nextFocus);
@@ -83,76 +48,58 @@ export default function ShiftCalendar() {
         },
         [changeFocus],
     );
-    const handleToggleFoldLevel = useCallback(
-        (level: number, expanded: boolean) => {
-            sendEvent(expanded ? events.requestPage.calendar.spreadDivision : events.requestPage.calendar.foldDivision);
-            foldLevel(level);
-        },
-        [foldLevel],
+    const skillSettings = useMemo(() => getWardSkillSettings(wardId), [wardId]);
+    const allWardNurses = useMemo(
+        () => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? currentShiftTeam?.nurses ?? [],
+        [currentShiftTeam?.nurses, shiftTeams],
     );
-    const handleCreateDivision = useCallback(
-        (priority: number) => {
-            if (!currentShiftTeam) return;
-
-            editDivision(currentShiftTeam.shiftTeamId, priority, 1, getYearMonthLabel(year, month));
-            sendEvent(events.requestPage.calendar.createDivision);
-        },
-        [currentShiftTeam, editDivision, month, year],
-    );
-    const handleDeleteDivision = useCallback(
-        (priority: number) => {
-            if (!currentShiftTeam) return;
-
-            editDivision(currentShiftTeam.shiftTeamId, priority, -1, getYearMonthLabel(year, month));
-            sendEvent(events.requestPage.calendar.deleteDivision);
-        },
-        [currentShiftTeam, editDivision, month, year],
+    const {config: skillConfig, levelsByNurseId} = useMemo(
+        () => resolveWardSkillLevels(allWardNurses, skillSettings),
+        [allWardNurses, skillSettings],
     );
 
     useRequestCalendarFocusScroll({focus, focusedCellRef, containerRef});
 
-    if (!requestShift || !foldedLevels || !wardShiftTypeMap || !currentShiftTeam) return null;
+    if (!requestShift || !wardShiftTypeMap || !currentShiftTeam) return null;
 
-    const unresolvedRequestCount = getUnresolvedRequestCount(dutyRequestStatus, dutyRequestList);
+    const canEditRequests = editAvailability.canEdit;
     const dutyRequestLookup = createDutyRequestLookup(dutyRequestList);
     const connectedNurseIds = createConnectedNurseIdSet(currentShiftTeam);
     const shiftNurseIdByNurseId = createShiftNurseIdByNurseId(requestShift);
 
     return (
-        <div id="calendar" className="mt-6 flex min-h-0 flex-1 flex-col gap-6 xl:flex-row">
-            <Card
-                variant="elevated"
-                padding="none"
-                className="min-w-0 flex-1 overflow-hidden border-transparent shadow-[0_4px_34px_0_rgba(237,233,245,1)]"
-            >
-                <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col px-5 pb-4">
-                    <RequestCalendarHeader days={requestShift.days} focusDay={focus?.day} separateWeekendColor={separateWeekendColor} />
-                    <RequestCalendarGrid
-                        requestShift={requestShift}
-                        foldedLevels={foldedLevels}
-                        focus={focus}
-                        readonly={readonly}
-                        separateWeekendColor={separateWeekendColor}
-                        wardShiftTypeMap={wardShiftTypeMap}
-                        dutyRequestLookup={dutyRequestLookup}
-                        connectedNurseIds={connectedNurseIds}
-                        focusedCellRef={focusedCellRef}
-                        containerRef={containerRef}
-                        onDragEnd={handleDragEnd}
-                        onSelectCell={handleSelectCell}
-                        onToggleFoldLevel={handleToggleFoldLevel}
-                        onCreateDivision={handleCreateDivision}
-                        onDeleteDivision={handleDeleteDivision}
-                    />
+        <div
+            id="calendar"
+            className="mx-auto mt-2 grid min-h-0 w-full max-w-none flex-1 grid-cols-1 gap-2 xl:grid-cols-[minmax(0,1fr)_360px]"
+        >
+            <section className="min-h-0 min-w-0 rounded-[18px] bg-white" aria-label="신청 근무표">
+                <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col">
+                    <div ref={containerRef} className="min-h-[420px] w-full overflow-visible">
+                        <RequestCalendarHeader days={requestShift.days} focusDay={focus?.day} separateWeekendColor={separateWeekendColor} />
+                        <RequestCalendarGrid
+                            requestShift={requestShift}
+                            focus={focus}
+                            readonly={!canEditRequests}
+                            separateWeekendColor={separateWeekendColor}
+                            wardShiftTypeMap={wardShiftTypeMap}
+                            dutyRequestLookup={dutyRequestLookup}
+                            connectedNurseIds={connectedNurseIds}
+                            skillConfig={skillConfig}
+                            levelsByNurseId={levelsByNurseId}
+                            focusedCellRef={focusedCellRef}
+                            onSelectCell={handleSelectCell}
+                        />
+                    </div>
                 </div>
-            </Card>
+            </section>
             <RequestDutyRequestPanel
+                year={year}
                 month={month}
+                days={requestShift.days}
                 dutyRequestList={dutyRequestList}
                 dutyRequestStatus={dutyRequestStatus}
                 wardShiftTypeMap={wardShiftTypeMap}
-                unresolvedRequestCount={unresolvedRequestCount}
-                readonly={readonly}
+                canEdit={canEditRequests}
                 updatingRequestId={updatingRequestId}
                 shiftNurseIdByNurseId={shiftNurseIdByNurseId}
                 changeFocus={changeFocus}
@@ -160,6 +107,7 @@ export default function ShiftCalendar() {
                 acceptRequests={acceptRequests}
                 retry={retry}
                 onAcceptAnalytics={(accepted) => sendEvent(events.requestPage.acceptRequest, String(accepted))}
+                defaultReviewMode={defaultReviewMode}
             />
         </div>
     );

@@ -1,5 +1,5 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {useEffect, useMemo, useRef} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -52,11 +52,12 @@ const EMPTY_DUTY_DOC: TDutyDoc = {
     fixedCells: {},
     requestCells: {},
 };
+const ONBOARDING_WARD_CREATED_SEARCH_PARAM = 'onboardingWardCreated';
 
 export function useDutyHook() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const {
         state: {wardId, isAuth, _loaded, accountMeStatus},
         actions: {handleGetAccountMe},
@@ -89,6 +90,7 @@ export function useDutyHook() {
     const queryYear = useMemo(() => parsePositiveInt(searchParams.get('year')), [searchParams]);
     const queryMonth = useMemo(() => parsePositiveInt(searchParams.get('month')), [searchParams]);
     const queryShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
+    const [showOnboardingWardCreatedModal, setShowOnboardingWardCreatedModal] = useState(false);
 
     // URL 맥락(연·월·팀)으로 들어올 때마다 보기 전용. (다른 화면에서 수정 모드로 나갔다 와도 편집 모드가 유지되지 않게)
     useEffect(() => {
@@ -103,6 +105,11 @@ export function useDutyHook() {
               : 'success';
     const shiftTeamsQuery = useQuery({
         ...wardQueryOptions.shiftTeams(wardId ?? -1),
+        enabled: wardId !== null,
+        staleTime: 1000 * 60 * 5,
+    });
+    const wardQuery = useQuery({
+        ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
         staleTime: 1000 * 60 * 5,
     });
@@ -126,6 +133,19 @@ export function useDutyHook() {
 
         setYearMonth({year: queryYear, month: queryMonth});
     }, [queryMonth, queryYear, setYearMonth]);
+
+    useEffect(() => {
+        if (searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) !== '1') {
+            return;
+        }
+
+        setShowOnboardingWardCreatedModal(true);
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+
+        nextSearchParams.delete(ONBOARDING_WARD_CREATED_SEARCH_PARAM);
+        setSearchParams(nextSearchParams, {replace: true});
+    }, [searchParams, setSearchParams]);
 
     useEffect(() => {
         if (!shiftTeamsQuery.data) return;
@@ -256,6 +276,13 @@ export function useDutyHook() {
 
         navigateToMakeShift(nextYear, nextMonth);
     };
+    const handleDismissOnboardingWardCreatedModal = () => {
+        setShowOnboardingWardCreatedModal(false);
+    };
+    const handleStartNextMonthMakeFromOnboarding = () => {
+        setShowOnboardingWardCreatedModal(false);
+        handleGoNextMonthMake();
+    };
     const handlePostShift = async () => {
         if (!wardId || !currentShiftTeamId) return;
 
@@ -296,6 +323,8 @@ export function useDutyHook() {
             dutyAtMaxFutureMonth,
             dutyViewingThisCalendarMonth,
             dutyPastStrictlyBeforeLastMonth,
+            showOnboardingWardCreatedModal,
+            wardCode: wardQuery.data?.code ?? '',
         },
         refs: {
             editorRef,
@@ -309,6 +338,8 @@ export function useDutyHook() {
             cancelEdit: handleCancelEdit,
             goCurrentMonthMake: handleGoCurrentMonthMake,
             goNextMonthMake: handleGoNextMonthMake,
+            dismissOnboardingWardCreatedModal: handleDismissOnboardingWardCreatedModal,
+            startNextMonthMakeFromOnboarding: handleStartNextMonthMakeFromOnboarding,
             postShift: handlePostShift,
             exportExcel: handleExportExcel,
             retry: handleRetry,

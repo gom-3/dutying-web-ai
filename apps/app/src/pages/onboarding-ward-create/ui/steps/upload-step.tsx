@@ -20,7 +20,7 @@ function UploadStep({draft, onUpload, isUploading, uploadError, uploadWarnings}:
             <Card
                 variant="muted"
                 padding="none"
-                className="flex min-h-[204px] flex-col items-center justify-center px-10 py-[60px]"
+                className="flex min-h-[204px] flex-col items-center justify-center bg-white px-10 py-[60px]"
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {
                     event.preventDefault();
@@ -52,7 +52,7 @@ function UploadStep({draft, onUpload, isUploading, uploadError, uploadWarnings}:
                     type="button"
                     variant="secondary"
                     size="md"
-                    className="mt-5 h-10 rounded-[10px] border-gray-4 px-4 text-[20px] font-medium"
+                    className="mt-5 h-10 rounded-[10px] px-4 text-[20px] font-medium enabled:cursor-pointer"
                     disabled={isUploading}
                     onClick={() => inputRef.current?.click()}
                 >

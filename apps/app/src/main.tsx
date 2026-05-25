@@ -31,7 +31,50 @@ const element = (
     <QueryClientProvider client={queryClient}>
         <BrowserRouter>
             <App />
-            <Toaster position="bottom-center" containerClassName="toaster" />
+            <Toaster
+                position="bottom-center"
+                containerClassName="toaster"
+                gutter={10}
+                toastOptions={{
+                    duration: 3000,
+                    style: {
+                        borderRadius: '12px',
+                        background: 'rgba(0, 0, 0, 0.82)',
+                        color: '#FFFFFF',
+                        boxShadow: 'none',
+                        border: 'none',
+                        padding: '12px 14px',
+                        fontSize: '14px',
+                        whiteSpace: 'nowrap',
+                        maxWidth: 'none',
+                        width: 'max-content',
+                    },
+                    success: {
+                        style: {
+                            borderRadius: '12px',
+                            background: 'rgba(0, 0, 0, 0.82)',
+                            color: '#FFFFFF',
+                            boxShadow: 'none',
+                            border: 'none',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 'none',
+                            width: 'max-content',
+                        },
+                    },
+                    error: {
+                        style: {
+                            borderRadius: '12px',
+                            background: 'rgba(0, 0, 0, 0.82)',
+                            color: '#FFFFFF',
+                            boxShadow: 'none',
+                            border: 'none',
+                            whiteSpace: 'nowrap',
+                            maxWidth: 'none',
+                            width: 'max-content',
+                        },
+                    },
+                }}
+            />
             <Loading />
             <Tutorial />
         </BrowserRouter>

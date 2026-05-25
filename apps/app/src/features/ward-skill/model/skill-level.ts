@@ -6,9 +6,11 @@ export type TSkillPalette = {
 };
 
 export type TSkillLevelConfig = {
+    enabled: boolean;
     levelCount: number;
     paletteId: string;
     autoAssign: boolean;
+    levelLabels?: Record<number, string>;
 };
 
 export type TWardSkillSettings = {
@@ -37,12 +39,14 @@ export function getSkillLevelBadgeStyle(level: number): {background: string; tex
 const STORAGE_KEY = 'ward-skill-settings:v1';
 const DEFAULT_UNASSIGNED_SKILL_LEVEL = 1;
 const SKILL_PALETTES: TSkillPalette[] = [
-    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
-    {id: 'cool', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
-    {id: 'violet', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFC7B8', '#FFB3A7']},
+    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
+    {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
+    {id: 'violet', colors: ['#E8D9FF', '#D8C3FF', '#C4A8FF', '#A382F5']},
+    {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
 
 export const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
+    enabled: true,
     levelCount: 5,
     paletteId: 'warm',
     autoAssign: true,
@@ -62,11 +66,28 @@ export const getSkillPalette = (paletteId: string) => skillPalettes.find((palett
 
 export const normalizeSkillLevelConfig = (config: Partial<TSkillLevelConfig> | undefined): TSkillLevelConfig => {
     const paletteId = config?.paletteId && skillPalettes.some((palette) => palette.id === config.paletteId) ? config.paletteId : 'warm';
+    const levelCount = clampLevelCount(config?.levelCount ?? DEFAULT_SKILL_LEVEL_CONFIG.levelCount);
+    const levelLabels = Object.entries(config?.levelLabels ?? {}).reduce<Record<number, string>>((acc, [key, value]) => {
+        const level = Number(key);
+        const label = typeof value === 'string' ? value.trim() : '';
+
+        if (!Number.isInteger(level)) return acc;
+
+        if (level < 1 || level > levelCount) return acc;
+
+        if (!label) return acc;
+
+        acc[level] = label;
+
+        return acc;
+    }, {});
 
     return {
-        levelCount: clampLevelCount(config?.levelCount ?? DEFAULT_SKILL_LEVEL_CONFIG.levelCount),
+        enabled: config?.enabled ?? DEFAULT_SKILL_LEVEL_CONFIG.enabled,
+        levelCount,
         paletteId,
         autoAssign: config?.autoAssign ?? DEFAULT_SKILL_LEVEL_CONFIG.autoAssign,
+        levelLabels: Object.keys(levelLabels).length > 0 ? levelLabels : undefined,
     };
 };
 
@@ -83,7 +104,9 @@ export const createAutoAssignedSkillLevels = (nurses: TSkillLevelNurse[], config
         .map((nurse) => ({nurse}))
         .sort((left, right) => {
             const byDate = (left.nurse.employmentDate ?? '').localeCompare(right.nurse.employmentDate ?? '');
+
             if (byDate !== 0) return byDate;
+
             /** 동일 입사일때 ward/팀 내 배열 순서(드래그·낙관적 업데이트)에 따라 LV가 뒤바뀌지 않도록 고정한다 */
             return left.nurse.nurseId - right.nurse.nurseId;
         });

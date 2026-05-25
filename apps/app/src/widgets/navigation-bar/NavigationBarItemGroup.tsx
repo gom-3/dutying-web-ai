@@ -84,6 +84,10 @@ type TNavigationBarItemGroupsProps = {
 
 const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsProps) => {
     const {t} = useTypedTranslation();
+    const {
+        state: {watingNurses},
+    } = useEditWard();
+    const waitingCount = watingNurses?.length ?? 0;
 
     return (
         <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('w-full', collapsed ? 'mt-5' : 'mt-6')}>
@@ -102,6 +106,7 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
                                 text={t(item.textKey)}
                                 collapsed={collapsed}
                                 disabled={item.disabled}
+                                badgeCount={item.path === ROUTE.MEMBER ? waitingCount : 0}
                             />
                         ))}
                     </div>

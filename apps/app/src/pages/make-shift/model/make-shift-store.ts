@@ -1,14 +1,9 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
-import {type TShiftTeam} from '@/entities';
-import {
-    bumpMaxReachedStep,
-    loadDraftStep,
-    loadMaxReachedStep,
-    saveDraftStep,
-} from './make-shift-progress-storage';
+import {type TShift, type TShiftTeam} from '@/entities';
+import {bumpMaxReachedStep, loadDraftStep, loadMaxReachedStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 
-export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
+export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5 | 6;
 export type TFlowPhase = 'overview' | 'stepping';
 export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
 export type TShiftTeamsStatus = 'idle' | 'pending' | 'success' | 'error';
@@ -44,7 +39,7 @@ export function loadPersistedStep(): TMakeShiftStep | null {
 
     const n = Number(raw);
 
-    return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
+    return n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
 }
 
 /** 레거시 단일 draft-step 키만 제거 (연·월 로컬 키는 유지). */
@@ -76,6 +71,7 @@ export type TMakeShiftStore = {
     shiftExists: boolean;
     /** 근무자 칸이 모두 채워진 상태(만들기 플로 진입 불가). */
     shiftFullyAssigned: boolean;
+    confirmedShiftSnapshot: TShift | null;
     reloadToken: number;
 
     // actions (no business logic beyond state transitions)
@@ -87,6 +83,8 @@ export type TMakeShiftStore = {
     goPrev: () => void;
     goNext: () => void;
     goToStep: (step: TMakeShiftStep) => void;
+    confirmSchedule: (shiftSnapshot?: TShift | null) => void;
+    editConfirmedSchedule: () => void;
 
     setYearMonth: (payload: {year: number; month: number}) => void;
     goPrevMonth: () => void;
@@ -133,6 +131,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         shiftStatus: 'idle',
         shiftExists: false,
         shiftFullyAssigned: false,
+        confirmedShiftSnapshot: null,
         reloadToken: 0,
 
         setWardId: (wardId) => {
@@ -140,6 +139,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             set(() => ({
                 wardId,
+                confirmedShiftSnapshot: null,
                 maxReachedStep: wardId ? readMaxReached(wardId, currentShiftTeamId, year, month) : 1,
             }));
         },
@@ -152,12 +152,14 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             set(() => ({
                 phase: 'stepping',
                 currentStep: step,
+                confirmedShiftSnapshot: null,
                 restoreDraftModalOpen: openRestoreDraftModal,
             }));
             persistYearMonth(year, month);
 
             if (wardId && currentShiftTeamId) {
                 saveDraftStep(wardId, currentShiftTeamId, year, month, step);
+
                 const max = bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, step);
 
                 set(() => ({maxReachedStep: max}));
@@ -171,6 +173,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 phase: 'overview',
                 currentStep: 1,
                 restoreDraftModalOpen: false,
+                confirmedShiftSnapshot: null,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, month),
             }));
         },
@@ -180,7 +183,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (phase !== 'stepping') return;
 
-            if (currentStep <= 1) return;
+            if (currentStep <= 1 || currentStep >= 6) return;
 
             const nextStep = (currentStep - 1) as TMakeShiftStep;
 
@@ -203,20 +206,62 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (wardId && currentShiftTeamId) {
                 saveDraftStep(wardId, currentShiftTeamId, year, month, nextStep);
+
                 const max = bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, nextStep);
 
                 set(() => ({maxReachedStep: max}));
             }
         },
         goToStep: (step) => {
-            const {phase, wardId, currentShiftTeamId, year, month} = get();
+            const {phase, currentStep, maxReachedStep, wardId, currentShiftTeamId, year, month} = get();
 
             if (phase !== 'stepping') return;
+
+            if (currentStep === 6) return;
+
+            if (step === 6 || step > maxReachedStep) return;
 
             set(() => ({currentStep: step}));
 
             if (wardId && currentShiftTeamId) {
                 saveDraftStep(wardId, currentShiftTeamId, year, month, step);
+            }
+        },
+        confirmSchedule: (shiftSnapshot = null) => {
+            const {wardId, currentShiftTeamId, year, month} = get();
+
+            set(() => ({
+                phase: 'stepping',
+                currentStep: 6,
+                maxReachedStep: 6,
+                restoreDraftModalOpen: false,
+                shiftExists: true,
+                shiftFullyAssigned: true,
+                confirmedShiftSnapshot: shiftSnapshot,
+            }));
+            persistYearMonth(year, month);
+
+            if (wardId && currentShiftTeamId) {
+                saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
+                bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+            }
+        },
+        editConfirmedSchedule: () => {
+            const {wardId, currentShiftTeamId, year, month} = get();
+
+            set(() => ({
+                phase: 'stepping',
+                currentStep: 5,
+                maxReachedStep: 5,
+                restoreDraftModalOpen: false,
+                shiftFullyAssigned: false,
+                confirmedShiftSnapshot: null,
+            }));
+            persistYearMonth(year, month);
+
+            if (wardId && currentShiftTeamId) {
+                saveDraftStep(wardId, currentShiftTeamId, year, month, 5);
+                saveMaxReachedStep(wardId, currentShiftTeamId, year, month, 5);
             }
         },
 
@@ -229,6 +274,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 month: nextMonth,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nextMonth),
                 shiftFullyAssigned: false,
+                confirmedShiftSnapshot: null,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nextMonth);
@@ -245,6 +291,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
                     shiftFullyAssigned: false,
+                    confirmedShiftSnapshot: null,
                     ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
@@ -258,6 +305,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
                 shiftFullyAssigned: false,
+                confirmedShiftSnapshot: null,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
@@ -274,6 +322,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     month: nm,
                     maxReachedStep: readMaxReached(wardId, currentShiftTeamId, ny, nm),
                     shiftFullyAssigned: false,
+                    confirmedShiftSnapshot: null,
                     ...exitingSteppingIfNeeded(phase),
                 }));
                 persistYearMonth(ny, nm);
@@ -287,6 +336,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 month: nm,
                 maxReachedStep: readMaxReached(wardId, currentShiftTeamId, year, nm),
                 shiftFullyAssigned: false,
+                confirmedShiftSnapshot: null,
                 ...exitingSteppingIfNeeded(phase),
             }));
             persistYearMonth(year, nm);
@@ -301,6 +351,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     currentShiftTeamId,
                     maxReachedStep: 1,
                     shiftFullyAssigned: false,
+                    confirmedShiftSnapshot: null,
                 }));
 
                 return;
@@ -308,6 +359,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             const maxReached = readMaxReached(wardId, currentShiftTeamId, year, month);
             const saved = loadDraftStep(wardId, currentShiftTeamId, year, month);
+
             let currentStep: TMakeShiftStep = saved ?? 1;
 
             if (currentStep > maxReached) {
@@ -319,6 +371,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 maxReachedStep: maxReached,
                 currentStep,
                 shiftFullyAssigned: false,
+                confirmedShiftSnapshot: null,
             }));
         },
 
@@ -331,7 +384,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 );
 
 export function canGoPrev(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>): boolean {
-    return state.phase === 'stepping' && state.currentStep > 1;
+    return state.phase === 'stepping' && state.currentStep > 1 && state.currentStep < 6;
 }
 
 export function canGoNext(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>): boolean {

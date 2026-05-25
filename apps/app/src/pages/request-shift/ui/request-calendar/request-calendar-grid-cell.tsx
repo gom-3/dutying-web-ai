@@ -47,7 +47,7 @@ export default function RequestCalendarGridCell({
 
     return (
         <div
-            className={`group relative flex h-full w-9 flex-1 items-center justify-center px-[.25rem] ${getDayCellClass(
+            className={`group relative flex h-full min-w-0 flex-1 items-center justify-center px-px ${getDayCellClass(
                 dayType,
                 day === focus?.day,
                 separateWeekendColor,
@@ -62,9 +62,9 @@ export default function RequestCalendarGridCell({
                 }}
                 shiftType={cellState.shiftType}
                 isOnlyRequest={cellState.isOnlyRequest}
-                className={`z-10 ${readonly ? 'cursor-default' : 'cursor-pointer'} ${
-                    cellState.isFocused && 'outline-[.125rem] outline-main-1'
-                }`}
+                className={`z-10 transition-[box-shadow,transform] duration-150 ${
+                    readonly ? 'cursor-default' : 'cursor-pointer'
+                } ${cellState.isFocused ? 'ring-2 ring-main-1/70' : ''}`}
                 forwardRef={cellState.isFocused ? focusedCellRef : null}
             />
         </div>

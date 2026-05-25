@@ -11,7 +11,11 @@ import {
 
 describe('OnboardingWardCreatePage adapter', () => {
     it('builds create ward payload outside the UI draft layer', () => {
-        const draft = createInitialDraft();
+        const draft = {
+            ...createInitialDraft(),
+            wardName: '중환자실',
+            hospitalName: '듀팅병원',
+        };
         const payload = buildCreateWardPayload(draft);
 
         expect(payload).toHaveProperty('name', draft.wardName);
@@ -22,6 +26,13 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.shiftTeams[0]).toEqual({
             nurseNames: ['홍길동', '김하늘', '박연우', '이서윤'],
         });
+    });
+
+    it('uses a safe fallback name when both ward and hospital names are blank', () => {
+        const payload = buildCreateWardPayload(createInitialDraft());
+
+        expect(payload.name).toBe('듀팅 병동');
+        expect(payload.hospitalName).toBe('듀팅 병동');
     });
 
     it('applies parsed response data as draft bootstrap values', () => {

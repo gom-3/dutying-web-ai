@@ -23,8 +23,12 @@
 }
 
 @layer utilities {
+    html {
+        background-color: #faf8fb;
+    }
+
     body {
-        background-color: #fdfcfe;
+        background-color: #faf8fb;
         font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
         box-sizing: border-box;
         -webkit-font-smoothing: antialiased;
@@ -283,7 +287,7 @@
 
 :root {
     --radius: 0.625rem;
-    --background: oklch(1 0 0);
+    --background: #faf8fb;
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
@@ -317,7 +321,7 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
+    --background: #faf8fb;
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);

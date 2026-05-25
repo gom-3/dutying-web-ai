@@ -1,8 +1,9 @@
 import {useState} from 'react';
+import {Link2} from 'lucide-react';
 import toast from 'react-hot-toast';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import useEditWard from '@/features/edit-ward';
-import {CopyIcon, LinkedIcon} from '@/shared/assets/svg';
+import {CopyIcon} from '@/shared/assets/svg';
 import ConnectionManage from './connection-manage';
 
 function WardInfo() {
@@ -74,7 +75,7 @@ function WardInfo() {
                     />
                 </div>
                 <div className="flex h-17.5 min-w-37 items-center justify-center rounded-[.9375rem] border-[.0625rem] border-main-3 bg-white px-4">
-                    <p className="spacing font-poppins text-[1.75rem] text-main-2">{ward?.code}</p>
+                    <p className="spacing font-poppins text-[1.75rem] font-medium text-main-1">{ward?.code}</p>
                 </div>
             </div>
             <div className="flex flex-col gap-[.4375rem]">
@@ -83,7 +84,7 @@ function WardInfo() {
                     className="relative flex h-15.5 w-15.5 cursor-pointer items-center justify-center rounded-full border-[.0938rem] border-main-3 shadow-banner"
                     onClick={() => setOpen(true)}
                 >
-                    <LinkedIcon className="h-9 w-9" />
+                    <Link2 className="h-9 w-9 text-main-3" strokeWidth={2.8} />
                     {watingNurses?.length ? (
                         <div className="absolute right-0 bottom-0 flex h-7 w-7 translate-x-[50%] items-center justify-center rounded-full bg-main-1">
                             <p className="font-poppins text-[.875rem] text-white">{watingNurses?.length}</p>

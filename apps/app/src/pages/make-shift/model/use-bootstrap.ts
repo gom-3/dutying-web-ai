@@ -1,16 +1,8 @@
 import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
-import {
-    isDutyShiftFullyAssigned,
-    isDutyShiftWithoutAssignments,
-    useShiftEditorCommands,
-} from '@/features/shift-editor';
+import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {
-    bumpMaxReachedStep,
-    loadDraftStep,
-    saveDraftStep,
-} from './make-shift-progress-storage';
+import {bumpMaxReachedStep, loadDraftStep, saveDraftStep} from './make-shift-progress-storage';
 import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
@@ -49,6 +41,7 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const resetToOverview = useMakeShiftStore((s) => s.resetToOverview);
     const setWardId = useMakeShiftStore((s) => s.setWardId);
     const phase = useMakeShiftStore((s) => s.phase);
+    const currentStep = useMakeShiftStore((s) => s.currentStep);
     const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const autoRestoreAttemptedRef = useRef(false);
 
@@ -222,22 +215,15 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         return () => {
             cancelled = true;
         };
-    }, [
-        currentShiftTeamId,
-        month,
-        reloadToken,
-        setShiftExists,
-        setShiftFullyAssigned,
-        setShiftStatus,
-        wardId,
-        year,
-    ]);
+    }, [currentShiftTeamId, month, reloadToken, setShiftExists, setShiftFullyAssigned, setShiftStatus, wardId, year]);
 
     useEffect(() => {
         if (shiftStatus !== 'success' || !shiftFullyAssigned || phase !== 'stepping') return;
 
+        if (currentStep >= 5) return;
+
         resetToOverview();
-    }, [phase, resetToOverview, shiftFullyAssigned, shiftStatus]);
+    }, [currentStep, phase, resetToOverview, shiftFullyAssigned, shiftStatus]);
 
     useEffect(() => {
         let cancelled = false;

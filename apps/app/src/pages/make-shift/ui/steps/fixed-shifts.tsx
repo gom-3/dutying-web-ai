@@ -7,8 +7,8 @@ import {docToWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
 import {type TViolation} from '@/features/shift-editor/model';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import PageState from '@/shared/ui/PageState';
 import Button from '@/shared/ui/form-controls/Button';
+import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
@@ -95,24 +95,28 @@ export function FixedShifts() {
     return (
         <div
             id="make_fixed_shifts_step"
-            className="fixed-shifts-root flex w-full min-w-0 flex-col gap-[clamp(16px,1.4vw,28px)] pt-[clamp(12px,1.25vw,28px)] outline-none"
+            className="fixed-shifts-root flex w-full min-w-0 flex-col gap-3 pt-3 outline-none"
             ref={editorRef}
             onKeyDown={onKeyDown}
             onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
-            {/* 상단 툴바: 제목 + 액션 버튼 */}
-            <div className="fixed-shifts-toolbar flex w-full min-w-0 items-center justify-between gap-[clamp(8px,0.8vw,16px)]">
-                <h1 className="fixed-shifts-toolbar__title font-apple text-[clamp(20px,1.7vw,30px)] font-semibold whitespace-nowrap text-sub-1">
-                    고정할 근무를 선택해 주세요
-                </h1>
+            <div className="fixed-shifts-toolbar flex w-full min-w-0 flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <h1 className="fixed-shifts-toolbar__title font-apple text-[28px] leading-tight font-bold whitespace-nowrap text-sub-1">
+                        {t('page.makeShift.fixedShifts.title')}
+                    </h1>
+                    <p className="fixed-shifts-toolbar__hint mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                        {t('page.makeShift.fixedShifts.hint')}
+                    </p>
+                </div>
 
-                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-[clamp(12px,1.1vw,24px)]">
+                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-2 pt-0.5">
                     <Button
                         variant="secondary"
                         size="md"
                         type="button"
-                        className={`cursor-pointer disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
+                        className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                         onClick={() => useCase.prev()}
                         disabled={!canPrev}
                     >
@@ -156,6 +160,9 @@ export function FixedShifts() {
                         onCellClick={focusEditor}
                     />
                 </div>
+            )}
+            {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
+                <PageState tone="empty" title={t('page.makeShift.fixedShifts.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>
     );

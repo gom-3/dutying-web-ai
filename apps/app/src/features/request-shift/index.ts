@@ -1,11 +1,12 @@
-import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {useCallback, useEffect} from 'react';
-import {type TRequestShift} from '@/entities/shift';
+import {useQueries, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useCallback, useEffect, useMemo} from 'react';
+import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TShiftTeam} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
+import {getMockDutyRequestListByTeamIndex, linkMockDutyRequestListToRequestShift, mockDutyRequestList} from './model/mock';
 import {
     createInitialFoldedLevels,
     createWardShiftTypeMap,
@@ -23,6 +24,7 @@ import {useRequestShiftChangeQueue} from './model/use-request-shift-change-queue
 import {useRequestShiftKeyboard} from './model/use-request-shift-keyboard';
 import {getRequestShiftEditAvailability} from './model/utils';
 
+const FORCE_MOCK_DUTY_REQUEST_LIST = true;
 const useRequestShift = (activeEffect = false) => {
     const {
         year,
@@ -79,12 +81,40 @@ const useRequestShift = (activeEffect = false) => {
         },
         enabled: !!wardId,
     });
+    const currentShiftTeamIndex = useMemo(
+        () => (shiftTeams ?? []).findIndex((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId),
+        [currentShiftTeamId, shiftTeams],
+    );
+    const teamPendingRequestCountQueries = useQueries({
+        queries: (shiftTeams ?? []).map((shiftTeam, teamIndex) => ({
+            queryKey: wardQueryKeys.requestList(wardId ?? 0, shiftTeam.shiftTeamId, year, month),
+            queryFn: async () =>
+                FORCE_MOCK_DUTY_REQUEST_LIST
+                    ? getMockDutyRequestListByTeamIndex(teamIndex)
+                    : WardAPI.getRequestList(wardId!, shiftTeam.shiftTeamId, year, month),
+            enabled: wardId !== null,
+            select: (requests: TDutyRequest[]) => requests.filter((request) => request.isAccepted === null).length,
+        })),
+    });
+    const teamPendingRequestCountByTeamId = useMemo(
+        () =>
+            (shiftTeams ?? []).reduce<Record<number, number>>((acc, shiftTeam, index) => {
+                acc[shiftTeam.shiftTeamId] = teamPendingRequestCountQueries[index]?.data ?? 0;
+
+                return acc;
+            }, {}),
+        [shiftTeams, teamPendingRequestCountQueries],
+    );
     const {
         data: dutyRequestList,
         status: dutyRequestStatus,
         refetch: refetchDutyRequestList,
     } = useQuery({
         ...requestListQueryOptions,
+        queryFn: async () =>
+            FORCE_MOCK_DUTY_REQUEST_LIST
+                ? getMockDutyRequestListByTeamIndex(Math.max(currentShiftTeamIndex, 0))
+                : WardAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
     const {
@@ -113,6 +143,10 @@ const useRequestShift = (activeEffect = false) => {
         },
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
+    const linkedDutyRequestList = useMemo(
+        () => (FORCE_MOCK_DUTY_REQUEST_LIST ? linkMockDutyRequestListToRequestShift(dutyRequestList, requestShift) : dutyRequestList),
+        [dutyRequestList, requestShift],
+    );
     const {changeRequestShift} = useRequestShiftChangeQueue({
         wardId,
         year,
@@ -131,6 +165,16 @@ const useRequestShift = (activeEffect = false) => {
             setState('updatingRequestId', reqShiftIds.length === 1 ? reqShiftIds[0] : -1);
 
             try {
+                if (FORCE_MOCK_DUTY_REQUEST_LIST) {
+                    queryClient.setQueryData<typeof mockDutyRequestList>(dutyRequestQueryKey, (current) =>
+                        (current ?? mockDutyRequestList).map((request) =>
+                            reqShiftIds.includes(request.wardReqShiftId) ? {...request, isAccepted} : request,
+                        ),
+                    );
+
+                    return true;
+                }
+
                 const results = await Promise.allSettled(
                     reqShiftIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted)),
                 );
@@ -190,7 +234,7 @@ const useRequestShift = (activeEffect = false) => {
 
             if (getRequestShiftTypeIdAtFocus(requestShift, focus) === shiftTypeId) return;
 
-            const requestDutyRequest = findDutyRequestByFocus(dutyRequestList, requestShift, focus);
+            const requestDutyRequest = findDutyRequestByFocus(linkedDutyRequestList, requestShift, focus);
 
             if (requestDutyRequest && requestDutyRequest.wardShiftTypeId !== shiftTypeId && !confirm('신청을 거절할까요?')) return;
 
@@ -203,7 +247,7 @@ const useRequestShift = (activeEffect = false) => {
 
             void changeRequestShift(focus, shiftTypeId);
         },
-        [acceptRequest, changeRequestShift, dutyRequestList, focus, requestShift, wardId],
+        [acceptRequest, changeRequestShift, focus, linkedDutyRequestList, requestShift, wardId],
     );
     const foldLevel = (level: number) => {
         if (!requestShift || !foldedLevels) return;
@@ -312,7 +356,7 @@ const useRequestShift = (activeEffect = false) => {
             month,
             bootstrapStatus,
             requestShift,
-            dutyRequestList,
+            dutyRequestList: linkedDutyRequestList,
             focus,
             foldedLevels,
             changeStatus,
@@ -324,6 +368,7 @@ const useRequestShift = (activeEffect = false) => {
             updatingRequestId,
             currentShiftTeam: shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
+            teamPendingRequestCountByTeamId,
             editAvailability,
         },
         actions: {
