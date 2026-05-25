@@ -1,4 +1,6 @@
-import {useCallback, useEffect, useState} from 'react';
+import {cn} from '@dutying/utils/style';
+import {ArrowLeft, Check, RotateCcw, X} from 'lucide-react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {createPortal} from 'react-dom';
 import {useNavigate} from 'react-router';
@@ -6,15 +8,28 @@ import {Pattern, match} from 'ts-pattern';
 import {type TWard} from '@/entities/ward';
 import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
-import {BackIcon, CancelIcon, FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
+import RegisterShell from './register-shell';
+
+const CODE_LENGTH = 6;
+const createEmptyCode = () => Array.from({length: CODE_LENGTH}, () => null) as (string | null)[];
+const toCodeList = (rawCode: string) => {
+    const chars = rawCode
+        .trim()
+        .toUpperCase()
+        .replace(/[^0-9A-Z]/g, '')
+        .slice(0, CODE_LENGTH)
+        .split('');
+
+    return Array.from({length: CODE_LENGTH}, (_, index) => chars[index] ?? null);
+};
 
 function EnterWard() {
-    const [codeList, setCodeList] = useState<(string | null)[]>([null, null, null, null, null, null]);
-    const [focusedIndex, setFocusedIndex] = useState<number>(-1);
-    const [open, setOpen] = useState<boolean>(false);
+    const [codeList, setCodeList] = useState<(string | null)[]>(createEmptyCode);
+    const [focusedIndex, setFocusedIndex] = useState<number>(0);
+    const [open, setOpen] = useState(false);
     const [ward, setWard] = useState<TWard | null>(null);
-    const [error, setError] = useState<boolean>(false);
+    const [error, setError] = useState(false);
     const {
         state: {accountMe},
         actions: {enterWard},
@@ -22,49 +37,74 @@ function EnterWard() {
     const {getWardByCode} = useGetWardByCode();
     const navigate = useNavigate();
     const clickAwayRef = useOnclickOutside(() => setFocusedIndex(-1));
+    const modalRoot = typeof document !== 'undefined' ? document.querySelector('#modal-root') : null;
+    const codeValue = useMemo(() => codeList.join(''), [codeList]);
+    const handleGetWard = useCallback(
+        async (code: string) => {
+            try {
+                const ward = await getWardByCode(code);
+
+                setWard(ward);
+                setError(false);
+                setOpen(true);
+            } catch {
+                setError(true);
+                setOpen(false);
+                setWard(null);
+            }
+        },
+        [getWardByCode],
+    );
+    const resetCode = () => {
+        setFocusedIndex(0);
+        setCodeList(createEmptyCode());
+        setOpen(false);
+        setError(false);
+    };
     const handleKeyDown = useCallback(
         async (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
                 e.preventDefault();
 
-                const code = (await navigator.clipboard.readText())
-                    .trim()
-                    .toUpperCase()
-                    .replace(/[^0-9a-zA-Z]/g, '')
-                    .slice(0, 6);
+                const nextCodeList = toCodeList(await navigator.clipboard.readText());
+                const nextFocusIndex = nextCodeList.findIndex((code) => code === null);
 
-                setCodeList(code.split(''));
+                setCodeList(nextCodeList);
+                setFocusedIndex(nextFocusIndex === -1 ? CODE_LENGTH - 1 : nextFocusIndex);
 
                 return;
             }
 
+            const activeIndex =
+                focusedIndex >= 0
+                    ? focusedIndex
+                    : Math.max(
+                          0,
+                          codeList.findIndex((code) => code === null),
+                      );
+
             match(e.key)
-                .with('ArrowRight', 'ArrowDown', () => setFocusedIndex(Math.min(5, focusedIndex + 1)))
-                .with('ArrowLeft', 'ArrowUp', () => setFocusedIndex(Math.max(0, focusedIndex - 1)))
+                .with('ArrowRight', 'ArrowDown', () => {
+                    e.preventDefault();
+                    setFocusedIndex(Math.min(CODE_LENGTH - 1, activeIndex + 1));
+                })
+                .with('ArrowLeft', 'ArrowUp', () => {
+                    e.preventDefault();
+                    setFocusedIndex(Math.max(0, activeIndex - 1));
+                })
                 .with('Backspace', () => {
-                    setCodeList(codeList.map((code, index) => (index === focusedIndex ? null : code)));
-                    setFocusedIndex(Math.max(0, focusedIndex - 1));
+                    e.preventDefault();
+                    setCodeList(codeList.map((code, index) => (index === activeIndex ? null : code)));
+                    setFocusedIndex(Math.max(0, activeIndex - 1));
                 })
                 .with(Pattern.string.regex(/[0-9a-zA-Z]/).maxLength(1), () => {
-                    setCodeList(codeList.map((code, index) => (index === focusedIndex ? e.key.toUpperCase() : code)));
-                    setFocusedIndex(Math.min(5, focusedIndex + 1));
+                    e.preventDefault();
+                    setCodeList(codeList.map((code, index) => (index === activeIndex ? e.key.toUpperCase() : code)));
+                    setFocusedIndex(Math.min(CODE_LENGTH - 1, activeIndex + 1));
                 });
         },
-        [focusedIndex, codeList],
+        [codeList, focusedIndex],
     );
-    const handleGetWard = async (code: string) => {
-        try {
-            const ward = await getWardByCode(code);
-
-            setWard(ward);
-            setError(false);
-            setOpen(true);
-        } catch {
-            setError(true);
-            setOpen(false);
-            setWard(null);
-        }
-    };
 
     useEffect(() => {
         if (accountMe?.status !== 'WARD_SELECT_PENDING') navigate(ROUTE.REGISTER);
@@ -72,13 +112,11 @@ function EnterWard() {
 
     useEffect(() => {
         if (codeList.every((code) => code !== null)) {
-            const code = codeList.join('');
-
-            handleGetWard(code);
+            void handleGetWard(codeValue);
         } else {
             setError(false);
         }
-    }, [codeList]);
+    }, [codeList, codeValue, handleGetWard]);
 
     useEffect(() => {
         document.addEventListener('keydown', handleKeyDown);
@@ -86,84 +124,104 @@ function EnterWard() {
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [focusedIndex, codeList, handleKeyDown]);
+    }, [handleKeyDown]);
 
     return (
-        <div className="relative mx-auto mt-30.75 flex h-[calc(100%-7.6875rem)] w-[52%] flex-col items-center bg-[#FDFCFE]">
-            <div className="fixed top-7.5 left-12.5 flex cursor-pointer gap-5" onClick={() => navigate(ROUTE.ROOT)}>
-                <LogoSymbolFill className="h-7.5 w-7.5" />
-                <FullLogo className="h-7.5 w-27.5" />
-            </div>
-            <div className="my-auto flex w-full flex-col items-center justify-center">
-                <h1 className="absolute top-0 left-0 font-apple text-[2rem] font-semibold text-text-1">병동 입장</h1>
-                <BackIcon className="absolute top-0 -left-10 h-12 w-12 -translate-x-full" />
-                <div className="flex flex-col items-center gap-6 bg-white">
-                    <p className="font-apple text-[1.5rem] font-medium text-main-2">해당 병동의 6자리 코드를 입력해 주세요.</p>
-                    <div ref={clickAwayRef} className="flex h-50 w-140 justify-center gap-[.75rem] rounded-[.9375rem] py-15 shadow-banner">
-                        {codeList.map((code, index) => (
-                            <div
-                                onClick={() => setFocusedIndex(index)}
-                                key={index}
-                                className={`flex w-15 cursor-text items-center justify-center rounded-[.625rem] bg-main-bg font-poppins text-[2.5rem] font-light ${
-                                    focusedIndex === index ? 'border-[.1875rem] border-main-1' : 'border-[.0625rem] border-main-4'
-                                } ${code === null ? 'text-sub-4' : 'text-sub-1'}`}
-                            >
-                                {code ?? (focusedIndex === index ? '_' : '0')}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                {error ? (
-                    <div className="mt-5 w-140 rounded-[.3125rem] bg-main-4 py-[.625rem] text-center font-apple text-[1.25rem] font-medium text-main-1">
-                        병동 코드를 다시 확인해 주세요.
-                    </div>
-                ) : null}
-                {open
-                    ? createPortal(
-                          <div
-                              onClick={() => setOpen(false)}
-                              className="fixed top-0 left-0 z-50 flex h-screen w-screen items-center justify-center bg-[rgba(0,0,0,0.60)]"
-                          >
-                              <div
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex h-106.25 w-177.5 flex-col rounded-[1.25rem] bg-white px-10.75 pt-7.5 pb-12.5"
-                              >
-                                  <div className="flex items-center justify-between">
-                                      <h2 className="font-apple text-[1.5rem] font-semibold text-text-1">병원 · 병동 확인</h2>
-                                      <CancelIcon onClick={() => setOpen(false)} className="h-7.5 w-7.5 cursor-pointer" />
-                                  </div>
-                                  <div className="flex flex-1 flex-col items-center justify-center gap-[.875rem]">
-                                      <h3 className="font-apple text-[1.75rem] font-semibold text-main-1 underline">
-                                          {ward?.hospitalName} {ward?.name}
-                                      </h3>
-                                      <p className="font-apple text-[1.25rem] font-medium text-sub-2">맞다면 입장해 주세요</p>
-                                  </div>
-                                  <div className="flex gap-6">
-                                      <button
-                                          onClick={() => {
-                                              setFocusedIndex(0);
-                                              setCodeList([null, null, null, null, null, null]);
-                                              setOpen(false);
-                                          }}
-                                          className="box-border h-17.5 flex-1 rounded-[.625rem] bg-sub-4 py-0 font-apple text-[1.5rem] leading-none font-semibold text-sub-2"
-                                      >
-                                          다시 입력
-                                      </button>
-                                      <button
-                                          onClick={() => ward && enterWard(ward.wardId)}
-                                          className="box-border h-17.5 flex-1 rounded-[.625rem] bg-main-1 py-0 font-apple text-[1.5rem] leading-none font-semibold text-white"
-                                      >
-                                          입장
-                                      </button>
-                                  </div>
-                              </div>
-                          </div>,
+        <RegisterShell maxWidth="max-w-[560px]">
+            <button
+                type="button"
+                className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
+                onClick={() => navigate(ROUTE.REGISTER)}
+            >
+                <ArrowLeft className="h-4 w-4" />
+                병동 선택으로
+            </button>
 
-                          document.querySelector('#modal-root')!,
-                      )
-                    : null}
+            <div>
+                <h1 className="text-[32px] font-semibold text-sub-1">병동 코드를 입력해요</h1>
+                <p className="mt-2 text-sm text-gray-3">관리자가 공유한 6자리 코드를 입력하면 병동을 확인할 수 있어요.</p>
             </div>
-        </div>
+
+            <section className="mt-6 rounded-[24px] bg-white p-6">
+                <div ref={clickAwayRef} className="grid grid-cols-6 gap-2" aria-label="병동 코드 입력">
+                    {codeList.map((code, index) => (
+                        <button
+                            type="button"
+                            onClick={() => setFocusedIndex(index)}
+                            key={index}
+                            aria-label={`병동 코드 ${index + 1}번째 자리`}
+                            className={cn(
+                                'flex aspect-square min-h-12 cursor-text items-center justify-center rounded-[14px] bg-gray-7 font-poppins text-[28px] font-semibold text-sub-1 transition-colors',
+                                focusedIndex === index && 'bg-main-light text-main-1',
+                                !code && focusedIndex !== index && 'text-gray-4',
+                            )}
+                        >
+                            {code ?? ''}
+                        </button>
+                    ))}
+                </div>
+            </section>
+
+            {error ? (
+                <p role="alert" className="mt-4 rounded-[16px] bg-[#FFF1F6] px-4 py-3 text-center text-sm font-medium text-red">
+                    병동 코드를 다시 확인해 주세요.
+                </p>
+            ) : null}
+
+            {open && modalRoot
+                ? createPortal(
+                      <div
+                          onClick={() => setOpen(false)}
+                          className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(21,11,60,0.42)] px-4"
+                      >
+                          <section
+                              onClick={(e) => e.stopPropagation()}
+                              className="flex w-full max-w-[440px] flex-col rounded-[24px] bg-white p-6"
+                              role="dialog"
+                              aria-modal="true"
+                              aria-labelledby="enter-ward-confirm-title"
+                          >
+                              <div className="flex items-start justify-between gap-4">
+                                  <div>
+                                      <p className="text-sm font-semibold text-sub-2.5">병동 확인</p>
+                                      <h2 id="enter-ward-confirm-title" className="mt-2 text-[24px] font-semibold text-sub-1">
+                                          {ward?.hospitalName} {ward?.name}
+                                      </h2>
+                                  </div>
+                                  <button
+                                      type="button"
+                                      onClick={() => setOpen(false)}
+                                      className="h-9 w-9 shrink-0 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
+                                      aria-label="닫기"
+                                  >
+                                      <X className="h-4 w-4" />
+                                  </button>
+                              </div>
+                              <p className="mt-3 text-sm leading-6 text-gray-3">맞는 병동이면 입장 요청을 보낼게요.</p>
+                              <div className="mt-8 grid grid-cols-2 gap-2">
+                                  <button
+                                      type="button"
+                                      onClick={resetCode}
+                                      className="h-11 cursor-pointer gap-2 rounded-[12px] bg-gray-7 px-4 text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-6"
+                                  >
+                                      <RotateCcw className="h-4 w-4" />
+                                      다시 입력
+                                  </button>
+                                  <button
+                                      type="button"
+                                      onClick={() => ward && enterWard(ward.wardId)}
+                                      className="h-11 cursor-pointer gap-2 rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7]"
+                                  >
+                                      <Check className="h-4 w-4" />
+                                      입장 요청
+                                  </button>
+                              </div>
+                          </section>
+                      </div>,
+                      modalRoot,
+                  )
+                : null}
+        </RegisterShell>
     );
 }
 

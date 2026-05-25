@@ -1,6 +1,6 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
-import {Check, ChevronDown, Plus, X} from 'lucide-react';
+import {Check, ChevronDown, Info, Plus, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {Input} from '@/shared/ui/primitives/input';
@@ -42,11 +42,62 @@ const SKILL_UNSELECTED_BACKGROUND = '#E5E7EB';
 const SKILL_UNSELECTED_TEXT = '#6B7280';
 const NURSE_GRID_PADDING_X = 'px-6';
 const NURSE_GRID_GAP_CLASS = 'gap-x-3';
-const NURSE_GRID_COLS_STEP_3 = 'grid-cols-[32px_minmax(168px,1.15fr)_minmax(220px,1.55fr)_minmax(84px,0.65fr)_minmax(96px,0.72fr)_40px]';
+const NURSE_GRID_COLS_STEP_3 =
+    'grid-cols-[32px_minmax(168px,1.08fr)_minmax(220px,1.48fr)_minmax(84px,0.58fr)_minmax(84px,0.58fr)_minmax(96px,0.68fr)_40px]';
 const NURSE_GRID_COLS_STEP_4 =
-    'grid-cols-[32px_minmax(168px,1.05fr)_minmax(116px,0.78fr)_minmax(196px,1.35fr)_minmax(84px,0.62fr)_minmax(96px,0.72fr)_40px]';
+    'grid-cols-[32px_minmax(168px,1fr)_minmax(116px,0.72fr)_minmax(196px,1.28fr)_minmax(84px,0.56fr)_minmax(84px,0.56fr)_minmax(96px,0.66fr)_40px]';
 const getDefaultSkillLabel = (level: number) => `LV. ${level}`;
 const limitNurseNameInput = (value: string) => value.slice(0, MAX_ONBOARDING_NURSE_NAME_LENGTH);
+
+type TNurseRoleHelp = 'preceptor' | 'preceptee';
+
+const NURSE_ROLE_HELP: Record<TNurseRoleHelp, {label: string; description: string}> = {
+    preceptor: {
+        label: '프리셉터',
+        description: '신규 또는 저연차 간호사의 적응과 교육을 도와주는 담당 간호사예요.',
+    },
+    preceptee: {
+        label: '프리셉티',
+        description: '프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.',
+    },
+};
+
+function NurseRoleHeaderHelp({
+    type,
+    openedType,
+    onToggle,
+}: {
+    type: TNurseRoleHelp;
+    openedType: TNurseRoleHelp | null;
+    onToggle: (type: TNurseRoleHelp) => void;
+}) {
+    const help = NURSE_ROLE_HELP[type];
+    const isOpen = openedType === type;
+
+    return (
+        <span className="group relative inline-flex items-center justify-center gap-1">
+            <span>{help.label}</span>
+            <button
+                type="button"
+                aria-label={`${help.label} 설명`}
+                aria-expanded={isOpen}
+                className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                onClick={() => onToggle(type)}
+            >
+                <Info className="h-3 w-3" />
+            </button>
+            <span
+                role="tooltip"
+                className={cn(
+                    'pointer-events-none absolute top-full left-1/2 z-30 mt-2 w-[218px] -translate-x-1/2 rounded-[8px] bg-[#242428] px-3 py-2 text-left font-apple text-[12px] leading-5 text-white opacity-0 shadow-[0px_10px_24px_rgba(23,23,28,0.18)] transition-opacity duration-150 group-focus-within:opacity-100 group-hover:opacity-100',
+                    isOpen && 'opacity-100',
+                )}
+            >
+                {help.description}
+            </span>
+        </span>
+    );
+}
 
 function NurseStep({
     draft,
@@ -65,6 +116,7 @@ function NurseStep({
 }: INurseStepProps) {
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const [openedSkillMenuNurseId, setOpenedSkillMenuNurseId] = useState<string | null>(null);
+    const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelp | null>(null);
     const sortMenuRef = useRef<HTMLDivElement | null>(null);
     const skillMenuRef = useRef<HTMLDivElement | null>(null);
     const rowRefByNurseId = useRef<Record<string, HTMLDivElement | null>>({});
@@ -285,7 +337,18 @@ function NurseStep({
                         <span className="block w-full text-center">가능 근무</span>
                     </div>
                     <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">프리셉터</span>
+                        <NurseRoleHeaderHelp
+                            type="preceptor"
+                            openedType={openedRoleHelp}
+                            onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
+                        />
+                    </div>
+                    <div className="flex h-8 w-full items-center justify-center">
+                        <NurseRoleHeaderHelp
+                            type="preceptee"
+                            openedType={openedRoleHelp}
+                            onToggle={(type) => setOpenedRoleHelp((prev) => (prev === type ? null : type))}
+                        />
                     </div>
                     <div className="flex h-8 w-full items-center justify-center">
                         <span className="block w-full text-center">근무 투입</span>
@@ -302,6 +365,7 @@ function NurseStep({
                                 {sortedNurses.map((nurse, index) => {
                                     const isSkillMenuOpen = openedSkillMenuNurseId === nurse.id;
                                     const isPreceptor = nurse.memo.trim() === '프리셉터';
+                                    const isPreceptee = nurse.memo.trim() === '프리셉티';
                                     const isSkillUnselected = nurse.level == null;
                                     const skillBadgeLabel = isSkillUnselected ? SKILL_UNSELECTED_LABEL : getSkillLabel(nurse.level);
                                     const fadedClass = nurse.isWorker ? '' : 'opacity-45';
@@ -489,6 +553,24 @@ function NurseStep({
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
                                                             onClick={() => onNurseChange(nurse.id, {memo: isPreceptor ? '' : '프리셉터'})}
+                                                        >
+                                                            <Check className="h-3.5 w-3.5 stroke-[3]" />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className={cn('flex items-center justify-center', fadedClass)}>
+                                                        <button
+                                                            type="button"
+                                                            role="checkbox"
+                                                            aria-checked={isPreceptee}
+                                                            aria-label={`${nurse.name || '간호사'} 프리셉티`}
+                                                            className={cn(
+                                                                'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                                                                isPreceptee
+                                                                    ? 'border-main-1 bg-main-1 text-white hover:bg-main-2'
+                                                                    : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
+                                                            )}
+                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptee ? '' : '프리셉티'})}
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </button>

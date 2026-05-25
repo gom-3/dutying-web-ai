@@ -179,8 +179,10 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
 
         return paletteColors[reverseIndex] ?? paletteColors[paletteColors.length - 1];
     };
-    const getBadgeTextColor = (level: number) => getSkillBadgeTextColor(getBadgeBackgroundColor(level), {level, levelCount: localConfig.levelCount});
+    const getBadgeTextColor = (level: number) =>
+        getSkillBadgeTextColor(getBadgeBackgroundColor(level), {level, levelCount: localConfig.levelCount});
     const highestSkillColor = getBadgeBackgroundColor(localConfig.levelCount);
+    const canDisableSkillFeature = config.enabled;
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
     return createPortal(
@@ -388,14 +390,16 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
                     </div>
                 </div>
 
-                <div className="mt-10 flex items-center justify-between">
-                    <button
-                        type="button"
-                        className="rounded-[10px] bg-[#F3F4F6] px-4 py-2 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1"
-                        onClick={() => setShowDisableConfirmModal(true)}
-                    >
-                        숙련도 사용하지 않기
-                    </button>
+                <div className={cn('mt-10 flex items-center', canDisableSkillFeature ? 'justify-between' : 'justify-end')}>
+                    {canDisableSkillFeature ? (
+                        <button
+                            type="button"
+                            className="rounded-[10px] bg-[#F3F4F6] px-4 py-2 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1"
+                            onClick={() => setShowDisableConfirmModal(true)}
+                        >
+                            숙련도 사용하지 않기
+                        </button>
+                    ) : null}
                     <button
                         type="button"
                         className="h-11 rounded-[10px] bg-main-1 px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2 focus-visible:outline-2 focus-visible:outline-main-1"

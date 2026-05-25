@@ -1,4 +1,4 @@
-export type TTutorialDismissKind = 'make' | 'request' | 'member';
+export type TTutorialDismissKind = 'make' | 'request' | 'member' | 'board' | 'board-list' | 'board-composer' | 'board-detail';
 
 const STORAGE_VERSION = 1;
 const PREFIX = 'dutying.tutorial.dismissed';

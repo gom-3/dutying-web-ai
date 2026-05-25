@@ -1,4 +1,3 @@
-import setupLocatorUI from '@locator/runtime';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
 import {Toaster} from 'react-hot-toast';
@@ -19,8 +18,10 @@ const queryClient = new QueryClient({
     },
 });
 
-if (import.meta.env.DEV) {
-    setupLocatorUI();
+if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCATOR === 'true') {
+    void import('@locator/runtime').then(({default: setupLocatorUI}) => {
+        setupLocatorUI();
+    });
 }
 
 initializeApp();

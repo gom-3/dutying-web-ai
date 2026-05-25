@@ -64,9 +64,12 @@ export function AiAutofillToolbar({
 
             <div
                 id="make_ai_autofill_actions"
-                className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2"
+                className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2 [&_button:not(:disabled)]:cursor-pointer"
             >
-                <div className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1">
+                <div
+                    id="make_ai_view_tools"
+                    className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
+                >
                     <ToggleIconButton
                         className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--auto-fill"
                         active={autoFillEnabled}
@@ -84,7 +87,10 @@ export function AiAutofillToolbar({
                     />
                 </div>
 
-                <span className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1">
+                <span
+                    id="make_ai_history_tools"
+                    className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1"
+                >
                     <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="Undo">
                         <Undo2 className="size-3.5" aria-hidden />
                     </IconButton>
@@ -94,25 +100,33 @@ export function AiAutofillToolbar({
                 </span>
 
                 <button
+                    id="make_ai_fill_button"
                     type="button"
                     onClick={onAiFill}
                     disabled={isAiGenerating}
                     aria-busy={isAiGenerating}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill',
-                        'inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 rounded-[13px] px-4 py-0',
+                        'relative inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[13px] px-4 py-0',
                         'bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white',
-                        'transition-[filter,transform] duration-150',
+                        'transition-[box-shadow,filter,transform] duration-150',
                         'hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
-                        'disabled:cursor-not-allowed disabled:opacity-70 disabled:grayscale',
+                        'disabled:cursor-wait disabled:opacity-100',
+                        isAiGenerating && 'shadow-[0_0_0_3px_rgba(169,120,255,0.24),0_8px_22px_rgba(107,69,244,0.2)]',
                     )}
                 >
-                    {isAiGenerating ? (
-                        <BouncingDots className="w-5 shrink-0 text-white" />
-                    ) : (
-                        <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="size-4 shrink-0 object-contain" />
+                    {isAiGenerating && (
+                        <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
+                        />
                     )}
-                    <span className="truncate">{t(actionLabelKey)}</span>
+                    {isAiGenerating ? (
+                        <BouncingDots className="relative z-10 w-5 shrink-0 text-white" />
+                    ) : (
+                        <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="relative z-10 size-4 shrink-0 object-contain" />
+                    )}
+                    <span className="relative z-10 truncate">{t(actionLabelKey)}</span>
                 </button>
 
                 <button

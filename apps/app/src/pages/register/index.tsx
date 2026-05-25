@@ -1,12 +1,13 @@
-import {Navigate, useNavigate} from 'react-router';
+import {useEffect, useState} from 'react';
+import {Navigate} from 'react-router';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth';
-import {FullLogo, LogoSymbolFill} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 import PendingEnter from './ui/pending-enter';
 import RegisterNurse from './ui/register-nurse';
+import RegisterShell from './ui/register-shell';
 import SelectEnterOrCreate from './ui/select-enter-or-create';
 
 function RegisterPage() {
@@ -14,22 +15,24 @@ function RegisterPage() {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe},
     } = useAuth();
-    const navigate = useNavigate();
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
+    const [stepOverride, setStepOverride] = useState<'nurse-info' | null>(null);
+
+    useEffect(() => {
+        if (accountMe?.status !== 'WARD_SELECT_PENDING') {
+            setStepOverride(null);
+        }
+    }, [accountMe?.status]);
 
     return (
-        <div className="relative mx-auto mt-30.75 flex h-[calc(100%-7.6875rem)] w-[52%] flex-col items-center bg-[#FDFCFE]">
-            <div className="fixed top-7.5 left-12.5 flex cursor-pointer gap-5" onClick={() => navigate(ROUTE.ROOT)}>
-                <LogoSymbolFill className="h-7.5 w-7.5" />
-                <FullLogo className="h-7.5 w-27.5" />
-            </div>
+        <RegisterShell>
             {isAccountBootstrapPending ? (
-                <div className="flex h-screen w-screen flex-col items-center justify-center">
+                <div className="flex min-h-[420px] flex-col items-center justify-center">
                     <LoadingSpinner size={56} />
                 </div>
             ) : isAccountBootstrapError ? (
-                <div className="flex h-screen w-screen items-center justify-center px-8">
+                <div className="flex min-h-[420px] items-center justify-center">
                     <PageState
                         tone="error"
                         title="계정 정보를 불러오지 못했어요"
@@ -41,11 +44,17 @@ function RegisterPage() {
             ) : (
                 match(accountMe?.status)
                     .with('INITIAL', 'NURSE_INFO_PENDING', () => <RegisterNurse />)
-                    .with('WARD_SELECT_PENDING', () => <SelectEnterOrCreate />)
+                    .with('WARD_SELECT_PENDING', () =>
+                        stepOverride === 'nurse-info' ? (
+                            <RegisterNurse onCompleted={() => setStepOverride(null)} />
+                        ) : (
+                            <SelectEnterOrCreate onBack={() => setStepOverride('nurse-info')} />
+                        ),
+                    )
                     .with('WARD_ENTRY_PENDING', () => <PendingEnter />)
                     .with('LINKED', () => <Navigate to={ROUTE.MAKE} />)
                     .otherwise(() => (
-                        <div className="flex h-screen w-screen items-center justify-center px-8">
+                        <div className="flex min-h-[420px] items-center justify-center">
                             <PageState
                                 tone="error"
                                 title="계정 상태를 확인하지 못했어요"
@@ -56,7 +65,7 @@ function RegisterPage() {
                         </div>
                     ))
             )}
-        </div>
+        </RegisterShell>
     );
 }
 

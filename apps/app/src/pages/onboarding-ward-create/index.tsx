@@ -1,4 +1,4 @@
-import {ArrowRight, Trash2} from 'lucide-react';
+import {ArrowLeft, ArrowRight, Trash2} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -80,15 +80,11 @@ function OnboardingWardCreatePage() {
             return '이미 병동 생성을 마쳤어요.';
         }
 
-        if (isUploadStep && !hasUploadedFile) {
-            return '근무표 파일을 업로드하거나 건너뛰기를 눌러주세요.';
-        }
-
         const blockingIssues = draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
         const codes = new Set(blockingIssues.map((issue) => issue.code));
 
         if (codes.has('missing-hospital-name')) {
-            return '병원명 또는 병동명을 입력해 주세요.';
+            return '병원명을 입력해 주세요.';
         }
 
         if (codes.has('invalid-ward-name') || codes.has('invalid-hospital-name')) {
@@ -121,6 +117,14 @@ function OnboardingWardCreatePage() {
 
         return '입력 정보를 확인해 주세요.';
     };
+    const getStepOneIssueCodes = () => new Set(currentStepValidation.issues.map((issue) => issue.code));
+    const focusFirstInvalidIdentityField = () => {
+        const codes = getStepOneIssueCodes();
+        const nextFocusId =
+            codes.has('missing-hospital-name') || codes.has('invalid-hospital-name') ? 'onboarding-hospital-name' : 'onboarding-ward-name';
+
+        document.getElementById(nextFocusId)?.focus();
+    };
     const handleIdentityNameEnter = () => {
         if (actionsDisabled) {
             return;
@@ -135,8 +139,9 @@ function OnboardingWardCreatePage() {
 
         if (draft.currentStep === 1) {
             setShowIdentityNameError(true);
-            document.getElementById('onboarding-identity-name')?.focus();
+            focusFirstInvalidIdentityField();
         }
+
         toast.error(getNextBlockedReasonMessage());
     };
     const headerAside =
@@ -186,27 +191,40 @@ function OnboardingWardCreatePage() {
 
     const stepContent = (() => {
         switch (draft.currentStep) {
-            case 1:
+            case 1: {
+                const stepOneIssueCodes = getStepOneIssueCodes();
+
                 return (
                     <WardIdentityStep
-                        identityName={
-                            draft.hospitalName && draft.wardName && draft.hospitalName !== draft.wardName
-                                ? `${draft.hospitalName} ${draft.wardName}`
-                                : draft.hospitalName || draft.wardName
+                        hospitalName={draft.hospitalName}
+                        wardName={draft.wardName}
+                        hasHospitalNameError={
+                            showIdentityNameError &&
+                            (stepOneIssueCodes.has('missing-hospital-name') || stepOneIssueCodes.has('invalid-hospital-name'))
                         }
-                        hasError={showIdentityNameError}
-                        onIdentityNameChange={(identityName) => {
-                            if (showIdentityNameError && identityName.trim()) {
+                        hasWardNameError={showIdentityNameError && stepOneIssueCodes.has('invalid-ward-name')}
+                        onHospitalNameChange={(hospitalName) => {
+                            if (showIdentityNameError) {
                                 setShowIdentityNameError(false);
                             }
+
                             updateWardIdentity({
-                                hospitalName: identityName,
-                                wardName: identityName,
+                                hospitalName,
+                            });
+                        }}
+                        onWardNameChange={(wardName) => {
+                            if (showIdentityNameError) {
+                                setShowIdentityNameError(false);
+                            }
+
+                            updateWardIdentity({
+                                wardName,
                             });
                         }}
                         onIdentityNameEnter={handleIdentityNameEnter}
                     />
                 );
+            }
             case 2:
                 return (
                     <UploadStep
@@ -297,6 +315,16 @@ function OnboardingWardCreatePage() {
                   )
                 : null}
             <div className="mx-auto w-[1120px] pt-[100px] pb-20">
+                {draft.currentStep === 1 ? (
+                    <button
+                        type="button"
+                        className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 font-apple text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
+                        onClick={() => navigate(ROUTE.REGISTER)}
+                    >
+                        <ArrowLeft className="h-4 w-4" />
+                        병동 선택으로
+                    </button>
+                ) : null}
                 <SectionHeader step={draft.currentStep} aside={headerAside} />
                 <OnboardingStepLayout
                     step={draft.currentStep}
@@ -306,8 +334,15 @@ function OnboardingWardCreatePage() {
                             setShowIdentityNameError(false);
                         }
 
+                        if (isUploadStep && !hasUploadedFile) {
+                            skipOrComplete();
+
+                            return;
+                        }
+
                         if (draft.currentStep < 4) {
                             goNextStep();
+
                             return;
                         }
 
@@ -316,8 +351,9 @@ function OnboardingWardCreatePage() {
                     onNextDisabledClick={() => {
                         if (draft.currentStep === 1) {
                             setShowIdentityNameError(true);
-                            document.getElementById('onboarding-identity-name')?.focus();
+                            focusFirstInvalidIdentityField();
                         }
+
                         toast.error(getNextBlockedReasonMessage());
                     }}
                     leftAction={
@@ -345,9 +381,7 @@ function OnboardingWardCreatePage() {
                         ) : undefined
                     }
                     nextDisabled={
-                        draft.currentStep < 4
-                            ? !canGoNext || (isUploadStep && !hasUploadedFile) || isSubmitting || isSuccess
-                            : !canComplete || isSubmitting || isSuccess
+                        draft.currentStep < 4 ? !canGoNext || isSubmitting || isSuccess : !canComplete || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}
                     nextLabel={draft.currentStep < 4 ? '다음' : isSubmitting ? '생성 중...' : isSuccess ? '생성 완료' : '완료'}

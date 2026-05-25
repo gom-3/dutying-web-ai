@@ -1,5 +1,6 @@
 import {cn} from '@dutying/utils/style';
-import {useEffect, useMemo, useRef, useState, type MouseEvent} from 'react';
+import {X} from 'lucide-react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
@@ -25,6 +26,7 @@ type TMakeShiftCalendarProps = {
      * 클릭 후 부가 동작(예: 부모의 editor 영역에 focus 주기) — 선택 저장은 캘린더 내부에서 처리하므로 별도 호출 불필요.
      */
     onCellClick?: (rowIndex: number, colIndex: number) => void;
+    tutorialCellId?: string;
     /**
      * true면 클릭으로 셀 선택을 갱신하지 않는다 (편집 불가).
      */
@@ -39,11 +41,29 @@ type TMakeShiftCalendarProps = {
  * 근무 만들기·/duty 공용 일자 캘린더. 스케일(transform)·내부 가로 스크롤 없음, 레이아웃은 `cqw`+`@container`.
  * 열: 이름 / 이월 / 전달 / N일 / 우측 D·E·N·O·WO 합계.
  */
-const VIOLATION_STYLE: Record<TViolation['level'], {border: string; background: string}> = {
-    error: {border: '#FF0000', background: 'rgba(255,0,0,0.2)'},
-    warning: {border: '#FFD900', background: 'rgba(238,255,0,0.3)'},
+const VIOLATION_TONE: Record<
+    TViolation['level'],
+    {accent: string; border: string; surface: string; rail: string; markerBg: string; markerText: string}
+> = {
+    error: {
+        accent: '#D92D20',
+        border: 'rgba(217,45,32,0.74)',
+        surface: 'rgba(217,45,32,0.07)',
+        rail: 'rgba(217,45,32,0.88)',
+        markerBg: '#D92D20',
+        markerText: '#FFFFFF',
+    },
+    warning: {
+        accent: '#B54708',
+        border: 'rgba(245,158,11,0.32)',
+        surface: 'transparent',
+        rail: 'rgba(245,158,11,0.62)',
+        markerBg: 'rgba(245,158,11,0.76)',
+        markerText: '#FFFFFF',
+    },
 };
-const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 1, warning: 0};
+const VIOLATION_LEVEL_LABEL: Record<TViolation['level'], string> = {error: '중요', warning: '참고'};
+const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const NAME_COL = 'clamp(64px,4.4cqw,76px)';
 const CARRY_COL = 'clamp(20px,1.5cqw,26px)';
 const LAST_COL = 'clamp(74px,5.4cqw,98px)';
@@ -86,7 +106,7 @@ const SUMMARY_CELL_WIDTH = 'w-[clamp(14px,1.05cqw,18px)]';
 /** 우측 row-summary 행 · footer daily-summary 행 공통 높이 */
 const ROW_SUMMARY_HEIGHT = 'h-[clamp(28px,2.4cqw,40px)]';
 /** row-summary 우측 합계 숫자 · daily-summary 일자별 셀 — 동일 글자 크기·색 */
-const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] leading-none text-gray-4 tabular-nums';
+const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] leading-none text-center text-gray-4 tabular-nums';
 /**
  * 일자 셀 내부 좌우 패딩.
  * - 최소값을 둬서 사이드바 등으로 컨테이너만 좁아졌을 때도 셀·배지 사이에 숨통이 남게 한다.
@@ -145,15 +165,17 @@ const DAILY_SUMMARY_ROW_HEIGHT = SUMMARY_CELL_HEIGHT;
  */
 const CARRY_ROUNDED = 'rounded-[clamp(3px,0.35cqw,6px)]';
 
-function getDaysAreaInsetLeft(simplified: boolean): string {
-    if (simplified) {
-        return `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X})`;
-    }
+type TViolationPopover = {
+    title: string;
+    violations: TViolation[];
+    left: number;
+    top: number;
+    placement: 'top' | 'bottom';
+};
 
-    return `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X} + ${CARRY_COL} + ${ROW_GAP_X} + ${LAST_COL} + ${ROW_GAP_X})`;
-}
+function getViolationColSpan(violation: TViolation): {startCol: number; span: number} | null {
+    if (violation.cells.length === 0) return null;
 
-function getViolationColSpan(violation: TViolation): {startCol: number; span: number} {
     const cols = violation.cells.map((cell) => cell.col);
     const startCol = Math.min(...cols);
     const endCol = Math.max(...cols);
@@ -161,58 +183,139 @@ function getViolationColSpan(violation: TViolation): {startCol: number; span: nu
     return {startCol, span: endCol - startCol + 1};
 }
 
-type TDivisionTeamViolationOverlayProps = {
-    violations: TViolation[];
-    dayCount: number;
-    rowCount: number;
-    simplified: boolean;
-};
+function sortViolationsForDisplay(violations: TViolation[]): TViolation[] {
+    return [...violations].sort((a, b) => {
+        const priority = VIOLATION_LEVEL_PRIORITY[b.level] - VIOLATION_LEVEL_PRIORITY[a.level];
 
-function DivisionTeamViolationOverlay({violations, dayCount, rowCount, simplified}: TDivisionTeamViolationOverlayProps) {
-    if (violations.length === 0 || rowCount === 0) return null;
+        if (priority !== 0) return priority;
+
+        return a.message.localeCompare(b.message, 'ko');
+    });
+}
+
+function getPrimaryViolationLevel(violations: TViolation[]): TViolation['level'] | null {
+    return sortViolationsForDisplay(violations)[0]?.level ?? null;
+}
+
+function formatViolationTitle(violations: TViolation[]): string | undefined {
+    if (violations.length === 0) return undefined;
+
+    return sortViolationsForDisplay(violations)
+        .map((violation) => `${VIOLATION_LEVEL_LABEL[violation.level]}: ${violation.message}`)
+        .join('\n');
+}
+
+function getViolationSummary(violations: TViolation[]): string {
+    const errorCount = violations.filter((violation) => violation.level === 'error').length;
+    const warningCount = violations.length - errorCount;
+
+    return [
+        errorCount > 0 ? `${VIOLATION_LEVEL_LABEL.error} ${errorCount}` : null,
+        warningCount > 0 ? `${VIOLATION_LEVEL_LABEL.warning} ${warningCount}` : null,
+    ]
+        .filter(Boolean)
+        .join(' · ');
+}
+
+function ViolationMarker({violations}: {violations: TViolation[]}) {
+    const level = getPrimaryViolationLevel(violations);
+
+    if (!level) return null;
+
+    const tone = VIOLATION_TONE[level];
+    const label = violations.length > 1 ? (violations.length > 9 ? '9+' : String(violations.length)) : '';
 
     return (
-        <div
-            className="make-shift-calendar__team-violations pointer-events-none absolute right-0 z-[4] grid"
-            style={{
-                left: getDaysAreaInsetLeft(simplified),
-                top: 0,
-                bottom: 0,
-                paddingTop: DIVISION_PADDING_Y,
-                paddingBottom: DIVISION_PADDING_Y,
-                gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`,
-                gridTemplateRows: `repeat(${rowCount}, clamp(28px, 2.4cqw, 40px))`,
-            }}
+        <span
+            aria-hidden
+            className={cn(
+                'make-shift-calendar__violation-marker pointer-events-none absolute z-[30] grid place-items-center rounded-full font-poppins font-bold shadow-[0_0_0_1px_rgba(255,255,255,0.92)]',
+                label
+                    ? 'top-[clamp(1px,0.12cqw,2px)] right-[clamp(1px,0.12cqw,2px)] h-[clamp(9px,0.74cqw,12px)] min-w-[clamp(9px,0.74cqw,12px)] px-[1.5px] text-[clamp(7px,0.48cqw,8px)] leading-none'
+                    : 'top-[clamp(2px,0.18cqw,3px)] right-[clamp(2px,0.18cqw,3px)] size-[clamp(4px,0.4cqw,6px)]',
+                level === 'warning' && !label && 'opacity-75',
+            )}
+            style={{backgroundColor: tone.markerBg, color: tone.markerText}}
         >
-            {violations.map((violation) => {
-                const {startCol, span} = getViolationColSpan(violation);
-                const style = VIOLATION_STYLE[violation.level];
+            {label}
+        </span>
+    );
+}
 
-                return (
-                    <span
-                        key={violation.ruleId}
-                        aria-label={violation.message}
-                        title={violation.message}
-                        data-violation-level={violation.level}
-                        data-violation-scope="team"
-                        style={{
-                            gridColumn: `${startCol + 1} / span ${span}`,
-                            gridRow: '1 / -1',
-                            borderColor: style.border,
-                            backgroundColor: style.background,
-                            margin: VIOLATION_INSET,
-                        }}
-                        className={cn(
-                            'make-shift-calendar__violation',
-                            `make-shift-calendar__violation--${violation.level}`,
-                            'make-shift-calendar__violation--team',
-                            'rounded-[clamp(5px,0.55cqw,8px)] border-[1.5px]',
-                            violation.level === 'error' ? 'z-[6]' : 'z-[5]',
-                        )}
-                    />
-                );
-            })}
-        </div>
+function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover | null; onClose: () => void}) {
+    useEffect(() => {
+        if (!popover) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof Element)) return;
+
+            if (target.closest('[data-violation-popover]')) return;
+
+            onClose();
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose, popover]);
+
+    if (!popover) return null;
+
+    const sortedViolations = sortViolationsForDisplay(popover.violations);
+
+    return createPortal(
+        <div
+            data-violation-popover
+            role="dialog"
+            aria-label={popover.title}
+            className={cn(
+                'fixed z-[99999] box-border w-max max-w-[min(22rem,calc(100vw-1rem))] rounded-lg border border-gray-6 bg-white px-3 py-2.5 text-left font-apple shadow-[0_12px_28px_rgba(31,41,55,0.16)]',
+                popover.placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2',
+            )}
+            style={{left: popover.left, top: popover.top}}
+        >
+            <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                    <p className="text-[13px] leading-tight font-semibold text-sub-1">{popover.title}</p>
+                    <p className="mt-1 text-[11px] leading-none font-medium text-gray-3">{getViolationSummary(sortedViolations)}</p>
+                </div>
+                <button
+                    type="button"
+                    aria-label="닫기"
+                    onClick={onClose}
+                    className="grid size-6 shrink-0 cursor-pointer place-items-center rounded-full text-gray-3 hover:bg-gray-7 hover:text-sub-1"
+                >
+                    <X aria-hidden className="size-3.5" strokeWidth={2} />
+                </button>
+            </div>
+            <div className="mt-2 flex max-h-[min(18rem,calc(100vh-8rem))] flex-col gap-1.5 overflow-y-auto pr-1">
+                {sortedViolations.map((violation, index) => {
+                    const tone = VIOLATION_TONE[violation.level];
+
+                    return (
+                        <div key={`${violation.ruleId}-${index}`} className="flex min-w-0 gap-2 rounded-md bg-gray-7/60 px-2 py-1.5">
+                            <span aria-hidden className="mt-[5px] size-1.5 shrink-0 rounded-full" style={{backgroundColor: tone.accent}} />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-[11px] leading-none font-semibold" style={{color: tone.accent}}>
+                                    {VIOLATION_LEVEL_LABEL[violation.level]}
+                                </p>
+                                <p className="mt-1 text-xs leading-snug whitespace-normal text-sub-1">{violation.message}</p>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>,
+        document.body,
     );
 }
 
@@ -224,6 +327,7 @@ export function MakeShiftCalendar({
     showFaults,
     variant = 'default',
     onCellClick,
+    tutorialCellId,
     readonly = false,
     disableInitialSelection = false,
 }: TMakeShiftCalendarProps) {
@@ -232,6 +336,23 @@ export function MakeShiftCalendar({
     const selection = useShiftEditorStore((s) => s.selection);
     const selectionRect = useMemo(() => (selection ? normalizeSelection(selection) : null), [selection]);
     const didClearInitialSelection = useRef(false);
+    const [violationPopover, setViolationPopover] = useState<TViolationPopover | null>(null);
+    const closeViolationPopover = useCallback(() => setViolationPopover(null), []);
+    const showViolationPopover = useCallback((target: HTMLElement, violations: TViolation[], title: string) => {
+        if (violations.length === 0) return;
+
+        const rect = target.getBoundingClientRect();
+        const preferredBottomTop = rect.bottom + 8;
+        const shouldOpenAbove = preferredBottomTop > window.innerHeight - 220 && rect.top > 220;
+
+        setViolationPopover({
+            title,
+            violations: sortViolationsForDisplay(violations),
+            left: rect.left + rect.width / 2,
+            top: shouldOpenAbove ? rect.top - 8 : preferredBottomTop,
+            placement: shouldOpenAbove ? 'top' : 'bottom',
+        });
+    }, []);
 
     useEffect(() => {
         if (!disableInitialSelection || didClearInitialSelection.current) return;
@@ -241,6 +362,10 @@ export function MakeShiftCalendar({
             didClearInitialSelection.current = true;
         }
     }, [commands, disableInitialSelection, selection]);
+
+    useEffect(() => {
+        if (!showFaults) closeViolationPopover();
+    }, [closeViolationPopover, showFaults]);
 
     /**
      * 셀 클릭 처리.
@@ -275,7 +400,21 @@ export function MakeShiftCalendar({
 
         return map;
     }, [doc]);
-    const summaryShiftTypes = useMemo(() => {
+    const teamViolationsByDayCol = useMemo(() => {
+        const byCol = new Map<number, TViolation[]>();
+
+        for (const violation of teamViolations) {
+            for (const cell of violation.cells) {
+                const list = byCol.get(cell.col) ?? [];
+
+                list.push(violation);
+                byCol.set(cell.col, list);
+            }
+        }
+
+        return byCol;
+    }, [teamViolations]);
+    const visibleSummaryShiftTypeIds = useMemo(() => {
         const usedTypeIds = new Set<number>();
 
         for (const row of doc.rows) {
@@ -290,11 +429,33 @@ export function MakeShiftCalendar({
             }
         }
 
-        return shift.wardShiftTypes.filter((type) => type.isCounted && usedTypeIds.has(type.wardShiftTypeId));
-    }, [doc.rows, shift.wardShiftTypes, shortNameToType]);
+        return Array.from(usedTypeIds);
+    }, [doc.rows, shortNameToType]);
+    const [stickySummaryShiftTypeIds, setStickySummaryShiftTypeIds] = useState<number[]>([]);
+
+    useEffect(() => {
+        if (visibleSummaryShiftTypeIds.length === 0) return;
+
+        setStickySummaryShiftTypeIds((prev) => {
+            const merged = new Set(prev);
+
+            for (const typeId of visibleSummaryShiftTypeIds) merged.add(typeId);
+
+            if (merged.size === prev.length) return prev;
+
+            return Array.from(merged);
+        });
+    }, [visibleSummaryShiftTypeIds]);
+
+    const summaryShiftTypes = useMemo(() => {
+        const summaryTypeIds = new Set<number>([...stickySummaryShiftTypeIds, ...visibleSummaryShiftTypeIds]);
+
+        return shift.wardShiftTypes.filter((type) => type.isCounted && summaryTypeIds.has(type.wardShiftTypeId));
+    }, [shift.wardShiftTypes, stickySummaryShiftTypeIds, visibleSummaryShiftTypeIds]);
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
     const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : LEFT_GRID_TEMPLATE_COLUMNS;
+    let didAssignTutorialCell = false;
 
     return (
         <div
@@ -337,25 +498,47 @@ export function MakeShiftCalendar({
                         className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-1.5 py-1"
                         style={{gridTemplateColumns: `repeat(${shift.days.length}, minmax(0, 1fr))`}}
                     >
-                        {shift.days.map((d, j) => (
-                            <p
-                                key={j}
-                                className={cn(
-                                    'make-shift-calendar__day-header-cell',
-                                    'min-w-0 rounded-full text-center font-poppins tabular-nums',
-                                    'text-[12px] leading-5 font-semibold',
-                                    d.dayType === 'saturday'
-                                        ? separateWeekendColor
-                                            ? 'text-blue'
-                                            : 'text-red'
-                                        : d.dayType === 'sunday' || d.dayType === 'holiday'
-                                          ? 'text-red'
-                                          : 'text-sub-2.5',
-                                )}
-                            >
-                                {d.day}
-                            </p>
-                        ))}
+                        {shift.days.map((d, j) => {
+                            const dayViolations = showFaults ? teamViolationsByDayCol.get(j) : undefined;
+                            const dayViolationLevel = dayViolations ? getPrimaryViolationLevel(dayViolations) : null;
+                            const dayViolationTone = dayViolationLevel ? VIOLATION_TONE[dayViolationLevel] : null;
+
+                            return (
+                                <button
+                                    key={j}
+                                    type="button"
+                                    tabIndex={dayViolations ? 0 : -1}
+                                    data-violation-trigger={dayViolations ? 'true' : undefined}
+                                    title={formatViolationTitle(dayViolations ?? [])}
+                                    onClick={(event) => {
+                                        if (!dayViolations) return;
+
+                                        showViolationPopover(event.currentTarget, dayViolations, `${d.day}일 전체`);
+                                    }}
+                                    className={cn(
+                                        'make-shift-calendar__day-header-cell',
+                                        'relative min-w-0 rounded-full text-center font-poppins tabular-nums',
+                                        'text-[12px] leading-5 font-semibold',
+                                        dayViolations ? 'cursor-pointer' : 'cursor-default',
+                                        d.dayType === 'saturday'
+                                            ? separateWeekendColor
+                                                ? 'text-blue'
+                                                : 'text-red'
+                                            : d.dayType === 'sunday' || d.dayType === 'holiday'
+                                              ? 'text-red'
+                                              : 'text-sub-2.5',
+                                    )}
+                                    style={{
+                                        boxShadow: dayViolationTone
+                                            ? `inset 0 -${dayViolationLevel === 'warning' ? '1px' : '2px'} 0 ${dayViolationTone.rail}`
+                                            : undefined,
+                                    }}
+                                >
+                                    {d.day}
+                                    {dayViolations && <ViolationMarker violations={dayViolations} />}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -406,19 +589,15 @@ export function MakeShiftCalendar({
                              * 행 그리드는 items-stretch → 주말 셀이 행 높이 전체를 칠함(행 안에서 잘리지 않음).
                              */}
                             <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
-                                {showFaults && teamViolations.length > 0 && (
-                                    <DivisionTeamViolationOverlay
-                                        violations={teamViolations}
-                                        dayCount={shift.days.length}
-                                        rowCount={rows.length}
-                                        simplified={isSimplified}
-                                    />
-                                )}
                                 {rows.map((row, i) => {
                                     const workerId = String(row.shiftNurse.shiftNurseId);
                                     const docEntry = workerRowMap.get(workerId);
 
                                     if (!docEntry) return null;
+
+                                    const rowTutorialCellId = tutorialCellId && !didAssignTutorialCell ? tutorialCellId : undefined;
+
+                                    didAssignTutorialCell = didAssignTutorialCell || rowTutorialCellId !== undefined;
 
                                     return (
                                         <div
@@ -449,7 +628,9 @@ export function MakeShiftCalendar({
                                                 simplified={isSimplified}
                                                 readonly={readonly}
                                                 selectionRect={selectionRect}
+                                                tutorialCellId={rowTutorialCellId}
                                                 onCellClick={handleCellClick}
+                                                onViolationClick={showViolationPopover}
                                             />
                                         </div>
                                     );
@@ -489,6 +670,7 @@ export function MakeShiftCalendar({
             {!isSimplified && hasSummaryShiftTypes && (
                 <DailySummary doc={doc} shortNameToType={shortNameToType} summaryShiftTypes={summaryShiftTypes} />
             )}
+            <ViolationReasonPopover popover={violationPopover} onClose={closeViolationPopover} />
         </div>
     );
 }
@@ -524,7 +706,9 @@ type TCalendarRowLeftProps = {
     simplified: boolean;
     readonly: boolean;
     selectionRect: {top: number; left: number; bottom: number; right: number} | null;
+    tutorialCellId?: string;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
+    onViolationClick: (target: HTMLElement, violations: TViolation[], title: string) => void;
 };
 
 /**
@@ -547,11 +731,12 @@ function CalendarRowLeft({
     simplified,
     readonly,
     selectionRect,
+    tutorialCellId,
     onCellClick,
+    onViolationClick,
 }: TCalendarRowLeftProps) {
-    const [violationTip, setViolationTip] = useState<{message: string; left: number; top: number} | null>(null);
-    const [hoveredViolationKey, setHoveredViolationKey] = useState<string | null>(null);
     const rowViolationPrefix = `${shiftNurseId},`;
+    const displayNurseName = formatNurseDisplayName(nurseName);
     const violationsByDayCol = useMemo(() => {
         const byCol = new Map<number, TViolation[]>();
 
@@ -571,16 +756,16 @@ function CalendarRowLeft({
         return byCol;
     }, [violations, rowIndex, rowViolationPrefix]);
     const violationSpanList = useMemo(() => {
-        const list: {startCol: number; violation: TViolation}[] = [];
+        const list: {startCol: number; span: number; violation: TViolation}[] = [];
 
         for (const [key, v] of violations) {
             if (!key.startsWith(rowViolationPrefix)) continue;
 
-            const startCol = v.cells[0]?.col;
+            const spanInfo = getViolationColSpan(v);
 
-            if (startCol === undefined) continue;
+            if (!spanInfo) continue;
 
-            list.push({startCol, violation: v});
+            list.push({...spanInfo, violation: v});
         }
 
         list.sort((a, b) => {
@@ -593,23 +778,6 @@ function CalendarRowLeft({
 
         return list;
     }, [rowViolationPrefix, violations]);
-    const violationTipMessage = (items: TViolation[] | undefined) => items?.map((v) => v.message).join('\n\n');
-    const primaryViolation = (items: TViolation[] | undefined) => {
-        if (!items || items.length === 0) return undefined;
-
-        return [...items].sort((a, b) => VIOLATION_LEVEL_PRIORITY[b.level] - VIOLATION_LEVEL_PRIORITY[a.level])[0];
-    };
-    const showViolationTipFromTarget = (target: HTMLButtonElement, v: TViolation) => {
-        const r = target.getBoundingClientRect();
-
-        setViolationTip({message: v.message, left: r.left + r.width / 2, top: r.bottom + 6});
-    };
-    const onViolationTipPointer = (e: MouseEvent<HTMLButtonElement>, v: TViolation | undefined) => {
-        if (!showFaults || !v) return;
-
-        showViolationTipFromTarget(e.currentTarget, v);
-        setHoveredViolationKey(`${shiftNurseId},${v.cells[0]!.col},${v.ruleId}`);
-    };
     const getCellShiftType = (j: number): TWardShiftType | null => {
         const cell = cells[j];
 
@@ -633,7 +801,7 @@ function CalendarRowLeft({
                     className="make-shift-calendar__row-name flex min-h-0 min-w-0 items-center justify-center truncate text-center font-apple text-[clamp(12px,1.05cqw,16px)] leading-none whitespace-nowrap text-sub-1"
                     title={nurseName}
                 >
-                    {formatNurseDisplayName(nurseName)}
+                    {displayNurseName}
                 </div>
 
                 {!simplified && (
@@ -674,8 +842,9 @@ function CalendarRowLeft({
                         const reqId = wardReqShiftList[j] ?? null;
                         const reqType = reqId != null ? idToType.get(reqId) : null;
                         const cellViolationList = showFaults ? violationsByDayCol.get(j) : undefined;
-                        const cellViolation = primaryViolation(cellViolationList);
-                        const cellViolationTitle = violationTipMessage(cellViolationList);
+                        const cellViolations = cellViolationList ?? [];
+                        const hasCellViolations = cellViolations.length > 0;
+                        const cellViolationTitle = formatViolationTitle(cellViolations);
                         const weekendBg =
                             day.dayType === 'saturday'
                                 ? separateWeekendColor
@@ -697,48 +866,24 @@ function CalendarRowLeft({
                                 key={j}
                                 type="button"
                                 tabIndex={-1}
+                                id={tutorialCellId && j === 0 ? tutorialCellId : undefined}
                                 data-day-index={j}
                                 data-selected={isSelected || undefined}
-                                data-violation-rule={cellViolation?.ruleId}
-                                onClick={() => onCellClick?.(rowIndex, j)}
-                                onMouseEnter={(e) => {
-                                    if (!cellViolation) {
-                                        setHoveredViolationKey(null);
+                                data-violation-trigger={hasCellViolations ? 'true' : undefined}
+                                data-violation-count={hasCellViolations ? cellViolations.length : undefined}
+                                onClick={(event) => {
+                                    onCellClick?.(rowIndex, j);
 
-                                        return;
+                                    if (hasCellViolations) {
+                                        onViolationClick(event.currentTarget, cellViolations, `${displayNurseName} · ${day.day}일`);
                                     }
-
-                                    onViolationTipPointer(e, {
-                                        ...cellViolation,
-                                        message: cellViolationTitle ?? cellViolation.message,
-                                    });
-                                }}
-                                onMouseLeave={() => {
-                                    setViolationTip(null);
-                                    setHoveredViolationKey(null);
-                                }}
-                                onFocus={(e) => {
-                                    if (!showFaults || !cellViolation) return;
-
-                                    showViolationTipFromTarget(e.currentTarget, {
-                                        ...cellViolation,
-                                        message: cellViolationTitle ?? cellViolation.message,
-                                    });
-
-                                    if (cellViolation) {
-                                        setHoveredViolationKey(`${shiftNurseId},${cellViolation.cells[0]!.col},${cellViolation.ruleId}`);
-                                    }
-                                }}
-                                onBlur={() => {
-                                    setViolationTip(null);
-                                    setHoveredViolationKey(null);
                                 }}
                                 title={cellViolationTitle}
                                 style={{gridRow: 1, gridColumn: j + 1, paddingInline: DAY_CELL_PADDING_X}}
                                 className={cn(
                                     'make-shift-calendar__day-cell',
                                     'group relative z-[10] flex h-full min-w-0 items-center justify-center',
-                                    cellViolation ? 'cursor-help' : readonly ? 'cursor-default' : 'cursor-pointer',
+                                    hasCellViolations || !readonly ? 'cursor-pointer' : 'cursor-default',
                                     weekendBg,
                                 )}
                             >
@@ -749,6 +894,7 @@ function CalendarRowLeft({
                                         aria-hidden
                                     />
                                 )}
+                                {hasCellViolations && <ViolationMarker violations={cellViolations} />}
                                 <span className={SHIFT_BADGE_CELL_WRAP}>
                                     <ShiftBadge
                                         shiftType={shiftType}
@@ -760,11 +906,9 @@ function CalendarRowLeft({
                         );
                     })}
                     {showFaults &&
-                        violationSpanList.map(({startCol, violation: v}) => {
-                            const span = Math.max(1, v.cells.length);
-                            const style = VIOLATION_STYLE[v.level];
-                            const vioKey = `${shiftNurseId},${startCol},${v.ruleId}`;
-                            const isHovered = hoveredViolationKey === vioKey;
+                        violationSpanList.map(({startCol, span, violation: v}) => {
+                            const tone = VIOLATION_TONE[v.level];
+                            const isHard = v.level === 'error';
                             const zByLevel = v.level === 'error' ? 'z-[6]' : 'z-[5]';
 
                             return (
@@ -776,36 +920,23 @@ function CalendarRowLeft({
                                     style={{
                                         gridRow: 1,
                                         gridColumn: `${startCol + 1} / span ${span}`,
-                                        borderColor: style.border,
-                                        backgroundColor: style.background,
+                                        borderColor: isHard ? tone.border : 'transparent',
+                                        borderWidth: isHard ? '1.5px' : 0,
+                                        backgroundColor: tone.surface,
                                         margin: VIOLATION_INSET,
-                                        transformOrigin: 'center',
-                                        transform: isHovered ? 'scale(1.085)' : undefined,
-                                        transition: 'transform 140ms ease-out',
+                                        boxShadow: isHard ? `inset 0 0 0 1px ${tone.border}` : `inset 0 -1px 0 ${tone.rail}`,
                                     }}
                                     className={cn(
                                         'make-shift-calendar__violation',
                                         `make-shift-calendar__violation--${v.level}`,
-                                        'pointer-events-none rounded-[clamp(5px,0.55cqw,8px)] border-[1.5px]',
+                                        'pointer-events-none rounded-[clamp(5px,0.55cqw,8px)]',
                                         zByLevel,
-                                        isHovered && 'z-[8]',
                                     )}
                                 />
                             );
                         })}
                 </div>
             </div>
-            {violationTip != null &&
-                createPortal(
-                    <div
-                        role="tooltip"
-                        className="pointer-events-none fixed z-[99999] box-border w-max max-w-[min(24rem,calc(100vw-1rem))] -translate-x-1/2 rounded-md bg-white px-2.5 py-1.5 text-left font-apple text-xs leading-snug whitespace-normal text-sub-1"
-                        style={{left: violationTip.left, top: violationTip.top}}
-                    >
-                        {violationTip.message}
-                    </div>,
-                    document.body,
-                )}
         </>
     );
 }

@@ -44,11 +44,6 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
-    const autoRestoreAttemptedRef = useRef(false);
-
-    useEffect(() => {
-        autoRestoreAttemptedRef.current = false;
-    }, [wardId]);
 
     useEffect(() => {
         setWardId(wardId);
@@ -67,27 +62,19 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     }, [isHydrated, wardId, setHydrated, searchParams, setYearMonth]);
 
     useEffect(() => {
-        if (!wardId || !isHydrated || autoRestoreAttemptedRef.current || !currentShiftTeamId) return;
+        if (!wardId || !isHydrated || !currentShiftTeamId) return;
 
         const st = useMakeShiftStore.getState();
         const fromComposite = loadDraftStep(wardId, currentShiftTeamId, st.year, st.month);
         const fromLegacy = loadPersistedStep();
-        const saved = fromComposite ?? fromLegacy;
 
-        if (!saved) return;
+        if (fromComposite || !fromLegacy) return;
 
-        autoRestoreAttemptedRef.current = true;
-        startFromStep({
-            step: saved,
-            openRestoreDraftModal: editor.getPersisted() !== null,
-        });
-
-        if (!fromComposite && fromLegacy) {
-            saveDraftStep(wardId, currentShiftTeamId, st.year, st.month, saved);
-            bumpMaxReachedStep(wardId, currentShiftTeamId, st.year, st.month, saved);
-            clearPersistedStep();
-        }
-    }, [wardId, isHydrated, currentShiftTeamId, year, month, startFromStep, editor]);
+        saveDraftStep(wardId, currentShiftTeamId, st.year, st.month, fromLegacy);
+        bumpMaxReachedStep(wardId, currentShiftTeamId, st.year, st.month, fromLegacy);
+        clearPersistedStep();
+        setCurrentShiftTeamId(currentShiftTeamId);
+    }, [currentShiftTeamId, isHydrated, month, setCurrentShiftTeamId, wardId, year]);
 
     useEffect(() => {
         if (!wardId) {
@@ -221,6 +208,11 @@ export function useMakeShiftBootstrap(wardId: number | null) {
     useEffect(() => {
         if (shiftStatus !== 'success' || !currentShiftTeamId) return;
 
+        const saved =
+            wardId && currentShiftTeamId
+                ? (loadDraftStep(wardId, currentShiftTeamId, year, month) ?? loadPersistedStep())
+                : loadPersistedStep();
+
         if (shiftFullyAssigned) {
             if (phase !== 'stepping' || currentStep !== 6) {
                 confirmSchedule();
@@ -229,12 +221,18 @@ export function useMakeShiftBootstrap(wardId: number | null) {
             return;
         }
 
-        if (!shiftExists || phase !== 'overview') return;
+        if (saved === 6) {
+            if (phase !== 'stepping' || currentStep !== 6) {
+                startFromStep({
+                    step: 6,
+                    openRestoreDraftModal: false,
+                });
+            }
 
-        const saved =
-            wardId && currentShiftTeamId
-                ? (loadDraftStep(wardId, currentShiftTeamId, year, month) ?? loadPersistedStep())
-                : loadPersistedStep();
+            return;
+        }
+
+        if (!shiftExists || phase !== 'overview') return;
 
         startFromStep({
             step: saved ?? 1,

@@ -4,8 +4,8 @@ import type {TOnboardingStep} from '../model';
 
 const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}> = {
     1: {
-        title: '병원명 또는 병동명을 입력해 주세요',
-        description: '하나만 입력해도 되고, 둘 다 함께 입력해도 돼요',
+        title: '병원명과 병동명을 입력해 주세요',
+        description: '병원명은 필수로, 병동명은 선택해서 입력해 주세요',
     },
     2: {
         title: '이전 근무표 파일이 있다면 업로드해 주세요',

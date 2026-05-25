@@ -27,7 +27,7 @@ const FEEDBACK_BY_STATUS: Record<Exclude<TCreateAccountStatus, 'idle'>, TCreateA
     },
     failure: {
         tone: 'error',
-        message: '입력한 계정 정보를 다시 확인해 주세요.',
+        message: null,
     },
     exception: {
         tone: 'error',
@@ -54,7 +54,7 @@ const useCreateAccount = ({submit}: TUseCreateAccountParams) => {
         setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' || currentStatus === 'loading' ? currentStatus : 'idle'));
     }, []);
     const handleCreateAccountValidationFailure = useCallback(() => {
-        setCreateAccountStatus('failure');
+        setCreateAccountStatus('idle');
     }, []);
     const handleCreateAccount = useCallback(
         async (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => {

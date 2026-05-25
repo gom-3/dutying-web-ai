@@ -9,7 +9,8 @@ const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
-const TEST_IDENTITY_NAME = '테스트 병동';
+const TEST_HOSPITAL_NAME = '테스트 병원';
+const TEST_WARD_NAME = '테스트 병동';
 const typedTranslations = {
     'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
     'page.onboardingWardCreate.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
@@ -87,21 +88,20 @@ vi.mock('@/shared/api', async () => {
 });
 
 const prepareValidFinalStep = async (user: ReturnType<typeof userEvent.setup>) => {
-    await user.clear(screen.getByLabelText(/병원명 또는 병동명/));
-    await user.type(screen.getByLabelText(/병원명 또는 병동명/), TEST_IDENTITY_NAME);
+    await user.clear(screen.getByLabelText('병원명'));
+    await user.type(screen.getByLabelText('병원명'), TEST_HOSPITAL_NAME);
+    await user.clear(screen.getByLabelText('병동명'));
+    await user.type(screen.getByLabelText('병동명'), TEST_WARD_NAME);
     await user.click(screen.getByRole('button', {name: '다음'}));
 };
-
 const moveToShiftTypeStep = async (user: ReturnType<typeof userEvent.setup>) => {
     await prepareValidFinalStep(user);
     await user.click(screen.getByRole('button', {name: '건너뛰기'}));
 };
-
 const moveToNurseStep = async (user: ReturnType<typeof userEvent.setup>) => {
     await moveToShiftTypeStep(user);
     await user.click(screen.getByRole('button', {name: '다음'}));
 };
-
 const prepareValidCreationState = async (user: ReturnType<typeof userEvent.setup>) => {
     await moveToNurseStep(user);
     await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
@@ -120,10 +120,32 @@ describe('OnboardingWardCreatePage', () => {
         mockParseOnboardingWardExcel.mockReset();
     });
 
+    it('renders separate hospital and ward name fields on the first step', () => {
+        render(<OnboardingWardCreatePage />);
+
+        expect(screen.getByLabelText('병원명')).toBeInTheDocument();
+        expect(screen.getByLabelText('병동명')).toBeInTheDocument();
+        expect(screen.getByText('(선택) 병동명')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('병원명을 입력해 주세요')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('병동명을 입력해 주세요')).toBeInTheDocument();
+    });
+
+    it('returns to ward selection from the first step', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await user.click(screen.getByRole('button', {name: '병동 선택으로'}));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/register');
+    });
+
     it('uploads a file, injects parsed data, and moves through onboarding steps', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+
         await prepareValidFinalStep(user);
+
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockResolvedValue({
@@ -168,7 +190,9 @@ describe('OnboardingWardCreatePage', () => {
     it('shows upload warnings when the parse api partially succeeds', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+
         await prepareValidFinalStep(user);
+
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockResolvedValue({
@@ -189,7 +213,9 @@ describe('OnboardingWardCreatePage', () => {
     it('shows upload error guidance when the parse api fails', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
+
         await prepareValidFinalStep(user);
+
         const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
 
         mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
@@ -215,7 +241,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(nextButton);
 
-        expect(toastError).toHaveBeenCalledWith('병원명 또는 병동명을 입력해 주세요.');
+        expect(toastError).toHaveBeenCalledWith('병원명을 입력해 주세요.');
     });
 
     it('disables next in step 3 when a shift type is invalid', async () => {
@@ -316,6 +342,7 @@ describe('OnboardingWardCreatePage', () => {
         await waitFor(() => {
             expect(mockCreateWard).toHaveBeenCalledTimes(1);
         });
+
         const [submittedPayload] = mockCreateWard.mock.calls[0] as [Record<string, unknown>, unknown?];
         const submittedShiftTeams = submittedPayload.shiftTeams as {nurseNames: string[]}[];
 
@@ -359,7 +386,35 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByRole('button', {name: '완료'})).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('keeps next disabled on upload step until a file is uploaded', async () => {
+    it('shows preceptee column with help and toggles the preceptee checkbox', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToNurseStep(user);
+
+        const precepteeHelpButton = screen.getByRole('button', {name: '프리셉티 설명'});
+
+        expect(precepteeHelpButton).toHaveAttribute('aria-expanded', 'false');
+
+        await user.click(precepteeHelpButton);
+
+        expect(precepteeHelpButton).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByText('프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.')).toBeInTheDocument();
+
+        const preceptorCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉터'});
+        const precepteeCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉티'});
+
+        expect(preceptorCheckbox).toHaveAttribute('aria-checked', 'true');
+        expect(precepteeCheckbox).toHaveAttribute('aria-checked', 'false');
+
+        await user.click(precepteeCheckbox);
+
+        expect(preceptorCheckbox).toHaveAttribute('aria-checked', 'false');
+        expect(precepteeCheckbox).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('lets next skip the upload step when no file is uploaded', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
@@ -368,11 +423,13 @@ describe('OnboardingWardCreatePage', () => {
 
         const nextButton = screen.getByRole('button', {name: '다음'});
 
-        expect(nextButton).toHaveAttribute('aria-disabled', 'true');
+        expect(nextButton).toHaveAttribute('aria-disabled', 'false');
 
         await user.click(nextButton);
 
-        expect(toastError).toHaveBeenCalledWith('근무표 파일을 업로드하거나 건너뛰기를 눌러주세요.');
+        expect(screen.getByText('근무명')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
+        expect(toastError).not.toHaveBeenCalled();
     });
 
     it('shows skip only on upload step and moves to the next step when clicked', async () => {
@@ -418,8 +475,8 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(mockCreateWard).toHaveBeenCalledWith(
             expect.objectContaining({
-                name: TEST_IDENTITY_NAME,
-                hospitalName: TEST_IDENTITY_NAME,
+                name: TEST_WARD_NAME,
+                hospitalName: TEST_HOSPITAL_NAME,
                 shiftTeams: expect.any(Array),
                 wardShiftTypes: expect.any(Array),
             }),

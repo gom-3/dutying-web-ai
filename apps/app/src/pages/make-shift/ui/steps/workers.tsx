@@ -1,7 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {DragDropContext, type DropResult} from '@hello-pangea/dnd';
 import {useQuery} from '@tanstack/react-query';
-import {ArrowRight, ChevronDown} from 'lucide-react';
+import {ArrowRight, ChevronDown, UserPlus} from 'lucide-react';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {type TNurse} from '@/entities/nurse';
@@ -14,8 +14,8 @@ import {PersonIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {useMakeShiftStore} from '../../model/make-shift-store';
+import {ManagementActionButton} from '@/widgets/duty-management/ui';
+import {type TWorkerConfirmationStatus, useMakeShiftStore} from '../../model/make-shift-store';
 import {
     applyMakeShiftWorkerDrag,
     buildMakeShiftWorkerMovePayload,
@@ -98,6 +98,7 @@ export function Workers() {
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
+    const setWorkerConfirmationState = useMakeShiftStore((s) => s.setWorkerConfirmationState);
     const enabled = wardId !== null && currentShiftTeamId !== null;
     const {
         state: {nurseSaveStatus},
@@ -348,6 +349,20 @@ export function Workers() {
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
     const isWorkerToggleBusy = nurseSaveStatus === 'saving';
     const isWorkersLoading = enabled && (teamNursesQuery.isPending || wardQuery.isPending);
+    const workerConfirmationStatus: TWorkerConfirmationStatus = !enabled
+        ? 'idle'
+        : teamNursesQuery.isPending
+          ? 'pending'
+          : teamNursesQuery.isError
+            ? 'error'
+            : 'success';
+
+    useEffect(() => {
+        setWorkerConfirmationState({
+            status: workerConfirmationStatus,
+            count: workerConfirmationStatus === 'success' ? activeWorkerCount : 0,
+        });
+    }, [activeWorkerCount, setWorkerConfirmationState, workerConfirmationStatus]);
 
     useEffect(() => {
         if (skillConfig.enabled || sortMode !== 'skill') return;
@@ -500,28 +515,45 @@ export function Workers() {
                             </div>
                         </div>
                         <WorkersTableHeader showSkill={skillConfig.enabled} />
+                        {activeWorkerCount === 0 ? (
+                            <div
+                                role="status"
+                                className="mt-2 rounded-[10px] bg-[#FFF7E8] px-4 py-3 font-apple text-[14px] leading-5 text-[#8A5A00]"
+                            >
+                                <p className="font-semibold text-[#6F4700]">{t('page.makeShift.workers.emptyTitle')}</p>
+                                <p className="mt-0.5 font-medium">{t('page.makeShift.workers.emptyDescription')}</p>
+                            </div>
+                        ) : null}
                     </>
                 ) : null}
 
                 {workerCount === 0 ? (
-                    <DutyManagementStatusCard
-                        title={noNurseTitle}
-                        description={noNurseDescription}
-                        descriptionClassName="max-w-none whitespace-nowrap"
-                        actions={
+                    <div className="mt-3 flex min-h-[240px] flex-col items-center justify-center px-4 py-10 text-center">
+                        <div className="grid size-12 place-items-center rounded-full bg-main-light text-main-1 shadow-[inset_0_0_0_1px_rgba(112,82,255,0.10)]">
+                            <UserPlus aria-hidden className="size-6" strokeWidth={2.2} />
+                        </div>
+                        <p className="mt-5 max-w-[520px] font-apple text-[22px] leading-[1.35] font-semibold break-keep text-sub-1">
+                            {noNurseTitle}
+                        </p>
+                        <p className="mt-2 max-w-[560px] font-apple text-[15px] leading-6 font-medium break-keep text-gray-3">
+                            {noNurseDescription}
+                        </p>
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                             <ManagementActionButton
                                 size="sm"
-                                variant="neutral"
+                                variant="primary"
+                                className="h-11 cursor-pointer rounded-[12px] px-5 text-[15px]"
                                 onClick={() => {
-                                    navigate(ROUTE.MEMBER);
+                                    navigate(
+                                        currentShiftTeamId === null ? ROUTE.MEMBER : `${ROUTE.MEMBER}?shiftTeamId=${currentShiftTeamId}`,
+                                    );
                                 }}
                             >
-                                <ArrowRight aria-hidden className="size-4" />
                                 근무자 관리로 이동
+                                <ArrowRight aria-hidden className="size-4" />
                             </ManagementActionButton>
-                        }
-                        className="mt-3 min-h-[220px] border-0 bg-white"
-                    />
+                        </div>
+                    </div>
                 ) : currentShiftTeamId !== null ? (
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
                         <WorkersList

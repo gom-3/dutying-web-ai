@@ -7,41 +7,50 @@ type TTutorialInfoBoxProps = {
     infoBoxElement: RefObject<HTMLDivElement | null>;
     onNext: () => void;
     onPrevious: () => void;
-    onSkip: () => void;
     stepIndex: number;
     totalSteps: number;
 };
 
-export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious, onSkip, stepIndex, totalSteps}: TTutorialInfoBoxProps) {
+const secondaryButtonClassName =
+    'inline-flex h-10 min-w-16 items-center justify-center rounded-xl bg-[#F2F4F6] px-4 text-[.9375rem] font-semibold text-[#4E5968] transition-colors hover:enabled:bg-[#E5E8EB] disabled:bg-transparent disabled:text-[#B0B8C1]';
+const primaryButtonClassName =
+    'inline-flex h-10 min-w-16 items-center justify-center rounded-xl bg-[#3182F6] px-4 text-[.9375rem] font-semibold text-white transition-colors hover:bg-[#1B64DA]';
+
+export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious, stepIndex, totalSteps}: TTutorialInfoBoxProps) {
+    const isLastStep = stepIndex === totalSteps - 1;
+
     return (
         <div
             id="InfoBox"
-            className="width-[20rem] absolute top-25 z-999 flex min-h-30 flex-col rounded-[.625rem] bg-white p-4 font-apple shadow-[5px_5px_15px_0px_rgba(149,81,146,0.3)]"
+            className="group/infobox fixed top-25 z-[1000] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-visible rounded-[1.25rem] bg-white px-5 py-4 font-apple shadow-[0_18px_48px_rgba(0,0,0,0.2)]"
             ref={infoBoxElement}
         >
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-[var(--tutorial-arrow-left,50%)] size-4 -translate-x-1/2 rotate-45 rounded-[.1875rem] bg-white group-data-[placement=bottom]/infobox:-top-1.5 group-data-[placement=left]/infobox:top-[var(--tutorial-arrow-top,50%)] group-data-[placement=left]/infobox:right-[-0.375rem] group-data-[placement=left]/infobox:left-auto group-data-[placement=left]/infobox:translate-x-0 group-data-[placement=left]/infobox:-translate-y-1/2 group-data-[placement=right]/infobox:top-[var(--tutorial-arrow-top,50%)] group-data-[placement=right]/infobox:left-[-0.375rem] group-data-[placement=right]/infobox:translate-x-0 group-data-[placement=right]/infobox:-translate-y-1/2 group-data-[placement=top]/infobox:-bottom-1.5"
+            />
             <div className="flex flex-1 flex-col">
-                <div id="InfoTitle" className="flex items-center">
-                    <p className="truncate text-[1.25rem] font-semibold text-main-1">{currentStep?.title}</p>
-                    <button className="ml-auto text-[.75rem] font-medium text-main-2 underline underline-offset-[.1rem]" onClick={onSkip}>
-                        건너뛰기
-                    </button>
+                <div id="InfoTitle" className="flex items-start">
+                    <p className="min-w-0 text-[1.125rem] leading-7 font-bold [text-wrap:pretty] [overflow-wrap:break-word] break-keep text-[#191F28]">
+                        {currentStep?.title}
+                    </p>
                 </div>
-                <div id="InfoContent" className="mt-4 scrollbar-hide flex-1 overflow-y-scroll">
+                <div id="InfoContent" className="mt-3 scrollbar-hide max-h-36 overflow-y-auto">
                     {currentStep?.info?.split('\n').map((line, index) => (
-                        <p key={index} className="text-[1rem] font-medium text-sub-1">
+                        <p
+                            key={index}
+                            className="text-[.9375rem] leading-6 font-medium [text-wrap:pretty] [overflow-wrap:break-word] break-keep text-[#4E5968]"
+                        >
                             {line}
                         </p>
                     ))}
                 </div>
             </div>
-            <div id="BoxFooter" className="flex items-center justify-between">
-                <div id="InfoSteps" className="text-[.75rem] font-medium text-sub-2.5">
-                    <span>{`${stepIndex + 1} / ${totalSteps}`}</span>
-                </div>
-                <div id="ButtonWrapper" className="flex gap-[.625rem]">
+            <div id="BoxFooter" className="mt-4 flex min-w-0 justify-end">
+                <div id="ButtonWrapper" className="flex max-w-full flex-wrap items-center justify-end gap-2">
                     {currentStep?.ctaUrl && currentStep?.ctaText ? (
                         <a
-                            className="bg-main-1text-white flex h-6 items-center justify-center rounded-[.3125rem] border-[.0625rem] border-main-1 bg-main-1 px-[.375rem] text-[.875rem] font-medium text-white transition-all"
+                            className="inline-flex h-10 min-w-0 items-center justify-center rounded-xl bg-[#F2F8FF] px-3 text-[.9375rem] font-semibold whitespace-nowrap text-[#3182F6] transition-colors hover:bg-[#E8F3FF]"
                             href={currentStep.ctaUrl}
                             target="_blank"
                             rel="noreferrer"
@@ -49,21 +58,11 @@ export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious
                             {currentStep.ctaText}
                         </a>
                     ) : null}
-                    <button
-                        className="flex h-6 items-center justify-center rounded-[.3125rem] border-[.0625rem] border-main-1 px-[.375rem] text-[.875rem] font-medium text-main-1 transition-all hover:enabled:bg-main-1 hover:enabled:text-white disabled:border-sub-3 disabled:text-sub-3"
-                        onClick={onPrevious}
-                        disabled={stepIndex === 0}
-                    >
+                    <button className={secondaryButtonClassName} onClick={onPrevious} disabled={stepIndex === 0}>
                         이전
                     </button>
-                    <button
-                        className={twMerge(
-                            'flex h-6 items-center justify-center rounded-[.3125rem] border-[.0625rem] border-main-1 px-[.375rem] text-[.875rem] font-medium text-main-1 transition-all hover:enabled:bg-main-1 hover:enabled:text-white disabled:border-sub-3 disabled:text-sub-3',
-                            stepIndex === totalSteps - 1 && 'bg-main-1 text-white',
-                        )}
-                        onClick={onNext}
-                    >
-                        {stepIndex !== totalSteps - 1 ? '다음' : '완료'}
+                    <button className={twMerge(primaryButtonClassName, isLastStep && 'min-w-[4.5rem]')} onClick={onNext}>
+                        {isLastStep ? '완료' : '다음'}
                     </button>
                 </div>
             </div>

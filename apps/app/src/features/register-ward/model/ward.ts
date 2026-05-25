@@ -61,8 +61,8 @@ export function getWardShiftValidationMessage(wardShiftTypes: TCreateWardDTO['wa
     }
 
     if (!invalidShiftType.isOff && (invalidShiftType.startTime === '' || invalidShiftType.endTime === '')) {
-        return `${invalidShiftType.name}근무의 근무 시간을 입력해 주세요.`;
+        return `${invalidShiftType.name} 근무의 근무 시간을 입력해 주세요.`;
     }
 
-    return `${invalidShiftType.name}근무의 근무 약자를 입력해 주세요.`;
+    return `${invalidShiftType.name} 근무의 근무 약자를 입력해 주세요.`;
 }

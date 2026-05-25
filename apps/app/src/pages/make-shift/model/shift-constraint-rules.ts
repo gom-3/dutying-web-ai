@@ -17,6 +17,7 @@ export type TShiftConstraintRule = {
     severity: TShiftConstraintSeverity;
     sortOrder: number;
     params: Record<string, unknown>;
+    isImportant?: boolean;
     displayText?: string;
     isValid?: boolean;
     invalidReason?: string | null;
@@ -40,6 +41,7 @@ export type TShiftConstraintRulesSavePayload = {
         severity: TShiftConstraintSeverity;
         sortOrder: number;
         params: Record<string, unknown>;
+        isImportant?: boolean;
     }[];
 };
 
@@ -82,6 +84,7 @@ export const putShiftConstraintRules = async (wardId: number, shiftTeamId: numbe
             severity: rule.severity,
             sortOrder: rule.sortOrder,
             params: rule.params,
+            isImportant: rule.isImportant,
             isValid: true,
             invalidReason: null,
         })),

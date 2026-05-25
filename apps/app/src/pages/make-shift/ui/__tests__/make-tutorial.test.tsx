@@ -1,11 +1,9 @@
-import {render, screen} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import MakeTutorial from '../make-tutorial';
 
 const setMakeTutorialMock = vi.fn();
-const nextMock = vi.fn();
-const prevMock = vi.fn();
 const tutorialPortalMock = vi.fn();
 
 let tutorialStoreState = {
@@ -13,7 +11,7 @@ let tutorialStoreState = {
 };
 let makeShiftStoreState = {
     phase: 'stepping' as 'overview' | 'stepping',
-    currentStep: 1,
+    currentStep: 1 as 1 | 2 | 3 | 4 | 5 | 6,
 };
 
 vi.mock('@/features/tutorial/model/store', () => ({
@@ -35,13 +33,6 @@ vi.mock('@/features/auth', () => ({
 
 vi.mock('../../model/make-shift-store', () => ({
     useMakeShiftStore: (selector: (state: typeof makeShiftStoreState) => unknown) => selector(makeShiftStoreState),
-}));
-
-vi.mock('../../model/make-shift-use-case', () => ({
-    useMakeShiftUseCase: () => ({
-        next: nextMock,
-        prev: prevMock,
-    }),
 }));
 
 vi.mock('@/widgets/tutorial/TutorialPortal', () => ({
@@ -69,45 +60,97 @@ vi.mock('@/widgets/tutorial/TutorialPortal', () => ({
     },
 }));
 
+function addTutorialTargets(ids: string[]) {
+    ids.forEach((id) => {
+        const target = document.createElement('div');
+
+        target.id = id;
+        document.body.append(target);
+    });
+}
+
+function getLastTutorialCall() {
+    return tutorialPortalMock.mock.lastCall?.[0] as {config: ITutorialConfig; closeCallback: () => void; open: boolean};
+}
+
 describe('make-tutorial', () => {
     beforeEach(() => {
+        document.body.innerHTML = '';
         tutorialStoreState = {showMakeTutorial: true};
         makeShiftStoreState = {phase: 'stepping', currentStep: 1};
         setMakeTutorialMock.mockReset();
-        nextMock.mockReset();
-        prevMock.mockReset();
         tutorialPortalMock.mockReset();
     });
 
-    it('opens tutorial only during make stepping phase', () => {
+    it('opens tutorial only during make stepping phase', async () => {
         makeShiftStoreState = {phase: 'overview', currentStep: 1};
+        addTutorialTargets(['make_stepper']);
 
         render(<MakeTutorial />);
 
-        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false');
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false'));
     });
 
-    it('builds stepping tutorial config for current make flow', () => {
+    it('shows only the stepper guidance on the first tab', async () => {
+        addTutorialTargets(['make_stepper']);
+
         render(<MakeTutorial />);
 
-        const portal = screen.getByTestId('tutorial-portal');
-        const lastCall = tutorialPortalMock.mock.lastCall?.[0] as {config: ITutorialConfig; open: boolean};
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
 
-        expect(portal).toHaveAttribute('data-open', 'true');
-        expect(portal).toHaveAttribute('data-step-count', '6');
-        expect(portal).toHaveAttribute('data-initial-step-index', '0');
-        expect(lastCall.open).toBe(true);
-        expect(lastCall.config.steps[0]?.highlightIds).toEqual(['make_stepper']);
-        expect(lastCall.config.steps[3]?.highlightIds).toEqual(['make_requests_step', 'make_requests_decision_panel']);
-        expect(lastCall.config.steps[4]?.highlightIds).toEqual(['make_fixed_shifts_step', 'count_by_day']);
-        expect(lastCall.config.steps[5]?.highlightIds).toEqual(['make_ai_autofill_actions']);
+        const lastCall = getLastTutorialCall();
+
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '1');
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-initial-step-index', '0');
+        expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([['make_stepper']]);
+        expect(lastCall.config.steps[0]?.title).toBe('근무표 만들기');
     });
 
-    it('aligns tutorial start step with restored make step', () => {
+    it('uses current-tab tutorial targets instead of a full flow tour', async () => {
+        makeShiftStoreState = {phase: 'stepping', currentStep: 5};
+        addTutorialTargets(['make_ai_fill_button', 'make_ai_view_tools', 'make_ai_history_tools']);
+
+        render(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
+
+        const lastCall = getLastTutorialCall();
+
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '2');
+        expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([
+            ['make_ai_fill_button'],
+            ['make_ai_view_tools', 'make_ai_history_tools'],
+        ]);
+        expect(lastCall.config.steps.map((step) => step.title)).toEqual(['AI 자동 채우기', '보조 도구 활용하기']);
+    });
+
+    it('shows fixed-shift keyboard input guidance on the fourth tab', async () => {
         makeShiftStoreState = {phase: 'stepping', currentStep: 4};
+        addTutorialTargets(['make_fixed_shift_sample_cell']);
 
         render(<MakeTutorial />);
 
-        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-initial-step-index', '4');
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
+
+        const lastCall = getLastTutorialCall();
+
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '1');
+        expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([['make_fixed_shift_sample_cell']]);
+        expect(lastCall.config.steps[0]?.title).toBe('고정 근무 입력하기');
+    });
+
+    it('keeps later tab tutorials available after completing an earlier tab', async () => {
+        addTutorialTargets(['make_stepper']);
+
+        render(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
+
+        await act(async () => {
+            getLastTutorialCall().closeCallback();
+        });
+
+        expect(setMakeTutorialMock).not.toHaveBeenCalled();
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false'));
     });
 });

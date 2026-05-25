@@ -1,13 +1,13 @@
-﻿import {DragDropContext, Draggable, Droppable, type DraggableProvidedDragHandleProps, type DropResult} from '@hello-pangea/dnd';
 import {useQuery} from '@tanstack/react-query';
 import {ChevronDown, Plus, RotateCcw, X} from 'lucide-react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
 import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
-import {SixDotsIcon} from '@/shared/assets/svg';
 import PageState from '@/shared/ui/PageState';
+import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {
     getShiftConstraintRuleCandidates,
@@ -46,7 +46,7 @@ type TSoftRuleTemplate = {
     controls: TControlDef[];
     sentence: TSentencePart[];
     buildText: (params: Record<string, string>) => string;
-    isImportant?: boolean;
+    isRecommended?: boolean;
     sourceTemplate?: TShiftConstraintTemplate;
 };
 
@@ -60,7 +60,10 @@ type TShiftTypeLike = {
 };
 type TNurseLike = {nurseId?: number; name?: string; isPreceptor?: boolean};
 
-const IMPORTANT_MODAL_CATEGORY = 'IMPORTANT';
+const EMPTY_NURSES: TNurseLike[] = [];
+const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
+const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
+const RECOMMENDED_MODAL_CATEGORY = 'RECOMMENDED';
 const CATEGORY_LABEL: Record<string, string> = {
     STAFFING: '인원수',
     STAFFING_COUNT: '인원수',
@@ -73,12 +76,12 @@ const CATEGORY_LABEL: Record<string, string> = {
     PROFICIENCY: '숙련도',
     COMBINATION: '근무자 조합',
     NURSE_COMBINATION: '근무자 조합',
-    CORE: '주요',
-    IMPORTANT: '주요',
+    CORE: '권장',
+    IMPORTANT: '권장',
 };
 
 function getCategoryLabel(category: TModalCategory) {
-    if (category === IMPORTANT_MODAL_CATEGORY) return '주요';
+    if (category === RECOMMENDED_MODAL_CATEGORY) return '권장';
 
     return CATEGORY_LABEL[category] ?? category;
 }
@@ -95,6 +98,7 @@ function resolveDutyStyle(optionOrCode: TSelectOption) {
 
 function DutyTypeBadge({option}: {option: TSelectOption}) {
     const style = resolveDutyStyle(option);
+    const showName = style.name && style.name !== style.code;
 
     return (
         <span
@@ -102,7 +106,7 @@ function DutyTypeBadge({option}: {option: TSelectOption}) {
             style={{backgroundColor: style.color}}
         >
             <span className="text-[14px] font-semibold">{style.code}</span>
-            <span className="text-[12px] font-medium opacity-90">{style.name}</span>
+            {showName ? <span className="text-[12px] font-medium opacity-90">{style.name}</span> : null}
         </span>
     );
 }
@@ -114,6 +118,7 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
         <span className="inline-flex h-8 shrink-0 items-center overflow-hidden rounded-[9px] bg-gray-7 ring-1 ring-gray-6">
             {options.map((option, index) => {
                 const style = resolveDutyStyle(option);
+                const showName = style.name && style.name !== style.code;
 
                 return (
                     <span key={`${option.value}-${index}`} className="inline-flex h-full items-center">
@@ -123,7 +128,7 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
                             style={{backgroundColor: style.color}}
                         >
                             <span className="text-[14px] font-semibold">{style.code}</span>
-                            <span className="text-[12px] font-medium opacity-90">{style.name}</span>
+                            {showName ? <span className="text-[12px] font-medium opacity-90">{style.name}</span> : null}
                         </span>
                     </span>
                 );
@@ -132,7 +137,7 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
     );
 }
 
-const IMPORTANT_DEFAULT_RULE_IDS = new Set([
+const RECOMMENDED_DEFAULT_RULE_IDS = new Set([
     'IMPORTANT_MAX_WORK_STREAK',
     'IMPORTANT_MAX_SAME_DUTY_STREAK',
     'IMPORTANT_MIN_NIGHT_INTERVAL',
@@ -627,11 +632,11 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
     NOD: ['N', 'OFF', 'D'],
 };
 
-function isImportantTemplateCode(templateCode: string, category?: string) {
+function isRecommendedTemplateCode(templateCode: string, category?: string) {
     const normalizedCategory = category?.toUpperCase();
 
     return (
-        IMPORTANT_DEFAULT_RULE_IDS.has(templateCode) ||
+        RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode) ||
         templateCode.startsWith('IMPORTANT_') ||
         templateCode.startsWith('CORE_') ||
         normalizedCategory === 'CORE' ||
@@ -712,6 +717,18 @@ function createTextSentenceParts(text: string): TSentencePart[] {
     return parts.length ? parts : [{type: 'text', text}];
 }
 
+function getLeadingParticle(text: string) {
+    const particlePairs = [
+        {withBatchim: '은', withoutBatchim: '는'},
+        {withBatchim: '이', withoutBatchim: '가'},
+        {withBatchim: '을', withoutBatchim: '를'},
+        {withBatchim: '과', withoutBatchim: '와'},
+    ];
+    const firstChar = text.charAt(0);
+
+    return particlePairs.find((particle) => particle.withBatchim === firstChar || particle.withoutBatchim === firstChar) ?? null;
+}
+
 function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls: TControlDef[]): TSentencePart[] {
     const parts: TSentencePart[] = [];
     const controlKeys = new Set(controls.map((control) => control.key));
@@ -727,7 +744,21 @@ function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls
 
         const key = match[1]?.trim() ?? '';
 
-        parts.push(controlKeys.has(key) ? {type: 'control', key} : {type: 'text', text: `{${key}}`});
+        if (controlKeys.has(key)) {
+            parts.push({type: 'control', key});
+
+            const particle = getLeadingParticle(template.displayTemplate.slice(match.index + match[0].length));
+
+            if (particle) {
+                parts.push({type: 'particle', key, ...particle});
+                lastIndex = match.index + match[0].length + 1;
+
+                continue;
+            }
+        } else {
+            parts.push({type: 'text', text: `{${key}}`});
+        }
+
         lastIndex = match.index + match[0].length;
     }
 
@@ -765,7 +796,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[]) {
             controls,
             sentence,
             buildText: (params) => interpolateDisplayTemplate(template, params),
-            isImportant: isImportantTemplateCode(template.templateCode, template.category),
+            isRecommended: isRecommendedTemplateCode(template.templateCode, template.category),
             sourceTemplate: template,
         };
     });
@@ -774,7 +805,7 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[]) {
 function createLegacySoftRuleTemplates() {
     return SOFT_RULE_TEMPLATES.map((template) => ({
         ...template,
-        isImportant: isImportantTemplateCode(template.id, template.category),
+        isRecommended: isRecommendedTemplateCode(template.id, template.category),
     }));
 }
 
@@ -785,7 +816,11 @@ function createClientId(rule: {shiftConstraintRuleId?: number; templateCode: str
 }
 
 function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
-    return rules.map((rule) => ({...rule, clientId: createClientId(rule)}));
+    return rules.map((rule) => ({
+        ...rule,
+        isImportant: rule.isImportant ?? isRecommendedTemplateCode(rule.templateCode, rule.category),
+        clientId: createClientId(rule),
+    }));
 }
 
 function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string, TSelectOption[]> = {}) {
@@ -811,19 +846,20 @@ function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string,
     return params;
 }
 
-function createImportantDefaultRules(templates: TSoftRuleTemplate[], optionMap: Record<string, TSelectOption[]> = {}) {
+function createRecommendedDefaultRules(templates: TSoftRuleTemplate[], optionMap: Record<string, TSelectOption[]> = {}) {
     return templates
-        .filter((template) => template.isImportant)
+        .filter((template) => template.isRecommended)
         .map<TShiftConstraintRuleDraft>((template, index) => {
             const params = getDefaultParams(template, optionMap);
 
             return {
-                clientId: `important-${template.id}`,
+                clientId: `recommended-${template.id}`,
                 templateCode: template.id,
                 category: template.category,
                 severity: 'SOFT',
                 sortOrder: index + 1,
                 params,
+                isImportant: true,
                 displayText: template.buildText(params),
                 isValid: true,
                 invalidReason: null,
@@ -857,6 +893,75 @@ function getValueLabel(value: unknown) {
     return value.label ?? value.name ?? value.code ?? value.type;
 }
 
+function normalizeDuplicateParamValue(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(normalizeDuplicateParamValue);
+
+    if (!value || typeof value !== 'object') return value;
+
+    if (isConstraintOption(value)) {
+        return {
+            type: value.type,
+            nurseId: value.nurseId,
+            wardShiftTypeId: value.wardShiftTypeId,
+            day: value.day,
+            level: value.level,
+            proficiency: value.proficiency,
+            code: value.code,
+            label: value.label ?? value.name,
+        };
+    }
+
+    return Object.fromEntries(
+        Object.entries(value)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([key, entryValue]) => [key, normalizeDuplicateParamValue(entryValue)]),
+    );
+}
+
+function stringifyDuplicateParams(params: Record<string, unknown>) {
+    return JSON.stringify(normalizeDuplicateParamValue(params));
+}
+
+function getConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
+    return [rule.severity, rule.category, rule.templateCode, stringifyDuplicateParams(rule.params)].join('|');
+}
+
+function compactDuplicateRules(rules: TShiftConstraintRuleDraft[]) {
+    const indexByKey = new Map<string, number>();
+    const compacted: TShiftConstraintRuleDraft[] = [];
+
+    let removedCount = 0;
+
+    rules.forEach((rule) => {
+        const key = getConstraintDuplicateKey(rule);
+        const existingIndex = indexByKey.get(key);
+
+        if (existingIndex == null) {
+            indexByKey.set(key, compacted.length);
+            compacted.push(rule);
+
+            return;
+        }
+
+        removedCount += 1;
+
+        const existingRule = compacted[existingIndex];
+
+        compacted[existingIndex] = {
+            ...existingRule,
+            shiftConstraintRuleId: existingRule.shiftConstraintRuleId ?? rule.shiftConstraintRuleId,
+            isImportant: [existingRule.isImportant, rule.isImportant].some(Boolean),
+            isValid: existingRule.isValid ?? rule.isValid,
+            invalidReason: existingRule.invalidReason ?? rule.invalidReason,
+        };
+    });
+
+    return {
+        removedCount,
+        rules: compacted.map((rule, index) => ({...rule, sortOrder: index + 1})),
+    };
+}
+
 function getRuleTitle(rule: TShiftConstraintRuleDraft, template?: TShiftConstraintTemplate) {
     if (rule.displayText) return rule.displayText;
 
@@ -879,17 +984,6 @@ function uniqueByValue(options: TSelectOption[]) {
     return Array.from(map.values());
 }
 
-function reorderRules(items: TShiftConstraintRuleDraft[], sourceIndex: number, destinationIndex: number) {
-    const next = [...items];
-    const [moved] = next.splice(sourceIndex, 1);
-
-    if (!moved) return items;
-
-    next.splice(destinationIndex, 0, moved);
-
-    return next.map((rule, index) => ({...rule, sortOrder: index + 1}));
-}
-
 function normalizeShiftTypes(input: unknown): TShiftTypeLike[] {
     if (Array.isArray(input)) return input as TShiftTypeLike[];
 
@@ -901,7 +995,7 @@ function normalizeShiftTypes(input: unknown): TShiftTypeLike[] {
         if (Array.isArray(maybe.wardShiftTypes)) return maybe.wardShiftTypes as TShiftTypeLike[];
     }
 
-    return [];
+    return EMPTY_SHIFT_TYPES;
 }
 
 function getCandidateOptionValue(option: TShiftConstraintOption) {
@@ -1041,6 +1135,26 @@ function getOptionsForControl(
     return options.filter((option) => option.label !== pairedValue);
 }
 
+function getControlDisplayValue(
+    control: TControlDef | undefined,
+    template: TSoftRuleTemplate,
+    params: Record<string, string>,
+    optionMap: Record<string, TSelectOption[]>,
+) {
+    if (!control) return '';
+
+    if (control.kind === 'number') {
+        return params[control.key] ?? String(control.values?.[0] ?? control.min ?? 1);
+    }
+
+    const options = getOptionsForControl(control, template, params, optionMap);
+    const value = params[control.key];
+
+    if (!value) return options[0]?.label ?? '';
+
+    return options.find((option) => option.label === value || option.value === value)?.label ?? value;
+}
+
 function normalizeCombinationParams(
     template: TSoftRuleTemplate,
     params: Record<string, string>,
@@ -1060,30 +1174,39 @@ type TInlineDropdownProps = {
     value: string;
     options: TSelectOption[];
     minWidth?: number;
-    tone?: 'brand' | 'neutral';
     onChange: (value: string) => void;
 };
 
-function InlineDropdown({value, options, minWidth = 72, tone = 'brand', onChange}: TInlineDropdownProps) {
+function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
+    const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
     const ref = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const selected = options.find((option) => option.label === value || option.value === value) ?? options[0];
     const buttonClassName =
-        tone === 'neutral'
-            ? `inline-flex h-8 items-center justify-between gap-3 rounded-[5px] px-3 font-apple text-[14px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-main-1 ${
-                  open ? 'bg-white text-sub-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'bg-gray-6 text-gray-3 hover:bg-gray-7'
-              }`
-            : `inline-flex h-8 items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 transition-[box-shadow,background-color] hover:bg-[#FBFAFF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none`;
-    const toggleOpen = () => {
-        if (!open && ref.current) {
-            const rect = ref.current.getBoundingClientRect();
-            const estimatedMenuHeight = Math.min(220, Math.max(44, options.length * 38 + 8));
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
+        'inline-flex h-8 cursor-pointer items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 transition-[box-shadow,background-color] hover:bg-[#FBFAFF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none';
+    const updateMenuPosition = useCallback(() => {
+        if (!ref.current) return;
 
-            setOpenUpward(spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow);
-        }
+        const rect = ref.current.getBoundingClientRect();
+        const estimatedMenuHeight = Math.min(220, Math.max(44, options.length * 38 + 8));
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const nextOpenUpward = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+        const menuMinWidth = Math.max(rect.width, minWidth);
+        const viewportPadding = 12;
+        const left = Math.max(viewportPadding, Math.min(rect.left, window.innerWidth - menuMinWidth - viewportPadding));
+
+        setOpenUpward(nextOpenUpward);
+        setMenuPosition(
+            nextOpenUpward
+                ? {left, bottom: window.innerHeight - rect.top + 4, minWidth: menuMinWidth}
+                : {left, top: rect.bottom + 4, minWidth: menuMinWidth},
+        );
+    }, [minWidth, options.length]);
+    const toggleOpen = () => {
+        if (!open) updateMenuPosition();
 
         setOpen((prev) => !prev);
     };
@@ -1092,15 +1215,30 @@ function InlineDropdown({value, options, minWidth = 72, tone = 'brand', onChange
         if (!open) return;
 
         const handlePointerDown = (event: MouseEvent) => {
-            if (ref.current?.contains(event.target as Node)) return;
+            if (ref.current?.contains(event.target as Node) || menuRef.current?.contains(event.target as Node)) return;
 
             setOpen(false);
         };
 
+        updateMenuPosition();
         document.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('resize', updateMenuPosition);
+        window.addEventListener('scroll', updateMenuPosition, true);
 
-        return () => document.removeEventListener('mousedown', handlePointerDown);
-    }, [open]);
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            window.removeEventListener('resize', updateMenuPosition);
+            window.removeEventListener('scroll', updateMenuPosition, true);
+        };
+    }, [open, updateMenuPosition]);
+
+    const menuStyle = menuPosition
+        ? {
+              left: `${menuPosition.left}px`,
+              minWidth: `${menuPosition.minWidth}px`,
+              ...(openUpward ? {bottom: `${menuPosition.bottom}px`} : {top: `${menuPosition.top}px`}),
+          }
+        : undefined;
 
     return (
         <div ref={ref} className="relative inline-flex">
@@ -1120,36 +1258,41 @@ function InlineDropdown({value, options, minWidth = 72, tone = 'brand', onChange
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
-            {open ? (
-                <div
-                    role="listbox"
-                    className={`absolute left-0 z-30 max-h-[220px] min-w-full animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
-                        openUpward ? 'bottom-full mb-1 slide-in-from-bottom-1' : 'top-full mt-1 slide-in-from-top-1'
-                    }`}
-                >
-                    {options.map((option) => {
-                        const isSelected = option.label === selected?.label;
+            {open && menuPosition && typeof document !== 'undefined'
+                ? createPortal(
+                      <div
+                          ref={menuRef}
+                          role="listbox"
+                          style={menuStyle}
+                          className={`fixed z-[70] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                              openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
+                          }`}
+                      >
+                          {options.map((option) => {
+                              const isSelected = option.label === selected?.label;
 
-                        return (
-                            <button
-                                key={option.value}
-                                type="button"
-                                role="option"
-                                aria-selected={isSelected}
-                                className={`flex w-full items-center justify-center px-3 py-2 text-center font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1 ${
-                                    isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1'
-                                }`}
-                                onClick={() => {
-                                    onChange(option.label);
-                                    setOpen(false);
-                                }}
-                            >
-                                {option.kind === 'duty' ? <DutyTypeBadge option={option} /> : option.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            ) : null}
+                              return (
+                                  <button
+                                      key={option.value}
+                                      type="button"
+                                      role="option"
+                                      aria-selected={isSelected}
+                                      className={`flex w-full cursor-pointer items-center justify-center px-3 py-2 text-center font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1 ${
+                                          isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1'
+                                      }`}
+                                      onClick={() => {
+                                          onChange(option.label);
+                                          setOpen(false);
+                                      }}
+                                  >
+                                      {option.kind === 'duty' ? <DutyTypeBadge option={option} /> : option.label}
+                                  </button>
+                              );
+                          })}
+                      </div>,
+                      document.body,
+                  )
+                : null}
         </div>
     );
 }
@@ -1190,9 +1333,12 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                 }
 
                 if (part.type === 'particle') {
+                    const control = template.controls.find((item) => item.key === part.key);
+                    const particleValue = getControlDisplayValue(control, template, params, optionMap);
+
                     return (
                         <span key={`${template.id}-particle-${idx}`} className="font-apple text-[14px] font-medium text-sub-1">
-                            {hasFinalConsonant(params[part.key] ?? '') ? part.withBatchim : part.withoutBatchim}
+                            {hasFinalConsonant(particleValue) ? part.withBatchim : part.withoutBatchim}
                         </span>
                     );
                 }
@@ -1205,7 +1351,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                     const min = control.min ?? 1;
                     const max = control.max ?? min;
                     const values = control.values ?? Array.from({length: max - min + 1}, (_, i) => min + i);
-                    const current = Number(params[control.key] ?? values[0] ?? min);
+                    const current = Number(getControlDisplayValue(control, template, params, optionMap) || values[0] || min);
 
                     return (
                         <InlineDropdown
@@ -1219,7 +1365,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                 }
 
                 const options = getOptionsForControl(control, template, params, optionMap);
-                const selected = params[control.key] ?? options[0]?.label ?? '';
+                const selected = getControlDisplayValue(control, template, params, optionMap);
 
                 return (
                     <InlineDropdown
@@ -1227,7 +1373,6 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                         value={selected}
                         options={options}
                         minWidth={control.optionsKey === 'date' ? 88 : control.optionsKey === 'target' ? 104 : 72}
-                        tone={control.optionsKey === 'target' || control.optionsKey === 'nurse' ? 'neutral' : 'brand'}
                         onChange={(nextValue) => onParamChange(control.key, nextValue)}
                     />
                 );
@@ -1249,41 +1394,31 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
         const values = Array.from({length: (slot.max ?? 10) - (slot.min ?? 1) + 1}, (_, i) => (slot.min ?? 1) + i);
 
         return (
-            <select
-                value={numberValue}
-                onChange={(e) => onChange(Number(e.target.value))}
-                className="h-8 rounded-[8px] border border-main-4 bg-white px-2.5 font-apple text-[15px] text-main-1 outline-none"
-            >
-                {values.map((v) => (
-                    <option key={v} value={v}>
-                        {v}
-                    </option>
-                ))}
-            </select>
+            <InlineDropdown
+                value={String(numberValue)}
+                options={values.map((v) => ({value: String(v), label: String(v)}))}
+                minWidth={58}
+                onChange={(nextValue) => onChange(Number(nextValue))}
+            />
         );
     }
 
     if (!slot.optionGroup) return null;
 
     const optionList = options[slot.optionGroup] ?? [];
-    const selected = isConstraintOption(value) ? getOptionKey(value) : '';
+    const selected = isConstraintOption(value) ? getValueLabel(value) : '';
 
     return (
-        <select
+        <InlineDropdown
             value={selected}
-            onChange={(e) => {
-                const next = optionList.find((option) => getOptionKey(option) === e.target.value);
+            options={optionList.map((option) => ({value: getOptionKey(option), label: getValueLabel(option)}))}
+            minWidth={104}
+            onChange={(nextValue) => {
+                const next = optionList.find((option) => getValueLabel(option) === nextValue);
 
                 if (next) onChange(next);
             }}
-            className="h-8 max-w-[130px] rounded-[8px] border border-main-4 bg-white px-2.5 font-apple text-[14px] text-main-1 outline-none"
-        >
-            {optionList.map((option) => (
-                <option key={getOptionKey(option)} value={getOptionKey(option)}>
-                    {getValueLabel(option)}
-                </option>
-            ))}
-        </select>
+        />
     );
 }
 
@@ -1294,12 +1429,41 @@ type TRuleRowProps = {
     options: TShiftConstraintOptions;
     optionMap: Record<string, TSelectOption[]>;
     highlighted?: boolean;
-    isImportant?: boolean;
-    dragHandleProps?: DraggableProvidedDragHandleProps | null;
+    isImportant: boolean;
+    isRecommended: boolean;
     onDelete: () => void;
+    onToggleImportant: (next: boolean) => void;
     onParamChange: (key: string, value: unknown) => void;
     onSoftParamChange: (template: TSoftRuleTemplate, key: string, value: string) => void;
 };
+
+function ImportantToggle({
+    checked,
+    isRecommended,
+    onChange,
+}: {
+    checked: boolean;
+    isRecommended: boolean;
+    onChange: (next: boolean) => void;
+}) {
+    return (
+        <button
+            type="button"
+            role="checkbox"
+            aria-checked={checked}
+            aria-label={checked ? '중요 표시 해제' : '중요 표시'}
+            title={isRecommended ? '권장 중요 사항' : '중요 표시'}
+            onClick={() => onChange(!checked)}
+            className={`mr-6 inline-flex h-6 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2 font-apple text-[12px] font-bold ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
+                checked
+                    ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
+                    : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
+            }`}
+        >
+            중요
+        </button>
+    );
+}
 
 const RuleRow = memo(function RuleRow({
     rule,
@@ -1308,9 +1472,10 @@ const RuleRow = memo(function RuleRow({
     options,
     optionMap,
     highlighted = false,
-    isImportant = false,
-    dragHandleProps,
+    isImportant,
+    isRecommended,
     onDelete,
+    onToggleImportant,
     onParamChange,
     onSoftParamChange,
 }: TRuleRowProps) {
@@ -1322,51 +1487,32 @@ const RuleRow = memo(function RuleRow({
                 highlighted ? 'shadow-[0_0_0_2px_rgba(127,93,255,0.10)] ring-2 ring-main-1/55' : ''
             }`}
         >
-            <div className="flex min-w-0 items-center gap-2">
-                <button
-                    type="button"
-                    aria-label="드래그하여 우선순위 변경"
-                    className="grid size-7 shrink-0 cursor-grab place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none active:cursor-grabbing"
-                    {...dragHandleProps}
-                >
-                    <SixDotsIcon className="size-3.5" />
-                </button>
-                <div className="min-w-0">
-                    {softTemplate ? (
-                        <div className="flex flex-wrap items-center gap-y-2">
-                            {isImportant ? (
-                                <span className="mr-9 inline-flex h-6 w-10 shrink-0 items-center justify-center rounded-full bg-[#FFF3D6] px-2 font-apple text-[12px] font-bold text-[#B86E00]">
-                                    중요
-                                </span>
-                            ) : (
-                                <span className="mr-9 h-6 w-10 shrink-0" aria-hidden />
-                            )}
-                            <SoftSentence
-                                template={softTemplate}
-                                params={rule.params as Record<string, string>}
-                                optionMap={optionMap}
-                                onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 pl-2">
+                <ImportantToggle checked={isImportant} isRecommended={isRecommended} onChange={onToggleImportant} />
+                {softTemplate ? (
+                    <SoftSentence
+                        template={softTemplate}
+                        params={rule.params as Record<string, string>}
+                        optionMap={optionMap}
+                        onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
+                    />
+                ) : (
+                    <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
+                )}
+                {!softTemplate && slots.length ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                        {slots.map((slot) => (
+                            <SlotControl
+                                key={`${rule.clientId}-${slot.key}`}
+                                slot={slot}
+                                value={rule.params[slot.key]}
+                                options={options}
+                                onChange={(next) => onParamChange(slot.key, next)}
                             />
-                        </div>
-                    ) : (
-                        <p className="truncate font-apple text-[15px] font-medium text-sub-1">{getRuleTitle(rule, template)}</p>
-                    )}
-                </div>
+                        ))}
+                    </div>
+                ) : null}
             </div>
-
-            {!softTemplate ? (
-                <div className="col-start-2 flex flex-wrap items-center gap-2">
-                    {slots.map((slot) => (
-                        <SlotControl
-                            key={`${rule.clientId}-${slot.key}`}
-                            slot={slot}
-                            value={rule.params[slot.key]}
-                            options={options}
-                            onChange={(next) => onParamChange(slot.key, next)}
-                        />
-                    ))}
-                </div>
-            ) : null}
 
             <div className="flex items-center justify-end">
                 <button
@@ -1382,66 +1528,6 @@ const RuleRow = memo(function RuleRow({
     );
 });
 
-type TDraggableRuleRowProps = {
-    rule: TShiftConstraintRuleDraft;
-    index: number;
-    template?: TShiftConstraintTemplate;
-    softTemplate?: TSoftRuleTemplate;
-    options: TShiftConstraintOptions;
-    optionMap: Record<string, TSelectOption[]>;
-    highlighted: boolean;
-    isImportant: boolean;
-    onDelete: (rule: TShiftConstraintRuleDraft) => void;
-    onParamChange: (clientId: string, key: string, value: unknown) => void;
-    onSoftParamChange: (clientId: string, template: TSoftRuleTemplate, key: string, value: string) => void;
-};
-
-const DraggableRuleRow = memo(function DraggableRuleRow({
-    rule,
-    index,
-    template,
-    softTemplate,
-    options,
-    optionMap,
-    highlighted,
-    isImportant,
-    onDelete,
-    onParamChange,
-    onSoftParamChange,
-}: TDraggableRuleRowProps) {
-    return (
-        <Draggable draggableId={rule.clientId} index={index}>
-            {(dragProvided, dragSnapshot) => (
-                <div
-                    ref={dragProvided.innerRef}
-                    {...dragProvided.draggableProps}
-                    className={`grid grid-cols-[64px_minmax(0,1fr)] items-stretch gap-2 ${dragSnapshot.isDragging ? 'opacity-95' : ''}`}
-                    style={dragProvided.draggableProps.style}
-                >
-                    <span className="flex h-full min-h-[52px] items-center justify-center font-apple text-[14px] font-bold text-gray-4">
-                        {index + 1}
-                    </span>
-                    <div className="min-w-0">
-                        <RuleRow
-                            rule={rule}
-                            template={template}
-                            softTemplate={softTemplate}
-                            options={options}
-                            optionMap={optionMap}
-                            highlighted={highlighted}
-                            isImportant={isImportant}
-                            dragHandleProps={dragProvided.dragHandleProps}
-                            onDelete={() => onDelete(rule)}
-                            onParamChange={(key, value) => onParamChange(rule.clientId, key, value)}
-                            onSoftParamChange={(softTemplate, key, value) => onSoftParamChange(rule.clientId, softTemplate, key, value)}
-                        />
-                    </div>
-                </div>
-            )}
-        </Draggable>
-    );
-});
-
 type TSectionProps = {
     action?: React.ReactNode;
     children: React.ReactNode;
@@ -1450,13 +1536,10 @@ type TSectionProps = {
 function Section({action, children}: TSectionProps) {
     return (
         <section className="mb-4">
-            <div className="mb-2.5 flex justify-end">
-                <div className="flex items-center gap-2">{action}</div>
-            </div>
-            <div className="rounded-[14px] bg-[#F8F9FB] px-3 pt-6 pb-8">
-                <div className="mb-5 grid grid-cols-[64px_minmax(0,1fr)] items-center gap-2">
-                    <span className="text-center font-apple text-[13px] font-bold text-gray-4">우선순위</span>
-                    <span className="text-center font-apple text-[13px] font-bold text-gray-4">제약조건</span>
+            <div className="rounded-[18px] bg-[#F8F9FB] px-3 pt-5 pb-8">
+                <div className="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3">
+                    <span className="font-apple text-[13px] font-bold text-gray-4">제약조건</span>
+                    {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
                 </div>
                 <div className="space-y-2.5">{children}</div>
             </div>
@@ -1476,22 +1559,18 @@ type TSoftModalProps = {
     open: boolean;
     templates: TSoftRuleTemplate[];
     optionMap: Record<string, TSelectOption[]>;
-    existingTemplateCodes: Set<string>;
     onClose: () => void;
     onAdd: (template: TSoftRuleTemplate, params: Record<string, string>) => void;
 };
 
-function SoftRuleModal({open, templates, optionMap, existingTemplateCodes, onClose, onAdd}: TSoftModalProps) {
-    const visibleImportantTemplates = useMemo(
-        () => templates.filter((template) => template.isImportant && !existingTemplateCodes.has(template.id)),
-        [existingTemplateCodes, templates],
-    );
+function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
+    const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
     const categories = useMemo<TModalCategory[]>(() => {
-        const normalCategories = Array.from(new Set(templates.filter((template) => !template.isImportant).map((t) => t.category)));
+        const normalCategories = Array.from(new Set(templates.filter((template) => !template.isRecommended).map((t) => t.category)));
 
-        return visibleImportantTemplates.length ? [IMPORTANT_MODAL_CATEGORY, ...normalCategories] : normalCategories;
-    }, [templates, visibleImportantTemplates]);
-    const [selectedCategory, setSelectedCategory] = useState<TModalCategory>(IMPORTANT_MODAL_CATEGORY);
+        return recommendedTemplates.length ? [RECOMMENDED_MODAL_CATEGORY, ...normalCategories] : normalCategories;
+    }, [recommendedTemplates.length, templates]);
+    const [selectedCategory, setSelectedCategory] = useState<TModalCategory>(RECOMMENDED_MODAL_CATEGORY);
     const [draftParams, setDraftParams] = useState<Record<string, Record<string, string>>>({});
 
     useEffect(() => {
@@ -1511,9 +1590,9 @@ function SoftRuleModal({open, templates, optionMap, existingTemplateCodes, onClo
     if (!open) return null;
 
     const visibleTemplates = templates.filter((template) =>
-        selectedCategory === IMPORTANT_MODAL_CATEGORY
-            ? template.isImportant && !existingTemplateCodes.has(template.id)
-            : !template.isImportant && template.category === selectedCategory,
+        selectedCategory === RECOMMENDED_MODAL_CATEGORY
+            ? template.isRecommended
+            : !template.isRecommended && template.category === selectedCategory,
     );
 
     return (
@@ -1529,7 +1608,7 @@ function SoftRuleModal({open, templates, optionMap, existingTemplateCodes, onClo
                     <button
                         type="button"
                         onClick={onClose}
-                        className="grid size-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                        className="grid size-8 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                         aria-label="닫기"
                     >
                         <X className="size-5" />
@@ -1579,7 +1658,7 @@ function SoftRuleModal({open, templates, optionMap, existingTemplateCodes, onClo
                                     <button
                                         type="button"
                                         onClick={() => onAdd(template, templateParams)}
-                                        className="grid size-8 place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                        className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                         aria-label="제약 조건 추가"
                                         title="추가"
                                     >
@@ -1595,36 +1674,46 @@ function SoftRuleModal({open, templates, optionMap, existingTemplateCodes, onClo
     );
 }
 
-type TDeleteImportantRuleModalProps = {
-    rule: TShiftConstraintRuleDraft | null;
+type TRecommendedRuleWarning = {
+    rule: TShiftConstraintRuleDraft;
+    action: 'unmark' | 'delete';
+};
+
+type TRecommendedRuleWarningModalProps = {
+    warning: TRecommendedRuleWarning | null;
     onClose: () => void;
     onConfirm: () => void;
 };
 
-function DeleteImportantRuleModal({rule, onClose, onConfirm}: TDeleteImportantRuleModalProps) {
-    if (!rule) return null;
+function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommendedRuleWarningModalProps) {
+    if (!warning) return null;
+
+    const isDelete = warning.action === 'delete';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
             <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
-                <p className="font-apple text-[20px] font-bold text-sub-1">중요 조건을 삭제할까요?</p>
+                <p className="font-apple text-[20px] font-bold text-sub-1">
+                    {isDelete ? '권장 조건을 삭제할까요?' : '중요 표시를 뺄까요?'}
+                </p>
                 <p className="mt-2 font-apple text-[14px] leading-6 text-gray-4">
-                    이 조건은 주로 사용되는 조건이며, 법적 요건과 관련될 수 있어요. 삭제할까요?
+                    이 조건은 안정적인 근무표를 위해 기본으로 권장하는 중요 사항이에요.{' '}
+                    {isDelete ? '그래도 목록에서 삭제할까요?' : '그래도 중요 표시를 해제할까요?'}
                 </p>
                 <div className="mt-5 flex gap-2">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                        className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                     >
-                        닫기
+                        유지하기
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
-                        className="h-11 flex-1 rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                        className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
                     >
-                        삭제하기
+                        {isDelete ? '삭제하기' : '중요 표시 빼기'}
                     </button>
                 </div>
             </div>
@@ -1644,10 +1733,12 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
     const enabled = wardId !== null && wardId !== undefined && currentShiftTeamId !== null && currentShiftTeamId !== undefined;
     const frameClassName = variant === 'settings' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
     const surfaceWidthClassName = variant === 'settings' ? 'w-full' : 'w-[90%]';
+    const surfacePaddingYClassName = variant === 'settings' ? 'py-[clamp(10px,1.1vw,16px)]' : 'py-0';
     const [rules, setRules] = useState<TShiftConstraintRuleDraft[]>([]);
+    const rulesRef = useRef<TShiftConstraintRuleDraft[]>([]);
     const [softModalOpen, setSoftModalOpen] = useState(false);
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
-    const [deleteTarget, setDeleteTarget] = useState<TShiftConstraintRuleDraft | null>(null);
+    const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
         queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -1677,23 +1768,8 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
     }, [templates]);
     const templateByCode = useMemo(() => new Map(templates.map((template) => [template.templateCode, template] as const)), [templates]);
     const softTemplateByCode = useMemo(() => new Map(softTemplates.map((template) => [template.id, template] as const)), [softTemplates]);
-    const options = candidatesQuery.data?.options ?? {};
-
-    useEffect(() => {
-        if (!rulesQuery.data || candidatesQuery.isPending) return;
-
-        const defaults = createImportantDefaultRules(softTemplates);
-        const defaultTemplateCodes = new Set(defaults.map((rule) => rule.templateCode));
-        const loadedRules = fromServerRules(rulesQuery.data.rules);
-        const next = [
-            ...defaults,
-            ...loadedRules.filter((rule) => rule.severity === 'SOFT' && !defaultTemplateCodes.has(rule.templateCode)),
-        ].map((rule, index) => ({...rule, sortOrder: index + 1}));
-
-        setRules(next);
-    }, [candidatesQuery.isPending, rulesQuery.data, softTemplates]);
-
-    const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : [];
+    const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
+    const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
     const skillConfig = useMemo(() => getWardSkillSettings(wardId)?.config ?? DEFAULT_SKILL_LEVEL_CONFIG, [wardId]);
     const optionMap = useMemo(() => {
@@ -1737,29 +1813,67 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
 
         return mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes);
     }, [nurses, options, shiftTypes, skillConfig, year, month]);
+
+    useEffect(() => {
+        if (!rulesQuery.data || candidatesQuery.isPending) return;
+
+        const defaults = createRecommendedDefaultRules(softTemplates, optionMap);
+        const defaultTemplateCodes = new Set(defaults.map((rule) => rule.templateCode));
+        const loadedRules = fromServerRules(rulesQuery.data.rules);
+        const next = [
+            ...defaults,
+            ...loadedRules.filter((rule) => rule.severity === 'SOFT' && !defaultTemplateCodes.has(rule.templateCode)),
+        ].map((rule, index) => ({...rule, sortOrder: index + 1}));
+
+        rulesRef.current = next;
+        setRules(next);
+    }, [candidatesQuery.isPending, optionMap, rulesQuery.data, softTemplates]);
+
+    useEffect(() => {
+        rulesRef.current = rules;
+    }, [rules]);
+
+    const optimizeDuplicateRules = useCallback(() => {
+        const result = compactDuplicateRules(rulesRef.current);
+
+        if (!result.removedCount) return 0;
+
+        rulesRef.current = result.rules;
+        setRules(result.rules);
+        setHighlightedRuleId(null);
+        toast.success(`중복 제약조건 ${result.removedCount}개를 정리했어요.`);
+
+        return result.removedCount;
+    }, []);
+
+    useEffect(() => {
+        if (variant !== 'flow') return;
+
+        const handleOptimize = () => {
+            optimizeDuplicateRules();
+        };
+
+        window.addEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
+
+        return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
+    }, [optimizeDuplicateRules, variant]);
+
     const softRules = rules.filter((rule) => rule.severity === 'SOFT');
-    const existingTemplateCodes = useMemo(() => new Set(rules.map((rule) => rule.templateCode)), [rules]);
     const isLoading = candidatesQuery.isPending || rulesQuery.isPending;
     const isLoadError = rulesQuery.isError;
     const softRuleViewModels = useMemo(
         () =>
-            softRules.map((rule, index) => ({
+            softRules.map((rule) => ({
                 rule,
-                index,
                 template: templateByCode.get(rule.templateCode),
                 softTemplate: softTemplateByCode.get(rule.templateCode),
                 highlighted: highlightedRuleId === rule.clientId,
-                isImportant: isImportantTemplateCode(rule.templateCode, rule.category),
+                isImportant: Boolean(rule.isImportant),
+                isRecommended: isRecommendedTemplateCode(rule.templateCode, rule.category),
             })),
         [highlightedRuleId, softRules, softTemplateByCode, templateByCode],
     );
     const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, string>) => {
-        if (template.isImportant && existingTemplateCodes.has(template.id)) {
-            toast('이미 추가된 주요 조건이에요.');
-
-            return;
-        }
-
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
@@ -1767,6 +1881,7 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
             severity: 'SOFT',
             sortOrder: softRules.length + 1,
             params,
+            isImportant: Boolean(template.isRecommended),
             displayText: template.buildText(params),
             isValid: true,
             invalidReason: null,
@@ -1775,36 +1890,25 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
         setRules((prev) => {
             const hard = prev.filter((r) => r.severity === 'HARD');
             const soft = prev.filter((r) => r.severity === 'SOFT');
-            const reorderedSoft = [...soft, nextRule].map((r, idx) => ({...r, sortOrder: idx + 1}));
+            const nextSoft = [...soft, nextRule].map((r, idx) => ({...r, sortOrder: idx + 1}));
 
-            return [...hard, ...reorderedSoft];
+            return [...hard, ...nextSoft];
         });
         setHighlightedRuleId(nextRule.clientId);
         setSoftModalOpen(false);
-        toast.success('약 제약조건을 추가했어요.');
+        toast.success('제약조건을 추가했어요.');
 
         window.setTimeout(() => {
             setHighlightedRuleId((current) => (current === nextRule.clientId ? null : current));
         }, 1800);
     };
     const resetRulesToImportantDefaults = useCallback(() => {
-        const defaults = createImportantDefaultRules(softTemplates);
+        const defaults = createRecommendedDefaultRules(softTemplates, optionMap);
 
         setRules(defaults);
         setHighlightedRuleId(null);
-        toast.success(`주요 조건 ${defaults.length}개로 초기화했어요.`);
-    }, [softTemplates]);
-    const handleDragEnd = useCallback(({source, destination}: DropResult) => {
-        if (!destination || destination.index === source.index) return;
-
-        setRules((prev) => {
-            const hard = prev.filter((rule) => rule.severity === 'HARD');
-            const soft = prev.filter((rule) => rule.severity === 'SOFT');
-            const reorderedSoft = reorderRules(soft, source.index, destination.index);
-
-            return [...hard, ...reorderedSoft];
-        });
-    }, []);
+        toast.success(`권장 조건 ${defaults.length}개로 초기화했어요.`);
+    }, [optionMap, softTemplates]);
     const updateRuleParam = useCallback((clientId: string, key: string, value: unknown) => {
         setRules((prev) => prev.map((item) => (item.clientId === clientId ? {...item, params: {...item.params, [key]: value}} : item)));
     }, []);
@@ -1823,21 +1927,42 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
             }),
         );
     }, []);
+    const setRuleImportant = useCallback((clientId: string, isImportant: boolean) => {
+        setRules((prev) => prev.map((item) => (item.clientId === clientId ? {...item, isImportant} : item)));
+    }, []);
+    const toggleRuleImportant = useCallback(
+        (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
+            if (!nextImportant && isRecommendedTemplateCode(rule.templateCode, rule.category)) {
+                setRecommendedWarning({rule, action: 'unmark'});
+
+                return;
+            }
+
+            setRuleImportant(rule.clientId, nextImportant);
+        },
+        [setRuleImportant],
+    );
     const removeRule = useCallback((rule: TShiftConstraintRuleDraft) => {
-        if (isImportantTemplateCode(rule.templateCode, rule.category)) {
-            setDeleteTarget(rule);
+        if (isRecommendedTemplateCode(rule.templateCode, rule.category)) {
+            setRecommendedWarning({rule, action: 'delete'});
 
             return;
         }
 
         setRules((prev) => prev.filter((item) => item.clientId !== rule.clientId));
     }, []);
-    const confirmDeleteImportantRule = () => {
-        if (!deleteTarget) return;
+    const confirmRecommendedWarning = () => {
+        if (!recommendedWarning) return;
 
-        setRules((prev) => prev.filter((item) => item.clientId !== deleteTarget.clientId));
-        setDeleteTarget(null);
-        toast.success('중요 제약조건을 삭제했어요.');
+        if (recommendedWarning.action === 'delete') {
+            setRules((prev) => prev.filter((item) => item.clientId !== recommendedWarning.rule.clientId));
+            toast.success('권장 조건을 삭제했어요.');
+        } else {
+            setRuleImportant(recommendedWarning.rule.clientId, false);
+            toast.success('중요 표시를 해제했어요.');
+        }
+
+        setRecommendedWarning(null);
     };
 
     if (!enabled) {
@@ -1880,55 +2005,52 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
         <>
             <div className={frameClassName}>
                 <div
-                    className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] py-[clamp(10px,1.1vw,16px)]`}
+                    className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
                 >
                     <Section
                         action={
                             <>
                                 <button
+                                    id="make_constraint_add_button"
                                     type="button"
                                     onClick={() => setSoftModalOpen(true)}
-                                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#6C5CFF] px-3.5 font-apple text-[12px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#6C5CFF] px-4 font-apple text-[13px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                 >
-                                    <Plus className="size-3.5" />
+                                    <Plus className="size-4" />
                                     제약 조건 추가
                                 </button>
                                 <button
                                     type="button"
                                     onClick={resetRulesToImportantDefaults}
-                                    className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#E8EBF1] px-3.5 font-apple text-[12px] font-bold text-gray-4 transition-colors hover:bg-[#DFE4EC] hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#F8F9FB] px-4 font-apple text-[13px] font-bold text-gray-4 transition-colors hover:bg-[#EEF0F4] hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                 >
-                                    <RotateCcw className="size-3.5" />
+                                    <RotateCcw className="size-4" />
                                     초기화
                                 </button>
                             </>
                         }
                     >
-                        <DragDropContext onDragEnd={handleDragEnd}>
-                            <Droppable droppableId="soft-constraint-rules">
-                                {(provided) => (
-                                    <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2.5">
-                                        {softRuleViewModels.map(({rule, index, template, softTemplate, highlighted, isImportant}) => (
-                                            <DraggableRuleRow
-                                                key={rule.clientId}
-                                                rule={rule}
-                                                index={index}
-                                                template={template}
-                                                softTemplate={softTemplate}
-                                                options={options}
-                                                optionMap={optionMap}
-                                                highlighted={highlighted}
-                                                isImportant={isImportant}
-                                                onDelete={removeRule}
-                                                onParamChange={updateRuleParam}
-                                                onSoftParamChange={updateSoftRuleParamByClientId}
-                                            />
-                                        ))}
-                                        {provided.placeholder}
-                                    </div>
-                                )}
-                            </Droppable>
-                        </DragDropContext>
+                        <div className="space-y-2.5">
+                            {softRuleViewModels.map(({rule, template, softTemplate, highlighted, isImportant, isRecommended}) => (
+                                <RuleRow
+                                    key={rule.clientId}
+                                    rule={rule}
+                                    template={template}
+                                    softTemplate={softTemplate}
+                                    options={options}
+                                    optionMap={optionMap}
+                                    highlighted={highlighted}
+                                    isImportant={isImportant}
+                                    isRecommended={isRecommended}
+                                    onDelete={() => removeRule(rule)}
+                                    onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
+                                    onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
+                                    onSoftParamChange={(softTemplate, key, value) =>
+                                        updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
+                                    }
+                                />
+                            ))}
+                        </div>
                     </Section>
                 </div>
             </div>
@@ -1937,11 +2059,14 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
                 open={softModalOpen}
                 templates={softTemplates}
                 optionMap={optionMap}
-                existingTemplateCodes={existingTemplateCodes}
                 onClose={() => setSoftModalOpen(false)}
                 onAdd={addSoftRule}
             />
-            <DeleteImportantRuleModal rule={deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={confirmDeleteImportantRule} />
+            <RecommendedRuleWarningModal
+                warning={recommendedWarning}
+                onClose={() => setRecommendedWarning(null)}
+                onConfirm={confirmRecommendedWarning}
+            />
         </>
     );
 }
