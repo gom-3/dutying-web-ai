@@ -85,7 +85,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
         <div
             id="calendar"
             className={cn(
-                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1220px] flex-1 grid-cols-[minmax(876px,1fr)_minmax(330px,clamp(330px,22vw,420px))] items-start gap-3',
+                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1160px] flex-1 grid-cols-[minmax(876px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
                 !hasCurrentTeamNurses && 'items-stretch',
             )}
         >
