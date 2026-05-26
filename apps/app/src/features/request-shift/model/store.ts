@@ -15,6 +15,7 @@ interface IState {
     readonly: boolean;
     changeStatus: 'idle' | 'loading' | 'success' | 'error';
     updatingRequestId: number | null;
+    mockRequestDecisionById: Record<number, boolean | null>;
 }
 
 interface IStore extends IState {
@@ -33,6 +34,7 @@ const initialState: IState = {
     readonly: true,
     changeStatus: 'idle',
     updatingRequestId: null,
+    mockRequestDecisionById: {},
 };
 
 export const useRequestShiftStore = create<IStore>()(
