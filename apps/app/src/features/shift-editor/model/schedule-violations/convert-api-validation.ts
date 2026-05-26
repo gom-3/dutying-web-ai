@@ -1,12 +1,60 @@
 import type {TAiConstraintViolation, TAiValidation} from '@dutying/api/ward';
 import type {TCellPos, TDutyDoc, TViolation} from '../types';
 
+function hasKoreanText(value: string): boolean {
+    return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(value);
+}
+
+function isEnglishLike(value: string): boolean {
+    return /[A-Za-z]/.test(value) && !hasKoreanText(value);
+}
+
+function normalizeViolationTitle(title: string): string {
+    switch (title) {
+        case '야간 후 휴무 부족':
+            return '야간 후 휴무가 부족해요';
+        case '필요 인원 부족':
+            return '필요 인원이 부족해요';
+        default:
+            return title;
+    }
+}
+
+function translateKnownEnglishMessage(item: TAiConstraintViolation): string | null {
+    const message = item.message.trim();
+    const offAfterNightMatch = message.match(
+        /^Nurse\s+\S+\s+has\s+(\d+)\s+off days after night shift,\s+but\s+(\d+)\s+(?:is|are)\s+required\.?$/i,
+    );
+
+    if (offAfterNightMatch) {
+        const [, actualOffDays, requiredOffDays] = offAfterNightMatch;
+
+        return `야간 후 휴무가 ${actualOffDays}일이라 ${requiredOffDays}일보다 부족해요.`;
+    }
+
+    if (/^off days after night shift are insufficient\.?$/i.test(message)) {
+        return '야간 후 휴무가 부족해요.';
+    }
+
+    const staffingMatch = message.match(/^(.+?)\s+shift staffing is low\.?$/i);
+
+    if (staffingMatch) {
+        return `${staffingMatch[1]} 근무 인원이 부족해요.`;
+    }
+
+    return null;
+}
+
 function formatViolationMessage(item: TAiConstraintViolation): string {
-    const title = item.title?.trim();
+    const title = item.title?.trim() ? normalizeViolationTitle(item.title.trim()) : undefined;
+    const message = item.message.trim();
+    const translatedMessage = translateKnownEnglishMessage(item);
 
-    if (title && title !== item.message) return `${title}: ${item.message}`;
+    if (translatedMessage) return translatedMessage;
 
-    return item.message;
+    if (title) return title;
+
+    return isEnglishLike(message) ? '제약 조건을 확인해 주세요.' : message;
 }
 
 function resolveDayRange(item: TAiConstraintViolation): {startDay: number; endDay: number} | null {

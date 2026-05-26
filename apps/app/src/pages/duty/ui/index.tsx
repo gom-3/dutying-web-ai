@@ -26,7 +26,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const headerDisabled = showBootstrapLoadingState || showBootstrapErrorState || !teamsReady;
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-[#FAF8FB] px-10 py-10">
+        <div className="flex min-h-screen w-full flex-col bg-main-bg px-10 py-10">
             <WardCodeGuideModal
                 open={state.showOnboardingWardCreatedModal}
                 wardCode={wardCodeLabel}
@@ -49,7 +49,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 nextMonthDisabled={!state.isDutyViewAllowed || state.dutyAtMaxFutureMonth}
             />
 
-            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-[#FAF8FB] px-10 py-7">
+            <div className="mt-[14px] flex flex-1 flex-col rounded-[20px] bg-main-bg px-10 py-7">
                 {showBootstrapLoadingState && (
                     <PageState
                         tone="loading"

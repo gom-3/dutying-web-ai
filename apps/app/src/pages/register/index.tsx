@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {Navigate} from 'react-router';
+import {Navigate, useLocation} from 'react-router';
 import {match} from 'ts-pattern';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
@@ -10,11 +10,17 @@ import RegisterNurse from './ui/register-nurse';
 import RegisterShell from './ui/register-shell';
 import SelectEnterOrCreate from './ui/select-enter-or-create';
 
+type TRegisterLocationState = {
+    fromQuitWard?: boolean;
+} | null;
+
 function RegisterPage() {
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe},
     } = useAuth();
+    const {state: locationState} = useLocation();
+    const isFromQuitWard = (locationState as TRegisterLocationState)?.fromQuitWard === true;
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
     const [stepOverride, setStepOverride] = useState<'nurse-info' | null>(null);
@@ -48,7 +54,7 @@ function RegisterPage() {
                         stepOverride === 'nurse-info' ? (
                             <RegisterNurse onCompleted={() => setStepOverride(null)} />
                         ) : (
-                            <SelectEnterOrCreate onBack={() => setStepOverride('nurse-info')} />
+                            <SelectEnterOrCreate onBack={isFromQuitWard ? undefined : () => setStepOverride('nurse-info')} />
                         ),
                     )
                     .with('WARD_ENTRY_PENDING', () => <PendingEnter />)

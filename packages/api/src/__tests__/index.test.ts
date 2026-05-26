@@ -70,4 +70,30 @@ describe('@dutying/api public entry', () => {
         expect(getMock).toHaveBeenNthCalledWith(2, '/wards/7/chat/unread-count');
         expect(getMock).toHaveBeenNthCalledWith(3, '/wards/chat/unread-counts');
     });
+
+    it('builds request shift endpoints', async () => {
+        const client = createClient();
+        const getMock = client.get as ReturnType<typeof vi.fn>;
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        getMock.mockResolvedValueOnce({data: {days: [], wardShiftTypes: [], divisionShiftNurses: []}});
+        getMock.mockResolvedValueOnce({data: []});
+        patchMock.mockResolvedValue({data: undefined});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.getReqShift(7, 3, 2026, 3)).resolves.toMatchObject({days: []});
+        await expect(wardApi.getRequestList(7, 3, 2026, 3)).resolves.toEqual([]);
+        await expect(wardApi.updateReqShift(7, 2026, 3, 4, 12, 99)).resolves.toBeUndefined();
+        await expect(wardApi.acceptRequestShift(7, 301, true)).resolves.toBeUndefined();
+
+        expect(getMock).toHaveBeenNthCalledWith(1, '/wards/7/shift-teams/3/req-duty?year=2026&month=3');
+        expect(getMock).toHaveBeenNthCalledWith(2, '/wards/7/shift-teams/3/req-duty/req-list?year=2026&month=3');
+        expect(patchMock).toHaveBeenNthCalledWith(1, '/wards/7/req-shifts', {
+            shiftNurseId: 12,
+            date: '2026-03-04',
+            wardShiftTypeId: 99,
+        });
+        expect(patchMock).toHaveBeenNthCalledWith(2, '/wards/7/req-shifts/301/accept', {isAccepted: true});
+    });
 });

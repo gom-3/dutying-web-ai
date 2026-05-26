@@ -1,8 +1,9 @@
-import {useQuery} from '@tanstack/react-query';
-import {ChevronDown, Plus, RotateCcw, X} from 'lucide-react';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {ChevronDown, Download, Plus, RotateCcw, X} from 'lucide-react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
+import {type TShiftTeam} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
 import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
@@ -15,6 +16,7 @@ import {
     shiftConstraintRuleQueryKeys,
     type TShiftConstraintOption,
     type TShiftConstraintOptions,
+    type TShiftConstraintRule,
     type TShiftConstraintRuleDraft,
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
@@ -867,6 +869,20 @@ function createRecommendedDefaultRules(templates: TSoftRuleTemplate[], optionMap
         });
 }
 
+function createVisibleSoftRules(
+    serverRules: TShiftConstraintRule[],
+    templates: TSoftRuleTemplate[],
+    optionMap: Record<string, TSelectOption[]> = {},
+) {
+    const defaults = createRecommendedDefaultRules(templates, optionMap);
+    const defaultTemplateCodes = new Set(defaults.map((rule) => rule.templateCode));
+    const loadedRules = fromServerRules(serverRules);
+
+    return [...defaults, ...loadedRules.filter((rule) => rule.severity === 'SOFT' && !defaultTemplateCodes.has(rule.templateCode))].map(
+        (rule, index) => ({...rule, sortOrder: index + 1}),
+    );
+}
+
 function getOptionKey(option: TShiftConstraintOption) {
     if (option.nurseId != null) return `nurse-${option.nurseId}`;
 
@@ -1547,9 +1563,144 @@ function Section({action, children}: TSectionProps) {
     );
 }
 
+type TConstraintImportButtonProps = {
+    teams: TShiftTeam[];
+    currentShiftTeamId: number | null | undefined;
+    importingShiftTeamId: number | null;
+    onImport: (shiftTeamId: number) => Promise<void>;
+};
+
+function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId, onImport}: TConstraintImportButtonProps) {
+    const [open, setOpen] = useState(false);
+    const [selectedShiftTeamId, setSelectedShiftTeamId] = useState<number | null>(null);
+    const sourceTeams = useMemo(() => teams.filter((team) => team.shiftTeamId !== currentShiftTeamId), [currentShiftTeamId, teams]);
+    const currentTeam = teams.find((team) => team.shiftTeamId === currentShiftTeamId);
+    const hasMultipleTeams = teams.length >= 2;
+    const disabled = currentShiftTeamId == null || !hasMultipleTeams || sourceTeams.length === 0 || importingShiftTeamId !== null;
+    const title = hasMultipleTeams ? '다른 팀 제약조건 불러오기' : '팀이 2개 이상일 때 사용할 수 있어요';
+
+    useEffect(() => {
+        if (!open) return;
+
+        if (selectedShiftTeamId !== null && sourceTeams.some((team) => team.shiftTeamId === selectedShiftTeamId)) return;
+
+        setSelectedShiftTeamId(sourceTeams[0]?.shiftTeamId ?? null);
+    }, [open, selectedShiftTeamId, sourceTeams]);
+
+    useEffect(() => {
+        if (disabled) {
+            setOpen(false);
+            setSelectedShiftTeamId(null);
+        }
+    }, [disabled]);
+
+    const closeModal = () => {
+        if (importingShiftTeamId !== null) return;
+
+        setOpen(false);
+    };
+    const confirmImport = async () => {
+        if (selectedShiftTeamId === null || importingShiftTeamId !== null) return;
+
+        await onImport(selectedShiftTeamId);
+        setOpen(false);
+    };
+
+    return (
+        <>
+            <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded={open}
+                aria-label="다른 팀 제약조건 불러오기"
+                title={title}
+                disabled={disabled}
+                onClick={() => setOpen(true)}
+                className="grid size-9 cursor-pointer place-items-center rounded-full bg-white text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:bg-[#F1F3F6] disabled:text-gray-5 disabled:hover:bg-[#F1F3F6] disabled:hover:text-gray-5"
+            >
+                <Download className="size-4" />
+            </button>
+
+            {open ? (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+                    <div
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="constraint-import-title"
+                        className="w-full max-w-[400px] rounded-[16px] bg-white p-5"
+                    >
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <p id="constraint-import-title" className="font-apple text-[20px] font-bold text-sub-1">
+                                    제약조건 불러오기
+                                </p>
+                                <p className="mt-1 truncate font-apple text-[13px] text-gray-4">
+                                    현재 팀: {currentTeam?.name ?? '선택된 팀'}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                                aria-label="닫기"
+                            >
+                                <X className="size-5" />
+                            </button>
+                        </div>
+
+                        <div className="mt-5">
+                            <p className="mb-2 font-apple text-[12px] font-bold text-gray-4">불러올 팀</p>
+                            <div className="space-y-1.5">
+                                {sourceTeams.map((team) => {
+                                    const selected = team.shiftTeamId === selectedShiftTeamId;
+
+                                    return (
+                                        <button
+                                            key={team.shiftTeamId}
+                                            type="button"
+                                            className={`flex h-10 w-full cursor-pointer items-center justify-between rounded-[9px] px-3 text-left font-apple transition-colors focus-visible:outline-2 focus-visible:outline-main-1 ${
+                                                selected
+                                                    ? 'bg-[#F3F4F6] text-main-1'
+                                                    : 'bg-[#F3F4F6] text-sub-2 hover:bg-[#EEF0F4] hover:text-sub-1'
+                                            }`}
+                                            onClick={() => setSelectedShiftTeamId(team.shiftTeamId)}
+                                        >
+                                            <span className="truncate text-[14px] font-semibold">{team.name}</span>
+                                            {selected ? <span className="ml-3 size-1.5 shrink-0 rounded-full bg-main-1" /> : null}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="mt-5 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={closeModal}
+                                className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                            >
+                                취소
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void confirmImport()}
+                                disabled={selectedShiftTeamId === null || importingShiftTeamId !== null}
+                                className="h-11 flex-1 cursor-pointer rounded-[10px] bg-main-1 px-6 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-[#5948F5] disabled:cursor-not-allowed disabled:bg-gray-5"
+                            >
+                                {importingShiftTeamId !== null ? '불러오는 중' : '불러오기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+        </>
+    );
+}
+
 type TConstraintsProps = {
     wardId?: number | null;
     shiftTeamId?: number | null;
+    shiftTeams?: TShiftTeam[];
     year?: number;
     month?: number;
     variant?: 'flow' | 'settings';
@@ -1721,24 +1872,35 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
     );
 }
 
-export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, month: monthProp, variant = 'flow'}: TConstraintsProps = {}) {
+export function Constraints({
+    wardId: wardIdProp,
+    shiftTeamId,
+    shiftTeams: shiftTeamsProp,
+    year: yearProp,
+    month: monthProp,
+    variant = 'flow',
+}: TConstraintsProps = {}) {
+    const queryClient = useQueryClient();
     const authWardId = useAuthStore((s) => s.wardId);
     const storeShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const storeShiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const storeYear = useMakeShiftStore((s) => s.year);
     const storeMonth = useMakeShiftStore((s) => s.month);
     const wardId = wardIdProp ?? authWardId;
     const currentShiftTeamId = shiftTeamId ?? storeShiftTeamId;
+    const availableShiftTeams = shiftTeamsProp ?? storeShiftTeams;
     const year = yearProp ?? storeYear;
     const month = monthProp ?? storeMonth;
     const enabled = wardId !== null && wardId !== undefined && currentShiftTeamId !== null && currentShiftTeamId !== undefined;
     const frameClassName = variant === 'settings' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
-    const surfaceWidthClassName = variant === 'settings' ? 'w-full' : 'w-[90%]';
+    const surfaceWidthClassName = variant === 'settings' ? 'w-full' : 'w-full min-w-[920px] max-w-[1088px]';
     const surfacePaddingYClassName = variant === 'settings' ? 'py-[clamp(10px,1.1vw,16px)]' : 'py-0';
     const [rules, setRules] = useState<TShiftConstraintRuleDraft[]>([]);
     const rulesRef = useRef<TShiftConstraintRuleDraft[]>([]);
     const [softModalOpen, setSoftModalOpen] = useState(false);
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
+    const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
         queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -1817,13 +1979,7 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
     useEffect(() => {
         if (!rulesQuery.data || candidatesQuery.isPending) return;
 
-        const defaults = createRecommendedDefaultRules(softTemplates, optionMap);
-        const defaultTemplateCodes = new Set(defaults.map((rule) => rule.templateCode));
-        const loadedRules = fromServerRules(rulesQuery.data.rules);
-        const next = [
-            ...defaults,
-            ...loadedRules.filter((rule) => rule.severity === 'SOFT' && !defaultTemplateCodes.has(rule.templateCode)),
-        ].map((rule, index) => ({...rule, sortOrder: index + 1}));
+        const next = createVisibleSoftRules(rulesQuery.data.rules, softTemplates, optionMap);
 
         rulesRef.current = next;
         setRules(next);
@@ -1909,6 +2065,33 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
         setHighlightedRuleId(null);
         toast.success(`권장 조건 ${defaults.length}개로 초기화했어요.`);
     }, [optionMap, softTemplates]);
+    const importRulesFromTeam = useCallback(
+        async (sourceShiftTeamId: number) => {
+            if (!wardId || currentShiftTeamId == null || importingShiftTeamId !== null) return;
+
+            const sourceTeam = availableShiftTeams.find((team) => team.shiftTeamId === sourceShiftTeamId);
+
+            try {
+                setImportingShiftTeamId(sourceShiftTeamId);
+
+                const response = await queryClient.fetchQuery({
+                    queryKey: shiftConstraintRuleQueryKeys.rules(wardId, sourceShiftTeamId),
+                    queryFn: () => getShiftConstraintRules(wardId, sourceShiftTeamId),
+                });
+                const next = createVisibleSoftRules(response.rules, softTemplates, optionMap);
+
+                rulesRef.current = next;
+                setRules(next);
+                setHighlightedRuleId(null);
+                toast.success(`${sourceTeam?.name ?? '다른 팀'} 제약조건을 그대로 불러왔어요.`);
+            } catch {
+                toast.error('제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+            } finally {
+                setImportingShiftTeamId(null);
+            }
+        },
+        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, optionMap, queryClient, softTemplates, wardId],
+    );
     const updateRuleParam = useCallback((clientId: string, key: string, value: unknown) => {
         setRules((prev) => prev.map((item) => (item.clientId === clientId ? {...item, params: {...item.params, [key]: value}} : item)));
     }, []);
@@ -2010,6 +2193,12 @@ export function Constraints({wardId: wardIdProp, shiftTeamId, year: yearProp, mo
                     <Section
                         action={
                             <>
+                                <ConstraintImportButton
+                                    teams={availableShiftTeams}
+                                    currentShiftTeamId={currentShiftTeamId}
+                                    importingShiftTeamId={importingShiftTeamId}
+                                    onImport={importRulesFromTeam}
+                                />
                                 <button
                                     id="make_constraint_add_button"
                                     type="button"

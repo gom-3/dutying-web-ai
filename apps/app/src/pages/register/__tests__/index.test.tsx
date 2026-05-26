@@ -5,6 +5,7 @@ import RegisterPage from '../index';
 const mockHandleGetAccountMe = vi.fn();
 const mockNavigate = vi.fn();
 
+let mockLocationState: unknown = null;
 let mockAuthState: {
     accountMe: {status: 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED'} | null;
     accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
@@ -17,6 +18,7 @@ let mockAuthState: {
 
 vi.mock('react-router', () => ({
     Navigate: ({to}: {to: string}) => <div>navigate:{to}</div>,
+    useLocation: () => ({state: mockLocationState}),
     useNavigate: () => mockNavigate,
 }));
 
@@ -40,9 +42,14 @@ vi.mock('../ui/register-nurse', () => ({
 
 vi.mock('../ui/select-enter-or-create', () => ({
     default: ({onBack}: {onBack?: () => void}) => (
-        <button type="button" onClick={onBack}>
-            select-enter-or-create
-        </button>
+        <div>
+            <div>select-enter-or-create</div>
+            {onBack ? (
+                <button type="button" onClick={onBack}>
+                    계정 정보로
+                </button>
+            ) : null}
+        </div>
     ),
 }));
 
@@ -55,6 +62,7 @@ describe('RegisterPage', () => {
         mockHandleGetAccountMe.mockReset();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockNavigate.mockReset();
+        mockLocationState = null;
         mockAuthState = {
             accountMe: null,
             accountMeStatus: 'loading',
@@ -109,8 +117,22 @@ describe('RegisterPage', () => {
 
         render(<RegisterPage />);
 
-        await user.click(screen.getByRole('button', {name: 'select-enter-or-create'}));
+        await user.click(screen.getByRole('button', {name: '계정 정보로'}));
 
         expect(screen.getByText('register-nurse')).toBeInTheDocument();
+    });
+
+    it('hides the back action when the user arrived after quitting a ward', () => {
+        mockLocationState = {fromQuitWard: true};
+        mockAuthState = {
+            accountMe: {status: 'WARD_SELECT_PENDING'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('select-enter-or-create')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '계정 정보로'})).not.toBeInTheDocument();
     });
 });

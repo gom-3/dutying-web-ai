@@ -17,6 +17,7 @@ const ROUTE = {
     BOARD: '/board',
     MEMBER: '/member',
     WARD_SETTINGS: '/ward-settings',
+    WARD_INFO_SETTINGS: '/ward-info-settings',
     PROFILE: '/profile',
 };
 

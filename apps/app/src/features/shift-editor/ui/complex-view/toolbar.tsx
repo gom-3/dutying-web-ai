@@ -62,7 +62,7 @@ function Toolbar({
     const [currentSetup, setCurrentSetup] = useState<TToolbarSetupTab | null>(null);
 
     return (
-        <div id="toolbar" className="sticky top-0 z-30 flex h-24.5 w-full items-center bg-[#FDFCFE] pt-7.5 pr-4 pb-[.75rem] pl-5">
+        <div id="toolbar" className="sticky top-0 z-30 flex h-24.5 w-full items-center bg-main-bg pt-7.5 pr-4 pb-[.75rem] pl-5">
             <div className="flex gap-5">
                 <div className="w-13.5"></div>
                 <div className="w-17.5"></div>

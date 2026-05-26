@@ -5,7 +5,6 @@ import {type TShiftTeam} from '@/entities/ward';
 import {wardQueryKeys} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
-import {FORCE_MOCK_DUTY_REQUEST_LIST, getMockDutyRequestListByTeamIndex} from './mock';
 import {countPendingDutyRequests} from './pending-request-count';
 import {useRequestShiftStore} from './store';
 
@@ -16,12 +15,9 @@ export const useTotalPendingRequestCount = (shiftTeams: TShiftTeam[] | undefined
     const year = useRequestShiftStore((state) => state.year);
     const month = useRequestShiftStore((state) => state.month);
     const teamPendingRequestCountQueries = useQueries({
-        queries: (shiftTeams ?? []).map((shiftTeam, teamIndex) => ({
+        queries: (shiftTeams ?? []).map((shiftTeam) => ({
             queryKey: wardQueryKeys.requestList(wardId ?? 0, shiftTeam.shiftTeamId, year, month),
-            queryFn: async (): Promise<TDutyRequest[]> =>
-                FORCE_MOCK_DUTY_REQUEST_LIST
-                    ? getMockDutyRequestListByTeamIndex(teamIndex)
-                    : WardAPI.getRequestList(wardId!, shiftTeam.shiftTeamId, year, month),
+            queryFn: async (): Promise<TDutyRequest[]> => WardAPI.getRequestList(wardId!, shiftTeam.shiftTeamId, year, month),
             enabled: !!wardId,
             select: countPendingDutyRequests,
         })),

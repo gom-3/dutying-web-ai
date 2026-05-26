@@ -10,8 +10,8 @@ const doc: TDutyDoc = {
         {workerId: '8754', cells: ['E', 'D', 'D', 'N', 'O']},
     ],
     workerMeta: {
-        8753: {name: 'Kim', nurseId: 3414},
-        8754: {name: 'Lee', nurseId: 3415},
+        8753: {name: '김민정', nurseId: 3414},
+        8754: {name: '이서연', nurseId: 3415},
     },
     fixedCells: {},
     requestCells: {},
@@ -27,7 +27,7 @@ describe('violationsFromApiValidation', () => {
                     id: 'L2_MIN_OFF_AFTER_NIGHT:3414',
                     severity: 'SOFT',
                     title: '야간 후 휴무 부족',
-                    message: 'off days after night shift are insufficient',
+                    message: 'Nurse 3414 has 1 off days after night shift, but 2 are required.',
                     nurse_id: '3414',
                     period: {start_day: 2, end_day: 4},
                 },
@@ -40,7 +40,7 @@ describe('violationsFromApiValidation', () => {
         expect(violations).toEqual([
             {
                 ruleId: 'llm.L2_MIN_OFF_AFTER_NIGHT:3414',
-                message: '야간 후 휴무 부족: off days after night shift are insufficient',
+                message: '야간 후 휴무가 1일이라 2일보다 부족해요.',
                 level: 'warning',
                 scope: 'nurse',
                 cells: [
@@ -73,9 +73,32 @@ describe('violationsFromApiValidation', () => {
 
         expect(violations).toHaveLength(1);
         expect(violations[0]).toMatchObject({
+            message: 'E 근무 인원이 부족해요.',
             level: 'error',
             scope: 'team',
             cells: [{row: 0, col: 2}],
         });
+    });
+
+    it('uses the translated title instead of exposing unknown English details', () => {
+        const validation: TAiValidation = {
+            valid: false,
+            hard_constraints_violated: [],
+            soft_constraints_violated: [
+                {
+                    id: 'UNKNOWN_ENGLISH:3415',
+                    severity: 'SOFT',
+                    title: '제약 조건 확인 필요',
+                    message: 'Some new English validator detail.',
+                    nurse_id: '3415',
+                    period: {start_day: 4, end_day: 4},
+                },
+            ],
+            warnings: [],
+        };
+
+        const violations = violationsFromApiValidation(validation, doc);
+
+        expect(violations[0]?.message).toBe('제약 조건 확인 필요');
     });
 });

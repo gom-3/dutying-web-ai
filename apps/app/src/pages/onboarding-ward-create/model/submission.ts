@@ -1,10 +1,11 @@
-import type {TCreateWardDTO} from '@dutying/api/ward';
+import type {TCreateWardDTO, TWardResponse} from '@dutying/api/ward';
 import {buildCreateWardPayload} from './adapter';
 import type {TOnboardingWardDraft} from './draft';
 
 export type TOnboardingWardCreateSubmission = {
     mode: 'created';
     successMessage: string;
+    ward?: TWardResponse;
 };
 
 export type TOnboardingWardCreateAction = (
@@ -12,7 +13,7 @@ export type TOnboardingWardCreateAction = (
     options?: {
         navigateOnLinked?: boolean;
     },
-) => Promise<unknown>;
+) => Promise<TWardResponse | void>;
 
 export type TOnboardingWardCreateExecutor = (draft: TOnboardingWardDraft) => Promise<TOnboardingWardCreateSubmission>;
 
@@ -20,11 +21,11 @@ export const createOnboardingWardCreateExecutor =
     (createWard: TOnboardingWardCreateAction): TOnboardingWardCreateExecutor =>
     async (draft) => {
         const wardCreatePayload = buildCreateWardPayload(draft);
-
-        await createWard(wardCreatePayload, {navigateOnLinked: false});
+        const ward = await createWard(wardCreatePayload, {navigateOnLinked: false});
 
         return {
             mode: 'created',
-            successMessage: '병동 생성을 완료했어요.',
+            successMessage: '병동 생성이 완료되었어요.',
+            ward: ward ?? undefined,
         };
     };

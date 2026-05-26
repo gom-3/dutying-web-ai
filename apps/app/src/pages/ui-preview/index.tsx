@@ -43,7 +43,7 @@ function PreviewSection({title, description, children}: TPreviewSectionProps) {
 
 function SampleBox({label, children}: {label: string; children: ReactNode}) {
     return (
-        <div className="flex min-h-[112px] flex-col gap-3 rounded-[8px] border border-gray-6 bg-[#FDFCFE] p-4">
+        <div className="flex min-h-[112px] flex-col gap-3 rounded-[8px] border border-gray-6 bg-main-bg p-4">
             <p className="text-[12px] font-semibold tracking-[0.04em] text-gray-3 uppercase">{label}</p>
             <div className="flex min-h-12 flex-wrap items-center gap-3">{children}</div>
         </div>

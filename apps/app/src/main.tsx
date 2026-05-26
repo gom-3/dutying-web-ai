@@ -1,6 +1,6 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {createRoot} from 'react-dom/client';
-import {Toaster} from 'react-hot-toast';
+import {LoaderIcon, Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
 import App from '@/app/App';
 import {initializeProfileImageStore} from '@/features/file';
@@ -27,6 +27,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCATOR === 'true') {
 initializeApp();
 initializeProfileImageStore();
 
+const TOAST_LOADING_SPINNER_SIZE = 14.4;
 const container = document.getElementById('root') as HTMLElement;
 const element = (
     <QueryClientProvider client={queryClient}>
@@ -73,6 +74,16 @@ const element = (
                             maxWidth: 'none',
                             width: 'max-content',
                         },
+                    },
+                    loading: {
+                        icon: (
+                            <LoaderIcon
+                                style={{
+                                    width: TOAST_LOADING_SPINNER_SIZE,
+                                    height: TOAST_LOADING_SPINNER_SIZE,
+                                }}
+                            />
+                        ),
                     },
                 }}
             />

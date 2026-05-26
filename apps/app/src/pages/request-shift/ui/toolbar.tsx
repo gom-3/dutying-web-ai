@@ -93,7 +93,7 @@ function Toolbar() {
                 {shouldShowShiftTeamList ? (
                     <div
                         id="shift_team_list"
-                        className="relative grid overflow-visible rounded-[12px] bg-[#3D4658] p-0.5"
+                        className="relative grid gap-1 overflow-visible rounded-[12px] bg-[#3D4658] p-0.5"
                         style={{
                             gridTemplateColumns: `repeat(${Math.max(shiftTeamCount, 1)}, minmax(0, 1fr))`,
                         }}
@@ -108,7 +108,7 @@ function Toolbar() {
                                         key={team.shiftTeamId}
                                         type="button"
                                         className={cn(
-                                            'relative h-8 min-w-[92px] overflow-visible rounded-[9px] px-3 font-apple text-[12px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                            'relative box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center overflow-visible rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                                             selected ? 'bg-white text-sub-1' : 'text-[#B8C0CF] hover:text-white',
                                         )}
                                         style={{
@@ -125,7 +125,7 @@ function Toolbar() {
                                             sendEvent(events.requestPage.toolbar.changeShiftTeam);
                                         }}
                                     >
-                                        {team.name}
+                                        <span className="block leading-none">{team.name}</span>
                                         {pendingCount > 0 ? (
                                             <span className="pointer-events-none absolute -top-2 -right-2 z-50 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E97A84] px-1.5 font-poppins text-[11px] leading-none font-bold text-white">
                                                 {pendingCount}

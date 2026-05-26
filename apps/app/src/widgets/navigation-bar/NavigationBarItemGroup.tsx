@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {CircleUserRound, MessageSquareText, SlidersHorizontal, UsersRound} from 'lucide-react';
+import {CircleUserRound, Hospital, MessageSquareText, SlidersHorizontal, UsersRound} from 'lucide-react';
 import {type ComponentType, type SVGProps, useState} from 'react';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useEditWard from '@/features/edit-ward';
@@ -73,13 +73,18 @@ const sections: TNavSection[] = [
                 textKey: 'page.navigationBar.items.wardSettings',
             },
             {
-                path: ROUTE.PROFILE,
-                icon: CircleUserRound,
-                textKey: 'page.navigationBar.items.account',
+                path: ROUTE.WARD_INFO_SETTINGS,
+                icon: Hospital,
+                textKey: 'page.navigationBar.items.wardInfoSettings',
             },
         ],
     },
 ];
+const accountItem: TNavItem = {
+    path: ROUTE.PROFILE,
+    icon: CircleUserRound,
+    textKey: 'page.navigationBar.items.account',
+};
 
 type TNavigationBarItemGroupsProps = {
     collapsed?: boolean;
@@ -157,34 +162,53 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
     const pendingRequestCount = useTotalPendingRequestCount(ward?.shiftTeams);
 
     return (
-        <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('w-full', collapsed ? 'mt-5' : 'mt-6')}>
-            <WardIdentity collapsed={collapsed} ward={ward} />
-            {sections.map((section, sectionIndex) => (
-                <div
-                    key={section.labelKey}
-                    className={cn(collapsed ? (sectionIndex === 0 ? 'mt-0' : 'mt-4') : sectionIndex === 0 ? 'mt-0' : 'mt-7')}
-                >
-                    <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
-                    {collapsed ? null : <div className="px-3 pb-2 text-[12px] font-semibold text-gray-4">{t(section.labelKey)}</div>}
-                    <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
-                        {section.items.map((item) => (
-                            <NavigationBarItem
-                                key={item.path ?? item.textKey}
-                                path={item.path}
-                                activePaths={item.activePaths}
-                                Icon={item.icon}
-                                SelectedIcon={item.selectedIcon}
-                                text={t(item.textKey)}
-                                collapsed={collapsed}
-                                disabled={item.disabled}
-                                badgeCount={
-                                    item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
-                                }
-                            />
-                        ))}
+        <nav
+            aria-label={t('page.navigationBar.ariaLabel')}
+            className={cn('flex min-h-0 w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}
+        >
+            <div className="min-h-0 flex-1 overflow-y-auto">
+                <WardIdentity collapsed={collapsed} ward={ward} />
+                {sections.map((section, sectionIndex) => (
+                    <div
+                        key={section.labelKey}
+                        className={cn(collapsed ? (sectionIndex === 0 ? 'mt-0' : 'mt-4') : sectionIndex === 0 ? 'mt-0' : 'mt-7')}
+                    >
+                        <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
+                        {collapsed ? null : <div className="px-3 pb-2 text-[12px] font-semibold text-gray-4">{t(section.labelKey)}</div>}
+                        <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
+                            {section.items.map((item) => (
+                                <NavigationBarItem
+                                    key={item.path ?? item.textKey}
+                                    path={item.path}
+                                    activePaths={item.activePaths}
+                                    Icon={item.icon}
+                                    SelectedIcon={item.selectedIcon}
+                                    text={t(item.textKey)}
+                                    collapsed={collapsed}
+                                    disabled={item.disabled}
+                                    badgeCount={
+                                        item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
+                                    }
+                                />
+                            ))}
+                        </div>
                     </div>
+                ))}
+            </div>
+            <div className={cn('mt-auto shrink-0', collapsed ? 'pt-4' : 'pt-5')}>
+                <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
+                <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
+                    <NavigationBarItem
+                        path={accountItem.path}
+                        activePaths={accountItem.activePaths}
+                        Icon={accountItem.icon}
+                        SelectedIcon={accountItem.selectedIcon}
+                        text={t(accountItem.textKey)}
+                        collapsed={collapsed}
+                        disabled={accountItem.disabled}
+                    />
                 </div>
-            ))}
+            </div>
         </nav>
     );
 };

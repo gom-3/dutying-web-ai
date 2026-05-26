@@ -157,7 +157,7 @@ const getDeadlineMeta = (deadlineDate?: string, options?: {forceDday?: boolean})
 
 function Metric({icon: Icon, label}: {icon: typeof Eye; label: string | number}) {
     return (
-        <span className="inline-flex items-center gap-1 text-[12px] font-medium text-gray-3">
+        <span className="inline-flex items-center gap-1 text-[12px] font-medium whitespace-nowrap text-gray-3">
             <Icon className="size-3.5" strokeWidth={1.9} aria-hidden="true" />
             {label}
         </span>
@@ -213,7 +213,7 @@ function PostListItem({post, selected, onSelect}: {post: TWardBoardPost; selecte
                         <span className="truncate text-[12px] font-medium text-sub-2.5">
                             {getAuthorName(post)} · {formatDateTime(post.createdAt)}
                         </span>
-                        <span className="flex shrink-0 items-center gap-3">
+                        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0">
                             <Metric icon={Eye} label={post.viewCount ?? 0} />
                             <Metric icon={Heart} label={post.likeCount ?? 0} />
                             <Metric icon={CheckCircle2} label={post.checkCount ?? 0} />
@@ -222,7 +222,12 @@ function PostListItem({post, selected, onSelect}: {post: TWardBoardPost; selecte
                     </div>
                 </div>
                 {thumbnailUrl ? (
-                    <img src={thumbnailUrl} alt="" className="mt-1 h-[86px] w-[86px] shrink-0 rounded-[8px] object-cover" loading="lazy" />
+                    <img
+                        src={thumbnailUrl}
+                        alt=""
+                        className="mt-1 h-[72px] w-[72px] shrink-0 rounded-[8px] object-cover sm:h-[86px] sm:w-[86px]"
+                        loading="lazy"
+                    />
                 ) : null}
             </div>
         </button>
@@ -316,11 +321,11 @@ function CommentThread({
                                     }}
                                     placeholder="답글을 입력해 주세요"
                                     rows={1}
-                                    className="min-h-8 min-w-0 flex-1 resize-none overflow-hidden rounded-[7px] bg-white px-2.5 py-1.5 text-[12px] leading-4 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:ring-main-3"
+                                    className="min-h-10 min-w-0 flex-1 resize-none overflow-hidden rounded-[7px] bg-white px-2.5 py-3 text-[12px] leading-4 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:ring-main-3"
                                 />
                                 <button
                                     type="button"
-                                    className="h-8 rounded-[7px] bg-sub-1 px-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#3A3A42] disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="inline-flex h-10 w-10 items-center justify-center rounded-[7px] bg-sub-1 px-0 text-[12px] font-semibold text-white transition-colors hover:bg-[#3A3A42] disabled:cursor-not-allowed disabled:opacity-40"
                                     disabled={disabled || !replyDraft.trim()}
                                     onClick={() => onSubmitReply(commentId)}
                                 >
@@ -328,7 +333,7 @@ function CommentThread({
                                 </button>
                                 <button
                                     type="button"
-                                    className="h-8 w-8 rounded-[7px] text-gray-4 transition-colors hover:bg-white hover:text-sub-1"
+                                    className="h-10 w-10 rounded-[7px] text-gray-4 transition-colors hover:bg-white hover:text-sub-1"
                                     onClick={onCancelReply}
                                     aria-label="답글 취소"
                                     title="답글 취소"
@@ -438,7 +443,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
     };
 
     return (
-        <div id="board_composer_deadline_picker" ref={pickerRef} className="relative grid max-w-[300px] gap-1.5">
+        <div id="board_composer_deadline_picker" ref={pickerRef} className="relative grid w-full max-w-full gap-1.5 sm:max-w-[300px]">
             <span className="text-[13px] font-semibold text-sub-2">마감일</span>
             <button
                 type="button"
@@ -609,96 +614,102 @@ function DeadlineCalendar({
     );
 
     return (
-        <aside className="min-w-0 rounded-[8px] bg-white p-4">
-            <div className="flex items-center justify-between gap-2">
-                <div>
-                    <p className="text-[13px] font-semibold text-gray-3">병동 캘린더</p>
-                    <h2 className="mt-1 text-[20px] font-semibold text-sub-1">{formatMonthTitle(year, month)}</h2>
-                </div>
-                <div className="flex items-center gap-1">
-                    <button
-                        type="button"
-                        className="grid h-8 w-8 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                        onClick={() => onMoveMonth(-1)}
-                        aria-label="이전 달"
-                        title="이전 달"
-                    >
-                        <ChevronLeft className="size-4" aria-hidden="true" />
-                    </button>
-                    <button
-                        type="button"
-                        className="grid h-8 w-8 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                        onClick={() => onMoveMonth(1)}
-                        aria-label="다음 달"
-                        title="다음 달"
-                    >
-                        <ChevronRight className="size-4" aria-hidden="true" />
-                    </button>
-                </div>
-            </div>
-
-            <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-semibold text-gray-4">
-                {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
-                    <span key={dayLabel} className="h-6 leading-6">
-                        {dayLabel}
-                    </span>
-                ))}
-            </div>
-            <div className="mt-1 grid grid-cols-7 gap-1">
-                {cells.map((cell) => {
-                    const dayDeadlines = deadlinesByDate.get(cell.key) ?? [];
-                    const hasDeadline = dayDeadlines.length > 0;
-
-                    return (
-                        <button
-                            key={cell.key}
-                            type="button"
-                            className={cn(
-                                'relative aspect-square rounded-[8px] text-[12px] font-semibold transition-colors',
-                                cell.inMonth ? 'text-sub-2' : 'text-gray-5',
-                                hasDeadline ? 'bg-main-light text-main-1 hover:bg-main-4' : 'hover:bg-gray-7',
-                            )}
-                            disabled={!hasDeadline}
-                            onClick={() => onSelectPost(dayDeadlines[0].postId)}
-                            aria-label={`${formatDate(cell.key)} 마감 ${dayDeadlines.length}건`}
-                        >
-                            {cell.date.getDate()}
-                            {hasDeadline ? (
-                                <span className="absolute top-1.5 right-1.5 h-1 w-1 rounded-full bg-main-1" aria-hidden="true" />
-                            ) : null}
-                        </button>
-                    );
-                })}
-            </div>
-
-            <div className="mt-5">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-[14px] font-semibold text-sub-1">이번 달 마감</h3>
-                    <span className="text-[12px] font-semibold text-gray-4">{deadlines.length}건</span>
-                </div>
-                <div className="mt-3 space-y-2">
-                    {deadlines.length === 0 ? (
-                        <p className="rounded-[8px] bg-gray-7 px-3 py-3 text-[13px] text-gray-3">마감 글을 등록하면 여기에 보여요.</p>
-                    ) : (
-                        deadlines.slice(0, 5).map((deadline) => (
+        <aside className="min-w-0 rounded-[8px] bg-white p-3">
+            <div className="grid gap-4">
+                <div className="min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                        <div>
+                            <p className="text-[12px] font-semibold text-gray-3">병동 캘린더</p>
+                            <h2 className="mt-0.5 text-[18px] font-semibold text-sub-1">{formatMonthTitle(year, month)}</h2>
+                        </div>
+                        <div className="flex items-center gap-1">
                             <button
-                                key={`${deadline.postId}-${deadline.deadlineDate}`}
                                 type="button"
-                                className="flex w-full items-center gap-3 rounded-[8px] bg-gray-7 px-3 py-2.5 text-left transition-colors hover:bg-main-light"
-                                onClick={() => onSelectPost(deadline.postId)}
+                                className="grid h-7 w-7 place-items-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                                onClick={() => onMoveMonth(-1)}
+                                aria-label="이전 달"
+                                title="이전 달"
                             >
-                                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[8px] bg-white text-[12px] font-bold text-main-1">
-                                    {formatDate(deadline.deadlineDate).replace('월 ', '.').replace('일', '')}
-                                </span>
-                                <span className="min-w-0">
-                                    <span className="block truncate text-[13px] font-semibold text-sub-1">{deadline.postTitle}</span>
-                                    <span className="mt-0.5 block truncate text-[11px] font-medium text-gray-3">
-                                        {deadline.writerName ?? '작성자'}
-                                    </span>
-                                </span>
+                                <ChevronLeft className="size-3.5" aria-hidden="true" />
                             </button>
-                        ))
-                    )}
+                            <button
+                                type="button"
+                                className="grid h-7 w-7 place-items-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                                onClick={() => onMoveMonth(1)}
+                                aria-label="다음 달"
+                                title="다음 달"
+                            >
+                                <ChevronRight className="size-3.5" aria-hidden="true" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-gray-4">
+                        {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
+                            <span key={dayLabel} className="h-5 leading-5">
+                                {dayLabel}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="mt-1 grid grid-cols-7 gap-0.5">
+                        {cells.map((cell) => {
+                            const dayDeadlines = deadlinesByDate.get(cell.key) ?? [];
+                            const hasDeadline = dayDeadlines.length > 0;
+
+                            return (
+                                <button
+                                    key={cell.key}
+                                    type="button"
+                                    className={cn(
+                                        'relative aspect-square rounded-[7px] text-[11px] font-semibold transition-colors',
+                                        cell.inMonth ? 'text-sub-2' : 'text-gray-5',
+                                        hasDeadline ? 'bg-main-light text-main-1 hover:bg-main-4' : 'hover:bg-gray-7',
+                                    )}
+                                    disabled={!hasDeadline}
+                                    onClick={() => onSelectPost(dayDeadlines[0].postId)}
+                                    aria-label={`${formatDate(cell.key)} 마감 ${dayDeadlines.length}건`}
+                                >
+                                    {cell.date.getDate()}
+                                    {hasDeadline ? (
+                                        <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-main-1" aria-hidden="true" />
+                                    ) : null}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="min-w-0">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-[13px] font-semibold text-sub-1">이번 달 마감</h3>
+                        <span className="text-[11px] font-semibold text-gray-4">{deadlines.length}건</span>
+                    </div>
+                    <div className="mt-2.5 space-y-1.5">
+                        {deadlines.length === 0 ? (
+                            <p className="rounded-[8px] bg-gray-7 px-2.5 py-2.5 text-[12px] leading-5 text-gray-3">
+                                마감 글을 등록하면 여기에 보여요.
+                            </p>
+                        ) : (
+                            deadlines.slice(0, 5).map((deadline) => (
+                                <button
+                                    key={`${deadline.postId}-${deadline.deadlineDate}`}
+                                    type="button"
+                                    className="flex w-full items-center gap-2 rounded-[8px] bg-gray-7 px-2.5 py-2 text-left transition-colors hover:bg-main-light"
+                                    onClick={() => onSelectPost(deadline.postId)}
+                                >
+                                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-white text-[11px] font-bold text-main-1">
+                                        {formatDate(deadline.deadlineDate).replace('월 ', '.').replace('일', '')}
+                                    </span>
+                                    <span className="min-w-0">
+                                        <span className="block truncate text-[12px] font-semibold text-sub-1">{deadline.postTitle}</span>
+                                        <span className="mt-0.5 block truncate text-[10px] font-medium text-gray-3">
+                                            {deadline.writerName ?? '작성자'}
+                                        </span>
+                                    </span>
+                                </button>
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </aside>
@@ -1141,16 +1152,15 @@ function BoardPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-[#FAF8FB] px-5 py-5 font-apple lg:px-10 lg:py-7">
-            <div>
-                <p className="text-[13px] font-semibold text-gray-3">병동 소통</p>
-                <h1 className="mt-1 text-[32px] font-semibold text-sub-1">게시판</h1>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-[14px] leading-6 text-gray-3">공지, 요청, 마감 체크를 한곳에서 관리해요.</p>
+        <div className="flex min-h-screen w-full min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
+            <div className="min-w-0">
+                <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">게시판</h1>
+                <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                    <p className="min-w-0 text-[14px] leading-6 text-gray-3">같은 병동 간호사에게 필요한 내용을 공유할 수 있어요.</p>
                     <button
                         id="board_create_button"
                         type="button"
-                        className="inline-flex h-10 items-center rounded-[8px] bg-sub-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-[#3A3A42]"
+                        className="inline-flex h-10 items-center justify-center rounded-[8px] bg-sub-1 px-4 text-[14px] font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#3A3A42]"
                         onClick={() => {
                             setPostDraftSubmitAttempted(false);
                             setIsComposerOpen(true);
@@ -1163,8 +1173,11 @@ function BoardPage() {
                 </div>
             </div>
 
-            <div className="mt-5 grid min-h-0 flex-1 grid-cols-1 gap-4 xl:grid-cols-[minmax(320px,0.9fr)_minmax(420px,1.25fr)_320px]">
-                <section id="board_post_list" className="flex min-h-[520px] min-w-0 flex-col rounded-[8px] bg-white p-3">
+            <div className="mt-3 grid min-h-0 flex-1 grid-cols-[minmax(260px,0.7fr)_minmax(460px,1.35fr)_minmax(280px,320px)] gap-4">
+                <section
+                    id="board_post_list"
+                    className="flex min-h-[360px] min-w-0 flex-col rounded-[8px] bg-white p-3 sm:min-h-[420px] lg:min-h-[520px]"
+                >
                     <div className="mb-2 flex items-center justify-between px-1">
                         <h2 className="text-[15px] font-semibold text-sub-1">게시글</h2>
                         <button
@@ -1245,13 +1258,13 @@ function BoardPage() {
                     )}
                 </section>
 
-                <section className="min-h-[520px] min-w-0 rounded-[8px] bg-white p-5">
+                <section className="min-h-[420px] min-w-0 rounded-[8px] bg-white p-4 sm:min-h-[520px] sm:p-5">
                     {isComposerOpen ? (
                         <form id="board_composer_panel" className="flex h-full min-h-0 flex-col" onSubmit={handleCreatePost} noValidate>
                             <div className="flex items-center justify-between gap-3">
-                                <div>
+                                <div className="min-w-0">
                                     <p className="text-[13px] font-semibold text-gray-3">새 게시글</p>
-                                    <h2 className="mt-1 text-[24px] font-semibold text-sub-1">병동에 공유하기</h2>
+                                    <h2 className="mt-1 text-[22px] font-semibold text-sub-1 sm:text-[24px]">병동에 공유하기</h2>
                                 </div>
                                 <button
                                     type="button"
@@ -1282,7 +1295,7 @@ function BoardPage() {
                                             aria-required="true"
                                             aria-invalid={isPostTitleInvalid}
                                             className={cn(
-                                                'h-11 rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
                                                 isPostTitleInvalid
                                                     ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
                                                     : 'ring-transparent focus:ring-main-3',
@@ -1303,7 +1316,7 @@ function BoardPage() {
                                             aria-required="true"
                                             aria-invalid={isPostContentInvalid}
                                             className={cn(
-                                                'min-h-[220px] resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3.5 py-3 text-[15px] leading-6 text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                                'min-h-[180px] w-full resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3.5 py-3 text-[15px] leading-6 text-sub-1 ring-1 transition outline-none focus:bg-white sm:min-h-[220px]',
                                                 isPostContentInvalid
                                                     ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
                                                     : 'ring-transparent focus:ring-main-3',
@@ -1380,7 +1393,7 @@ function BoardPage() {
                                 <button
                                     id="board_composer_submit"
                                     type="submit"
-                                    className="h-10 rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
+                                    className="h-10 w-full rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                                     disabled={createPostMutation.isPending || isPostImageReading}
                                 >
                                     등록
@@ -1400,7 +1413,7 @@ function BoardPage() {
                                     ) : null}
                                     <h2
                                         className={cn(
-                                            'text-[26px] leading-8 font-semibold text-sub-1',
+                                            'text-[22px] leading-8 font-semibold break-words text-sub-1 sm:text-[26px]',
                                             selectedPost.isNotice ? 'mt-3' : undefined,
                                         )}
                                     >
@@ -1410,7 +1423,7 @@ function BoardPage() {
                                         {getAuthorName(selectedPost)} · {formatDateTime(selectedPost.createdAt)}
                                     </p>
                                 </div>
-                                <div className="flex shrink-0 flex-col items-end gap-2">
+                                <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
                                     {selectedPost.deadlineDate ? (
                                         <div className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-gray-7 px-3 text-[12px] font-semibold text-sub-1">
                                             <Clock3 className="size-3.5 text-main-1" aria-hidden="true" />
@@ -1488,7 +1501,7 @@ function BoardPage() {
                                 <article className="text-[15px] leading-7 whitespace-pre-line text-sub-2">{selectedPost.content}</article>
 
                                 {selectedPost.imageUrls?.length ? (
-                                    <div className="mt-5 grid grid-cols-2 gap-2">
+                                    <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                         {selectedPost.imageUrls.map((imageUrl, index) => (
                                             <button
                                                 key={`${imageUrl}-${index}`}
@@ -1541,7 +1554,10 @@ function BoardPage() {
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-[15px] font-semibold text-sub-1">댓글 {selectedPost.commentCount ?? 0}</h3>
                                     </div>
-                                    <div id="board_comment_form" className="mt-2 flex items-start gap-1.5">
+                                    <div
+                                        id="board_comment_form"
+                                        className="mt-2 flex flex-col items-stretch gap-1.5 sm:flex-row sm:items-start"
+                                    >
                                         <textarea
                                             ref={commentTextareaRef}
                                             value={commentDraft}
@@ -1549,11 +1565,11 @@ function BoardPage() {
                                             onKeyDown={handleCommentKeyDown}
                                             placeholder="댓글을 입력해 주세요"
                                             rows={1}
-                                            className="min-h-9 min-w-0 flex-1 resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3 py-2 text-[13px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:bg-white focus:ring-main-3"
+                                            className="min-h-12 min-w-0 flex-1 resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3 py-[14px] text-[13px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:bg-white focus:ring-main-3"
                                         />
                                         <button
                                             type="button"
-                                            className="inline-flex h-9 items-center rounded-[8px] bg-sub-1 px-2.5 text-[12px] font-semibold text-white transition-colors hover:bg-[#3A3A42] disabled:cursor-not-allowed disabled:opacity-40"
+                                            className="inline-flex h-12 w-12 items-center justify-center rounded-[8px] bg-sub-1 px-0 text-[12px] font-semibold text-white transition-colors hover:bg-[#3A3A42] disabled:cursor-not-allowed disabled:opacity-40"
                                             disabled={!canSubmitComment || createCommentMutation.isPending}
                                             onClick={handleCreateComment}
                                         >
@@ -1589,7 +1605,7 @@ function BoardPage() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex h-full min-h-[480px] items-center justify-center">
+                        <div className="flex h-full min-h-[320px] items-center justify-center sm:min-h-[480px]">
                             <PageState
                                 tone="empty"
                                 title="게시글을 선택해 주세요"

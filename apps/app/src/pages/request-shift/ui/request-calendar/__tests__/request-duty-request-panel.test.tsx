@@ -2,7 +2,7 @@ import {useState} from 'react';
 import toast from 'react-hot-toast';
 import {afterEach, describe, expect, it, vi} from 'vitest';
 import {type TDutyRequest} from '@/entities/shift';
-import {act, fireEvent, render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
+import {act, fireEvent, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import RequestDutyRequestPanel from '../request-duty-request-panel';
 
 const translations: Record<string, string> = {
@@ -119,6 +119,35 @@ describe('RequestDutyRequestPanel', () => {
         await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Kim's D request rejected."));
     });
 
+    it('keeps the pending badge from being clipped by the review toggle', () => {
+        render(
+            <RequestDutyRequestPanel
+                year={2026}
+                month={6}
+                days={[{day: 1, dayType: 'workday'}]}
+                dutyRequestList={[createDutyRequest()]}
+                dutyRequestStatus="success"
+                wardShiftTypeMap={new Map()}
+                canEdit
+                updatingRequestId={null}
+                shiftNurseIdByNurseId={new Map([[10, 20]])}
+                changeFocus={vi.fn()}
+                acceptRequest={vi.fn().mockResolvedValue(true)}
+                acceptRequests={vi.fn().mockResolvedValue(true)}
+                retry={vi.fn()}
+                onAcceptAnalytics={vi.fn()}
+            />,
+        );
+
+        const pendingToggle = screen.getByText('Pending').closest('button');
+
+        if (!pendingToggle) throw new Error('Pending toggle not found');
+
+        expect(pendingToggle).toHaveClass('overflow-visible');
+        expect(pendingToggle).not.toHaveClass('truncate');
+        expect(within(pendingToggle).getByText('1')).toHaveClass('-top-1.5');
+    });
+
     it('keeps a decided pending request visible for 0.5 seconds before removing it', async () => {
         vi.useFakeTimers();
 
@@ -139,9 +168,7 @@ describe('RequestDutyRequestPanel', () => {
                     changeFocus={vi.fn()}
                     acceptRequest={vi.fn().mockImplementation(async (reqShiftId: number, isAccepted: boolean | null) => {
                         setDutyRequestList((current) =>
-                            current.map((request) =>
-                                request.wardReqShiftId === reqShiftId ? {...request, isAccepted} : request,
-                            ),
+                            current.map((request) => (request.wardReqShiftId === reqShiftId ? {...request, isAccepted} : request)),
                         );
 
                         return true;

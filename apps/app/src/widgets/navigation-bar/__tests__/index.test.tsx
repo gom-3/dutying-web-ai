@@ -5,11 +5,24 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import NavigationBar from '..';
 
 const mockUseTotalPendingRequestCount = vi.fn(() => 0);
-const mockUseEditWard = vi.fn(() => ({
+type TMockUseEditWardResult = {
     state: {
-        watingNurses: [],
-    },
-}));
+        ward?: {
+            hospitalName?: string;
+            name?: string;
+            code?: string;
+            shiftTeams?: unknown[];
+        };
+        watingNurses: unknown[];
+    };
+};
+const mockUseEditWard = vi.fn(
+    (): TMockUseEditWardResult => ({
+        state: {
+            watingNurses: [],
+        },
+    }),
+);
 const translations = {
     'page.navigationBar.ariaLabel': '주요 메뉴',
     'page.navigationBar.expandAria': '사이드바 펼치기',
@@ -22,6 +35,7 @@ const translations = {
     'page.navigationBar.items.board': '게시판',
     'page.navigationBar.items.member': '근무자',
     'page.navigationBar.items.wardSettings': '근무 설정',
+    'page.navigationBar.items.wardInfoSettings': '병동 설정',
     'page.navigationBar.items.account': '계정',
 } as const;
 
@@ -168,14 +182,17 @@ describe('NavigationBar', () => {
         expect(screen.queryByRole('button', {name: '듀팅 병동코드 복사하기'})).not.toBeInTheDocument();
     });
 
-    it('설정 섹션에 계정 메뉴를 노출하고 하단 프로필 영역은 렌더링하지 않는다', () => {
+    it('계정 메뉴를 내비게이션 하단에 고정하고 하단 프로필 영역은 렌더링하지 않는다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
             </MemoryRouter>,
         );
 
-        expect(screen.getByRole('button', {name: '계정'})).toBeInTheDocument();
+        const accountButton = screen.getByRole('button', {name: '계정'});
+
+        expect(accountButton).toBeInTheDocument();
+        expect(accountButton.parentElement?.parentElement).toHaveClass('mt-auto');
         expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
@@ -210,6 +227,39 @@ describe('NavigationBar', () => {
         await userEvent.click(screen.getByRole('button', {name: '계정'}));
 
         expect(await screen.findByText('profile page')).toBeInTheDocument();
+    });
+
+    it('병동 설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route
+                        path={ROUTE.MAKE}
+                        element={
+                            <div className="flex">
+                                <NavigationBar />
+                                <div>make page</div>
+                            </div>
+                        }
+                    />
+                    <Route
+                        path={ROUTE.WARD_INFO_SETTINGS}
+                        element={
+                            <div className="flex">
+                                <NavigationBar />
+                                <div>ward info settings page</div>
+                            </div>
+                        }
+                    />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('make page')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '병동 설정'}));
+
+        expect(await screen.findByText('ward info settings page')).toBeInTheDocument();
     });
 
     it('사이드바를 접어도 주요 메뉴는 아이콘 버튼으로 남는다', async () => {

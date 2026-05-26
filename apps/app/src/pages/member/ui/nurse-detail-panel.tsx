@@ -1,6 +1,6 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
-import {ArrowRightLeft, Check, ChevronRight, Loader2, Settings2, UsersRound} from 'lucide-react';
+import {ArrowRightLeft, Check, ChevronRight, Loader2, Settings2} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {events, sendEvent} from '@/analytics';
@@ -121,23 +121,21 @@ function NurseDetailPanel({
             null
         );
     }, [selectedNurse, shiftTeams]);
-    const currentShiftTeam = useMemo(
-        () => shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === selectedShiftTeamId) ?? null,
-        [selectedShiftTeamId, shiftTeams],
-    );
     const moveTargetShiftTeams = useMemo(
         () => (shiftTeams ?? []).filter((shiftTeam) => shiftTeam.shiftTeamId !== selectedShiftTeamId),
         [selectedShiftTeamId, shiftTeams],
     );
 
     if (!selectedNurse || !writeNurse) {
-        return <aside className="min-h-[680px] w-[400px] rounded-[18px] bg-white p-6 shadow-[0_12px_34px_rgba(91,84,118,0.16)]" />;
+        return (
+            <aside className="min-h-[680px] w-[360px] rounded-[18px] bg-white p-5 shadow-[0_12px_34px_rgba(91,84,118,0.16)] min-[1440px]:w-[400px] min-[1440px]:p-6" />
+        );
     }
 
     return (
         <TooltipProvider delayDuration={120}>
-            <aside className="w-[400px] overflow-hidden rounded-[18px] border border-white/80 bg-white shadow-[0_12px_34px_rgba(91,84,118,0.16)] [&_button:not(:disabled)]:cursor-pointer">
-                <div className="px-6 pt-6 pb-5">
+            <aside className="w-[360px] overflow-hidden rounded-[18px] border border-white/80 bg-white shadow-[0_12px_34px_rgba(91,84,118,0.16)] min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
+                <div className="px-5 pt-5 pb-4 min-[1440px]:px-6 min-[1440px]:pt-6 min-[1440px]:pb-5">
                     <div className="flex items-center justify-between">
                         <p className="font-apple text-[13px] font-semibold text-gray-3">{t('page.member.table.name')}</p>
                         <button
@@ -158,7 +156,7 @@ function NurseDetailPanel({
                             maxLength={30}
                             placeholder={showNameRequiredError ? '이름' : undefined}
                             className={cn(
-                                'h-12 min-w-0 rounded-[12px] border-gray-6 px-3.5 text-[22px] font-bold text-text-1 shadow-none outline-none focus:!border-2 focus-visible:!border-2',
+                                'h-11 min-w-0 rounded-[12px] border-gray-6 px-3.5 text-[20px] font-bold text-text-1 shadow-none outline-none focus:!border-2 focus-visible:!border-2 min-[1440px]:h-12 min-[1440px]:text-[22px]',
                                 showNameRequiredError &&
                                     '!border-2 !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-2 focus:!outline-[#E57373] focus-visible:!border-[#E57373]',
                             )}
@@ -178,7 +176,7 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     disabled={isBusy}
-                                    className="inline-flex h-12 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50"
+                                    className="inline-flex h-11 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1440px]:h-12"
                                     onClick={() => {
                                         if (writeNurse.isConnected) {
                                             setDisconnectConfirmModalOpen(true);
@@ -247,26 +245,7 @@ function NurseDetailPanel({
                     ) : null}
                 </div>
 
-                <div className="border-t border-gray-7 px-6 py-5">
-                    <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="font-apple text-[14px] font-semibold text-[#5C667D]">소속 팀</p>
-                            <div className="mt-2 inline-flex max-w-full items-center gap-2 rounded-[10px] bg-gray-7 px-3 py-2">
-                                <UsersRound className="h-4 w-4 shrink-0 text-main-1" strokeWidth={2.3} />
-                                <span className="min-w-0 truncate font-apple text-[15px] font-semibold text-sub-1">
-                                    {currentShiftTeam?.name ?? '-'}
-                                </span>
-                                {currentShiftTeam ? (
-                                    <span className="shrink-0 font-poppins text-[13px] font-semibold text-gray-3">
-                                        {currentShiftTeam.nurses.length}
-                                    </span>
-                                ) : null}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-7 px-6 py-5">
+                <div className="border-t border-gray-7 px-5 py-4 min-[1440px]:px-6 min-[1440px]:py-5">
                     <div className="flex items-center justify-between">
                         <p className="font-apple text-[14px] font-semibold text-[#5C667D]">{t('page.member.detail.shiftTypes')}</p>
                         <Tooltip>
@@ -293,7 +272,7 @@ function NurseDetailPanel({
                                     disabled={isBusy}
                                     aria-pressed={isPossible}
                                     className={cn(
-                                        'inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-3 py-1.5 font-apple text-[15px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50',
+                                        'inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-2 py-1.5 font-apple text-[14px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:px-3 min-[1440px]:text-[15px]',
                                     )}
                                     style={
                                         isPossible
@@ -340,11 +319,11 @@ function NurseDetailPanel({
                     </div>
                 </div>
 
-                <div className="border-t border-gray-7 px-6 py-5">
+                <div className="border-t border-gray-7 px-5 py-4 min-[1440px]:px-6 min-[1440px]:py-5">
                     <p className="font-apple text-[14px] font-semibold text-[#5C667D]">역할 및 권한</p>
                     <div className="mt-3 grid grid-cols-2 gap-2">
-                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3.5">
-                            <p className="font-apple text-[14px] font-medium text-sub-2">프리셉터</p>
+                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3 min-[1440px]:px-3.5">
+                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉터</p>
                             <button
                                 type="button"
                                 role="checkbox"
@@ -368,8 +347,8 @@ function NurseDetailPanel({
                                 <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                             </button>
                         </div>
-                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3.5">
-                            <p className="font-apple text-[14px] font-medium text-sub-2">프리셉티</p>
+                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3 min-[1440px]:px-3.5">
+                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉티</p>
                             <button
                                 type="button"
                                 role="checkbox"
@@ -397,8 +376,8 @@ function NurseDetailPanel({
                                 <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                             </button>
                         </div>
-                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3.5">
-                            <p className="font-apple text-[14px] font-medium text-sub-2">근무투입</p>
+                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3 min-[1440px]:px-3.5">
+                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">근무투입</p>
                             <Switch
                                 checked={writeNurse.isWorker}
                                 disabled={isBusy}
@@ -408,8 +387,8 @@ function NurseDetailPanel({
                                 aria-label={`${writeNurse.name} 근무투입`}
                             />
                         </div>
-                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3.5">
-                            <p className="font-apple text-[14px] font-medium text-sub-2">근무표 관리자</p>
+                        <div className="flex min-h-11 items-center justify-between rounded-[12px] bg-gray-7 px-3 min-[1440px]:px-3.5">
+                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">근무표 관리자</p>
                             <button
                                 type="button"
                                 role="checkbox"
@@ -430,14 +409,14 @@ function NurseDetailPanel({
                     </div>
                 </div>
 
-                <div className="border-t border-gray-7 px-6 pt-5 pb-6">
+                <div className="border-t border-gray-7 px-5 pt-4 pb-5 min-[1440px]:px-6 min-[1440px]:pt-5 min-[1440px]:pb-6">
                     <p className="font-apple text-[14px] font-semibold text-[#5C667D]">메모</p>
                     <textarea
                         name="nurseMemo"
                         aria-label={t('page.member.detail.memo')}
                         value={writeNurse.memo ?? ''}
                         disabled={isBusy}
-                        className="mt-3 h-24 w-full resize-none rounded-[12px] border border-gray-6 bg-[#FDFCFE] p-3.5 font-apple text-[15px] leading-6 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                        className="mt-3 h-24 w-full resize-none rounded-[12px] border border-gray-6 bg-main-bg p-3.5 font-apple text-[15px] leading-6 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
                         onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, memo: event.target.value} : prev))}
                         onBlur={() => void autoSaveDraft(writeNurse)}
                     />

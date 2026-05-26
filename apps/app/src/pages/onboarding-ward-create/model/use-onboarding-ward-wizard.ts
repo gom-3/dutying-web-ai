@@ -36,7 +36,7 @@ import {
     updateTeamNameDraft,
 } from './draft';
 import {sortNursesByMode} from './sort';
-import {createOnboardingWardCreateExecutor} from './submission';
+import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
 import type {TSortMode} from './types';
 
 const MAX_STEP = 4;
@@ -133,6 +133,7 @@ function useOnboardingWardWizard() {
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
+    const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
     const onboardingWardCreateExecutor = useMemo(() => createOnboardingWardCreateExecutor(createWard), [createWard]);
 
     useEffect(() => {
@@ -409,11 +410,13 @@ function useOnboardingWardWizard() {
             return;
         }
 
+        setCreatedWard(null);
         setSubmissionStatus('submitting');
 
         try {
             const submission = await onboardingWardCreateExecutor(nextDraft);
 
+            setCreatedWard(submission.ward ?? null);
             setSubmissionStatus('success');
             toast.success(submission.successMessage);
         } catch (error) {
@@ -462,6 +465,7 @@ function useOnboardingWardWizard() {
         uploadStatus,
         uploadError,
         uploadWarnings,
+        createdWard,
         saveSkillConfig,
         disableSkillConfig,
         complete,
@@ -476,6 +480,3 @@ function useOnboardingWardWizard() {
 }
 
 export default useOnboardingWardWizard;
-
-
-

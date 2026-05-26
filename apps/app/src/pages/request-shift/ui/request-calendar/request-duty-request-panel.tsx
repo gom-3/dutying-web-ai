@@ -5,6 +5,7 @@ import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
+import requestEmptyShiftImage from '@/shared/assets/images/request-empty-shift.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {getRequestFocus} from './utils';
@@ -25,6 +26,7 @@ interface IRequestDutyRequestPanelProps {
     retry: () => Promise<unknown>;
     onAcceptAnalytics: (accepted: boolean) => void;
     defaultReviewMode?: TReviewMode;
+    className?: string;
 }
 
 type TReviewMode = 'date' | 'request' | 'pending' | 'nurse';
@@ -49,6 +51,17 @@ const REQUEST_ROW_PAGE_SIZE = 9;
 const PENDING_REQUEST_DISMISS_DELAY_MS = 500;
 const REVIEW_PANEL_SURFACE_CLASS_NAME = 'bg-gray-7';
 const REVIEW_ROW_SURFACE_CLASS_NAME = 'bg-white';
+const REQUEST_EMPTY_VISUAL = (
+    <img
+        src={requestEmptyShiftImage}
+        alt=""
+        aria-hidden="true"
+        className="h-[180px] w-[208px] object-contain"
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+    />
+);
 const WEEKDAY_LABELS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 const getRequestTimestamp = (request: TDutyRequest) => {
     const timestamp = new Date(request.requestDate).getTime();
@@ -96,7 +109,7 @@ const getRequestShiftType = (request: TDutyRequest, wardShiftTypeMap: Map<number
 };
 const getActionButtonClassName = ({active, tone}: {active: boolean; tone: 'accept' | 'reject'}) =>
     twMerge(
-        'h-8 min-w-0 cursor-pointer rounded-[10px] px-2 font-apple text-[12px] font-semibold transition-colors disabled:cursor-wait disabled:opacity-60',
+        'h-8 min-w-0 cursor-pointer rounded-[10px] px-1.5 font-apple text-[11px] font-semibold transition-colors min-[1440px]:px-2 min-[1440px]:text-[12px] disabled:cursor-wait disabled:opacity-60',
         active && tone === 'accept' && 'bg-main-1 text-white hover:bg-main-2',
         active && tone === 'reject' && 'bg-gray-3 text-white hover:bg-sub-2',
         !active && 'bg-[#EDF2F7] text-gray-3 hover:bg-[#E4ECF5] hover:text-sub-1',
@@ -146,6 +159,7 @@ export default function RequestDutyRequestPanel({
     retry,
     onAcceptAnalytics,
     defaultReviewMode = 'date',
+    className,
 }: IRequestDutyRequestPanelProps) {
     const {t} = useTypedTranslation();
     const [reviewMode, setReviewMode] = useState<TReviewMode>(defaultReviewMode);
@@ -157,7 +171,7 @@ export default function RequestDutyRequestPanel({
     const displayedRequestList = canEdit ? dutyRequestList : dutyRequestList?.filter((request) => request.isAccepted === true);
     const panelTitle = canEdit ? t('page.request.panel.editTitle') : t('page.request.panel.readonlyTitle');
     const emptyTitle = canEdit ? t('page.request.panel.emptyTitleEdit') : t('page.request.panel.emptyTitleReadonly');
-    const emptyDescription = canEdit ? t('page.request.panel.emptyDescriptionEdit') : t('page.request.panel.emptyDescriptionReadonly');
+    const emptyDescription = canEdit ? undefined : t('page.request.panel.emptyDescriptionReadonly');
     const sortedRequestList = useMemo(() => {
         const requestById = new Map((displayedRequestList ?? []).map((request) => [request.wardReqShiftId, request]));
 
@@ -250,6 +264,7 @@ export default function RequestDutyRequestPanel({
     const hasRequestPagination = totalDisplayCount > pageSize;
     const hasAnyRequest = sortedRequestList.length > 0;
     const hasVisibleRequest = totalDisplayCount > 0;
+    const shouldShowRequestEmptyVisual = !(reviewMode === 'pending' && hasAnyRequest);
     const reviewModeOptions: Array<{value: TReviewMode; label: string; count?: number}> = [
         {value: 'date', label: t('page.request.panel.sortByDate')},
         {value: 'nurse', label: t('page.request.panel.sortByNurse')},
@@ -337,7 +352,7 @@ export default function RequestDutyRequestPanel({
             <div
                 key={dutyRequest.wardReqShiftId}
                 className={twMerge(
-                    'flex min-w-0 items-center gap-2 rounded-[12px] px-2.5 py-2 transition-colors',
+                    'flex min-w-0 items-center gap-1.5 rounded-[12px] px-2 py-2 transition-colors min-[1440px]:gap-2 min-[1440px]:px-2.5',
                     REVIEW_ROW_SURFACE_CLASS_NAME,
                     requestFocus && 'hover:bg-[#FBFDFF]',
                     (isUpdating || isExitingPendingRequest) && 'opacity-70',
@@ -372,7 +387,7 @@ export default function RequestDutyRequestPanel({
                     />
                 </button>
                 {canEdit ? (
-                    <div className="ml-auto grid w-[106px] shrink-0 grid-cols-2 gap-1">
+                    <div className="ml-auto grid w-[94px] shrink-0 grid-cols-2 gap-1 min-[1440px]:w-[106px]">
                         <button
                             type="button"
                             className={getActionButtonClassName({active: isAccepted, tone: 'accept'})}
@@ -398,10 +413,14 @@ export default function RequestDutyRequestPanel({
     };
 
     return (
-        <aside id="nurse_request_list" className="h-fit w-full rounded-[18px] bg-white" aria-label={panelDisplayTitle}>
-            <div className="px-2.5 pt-2.5">
+        <aside
+            id="nurse_request_list"
+            className={twMerge('h-fit w-full min-w-0 rounded-[18px] bg-white', className)}
+            aria-label={panelDisplayTitle}
+        >
+            <div className="px-2 pt-2 min-[1440px]:px-2.5 min-[1440px]:pt-2.5">
                 <div className="min-w-0">
-                    <p className="font-apple text-[17px] font-semibold text-sub-1">{panelDisplayTitle}</p>
+                    <p className="pl-1 font-apple text-[15px] font-semibold text-sub-1 min-[1440px]:text-[17px]">{panelDisplayTitle}</p>
                 </div>
                 {canEdit && hasAnyRequest ? (
                     <div
@@ -414,7 +433,7 @@ export default function RequestDutyRequestPanel({
                                 type="button"
                                 id={option.value === 'pending' ? 'nurse_request_pending_toggle' : undefined}
                                 className={twMerge(
-                                    'relative h-8 cursor-pointer rounded-[9px] px-2 font-apple text-[12px] font-semibold transition-colors',
+                                    'relative h-8 min-w-0 cursor-pointer overflow-visible rounded-[9px] px-1.5 font-apple text-[11px] font-semibold whitespace-nowrap transition-colors min-[1440px]:px-2 min-[1440px]:text-[12px]',
                                     reviewMode === option.value ? 'bg-white text-sub-1' : 'text-gray-4 hover:text-sub-1',
                                 )}
                                 aria-pressed={reviewMode === option.value}
@@ -423,7 +442,7 @@ export default function RequestDutyRequestPanel({
                                     setRequestPageIndex(0);
                                 }}
                             >
-                                {option.label}
+                                <span className="block min-w-0 truncate">{option.label}</span>
                                 {option.count !== undefined && option.count > 0 ? (
                                     <span className="absolute -top-1.5 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F07C84] px-1 font-poppins text-[10px] leading-none font-semibold text-white">
                                         {option.count}
@@ -435,7 +454,7 @@ export default function RequestDutyRequestPanel({
                 ) : null}
             </div>
 
-            <div className="px-2 pt-3 pb-2">
+            <div className="px-1.5 pt-2.5 pb-2 min-[1440px]:px-2 min-[1440px]:pt-3">
                 {dutyRequestStatus === 'pending' ? (
                     <PageState
                         tone="loading"
@@ -466,7 +485,7 @@ export default function RequestDutyRequestPanel({
                                                 key={requestGroup.key}
                                                 className={twMerge('flex gap-1.5 rounded-[16px] p-1.5', REVIEW_PANEL_SURFACE_CLASS_NAME)}
                                             >
-                                                <div className="flex w-[62px] shrink-0 flex-col items-center justify-center text-center">
+                                                <div className="flex w-[56px] shrink-0 flex-col items-center justify-center text-center min-[1440px]:w-[62px]">
                                                     <span className="font-apple text-[11px] leading-none font-semibold text-gray-4">
                                                         {month}월
                                                     </span>
@@ -497,7 +516,7 @@ export default function RequestDutyRequestPanel({
                                         key={requestGroup.key}
                                         className={twMerge('flex gap-1.5 rounded-[16px] p-1.5', REVIEW_PANEL_SURFACE_CLASS_NAME)}
                                     >
-                                        <div className="flex w-[62px] shrink-0 flex-col items-center justify-center text-center">
+                                        <div className="flex w-[56px] shrink-0 flex-col items-center justify-center text-center min-[1440px]:w-[62px]">
                                             <span className="max-w-full truncate font-apple text-[15px] leading-none font-semibold tracking-[-0.02em] text-sub-1">
                                                 {requestGroup.nurseName}
                                             </span>
@@ -545,6 +564,7 @@ export default function RequestDutyRequestPanel({
                         tone="empty"
                         title={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyTitle : emptyTitle}
                         description={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyDescription : emptyDescription}
+                        visual={shouldShowRequestEmptyVisual ? REQUEST_EMPTY_VISUAL : undefined}
                         className="min-h-[132px] px-5 py-6"
                     />
                 )}

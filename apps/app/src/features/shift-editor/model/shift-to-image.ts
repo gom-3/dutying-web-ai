@@ -35,9 +35,16 @@ export function downloadBlobAsFile(blob: Blob, fileName: string) {
     window.URL.revokeObjectURL(url);
 }
 
+function getAppBackgroundColor() {
+    return (
+        getComputedStyle(document.documentElement).getPropertyValue('--app-background').trim() ||
+        getComputedStyle(document.body).backgroundColor
+    );
+}
+
 export async function shiftToImage({element, year, month, teamName}: TShiftToImageOptions) {
     const blob = await toBlob(element, {
-        backgroundColor: '#FDFCFE',
+        backgroundColor: getAppBackgroundColor(),
         cacheBust: true,
         pixelRatio: 2,
         width: Math.max(element.scrollWidth, element.clientWidth),

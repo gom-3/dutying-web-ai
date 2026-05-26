@@ -58,8 +58,8 @@ function CountDutyByDay({
             id="count_by_day"
             className={cn(
                 'w-full min-w-0',
-                isCard && 'overflow-hidden rounded-[1.25rem] bg-[#FDFCFE] shadow-[0rem_-0.25rem_2.125rem_0rem_#EDE9F5]',
-                !isCard && 'border-t-[.0625rem] border-[#E0E0E0] bg-[#FDFCFE]',
+                isCard && 'overflow-hidden rounded-[1.25rem] bg-main-bg shadow-[0rem_-0.25rem_2.125rem_0rem_#EDE9F5]',
+                !isCard && 'border-t-[.0625rem] border-[#E0E0E0] bg-main-bg',
                 className,
             )}
         >

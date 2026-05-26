@@ -27,7 +27,7 @@ function ImportantIntroBadge() {
 function StepIntroDescription({currentStep, description}: {currentStep: TMakeShiftStep; description: string}) {
     if (currentStep === 2) {
         return (
-            <div className="mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+            <div className="mt-4 min-h-[78px] font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:min-h-[56px] min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
                 <p>
                     꼭 지켜야 할 조건은 <ImportantIntroBadge /> 버튼을 켜 주세요.
                 </p>
@@ -35,7 +35,11 @@ function StepIntroDescription({currentStep, description}: {currentStep: TMakeShi
         );
     }
 
-    return <p className="mt-4 font-apple text-[16px] leading-[28px] font-medium whitespace-pre-line text-gray-3">{description}</p>;
+    return (
+        <p className="mt-4 min-h-[78px] font-apple text-[15px] leading-[26px] font-medium whitespace-pre-line text-gray-3 min-[1440px]:min-h-[56px] min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
+            {description}
+        </p>
+    );
 }
 
 export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onNext}: TMakeShiftStepContentProps) {
@@ -63,7 +67,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
 
         return (
             <div
-                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-0 flex-1 flex-col pb-3 ${widePtClass}`}
+                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-[1360px] flex-1 flex-col pb-3 ${widePtClass}`}
             >
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
@@ -81,17 +85,17 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     };
 
     return (
-        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-0 flex-1 gap-4 pt-7 pb-3">
-            <aside className="make-shift-step-content__intro flex w-[clamp(292px,25vw,360px)] shrink-0 flex-col justify-between px-1 py-2">
-                <div>
-                    <p className="make-shift-step-content__intro-title font-apple text-[28px] leading-tight font-bold text-sub-1">
+        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] flex-1 gap-4 pt-7 pb-3">
+            <aside className="make-shift-step-content__intro flex w-[400px] shrink-0 flex-col px-1 py-2 min-[1440px]:w-[clamp(400px,25vw,440px)]">
+                <div className="min-h-[159px] pl-8 min-[1440px]:min-h-[140px] min-[1440px]:pl-10">
+                    <p className="make-shift-step-content__intro-title font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">
                         {intro ? t(intro.titleKey) : ''}
                     </p>
                     {intro && <StepIntroDescription currentStep={currentStep} description={t(intro.descriptionKey)} />}
                 </div>
 
-                <div className="make-shift-step-content__intro-actions mt-8 flex items-center justify-end gap-2">
-                    {currentStep > 1 && (
+                <div className="make-shift-step-content__intro-actions mt-[50px] grid w-[292px] grid-cols-[auto_auto] items-center justify-end gap-2">
+                    {currentStep > 1 ? (
                         <Button
                             variant="secondary"
                             size="md"
@@ -103,6 +107,8 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                             {transitioning === 'prev' ? <BouncingDots className="w-5 shrink-0 text-main-1" /> : null}
                             {transitioning === 'prev' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.previous')}
                         </Button>
+                    ) : (
+                        <span aria-hidden="true" className={`invisible ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`} />
                     )}
                     <Button
                         size="md"
@@ -117,7 +123,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                 </div>
             </aside>
 
-            <div className="make-shift-step-content__main min-w-0 flex-1">
+            <div className="make-shift-step-content__main min-w-[920px] flex-1">
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>

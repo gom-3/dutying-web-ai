@@ -25,6 +25,7 @@ export const en: TLocale = {
                 board: 'Board',
                 member: 'Members',
                 wardSettings: 'Duty settings',
+                wardInfoSettings: 'Ward settings',
                 account: 'Account',
             },
         },
@@ -338,6 +339,11 @@ export const en: TLocale = {
                 savedDescription: 'Your latest changes have been saved.',
                 noTeamsLabel: 'No registered teams',
                 saveError: 'Failed to save the latest changes. Please try saving again.',
+            },
+            calendar: {
+                noNurseTitleSuffix: ' has no nurses yet',
+                noNurseDescription: 'Add nurses to this team from Member Management before reviewing requested shifts.',
+                noNurseAction: 'Go to Member Management',
             },
             panel: {
                 readonlyTitle: 'Applied requested shifts',
