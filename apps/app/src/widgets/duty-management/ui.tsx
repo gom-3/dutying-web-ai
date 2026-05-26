@@ -85,8 +85,8 @@ export function DutyManagementMonthTeamHeader({
     const shouldShowTeamSwitcher = shiftTeams.length !== 1;
 
     return (
-        <div className={cn('flex flex-wrap items-center', isDarkSegmented ? 'gap-2' : 'gap-4')}>
-            <div className={cn('flex items-center', isDarkSegmented ? 'gap-1' : 'gap-2')}>
+        <div className={cn('flex items-center', isDarkSegmented ? 'min-w-0 flex-nowrap gap-2' : 'flex-wrap gap-4')}>
+            <div className={cn('flex shrink-0 items-center', isDarkSegmented ? 'gap-1' : 'gap-2')}>
                 <button
                     type="button"
                     className={cn(
@@ -128,16 +128,12 @@ export function DutyManagementMonthTeamHeader({
             {shouldShowTeamSwitcher ? (
                 <div
                     className={cn(
-                        'max-w-full',
-                        isDarkSegmented ? 'rounded-[12px] bg-[#3D4658] p-0.5' : 'rounded-[10px] bg-main-light px-[10px] py-[7px]',
+                        isDarkSegmented
+                            ? 'max-w-full min-w-0 rounded-[12px] bg-[#3D4658] p-0.5'
+                            : 'max-w-full rounded-[10px] bg-main-light px-[10px] py-[7px]',
                     )}
                 >
-                    <div
-                        className={cn(
-                            'scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap',
-                            isDarkSegmented && 'overflow-visible',
-                        )}
-                    >
+                    <div className="scrollbar-hide flex max-w-full min-w-0 gap-1 overflow-x-auto whitespace-nowrap">
                         {shiftTeams.map((team) => {
                             const selected = team.shiftTeamId === currentShiftTeamId;
 
@@ -150,7 +146,7 @@ export function DutyManagementMonthTeamHeader({
                                     className={cn(
                                         isDarkSegmented
                                             ? cn(
-                                                  'box-border grid h-8 max-h-8 min-h-8 min-w-[92px] place-items-center rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                                  'box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                                                   selected
                                                       ? 'bg-white text-sub-1'
                                                       : 'text-[#B8C0CF] hover:text-white disabled:hover:bg-transparent',

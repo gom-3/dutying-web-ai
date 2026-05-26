@@ -1,8 +1,10 @@
+import {cn} from '@dutying/utils/style';
 import {ArrowLeft, ArrowRight, Trash2} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useNavigate} from 'react-router';
+import {getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
@@ -17,6 +19,8 @@ import SkillLevelModal from './ui/steps/skill-level-modal';
 import UploadStep from './ui/steps/upload-step';
 import WardIdentityStep from './ui/steps/ward-identity-step';
 import WizardButton from './ui/wizard-button';
+
+const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
 
 function OnboardingWardCreatePage() {
     const navigate = useNavigate();
@@ -50,6 +54,7 @@ function OnboardingWardCreatePage() {
         uploadStatus,
         uploadError,
         uploadWarnings,
+        createdWard,
         saveSkillConfig,
         disableSkillConfig,
         complete,
@@ -172,22 +177,32 @@ function OnboardingWardCreatePage() {
     useEffect(() => {
         if (isOnboardingWardCreatePreviewAllowed()) return;
 
+        if (isSubmitting || isSuccess) {
+            return;
+        }
+
         if (accountMe && accountMe.status !== 'WARD_SELECT_PENDING') {
             navigate(ROUTE.REGISTER);
         }
-    }, [accountMe, navigate]);
+    }, [accountMe, isSubmitting, isSuccess, navigate]);
 
     useEffect(() => {
         if (!isSuccess) {
             return;
         }
 
-        const navigateTimer = window.setTimeout(() => {
-            navigate(`${ROUTE.DUTY}?onboardingWardCreated=1`, {replace: true});
-        }, 1000);
+        const guidePayload = createdWard
+            ? {
+                  wardCode: createdWard.code,
+                  wardTitle: getWardDisplayTitle(createdWard),
+              }
+            : true;
 
-        return () => window.clearTimeout(navigateTimer);
-    }, [isSuccess, navigate]);
+        window.sessionStorage.setItem(WARD_CREATED_GUIDE_STORAGE_KEY, JSON.stringify(guidePayload));
+        navigate(ROUTE.DUTY, {replace: true, state: {onboardingWardCreated: guidePayload}});
+
+        return undefined;
+    }, [createdWard, isSuccess, navigate]);
 
     const stepContent = (() => {
         switch (draft.currentStep) {
@@ -269,7 +284,7 @@ function OnboardingWardCreatePage() {
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
     return (
-        <div className="relative min-h-screen bg-[#FAF8FB]">
+        <div className="relative min-h-screen bg-main-bg">
             <HeaderLogo />
             <SkillLevelModal
                 open={showSkillModal}
@@ -314,7 +329,12 @@ function OnboardingWardCreatePage() {
                       modalRoot,
                   )
                 : null}
-            <div className="mx-auto w-[1120px] pt-[100px] pb-20">
+            <div
+                className={cn(
+                    'mx-auto w-full px-4 pt-[100px] pb-20 sm:px-6 lg:px-0',
+                    draft.currentStep === 1 ? 'max-w-[480px]' : 'max-w-[1120px]',
+                )}
+            >
                 {draft.currentStep === 1 ? (
                     <button
                         type="button"

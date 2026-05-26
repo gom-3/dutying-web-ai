@@ -1,4 +1,5 @@
-﻿import {useQuery} from '@tanstack/react-query';
+﻿import {cn} from '@dutying/utils/style';
+import {useQuery} from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -13,7 +14,6 @@ import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
-import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfileFormDirty} from './model';
 
@@ -21,13 +21,21 @@ type TProfileField = 'name' | 'phoneNum';
 type TProfileErrors = Partial<Record<TProfileField, string>>;
 type TProfileTouched = Partial<Record<TProfileField, boolean>>;
 
+const NURSE_NAME_MAX_LENGTH = 20;
+const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
+const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
+const FIELD_CLASS =
+    'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
+const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const normalizePhone = (value: string) => value.replace(/\D/g, '').slice(0, 11);
 const validateName = (value: string) => {
     const trimmed = value.trim();
 
     if (!trimmed) return '이름을 입력해 주세요.';
 
-    if (trimmed.length > 30) return '이름은 30자 이하로 입력해 주세요.';
+    if (trimmed.length > NURSE_NAME_MAX_LENGTH || !NURSE_NAME_ALLOWED_REGEXP.test(trimmed)) {
+        return "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.";
+    }
 
     return undefined;
 };
@@ -36,7 +44,9 @@ const validatePhoneNum = (value: string) => {
 
     if (!digits) return '전화번호를 입력해 주세요.';
 
-    if (digits.length < 10 || digits.length > 11) return '전화번호는 10~11자리 숫자로 입력해 주세요.';
+    if (!/^01([0|1|6|7|8|9])([0-9]{3,4})([0-9]{4})$/.test(digits)) {
+        return '전화번호는 01012341234처럼 숫자만 입력해 주세요.';
+    }
 
     return undefined;
 };
@@ -109,6 +119,14 @@ function ProfilePage() {
             isSaved = await handleEditProfile(writeNurse, currentProfileImage);
         } else {
             const nextName = (draftName.trim() || accountMe?.name) ?? '';
+            const nameError = validateName(nextName);
+
+            if (nameError) {
+                setFieldErrors({name: nameError});
+                setFieldTouched({name: true});
+
+                return;
+            }
 
             if (!nextName) return;
 
@@ -265,13 +283,14 @@ function ProfilePage() {
                             <label htmlFor="name" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
                                 이름
                             </label>
-                            <Input
+                            <input
                                 id="name"
-                                variant="foundation"
-                                fieldSize="lg"
+                                className={cn(FIELD_CLASS, fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
+                                maxLength={NURSE_NAME_MAX_LENGTH}
+                                placeholder="이름을 입력하세요"
                                 value={writeNurse?.name ?? draftName}
                                 onChange={(e) => {
-                                    const nextValue = e.target.value;
+                                    const nextValue = sanitizeNurseNameInput(e.target.value);
 
                                     if (writeNurse) {
                                         handleChange('name', nextValue);
@@ -287,7 +306,6 @@ function ProfilePage() {
                                 }}
                                 aria-invalid={Boolean(fieldErrors.name)}
                                 aria-describedby={fieldErrors.name ? 'profile-name-error' : undefined}
-                                className={`h-11 rounded-[12px] px-3.5 text-[15px] ${fieldErrors.name ? 'border-red focus-visible:ring-red' : ''}`}
                             />
                             {fieldErrors.name ? (
                                 <p id="profile-name-error" className="mt-1 font-apple text-xs text-red">
@@ -299,12 +317,15 @@ function ProfilePage() {
                             <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
                                 전화번호
                             </label>
-                            <Input
+                            <input
                                 id="phoneNum"
                                 inputMode="numeric"
-                                variant="foundation"
-                                fieldSize="lg"
-                                placeholder="01012341234"
+                                className={cn(
+                                    FIELD_CLASS,
+                                    fieldErrors.phoneNum && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
+                                    !writeNurse && 'cursor-not-allowed text-gray-4',
+                                )}
+                                placeholder="전화번호를 입력하세요"
                                 value={writeNurse?.phoneNum ?? ''}
                                 onChange={(e) => {
                                     const nextValue = normalizePhone(e.target.value);
@@ -321,7 +342,6 @@ function ProfilePage() {
                                 }}
                                 aria-invalid={Boolean(fieldErrors.phoneNum)}
                                 aria-describedby={fieldErrors.phoneNum ? 'profile-phone-error' : undefined}
-                                className={`h-11 rounded-[12px] px-3.5 text-[15px] ${fieldErrors.phoneNum ? 'border-red focus-visible:ring-red' : ''}`}
                                 disabled={!writeNurse}
                             />
                             {fieldErrors.phoneNum ? (

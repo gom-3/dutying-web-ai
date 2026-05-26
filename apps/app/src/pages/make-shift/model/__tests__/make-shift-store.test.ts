@@ -1,5 +1,33 @@
 import {beforeEach, describe, expect, it} from 'vitest';
-import {useMakeShiftStore} from '../make-shift-store';
+import {type TNurse, type TShiftTeam} from '@/entities';
+import {canGoNext, useMakeShiftStore} from '../make-shift-store';
+
+const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'isWorker'>): TNurse => ({
+    nurseId: params.nurseId,
+    accountId: params.accountId ?? null,
+    shiftTeamId: params.shiftTeamId ?? 10,
+    wardId: params.wardId ?? 1,
+    name: params.name ?? `Nurse ${params.nurseId}`,
+    phoneNum: params.phoneNum ?? '',
+    isConnected: params.isConnected ?? true,
+    nurseShiftTypes: params.nurseShiftTypes ?? [],
+    isWorker: params.isWorker,
+    isDutyManager: params.isDutyManager ?? false,
+    isWardManager: params.isWardManager ?? false,
+    gender: params.gender ?? '',
+    employmentDate: params.employmentDate ?? '',
+    memo: params.memo ?? '',
+    isDeleted: params.isDeleted ?? false,
+    divisionNum: params.divisionNum ?? 1,
+    priority: params.priority ?? 100,
+});
+
+const createShiftTeam = (params: Partial<TShiftTeam> & Pick<TShiftTeam, 'shiftTeamId' | 'nurses'>): TShiftTeam => ({
+    shiftTeamId: params.shiftTeamId,
+    name: params.name ?? 'A Team',
+    nurseCnt: params.nurseCnt ?? params.nurses.length,
+    nurses: params.nurses,
+});
 
 describe('make-shift-store', () => {
     beforeEach(() => {
@@ -103,5 +131,19 @@ describe('make-shift-store', () => {
             currentStep: 2,
             maxReachedStep: 2,
         });
+    });
+
+    it('allows the first next button immediately when the selected team already has an included nurse', () => {
+        useMakeShiftStore.setState({
+            phase: 'stepping',
+            currentStep: 1,
+            maxReachedStep: 1,
+            currentShiftTeamId: 10,
+            shiftTeams: [createShiftTeam({shiftTeamId: 10, nurses: [createNurse({nurseId: 1, isWorker: true})]})],
+            workerConfirmationStatus: 'pending',
+            workerConfirmationCount: 0,
+        });
+
+        expect(canGoNext(useMakeShiftStore.getState())).toBe(true);
     });
 });

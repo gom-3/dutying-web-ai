@@ -24,11 +24,11 @@
 
 @layer utilities {
     html {
-        background-color: #faf8fb;
+        background-color: var(--app-background);
     }
 
     body {
-        background-color: #faf8fb;
+        background-color: var(--app-background);
         font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
         box-sizing: border-box;
         -webkit-font-smoothing: antialiased;
@@ -287,7 +287,8 @@
 
 :root {
     --radius: 0.625rem;
-    --background: #faf8fb;
+    --app-background: #FAF8FB;
+    --background: var(--app-background);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
@@ -321,7 +322,7 @@
 }
 
 .dark {
-    --background: #faf8fb;
+    --background: var(--app-background);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);

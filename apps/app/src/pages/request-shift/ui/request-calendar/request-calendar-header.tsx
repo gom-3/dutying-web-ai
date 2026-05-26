@@ -9,7 +9,7 @@ interface IRequestCalendarHeaderProps {
 
 export default function RequestCalendarHeader({days, focusDay, separateWeekendColor}: IRequestCalendarHeaderProps) {
     return (
-        <div className="sticky top-0 z-20 mb-1 flex h-8 w-full items-center bg-white pt-1">
+        <div className="sticky top-0 z-20 mb-1 flex h-8 w-full items-center rounded-t-[18px] bg-white pt-1">
             <div className="flex w-full items-center gap-2">
                 <div className="w-[72px] shrink-0 pl-2 text-center font-apple text-[12px] font-semibold text-gray-4">이름</div>
                 <div className="w-11 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">숙련도</div>

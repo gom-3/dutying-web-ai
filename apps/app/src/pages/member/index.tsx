@@ -392,7 +392,7 @@ function MemberPage() {
         const activeRect = activeButtonElement.getBoundingClientRect();
 
         setActiveIndicatorStyle({
-            left: activeRect.left - containerRect.left,
+            left: activeRect.left - containerRect.left + containerElement.scrollLeft,
             width: activeRect.width,
         });
     }, [activeShiftTeam?.shiftTeamId, editingTeamId, editingTeamName, shiftTeams]);
@@ -802,7 +802,7 @@ function MemberPage() {
     const wardGuideCode = getWardDisplayCode(ward, '-');
 
     return (
-        <div className="min-h-screen bg-[#FAF8FB] [&_button:not(:disabled)]:cursor-pointer">
+        <div className="min-h-screen bg-main-bg [&_button:not(:disabled)]:cursor-pointer">
             <WardCodeGuideModal
                 open={wardCodeGuideOpen}
                 wardCode={wardGuideCode}
@@ -852,40 +852,54 @@ function MemberPage() {
                       modalRoot,
                   )
                 : null}
-            <div ref={layoutRowRef} className="flex min-h-screen min-w-0 gap-5 overflow-visible px-10 pt-[52px] pb-14">
-                <section className="min-w-0 flex-1">
-                    <div id="ward_info" className="flex items-center justify-between gap-10">
-                        <div>
-                            <h1 className="font-apple text-[32px] font-semibold text-text-1">{t('page.member.title')}</h1>
+            <div
+                ref={layoutRowRef}
+                className={cn(
+                    'flex min-h-screen gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14',
+                    selectedNurse ? 'min-w-[1280px] min-[1440px]:min-w-[1360px]' : 'min-w-[900px]',
+                )}
+            >
+                <section className="min-w-[840px] flex-1">
+                    <div id="ward_info" className="flex min-w-0 items-center gap-4 min-[1440px]:gap-5">
+                        <div className="shrink-0">
+                            <h1 className="font-apple text-[30px] font-semibold text-text-1 min-[1440px]:text-[32px]">
+                                {t('page.member.title')}
+                            </h1>
                         </div>
-                        <div className="flex min-w-[370px] items-center gap-2">
-                            <div className="flex h-[46px] items-center justify-center rounded-[10px] bg-white px-4">
-                                <div className="flex min-w-0 items-center justify-center gap-2 pr-4">
-                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">
+                        <div className="flex min-w-0 items-center gap-1.5 min-[1440px]:gap-2">
+                            <div className="flex h-11 max-w-[360px] min-w-[300px] items-center justify-center rounded-[10px] bg-white px-3 min-[1440px]:h-[46px] min-[1440px]:max-w-none min-[1440px]:min-w-[370px] min-[1440px]:px-4">
+                                <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 pr-3 min-[1440px]:gap-2 min-[1440px]:pr-4">
+                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1440px]:text-[16px]">
                                         {hospitalName}
                                     </span>
-                                    <span className="truncate font-apple text-[16px] leading-none font-semibold text-[#616C84]">
+                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1440px]:text-[16px]">
                                         {wardName}
                                     </span>
                                 </div>
                                 <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
-                                <div className="flex min-w-0 items-center justify-center gap-3 pl-4">
-                                    <div className="flex items-baseline gap-2 whitespace-nowrap">
-                                        <span className="font-apple text-[14px] font-normal text-[#8A94A8]">전체 인원</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                <div className="flex shrink-0 items-center justify-center gap-2 pl-3 min-[1440px]:gap-3 min-[1440px]:pl-4">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                            전체 인원
+                                        </span>
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {totalNurseCount}
                                         </span>
                                     </div>
                                     <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
-                                    <div className="flex items-baseline gap-2 whitespace-nowrap">
-                                        <span className="font-apple text-[14px] font-normal text-[#8A94A8]">연동됨</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                            연동됨
+                                        </span>
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {connectedNurseCount}
                                         </span>
                                     </div>
-                                    <div className="flex items-baseline gap-2 whitespace-nowrap">
-                                        <span className="font-apple text-[14px] font-normal text-[#8A94A8]">미연동</span>
-                                        <span className="font-poppins text-[16px] leading-none font-bold text-[#657084]">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                            미연동
+                                        </span>
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {unconnectedNurseCount}
                                         </span>
                                     </div>
@@ -895,18 +909,21 @@ function MemberPage() {
                                 role="button"
                                 tabIndex={0}
                                 aria-label={`병동코드 ${wardGuideCode} 안내 보기`}
-                                className="flex h-[46px] cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-4 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1"
+                                className="flex h-11 shrink-0 cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-3 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[46px] min-[1440px]:px-4"
                                 onClick={() => setWardCodeGuideOpen(true)}
                                 onKeyDown={(event) => {
                                     if (event.target !== event.currentTarget) return;
+
                                     if (event.key !== 'Enter' && event.key !== ' ') return;
 
                                     event.preventDefault();
                                     setWardCodeGuideOpen(true);
                                 }}
                             >
-                                <span className="font-apple text-[14px] text-[#8A94A8]">병동 코드</span>
-                                <span className="ml-2 font-poppins text-[16px] font-bold text-main-1">{wardGuideCode}</span>
+                                <span className="font-apple text-[13px] text-[#8A94A8] min-[1440px]:text-[14px]">병동 코드</span>
+                                <span className="ml-2 font-poppins text-[15px] font-bold text-main-1 min-[1440px]:text-[16px]">
+                                    {wardGuideCode}
+                                </span>
                                 <button
                                     type="button"
                                     className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded text-[#8A94A8] transition-colors hover:bg-[#F2F4F8] hover:text-[#657084] focus-visible:outline-2 focus-visible:outline-main-1"
@@ -925,7 +942,7 @@ function MemberPage() {
                             </div>
                             <button
                                 type="button"
-                                className="relative flex h-[46px] items-center gap-1.5 rounded-[10px] border border-[#D6DDEA] bg-white px-4 font-apple text-[14px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1"
+                                className="relative flex h-11 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#D6DDEA] bg-white px-3 font-apple text-[13px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[46px] min-[1440px]:px-4 min-[1440px]:text-[14px]"
                                 onClick={() => setConnectionManageModalOpen(true)}
                             >
                                 {(watingNurses?.length ?? 0) > 0 ? (
@@ -934,13 +951,13 @@ function MemberPage() {
                                     </span>
                                 ) : null}
                                 연동관리
-                                <Link2 className="h-5 w-5 text-main-1" strokeWidth={2.8} />
+                                <Link2 className="h-[18px] w-[18px] text-main-1 min-[1440px]:h-5 min-[1440px]:w-5" strokeWidth={2.8} />
                             </button>
                         </div>
                         <button
                             id="member_skill_settings_button"
                             type="button"
-                            className="ml-auto flex h-[42px] items-center gap-2 rounded-[8px] bg-gray-6 px-4 font-apple text-[16px] font-medium text-sub-2 transition-colors hover:bg-gray-5 focus-visible:outline-2 focus-visible:outline-main-1"
+                            className="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-[8px] bg-gray-6 px-3 font-apple text-[14px] font-medium text-sub-2 transition-colors hover:bg-gray-5 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[42px] min-[1440px]:gap-2 min-[1440px]:px-4 min-[1440px]:text-[16px]"
                             onClick={() => setSkillModalOpen(true)}
                         >
                             {t('page.member.skillSettings')}
@@ -952,9 +969,12 @@ function MemberPage() {
                     <div className="mt-8">
                         <div
                             id="shift_team_list"
-                            className="flex w-full items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5"
+                            className="flex w-full min-w-0 items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5"
                         >
-                            <div ref={tabListRef} className="relative flex flex-1 items-center justify-start gap-1">
+                            <div
+                                ref={tabListRef}
+                                className="relative scrollbar-hide flex min-w-0 flex-1 items-center justify-start gap-1 overflow-x-auto"
+                            >
                                 {activeIndicatorStyle ? (
                                     <span
                                         className="pointer-events-none absolute top-1/2 z-0 h-8 -translate-y-1/2 rounded-[9px] bg-white transition-[left,width] duration-250 ease-out will-change-[left,width]"
@@ -1290,7 +1310,7 @@ function MemberPage() {
                     id="nurse_edit_drawer"
                     className={cn(
                         'sticky shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-out',
-                        selectedNurse ? 'ml-5 w-[400px]' : 'ml-0 w-0',
+                        selectedNurse ? 'w-[360px] min-[1440px]:w-[400px]' : 'w-0',
                     )}
                     style={{top: '12px', marginTop: `${drawerStartOffset}px`}}
                 >

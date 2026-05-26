@@ -15,14 +15,16 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
 
     return (
         <div className="flex w-full flex-col">
-            <button
-                type="button"
-                className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
-                onClick={onBack}
-            >
-                <ArrowLeft className="h-4 w-4" />
-                계정 정보로
-            </button>
+            {onBack ? (
+                <button
+                    type="button"
+                    className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
+                    onClick={onBack}
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    계정 정보로
+                </button>
+            ) : null}
 
             <div>
                 <h1 className="text-[32px] font-semibold text-sub-1">

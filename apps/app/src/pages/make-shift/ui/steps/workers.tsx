@@ -22,7 +22,7 @@ import {
     freshenMakeShiftDisplayWorkers,
     sortMakeShiftWorkersInitialOrder,
 } from '../../model/make-shift-worker-order';
-import {WorkersList, WorkersTableHeader} from './workers-sections';
+import {WorkersList} from './workers-sections';
 
 const MAKE_SHIFT_WORKER_SORT_OPTIONS = [
     {value: 'priority', labelKey: 'page.makeShift.workers.sortBySavedOrder'},
@@ -444,7 +444,7 @@ export function Workers() {
 
     return (
         <div id="make_workers_step" className="make-shift-workers-root flex min-w-0 flex-col items-end">
-            <div className="make-shift-workers w-[90%] min-w-0 rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)]">
+            <div className="make-shift-workers w-full max-w-[1088px] min-w-[920px] rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)]">
                 {isWorkersLoading ? (
                     <PageState
                         tone="loading"
@@ -514,7 +514,6 @@ export function Workers() {
                                 ) : null}
                             </div>
                         </div>
-                        <WorkersTableHeader showSkill={skillConfig.enabled} />
                         {activeWorkerCount === 0 ? (
                             <div
                                 role="status"

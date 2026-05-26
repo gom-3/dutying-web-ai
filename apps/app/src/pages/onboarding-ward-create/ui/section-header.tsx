@@ -28,14 +28,27 @@ interface ISectionHeaderProps {
 
 function SectionHeader({step, aside}: ISectionHeaderProps) {
     const label = STEP_LABELS[step];
+    const isIdentityStep = step === 1;
 
     if (!aside) {
-        return <BaseSectionHeader className="mb-10 max-w-[541px]" title={label.title} description={label.description} />;
+        return (
+            <BaseSectionHeader
+                className={isIdentityStep ? 'mb-6 max-w-[480px] space-y-2' : 'mb-10 max-w-[541px]'}
+                title={label.title}
+                description={label.description}
+                descriptionClassName={isIdentityStep ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'}
+            />
+        );
     }
 
     return (
         <div className="mb-10 flex items-start justify-between gap-8">
-            <BaseSectionHeader className="max-w-[541px]" title={label.title} description={label.description} />
+            <BaseSectionHeader
+                className="max-w-[541px]"
+                title={label.title}
+                description={label.description}
+                descriptionClassName="whitespace-normal sm:whitespace-nowrap"
+            />
             <div className="shrink-0">{aside}</div>
         </div>
     );

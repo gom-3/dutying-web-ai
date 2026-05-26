@@ -72,6 +72,7 @@ const useAuth = (activeEffect = false) => {
 
         try {
             initTutorial();
+
             const data = await AuthAPI.demoStart();
 
             applyDemoSession({
@@ -81,6 +82,7 @@ const useAuth = (activeEffect = false) => {
                 wardId: data.accountResDto.wardId,
                 demoStartDate: new Date().toISOString(),
             });
+
             setAccessToken(data.accessToken);
             navigate(ROUTE.MAKE);
         } finally {
@@ -132,6 +134,7 @@ const useAuth = (activeEffect = false) => {
         },
         actions: {
             handleGetAccountMe,
+            applyAccountMe: setAccountMeSuccess,
             handleLogin,
             handleLogout,
             setDemoExpired,

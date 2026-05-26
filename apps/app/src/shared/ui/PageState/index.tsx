@@ -73,7 +73,7 @@ function PageState({
     const titleElement = (
         <h2
             className={cn(
-                'font-apple text-[20px] leading-[1.45] font-semibold tracking-normal break-keep text-sub-1',
+                'font-apple text-[20px] leading-[1.45] font-semibold whitespace-pre-line tracking-normal break-keep text-sub-1',
                 titlePlacement === 'aboveIcon' ? 'mb-10' : 'mt-4',
                 titleClassName,
             )}

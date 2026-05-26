@@ -109,17 +109,17 @@ export function FixedShifts() {
             onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
-            <div className="fixed-shifts-toolbar flex w-full min-w-0 flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <h1 className="fixed-shifts-toolbar__title font-apple text-[28px] leading-tight font-bold whitespace-nowrap text-sub-1">
+            <div className="fixed-shifts-toolbar flex w-full min-w-0 flex-nowrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
+                    <h1 className="fixed-shifts-toolbar__title truncate font-apple text-[26px] leading-tight font-bold whitespace-nowrap text-sub-1 min-[1440px]:text-[28px]">
                         {t('page.makeShift.fixedShifts.title')}
                     </h1>
-                    <p className="fixed-shifts-toolbar__hint mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                    <p className="fixed-shifts-toolbar__hint mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
                         {t('page.makeShift.fixedShifts.hint')}
                     </p>
                 </div>
 
-                <div className="fixed-shifts-toolbar__actions flex shrink-0 items-center gap-2 pt-0.5">
+                <div className="fixed-shifts-toolbar__actions flex shrink-0 flex-nowrap items-center gap-2 pt-0.5">
                     <Button
                         variant="secondary"
                         size="md"

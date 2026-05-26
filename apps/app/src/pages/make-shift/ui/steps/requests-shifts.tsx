@@ -94,10 +94,12 @@ export function RequestsShifts() {
     return (
         <div id="make_requests_step" className="make-shift-requests flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex flex-wrap items-start justify-between gap-3 pb-3">
-                    <div className="min-w-0">
-                        <h1 className="font-apple text-[28px] leading-tight font-bold text-sub-1">{t('page.makeShift.requests.title')}</h1>
-                        <p className="mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                <div className="flex flex-nowrap items-start justify-between gap-3 pb-3">
+                    <div className="min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
+                        <h1 className="truncate font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">
+                            {t('page.makeShift.requests.title')}
+                        </h1>
+                        <p className="mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
                             {t('page.makeShift.requests.descriptionLine')}
                         </p>
                     </div>

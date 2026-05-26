@@ -1,11 +1,13 @@
 import * as Sentry from '@sentry/react';
 import {useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import {useNavigate} from 'react-router';
 import {type TNurse} from '@/entities/nurse';
 import useAuth from '@/features/auth';
 import useEditWard from '@/features/edit-ward';
 import useLoadingUseCase from '@/features/loading';
 import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
+import ROUTE from '@/shared/constant/path';
 
 const useEditAccount = () => {
     const {
@@ -17,6 +19,7 @@ const useEditAccount = () => {
     } = useEditWard();
     const {setLoading} = useLoadingUseCase();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
         if (!accountMe) return false;
 
@@ -81,6 +84,7 @@ const useEditAccount = () => {
             await WardAPI.quitWard(accountMe.wardId);
             await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
             await handleGetAccountMe();
+            navigate(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
         } catch (e) {
             Sentry.captureException(e, {
                 tags: {feature: 'account', action: 'quit-ward'},

@@ -62,7 +62,6 @@ const VIOLATION_TONE: Record<
         markerText: '#FFFFFF',
     },
 };
-const VIOLATION_LEVEL_LABEL: Record<TViolation['level'], string> = {error: '중요', warning: '참고'};
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const NAME_COL = 'clamp(64px,4.4cqw,76px)';
 const CARRY_COL = 'clamp(20px,1.5cqw,26px)';
@@ -201,20 +200,36 @@ function formatViolationTitle(violations: TViolation[]): string | undefined {
     if (violations.length === 0) return undefined;
 
     return sortViolationsForDisplay(violations)
-        .map((violation) => `${VIOLATION_LEVEL_LABEL[violation.level]}: ${violation.message}`)
+        .map((violation) => getViolationProblemSentence(violation))
         .join('\n');
 }
 
-function getViolationSummary(violations: TViolation[]): string {
-    const errorCount = violations.filter((violation) => violation.level === 'error').length;
-    const warningCount = violations.length - errorCount;
+function normalizeViolationTitle(title: string): string {
+    switch (title) {
+        case '야간 후 휴무 부족':
+            return '야간 후 휴무가 부족해요';
+        case '필요 인원 부족':
+            return '필요 인원이 부족해요';
+        default:
+            return title;
+    }
+}
 
-    return [
-        errorCount > 0 ? `${VIOLATION_LEVEL_LABEL.error} ${errorCount}` : null,
-        warningCount > 0 ? `${VIOLATION_LEVEL_LABEL.warning} ${warningCount}` : null,
-    ]
-        .filter(Boolean)
-        .join(' · ');
+function getViolationProblemSentence(violation: TViolation): string {
+    const [rawTitle, ...detailParts] = violation.message.split(': ');
+    const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
+    const detail = detailParts.join(': ').trim();
+    const source = detail || fallback || violation.message.trim();
+    const withoutName = source.replace(/^[^\s:]+님은\s+/, '');
+    const offAfterNightMatch = withoutName.match(/^야간 후 휴무가 (\d+)일이에요\.?\s*(\d+)일 필요해요\.?$/);
+
+    if (offAfterNightMatch) {
+        const [, actualOffDays, requiredOffDays] = offAfterNightMatch;
+
+        return `야간 후 휴무가 ${actualOffDays}일이라 ${requiredOffDays}일보다 부족해요.`;
+    }
+
+    return withoutName;
 }
 
 function ViolationMarker({violations}: {violations: TViolation[]}) {
@@ -276,44 +291,45 @@ function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover 
         <div
             data-violation-popover
             role="dialog"
-            aria-label={popover.title}
+            aria-label="제약 문제"
             className={cn(
-                'fixed z-[99999] box-border w-max max-w-[min(22rem,calc(100vw-1rem))] rounded-lg border border-gray-6 bg-white px-3 py-2.5 text-left font-apple shadow-[0_12px_28px_rgba(31,41,55,0.16)]',
+                'fixed z-[99999] box-border w-[min(20rem,calc(100vw-1rem))] rounded-lg border border-gray-6 bg-white px-3 py-2.5 text-left font-apple shadow-[0_14px_32px_rgba(15,23,42,0.16)]',
                 popover.placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2',
             )}
             style={{left: popover.left, top: popover.top}}
         >
-            <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                    <p className="text-[13px] leading-tight font-semibold text-sub-1">{popover.title}</p>
-                    <p className="mt-1 text-[11px] leading-none font-medium text-gray-3">{getViolationSummary(sortedViolations)}</p>
-                </div>
-                <button
-                    type="button"
-                    aria-label="닫기"
-                    onClick={onClose}
-                    className="grid size-6 shrink-0 cursor-pointer place-items-center rounded-full text-gray-3 hover:bg-gray-7 hover:text-sub-1"
-                >
-                    <X aria-hidden className="size-3.5" strokeWidth={2} />
-                </button>
-            </div>
-            <div className="mt-2 flex max-h-[min(18rem,calc(100vh-8rem))] flex-col gap-1.5 overflow-y-auto pr-1">
+            <span
+                aria-hidden
+                className={cn(
+                    'pointer-events-none absolute left-1/2 size-3 -translate-x-1/2 rotate-45 border-gray-6 bg-white',
+                    popover.placement === 'top' ? '-bottom-[7px] border-r border-b' : '-top-[7px] border-t border-l',
+                )}
+            />
+            <div className="space-y-2 pr-7">
                 {sortedViolations.map((violation, index) => {
                     const tone = VIOLATION_TONE[violation.level];
 
                     return (
-                        <div key={`${violation.ruleId}-${index}`} className="flex min-w-0 gap-2 rounded-md bg-gray-7/60 px-2 py-1.5">
-                            <span aria-hidden className="mt-[5px] size-1.5 shrink-0 rounded-full" style={{backgroundColor: tone.accent}} />
-                            <div className="min-w-0 flex-1">
-                                <p className="text-[11px] leading-none font-semibold" style={{color: tone.accent}}>
-                                    {VIOLATION_LEVEL_LABEL[violation.level]}
-                                </p>
-                                <p className="mt-1 text-xs leading-snug whitespace-normal text-sub-1">{violation.message}</p>
-                            </div>
+                        <div
+                            key={`${violation.ruleId}-${index}`}
+                            className={cn('flex min-w-0 gap-2', index > 0 && 'border-t border-gray-7 pt-2')}
+                        >
+                            <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full" style={{backgroundColor: tone.accent}} />
+                            <p className="min-w-0 text-[13px] leading-relaxed font-semibold whitespace-normal text-sub-1">
+                                {getViolationProblemSentence(violation)}
+                            </p>
                         </div>
                     );
                 })}
             </div>
+            <button
+                type="button"
+                aria-label="팝업 닫기"
+                onClick={onClose}
+                className="absolute top-1.5 right-1.5 grid size-7 shrink-0 cursor-pointer place-items-center rounded-full text-gray-3 hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-4 focus-visible:ring-offset-2 focus-visible:outline-none"
+            >
+                <X aria-hidden className="size-3.5" strokeWidth={2} />
+            </button>
         </div>,
         document.body,
     );
@@ -342,14 +358,17 @@ export function MakeShiftCalendar({
         if (violations.length === 0) return;
 
         const rect = target.getBoundingClientRect();
-        const preferredBottomTop = rect.bottom + 8;
-        const shouldOpenAbove = preferredBottomTop > window.innerHeight - 220 && rect.top > 220;
+        const popoverWidth = Math.min(360, window.innerWidth - 16);
+        const centerLeft = rect.left + rect.width / 2;
+        const left = Math.min(Math.max(centerLeft, 8 + popoverWidth / 2), window.innerWidth - 8 - popoverWidth / 2);
+        const preferredBottomTop = rect.bottom + 10;
+        const shouldOpenAbove = preferredBottomTop > window.innerHeight - 240 && rect.top > 240;
 
         setViolationPopover({
             title,
             violations: sortViolationsForDisplay(violations),
-            left: rect.left + rect.width / 2,
-            top: shouldOpenAbove ? rect.top - 8 : preferredBottomTop,
+            left,
+            top: shouldOpenAbove ? rect.top - 10 : preferredBottomTop,
             placement: shouldOpenAbove ? 'top' : 'bottom',
         });
     }, []);

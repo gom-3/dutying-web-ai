@@ -160,7 +160,7 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
     const shiftCodes = buildShiftCodes(nurse);
     const memo = nurse.memo?.trim();
     const memoPreview = memo ? formatMemoPreview(memo) : '';
-    const fadedClass = isWorker ? '' : 'opacity-55';
+    const fadedRowClass = isWorker ? '' : 'opacity-55';
 
     return (
         <Draggable draggableId={String(nurse.nurseId)} index={index} isDragDisabled={!isWorker}>
@@ -174,7 +174,7 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                             setRowRef(nurse.nurseId, element);
                         }}
                         {...draggableProps}
-                        className={`make-shift-workers__row grid min-h-11 items-center rounded-[12px] bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} transition-colors hover:bg-[#FBFDFF] ${
+                        className={`make-shift-workers__row grid min-h-11 items-center rounded-[12px] bg-white ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} transition-colors hover:bg-[#FBFDFF] ${fadedRowClass} ${
                             dragSnapshot.isDragging ? 'opacity-95' : ''
                         }`}
                         style={{
@@ -187,7 +187,7 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                                 type="button"
                                 aria-label={t('page.makeShift.workers.dragHandleAria')}
                                 disabled={!isWorker}
-                                className={`make-shift-workers__row-drag-handle grid size-8 shrink-0 place-items-center rounded-[9px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-35 ${
+                                className={`make-shift-workers__row-drag-handle grid size-8 shrink-0 place-items-center rounded-[9px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none disabled:cursor-not-allowed ${
                                     isWorker ? 'cursor-grab active:cursor-grabbing' : ''
                                 }`}
                                 {...dragProvided.dragHandleProps}
@@ -195,14 +195,14 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                                 <SixDotsIcon className="size-[clamp(13px,1.25vw,18px)]" />
                             </button>
                             <p
-                                className={`min-w-0 truncate text-left font-apple text-[clamp(12px,1.1vw,18px)] font-semibold whitespace-nowrap text-sub-1 ${fadedClass}`}
+                                className="min-w-0 truncate text-left font-apple text-[clamp(12px,1.1vw,18px)] font-semibold whitespace-nowrap text-sub-1"
                                 title={nurse.name}
                             >
                                 {formatNurseDisplayName(nurse.name)}
                             </p>
                         </div>
                         {showSkill ? (
-                            <div className={`make-shift-workers__row-level flex justify-center ${fadedClass}`}>
+                            <div className="make-shift-workers__row-level flex justify-center">
                                 <SkillBadge
                                     level={level}
                                     config={skillConfig}
@@ -210,16 +210,14 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                                 />
                             </div>
                         ) : null}
-                        <div
-                            className={`make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(3px,0.3vw,6px)] ${fadedClass}`}
-                        >
+                        <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(3px,0.3vw,6px)]">
                             {shiftCodes.length > 0 ? (
                                 shiftCodes.map((code) => <ShiftTypeBadge key={`${nurse.nurseId}-${code}`} code={code} />)
                             ) : (
                                 <span className="font-apple text-[clamp(10px,0.85vw,14px)] text-gray-4">-</span>
                             )}
                         </div>
-                        <div className={`make-shift-workers__row-preceptor flex items-center justify-center ${fadedClass}`}>
+                        <div className="make-shift-workers__row-preceptor flex items-center justify-center">
                             {nurse.isWardManager ? (
                                 <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
                                     {t('page.makeShift.workers.preceptorActive')}
@@ -228,7 +226,7 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                                 <span className="text-[clamp(10px,0.85vw,14px)] font-normal text-gray-4">-</span>
                             )}
                         </div>
-                        <div className={`make-shift-workers__row-is-worker flex justify-center ${fadedClass}`}>
+                        <div className="make-shift-workers__row-is-worker flex justify-center">
                             <Switch
                                 checked={isWorker}
                                 disabled={isBusy}
@@ -241,7 +239,7 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                                 aria-label={`${nurse.name} ${t('page.makeShift.workers.column.isWorker')}`}
                             />
                         </div>
-                        <div className={`make-shift-workers__row-memo flex min-w-0 items-center justify-center ${fadedClass}`}>
+                        <div className="make-shift-workers__row-memo flex min-w-0 items-center justify-center">
                             {memo ? (
                                 <p
                                     className="min-w-0 truncate text-center font-apple text-[clamp(12px,1.1vw,18px)] font-medium text-sub-1"

@@ -20,6 +20,7 @@ const RequestShiftPage = lazy(() => import('@/pages/request-shift'));
 const BoardPage = lazy(() => import('@/pages/board'));
 const MemberPage = lazy(() => import('@/pages/member'));
 const WardSettingsPage = lazy(() => import('@/pages/ward-settings'));
+const WardInfoSettingsPage = lazy(() => import('@/pages/ward-info-settings'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
 
 export const Router = () => {
@@ -58,6 +59,7 @@ export const Router = () => {
                         <Route path={ROUTE.BOARD} element={<BoardPage />} />
                         <Route path={ROUTE.MEMBER} element={<MemberPage />} />
                         <Route path={ROUTE.WARD_SETTINGS} element={<WardSettingsPage />} />
+                        <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                     </Route>
                 </Route>

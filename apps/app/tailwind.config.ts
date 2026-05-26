@@ -13,7 +13,7 @@ export default {
             },
             colors: {
                 'text-1': '#150B3C',
-                'main-bg': '#FDFCFE',
+                'main-bg': 'var(--app-background)',
                 'main-1': '#663DFA',
                 'main-2': '#B08BFF',
                 'main-3': '#CEB6FF',

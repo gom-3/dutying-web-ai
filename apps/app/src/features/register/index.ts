@@ -23,7 +23,7 @@ type TCreateWardOptions = {
 const useRegister = () => {
     const {
         state: {accountMe, accountId},
-        actions: {handleGetAccountMe},
+        actions: {handleGetAccountMe, applyAccountMe},
     } = useAuth();
     const {initTutorial} = useTutorialUseCase();
     const {setLoading} = useLoadingUseCase();
@@ -33,6 +33,7 @@ const useRegister = () => {
             try {
                 const updatedAccount = await AccountAPI.editAccountStatus(accountId, status);
 
+                applyAccountMe(updatedAccount);
                 void handleGetAccountMe().catch(() => undefined);
 
                 if (updatedAccount.status === 'LINKED' && options?.navigateOnLinked !== false) {
@@ -45,7 +46,7 @@ const useRegister = () => {
                 throw new Error('Failed to change account status.');
             }
         },
-        [handleGetAccountMe, navigate],
+        [applyAccountMe, handleGetAccountMe, navigate],
     );
     const createWard = useCallback(
         async (createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {

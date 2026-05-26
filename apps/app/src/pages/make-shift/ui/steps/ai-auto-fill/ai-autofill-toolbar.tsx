@@ -52,19 +52,19 @@ export function AiAutofillToolbar({
     const actionLabelKey = AI_ACTION_LABEL_KEYS[getAiAutofillActionLabel(aiStatus, hasCompletedAiFill)];
 
     return (
-        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-wrap items-center justify-between gap-3">
-            <div className="ai-autofill-toolbar__titles min-w-0">
-                <h1 className="ai-autofill-toolbar__title shrink-0 font-apple text-[28px] leading-tight font-bold whitespace-nowrap text-sub-1">
+        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3">
+            <div className="ai-autofill-toolbar__titles min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
+                <h1 className="ai-autofill-toolbar__title truncate font-apple text-[26px] leading-tight font-bold whitespace-nowrap text-sub-1 min-[1440px]:text-[28px]">
                     {t('page.makeShift.aiRefill.toolbarTitle')}
                 </h1>
-                <p className="ai-autofill-toolbar__subtitle mt-4 font-apple text-[16px] leading-[28px] font-medium text-gray-3">
+                <p className="ai-autofill-toolbar__subtitle mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
                     {t('page.makeShift.aiRefill.toolbarSubTitle')}
                 </p>
             </div>
 
             <div
                 id="make_ai_autofill_actions"
-                className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2 [&_button:not(:disabled)]:cursor-pointer"
+                className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-2 [&_button:not(:disabled)]:cursor-pointer"
             >
                 <div
                     id="make_ai_view_tools"

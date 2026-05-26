@@ -110,6 +110,27 @@ function readMaxReached(wardId: number | null, shiftTeamId: number | null, year:
     return loadMaxReachedStep(wardId, shiftTeamId, year, month);
 }
 
+function getKnownWorkerCount(shiftTeams: TShiftTeam[] | undefined, shiftTeamId: number | null | undefined): number {
+    if (!shiftTeams || shiftTeamId == null) return 0;
+
+    const shiftTeam = shiftTeams.find((team) => team.shiftTeamId === shiftTeamId);
+
+    return shiftTeam?.nurses.filter((nurse) => nurse.isWorker).length ?? 0;
+}
+
+function getWorkerConfirmationFromShiftTeams(
+    shiftTeams: TShiftTeam[],
+    shiftTeamId: number | null,
+): {status: TWorkerConfirmationStatus; count: number} {
+    if (shiftTeamId == null) return {status: 'idle', count: 0};
+
+    const hasSelectedTeam = shiftTeams.some((team) => team.shiftTeamId === shiftTeamId);
+
+    if (!hasSelectedTeam) return {status: 'idle', count: 0};
+
+    return {status: 'success', count: getKnownWorkerCount(shiftTeams, shiftTeamId)};
+}
+
 /** 헤더로 연·월이 바뀌면 만들기 단계(stepping)를 끊고 개요로 보낸다(다른 달 플로우가 그대로 이어지지 않게). */
 function exitingSteppingIfNeeded(phase: TFlowPhase): Partial<Pick<TMakeShiftStore, 'phase' | 'currentStep' | 'restoreDraftModalOpen'>> {
     if (phase !== 'stepping') return {};
@@ -158,14 +179,17 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             })),
 
         startFromStep: ({step, openRestoreDraftModal}) => {
-            const {wardId, currentShiftTeamId, year, month, shiftFullyAssigned, shiftStatus} = get();
+            const {wardId, currentShiftTeamId, year, month, shiftFullyAssigned, shiftStatus, shiftTeams} = get();
             const nextStep = shiftStatus === 'success' && shiftFullyAssigned ? 6 : step;
+            const workerConfirmation = getWorkerConfirmationFromShiftTeams(shiftTeams, currentShiftTeamId);
 
             set(() => ({
                 phase: 'stepping',
                 currentStep: nextStep,
                 confirmedShiftSnapshot: null,
                 restoreDraftModalOpen: nextStep === 6 ? false : openRestoreDraftModal,
+                workerConfirmationStatus: workerConfirmation.status,
+                workerConfirmationCount: workerConfirmation.count,
             }));
             persistYearMonth(year, month);
 
@@ -354,11 +378,21 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             }));
             persistYearMonth(year, nm);
         },
-        setShiftTeams: (shiftTeams) => set(() => ({shiftTeams})),
+        setShiftTeams: (shiftTeams) =>
+            set((state) => {
+                const workerConfirmation = getWorkerConfirmationFromShiftTeams(shiftTeams, state.currentShiftTeamId);
+
+                return {
+                    shiftTeams,
+                    workerConfirmationStatus: workerConfirmation.status,
+                    workerConfirmationCount: workerConfirmation.count,
+                };
+            }),
         setShiftTeamsStatus: (shiftTeamsStatus) => set(() => ({shiftTeamsStatus})),
         setCurrentShiftTeamId: (currentShiftTeamId) => {
-            const {wardId, year, month, currentShiftTeamId: prevShiftTeamId} = get();
+            const {wardId, year, month, currentShiftTeamId: prevShiftTeamId, shiftTeams} = get();
             const isChangingTeam = currentShiftTeamId !== prevShiftTeamId;
+            const workerConfirmation = getWorkerConfirmationFromShiftTeams(shiftTeams, currentShiftTeamId);
 
             if (!wardId || currentShiftTeamId === null) {
                 set(() => ({
@@ -369,8 +403,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                     shiftExists: false,
                     shiftFullyAssigned: false,
                     confirmedShiftSnapshot: null,
-                    workerConfirmationStatus: 'idle',
-                    workerConfirmationCount: 0,
+                    workerConfirmationStatus: workerConfirmation.status,
+                    workerConfirmationCount: workerConfirmation.count,
                 }));
 
                 return;
@@ -392,8 +426,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
                 ...(isChangingTeam ? {phase: 'overview', restoreDraftModalOpen: false, shiftStatus: 'idle', shiftExists: false} : {}),
                 shiftFullyAssigned: false,
                 confirmedShiftSnapshot: null,
-                workerConfirmationStatus: 'idle',
-                workerConfirmationCount: 0,
+                workerConfirmationStatus: workerConfirmation.status,
+                workerConfirmationCount: workerConfirmation.count,
             }));
         },
 
@@ -410,13 +444,17 @@ export function canGoPrev(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>)
 }
 
 export function hasRequiredWorkerForSchedule(
-    state: Pick<TMakeShiftStore, 'workerConfirmationStatus' | 'workerConfirmationCount'>,
+    state: Pick<TMakeShiftStore, 'workerConfirmationStatus' | 'workerConfirmationCount'> &
+        Partial<Pick<TMakeShiftStore, 'shiftTeams' | 'currentShiftTeamId'>>,
 ): boolean {
-    return state.workerConfirmationStatus === 'success' && state.workerConfirmationCount > 0;
+    if (state.workerConfirmationStatus === 'success') return state.workerConfirmationCount > 0;
+
+    return getKnownWorkerCount(state.shiftTeams, state.currentShiftTeamId) > 0;
 }
 
 export function canGoNext(
-    state: Pick<TMakeShiftStore, 'phase' | 'currentStep' | 'workerConfirmationStatus' | 'workerConfirmationCount'>,
+    state: Pick<TMakeShiftStore, 'phase' | 'currentStep' | 'workerConfirmationStatus' | 'workerConfirmationCount'> &
+        Partial<Pick<TMakeShiftStore, 'shiftTeams' | 'currentShiftTeamId'>>,
 ): boolean {
     if (state.phase !== 'stepping' || state.currentStep >= 5) return false;
 
