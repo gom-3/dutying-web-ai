@@ -1,13 +1,22 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import RegisterPage from '../index';
 
 const mockHandleGetAccountMe = vi.fn();
 const mockNavigate = vi.fn();
 
-let mockLocationState: unknown = null;
 let mockAuthState: {
-    accountMe: {status: 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED'} | null;
+    accountMe: {
+        status:
+            | 'INITIAL'
+            | 'NURSE_INFO_PENDING'
+            | 'WARD_SELECT_PENDING'
+            | 'WARD_ENTRY_PENDING'
+            | 'WORKSPACE_SETUP_PENDING'
+            | 'LINKED'
+            | 'DEMO';
+    } | null;
     accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
     _loaded: boolean;
 } = {
@@ -18,7 +27,6 @@ let mockAuthState: {
 
 vi.mock('react-router', () => ({
     Navigate: ({to}: {to: string}) => <div>navigate:{to}</div>,
-    useLocation: () => ({state: mockLocationState}),
     useNavigate: () => mockNavigate,
 }));
 
@@ -36,33 +44,11 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
-vi.mock('../ui/register-nurse', () => ({
-    default: () => <div>register-nurse</div>,
-}));
-
-vi.mock('../ui/select-enter-or-create', () => ({
-    default: ({onBack}: {onBack?: () => void}) => (
-        <div>
-            <div>select-enter-or-create</div>
-            {onBack ? (
-                <button type="button" onClick={onBack}>
-                    계정 정보로
-                </button>
-            ) : null}
-        </div>
-    ),
-}));
-
-vi.mock('../ui/pending-enter', () => ({
-    default: () => <div>pending-enter</div>,
-}));
-
 describe('RegisterPage', () => {
     beforeEach(() => {
         mockHandleGetAccountMe.mockReset();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockNavigate.mockReset();
-        mockLocationState = null;
         mockAuthState = {
             accountMe: null,
             accountMeStatus: 'loading',
@@ -94,45 +80,36 @@ describe('RegisterPage', () => {
         expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
     });
 
-    it('renders the matching registration step when account status is available', () => {
-        mockAuthState = {
-            accountMe: {status: 'WARD_SELECT_PENDING'},
-            accountMeStatus: 'success',
-            _loaded: true,
-        };
+    it('redirects every incomplete account status to the new ward creation onboarding page', () => {
+        for (const status of [
+            'INITIAL',
+            'NURSE_INFO_PENDING',
+            'WARD_SELECT_PENDING',
+            'WARD_ENTRY_PENDING',
+            'WORKSPACE_SETUP_PENDING',
+        ] as const) {
+            mockAuthState = {
+                accountMe: {status},
+                accountMeStatus: 'success',
+                _loaded: true,
+            };
 
-        render(<RegisterPage />);
+            const {unmount} = render(<RegisterPage />);
 
-        expect(screen.getByText('select-enter-or-create')).toBeInTheDocument();
+            expect(screen.getByText(`navigate:${ROUTE.ONBOARDING_CREATE_WARD}`)).toBeInTheDocument();
+            unmount();
+        }
     });
 
-    it('shows the nurse info step when going back from ward selection', async () => {
-        const user = userEvent.setup();
-
+    it('redirects linked accounts into the app', () => {
         mockAuthState = {
-            accountMe: {status: 'WARD_SELECT_PENDING'},
+            accountMe: {status: 'LINKED'},
             accountMeStatus: 'success',
             _loaded: true,
         };
 
         render(<RegisterPage />);
 
-        await user.click(screen.getByRole('button', {name: '계정 정보로'}));
-
-        expect(screen.getByText('register-nurse')).toBeInTheDocument();
-    });
-
-    it('hides the back action when the user arrived after quitting a ward', () => {
-        mockLocationState = {fromQuitWard: true};
-        mockAuthState = {
-            accountMe: {status: 'WARD_SELECT_PENDING'},
-            accountMeStatus: 'success',
-            _loaded: true,
-        };
-
-        render(<RegisterPage />);
-
-        expect(screen.getByText('select-enter-or-create')).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '계정 정보로'})).not.toBeInTheDocument();
+        expect(screen.getByText(`navigate:${ROUTE.MAKE}`)).toBeInTheDocument();
     });
 });

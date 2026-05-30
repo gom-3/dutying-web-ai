@@ -1,5 +1,4 @@
 import axiosInstance from '../client';
-import mockBoardAPI, {MOCK_BOARD_WARD_ID} from './mock';
 
 export type TWardBoardPost = {
     id?: number;
@@ -75,22 +74,6 @@ type TCreateWardBoardCommentDTO = {
 const readPostId = (post: TWardBoardPost) => post.postId ?? post.id ?? 0;
 const normalizePosts = (response: TPostListResponse) => response.posts ?? response.items ?? response.data ?? [];
 const normalizeComments = (response: TCommentListResponse) => response.comments ?? response.items ?? response.data ?? [];
-
-type TBoardAPIProviderName = 'api' | 'mock';
-
-function getBoardAPIProviderName(): TBoardAPIProviderName {
-    const providerName = import.meta.env.VITE_BOARD_API_PROVIDER?.toLowerCase();
-
-    if (providerName === 'mock') return 'mock';
-
-    if (providerName === 'api') return 'api';
-
-    return import.meta.env.DEV ? 'mock' : 'api';
-}
-
-export function isBoardMockEnabled(): boolean {
-    return getBoardAPIProviderName() === 'mock';
-}
 
 class ApiBoardAPI {
     public async getPosts(wardId: number, options?: {cursorId?: number; size?: number; keyword?: string}) {
@@ -205,5 +188,4 @@ class ApiBoardAPI {
     }
 }
 
-export {MOCK_BOARD_WARD_ID};
-export default isBoardMockEnabled() ? mockBoardAPI : new ApiBoardAPI();
+export default new ApiBoardAPI();

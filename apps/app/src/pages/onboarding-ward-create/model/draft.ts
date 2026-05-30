@@ -173,50 +173,6 @@ const BASE_TEAMS: TOnboardingTeamDraft[] = [
     {id: createId('team'), name: '간호사 2팀'},
     {id: createId('team'), name: '간호사 3팀'},
 ];
-const createBaseNurses = (shiftTypes: TOnboardingWardShiftType[], teams: TOnboardingTeamDraft[]) => {
-    const shiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
-    const firstTeamId = teams[0]?.id ?? '';
-
-    return [
-        createNurse({
-            teamId: firstTeamId,
-            name: '홍길동',
-            memo: '프리셉터',
-            isWorker: true,
-            employmentDate: '2019-03-01',
-            possibleShiftTypeIds: shiftTypeIds,
-            level: 5,
-        }),
-        createNurse({
-            teamId: firstTeamId,
-            name: '김하늘',
-            memo: '',
-            isWorker: true,
-            employmentDate: '2020-07-15',
-            possibleShiftTypeIds: shiftTypeIds,
-            level: 4,
-        }),
-        createNurse({
-            teamId: firstTeamId,
-            name: '이서윤',
-            memo: '나이트킵',
-            isWorker: true,
-            employmentDate: '2023-10-10',
-            possibleShiftTypeIds: shiftTypeIds,
-            level: 2,
-        }),
-        createNurse({
-            teamId: firstTeamId,
-            name: '박연우',
-            memo: '',
-            isWorker: false,
-            employmentDate: '2022-02-01',
-            possibleShiftTypeIds: shiftTypeIds,
-            level: 3,
-        }),
-    ];
-};
-
 export const skillPalettes = SKILL_PALETTES;
 
 export const getSkillPalette = (paletteId: string) => skillPalettes.find((palette) => palette.id === paletteId) ?? skillPalettes[0];
@@ -292,7 +248,6 @@ export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShif
 export const createInitialDraft = (): TOnboardingWardDraft => {
     const shiftTypes = BASE_SHIFT_TYPES.map((shiftType) => ({...shiftType}));
     const teams = BASE_TEAMS.map((team) => ({...team}));
-    const nurses = createBaseNurses(shiftTypes, teams);
 
     return {
         currentStep: 1,
@@ -301,7 +256,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
         hospitalName: '',
         shiftTypes,
         teams,
-        nurses: applySkillLevels(nurses, DEFAULT_SKILL_LEVEL_CONFIG),
+        nurses: [],
         skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
 };

@@ -156,6 +156,16 @@ describe('useEditShiftTeam', () => {
             await Promise.resolve();
         });
 
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
+            name: '',
+            phoneNum: '',
+            gender: '',
+            isWorker: true,
+            employmentDate: '',
+            isDutyManager: false,
+            isWardManager: false,
+            memo: '',
+        });
         expect(result.current.state.isAddingNurse).toBe(true);
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
@@ -166,7 +176,7 @@ describe('useEditShiftTeam', () => {
         });
 
         expect(result.current.state.isAddingNurse).toBe(false);
-        expect(mockToastSuccess).toHaveBeenCalledWith('간호사를 추가했어요. 이름과 연락처를 확인한 뒤 저장해 주세요.', {
+        expect(mockToastSuccess).toHaveBeenCalledWith('간호사를 추가했어요. 이름과 연락처를 입력한 뒤 저장해 주세요.', {
             position: 'bottom-center',
         });
     });

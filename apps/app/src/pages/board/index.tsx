@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import {type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
-import {BoardAPI, isBoardMockEnabled, MOCK_BOARD_WARD_ID} from '@/shared/api';
+import {BoardAPI} from '@/shared/api';
 import {type TCreateWardBoardPostDTO, type TWardBoardComment, type TWardBoardDeadline, type TWardBoardPost} from '@/shared/api/board';
 import PageState from '@/shared/ui/PageState';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
@@ -746,11 +746,10 @@ function BoardPage() {
     const postContentTextareaRef = useRef<HTMLTextAreaElement>(null);
     const {startDate, endDate} = useMemo(() => getMonthBounds(calendarMonth.year, calendarMonth.month), [calendarMonth]);
     const isSearchVisible = isSearchOpen || Boolean(keyword);
-    const boardMockEnabled = isBoardMockEnabled();
-    const activeWardId = wardId ?? (boardMockEnabled ? MOCK_BOARD_WARD_ID : null);
+    const activeWardId = wardId;
     const bootstrapPending =
-        !boardMockEnabled && (!_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading')));
-    const bootstrapError = !boardMockEnabled && isAuth && wardId === null && accountMeStatus === 'error';
+        !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'));
+    const bootstrapError = isAuth && wardId === null && accountMeStatus === 'error';
     const postsQuery = useQuery({
         queryKey: activeWardId ? boardQueryKeys.posts(activeWardId, keyword) : boardQueryKeys.posts(0, keyword),
         queryFn: () => BoardAPI.getPosts(activeWardId!, {size: POST_PAGE_SIZE, keyword}),

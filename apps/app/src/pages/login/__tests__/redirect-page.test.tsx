@@ -1,5 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
+import {clearSocialSignupProfile, readSocialSignupProfile} from '@/features/auth/model/social-signup';
 import {render, waitFor} from '@/shared/util/test-utils';
 import RedirectPage from '../redirect-page';
 
@@ -23,6 +24,7 @@ describe('RedirectPage', () => {
 
     beforeEach(() => {
         handleLogin.mockReset();
+        clearSocialSignupProfile();
         mockedUseAuth.mockReset();
         mockedUseAuth.mockReturnValue({
             actions: {
@@ -59,6 +61,27 @@ describe('RedirectPage', () => {
 
         await waitFor(() => {
             expect(handleLogin).toHaveBeenCalledWith('test-token', '/request?month=3#calendar');
+        });
+    });
+
+    it('routes new social accounts to onboarding and keeps the provider profile for prefill', async () => {
+        window.history.replaceState(
+            {},
+            '',
+            '/oauth2/redirect?accessToken=test-token&nextPageUrl=%2Fmake&socialSignupRequired=true&provider=KAKAO&socialName=Kim&socialEmail=kim%40dutying.net&socialProfileImgUrl=https%3A%2F%2Fcdn.example.com%2Fkim.png',
+        );
+
+        render(<RedirectPage />);
+
+        await waitFor(() => {
+            expect(handleLogin).toHaveBeenCalledWith('test-token', '/onboarding');
+        });
+
+        expect(readSocialSignupProfile()).toMatchObject({
+            provider: 'KAKAO',
+            name: 'Kim',
+            email: 'kim@dutying.net',
+            profileImgUrl: 'https://cdn.example.com/kim.png',
         });
     });
 

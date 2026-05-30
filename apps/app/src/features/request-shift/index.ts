@@ -6,7 +6,6 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
-import {isFrontendMockDutyRequestId, mergeFrontendMockDutyRequests} from './model/mock-duty-requests';
 import {countPendingDutyRequests} from './model/pending-request-count';
 import {
     createInitialFoldedLevels,
@@ -35,7 +34,6 @@ const useRequestShift = (activeEffect = false) => {
         readonly,
         changeStatus,
         updatingRequestId,
-        mockRequestDecisionById,
         setState,
     } = useRequestShiftStore();
     const {
@@ -132,31 +130,6 @@ const useRequestShift = (activeEffect = false) => {
         },
         enabled: wardId !== null && currentShiftTeamId !== null,
     });
-    const dutyRequestListWithFrontendMocks = useMemo(
-        () =>
-            mergeFrontendMockDutyRequests({
-                dutyRequestList,
-                requestShift,
-                year,
-                month,
-                mockRequestDecisionById,
-            }),
-        [dutyRequestList, mockRequestDecisionById, month, requestShift, year],
-    );
-    const teamPendingRequestCountByTeamIdWithFrontendMocks = useMemo(() => {
-        const nextPendingRequestCountByTeamId = {...teamPendingRequestCountByTeamId};
-
-        if (currentShiftTeamId !== null) {
-            const frontendMockPendingRequestCount = countPendingDutyRequests(
-                (dutyRequestListWithFrontendMocks ?? []).filter((request) => isFrontendMockDutyRequestId(request.wardReqShiftId)),
-            );
-
-            nextPendingRequestCountByTeamId[currentShiftTeamId] =
-                (nextPendingRequestCountByTeamId[currentShiftTeamId] ?? 0) + frontendMockPendingRequestCount;
-        }
-
-        return nextPendingRequestCountByTeamId;
-    }, [currentShiftTeamId, dutyRequestListWithFrontendMocks, teamPendingRequestCountByTeamId]);
     const {changeRequestShift} = useRequestShiftChangeQueue({
         wardId,
         year,
@@ -170,35 +143,19 @@ const useRequestShift = (activeEffect = false) => {
         async (reqShiftIds: number[], isAccepted: boolean | null) => {
             if (reqShiftIds.length === 0 || useRequestShiftStore.getState().updatingRequestId !== null) return false;
 
-            const frontendMockRequestIds = reqShiftIds.filter(isFrontendMockDutyRequestId);
-            const apiRequestIds = reqShiftIds.filter((reqShiftId) => !isFrontendMockDutyRequestId(reqShiftId));
-
-            if (apiRequestIds.length > 0 && !wardId) return false;
+            if (!wardId) return false;
 
             setState('updatingRequestId', reqShiftIds.length === 1 ? reqShiftIds[0] : -1);
 
             try {
-                if (frontendMockRequestIds.length > 0) {
-                    const currentDecisions = useRequestShiftStore.getState().mockRequestDecisionById;
-                    const nextDecisions: Record<number, boolean | null> = {...currentDecisions};
-
-                    for (const requestId of frontendMockRequestIds) {
-                        nextDecisions[requestId] = isAccepted;
-                    }
-
-                    setState('mockRequestDecisionById', nextDecisions);
-                }
-
                 const results = await Promise.allSettled(
-                    apiRequestIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId!, reqShiftId, isAccepted)),
+                    reqShiftIds.map((reqShiftId) => WardAPI.acceptRequestShift(wardId, reqShiftId, isAccepted)),
                 );
                 const rejectedResults = results.filter((result) => result.status === 'rejected');
 
-                if (apiRequestIds.length > 0) {
-                    await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
-                    await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
-                    await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
-                }
+                await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+                await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+                await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
 
                 if (rejectedResults.length > 0) {
                     showActionErrorFeedback(rejectedResults[0].reason, '신청을 처리하지 못했어요.');
@@ -350,7 +307,7 @@ const useRequestShift = (activeEffect = false) => {
             month,
             bootstrapStatus,
             requestShift,
-            dutyRequestList: dutyRequestListWithFrontendMocks,
+            dutyRequestList,
             focus,
             foldedLevels,
             changeStatus,
@@ -362,7 +319,7 @@ const useRequestShift = (activeEffect = false) => {
             updatingRequestId,
             currentShiftTeam: shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
             shiftTeams,
-            teamPendingRequestCountByTeamId: teamPendingRequestCountByTeamIdWithFrontendMocks,
+            teamPendingRequestCountByTeamId,
             editAvailability,
         },
         actions: {

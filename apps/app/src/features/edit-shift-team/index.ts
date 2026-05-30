@@ -66,11 +66,11 @@ const useEditShiftTeam = () => {
 
             try {
                 const nurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
-                    name: `간호사${Math.floor(Math.random() * 10000)}`,
-                    phoneNum: '01012345678',
-                    gender: '여',
+                    name: '',
+                    phoneNum: '',
+                    gender: '',
                     isWorker: true,
-                    employmentDate: '2021-08-01',
+                    employmentDate: '',
                     isDutyManager: false,
                     isWardManager: false,
                     memo: '',
@@ -128,7 +128,7 @@ const useEditShiftTeam = () => {
 
                 completeAddingNurse(nurse.nurseId);
 
-                toast.success('간호사를 추가했어요. 이름과 연락처를 확인한 뒤 저장해 주세요.', {position: 'bottom-center'});
+                toast.success('간호사를 추가했어요. 이름과 연락처를 입력한 뒤 저장해 주세요.', {position: 'bottom-center'});
                 await invalidateWard();
             } catch (error) {
                 showActionErrorFeedback(error, '간호사를 추가하지 못했어요.');
