@@ -1,4 +1,4 @@
-import {CalendarPlus, PlayCircle} from 'lucide-react';
+import {CalendarPlus, Play} from 'lucide-react';
 import {Trans} from 'react-i18next';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
@@ -121,7 +121,7 @@ export const MakeShiftPageView = () => {
                                             disabled={currentShiftTeamId === null}
                                             className="h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
                                         >
-                                            <PlayCircle className="size-[17px]" strokeWidth={2.2} aria-hidden="true" />
+                                            <Play className="size-[17px] fill-current" stroke="none" aria-hidden="true" />
                                             {t('page.makeShift.overview.continueShift')}
                                         </ManagementActionButton>
                                     </div>

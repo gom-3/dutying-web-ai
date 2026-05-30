@@ -9,31 +9,6 @@ vi.mock('react-responsive-carousel', () => ({
     Carousel: ({children}: {children: ReactNode}) => <div>{children}</div>,
 }));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string) => {
-            const translations: Record<string, string> = {
-                'page.login.title': '로그인',
-                'page.login.description': '소셜 계정으로 듀팅을 시작해 보세요.',
-                'page.login.kakaoCta': '카카오 계정으로 시작하기',
-                'page.login.appleCta': 'Apple 계정으로 시작하기',
-                'page.login.termsPrefix': '버튼을 누르면',
-                'page.login.termsOfService': '서비스 약관,',
-                'page.login.privacyPolicy': '개인정보 처리방침',
-                'page.login.termsSuffix': '에 동의한 것으로 간주해요.',
-                'page.login.demoExpired.title': '회원가입하고 이어서 사용하기',
-                'page.login.demoExpired.description':
-                    '체험 시간은 끝났지만, 지금 가입하면 정식 계정 등록 절차를 바로 시작할 수 있어요.',
-                'page.login.demoExpired.bannerTitle': '체험 종료 후 전환 안내',
-                'page.login.demoExpired.bannerDescription':
-                    '정식 전환 API는 준비 중이라, 이번 단계에서는 로그인 후 회원가입 절차로 연결해요.',
-            };
-
-            return translations[key] ?? key;
-        },
-    }),
-}));
-
 describe('LoginPage', () => {
     afterEach(() => {
         vi.unstubAllEnvs();
@@ -44,21 +19,40 @@ describe('LoginPage', () => {
         vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
     });
 
-    it('shows demo conversion guidance and keeps the requested next path', () => {
+    it('renders sign-in as the default admin login page with a signup link', () => {
         render(
-            <MemoryRouter initialEntries={[`${ROUTE.LOGIN}?reason=demo-expired&next=%2Fregister`]}>
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
                 <Routes>
-                    <Route path={ROUTE.LOGIN} element={<LoginPage />} />
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
                 </Routes>
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('회원가입하고 이어서 사용하기')).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: '관리자 로그인'})).toBeInTheDocument();
+        expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
+        expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toBeInTheDocument();
+    });
 
-        const kakaoLink = screen.getByRole('link', {name: '카카오 계정으로 시작하기'});
+    it('renders sign-up as a separate account page and sends social signup to onboarding', () => {
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.SIGN_UP}?reason=demo-expired&next=%2Fregister`]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('체험 계정을 정식 계정으로 전환해요')).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: '관리자 계정 만들기'})).toBeInTheDocument();
+        expect(screen.getByLabelText('이메일')).toBeInTheDocument();
+        expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.SIGN_IN);
+
+        const kakaoLink = screen.getByRole('link', {name: '카카오로 시작하기'});
         const url = new URL(kakaoLink.getAttribute('href') ?? '');
 
         expect(url.pathname).toBe('/oauth2/authorization/kakao');
-        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/register');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/onboarding');
     });
 });

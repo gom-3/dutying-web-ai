@@ -1,3 +1,6 @@
-import RegisterWard from './ui/register-ward';
+import {Navigate} from 'react-router';
+import ROUTE from '@/shared/constant/path';
 
-export default RegisterWard;
+export default function RegisterWardRedirectPage() {
+    return <Navigate to={ROUTE.ONBOARDING_CREATE_WARD} replace />;
+}

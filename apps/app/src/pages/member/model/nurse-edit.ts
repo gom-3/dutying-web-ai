@@ -51,7 +51,7 @@ export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStat
     if (mode === 'create') {
         return {
             title: '새 간호사를 추가했어요',
-            description: '기본 정보가 먼저 입력된 상태예요. 이름과 연락처를 확인한 뒤 저장해 주세요.',
+            description: '이름과 연락처를 입력한 뒤 저장해 주세요.',
             toneClassName: 'border-main-3/60 bg-sub-5 text-sub-1',
         };
     }
@@ -59,7 +59,7 @@ export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStat
     if (isDirty) {
         return {
             title: '변경 사항이 있어요',
-        description: '저장하지 않고 닫으면 수정한 내용이 사라져요.',
+            description: '저장하지 않고 닫으면 수정한 내용이 사라져요.',
             toneClassName: 'border-sub-4 bg-main-bg text-sub-1',
         };
     }

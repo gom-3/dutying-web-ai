@@ -3,7 +3,6 @@ import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import {getDemoSessionInfo, isDemoSessionExpired} from '@/features/auth/model/demo-session';
-import {isBoardMockEnabled} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import useInterval from '@/shared/util/useInterval';
@@ -22,10 +21,9 @@ export const AuthLayout = () => {
     const demoSessionInfo = getDemoSessionInfo(demoStartDate, currentTime);
     const isDemoSessionExpiredNow = isDemoSessionExpired(demoStartDate, currentTime);
     const isDemoAccount = accountMe?.status === 'DEMO' || Boolean(demoStartDate);
-    const canUseBoardMockRoute = pathname === ROUTE.BOARD && isBoardMockEnabled();
 
     useEffect(() => {
-        if (!isAuth && !canUseBoardMockRoute) {
+        if (!isAuth) {
             navigate(ROUTE.LOGIN);
         }
 
@@ -41,7 +39,7 @@ export const AuthLayout = () => {
             if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
                 navigate(ROUTE.REGISTER);
         }
-    }, [accountMe, canUseBoardMockRoute, isAuth, navigate, pathname]);
+    }, [accountMe, isAuth, navigate, pathname]);
 
     useEffect(() => {
         setCurrentTime(Date.now());
@@ -73,7 +71,7 @@ export const AuthLayout = () => {
     );
 
     return (
-        (isAuth || canUseBoardMockRoute) && (
+        isAuth && (
             <div className="flex h-full w-full flex-col">
                 <Helmet
                     title={
