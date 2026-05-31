@@ -3,7 +3,14 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
-import {docToShift, docToWardShiftsDTO, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import {
+    docToShift,
+    docToSnapshotCellsDTO,
+    docToSnapshotRowOrderDTO,
+    useAsyncScheduleValidation,
+    useShiftEditorCommands,
+    useShiftEditorStore,
+} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -32,14 +39,18 @@ export function AiAutofill() {
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const history = useShiftEditorStore((s) => s.history);
     const useCase = useMakeShiftUseCase();
+
     /** true: AI·기타로 채운 표 포함 전체 표시. false: 고정 근무 칸만 표시. */
     const [autoFillEnabled, setAutoFillEnabled] = useState(true);
     const [showFaults, setShowFaults] = useState(true);
     const [isWorking, setIsWorking] = useState(false);
+    const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
+
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
+
     const {
         dutyQuery,
         editorRef,
@@ -50,10 +61,21 @@ export function AiAutofill() {
         teamViolations,
         focusEditor,
     } = useDutyEditorStep({onContextChanged: resetAiStatus});
+
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+
+    // 비동기 실시간 검증 활성화
+    useAsyncScheduleValidation({
+        wardId,
+        shiftTeamId: currentShiftTeamId,
+        year,
+        month,
+        originalShift: dutyQuery.data,
+        enabled: !isAiGenerating && !isWorking && !isSavingSnapshot,
+    });
 
     useEffect(() => {
         setHasCompletedAiFill(false);
@@ -63,13 +85,38 @@ export function AiAutofill() {
         () => (autoFillEnabled ? hydratedDoc : maskDutyDocNonFixedCells(hydratedDoc)),
         [autoFillEnabled, hydratedDoc],
     );
+
     const canConfirm =
         !isWorking &&
+        !isSavingSnapshot &&
         !isAiGenerating &&
         !dutyQuery.isLoading &&
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
         canConfirmAiAutofill(aiStatus);
+
+    const handleSaveSnapshot = async () => {
+        if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
+
+        setIsSavingSnapshot(true);
+        const progressToastId = 'make-shift-snapshot-save-progress';
+        toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
+
+        try {
+            await WardAPI.saveSnapshot(wardId, currentShiftTeamId, {
+                yearMonth: `${year}-${String(month).padStart(2, '0')}`,
+                title: `${month}월 근무표 스냅샷 (${new Date().toLocaleTimeString()})`,
+                cells: docToSnapshotCellsDTO(editorDoc, dutyQuery.data),
+                rowOrder: docToSnapshotRowOrderDTO(editorDoc),
+            });
+            toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
+        } catch {
+            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: progressToastId});
+        } finally {
+            setIsSavingSnapshot(false);
+        }
+    };
+
     const handleConfirm = async () => {
         if (!wardId || !dutyQuery.data || !canConfirm) return;
 
@@ -80,21 +127,31 @@ export function AiAutofill() {
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            const dto = docToWardShiftsDTO(editorDoc, dutyQuery.data);
+            // 스냅샷 저장 후 바로 게시(Publish)하는 시나리오로 간주
+            const snapshot = await WardAPI.saveSnapshot(wardId, currentShiftTeamId ?? -1, {
+                yearMonth: `${year}-${String(month).padStart(2, '0')}`,
+                title: `${month}월 최종 확정본`,
+                cells: docToSnapshotCellsDTO(editorDoc, dutyQuery.data),
+                rowOrder: docToSnapshotRowOrderDTO(editorDoc),
+            });
+
+            await WardAPI.publishSnapshot(wardId, currentShiftTeamId ?? -1, snapshot.snapshotId);
+
             const nextShift = docToShift(editorDoc, dutyQuery.data);
             const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId ?? -1, year, month).queryKey;
 
-            await WardAPI.updateShifts(wardId, dto);
             useCase.confirm(nextShift);
             queryClient.setQueryData(queryKey, nextShift);
             void queryClient.invalidateQueries({queryKey});
+            toast.success(t('page.makeShift.aiRefill.publishSuccess'), {id: progressToastId});
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'));
-        } finally {
             toast.dismiss(progressToastId);
+        } finally {
             setIsWorking(false);
         }
     };
+
     const handleAiFill = async () => {
         if (wardId == null || currentShiftTeamId == null || isAiGenerating) return;
 
@@ -176,6 +233,8 @@ export function AiAutofill() {
                 onConfirm={handleConfirm}
                 isConfirming={isWorking}
                 canConfirm={canConfirm}
+                onSaveSnapshot={handleSaveSnapshot}
+                isSavingSnapshot={isSavingSnapshot}
             />
 
             {dutyQuery.isLoading && (

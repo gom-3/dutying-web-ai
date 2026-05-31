@@ -264,6 +264,11 @@ export const en: TLocale = {
                 error: 'Failed to load the duty schedule',
                 empty: 'Could not load schedule data',
                 saveFailed: 'Failed to save. Please try again shortly.',
+                saveSnapshot: 'Save snapshot',
+                savingSnapshot: 'Saving snapshot…',
+                saveSnapshotSuccess: 'Snapshot saved successfully.',
+                saveSnapshotFailed: 'Failed to save snapshot.',
+                publishSuccess: 'Schedule confirmed and published.',
                 title: {
                     idle: 'Autofill ready',
                     loading: 'Calculating schedule',

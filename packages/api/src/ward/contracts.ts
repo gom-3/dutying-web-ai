@@ -200,6 +200,82 @@ export type TAiScheduleResponse = {
     created_at: string;
 };
 
+export type TWorkspaceScheduleResponse = {
+    shift: TShift;
+    wardConstraint: TWardConstraint;
+};
+
+export type TSnapshotCellDTO = {
+    shiftNurseId: number;
+    date: string;
+    wardShiftTypeId: number | null;
+};
+
+export type TSnapshotRowOrderDTO = {
+    shiftNurseId: number;
+    priority: number;
+    divisionNum: number;
+};
+
+export type TSaveSnapshotDTO = {
+    yearMonth: string;
+    title: string;
+    cells: TSnapshotCellDTO[];
+    rowOrder: TSnapshotRowOrderDTO[];
+    prompt?: string;
+    baseHash?: string;
+};
+
+export type TSnapshotResponse = {
+    snapshotId: number;
+    title: string;
+    yearMonth: string;
+    createdAt: string;
+    isPublished: boolean;
+};
+
+export type TValidateSnapshotDTO = {
+    yearMonth: string;
+    draftRevision: number;
+    rulesHash: string;
+    cells: TSnapshotCellDTO[];
+    rowOrder: TSnapshotRowOrderDTO[];
+};
+
+export type TAutofillMode = 'GENERATE' | 'REPAIR';
+
+export type TAutofillTarget = {
+    type: 'VIOLATION';
+    ruleId: number;
+    violationId: string;
+};
+
+export type TAutofillDTO = {
+    mode: TAutofillMode;
+    yearMonth: string;
+    target?: TAutofillTarget;
+    prompt?: string;
+    snapshot: {
+        cells: TSnapshotCellDTO[];
+        rowOrder: TSnapshotRowOrderDTO[];
+    };
+};
+
+export type TPatchChange = {
+    shiftNurseId: number;
+    date: string;
+    fromWardShiftTypeId: number | null;
+    toWardShiftTypeId: number | null;
+};
+
+export type TAutofillResponse = {
+    resultType: 'FULL_SCHEDULE' | 'PATCH';
+    schedule?: Record<string, (number | null)[]>;
+    patch?: TPatchChange[];
+    sameAsPrevious: boolean;
+    unmetInstructions: {instruction: string; reason: string}[];
+};
+
 export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
@@ -259,6 +335,14 @@ export interface IWardAPI {
     createShiftType: (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;
     updateShiftType: (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) => Promise<TWardShiftTypeResponse>;
     deleteShiftType: (wardId: number, shiftTypeId: number) => Promise<void>;
+
+    getWorkspaceSchedule: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TWorkspaceScheduleResponse>;
+    validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TAiValidation>;
+    autofillSchedule: (wardId: number, shiftTeamId: number, autofillDTO: TAutofillDTO) => Promise<TAutofillResponse>;
+    getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotResponse[]>;
+    saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotResponse>;
+    getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TShiftResponse>;
+    publishSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<void>;
 
     /** @deprecated use getWaitingNurses */
     getWatingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;

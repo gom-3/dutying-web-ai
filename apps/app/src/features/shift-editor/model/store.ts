@@ -8,6 +8,8 @@ export type TEditorMode = 'normal' | 'fixed';
 export type TShiftEditorStore = {
     // state (data only)
     doc: TDutyDoc;
+    /** FE draft 변경 버전. validation 응답이 최신인지 확인용. */
+    draftRevision: number;
     selection: TSelection | null;
     /** 서버 validation 원본 스냅샷 — 표시는 doc 기준으로 재변환 */
     scheduleValidationSnapshot: TScheduleValidationSnapshot | null;
@@ -37,6 +39,7 @@ const initialHistory: THistoryState = {past: [], future: [], maxDepth: 200};
 export const useShiftEditorStore = create<TShiftEditorStore>()(
     devtools((set) => ({
         doc: emptyDoc,
+        draftRevision: 0,
         selection: null,
         scheduleValidationSnapshot: null,
         legacyDisplayViolations: [],
@@ -45,7 +48,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
         dutyRuleBoard: null,
         editorMode: 'normal',
 
-        setDoc: (doc) => set(() => ({doc})),
+        setDoc: (doc) => set((s) => ({doc, draftRevision: s.draftRevision + 1})),
         setSelection: (selection) => set(() => ({selection})),
         setScheduleValidationSnapshot: (scheduleValidationSnapshot) => set(() => ({scheduleValidationSnapshot})),
         setLegacyDisplayViolations: (legacyDisplayViolations) => set(() => ({legacyDisplayViolations})),
@@ -59,6 +62,7 @@ export const useShiftEditorStore = create<TShiftEditorStore>()(
 
             set(() => ({
                 doc: emptyDoc,
+                draftRevision: 0,
                 selection: null,
                 scheduleValidationSnapshot: null,
                 legacyDisplayViolations: [],

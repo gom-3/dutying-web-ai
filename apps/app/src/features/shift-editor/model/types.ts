@@ -23,7 +23,7 @@ export type TDutyRow = {
 export type TDutyDoc = {
     columns: TDateKey[];
     rows: TDutyRow[];
-    workerMeta: Record<string, {name: string; nurseId?: number}>;
+    workerMeta: Record<string, {name: string; nurseId?: number; priority?: number; divisionNum?: number}>;
     fixedCells: Record<string /* `${workerId}|${date}` */, true>;
     requestCells: Record<string /* `${workerId}|${date}` */, true>;
 };

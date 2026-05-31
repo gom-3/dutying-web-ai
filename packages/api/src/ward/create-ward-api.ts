@@ -172,4 +172,23 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
         (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
     deleteWatingNurses: async (wardId: number, nurseId: number) =>
         (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
+
+    getWorkspaceSchedule: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+        (
+            await client.get<TWorkspaceScheduleResponse>(
+                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/workspace?${toYearMonthQuery(year, month)}`,
+            )
+        ).data,
+    validateSnapshot: async (wardId: number, shiftTeamId: number, validateSnapshotDTO) =>
+        (await client.post<TAiValidation>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/validate-snapshot`, validateSnapshotDTO)).data,
+    autofillSchedule: async (wardId: number, shiftTeamId: number, autofillDTO) =>
+        (await client.post<TAutofillResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`, autofillDTO)).data,
+    getSnapshots: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+        (await client.get<TSnapshotResponse[]>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots?${toYearMonthQuery(year, month)}`)).data,
+    saveSnapshot: async (wardId: number, shiftTeamId: number, saveSnapshotDTO) =>
+        (await client.post<TSnapshotResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots`, saveSnapshotDTO)).data,
+    getSnapshot: async (wardId: number, shiftTeamId: number, snapshotId: number) =>
+        (await client.get<TShiftResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`)).data,
+    publishSnapshot: async (wardId: number, shiftTeamId: number, snapshotId: number) =>
+        (await client.post<void>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}/publish`)).data,
 });

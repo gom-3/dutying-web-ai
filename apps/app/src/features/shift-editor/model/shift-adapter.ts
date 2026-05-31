@@ -1,4 +1,4 @@
-import type {TWardShiftsDTO} from '@dutying/api/ward';
+import type {TSnapshotCellDTO, TSnapshotRowOrderDTO, TWardShiftsDTO} from '@dutying/api/ward';
 import type {TShift, TWardShiftType} from '@/entities';
 import type {TCellValue, TDutyDoc, TWorkKeyMap} from './types';
 
@@ -78,22 +78,29 @@ export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));
     const workerMeta: TDutyDoc['workerMeta'] = {};
     const rows = shift.divisionShiftNurses
-        .flatMap((division) => division)
-        .filter((row) => row.shiftNurse.isWorker)
-        .map((row) => {
-            const workerId = String(row.shiftNurse.shiftNurseId);
-            const cells = row.wardShiftList.map((value) => {
-                if (value === null) return null;
+        .flatMap((division, divisionIdx) =>
+            division
+                .filter((row) => row.shiftNurse.isWorker)
+                .map((row) => {
+                    const workerId = String(row.shiftNurse.shiftNurseId);
+                    const cells = row.wardShiftList.map((value) => {
+                        if (value === null) return null;
 
-                const type = idToType.get(value);
+                        const type = idToType.get(value);
 
-                return type?.shortName ?? null;
-            });
+                        return type?.shortName ?? null;
+                    });
 
-            workerMeta[workerId] = {name: row.shiftNurse.name, nurseId: row.shiftNurse.nurseId};
+                    workerMeta[workerId] = {
+                        name: row.shiftNurse.name,
+                        nurseId: row.shiftNurse.nurseId,
+                        priority: row.shiftNurse.priority,
+                        divisionNum: divisionIdx + 1,
+                    };
 
-            return {workerId, cells};
-        });
+                    return {workerId, cells};
+                }),
+        );
 
     return {columns, rows, workerMeta, fixedCells: {}, requestCells: {}};
 }
@@ -148,6 +155,38 @@ export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: TShift): TWardS
     }
 
     return dto;
+}
+
+export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSnapshotCellDTO[] {
+    const maps = buildWardShiftTypeMaps(originalShift);
+    const dto: TSnapshotCellDTO[] = [];
+
+    for (const row of doc.rows) {
+        const shiftNurseId = Number(row.workerId);
+
+        for (let colIdx = 0; colIdx < doc.columns.length; colIdx += 1) {
+            const date = doc.columns[colIdx]!;
+            const cell = row.cells[colIdx] ?? null;
+            const wardShiftTypeId = cellToWardShiftTypeId(cell, maps);
+
+            dto.push({shiftNurseId, date, wardShiftTypeId});
+        }
+    }
+
+    return dto;
+}
+
+export function docToSnapshotRowOrderDTO(doc: TDutyDoc): TSnapshotRowOrderDTO[] {
+    return doc.rows.map((row) => {
+        const shiftNurseId = Number(row.workerId);
+        const meta = doc.workerMeta[row.workerId];
+
+        return {
+            shiftNurseId,
+            priority: meta?.priority ?? 0,
+            divisionNum: meta?.divisionNum ?? 1,
+        };
+    });
 }
 
 export function buildWorkKeyMap(shift?: TShift): TWorkKeyMap {

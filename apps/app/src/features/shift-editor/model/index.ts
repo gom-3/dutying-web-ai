@@ -8,6 +8,7 @@ export * from './draft-status-store';
 export * from './use-shift-excel-export';
 export * from './use-shift-image-export';
 export * from './use-shift-editor-key-bindings';
+export * from './use-async-schedule-validation';
 export {buildViolationMap, buildViolationMapAll} from './validator';
 export {mergeServerScheduleViolations, mergeScheduleViolations} from './merge-schedule-violations';
 export {useViolationMap, type TScheduleViolationView} from './use-duty-violation-map';

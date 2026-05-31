@@ -261,6 +261,11 @@ export const ko = {
                 error: '근무표를 불러오지 못했어요',
                 empty: '근무표 데이터를 불러오지 못했어요',
                 saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+                saveSnapshot: '스냅샷 저장',
+                savingSnapshot: '스냅샷 저장 중…',
+                saveSnapshotSuccess: '스냅샷을 저장했어요.',
+                saveSnapshotFailed: '스냅샷을 저장하지 못했어요.',
+                publishSuccess: '근무표를 확정하고 게시했어요.',
                 title: {
                     idle: '자동 채우기 준비됨',
                     loading: '근무표 계산 중',
