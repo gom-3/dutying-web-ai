@@ -107,7 +107,9 @@ function EnterWard() {
     );
 
     useEffect(() => {
-        if (accountMe?.status !== 'WARD_SELECT_PENDING') navigate(ROUTE.REGISTER);
+        if (!accountMe || ['INITIAL', 'NURSE_INFO_PENDING', 'WARD_SELECT_PENDING'].includes(accountMe.status)) return;
+
+        navigate(ROUTE.REGISTER);
     }, [accountMe, navigate]);
 
     useEffect(() => {

@@ -99,6 +99,7 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType): TOnboardingWardSh
         color: parsed.color ?? base.color,
         isDefault: parsed.isDefault ?? false,
         isOff,
+        isCounted: parsed.isOff ? false : base.isCounted,
         classification: parsed.classification ?? inferClassificationFromShortName(shortName, isOff),
     };
 };

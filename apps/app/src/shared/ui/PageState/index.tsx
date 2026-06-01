@@ -73,7 +73,7 @@ function PageState({
     const titleElement = (
         <h2
             className={cn(
-                'font-apple text-[20px] leading-[1.45] font-semibold whitespace-pre-line tracking-normal break-keep text-sub-1',
+                'font-apple text-[20px] leading-[1.45] font-semibold tracking-normal break-keep whitespace-pre-line text-sub-1',
                 titlePlacement === 'aboveIcon' ? 'mb-10' : 'mt-4',
                 titleClassName,
             )}
@@ -85,8 +85,19 @@ function PageState({
     if (isLoading) {
         return (
             <div className={cn(containerClassName[layout], className)}>
-                <div aria-live="polite" className="flex items-center justify-center">
+                <div aria-live="polite" className="flex flex-col items-center justify-center text-center">
                     <BouncingDots className={cn('w-[36.3px]', loadingColorClassName[loadingColor])} />
+                    {title ? (
+                        <h2
+                            className={cn(
+                                'mt-4 font-apple text-[20px] leading-[1.45] font-semibold tracking-normal break-keep whitespace-pre-line text-sub-1',
+                                titleClassName,
+                            )}
+                        >
+                            {title}
+                        </h2>
+                    ) : null}
+                    {description ? <p className="mt-2 font-apple text-[14px] leading-6 text-gray-3">{description}</p> : null}
                 </div>
             </div>
         );

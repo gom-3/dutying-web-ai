@@ -74,6 +74,7 @@ const sections: TNavSection[] = [
             },
             {
                 path: ROUTE.WARD_INFO_SETTINGS,
+                activePaths: [ROUTE.WARD_INFO_SETTINGS, ROUTE.WARD_ADMINS],
                 icon: Hospital,
                 textKey: 'page.navigationBar.items.wardInfoSettings',
             },

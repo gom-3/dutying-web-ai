@@ -12,35 +12,27 @@ const initialState: IState = {
     imageBaseUrl: '',
     defaultProfileImages: [],
 };
+const DEFAULT_IMAGE_BASE_URL = RUNTIME_CONFIG.profileImageBaseUrl();
 
 export const useProfileImageStore = createStore<IState>(initialState, {name: 'useProfileImageStore'});
 
-const getImageUrls = (images: Awaited<ReturnType<typeof AccountAPI.getDefaultProfileImages>>) => images.map((image) => image.url);
+const getImageUrls = (images: Awaited<ReturnType<typeof AccountAPI.getDefaultProfileImages>>) =>
+    Array.isArray(images) ? images.map((image) => image.url).filter(Boolean) : [];
 
-AccountAPI.getDefaultProfileImages().then((images) => {
-    const imageUrls = getImageUrls(images);
+const getImageBaseUrl = (imageUrls: string[]) => {
+    const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
 
-    useProfileImageStore.setState({
-        defaultProfileImages: imageUrls,
-        imageBaseUrl: (() => {
-            const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
-
-            return match ? match[1] : RUNTIME_CONFIG.profileImageBaseUrl();
-        })(),
-    });
-});
-
-const DEFAULT_IMAGE_BASE_URL = RUNTIME_CONFIG.profileImageBaseUrl();
+    return match ? match[1] : DEFAULT_IMAGE_BASE_URL;
+};
 
 export const initializeProfileImageStore = async () => {
     try {
         const images = await AccountAPI.getDefaultProfileImages();
         const imageUrls = getImageUrls(images);
-        const match = imageUrls[0]?.match(/^(https:\/\/[^/]+)\//);
 
         useProfileImageStore.setState({
             defaultProfileImages: imageUrls,
-            imageBaseUrl: match ? match[1] : DEFAULT_IMAGE_BASE_URL,
+            imageBaseUrl: getImageBaseUrl(imageUrls),
         });
     } catch (error) {
         Sentry.captureException(error, {

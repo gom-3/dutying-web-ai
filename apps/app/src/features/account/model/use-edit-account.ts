@@ -4,14 +4,15 @@ import toast from 'react-hot-toast';
 import {useNavigate} from 'react-router';
 import {type TNurse} from '@/entities/nurse';
 import useAuth from '@/features/auth';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useEditWard from '@/features/edit-ward';
 import useLoadingUseCase from '@/features/loading';
-import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
+import {AccountAPI, AdminAPI, NurseAPI, WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 
 const useEditAccount = () => {
     const {
-        state: {accountMe},
+        state: {accountMe, accessToken},
         actions: {handleGetAccountMe, handleLogout},
     } = useAuth();
     const {
@@ -102,7 +103,13 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            await AccountAPI.deleteAccount(accountMe.accountId);
+
+            if (isWardAdminAccessToken(accessToken)) {
+                await AdminAPI.deleteMe();
+            } else {
+                await AccountAPI.deleteAccount(accountMe.accountId);
+            }
+
             await handleLogout();
         } catch (e) {
             Sentry.captureException(e, {

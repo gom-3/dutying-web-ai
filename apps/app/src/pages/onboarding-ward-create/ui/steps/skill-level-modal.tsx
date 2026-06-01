@@ -1,4 +1,4 @@
-﻿import {cn} from '@dutying/utils/style';
+import {cn} from '@dutying/utils/style';
 import {ChevronDown, Pencil, X} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -120,46 +120,6 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
     }
 
     const palette = getSkillPalette(localConfig.paletteId);
-    const hasUnsavedChanges = useMemo(() => {
-        const normalizeLabels = (labels?: Record<number, string>) =>
-            Object.entries(labels ?? {})
-                .map(([level, label]) => [Number(level), label.trim()] as const)
-                .filter(([, label]) => Boolean(label))
-                .sort(([a], [b]) => a - b);
-
-        const currentLabels = normalizeLabels(localConfig.levelLabels);
-        const originalLabels = normalizeLabels(config.levelLabels);
-
-        return (
-            localConfig.levelCount !== config.levelCount ||
-            localConfig.paletteId !== config.paletteId ||
-            JSON.stringify(currentLabels) !== JSON.stringify(originalLabels)
-        );
-    }, [config.levelCount, config.levelLabels, config.paletteId, localConfig.levelCount, localConfig.levelLabels, localConfig.paletteId]);
-    const requestLeave = (action: 'close' | 'disable') => {
-        if (!hasUnsavedChanges) {
-            if (action === 'disable') {
-                onDisable();
-                return;
-            }
-
-            onClose();
-            return;
-        }
-
-        setPendingLeaveAction(action);
-        setShowUnsavedConfirmModal(true);
-    };
-    const confirmLeave = () => {
-        const action = pendingLeaveAction;
-
-        if (action === 'disable') {
-            onDisable();
-            return;
-        }
-
-        onClose();
-    };
     const levelItems = Array.from({length: localConfig.levelCount}, (_, index) => localConfig.levelCount - index);
     const getDefaultLevelLabel = (level: number) => `LV. ${level}`;
     const getLevelLabel = (level: number) => localConfig.levelLabels?.[level] ?? getDefaultLevelLabel(level);
@@ -224,7 +184,8 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
 
         return paletteColors[reverseIndex] ?? paletteColors[paletteColors.length - 1];
     };
-    const getBadgeTextColor = (level: number) => getSkillBadgeTextColor(getBadgeBackgroundColor(level), {level, levelCount: localConfig.levelCount});
+    const getBadgeTextColor = (level: number) =>
+        getSkillBadgeTextColor(getBadgeBackgroundColor(level), {level, levelCount: localConfig.levelCount});
     const highestSkillColor = getBadgeBackgroundColor(localConfig.levelCount);
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
@@ -240,7 +201,12 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                             {t('page.onboardingWardCreate.skillLevelModal.description')}
                         </p>
                     </div>
-                    <button type="button" onClick={onClose} className="rounded-full p-2 text-gray-4 hover:bg-gray-7">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="rounded-full p-2 text-gray-4 hover:bg-gray-7"
+                        aria-label={t('page.onboardingWardCreate.skillLevelModal.cancel')}
+                    >
                         <X className="h-6 w-6" />
                     </button>
                 </div>
@@ -251,7 +217,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                             type="button"
                             aria-haspopup="listbox"
                             aria-expanded={isLevelCountMenuOpen}
-                            aria-label="?숇젴???④퀎"
+                            aria-label={`${t('page.onboardingWardCreate.skillLevelModal.levelLabel')} 단계`}
                             className={cn(
                                 'flex h-8 min-w-[112px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[16px] text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                 isLevelCountMenuOpen ? 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'hover:bg-gray-7',
@@ -265,7 +231,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                         {isLevelCountMenuOpen ? (
                             <div
                                 role="listbox"
-                                aria-label="?숇젴???④퀎 ?듭뀡"
+                                aria-label={t('page.onboardingWardCreate.skillLevelModal.levelLabel')}
                                 className="absolute top-full left-0 z-20 mt-1 w-[120px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
                             >
                                 {levelCountOptions.map((levelCount) => {
@@ -299,7 +265,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                             type="button"
                             aria-haspopup="listbox"
                             aria-expanded={isPaletteMenuOpen}
-                            aria-label="?됱긽 ?명듃"
+                            aria-label={t('page.onboardingWardCreate.skillLevelModal.colorLabel')}
                             className={cn(
                                 'flex h-8 min-w-[128px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                 isPaletteMenuOpen ? 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'hover:bg-gray-7',
@@ -321,7 +287,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                         {isPaletteMenuOpen ? (
                             <div
                                 role="listbox"
-                                aria-label="?됱긽 ?명듃 ?듭뀡"
+                                aria-label={t('page.onboardingWardCreate.skillLevelModal.colorLabel')}
                                 className="absolute top-full left-0 z-20 mt-1 w-[132px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
                             >
                                 {skillPalettes.map((candidate) => {
@@ -359,7 +325,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
 
                 <div className="mt-6">
                     <div className="mb-2 grid grid-cols-[72px_1fr] font-apple text-[16px] text-gray-3">
-                        <span className="text-center">援щ텇</span>
+                        <span className="text-center">{t('page.onboardingWardCreate.skillLevelModal.categoryLabel')}</span>
                         <span className="text-center">{t('page.onboardingWardCreate.skillLevelModal.levelLabel')}</span>
                     </div>
                     <div className="overflow-hidden rounded-[10px] border border-gray-5">
@@ -417,7 +383,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                                                     label={getLevelLabel(level)}
                                                     backgroundColor={getBadgeBackgroundColor(level)}
                                                     textColor={getBadgeTextColor(level)}
-                                                    className="text-[12px]"
+                                                    className="max-w-[240px] overflow-hidden text-[12px] text-ellipsis whitespace-nowrap"
                                                 />
                                                 <Pencil className="h-2.5 w-2.5 text-[#AEB7C7] opacity-80 transition-opacity group-hover:opacity-100" />
                                             </button>
@@ -435,7 +401,8 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                         className="rounded-[8px] px-3 py-2 font-apple text-[15px] font-medium text-gray-3 transition-colors hover:bg-gray-7"
                         onClick={onDisable}
                     >
-                        ?숇젴???ㅼ젙 ????                    </button>
+                        숙련도 설정 취소
+                    </button>
                     <WizardButton
                         onClick={() => {
                             onSave({...localConfig, autoAssign: true});
@@ -452,5 +419,3 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
 }
 
 export default SkillLevelModal;
-
-

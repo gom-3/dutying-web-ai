@@ -48,6 +48,44 @@ export type TWardChatUnreadCountResponse = {
     unreadCount: number;
 };
 
+export type TWardAdminRole = 'OWNER' | 'EDITOR';
+
+export type TWardAdminMembershipResponse = {
+    membershipId: number;
+    accountId: number;
+    name: string;
+    loginId?: string | null;
+    email?: string | null;
+    role: TWardAdminRole;
+    createdAt?: string;
+};
+
+export type TWardAdminInvitationResponse = {
+    invitationId: number;
+    invitedEmail: string;
+    invitedName?: string | null;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
+    status: 'PENDING' | 'ACCEPTED' | 'CANCELED' | 'EXPIRED';
+    invitedAt?: string;
+    expiresAt?: string | null;
+};
+
+export type TWardAdminsResponse = {
+    members: TWardAdminMembershipResponse[];
+    invitations: TWardAdminInvitationResponse[];
+};
+
+export type TCreateWardAdminInvitationDTO = {
+    invitedEmail: string;
+    invitedName?: string;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
+};
+
+export type TAddWardAdminByLoginIdDTO = {
+    loginId: string;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
+};
+
 export type TWardChatMessageListOptions = {
     cursorMessageId?: number;
     size?: number;
@@ -181,6 +219,12 @@ export interface IWardAPI {
     readWardChat: (wardId: number, read: TReadWardChatDTO) => Promise<void>;
     getWardChatUnreadCount: (wardId: number) => Promise<TWardChatUnreadCountResponse>;
     getMyWardChatUnreadCounts: () => Promise<TWardChatUnreadCountResponse[]>;
+    getWardAdmins: (wardId: number) => Promise<TWardAdminsResponse>;
+    createWardAdminInvitation: (wardId: number, invitation: TCreateWardAdminInvitationDTO) => Promise<TWardAdminInvitationResponse>;
+    addWardAdminByLoginId: (wardId: number, admin: TAddWardAdminByLoginIdDTO) => Promise<TWardAdminMembershipResponse>;
+    resendWardAdminInvitation: (wardId: number, invitationId: number) => Promise<void>;
+    cancelWardAdminInvitation: (wardId: number, invitationId: number) => Promise<void>;
+    removeWardAdmin: (wardId: number, membershipId: number) => Promise<void>;
     getReqShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TRequestShiftResponse>;
     getShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftResponse>;
     getRequestList: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TDutyRequestResponse[]>;
@@ -236,6 +280,7 @@ export type TCreateWardShiftTypeDTO = {
     endTime: string;
     isOff: boolean;
     isDefault: boolean;
+    isCounted: boolean;
     classification: TWardShiftClassification;
 };
 

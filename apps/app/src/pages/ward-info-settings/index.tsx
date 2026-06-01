@@ -1,9 +1,11 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {Hospital} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import toast from 'react-hot-toast';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
+import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
@@ -159,14 +161,17 @@ function WardInfoSettingsPage() {
             <div className="mx-auto flex max-w-[480px] items-start justify-between gap-4">
                 <div>
                     <h1 className="font-apple text-[32px] font-semibold tracking-normal text-sub-1">병동 설정</h1>
-                    <p className="mt-1 font-apple text-sm text-gray-3">
-                        {isDirty ? '변경 사항이 있어요. 저장해 주세요.' : '최신 병동 정보가 저장되어 있어요.'}
-                    </p>
                 </div>
             </div>
 
             <div className="mx-auto mt-6 max-w-[480px] space-y-4">
                 <Card className="rounded-[24px] border-transparent p-6">
+                    <div className="mb-5 flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-main-light text-main-1">
+                            <Hospital className="h-5 w-5" />
+                        </span>
+                        <h2 className="text-lg font-semibold text-sub-1">병동 정보</h2>
+                    </div>
                     <div className="grid grid-cols-1 gap-3">
                         <div className="max-w-[440px]">
                             <label htmlFor="hospitalName" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
@@ -221,6 +226,10 @@ function WardInfoSettingsPage() {
                         </div>
                     </div>
                 </Card>
+            </div>
+
+            <div className="mx-auto mt-6 max-w-[480px]">
+                <WardAdminsPage />
             </div>
 
             <div className="sticky bottom-3 mx-auto mt-4 flex max-w-[480px] items-center justify-end py-2">

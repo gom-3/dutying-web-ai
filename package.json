@@ -46,12 +46,6 @@
         "type-check:landing": "pnpm --dir ./apps/landing type-check",
         "workspace:list": "pnpm ls -r --depth -1"
     },
-    "pnpm": {
-        "onlyBuiltDependencies": [
-            "cypress",
-            "puppeteer"
-        ]
-    },
     "devDependencies": {
         "@changesets/cli": "^2.29.8",
         "lint-staged": "^16.2.7",

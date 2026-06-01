@@ -23,6 +23,7 @@ export interface IAccountAPI {
 export type TEditProfileRequest = {
     accountId: number;
     name: string;
+    phoneNum?: string | null;
     profileImgUrl?: string;
     defaultProfileImgId?: number;
 };

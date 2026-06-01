@@ -9,6 +9,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         color: '#4DC2AD',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'DAY',
     },
     {
@@ -19,6 +20,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         color: '#FF8BA5',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'EVENING',
     },
     {
@@ -29,6 +31,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         color: '#3580FF',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'NIGHT',
     },
     {
@@ -39,6 +42,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         color: '#465B7A',
         isDefault: true,
         isOff: true,
+        isCounted: false,
         classification: 'OFF',
     },
 ];

@@ -100,16 +100,18 @@ describe('buildAuthAuthorizeUrl', () => {
         const url = new URL(buildAuthAuthorizeUrl('kakao', 'https://evil.example/phish'));
 
         expect(url.origin).toBe('https://api.dutying.net');
+        expect(url.pathname).toBe('/oauth2/authorization/admin/kakao');
         expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/make');
     });
 
-    it('falls back when env urls are blank strings', () => {
+    it('uses the default server origin when VITE_SERVER_URL is blank', () => {
         vi.stubEnv('VITE_SERVER_URL', '   ');
         vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
 
         const url = new URL(buildAuthAuthorizeUrl('apple', ROUTE.REQUEST));
 
-        expect(url.origin).toBe('https://app.dutying.net');
+        expect(url.origin).toBe('https://api.dutying.net');
+        expect(url.pathname).toBe('/oauth2/authorization/admin/apple');
         expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/request');
     });
 });

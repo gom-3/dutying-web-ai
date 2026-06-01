@@ -6,7 +6,9 @@ import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {Navigate, useNavigate} from 'react-router';
 import {Pattern, match} from 'ts-pattern';
+import {type TWard} from '@/entities/ward';
 import useAuth from '@/features/auth';
+import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
 import RegisterShell from '@/pages/register/ui/register-shell';
 import ROUTE from '@/shared/constant/path';
@@ -36,10 +38,12 @@ function OnboardingJoinWardPage() {
     const {
         actions: {joinWardByCode},
     } = useRegister();
+    const {getWardByCode} = useGetWardByCode();
     const navigate = useNavigate();
     const [codeList, setCodeList] = useState<(string | null)[]>(createEmptyCode);
     const [focusedIndex, setFocusedIndex] = useState<number>(0);
     const [error, setError] = useState(false);
+    const [permissionWard, setPermissionWard] = useState<TWard | null>(null);
     const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const codeButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -79,24 +83,36 @@ function OnboardingJoinWardPage() {
             lastSubmittedCodeRef.current = code;
             setIsSubmitting(true);
             setError(false);
+            setIsPermissionModalOpen(false);
 
             try {
                 await joinWardByCode({code});
             } catch (error) {
-                if (getApiErrorCode(error) === 403) {
+                const errorCode = getApiErrorCode(error);
+
+                if (errorCode === 403) {
+                    try {
+                        setPermissionWard(await getWardByCode(code));
+                    } catch {
+                        setPermissionWard(null);
+                    }
+
                     setIsPermissionModalOpen(true);
 
                     return;
                 }
 
                 setError(true);
-                toast.error('병동에 들어가지 못했어요. 코드를 다시 확인해 주세요.');
+
+                if (errorCode !== 404) {
+                    toast.error('병동에 들어가지 못했어요. 코드를 다시 확인해 주세요.');
+                }
             } finally {
                 isSubmittingRef.current = false;
                 setIsSubmitting(false);
             }
         },
-        [joinWardByCode],
+        [getWardByCode, joinWardByCode],
     );
     const handleKeyDown = useCallback(
         async (e: KeyboardEvent) => {
@@ -154,6 +170,7 @@ function OnboardingJoinWardPage() {
             void handleJoinWard(codeValue);
         } else {
             setError(false);
+            setPermissionWard(null);
             setIsPermissionModalOpen(false);
             lastSubmittedCodeRef.current = null;
         }
@@ -243,7 +260,7 @@ function OnboardingJoinWardPage() {
                                     role="alert"
                                     className="mt-4 rounded-[16px] bg-[#FFF1F6] px-4 py-3 text-center text-sm font-medium text-red"
                                 >
-                                    병동 코드를 다시 확인해 주세요.
+                                    존재하지 않는 병동 코드예요. 코드를 다시 확인해 주세요.
                                 </p>
                             ) : null}
 
@@ -267,7 +284,9 @@ function OnboardingJoinWardPage() {
                                                           id="join-ward-permission-title"
                                                           className="mt-2 text-[24px] font-semibold text-sub-1"
                                                       >
-                                                          병동 관리자에게 요청해 주세요
+                                                          {permissionWard
+                                                              ? `${permissionWard.hospitalName} ${permissionWard.name} 관리자에게 요청해 주세요`
+                                                              : '병동 관리자에게 요청해 주세요'}
                                                       </h2>
                                                   </div>
                                                   <button
@@ -280,8 +299,9 @@ function OnboardingJoinWardPage() {
                                                   </button>
                                               </div>
                                               <p className="mt-3 text-sm leading-6 text-gray-3">
-                                                  병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요. 병동 최고 관리자에게 아이디
-                                                  또는 이메일로 관리자 권한 추가를 요청해 주세요.
+                                                  병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요.{' '}
+                                                  {permissionWard ? `${permissionWard.hospitalName} ${permissionWard.name} ` : ''}
+                                                  최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.
                                               </p>
                                               <button
                                                   type="button"

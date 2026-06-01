@@ -7,6 +7,21 @@ export const ko = {
             errorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 새로고침 후 다시 확인해 주세요.',
             retry: '다시 시도',
         },
+        error: {
+            goHome: '근무표로 가기',
+            goBack: '이전 화면',
+            retry: '다시 시도',
+            notFound: {
+                code: '404',
+                title: '페이지를 찾을 수 없어요',
+                description: '주소가 바뀌었거나 더 이상 제공하지 않는 화면일 수 있어요.\n근무표 화면에서 다시 시작해 주세요.',
+            },
+            unexpected: {
+                code: 'ERROR',
+                title: '화면을 불러오지 못했어요',
+                description: '일시적인 문제가 발생했어요.\n다시 시도해도 계속된다면 새로고침 후 확인해 주세요.',
+            },
+        },
         navigationBar: {
             ariaLabel: '주요 메뉴',
             expandAria: '사이드바 펼치기',
@@ -23,6 +38,7 @@ export const ko = {
                 board: '게시판',
                 member: '근무자',
                 wardSettings: '근무 설정',
+                wardAdmins: '병동 관리자',
                 wardInfoSettings: '병동 설정',
                 account: '계정',
             },

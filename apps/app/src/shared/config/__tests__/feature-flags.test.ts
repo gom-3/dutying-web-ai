@@ -1,5 +1,5 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {isNonProductionAppDomain, isOnboardingWardCreatePreviewAllowed} from '../feature-flags';
+import {isNonProductionAppDomain, isOnboardingWardCreatePreviewAllowed, isWardChatEnabled} from '../feature-flags';
 
 describe('isNonProductionAppDomain', () => {
     it('treats production app host as production', () => {
@@ -54,5 +54,35 @@ describe('isOnboardingWardCreatePreviewAllowed', () => {
         vi.stubEnv('VITE_ALLOW_ONBOARDING_PREVIEW', 'true');
 
         expect(isOnboardingWardCreatePreviewAllowed()).toBe(true);
+    });
+});
+
+describe('isWardChatEnabled', () => {
+    beforeEach(() => {
+        vi.stubEnv('VITE_ENABLE_WARD_CHAT', '');
+        vi.stubEnv('VITE_SERVER_URL', '');
+    });
+
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
+    it('disables ward chat against production API while it lacks chat routes', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+
+        expect(isWardChatEnabled()).toBe(false);
+    });
+
+    it('allows ward chat against dev API', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.net');
+
+        expect(isWardChatEnabled()).toBe(true);
+    });
+
+    it('respects explicit override', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+        vi.stubEnv('VITE_ENABLE_WARD_CHAT', 'true');
+
+        expect(isWardChatEnabled()).toBe(true);
     });
 });

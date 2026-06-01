@@ -13,6 +13,25 @@ import {NurseAPI, WardAPI} from '@/shared/api';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
+const TEMP_NURSE_ID_BASE = -1_000_000;
+
+let tempNurseIdSeq = 0;
+
+const createTempNurseId = () => TEMP_NURSE_ID_BASE - tempNurseIdSeq++;
+const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
+const normalizePhoneNum = (phoneNum: string) => phoneNum.replace(/\D/g, '');
+const toOptionalPhoneNum = (phoneNum: string) => {
+    const normalizedPhoneNum = normalizePhoneNum(phoneNum);
+
+    return normalizedPhoneNum.length > 0 ? normalizedPhoneNum : null;
+};
+const canCreateNurse = (nurse: TUpdateNurseDTO) => nurse.name.trim().length > 0;
+const toNursePayload = (nurse: TUpdateNurseDTO) =>
+    (({gender: _gender, ...payload}) => ({
+        ...payload,
+        name: nurse.name.trim(),
+        phoneNum: toOptionalPhoneNum(nurse.phoneNum),
+    }))(nurse) as TUpdateNurseDTO;
 const useEditShiftTeam = () => {
     const {
         selectedNurseId,
@@ -54,6 +73,7 @@ const useEditShiftTeam = () => {
         await queryClient.invalidateQueries({queryKey: wardQueryKey});
         await queryClient.invalidateQueries({queryKey: shiftQueryKey});
         await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
+
         if (wardId) {
             await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'shiftTeamNurses', wardId]});
         }
@@ -65,18 +85,8 @@ const useEditShiftTeam = () => {
             beginAddingNurse();
 
             try {
-                const nurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
-                    name: '',
-                    phoneNum: '',
-                    gender: '',
-                    isWorker: true,
-                    employmentDate: '',
-                    isDutyManager: false,
-                    isWardManager: false,
-                    memo: '',
-                });
-
-                const oldWard = queryClient.getQueryData<TWard>(wardQueryKey);
+                const oldWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? ward;
+                const tempNurseId = createTempNurseId();
 
                 if (oldWard) {
                     queryClient.setQueryData<TWard>(
@@ -86,39 +96,46 @@ const useEditShiftTeam = () => {
 
                             if (!targetShiftTeam) return;
 
-                            const alreadyExists = targetShiftTeam.nurses.some((existingNurse) => existingNurse.nurseId === nurse.nurseId);
+                            const alreadyExists = targetShiftTeam.nurses.some((existingNurse) => existingNurse.nurseId === tempNurseId);
 
                             if (alreadyExists) return;
 
-                            const seedShiftTypes = targetShiftTeam.nurses[0]?.nurseShiftTypes ?? [];
+                            const seedShiftTypes =
+                                targetShiftTeam.nurses[0]?.nurseShiftTypes ??
+                                draft.wardShiftTypes?.map((shiftType) => ({
+                                    nurseShiftTypeId: shiftType.wardShiftTypeId,
+                                    name: shiftType.name,
+                                    shortName: shiftType.shortName,
+                                    isPossible: true,
+                                    isPreferred: false,
+                                })) ??
+                                [];
                             const seedPriority = targetShiftTeam.nurses[targetShiftTeam.nurses.length - 1]?.priority ?? 0;
 
                             targetShiftTeam.nurses.push({
                                 accountId: null,
                                 shiftTeamId,
                                 wardId,
-                                name: nurse.name ?? '',
-                                phoneNum: nurse.phoneNum ?? '',
-                                isConnected: nurse.isConnected ?? false,
-                                nurseShiftTypes:
-                                    nurse.nurseShiftTypes ??
-                                    seedShiftTypes.map((shiftType) => ({
-                                        nurseShiftTypeId: shiftType.nurseShiftTypeId,
-                                        name: shiftType.name,
-                                        shortName: shiftType.shortName,
-                                        isPossible: shiftType.isPossible,
-                                        isPreferred: shiftType.isPreferred,
-                                    })),
-                                isWorker: nurse.isWorker ?? true,
-                                isDutyManager: nurse.isDutyManager ?? false,
-                                isWardManager: nurse.isWardManager ?? false,
-                                gender: nurse.gender ?? '',
-                                employmentDate: nurse.employmentDate ?? '',
-                                memo: nurse.memo ?? '',
-                                isDeleted: nurse.isDeleted ?? false,
-                                divisionNum: nurse.divisionNum ?? 1,
-                                priority: nurse.priority ?? seedPriority + 1,
-                                nurseId: nurse.nurseId,
+                                name: '',
+                                phoneNum: '',
+                                isConnected: false,
+                                nurseShiftTypes: seedShiftTypes.map((shiftType) => ({
+                                    nurseShiftTypeId: shiftType.nurseShiftTypeId,
+                                    name: shiftType.name,
+                                    shortName: shiftType.shortName,
+                                    isPossible: shiftType.isPossible,
+                                    isPreferred: shiftType.isPreferred,
+                                })),
+                                isWorker: true,
+                                isDutyManager: false,
+                                isWardManager: false,
+                                gender: '',
+                                employmentDate: '',
+                                memo: '',
+                                isDeleted: false,
+                                divisionNum: 1,
+                                priority: seedPriority + 1,
+                                nurseId: tempNurseId,
                             });
 
                             targetShiftTeam.nurseCnt = Math.max(targetShiftTeam.nurseCnt ?? 0, targetShiftTeam.nurses.length);
@@ -126,21 +143,42 @@ const useEditShiftTeam = () => {
                     );
                 }
 
-                completeAddingNurse(nurse.nurseId);
+                completeAddingNurse(tempNurseId);
 
-                toast.success('간호사를 추가했어요. 이름과 연락처를 입력한 뒤 저장해 주세요.', {position: 'bottom-center'});
-                await invalidateWard();
+                toast.success('간호사 정보를 입력한 뒤 저장해 주세요.', {position: 'bottom-center'});
             } catch (error) {
                 showActionErrorFeedback(error, '간호사를 추가하지 못했어요.');
             } finally {
                 finishAddingNurse();
             }
         },
-        [beginAddingNurse, completeAddingNurse, finishAddingNurse, invalidateWard, queryClient, wardId, wardQueryKey],
+        [beginAddingNurse, completeAddingNurse, finishAddingNurse, queryClient, ward, wardId, wardQueryKey],
     );
     const deleteNurse = useCallback(
         async (shiftTeamId: number, nurseId: number) => {
             if (!wardId) return;
+
+            if (isTempNurseId(nurseId)) {
+                const oldWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? ward;
+
+                if (oldWard) {
+                    queryClient.setQueryData<TWard>(
+                        wardQueryKey,
+                        produce(oldWard, (draft) => {
+                            const shiftTeam = draft.shiftTeams.find((team) => team.shiftTeamId === shiftTeamId);
+
+                            if (!shiftTeam) return;
+
+                            shiftTeam.nurses = shiftTeam.nurses.filter((nurse) => nurse.nurseId !== nurseId);
+                            shiftTeam.nurseCnt = shiftTeam.nurses.length;
+                        }),
+                    );
+                }
+
+                completeDeletingNurse();
+
+                return;
+            }
 
             beginDeletingNurse();
 
@@ -155,7 +193,7 @@ const useEditShiftTeam = () => {
                 finishDeletingNurse();
             }
         },
-        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, wardId],
+        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, queryClient, ward, wardId, wardQueryKey],
     );
     const disconnectNurse = useCallback(
         async (nurseId: number) => {
@@ -178,6 +216,7 @@ const useEditShiftTeam = () => {
                         draft.shiftTeams.forEach((shiftTeam) => {
                             shiftTeam.nurses.forEach((nurse) => {
                                 if (nurse.nurseId !== nurseId) return;
+
                                 nurse.isConnected = false;
                             });
                         });
@@ -190,14 +229,18 @@ const useEditShiftTeam = () => {
                 completeSavingNurse();
                 await invalidateWardShiftAndRequest();
                 toast.success('연동을 끊었어요.');
+
                 return true;
             } catch (error) {
                 if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
+
                 if (oldShift) queryClient.setQueryData(shiftQueryKey, oldShift);
+
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
                 failSavingNurse();
                 showActionErrorFeedback(error, '연동을 끊지 못했어요.');
+
                 return false;
             }
         },
@@ -227,6 +270,10 @@ const useEditShiftTeam = () => {
     );
     const updateNurse = useCallback(
         async (nurseId: number, updateNurseDTO: TUpdateNurseDTO) => {
+            if (isTempNurseId(nurseId) && !canCreateNurse(updateNurseDTO)) {
+                return false;
+            }
+
             beginSavingNurse();
 
             await queryClient.cancelQueries({queryKey: wardQueryKey});
@@ -253,7 +300,40 @@ const useEditShiftTeam = () => {
             }
 
             try {
-                await NurseAPI.updateNurse(nurseId, updateNurseDTO);
+                if (isTempNurseId(nurseId)) {
+                    const createNurseDTO = updateNurseDTO as TUpdateNurseDTO & {shiftTeamId?: number};
+                    const createdNurse = await WardAPI.addNurseIntoShiftTeam(
+                        wardId!,
+                        createNurseDTO.shiftTeamId!,
+                        toNursePayload(updateNurseDTO),
+                    );
+                    const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? oldWard;
+
+                    if (currentWard) {
+                        queryClient.setQueryData<TWard>(
+                            wardQueryKey,
+                            produce(currentWard, (draft) => {
+                                draft.shiftTeams.forEach((shiftTeam) => {
+                                    shiftTeam.nurses.forEach((nurse) => {
+                                        if (nurse.nurseId !== nurseId) return;
+
+                                        Object.assign(nurse, {
+                                            ...nurse,
+                                            ...createdNurse,
+                                            shiftTeamId: createdNurse.shiftTeamId ?? createNurseDTO.shiftTeamId,
+                                            wardId: createdNurse.wardId ?? wardId,
+                                        });
+                                    });
+                                });
+                            }),
+                        );
+                    }
+
+                    selectNurseState(createdNurse.nurseId, 'edit');
+                } else {
+                    await NurseAPI.updateNurse(nurseId, toNursePayload(updateNurseDTO));
+                }
+
                 completeSavingNurse();
 
                 await invalidateWardShiftAndRequest();
@@ -261,7 +341,9 @@ const useEditShiftTeam = () => {
                 return true;
             } catch (error) {
                 if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
+
                 if (oldShift) queryClient.setQueryData(shiftQueryKey, oldShift);
+
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
                 failSavingNurse();
@@ -276,9 +358,11 @@ const useEditShiftTeam = () => {
             completeSavingNurse,
             failSavingNurse,
             invalidateWardShiftAndRequest,
+            selectNurseState,
             queryClient,
             requestShiftQueryKey,
             shiftQueryKey,
+            wardId,
             wardQueryKey,
         ],
     );
@@ -319,12 +403,18 @@ const useEditShiftTeam = () => {
                 );
             }
 
+            if (isTempNurseId(nurseId)) {
+                return;
+            }
+
             try {
                 await NurseAPI.updateNurseShiftType(nurseId, nurseShiftTypeId, change);
                 await invalidateWardShiftAndRequest();
             } catch (error) {
                 if (oldWard) queryClient.setQueryData(wardQueryKey, oldWard);
+
                 if (oldShift) queryClient.setQueryData(shiftQueryKey, oldShift);
+
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
                 showActionErrorFeedback(error, '가능한 근무 유형을 저장하지 못했어요.');
@@ -336,7 +426,9 @@ const useEditShiftTeam = () => {
         if (!wardId) return;
 
         const createdShiftTeam = await WardAPI.createShiftTeam(wardId);
+
         await invalidateWard();
+
         return createdShiftTeam;
     }, [invalidateWard, wardId]);
     const deleteShiftTeam = useCallback(

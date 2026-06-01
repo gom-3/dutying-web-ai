@@ -1,8 +1,9 @@
 import {cn} from '@dutying/utils/style';
-import {AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Loader2} from 'lucide-react';
+import {AlertCircle, CheckCircle2, Loader2} from 'lucide-react';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/request-shift';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 
 function Toolbar() {
     const {t} = useTypedTranslation();
@@ -13,9 +14,11 @@ function Toolbar() {
     const isSaving = changeStatus === 'loading';
     const isSaved = changeStatus === 'success';
     const hasSaveError = changeStatus === 'error';
-    const shiftTeamCount = shiftTeams?.length ?? 0;
-    const shouldShowShiftTeamList = shiftTeamCount !== 1;
     const title = editAvailability.canEdit ? t('page.request.toolbar.editTitle') : t('page.request.toolbar.readonlyTitle', {month});
+    const headerShiftTeams = (shiftTeams ?? []).map((team) => ({
+        ...team,
+        pendingCount: teamPendingRequestCountByTeamId?.[team.shiftTeamId] ?? 0,
+    }));
     const feedback = hasSaveError
         ? {
               tone: 'error' as const,
@@ -57,93 +60,37 @@ function Toolbar() {
 
     return (
         <div id="toolbar" className="mx-auto flex w-full max-w-none flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1">
-                    <button
-                        type="button"
-                        className="grid h-9 w-9 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40"
-                        onClick={() => {
-                            if (!changeMonth('prev')) return;
+            <DutyManagementMonthTeamHeader
+                year={year}
+                month={month}
+                prevLabel={t('page.duty.prevMonth')}
+                nextLabel={t('page.duty.nextMonth')}
+                shiftTeams={headerShiftTeams}
+                currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
+                onPrevMonth={() => {
+                    if (!changeMonth('prev')) return;
 
-                            sendEvent(events.requestPage.toolbar.changeMonth);
-                        }}
-                        disabled={isSaving}
-                        aria-label={t('page.duty.prevMonth')}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <p className="min-w-[112px] text-center font-apple text-[20px] font-semibold text-sub-1">
-                        {t('page.duty.monthHeader', {year, month})}
-                    </p>
-                    <button
-                        type="button"
-                        className="grid h-9 w-9 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 disabled:cursor-not-allowed disabled:opacity-40"
-                        onClick={() => {
-                            if (!changeMonth('next')) return;
+                    sendEvent(events.requestPage.toolbar.changeMonth);
+                }}
+                onNextMonth={() => {
+                    if (!changeMonth('next')) return;
 
-                            sendEvent(events.requestPage.toolbar.changeMonth);
-                        }}
-                        disabled={isSaving}
-                        aria-label={t('page.duty.nextMonth')}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
+                    sendEvent(events.requestPage.toolbar.changeMonth);
+                }}
+                onSelectShiftTeam={(shiftTeamId) => {
+                    const nextTeam = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
 
-                {shouldShowShiftTeamList ? (
-                    <div
-                        id="shift_team_list"
-                        className="relative grid gap-1 overflow-visible rounded-[12px] bg-[#3D4658] p-0.5"
-                        style={{
-                            gridTemplateColumns: `repeat(${Math.max(shiftTeamCount, 1)}, minmax(0, 1fr))`,
-                        }}
-                    >
-                        <>
-                            {(shiftTeams ?? []).map((team, teamIndex) => {
-                                const selected = team.shiftTeamId === currentShiftTeam?.shiftTeamId;
-                                const pendingCount = teamPendingRequestCountByTeamId?.[team.shiftTeamId] ?? 0;
+                    if (!nextTeam) return;
 
-                                return (
-                                    <button
-                                        key={team.shiftTeamId}
-                                        type="button"
-                                        className={cn(
-                                            'relative box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center overflow-visible rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
-                                            selected ? 'bg-white text-sub-1' : 'text-[#B8C0CF] hover:text-white',
-                                        )}
-                                        style={{
-                                            zIndex: pendingCount > 0 ? 30 + (shiftTeamCount - teamIndex) : selected ? 10 : 0,
-                                        }}
-                                        disabled={isSaving}
-                                        onClick={() => {
-                                            const nextTeam = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === team.shiftTeamId);
+                    if (!changeShiftTeam(nextTeam)) return;
 
-                                            if (!nextTeam) return;
-
-                                            if (!changeShiftTeam(nextTeam)) return;
-
-                                            sendEvent(events.requestPage.toolbar.changeShiftTeam);
-                                        }}
-                                    >
-                                        <span className="block leading-none">{team.name}</span>
-                                        {pendingCount > 0 ? (
-                                            <span className="pointer-events-none absolute -top-2 -right-2 z-50 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E97A84] px-1.5 font-poppins text-[11px] leading-none font-bold text-white">
-                                                {pendingCount}
-                                            </span>
-                                        ) : null}
-                                    </button>
-                                );
-                            })}
-
-                            {shiftTeamCount === 0 ? (
-                                <div className="px-3 py-1.5 font-apple text-[14px] font-medium text-[#AEB7C7]">
-                                    {t('page.request.toolbar.noTeamsLabel')}
-                                </div>
-                            ) : null}
-                        </>
-                    </div>
-                ) : null}
-            </div>
+                    sendEvent(events.requestPage.toolbar.changeShiftTeam);
+                }}
+                emptyLabel={t('page.request.toolbar.noTeamsLabel')}
+                formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
+                disabled={isSaving}
+                teamTone="darkSegmented"
+            />
 
             <div className="flex flex-col gap-2 py-3 md:flex-row md:items-end md:justify-between">
                 <div className="min-w-0">

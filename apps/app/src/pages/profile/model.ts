@@ -3,7 +3,7 @@ import type {TProfileImageValue} from '@/entities/account/ui/profile-image/model
 import type {TNurse} from '@/entities/nurse';
 import type {TWard} from '@/entities/ward';
 
-const editableProfileFields = ['name', 'gender', 'phoneNum', 'employmentDate', 'isWorker'] as const;
+const editableProfileFields = ['name', 'gender', 'phoneNum', 'employmentDate'] as const;
 const getMeaningfulDisplayName = (name?: string | null) => {
     const trimmedName = name?.trim();
 

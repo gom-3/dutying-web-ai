@@ -66,7 +66,10 @@ function RegisterWard() {
                     createWard({
                         name: data.name,
                         hospitalName: data.hospitalName,
-                        shiftTeams: shiftTeams.map((shiftTeam) => ({nurseNames: shiftTeam})),
+                        shiftTeams: shiftTeams
+                            .map((shiftTeam) => shiftTeam.map((nurseName) => nurseName.trim()).filter(Boolean))
+                            .filter((nurseNames) => nurseNames.length > 0)
+                            .map((nurseNames) => ({nurseNames})),
                         wardShiftTypes,
                     });
                 })}

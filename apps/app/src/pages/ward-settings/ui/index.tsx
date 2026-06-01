@@ -121,7 +121,7 @@ function Tabs({currentTab, onSelect}: {currentTab: TWardSettingsTab; onSelect: (
     const {t} = useTypedTranslation();
 
     return (
-        <div className="w-fit rounded-[12px] bg-gray-7 p-1">
+        <div className="w-fit rounded-[12px] bg-[#F2F4F6] p-1">
             <div className="flex items-center gap-1">
                 {TAB_ORDER.map((tab) => {
                     const active = currentTab === tab;

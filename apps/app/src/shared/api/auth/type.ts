@@ -7,8 +7,66 @@ export type TDemoStartResponse = {
     accessToken: string;
 };
 
+export type TAdminPasswordLoginRequest = {
+    email: string;
+    password: string;
+};
+
+export type TAdminPasswordSignupRequest = {
+    email: string;
+    emailVerificationToken?: string;
+    password: string;
+    name?: string;
+    phoneNum?: string;
+    profileImgUrl?: string | null;
+};
+
+export type TAdminEmailVerificationSendRequest = {
+    email: string;
+};
+
+export type TAdminEmailVerificationSendResponse = {
+    email: string;
+    expiresAt?: string;
+    debugVerificationToken?: string;
+};
+
+export type TAdminSocialProvider = 'KAKAO' | 'APPLE';
+
+export type TAdminSocialProfileRequest = {
+    provider: TAdminSocialProvider;
+    idToken: string;
+    providerAccessToken?: string | null;
+};
+
+export type TAdminSocialProfileResponse = {
+    provider: TAdminSocialProvider;
+    providerUserId?: string;
+    email?: string | null;
+    name?: string | null;
+    phoneNum?: string | null;
+    profileImgUrl?: string | null;
+    signupToken?: string;
+};
+
+export type TAdminSocialSignupRequest = TAdminSocialProfileRequest & {
+    signupToken?: string;
+    name?: string | null;
+    phoneNum?: string | null;
+    profileImgUrl?: string | null;
+};
+
+export type TAuthTokenResponse = {
+    accessToken: string;
+};
+
 export interface IAuthAPI {
     // POST
     demoStart: () => Promise<TDemoStartResponse>;
+    passwordLogin: (request: TAdminPasswordLoginRequest) => Promise<TAuthTokenResponse>;
+    passwordSignup: (request: TAdminPasswordSignupRequest) => Promise<TAuthTokenResponse>;
+    sendAdminEmailVerification: (request: TAdminEmailVerificationSendRequest) => Promise<TAdminEmailVerificationSendResponse>;
+    adminSocialProfile: (request: TAdminSocialProfileRequest) => Promise<TAdminSocialProfileResponse>;
+    adminSocialSignup: (request: TAdminSocialSignupRequest) => Promise<TAuthTokenResponse>;
     logout: (accessToken: string | null) => Promise<void>;
 }

@@ -7,6 +7,8 @@ const ROUTE = {
     REGISTER_WARD: '/register-ward',
     ONBOARDING_WARD_CREATE: '/onboarding/ward-create',
     LOGIN: '/login',
+    SIGN_IN: '/login',
+    SIGN_UP: '/signup',
     REFRESH: '/refresh',
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
@@ -17,6 +19,7 @@ const ROUTE = {
     BOARD: '/board',
     MEMBER: '/member',
     WARD_SETTINGS: '/ward-settings',
+    WARD_ADMINS: '/ward-settings/admins',
     WARD_INFO_SETTINGS: '/ward-info-settings',
     PROFILE: '/profile',
 };

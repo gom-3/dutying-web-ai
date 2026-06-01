@@ -3,6 +3,8 @@ import type {
     IWardAPI,
     TCreateWardChatMessageDTO,
     TCreateShiftTypeDTO,
+    TAddWardAdminByLoginIdDTO,
+    TCreateWardAdminInvitationDTO,
     TCreateWardDTO,
     TDutyRequestResponse,
     TEditWardDTO,
@@ -13,6 +15,9 @@ import type {
     TShiftTeamResponse,
     TUpdateShiftTeamDTO,
     TWaitingNurseResponse,
+    TWardAdminInvitationResponse,
+    TWardAdminMembershipResponse,
+    TWardAdminsResponse,
     TWardChatMessageResponse,
     TWardChatMessagesResponse,
     TWardChatUnreadCountResponse,
@@ -104,6 +109,17 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
     readWardChat: async (wardId: number, read: TReadWardChatDTO) => (await client.put<void>(`/wards/${wardId}/chat/read`, read)).data,
     getWardChatUnreadCount: async (wardId: number) => (await client.get<TWardChatUnreadCountResponse>(`/wards/${wardId}/chat/unread-count`)).data,
     getMyWardChatUnreadCounts: async () => (await client.get<TWardChatUnreadCountResponse[]>(`/wards/chat/unread-counts`)).data,
+    getWardAdmins: async (wardId: number) => (await client.get<TWardAdminsResponse>(`/wards/${wardId}/admins`)).data,
+    createWardAdminInvitation: async (wardId: number, invitation: TCreateWardAdminInvitationDTO) =>
+        (await client.post<TWardAdminInvitationResponse>(`/wards/${wardId}/admin-invitations`, invitation)).data,
+    addWardAdminByLoginId: async (wardId: number, admin: TAddWardAdminByLoginIdDTO) =>
+        (await client.post<TWardAdminMembershipResponse>(`/wards/${wardId}/admins/by-login-id`, admin)).data,
+    resendWardAdminInvitation: async (wardId: number, invitationId: number) =>
+        (await client.post<void>(`/wards/${wardId}/admin-invitations/${invitationId}/resend`)).data,
+    cancelWardAdminInvitation: async (wardId: number, invitationId: number) =>
+        (await client.delete<void>(`/wards/${wardId}/admin-invitations/${invitationId}`)).data,
+    removeWardAdmin: async (wardId: number, membershipId: number) =>
+        (await client.delete<void>(`/wards/${wardId}/admins/${membershipId}`)).data,
     updateReqShift: async (
         wardId: number,
         year: number,

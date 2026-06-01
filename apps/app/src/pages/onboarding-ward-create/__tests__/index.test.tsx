@@ -446,7 +446,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
     });
 
-    it('shows toast and auto navigates to duty after ward creation succeeds', async () => {
+    it('shows toast and auto navigates to make after ward creation succeeds', async () => {
         const user = userEvent.setup();
 
         let resolveCreateWard!: () => void;
@@ -492,7 +492,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByTestId('ward-create-success')).not.toBeInTheDocument();
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/duty?onboardingWardCreated=1', {replace: true});
+                expect(mockNavigate).toHaveBeenCalledWith('/make', {replace: true, state: {onboardingWardCreated: true}});
             },
             {timeout: 2_000},
         );

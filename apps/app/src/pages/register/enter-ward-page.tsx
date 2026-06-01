@@ -1,6 +1,5 @@
-import {Navigate} from 'react-router';
-import ROUTE from '@/shared/constant/path';
+import OnboardingJoinWardPage from '@/pages/onboarding/join-ward';
 
 export default function EnterWardRedirectPage() {
-    return <Navigate to={ROUTE.ONBOARDING_JOIN_WARD} replace />;
+    return <OnboardingJoinWardPage />;
 }

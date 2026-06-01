@@ -1,23 +1,24 @@
 import {cn} from '@dutying/utils/style';
-import {Eye, EyeOff, Loader2, Lock, UserRound} from 'lucide-react';
+import {Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
 import {type FormEvent, useState} from 'react';
 import {Carousel} from 'react-responsive-carousel';
 import {Link, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
+import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
 import {AuthAPI} from '@/shared/api';
-import {AppleIcon, BackCircle, FullLogo, KakaoIcon, LogoSymbolFill, NextCircle} from '@/shared/assets/svg';
+import {AppleIcon, BackCircle, KakaoIcon, NextCircle} from '@/shared/assets/svg';
 import {buildAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import './index.css';
 
-type TSignupErrors = Partial<Record<'loginId' | 'password' | 'passwordConfirm', string>>;
+type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm', string>>;
 
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const PASSWORD_MIN_LENGTH = 8;
-const LOGIN_ID_PATTERN = /^[A-Za-z0-9._-]{4,40}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
     <button
@@ -48,24 +49,39 @@ function LoginPage() {
     const isDemoSignupFlow = getIsDemoSignupLoginReason(search);
     const isSignupPage = pathname === ROUTE.SIGN_UP;
     const canUseDevSignupBypass = import.meta.env.DEV && isSignupPage;
-    const [loginId, setLoginId] = useState('');
+    const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
-    const [signupLoginId, setSignupLoginId] = useState('');
+    const [signupName, setSignupName] = useState('');
+    const [signupEmail, setSignupEmail] = useState('');
+    const [signupEmailVerificationToken, setSignupEmailVerificationToken] = useState<string | null>(null);
     const [signupPassword, setSignupPassword] = useState('');
     const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
     const [loginError, setLoginError] = useState<string | null>(null);
     const [signupErrors, setSignupErrors] = useState<TSignupErrors>({});
     const [signupError, setSignupError] = useState<string | null>(null);
+    const [signupVerificationMessage, setSignupVerificationMessage] = useState<string | null>(null);
+    const [signupVerificationError, setSignupVerificationError] = useState<string | null>(null);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const isLoginDisabled = !loginId.trim() || !loginPassword || isSubmitting;
-    const isSignupDisabled = !signupLoginId.trim() || !signupPassword || !signupPasswordConfirm || isSubmitting;
+    const [isSendingVerification, setIsSendingVerification] = useState(false);
+    const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
+    const isSignupEmailVerified = Boolean(signupEmailVerificationToken);
+    const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
+    const isSignupBusy = isSubmitting || isSendingVerification;
+    const isSignupDisabled = !signupName.trim() || !isSignupEmailVerified || !signupPassword || !signupPasswordConfirm || isSignupBusy;
+    const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
+    const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
+    const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
     const title = isSignupPage ? '\ud68c\uc6d0\uac00\uc785' : '\ub85c\uadf8\uc778';
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
 
-        if (!LOGIN_ID_PATTERN.test(signupLoginId.trim())) {
-            nextErrors.loginId = '아이디는 영문, 숫자, 점, 밑줄, 하이픈으로 4자 이상 입력해 주세요.';
+        if (!signupName.trim()) {
+            nextErrors.name = '이름을 입력해 주세요.';
+        }
+
+        if (!EMAIL_PATTERN.test(signupEmail.trim())) {
+            nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
         }
 
         if (signupPassword.length < PASSWORD_MIN_LENGTH) {
@@ -80,12 +96,49 @@ function LoginPage() {
 
         return Object.keys(nextErrors).length === 0;
     };
+    const handleSignupEmailChange = (value: string) => {
+        setSignupEmail(value);
+        setSignupEmailVerificationToken(null);
+        setSignupVerificationMessage(null);
+        setSignupVerificationError(null);
+    };
+    const handleSendSignupEmailVerification = async () => {
+        setSignupVerificationMessage(null);
+        setSignupVerificationError(null);
+        setSignupEmailVerificationToken(null);
+
+        if (!isSignupEmailValid) {
+            setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+
+            return;
+        }
+
+        setSignupErrors((errors) => ({...errors, email: undefined}));
+        setIsSendingVerification(true);
+
+        try {
+            const response = await AuthAPI.sendAdminEmailVerification({email: signupEmail.trim()});
+
+            if (response.debugVerificationToken) {
+                setSignupEmailVerificationToken(response.debugVerificationToken);
+                setSignupVerificationMessage('이메일 인증이 완료됐어요.');
+
+                return;
+            }
+
+            setSignupVerificationMessage('인증 메일을 보냈어요. 메일함에서 인증을 완료해 주세요.');
+        } catch (error) {
+            setSignupVerificationError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
+        } finally {
+            setIsSendingVerification(false);
+        }
+    };
     const handlePasswordLogin = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setLoginError(null);
 
-        if (!loginId.trim() || !loginPassword) {
-            setLoginError('아이디와 비밀번호를 입력해 주세요.');
+        if (!loginEmail.trim() || !loginPassword) {
+            setLoginError('이메일과 비밀번호를 입력해 주세요.');
 
             return;
         }
@@ -94,7 +147,7 @@ function LoginPage() {
 
         try {
             const response = await AuthAPI.passwordLogin({
-                loginId: loginId.trim(),
+                email: loginEmail.trim(),
                 password: loginPassword,
             });
 
@@ -117,7 +170,9 @@ function LoginPage() {
 
         try {
             const response = await AuthAPI.passwordSignup({
-                loginId: signupLoginId.trim(),
+                name: signupName.trim(),
+                email: signupEmail.trim(),
+                emailVerificationToken: signupEmailVerificationToken ?? undefined,
                 password: signupPassword,
             });
 
@@ -128,7 +183,6 @@ function LoginPage() {
             setIsSubmitting(false);
         }
     };
-
     return (
         <div className="flex min-h-screen w-screen bg-white">
             <div className="hidden h-screen w-[calc(100vh/1080*1140)] min-w-0 shrink xl:block">
@@ -163,8 +217,7 @@ function LoginPage() {
 
             <div className="z-10 flex min-h-screen min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 py-10 md:px-16 xl:px-26.25">
                 <button type="button" className="flex cursor-pointer items-center" onClick={() => navigate(ROUTE.ROOT)}>
-                    <LogoSymbolFill className="mr-4 h-10 w-10 md:mr-[2.3438rem] md:h-12.5 md:w-[2.9688rem]" />
-                    <FullLogo className="h-10 w-36 md:h-12.5 md:w-45.25" />
+                    <img src="/img/group-19.png" alt="" aria-hidden="true" className="mt-8 h-[34px] w-auto max-w-[166px] object-contain" />
                 </button>
 
                 <div className={`mt-10 w-full ${isSignupPage ? 'max-w-[560px]' : 'max-w-[480px]'} md:mt-16`}>
@@ -184,18 +237,19 @@ function LoginPage() {
                     {!isSignupPage ? (
                         <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-[334px] space-y-4">
                             <div>
-                                <label htmlFor="login-id" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    아이디
+                                <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    이메일
                                 </label>
                                 <div className="relative">
-                                    <UserRound className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
+                                    <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
                                     <input
-                                        id="login-id"
-                                        value={loginId}
+                                        id="login-email"
+                                        value={loginEmail}
+                                        type="email"
                                         className={`${FIELD_CLASS} pl-9`}
-                                        placeholder="아이디를 입력하세요"
-                                        autoComplete="username"
-                                        onChange={(event) => setLoginId(event.target.value)}
+                                        placeholder="이메일을 입력하세요"
+                                        autoComplete="email"
+                                        onChange={(event) => setLoginEmail(event.target.value)}
                                     />
                                 </div>
                             </div>
@@ -243,20 +297,55 @@ function LoginPage() {
                     ) : (
                         <form onSubmit={handlePasswordSignup} className="mx-auto mt-7 w-[334px] space-y-4">
                             <div>
-                                <label htmlFor="signup-id" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    아이디
+                                <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    이름
                                 </label>
                                 <input
-                                    id="signup-id"
-                                    value={signupLoginId}
-                                    className={getInputClassName(Boolean(signupErrors.loginId))}
-                                    placeholder="아이디를 입력해 주세요"
-                                    autoComplete="username"
-                                    onChange={(event) => setSignupLoginId(event.target.value)}
-                                    aria-invalid={Boolean(signupErrors.loginId)}
-                                    aria-describedby={signupErrors.loginId ? 'signup-id-error' : undefined}
+                                    id="signup-name"
+                                    value={signupName}
+                                    type="text"
+                                    className={getInputClassName(Boolean(signupErrors.name))}
+                                    placeholder="이름을 입력해 주세요"
+                                    autoComplete="name"
+                                    onChange={(event) => setSignupName(event.target.value)}
+                                    aria-invalid={Boolean(signupErrors.name)}
+                                    aria-describedby={signupErrors.name ? 'signup-name-error' : undefined}
                                 />
-                                <FieldError id="signup-id-error" message={signupErrors.loginId} />
+                                <FieldError id="signup-name-error" message={signupErrors.name} />
+                            </div>
+
+                            <div>
+                                <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    이메일
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        id="signup-email"
+                                        value={signupEmail}
+                                        type="email"
+                                        className={cn(getInputClassName(Boolean(signupErrors.email)), 'min-w-0')}
+                                        placeholder="이메일을 입력해 주세요"
+                                        autoComplete="email"
+                                        onChange={(event) => handleSignupEmailChange(event.target.value)}
+                                        aria-invalid={Boolean(signupErrors.email)}
+                                        aria-describedby={signupErrors.email ? 'signup-email-error' : undefined}
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={!isSignupEmailValid || isSendingVerification || isSignupEmailVerified}
+                                        className="flex h-11 w-[92px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-3 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                        onClick={handleSendSignupEmailVerification}
+                                    >
+                                        {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignupEmailVerified ? '완료' : '인증'}
+                                    </button>
+                                </div>
+                                <FieldError id="signup-email-error" message={signupErrors.email} />
+                                {signupVerificationMessage ? <p className="mt-1 text-xs text-main-1">{signupVerificationMessage}</p> : null}
+                                {signupVerificationError ? (
+                                    <p className="mt-1 text-xs text-red">
+                                        {signupVerificationError}
+                                    </p>
+                                ) : null}
                             </div>
 
                             <div>
@@ -321,8 +410,8 @@ function LoginPage() {
                     <div className="mx-auto mt-7 w-[334px] border-t border-gray-6 pt-6">
                         <div className="grid grid-cols-1 gap-3">
                             <a
-                                href={buildAuthAuthorizeUrl('kakao', isSignupPage ? ROUTE.ONBOARDING : nextPath)}
-                                className="mx-auto flex h-[44px] w-[334px] items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
+                                href={kakaoAuthorizeUrl}
+                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
                             >
                                 <KakaoIcon className="mr-3 h-5 w-5" />
                                 {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
@@ -338,8 +427,8 @@ function LoginPage() {
                                 </button>
                             ) : null}
                             <a
-                                href={buildAuthAuthorizeUrl('apple', isSignupPage ? ROUTE.ONBOARDING : nextPath)}
-                                className="mx-auto flex h-[44px] w-[334px] items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
+                                href={appleAuthorizeUrl}
+                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
                             >
                                 <AppleIcon className="mr-3 h-5 w-5" />
                                 {isSignupPage ? 'Apple로 시작하기' : 'Apple로 계속하기'}

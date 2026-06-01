@@ -1,4 +1,5 @@
 import {useEffect} from 'react';
+import {AppErrorBoundary} from '@/app/ErrorBoundary';
 import {Router} from '@/app/Router';
 import useAuth from '@/features/auth';
 
@@ -18,7 +19,11 @@ function App() {
         return () => window.removeEventListener('resize', setScreenHeight);
     }, []);
 
-    return <Router />;
+    return (
+        <AppErrorBoundary>
+            <Router />
+        </AppErrorBoundary>
+    );
 }
 
 export default App;

@@ -1,5 +1,8 @@
+import {RUNTIME_CONFIG} from './runtime';
+
 /** 프로덕션 앱 도메인 — 여기서는 LINKED 계정 온보딩 미리보기 불가 */
 const PRODUCTION_APP_HOSTS = new Set(['app.dutying.net']);
+const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.net']);
 
 function getAppHostname(): string | null {
     if (typeof window === 'undefined') return null;
@@ -13,13 +16,19 @@ function getAppHostname(): string | null {
  */
 export function isNonProductionAppDomain(hostname: string = getAppHostname() ?? ''): boolean {
     if (!hostname) return false;
+
     if (PRODUCTION_APP_HOSTS.has(hostname)) return false;
 
     if (hostname === 'localhost') return true;
+
     if (hostname.endsWith('.vercel.app')) return true;
+
     if (hostname.endsWith('.local')) return true;
+
     if (hostname.startsWith('local.')) return true;
+
     if (hostname === 'dev.dutying.net') return true;
+
     if (hostname.startsWith('staging.')) return true;
 
     return false;
@@ -36,6 +45,7 @@ export function isOnboardingWardCreatePreviewAllowed(): boolean {
     const override = import.meta.env.VITE_ALLOW_ONBOARDING_PREVIEW;
 
     if (override === 'true') return true;
+
     if (override === 'false') return false;
 
     const hostname = getAppHostname();
@@ -43,4 +53,18 @@ export function isOnboardingWardCreatePreviewAllowed(): boolean {
     if (hostname && PRODUCTION_APP_HOSTS.has(hostname)) return false;
 
     return import.meta.env.DEV || isNonProductionAppDomain(hostname ?? '');
+}
+
+export function isWardChatEnabled(): boolean {
+    const override = import.meta.env.VITE_ENABLE_WARD_CHAT;
+
+    if (override === 'true') return true;
+
+    if (override === 'false') return false;
+
+    try {
+        return !PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT.has(new URL(RUNTIME_CONFIG.serverUrl()).hostname);
+    } catch {
+        return false;
+    }
 }

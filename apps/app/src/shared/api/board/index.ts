@@ -45,6 +45,21 @@ export type TWardBoardDeadline = {
     writerName?: string;
 };
 
+export type TWardBoardSchedule = {
+    id?: number;
+    scheduleId?: number;
+    title: string;
+    content?: string;
+    scheduleDate: string;
+    startTime?: string;
+    endTime?: string;
+    writerName?: string;
+    authorName?: string;
+    createdAt?: string;
+    modifiedAt?: string;
+    isMine?: boolean;
+};
+
 type TPostListResponse = {
     posts?: TWardBoardPost[];
     items?: TWardBoardPost[];
@@ -60,6 +75,12 @@ type TCommentListResponse = {
     nextCursorId?: number;
 };
 
+type TScheduleListResponse = {
+    schedules?: TWardBoardSchedule[];
+    items?: TWardBoardSchedule[];
+    data?: TWardBoardSchedule[];
+};
+
 export type TCreateWardBoardPostDTO = {
     title: string;
     content: string;
@@ -67,13 +88,26 @@ export type TCreateWardBoardPostDTO = {
     imageUrls?: string[];
 };
 
+export type TCreateWardBoardScheduleDTO = {
+    title: string;
+    content?: string;
+    scheduleDate: string;
+    startTime?: string;
+    endTime?: string;
+};
+
+export type TUpdateWardBoardScheduleDTO = TCreateWardBoardScheduleDTO;
+
 type TCreateWardBoardCommentDTO = {
     content: string;
 };
 
 const readPostId = (post: TWardBoardPost) => post.postId ?? post.id ?? 0;
+const readScheduleId = (schedule: TWardBoardSchedule) => schedule.scheduleId ?? schedule.id ?? 0;
 const normalizePosts = (response: TPostListResponse) => response.posts ?? response.items ?? response.data ?? [];
 const normalizeComments = (response: TCommentListResponse) => response.comments ?? response.items ?? response.data ?? [];
+const normalizeSchedules = (response: TScheduleListResponse | TWardBoardSchedule[]) =>
+    Array.isArray(response) ? response : (response.schedules ?? response.items ?? response.data ?? []);
 
 class ApiBoardAPI {
     public async getPosts(wardId: number, options?: {cursorId?: number; size?: number; keyword?: string}) {
@@ -183,8 +217,33 @@ class ApiBoardAPI {
         return (await axiosInstance.get<TWardBoardDeadline[]>(`/wards/${wardId}/board/deadlines?${query}`)).data;
     }
 
+    public async getSchedules(wardId: number, startDate: string, endDate: string) {
+        const query = new URLSearchParams({startDate, endDate}).toString();
+        const response = (
+            await axiosInstance.get<TScheduleListResponse | TWardBoardSchedule[]>(`/wards/${wardId}/board/schedules?${query}`)
+        ).data;
+
+        return normalizeSchedules(response);
+    }
+
+    public async createSchedule(wardId: number, schedule: TCreateWardBoardScheduleDTO) {
+        return (await axiosInstance.post<TWardBoardSchedule>(`/wards/${wardId}/board/schedules`, schedule)).data;
+    }
+
+    public async updateSchedule(wardId: number, scheduleId: number, schedule: TUpdateWardBoardScheduleDTO) {
+        return (await axiosInstance.put<TWardBoardSchedule>(`/wards/${wardId}/board/schedules/${scheduleId}`, schedule)).data;
+    }
+
+    public async deleteSchedule(wardId: number, scheduleId: number) {
+        return (await axiosInstance.delete<void>(`/wards/${wardId}/board/schedules/${scheduleId}`)).data;
+    }
+
     public getPostId(post: TWardBoardPost) {
         return readPostId(post);
+    }
+
+    public getScheduleId(schedule: TWardBoardSchedule) {
+        return readScheduleId(schedule);
     }
 }
 
