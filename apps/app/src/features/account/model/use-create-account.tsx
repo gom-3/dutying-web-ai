@@ -1,7 +1,15 @@
-import {type TCreateNurseDTO} from '@dutying/api/nurse';
 import {useCallback, useMemo, useState} from 'react';
 
 export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
+
+export type TCreateAccountProfileDTO = {
+    name: string;
+    phoneNum: string;
+    profileImg: {
+        profileImgUrl?: string;
+        defaultProfileImgId?: number;
+    };
+};
 
 type TCreateAccountFeedback = {
     tone: 'neutral' | 'error';
@@ -9,7 +17,7 @@ type TCreateAccountFeedback = {
 };
 
 type TUseCreateAccountParams = {
-    submit: (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => Promise<unknown>;
+    submit: (createAccountProfileDTO: TCreateAccountProfileDTO) => Promise<unknown>;
 };
 
 const DEFAULT_FEEDBACK: TCreateAccountFeedback = {
@@ -57,11 +65,11 @@ const useCreateAccount = ({submit}: TUseCreateAccountParams) => {
         setCreateAccountStatus('idle');
     }, []);
     const handleCreateAccount = useCallback(
-        async (createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}}) => {
+        async (createAccountProfileDTO: TCreateAccountProfileDTO) => {
             setCreateAccountStatus('loading');
 
             try {
-                await submit(createNurseDTO);
+                await submit(createAccountProfileDTO);
                 setCreateAccountStatus('success');
             } catch (error) {
                 setCreateAccountStatus(isHandledFailure(error) ? 'failure' : 'exception');

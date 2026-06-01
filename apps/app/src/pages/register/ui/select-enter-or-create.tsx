@@ -58,7 +58,7 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                         <DoorOpen className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-semibold text-sub-1">초대 코드로 입장하기</span>
+                        <span className="block text-[17px] font-semibold text-sub-1">기존 병동 입장하기</span>
                         <span className="mt-1 block text-sm leading-6 text-gray-3">관리자가 준 6자리 코드가 있을 때 선택해요.</span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />

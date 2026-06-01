@@ -2,6 +2,7 @@ import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {
     CalendarDays,
+    CalendarPlus,
     Check,
     CheckCircle2,
     ChevronLeft,
@@ -11,14 +12,24 @@ import {
     Heart,
     ImagePlus,
     MessageCircle,
+    Pencil,
     Plus,
     Search,
+    Trash2,
     X,
 } from 'lucide-react';
 import {type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
 import {BoardAPI} from '@/shared/api';
-import {type TCreateWardBoardPostDTO, type TWardBoardComment, type TWardBoardDeadline, type TWardBoardPost} from '@/shared/api/board';
+import {
+    type TCreateWardBoardPostDTO,
+    type TCreateWardBoardScheduleDTO,
+    type TWardBoardComment,
+    type TWardBoardDeadline,
+    type TWardBoardPost,
+    type TWardBoardSchedule,
+    type TUpdateWardBoardScheduleDTO,
+} from '@/shared/api/board';
 import PageState from '@/shared/ui/PageState';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
@@ -26,6 +37,8 @@ const POST_PAGE_SIZE = 40;
 const POST_LIST_TITLE_MAX_LENGTH = 24;
 const POST_LIST_CONTENT_MAX_LENGTH = 72;
 const POST_CONTENT_MAX_LENGTH = 1000;
+const SCHEDULE_TITLE_MAX_LENGTH = 60;
+const SCHEDULE_CONTENT_MAX_LENGTH = 300;
 const DEADLINE_DDAY_VISIBLE_DAYS = 3;
 const POST_IMAGE_MAX_COUNT = 5;
 const POST_IMAGE_MAX_SIZE_MB = 5;
@@ -44,6 +57,32 @@ type TPostImageAttachment = {
     url: string;
 };
 
+type TScheduleDraft = {
+    title: string;
+    content: string;
+    scheduleDate: string;
+    startTime: string;
+    endTime: string;
+};
+
+type TCalendarEvent =
+    | {
+          kind: 'schedule';
+          key: string;
+          date: string;
+          title: string;
+          meta: string;
+          schedule: TWardBoardSchedule;
+      }
+    | {
+          kind: 'deadline';
+          key: string;
+          date: string;
+          title: string;
+          meta: string;
+          deadline: TWardBoardDeadline;
+      };
+
 const boardQueryKeys = {
     all: ['ward-board'] as const,
     postsRoot: (wardId: number) => [...boardQueryKeys.all, 'posts', wardId] as const,
@@ -53,10 +92,14 @@ const boardQueryKeys = {
     checkers: (wardId: number, postId: number) => [...boardQueryKeys.all, 'checkers', wardId, postId] as const,
     deadlinesRoot: (wardId: number) => [...boardQueryKeys.all, 'deadlines', wardId] as const,
     deadlines: (wardId: number, year: number, month: number) => [...boardQueryKeys.deadlinesRoot(wardId), year, month] as const,
+    schedulesRoot: (wardId: number) => [...boardQueryKeys.all, 'schedules', wardId] as const,
+    schedules: (wardId: number, year: number, month: number) => [...boardQueryKeys.schedulesRoot(wardId), year, month] as const,
 };
 const getPostId = (post: TWardBoardPost) => BoardAPI.getPostId(post);
+const getScheduleId = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleId(schedule);
 const getCommentId = (comment: TWardBoardComment) => comment.commentId ?? comment.id ?? 0;
 const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? '작성자';
+const getScheduleWriterName = (schedule: TWardBoardSchedule) => schedule.writerName ?? schedule.authorName ?? '작성자';
 const pad2 = (value: number) => value.toString().padStart(2, '0');
 const toDateKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 const parseDateKey = (dateKey: string) => {
@@ -115,6 +158,38 @@ const getMonthBounds = (year: number, month: number) => ({
     startDate: toDateKey(new Date(year, month - 1, 1)),
     endDate: toDateKey(new Date(year, month, 0)),
 });
+const createInitialScheduleDraft = (scheduleDate = toDateKey(new Date())): TScheduleDraft => ({
+    title: '',
+    content: '',
+    scheduleDate,
+    startTime: '',
+    endTime: '',
+});
+const normalizeTimeInput = (value?: string) => (value ? value.slice(0, 5) : '');
+const formatScheduleTimeRange = (startTime?: string, endTime?: string) => {
+    const start = normalizeTimeInput(startTime);
+    const end = normalizeTimeInput(endTime);
+
+    if (start && end) return `${start}-${end}`;
+
+    return start || end || '';
+};
+const toSchedulePayload = (draft: TScheduleDraft): TCreateWardBoardScheduleDTO => ({
+    title: draft.title.trim(),
+    content: draft.content.trim() || undefined,
+    scheduleDate: draft.scheduleDate,
+    startTime: draft.startTime || undefined,
+    endTime: draft.endTime || undefined,
+});
+const getDefaultScheduleDateForMonth = (year: number, month: number) => {
+    const today = new Date();
+
+    if (today.getFullYear() === year && today.getMonth() + 1 === month) {
+        return toDateKey(today);
+    }
+
+    return toDateKey(new Date(year, month - 1, 1));
+};
 const getCalendarCells = (year: number, month: number) => {
     const firstDate = new Date(year, month - 1, 1);
     const startDate = new Date(firstDate);
@@ -587,31 +662,237 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
     );
 }
 
+function WardScheduleModal({
+    mode,
+    draft,
+    submitAttempted,
+    disabled,
+    deleting,
+    onChange,
+    onSubmit,
+    onClose,
+    onDelete,
+}: {
+    mode: 'create' | 'edit';
+    draft: TScheduleDraft;
+    submitAttempted: boolean;
+    disabled: boolean;
+    deleting: boolean;
+    onChange: (draft: TScheduleDraft) => void;
+    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    onClose: () => void;
+    onDelete?: () => void;
+}) {
+    const isEditMode = mode === 'edit';
+    const isTitleInvalid = submitAttempted && !draft.title.trim();
+    const isDateInvalid = submitAttempted && !draft.scheduleDate;
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
+            role="presentation"
+            onMouseDown={onClose}
+        >
+            <form
+                role="dialog"
+                aria-modal="true"
+                aria-label={isEditMode ? '병동 일정 수정' : '병동 일정 등록'}
+                className="w-full max-w-[440px] rounded-[16px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+                onMouseDown={(event) => event.stopPropagation()}
+                onSubmit={onSubmit}
+                noValidate
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-gray-3">병동 일정</p>
+                        <h2 className="mt-1 text-[22px] font-semibold text-sub-1">{isEditMode ? '일정 수정' : '일정 등록'}</h2>
+                    </div>
+                    <button
+                        type="button"
+                        className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                        onClick={onClose}
+                        aria-label="병동 일정 닫기"
+                        title="병동 일정 닫기"
+                    >
+                        <X className="size-4" aria-hidden="true" />
+                    </button>
+                </div>
+
+                <div className="mt-5 grid gap-4">
+                    <label className="grid gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                            제목
+                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
+                        </span>
+                        <input
+                            value={draft.title}
+                            onChange={(event) => onChange({...draft, title: event.target.value})}
+                            maxLength={SCHEDULE_TITLE_MAX_LENGTH}
+                            aria-required="true"
+                            aria-invalid={isTitleInvalid}
+                            className={cn(
+                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
+                            )}
+                            placeholder="예: 신규 교육"
+                        />
+                        {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
+                    </label>
+
+                    <label className="grid gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                            날짜
+                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
+                        </span>
+                        <input
+                            type="date"
+                            value={draft.scheduleDate}
+                            onChange={(event) => onChange({...draft, scheduleDate: event.target.value})}
+                            aria-required="true"
+                            aria-invalid={isDateInvalid}
+                            className={cn(
+                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] font-semibold text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                isDateInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
+                            )}
+                        />
+                        {isDateInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">날짜를 선택해 주세요.</span> : null}
+                    </label>
+
+                    <div className="grid gap-1.5">
+                        <span className="text-[13px] font-semibold text-sub-2">시간</span>
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                            <input
+                                type="time"
+                                value={draft.startTime}
+                                onChange={(event) => onChange({...draft, startTime: event.target.value})}
+                                className="h-11 min-w-0 rounded-[8px] bg-gray-7 px-3 text-[14px] font-semibold text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
+                                aria-label="시작 시간"
+                            />
+                            <span className="text-[13px] font-semibold text-gray-4">-</span>
+                            <input
+                                type="time"
+                                value={draft.endTime}
+                                onChange={(event) => onChange({...draft, endTime: event.target.value})}
+                                className="h-11 min-w-0 rounded-[8px] bg-gray-7 px-3 text-[14px] font-semibold text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
+                                aria-label="종료 시간"
+                            />
+                        </div>
+                    </div>
+
+                    <label className="grid gap-1.5">
+                        <span className="text-[13px] font-semibold text-sub-2">메모</span>
+                        <textarea
+                            value={draft.content}
+                            onChange={(event) => onChange({...draft, content: event.target.value})}
+                            maxLength={SCHEDULE_CONTENT_MAX_LENGTH}
+                            rows={4}
+                            className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
+                            placeholder="필요한 내용을 입력해 주세요"
+                        />
+                        <span className="justify-self-end text-[11px] font-medium text-gray-4">
+                            {draft.content.length}/{SCHEDULE_CONTENT_MAX_LENGTH}
+                        </span>
+                    </label>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
+                    {isEditMode && onDelete ? (
+                        <button
+                            type="button"
+                            className="inline-flex h-10 items-center gap-1.5 rounded-[8px] bg-[#FFF1F3] px-3 text-[13px] font-semibold text-[#D8495F] transition-colors hover:bg-[#FFE5EA] disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={disabled || deleting}
+                            onClick={onDelete}
+                        >
+                            <Trash2 className="size-3.5" aria-hidden="true" />
+                            삭제
+                        </button>
+                    ) : (
+                        <span />
+                    )}
+                    <div className="ml-auto flex items-center gap-2">
+                        <button
+                            type="button"
+                            className="h-10 rounded-[8px] bg-gray-7 px-4 text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6"
+                            onClick={onClose}
+                        >
+                            취소
+                        </button>
+                        <button
+                            type="submit"
+                            className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={disabled || deleting}
+                        >
+                            {isEditMode ? '수정' : '등록'}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 function DeadlineCalendar({
     year,
     month,
     deadlines,
+    schedules,
     onMoveMonth,
     onSelectPost,
+    onCreateSchedule,
+    onEditSchedule,
 }: {
     year: number;
     month: number;
     deadlines: TWardBoardDeadline[];
+    schedules: TWardBoardSchedule[];
     onMoveMonth: (delta: number) => void;
     onSelectPost: (postId: number) => void;
+    onCreateSchedule: (dateKey?: string) => void;
+    onEditSchedule: (schedule: TWardBoardSchedule) => void;
 }) {
     const cells = useMemo(() => getCalendarCells(year, month), [month, year]);
-    const deadlinesByDate = useMemo(
-        () =>
-            deadlines.reduce<Map<string, TWardBoardDeadline[]>>((map, deadline) => {
-                const current = map.get(deadline.deadlineDate) ?? [];
+    const events = useMemo<TCalendarEvent[]>(() => {
+        const scheduleEvents = schedules.map<TCalendarEvent>((schedule) => {
+            const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime);
 
-                map.set(deadline.deadlineDate, [...current, deadline]);
+            return {
+                kind: 'schedule',
+                key: `schedule-${getScheduleId(schedule)}`,
+                date: schedule.scheduleDate,
+                title: schedule.title,
+                meta: timeRange || getScheduleWriterName(schedule),
+                schedule,
+            };
+        });
+        const deadlineEvents = deadlines.map<TCalendarEvent>((deadline) => ({
+            kind: 'deadline',
+            key: `deadline-${deadline.postId}-${deadline.deadlineDate}`,
+            date: deadline.deadlineDate,
+            title: deadline.postTitle,
+            meta: '게시글 마감',
+            deadline,
+        }));
+
+        return [...scheduleEvents, ...deadlineEvents].sort((a, b) => {
+            if (a.date !== b.date) return a.date.localeCompare(b.date);
+
+            if (a.kind !== b.kind) return a.kind === 'schedule' ? -1 : 1;
+
+            return a.title.localeCompare(b.title);
+        });
+    }, [deadlines, schedules]);
+    const eventsByDate = useMemo(
+        () =>
+            events.reduce<Map<string, TCalendarEvent[]>>((map, event) => {
+                const current = map.get(event.date) ?? [];
+
+                map.set(event.date, [...current, event]);
 
                 return map;
             }, new Map()),
-        [deadlines],
+        [events],
     );
+    const defaultScheduleDate = getDefaultScheduleDateForMonth(year, month);
 
     return (
         <aside className="min-w-0 rounded-[8px] bg-white p-3">
@@ -623,6 +904,16 @@ function DeadlineCalendar({
                             <h2 className="mt-0.5 text-[18px] font-semibold text-sub-1">{formatMonthTitle(year, month)}</h2>
                         </div>
                         <div className="flex items-center gap-1">
+                            <button
+                                id="board_schedule_create_button"
+                                type="button"
+                                className="grid h-7 w-7 place-items-center rounded-[7px] bg-main-1 text-white transition-colors hover:bg-main-2"
+                                onClick={() => onCreateSchedule(defaultScheduleDate)}
+                                aria-label="병동 일정 등록"
+                                title="병동 일정 등록"
+                            >
+                                <CalendarPlus className="size-3.5" aria-hidden="true" />
+                            </button>
                             <button
                                 type="button"
                                 className="grid h-7 w-7 place-items-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
@@ -653,25 +944,59 @@ function DeadlineCalendar({
                     </div>
                     <div className="mt-1 grid grid-cols-7 gap-0.5">
                         {cells.map((cell) => {
-                            const dayDeadlines = deadlinesByDate.get(cell.key) ?? [];
-                            const hasDeadline = dayDeadlines.length > 0;
+                            const dayEvents = eventsByDate.get(cell.key) ?? [];
+                            const firstSchedule = dayEvents.find((event) => event.kind === 'schedule');
+                            const firstDeadline = dayEvents.find((event) => event.kind === 'deadline');
+                            const hasSchedule = Boolean(firstSchedule);
+                            const hasEvent = dayEvents.length > 0;
+                            const canCreateOnDate = cell.inMonth && !hasEvent;
 
                             return (
                                 <button
                                     key={cell.key}
                                     type="button"
                                     className={cn(
-                                        'relative aspect-square rounded-[7px] text-[11px] font-semibold transition-colors',
+                                        'relative aspect-square rounded-[7px] text-[11px] font-semibold transition-colors disabled:cursor-default',
                                         cell.inMonth ? 'text-sub-2' : 'text-gray-5',
-                                        hasDeadline ? 'bg-main-light text-main-1 hover:bg-main-4' : 'hover:bg-gray-7',
+                                        hasSchedule
+                                            ? 'bg-main-light text-main-1 hover:bg-main-4'
+                                            : hasEvent
+                                              ? 'bg-[#EEF6FF] text-[#2468B2] hover:bg-[#DCEBFF]'
+                                              : cell.inMonth
+                                                ? 'hover:bg-gray-7'
+                                                : undefined,
                                     )}
-                                    disabled={!hasDeadline}
-                                    onClick={() => onSelectPost(dayDeadlines[0].postId)}
-                                    aria-label={`${formatDate(cell.key)} 마감 ${dayDeadlines.length}건`}
+                                    disabled={!hasEvent && !canCreateOnDate}
+                                    onClick={() => {
+                                        if (firstSchedule?.kind === 'schedule') {
+                                            onEditSchedule(firstSchedule.schedule);
+
+                                            return;
+                                        }
+
+                                        if (firstDeadline?.kind === 'deadline') {
+                                            onSelectPost(firstDeadline.deadline.postId);
+
+                                            return;
+                                        }
+
+                                        if (canCreateOnDate) onCreateSchedule(cell.key);
+                                    }}
+                                    aria-label={`${formatDate(cell.key)} 일정 ${dayEvents.length}건`}
                                 >
                                     {cell.date.getDate()}
-                                    {hasDeadline ? (
-                                        <span className="absolute top-1 right-1 h-1 w-1 rounded-full bg-main-1" aria-hidden="true" />
+                                    {hasEvent ? (
+                                        <span className="absolute right-1 bottom-1 flex gap-0.5" aria-hidden="true">
+                                            {dayEvents.slice(0, 2).map((event) => (
+                                                <span
+                                                    key={event.key}
+                                                    className={cn(
+                                                        'h-1 w-1 rounded-full',
+                                                        event.kind === 'schedule' ? 'bg-main-1' : 'bg-[#3182F6]',
+                                                    )}
+                                                />
+                                            ))}
+                                        </span>
                                     ) : null}
                                 </button>
                             );
@@ -681,31 +1006,54 @@ function DeadlineCalendar({
 
                 <div className="min-w-0">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-[13px] font-semibold text-sub-1">이번 달 마감</h3>
-                        <span className="text-[11px] font-semibold text-gray-4">{deadlines.length}건</span>
+                        <h3 className="text-[13px] font-semibold text-sub-1">이번 달 일정</h3>
+                        <span className="text-[11px] font-semibold text-gray-4">{events.length}건</span>
                     </div>
                     <div className="mt-2.5 space-y-1.5">
-                        {deadlines.length === 0 ? (
+                        {events.length === 0 ? (
                             <p className="rounded-[8px] bg-gray-7 px-2.5 py-2.5 text-[12px] leading-5 text-gray-3">
-                                마감 글을 등록하면 여기에 보여요.
+                                병동 일정을 등록하면 여기에 보여요.
                             </p>
                         ) : (
-                            deadlines.slice(0, 5).map((deadline) => (
+                            events.slice(0, 6).map((event) => (
                                 <button
-                                    key={`${deadline.postId}-${deadline.deadlineDate}`}
+                                    key={event.key}
                                     type="button"
                                     className="flex w-full items-center gap-2 rounded-[8px] bg-gray-7 px-2.5 py-2 text-left transition-colors hover:bg-main-light"
-                                    onClick={() => onSelectPost(deadline.postId)}
+                                    onClick={() => {
+                                        if (event.kind === 'schedule') {
+                                            onEditSchedule(event.schedule);
+
+                                            return;
+                                        }
+
+                                        onSelectPost(event.deadline.postId);
+                                    }}
                                 >
-                                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-white text-[11px] font-bold text-main-1">
-                                        {formatDate(deadline.deadlineDate).replace('월 ', '.').replace('일', '')}
+                                    <span
+                                        className={cn(
+                                            'grid h-8 w-8 shrink-0 place-items-center rounded-[7px] bg-white text-[11px] font-bold',
+                                            event.kind === 'schedule' ? 'text-main-1' : 'text-[#2468B2]',
+                                        )}
+                                    >
+                                        {formatDate(event.date).replace('월 ', '.').replace('일', '')}
                                     </span>
-                                    <span className="min-w-0">
-                                        <span className="block truncate text-[12px] font-semibold text-sub-1">{deadline.postTitle}</span>
-                                        <span className="mt-0.5 block truncate text-[10px] font-medium text-gray-3">
-                                            {deadline.writerName ?? '작성자'}
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block truncate text-[12px] font-semibold text-sub-1">{event.title}</span>
+                                        <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[10px] font-medium text-gray-3">
+                                            <span
+                                                className={cn(
+                                                    'h-1.5 w-1.5 shrink-0 rounded-full',
+                                                    event.kind === 'schedule' ? 'bg-main-1' : 'bg-[#3182F6]',
+                                                )}
+                                                aria-hidden="true"
+                                            />
+                                            <span className="truncate">{event.meta}</span>
                                         </span>
                                     </span>
+                                    {event.kind === 'schedule' ? (
+                                        <Pencil className="size-3.5 shrink-0 text-gray-4" aria-hidden="true" />
+                                    ) : null}
                                 </button>
                             ))
                         )}
@@ -739,6 +1087,10 @@ function BoardPage() {
     const [replyDraft, setReplyDraft] = useState('');
     const [replyingCommentId, setReplyingCommentId] = useState<number | null>(null);
     const [calendarMonth, setCalendarMonth] = useState({year: today.getFullYear(), month: today.getMonth() + 1});
+    const [scheduleModalMode, setScheduleModalMode] = useState<'create' | 'edit' | null>(null);
+    const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+    const [scheduleDraft, setScheduleDraft] = useState<TScheduleDraft>(() => createInitialScheduleDraft());
+    const [scheduleDraftSubmitAttempted, setScheduleDraftSubmitAttempted] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const commentTextareaRef = useRef<HTMLTextAreaElement>(null);
     const postImageInputRef = useRef<HTMLInputElement>(null);
@@ -747,8 +1099,7 @@ function BoardPage() {
     const {startDate, endDate} = useMemo(() => getMonthBounds(calendarMonth.year, calendarMonth.month), [calendarMonth]);
     const isSearchVisible = isSearchOpen || Boolean(keyword);
     const activeWardId = wardId;
-    const bootstrapPending =
-        !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'));
+    const bootstrapPending = !_loaded || (isAuth && wardId === null && (accountMeStatus === 'idle' || accountMeStatus === 'loading'));
     const bootstrapError = isAuth && wardId === null && accountMeStatus === 'error';
     const postsQuery = useQuery({
         queryKey: activeWardId ? boardQueryKeys.posts(activeWardId, keyword) : boardQueryKeys.posts(0, keyword),
@@ -777,7 +1128,15 @@ function BoardPage() {
         queryFn: () => BoardAPI.getDeadlines(activeWardId!, startDate, endDate),
         enabled: Boolean(activeWardId),
     });
+    const schedulesQuery = useQuery({
+        queryKey: activeWardId
+            ? boardQueryKeys.schedules(activeWardId, calendarMonth.year, calendarMonth.month)
+            : boardQueryKeys.schedules(0, 0, 0),
+        queryFn: () => BoardAPI.getSchedules(activeWardId!, startDate, endDate),
+        enabled: Boolean(activeWardId),
+    });
     const posts = postsQuery.data?.posts ?? [];
+    const schedules = schedulesQuery.data ?? [];
     const selectedPost = selectedPostQuery.data ?? posts.find((post) => getPostId(post) === selectedPostId) ?? null;
     const comments = commentsQuery.data?.comments ?? [];
     const checkers = checkersQuery.data?.checkers ?? [];
@@ -823,6 +1182,26 @@ function BoardPage() {
         };
     }, [previewImageUrl]);
 
+    useEffect(() => {
+        if (!scheduleModalMode) return undefined;
+
+        const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setScheduleModalMode(null);
+                setScheduleDraftSubmitAttempted(false);
+            }
+        };
+        const previousOverflow = document.body.style.overflow;
+
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [scheduleModalMode]);
+
     const invalidateSelectedPost = async (postId: number) => {
         if (!activeWardId) return;
 
@@ -867,6 +1246,43 @@ function BoardPage() {
                 queryClient.invalidateQueries({queryKey: boardQueryKeys.postsRoot(activeWardId)}),
                 queryClient.invalidateQueries({queryKey: boardQueryKeys.deadlinesRoot(activeWardId)}),
             ]);
+        },
+    });
+    const createScheduleMutation = useMutation({
+        mutationFn: (draft: TCreateWardBoardScheduleDTO) => BoardAPI.createSchedule(activeWardId!, draft),
+        onSuccess: async () => {
+            if (!activeWardId) return;
+
+            setScheduleModalMode(null);
+            setEditingScheduleId(null);
+            setScheduleDraft(createInitialScheduleDraft());
+            setScheduleDraftSubmitAttempted(false);
+            await queryClient.invalidateQueries({queryKey: boardQueryKeys.schedulesRoot(activeWardId)});
+        },
+    });
+    const updateScheduleMutation = useMutation({
+        mutationFn: ({scheduleId, draft}: {scheduleId: number; draft: TUpdateWardBoardScheduleDTO}) =>
+            BoardAPI.updateSchedule(activeWardId!, scheduleId, draft),
+        onSuccess: async () => {
+            if (!activeWardId) return;
+
+            setScheduleModalMode(null);
+            setEditingScheduleId(null);
+            setScheduleDraft(createInitialScheduleDraft());
+            setScheduleDraftSubmitAttempted(false);
+            await queryClient.invalidateQueries({queryKey: boardQueryKeys.schedulesRoot(activeWardId)});
+        },
+    });
+    const deleteScheduleMutation = useMutation({
+        mutationFn: (scheduleId: number) => BoardAPI.deleteSchedule(activeWardId!, scheduleId),
+        onSuccess: async () => {
+            if (!activeWardId) return;
+
+            setScheduleModalMode(null);
+            setEditingScheduleId(null);
+            setScheduleDraft(createInitialScheduleDraft());
+            setScheduleDraftSubmitAttempted(false);
+            await queryClient.invalidateQueries({queryKey: boardQueryKeys.schedulesRoot(activeWardId)});
         },
     });
     const likeMutation = useMutation({
@@ -940,6 +1356,61 @@ function BoardPage() {
             setDeletingCommentId(null);
         },
     });
+    const isScheduleBusy = createScheduleMutation.isPending || updateScheduleMutation.isPending || deleteScheduleMutation.isPending;
+    const closeScheduleModal = () => {
+        if (isScheduleBusy) return;
+
+        setScheduleModalMode(null);
+        setEditingScheduleId(null);
+        setScheduleDraftSubmitAttempted(false);
+    };
+    const openCreateSchedule = (dateKey = getDefaultScheduleDateForMonth(calendarMonth.year, calendarMonth.month)) => {
+        setScheduleDraft(createInitialScheduleDraft(dateKey));
+        setScheduleDraftSubmitAttempted(false);
+        setEditingScheduleId(null);
+        setScheduleModalMode('create');
+    };
+    const openEditSchedule = (schedule: TWardBoardSchedule) => {
+        const scheduleId = getScheduleId(schedule);
+
+        if (!scheduleId) return;
+
+        setScheduleDraft({
+            title: schedule.title,
+            content: schedule.content ?? '',
+            scheduleDate: schedule.scheduleDate,
+            startTime: normalizeTimeInput(schedule.startTime),
+            endTime: normalizeTimeInput(schedule.endTime),
+        });
+        setScheduleDraftSubmitAttempted(false);
+        setEditingScheduleId(scheduleId);
+        setScheduleModalMode('edit');
+    };
+    const handleSubmitSchedule = (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setScheduleDraftSubmitAttempted(true);
+
+        const payload = toSchedulePayload(scheduleDraft);
+
+        if (!payload.title || !payload.scheduleDate) return;
+
+        if (scheduleModalMode === 'edit') {
+            if (!editingScheduleId) return;
+
+            updateScheduleMutation.mutate({scheduleId: editingScheduleId, draft: payload});
+
+            return;
+        }
+
+        createScheduleMutation.mutate(payload);
+    };
+    const handleDeleteSchedule = () => {
+        if (!editingScheduleId) return;
+
+        if (!globalThis.confirm('병동 일정을 삭제할까요?')) return;
+
+        deleteScheduleMutation.mutate(editingScheduleId);
+    };
     const handleSearch = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setKeyword(keywordInput.trim());
@@ -1105,6 +1576,7 @@ function BoardPage() {
         if (activeWardId) {
             void postsQuery.refetch();
             void deadlinesQuery.refetch();
+            void schedulesQuery.refetch();
 
             return;
         }
@@ -1230,12 +1702,7 @@ function BoardPage() {
                             className="py-0"
                         />
                     ) : posts.length === 0 ? (
-                        <PageState
-                            tone="empty"
-                            title="게시글을 등록하면 여기에 보여요"
-                            description="새 글을 등록해 보세요."
-                            className="py-0"
-                        />
+                        <PageState tone="empty" title="새 글을 등록해 보세요" className="py-0" />
                     ) : (
                         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                             {posts.map((post) => {
@@ -1630,17 +2097,33 @@ function BoardPage() {
                         year={calendarMonth.year}
                         month={calendarMonth.month}
                         deadlines={deadlinesQuery.data ?? []}
+                        schedules={schedules}
                         onMoveMonth={moveCalendarMonth}
                         onSelectPost={(postId) => {
                             setIsComposerOpen(false);
                             setSelectedPostId(postId);
                         }}
+                        onCreateSchedule={openCreateSchedule}
+                        onEditSchedule={openEditSchedule}
                     />
                 </div>
             </div>
+            {scheduleModalMode ? (
+                <WardScheduleModal
+                    mode={scheduleModalMode}
+                    draft={scheduleDraft}
+                    submitAttempted={scheduleDraftSubmitAttempted}
+                    disabled={createScheduleMutation.isPending || updateScheduleMutation.isPending}
+                    deleting={deleteScheduleMutation.isPending}
+                    onChange={setScheduleDraft}
+                    onSubmit={handleSubmitSchedule}
+                    onClose={closeScheduleModal}
+                    onDelete={scheduleModalMode === 'edit' ? handleDeleteSchedule : undefined}
+                />
+            ) : null}
             <BoardTutorial
                 accountId={accountId}
-                canStart={postsQuery.isSuccess && deadlinesQuery.isSuccess && !previewImageUrl}
+                canStart={postsQuery.isSuccess && deadlinesQuery.isSuccess && schedulesQuery.isSuccess && !previewImageUrl}
                 mode={boardTutorialMode}
             />
             {previewImageUrl ? (

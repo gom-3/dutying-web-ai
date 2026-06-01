@@ -58,7 +58,7 @@ function OnboardingPage() {
                                 <button
                                     type="button"
                                     className="group flex min-h-36 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-6 text-left transition-colors hover:bg-gray-7"
-                                    onClick={() => navigate(ROUTE.ONBOARDING_CREATE_WARD)}
+                                    onClick={() => navigate(ROUTE.ONBOARDING_WARD_CREATE)}
                                 >
                                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-main-light text-main-1">
                                         <Building2 className="h-6 w-6" />
@@ -75,13 +75,13 @@ function OnboardingPage() {
                                 <button
                                     type="button"
                                     className="group flex min-h-24 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-5 text-left transition-colors hover:bg-gray-7"
-                                    onClick={() => navigate(ROUTE.ONBOARDING_JOIN_WARD)}
+                                    onClick={() => navigate(ROUTE.ENTER_WARD)}
                                 >
                                     <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-main-light text-main-1">
                                         <DoorOpen className="h-5 w-5" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-[17px] font-semibold text-sub-1">기존 병동 들어가기</span>
+                                        <span className="block text-[17px] font-semibold text-sub-1">기존 병동 입장하기</span>
                                         <span className="mt-1 block text-sm leading-6 text-gray-3">
                                             병동 코드를 입력해요. 병동 오너가 등록한 관리자만 입장할 수 있어요.
                                         </span>

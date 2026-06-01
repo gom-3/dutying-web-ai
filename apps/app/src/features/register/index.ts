@@ -1,14 +1,14 @@
-import {type TCreateNurseDTO} from '@dutying/api/nurse';
-import {type TCreateWardDTO} from '@dutying/api/ward';
+import {type TCreateWardDTO, type TWardResponse} from '@dutying/api/ward';
 import {useQuery} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
 import {type TAccount} from '@/entities/account';
 import {accountQueryOptions} from '@/entities/account/model/queries';
 import useAuth from '@/features/auth';
+import {toAccountCompatibleAdminMe} from '@/features/auth/model/admin-account';
 import useLoadingUseCase from '@/features/loading';
 import useTutorialUseCase from '@/features/tutorial';
-import {AccountAPI, NurseAPI, WardAPI} from '@/shared/api';
+import {AccountAPI, AdminAPI, WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
@@ -20,6 +20,38 @@ type TCreateWardOptions = {
     navigateOnLinked?: boolean;
 };
 
+type TAdminProfileSource = {
+    name?: string | null;
+    phoneNum?: string | null;
+    profileImgUrl?: string | null;
+};
+
+const getWardIdFromAdminWorkspaceResponse = (response: Awaited<ReturnType<typeof AdminAPI.createWorkspace>>) => {
+    if ('wardId' in response) return response.wardId ?? undefined;
+
+    if ('ward' in response) return response.ward?.wardId;
+
+    return undefined;
+};
+const isWardResponse = (response: Awaited<ReturnType<typeof AdminAPI.createWorkspace>>): response is TWardResponse =>
+    'wardId' in response && 'code' in response && 'hospitalName' in response && 'nurseCnt' in response;
+const getWardFromAdminWorkspaceResponse = (response: Awaited<ReturnType<typeof AdminAPI.createWorkspace>>): TWardResponse | undefined => {
+    if ('ward' in response) return response.ward;
+
+    if ('wardId' in response && !('status' in response)) return response as TWardResponse;
+
+    if (isWardResponse(response)) return response;
+
+    return undefined;
+};
+const getAccountFromAdminWorkspaceResponse = (response: Awaited<ReturnType<typeof AdminAPI.createWorkspace>>) => {
+    if ('account' in response && response.account) return response.account;
+
+    if ('adminAccountId' in response) return response;
+
+    return null;
+};
+const getIsWorkspaceSetupPending = (account: TAccount | null) => (account?.status as string | undefined) === 'WORKSPACE_SETUP_PENDING';
 const useRegister = () => {
     const {
         state: {accountMe, accountId},
@@ -53,16 +85,36 @@ const useRegister = () => {
             setLoading(true);
 
             try {
-                const createdWard = await WardAPI.createWard(createWardDTO);
+                const accountProfile = accountMe as TAdminProfileSource | null;
+                const createdWorkspace = await AdminAPI.createWorkspace({
+                    hospitalName: createWardDTO.hospitalName,
+                    wardName: createWardDTO.name,
+                    adminName: accountProfile?.name ?? null,
+                    phoneNum: accountProfile?.phoneNum ?? null,
+                    profileImgUrl: accountProfile?.profileImgUrl ?? null,
+                });
+                const createdWard = getWardFromAdminWorkspaceResponse(createdWorkspace);
+                const createdWardId = getWardIdFromAdminWorkspaceResponse(createdWorkspace);
+                const createdAccount = getAccountFromAdminWorkspaceResponse(createdWorkspace);
 
                 initTutorial();
 
-                if (accountMe) {
-                    await changeAccountStatus({
-                        accountId: accountMe.accountId,
+                if (createdAccount) {
+                    applyAccountMe(toAccountCompatibleAdminMe(createdAccount, createdWardId));
+                } else if (accountMe) {
+                    applyAccountMe({
+                        ...accountMe,
+                        wardId: createdWardId ?? accountMe.wardId,
                         status: 'LINKED',
-                        options,
                     });
+                }
+
+                if (options?.navigateOnLinked !== false) {
+                    navigate(ROUTE.MAKE);
+                }
+
+                if (!createdAccount && !accountMe) {
+                    void handleGetAccountMe().catch(() => undefined);
                 }
 
                 return createdWard;
@@ -70,7 +122,30 @@ const useRegister = () => {
                 setLoading(false);
             }
         },
-        [accountMe, changeAccountStatus, initTutorial, setLoading],
+        [accountMe, applyAccountMe, handleGetAccountMe, initTutorial, navigate, setLoading],
+    );
+    const joinWardByCode = useCallback(
+        async ({code}: {code: string}) => {
+            setLoading(true);
+
+            try {
+                const result = await AdminAPI.joinWardByCode({code});
+                const nextAccount = result.account;
+
+                if (nextAccount) {
+                    applyAccountMe(toAccountCompatibleAdminMe(nextAccount));
+                } else {
+                    void handleGetAccountMe().catch(() => undefined);
+                }
+
+                navigate(ROUTE.MAKE);
+
+                return result;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [applyAccountMe, handleGetAccountMe, navigate, setLoading],
     );
     const enterWard = useCallback(
         async (wardId: number) => {
@@ -104,48 +179,51 @@ const useRegister = () => {
         ...accountQueryOptions.waiting(),
         enabled: accountMe?.status === 'WARD_ENTRY_PENDING',
     });
-    const registerAccountAndNurse = async (
-        createNurseDTO: TCreateNurseDTO & {profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}},
-    ) => {
+    const registerAccountProfile = async (accountProfileDTO: {
+        name: string;
+        phoneNum: string;
+        profileImg: {profileImgUrl?: string; defaultProfileImgId?: number};
+    }) => {
         if (!accountId || !accountMe) return;
 
         setLoading(true);
 
         try {
-            if (accountMe.status === 'WARD_SELECT_PENDING' && accountMe.nurseId) {
+            if (accountMe.status === 'WARD_SELECT_PENDING' || getIsWorkspaceSetupPending(accountMe)) {
+                if (getIsWorkspaceSetupPending(accountMe)) {
+                    const updatedAccount = await AdminAPI.updateMe({
+                        name: accountProfileDTO.name,
+                        phoneNum: accountProfileDTO.phoneNum,
+                        ...accountProfileDTO.profileImg,
+                    });
+
+                    applyAccountMe(updatedAccount as TAccount);
+                    void handleGetAccountMe().catch(() => undefined);
+
+                    return;
+                }
+
                 await AccountAPI.editAccount({
                     accountId,
-                    name: createNurseDTO.name,
-                    ...createNurseDTO.profileImg,
-                });
-
-                const currentNurse = await NurseAPI.getNurse(accountMe.nurseId);
-
-                await NurseAPI.updateNurse(accountMe.nurseId, {
-                    ...currentNurse,
-                    name: createNurseDTO.name,
-                    phoneNum: createNurseDTO.phoneNum,
-                    gender: createNurseDTO.gender,
-                    employmentDate: createNurseDTO.employmentDate,
-                    isWorker: createNurseDTO.isWorker,
+                    name: accountProfileDTO.name,
+                    phoneNum: accountProfileDTO.phoneNum,
+                    ...accountProfileDTO.profileImg,
                 });
                 await handleGetAccountMe();
 
                 return;
             }
 
-            if (accountMe.status === 'NURSE_INFO_PENDING') {
+            if (accountMe.status === 'NURSE_INFO_PENDING' || accountMe.status === 'INITIAL') {
                 // 모바일에서 계정 초기 등록을 이미 마친 경우 계정 정보를 수정한다.
                 await AccountAPI.editAccount({
                     accountId,
-                    name: createNurseDTO.name,
-                    ...createNurseDTO.profileImg,
+                    name: accountProfileDTO.name,
+                    phoneNum: accountProfileDTO.phoneNum,
+                    ...accountProfileDTO.profileImg,
                 });
-            } else if (accountMe.status === 'INITIAL') {
-                await AccountAPI.initAccount({accountId, name: createNurseDTO.name, ...createNurseDTO.profileImg});
             }
 
-            await NurseAPI.createAccountNurse(accountId, createNurseDTO);
             await changeAccountStatus({accountId, status: 'WARD_SELECT_PENDING'});
         } finally {
             setLoading(false);
@@ -155,8 +233,9 @@ const useRegister = () => {
     return {
         state: {accountMe, accountWaitingWard},
         actions: {
-            registerAccountAndNurse,
+            registerAccountProfile,
             createWard,
+            joinWardByCode,
             enterWard,
             cancelWaiting,
         },

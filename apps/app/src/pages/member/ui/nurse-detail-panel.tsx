@@ -44,7 +44,7 @@ function NurseDetailPanel({
     wardCode,
 }: INurseDetailPanelProps) {
     const {
-        state: {selectedNurse, nurseSaveStatus, isDeletingNurse},
+        state: {selectedNurse, selectedNurseDrawerMode, nurseSaveStatus, isDeletingNurse},
         actions: {updateNurse, deleteNurse, setNurseDraftDirty, disconnectNurse},
     } = useEditShiftTeam();
     const {t} = useTypedTranslation();
@@ -60,11 +60,15 @@ function NurseDetailPanel({
     const modalRoot = document.getElementById('modal-root') ?? document.body;
     const isDirty = hasNurseChanges(selectedNurse, writeNurse);
     const isBusy = nurseSaveStatus === 'saving' || isDeletingNurse || isMovingTeam;
+    const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptee = hasPrecepteeMemo(writeNurse?.memo);
+    const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const autoSaveDraft = async (draft: TNurse | null) => {
         if (!selectedNurse || !draft || isBusy) return;
 
         if (draft.name.trim().length === 0) return;
+
+        if (isCreateMode && !canSaveCreateDraft(draft)) return;
 
         if (!hasNurseChanges(selectedNurse, draft)) return;
 
@@ -407,6 +411,20 @@ function NurseDetailPanel({
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <div className="border-t border-gray-7 px-5 py-4 min-[1440px]:px-6 min-[1440px]:py-5">
+                    <p className="font-apple text-[14px] font-semibold text-[#5C667D]">전화번호</p>
+                    <input
+                        type="tel"
+                        disabled={isBusy}
+                        name="nursePhoneNum"
+                        placeholder="전화번호 입력"
+                        className="mt-3 h-11 w-full rounded-[12px] border border-gray-6 bg-main-bg px-3.5 font-poppins text-[15px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={writeNurse.phoneNum}
+                        onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
+                        onBlur={() => void autoSaveDraft(writeNurse)}
+                    />
                 </div>
 
                 <div className="border-t border-gray-7 px-5 pt-4 pb-5 min-[1440px]:px-6 min-[1440px]:pt-5 min-[1440px]:pb-6">

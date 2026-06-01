@@ -47,32 +47,6 @@ vi.mock('@/analytics', () => ({
     sendEvent: (...args: unknown[]) => mockSendEvent(...args),
 }));
 
-vi.mock('@/widgets/duty-management/ui', () => ({
-    DutyManagementMonthTeamHeader: ({
-        onPrevMonth,
-        onNextMonth,
-        onSelectShiftTeam,
-        disabled,
-    }: {
-        onPrevMonth: () => void;
-        onNextMonth: () => void;
-        onSelectShiftTeam: (shiftTeamId: number) => void;
-        disabled: boolean;
-    }) => (
-        <div>
-            <button type="button" onClick={onPrevMonth} disabled={disabled}>
-                이전
-            </button>
-            <button type="button" onClick={onNextMonth} disabled={disabled}>
-                다음
-            </button>
-            <button type="button" onClick={() => onSelectShiftTeam(2)} disabled={disabled}>
-                팀 변경
-            </button>
-        </div>
-    ),
-}));
-
 type TMockState = {
     year: number;
     month: number;

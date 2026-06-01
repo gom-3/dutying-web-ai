@@ -51,6 +51,17 @@ describe('ProfilePage model', () => {
         ).toBe(true);
     });
 
+    it('교대 근무자 여부 변경은 프로필 저장 가능 상태로 판단하지 않는다', () => {
+        const draftNurse = {...baseNurse, isWorker: false};
+
+        expect(
+            isProfileFormDirty({
+                originalNurse: baseNurse,
+                draftNurse,
+            }),
+        ).toBe(false);
+    });
+
     it('새 프로필 이미지가 있으면 폼 변경으로 판단한다', () => {
         expect(
             isProfileFormDirty({

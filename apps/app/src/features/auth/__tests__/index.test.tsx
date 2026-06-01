@@ -1,6 +1,6 @@
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {AccountAPI, AuthAPI} from '@/shared/api';
+import {AdminAPI, AuthAPI} from '@/shared/api';
 import useAuth from '../index';
 import useAuthStore from '../model/store';
 
@@ -13,6 +13,7 @@ const {
     mockExecuteLoginRedirect,
     mockGetLoginRedirectDecision,
     setAccessTokenMock,
+    setAdminAccessTokenMock,
 } = vi.hoisted(() => ({
     mockNavigate: vi.fn(),
     mockResetRequestShiftState: vi.fn(),
@@ -22,6 +23,7 @@ const {
     mockExecuteLoginRedirect: vi.fn(),
     mockGetLoginRedirectDecision: vi.fn(() => ({type: 'none'})),
     setAccessTokenMock: vi.fn(),
+    setAdminAccessTokenMock: vi.fn(),
 }));
 
 vi.mock('react-router', () => ({
@@ -60,23 +62,27 @@ vi.mock('@/features/tutorial', () => ({
 
 vi.mock('@/shared/api/client', () => ({
     setAccessToken: (...args: unknown[]) => setAccessTokenMock(...args),
+    setAdminAccessToken: (...args: unknown[]) => setAdminAccessTokenMock(...args),
 }));
 
 vi.mock('@/shared/api', () => ({
-    AccountAPI: {
-        getAccountMe: vi.fn(),
+    AdminAPI: {
+        getMe: vi.fn(),
     },
     AuthAPI: {
         demoStart: vi.fn(),
     },
 }));
 
-vi.mock('../loginRedirect', () => ({
+vi.mock('../model/login-redirect', () => ({
     executeLoginRedirect: mockExecuteLoginRedirect,
     getLoginRedirectDecision: mockGetLoginRedirectDecision,
 }));
 
 describe('useAuth', () => {
+    const createJwt = (payload: Record<string, unknown>) =>
+        `header.${btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}.signature`;
+
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
@@ -85,7 +91,7 @@ describe('useAuth', () => {
             accountMeStatus: 'success',
             isAuth: true,
             isDemoExpired: false,
-            accessToken: 'old-token',
+            accessToken: createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9}),
             accountId: 9,
             nurseId: 19,
             wardId: 99,
@@ -98,32 +104,49 @@ describe('useAuth', () => {
         const {result} = renderHook(() => useAuth());
 
         act(() => {
-            result.current.actions.handleLogin('new-token', null);
+            result.current.actions.handleLogin(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}), null);
         });
 
         expect(useAuthStore.getState()).toMatchObject({
             accountMe: null,
             accountMeStatus: 'loading',
-            accessToken: 'new-token',
+            accessToken: createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}),
             accountId: null,
             nurseId: null,
             wardId: null,
             demoStartDate: null,
             isAuth: true,
         });
+        expect(setAccessTokenMock).toHaveBeenCalledWith(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}));
+        expect(setAdminAccessTokenMock).toHaveBeenCalledWith(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}));
+        expect(setAccessTokenMock.mock.invocationCallOrder[0]).toBeLessThan(mockExecuteLoginRedirect.mock.invocationCallOrder[0]);
+    });
+
+    it('does not attach non-admin tokens to the admin API client', () => {
+        const {result} = renderHook(() => useAuth());
+        const appToken = createJwt({principalType: 'ACCOUNT', accountId: 12});
+
+        act(() => {
+            result.current.actions.handleLogin(appToken, null);
+        });
+
+        expect(setAccessTokenMock).toHaveBeenCalledWith(appToken);
+        expect(setAdminAccessTokenMock).toHaveBeenCalledWith('');
     });
 
     it('preserves demoStartDate when login is used for token refresh', () => {
         const {result} = renderHook(() => useAuth());
 
         act(() => {
-            result.current.actions.handleLogin('refreshed-token', null, {preserveDemoStartDate: true});
+            result.current.actions.handleLogin(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 15}), null, {
+                preserveDemoStartDate: true,
+            });
         });
 
         expect(useAuthStore.getState()).toMatchObject({
             accountMe: null,
             accountMeStatus: 'loading',
-            accessToken: 'refreshed-token',
+            accessToken: createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 15}),
             accountId: null,
             nurseId: null,
             wardId: null,
@@ -133,7 +156,7 @@ describe('useAuth', () => {
     });
 
     it('preserves stale identity fields and rethrows when account bootstrap fails', async () => {
-        vi.mocked(AccountAPI.getAccountMe).mockRejectedValueOnce(new Error('boom'));
+        vi.mocked(AdminAPI.getMe).mockRejectedValueOnce(new Error('boom'));
 
         const {result} = renderHook(() => useAuth());
 
@@ -152,13 +175,44 @@ describe('useAuth', () => {
         });
     });
 
+    it('normalizes setup-pending admin accounts with a ward membership as linked during bootstrap', async () => {
+        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+            accountId: 9,
+            nurseId: null,
+            wardId: null,
+            shiftTeamId: null,
+            email: 'admin@example.com',
+            name: 'Kim',
+            profileImgUrl: '',
+            isManager: true,
+            status: 'WORKSPACE_SETUP_PENDING',
+            memberships: [{wardId: 99, role: 'OWNER', status: 'ACTIVE'}],
+        } as never);
+
+        const {result} = renderHook(() => useAuth());
+
+        await act(async () => {
+            await result.current.actions.handleGetAccountMe();
+        });
+
+        expect(useAuthStore.getState()).toMatchObject({
+            accountMe: {
+                accountId: 9,
+                wardId: 99,
+                status: 'LINKED',
+            },
+            wardId: 99,
+            accountMeStatus: 'success',
+        });
+    });
+
     it('marks the demo session as expired during bootstrap instead of logging out', async () => {
         useAuthStore.setState({
             demoStartDate: '2026-02-01T00:00:00.000Z',
             isDemoExpired: false,
         });
 
-        vi.mocked(AccountAPI.getAccountMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
+        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({accountId: 9, wardId: 99, nurseId: 19} as never);
 
         await act(async () => {
             renderHook(() => useAuth(true));
@@ -167,7 +221,7 @@ describe('useAuth', () => {
 
         expect(useAuthStore.getState()).toMatchObject({
             isAuth: true,
-            accessToken: 'old-token',
+            accessToken: createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9}),
             isDemoExpired: true,
         });
         expect(mockResetRequestShiftState).not.toHaveBeenCalled();

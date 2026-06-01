@@ -7,6 +7,7 @@ export type TAccount = {
     shiftTeamId: number | null;
     email: string;
     name: string;
+    phoneNum?: string | null;
     /** @deprecated use profileImgUrl */
     profileImgBase64?: string;
     profileImgUrl: string;

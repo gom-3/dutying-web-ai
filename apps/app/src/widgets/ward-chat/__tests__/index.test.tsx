@@ -2,7 +2,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ReactNode} from 'react';
-import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import WardChatWidget from '../index';
 
 const wardApiMock = vi.hoisted(() => ({
@@ -45,6 +45,8 @@ describe('WardChatWidget', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.stubEnv('VITE_ENABLE_WARD_CHAT', '');
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.net');
         wardApiMock.getWardChatUnreadCount.mockResolvedValue({moimId: 1, wardId: 1, unreadCount: 5});
         wardApiMock.getWardChatMessages.mockResolvedValue({
             messages: [
@@ -76,6 +78,10 @@ describe('WardChatWidget', () => {
         });
     });
 
+    afterEach(() => {
+        vi.unstubAllEnvs();
+    });
+
     it('shows the floating button with unread count', async () => {
         renderWithQueryClient(<WardChatWidget />);
 
@@ -105,5 +111,14 @@ describe('WardChatWidget', () => {
             ),
         );
         expect(await screen.findByText('확인했습니다.')).toBeInTheDocument();
+    });
+
+    it('does not call ward chat APIs on production API while the routes are unavailable', () => {
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        expect(screen.queryByRole('button', {name: /병동톡 열기/})).not.toBeInTheDocument();
+        expect(wardApiMock.getWardChatUnreadCount).not.toHaveBeenCalled();
     });
 });

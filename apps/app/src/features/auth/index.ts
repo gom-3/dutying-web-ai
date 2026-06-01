@@ -1,13 +1,17 @@
 import {useEffect} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
+import type {TAccount} from '@/entities/account';
 import useLoadingUseCase from '@/features/loading';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import useTutorialUseCase from '@/features/tutorial';
-import {AccountAPI, AuthAPI} from '@/shared/api';
-import {setAccessToken} from '@/shared/api/client';
+import {AdminAPI, AuthAPI} from '@/shared/api';
+import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
+import {toAccountCompatibleAdminMe} from './model/admin-account';
+import {isWardAdminAccessToken} from './model/admin-token';
 import {buildDemoSignupLoginPath, isDemoSessionExpired} from './model/demo-session';
+import {createDevAuthBypassAccount, DEV_AUTH_BYPASS_TOKEN, isDevAuthBypassAvailable} from './model/dev-auth-bypass';
 import {executeLoginRedirect, getLoginRedirectDecision} from './model/login-redirect';
 import useAuthStore from './model/store';
 
@@ -44,6 +48,11 @@ const useAuth = (activeEffect = false) => {
         resetRequestShiftState();
         resetState();
         setAccessToken('');
+        setAdminAccessToken('');
+    };
+    const syncAccessTokenHeaders = (token: string) => {
+        setAccessToken(token);
+        setAdminAccessToken(isWardAdminAccessToken(token) ? token : '');
     };
     const handleLogout = async (fallBackPath?: string) => {
         resetSessionState();
@@ -53,13 +62,21 @@ const useAuth = (activeEffect = false) => {
     };
     const handleLogin = (accessToken: string, nextPageUrl?: string | null, options?: THandleLoginOptions) => {
         beginLogin(accessToken, {preserveDemoStartDate: options?.preserveDemoStartDate});
-        setAccessToken(accessToken);
+        syncAccessTokenHeaders(accessToken);
 
         const redirectDecision = getLoginRedirectDecision(nextPageUrl);
 
         executeLoginRedirect(redirectDecision);
 
         sendEvent(events.auth.login);
+    };
+    const handleDevSignupBypass = () => {
+        if (!isDevAuthBypassAvailable()) return;
+
+        beginLogin(DEV_AUTH_BYPASS_TOKEN);
+        syncAccessTokenHeaders(DEV_AUTH_BYPASS_TOKEN);
+        setAccountMeSuccess(createDevAuthBypassAccount());
+        navigate(ROUTE.ONBOARDING);
     };
     const setDemoExpired = (expired: boolean) => {
         setAuthDemoExpired(expired);
@@ -83,7 +100,7 @@ const useAuth = (activeEffect = false) => {
                 demoStartDate: new Date().toISOString(),
             });
 
-            setAccessToken(data.accessToken);
+            syncAccessTokenHeaders(data.accessToken);
             navigate(ROUTE.MAKE);
         } finally {
             setLoading(false);
@@ -93,9 +110,9 @@ const useAuth = (activeEffect = false) => {
         setAccountMeLoading();
 
         try {
-            const account = await AccountAPI.getAccountMe();
+            const account = toAccountCompatibleAdminMe(await AdminAPI.getMe());
 
-            setAccountMeSuccess(account);
+            setAccountMeSuccess(account as TAccount);
         } catch (error) {
             setAccountMeError();
             throw error;
@@ -104,7 +121,10 @@ const useAuth = (activeEffect = false) => {
 
     useEffect(() => {
         if (accessToken) {
-            setAccessToken(accessToken);
+            syncAccessTokenHeaders(accessToken);
+        } else {
+            setAccessToken('');
+            setAdminAccessToken('');
         }
     }, [accessToken]);
 
@@ -135,6 +155,7 @@ const useAuth = (activeEffect = false) => {
         actions: {
             handleGetAccountMe,
             applyAccountMe: setAccountMeSuccess,
+            handleDevSignupBypass,
             handleLogin,
             handleLogout,
             setDemoExpired,

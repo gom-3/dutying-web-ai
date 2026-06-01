@@ -7,6 +7,7 @@ import {buttonVariants} from '@/shared/ui/primitives/button';
 type TTeam = {
     shiftTeamId: number;
     name: string;
+    pendingCount?: number;
 };
 
 type TMonthTeamHeaderProps = {
@@ -129,13 +130,19 @@ export function DutyManagementMonthTeamHeader({
                 <div
                     className={cn(
                         isDarkSegmented
-                            ? 'max-w-full min-w-0 rounded-[12px] bg-[#3D4658] p-0.5'
+                            ? 'max-w-full min-w-0 overflow-visible rounded-[12px] bg-[#3D4658] p-0.5'
                             : 'max-w-full rounded-[10px] bg-main-light px-[10px] py-[7px]',
                     )}
                 >
-                    <div className="scrollbar-hide flex max-w-full min-w-0 gap-1 overflow-x-auto whitespace-nowrap">
-                        {shiftTeams.map((team) => {
+                    <div
+                        className={cn(
+                            'scrollbar-hide flex max-w-full min-w-0 gap-1 whitespace-nowrap',
+                            isDarkSegmented ? 'overflow-visible' : 'overflow-x-auto',
+                        )}
+                    >
+                        {shiftTeams.map((team, teamIndex) => {
                             const selected = team.shiftTeamId === currentShiftTeamId;
+                            const pendingCount = team.pendingCount ?? 0;
 
                             return (
                                 <button
@@ -146,7 +153,7 @@ export function DutyManagementMonthTeamHeader({
                                     className={cn(
                                         isDarkSegmented
                                             ? cn(
-                                                  'box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+                                                  'relative box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center overflow-visible rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40',
                                                   selected
                                                       ? 'bg-white text-sub-1'
                                                       : 'text-[#B8C0CF] hover:text-white disabled:hover:bg-transparent',
@@ -158,8 +165,18 @@ export function DutyManagementMonthTeamHeader({
                                                       : 'text-gray-3 hover:bg-white/70 disabled:hover:bg-transparent',
                                               ),
                                     )}
+                                    style={
+                                        isDarkSegmented
+                                            ? {zIndex: pendingCount > 0 ? 30 + (shiftTeams.length - teamIndex) : selected ? 10 : 0}
+                                            : undefined
+                                    }
                                 >
                                     <span className="block leading-none">{team.name}</span>
+                                    {isDarkSegmented && pendingCount > 0 ? (
+                                        <span className="pointer-events-none absolute -top-2 -right-2 z-50 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#E97A84] px-1.5 font-poppins text-[11px] leading-none font-bold text-white">
+                                            {pendingCount}
+                                        </span>
+                                    ) : null}
                                 </button>
                             );
                         })}

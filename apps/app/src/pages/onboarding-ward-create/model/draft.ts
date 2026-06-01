@@ -135,6 +135,7 @@ const BASE_SHIFT_TYPES = [
         color: '#4DC2AD',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'DAY',
     }),
     createShiftType({
@@ -145,6 +146,7 @@ const BASE_SHIFT_TYPES = [
         color: '#FF8BA5',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'EVENING',
     }),
     createShiftType({
@@ -155,6 +157,7 @@ const BASE_SHIFT_TYPES = [
         color: '#3580FF',
         isDefault: true,
         isOff: false,
+        isCounted: true,
         classification: 'NIGHT',
     }),
     createShiftType({
@@ -165,6 +168,7 @@ const BASE_SHIFT_TYPES = [
         color: '#465B7A',
         isDefault: true,
         isOff: true,
+        isCounted: false,
         classification: 'OFF',
     }),
 ];
@@ -173,6 +177,7 @@ const BASE_TEAMS: TOnboardingTeamDraft[] = [
     {id: createId('team'), name: '간호사 2팀'},
     {id: createId('team'), name: '간호사 3팀'},
 ];
+
 export const skillPalettes = SKILL_PALETTES;
 
 export const getSkillPalette = (paletteId: string) => skillPalettes.find((palette) => palette.id === paletteId) ?? skillPalettes[0];
@@ -231,6 +236,7 @@ export const createEmptyShiftType = (): TOnboardingWardShiftType =>
         color: '#BFC7D4',
         isDefault: false,
         isOff: false,
+        isCounted: true,
         classification: 'OTHER_WORK',
     });
 

@@ -1,10 +1,11 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {saveSocialSignupProfile, clearSocialSignupProfile} from '@/features/auth/model/social-signup';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import RegisterNurse from '../register-nurse';
 
 const mocks = vi.hoisted(() => ({
     profileImg: {defaultProfileImgId: 1},
-    registerAccountAndNurse: vi.fn(),
+    registerAccountProfile: vi.fn(),
     setPhotoImage: vi.fn(),
     setRandomImage: vi.fn(),
 }));
@@ -15,7 +16,7 @@ vi.mock('@/features/register', () => ({
             accountMe: null,
         },
         actions: {
-            registerAccountAndNurse: mocks.registerAccountAndNurse,
+            registerAccountProfile: mocks.registerAccountProfile,
         },
     }),
 }));
@@ -34,30 +35,27 @@ vi.mock('@/entities/account/ui/profile-image', () => ({
 
 describe('RegisterNurse', () => {
     beforeEach(() => {
-        mocks.registerAccountAndNurse.mockReset();
-        mocks.registerAccountAndNurse.mockResolvedValue(undefined);
+        mocks.registerAccountProfile.mockReset();
+        mocks.registerAccountProfile.mockResolvedValue(undefined);
         mocks.setPhotoImage.mockReset();
         mocks.setRandomImage.mockReset();
+        clearSocialSignupProfile();
     });
 
-    it('submits server-required hidden nurse defaults while keeping gender and employment date out of the UI', async () => {
+    it('submits account profile with contact information without creating a nurse profile', async () => {
         const user = userEvent.setup();
-        const today = new Date().toISOString().slice(0, 10);
 
         render(<RegisterNurse />);
 
         await user.type(screen.getByPlaceholderText('이름을 입력하세요'), '홍길동');
-        await user.type(screen.getByPlaceholderText('전화번호를 입력하세요'), '01012341234');
+        await user.type(screen.getByPlaceholderText('01012345678'), '01012345678');
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         await waitFor(() => {
-            expect(mocks.registerAccountAndNurse).toHaveBeenCalledWith(
+            expect(mocks.registerAccountProfile).toHaveBeenCalledWith(
                 expect.objectContaining({
                     name: '홍길동',
-                    phoneNum: '01012341234',
-                    gender: '여',
-                    employmentDate: today,
-                    isWorker: true,
+                    phoneNum: '01012345678',
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );
@@ -65,5 +63,38 @@ describe('RegisterNurse', () => {
 
         expect(screen.queryByText('성별')).not.toBeInTheDocument();
         expect(screen.queryByText('입사일')).not.toBeInTheDocument();
+        expect(screen.queryByText('근무자로 참여하기')).not.toBeInTheDocument();
+    });
+
+    it('prefills the social name and submits the edited real name in social signup mode', async () => {
+        const user = userEvent.setup();
+
+        saveSocialSignupProfile({
+            provider: 'KAKAO',
+            name: '소셜홍',
+            capturedAt: new Date().toISOString(),
+        });
+
+        render(<RegisterNurse mode="social" />);
+
+        expect(screen.getByText('소셜홍')).toBeInTheDocument();
+
+        const nameInput = screen.getByPlaceholderText('이름을 입력하세요');
+        expect(nameInput).toHaveValue('소셜홍');
+
+        await user.clear(nameInput);
+        await user.type(nameInput, '홍길동');
+        await user.type(screen.getByPlaceholderText('01012345678'), '01098765432');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(mocks.registerAccountProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: '홍길동',
+                    phoneNum: '01098765432',
+                    profileImg: {defaultProfileImgId: 1},
+                }),
+            );
+        });
     });
 });

@@ -9,6 +9,21 @@ export const en: TLocale = {
             errorDescription: 'Please try again shortly. If the issue continues, refresh and check again.',
             retry: 'Retry',
         },
+        error: {
+            goHome: 'Go to schedule',
+            goBack: 'Go back',
+            retry: 'Try again',
+            notFound: {
+                code: '404',
+                title: 'Page not found',
+                description: 'The address may have changed or this screen may no longer be available.\nStart again from the schedule page.',
+            },
+            unexpected: {
+                code: 'ERROR',
+                title: 'Could not load this screen',
+                description: 'Something went wrong for a moment.\nIf it keeps happening, refresh and try again.',
+            },
+        },
         navigationBar: {
             ariaLabel: 'Primary navigation',
             expandAria: 'Expand sidebar',
@@ -25,6 +40,7 @@ export const en: TLocale = {
                 board: 'Board',
                 member: 'Members',
                 wardSettings: 'Duty settings',
+                wardAdmins: 'Ward admins',
                 wardInfoSettings: 'Ward settings',
                 account: 'Account',
             },

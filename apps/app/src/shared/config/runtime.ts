@@ -16,10 +16,11 @@ const getRuntimeUrl = (envValue: string | undefined, fallback: string) => {
     return trimTrailingSlash(normalized ?? fallback);
 };
 const INTERNAL_PATH_PATTERN = /^\/(?![\\/])/;
+export const DEFAULT_SERVER_URL = 'https://api.dutying.net';
 
 export const RUNTIME_CONFIG = {
     publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.net'),
-    serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, RUNTIME_CONFIG.publicAppUrl()),
+    serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, DEFAULT_SERVER_URL),
     profileImageBaseUrl: () =>
         getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com'),
     docs: {
@@ -58,7 +59,7 @@ export const resolveSafeRedirectTarget = (target: string | null | undefined, fal
 };
 
 export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: string = ROUTE.MAKE) => {
-    const url = new URL(`/oauth2/authorization/${provider}`, `${RUNTIME_CONFIG.serverUrl()}/`);
+    const url = new URL(`/oauth2/authorization/admin/${provider}`, `${RUNTIME_CONFIG.serverUrl()}/`);
 
     url.searchParams.set('nextPageUrl', buildAppUrl(sanitizeInternalPath(nextPath)));
 

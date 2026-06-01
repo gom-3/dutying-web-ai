@@ -5,6 +5,7 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import NavigationBar from '..';
 
 const mockUseTotalPendingRequestCount = vi.fn(() => 0);
+
 type TMockUseEditWardResult = {
     state: {
         ward?: {
@@ -16,6 +17,7 @@ type TMockUseEditWardResult = {
         watingNurses: unknown[];
     };
 };
+
 const mockUseEditWard = vi.fn(
     (): TMockUseEditWardResult => ({
         state: {
@@ -35,6 +37,7 @@ const translations = {
     'page.navigationBar.items.board': '게시판',
     'page.navigationBar.items.member': '근무자',
     'page.navigationBar.items.wardSettings': '근무 설정',
+    'page.navigationBar.items.wardAdmins': '병동 관리자',
     'page.navigationBar.items.wardInfoSettings': '병동 설정',
     'page.navigationBar.items.account': '계정',
 } as const;
@@ -260,6 +263,16 @@ describe('NavigationBar', () => {
         await userEvent.click(screen.getByRole('button', {name: '병동 설정'}));
 
         expect(await screen.findByText('ward info settings page')).toBeInTheDocument();
+    });
+
+    it('병동 관리자 메뉴를 별도로 노출하지 않는다', () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        expect(screen.queryByRole('button', {name: '병동 관리자'})).not.toBeInTheDocument();
     });
 
     it('사이드바를 접어도 주요 메뉴는 아이콘 버튼으로 남는다', async () => {

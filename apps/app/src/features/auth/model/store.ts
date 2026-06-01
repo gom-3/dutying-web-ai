@@ -1,8 +1,9 @@
 import {create} from 'zustand';
 import {devtools, persist, type PersistStorage, type StorageValue} from 'zustand/middleware';
 import {type TAccount} from '@/entities/account';
-import {setAccessToken} from '@/shared/api/client';
+import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import {createStoreWriteHelpers} from '@/shared/util/create-store';
+import {isWardAdminAccessToken} from './admin-token';
 
 interface IState {
     accountMe: TAccount | null;
@@ -125,7 +126,10 @@ const useAuthStore = create<IStore>()(
                 name: 'useAuthStore',
                 storage: authStoreStorage,
                 partialize: ({isAuth, accessToken, accountId, nurseId, wardId, demoStartDate}: IStore): TPersistedAuthState => {
-                    if (accessToken) setAccessToken(accessToken);
+                    if (accessToken) {
+                        setAccessToken(accessToken);
+                        setAdminAccessToken(isWardAdminAccessToken(accessToken) ? accessToken : '');
+                    }
 
                     return {
                         isAuth,

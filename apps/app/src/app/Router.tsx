@@ -13,6 +13,7 @@ const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
 const EnterWard = lazy(() => import('@/pages/register/enter-ward-page.tsx'));
 const RegisterWard = lazy(() => import('@/pages/register/register-ward-page.tsx'));
+const OnboardingPage = lazy(() => import('@/pages/onboarding'));
 const OnboardingWardCreatePage = lazy(() => import('@/pages/onboarding-ward-create'));
 const MakeShiftPage = lazy(() => import('@/pages/make-shift'));
 const DutyPage = lazy(() => import('@/pages/duty'));
@@ -20,8 +21,10 @@ const RequestShiftPage = lazy(() => import('@/pages/request-shift'));
 const BoardPage = lazy(() => import('@/pages/board'));
 const MemberPage = lazy(() => import('@/pages/member'));
 const WardSettingsPage = lazy(() => import('@/pages/ward-settings'));
+const WardAdminsPage = lazy(() => import('@/pages/ward-admins'));
 const WardInfoSettingsPage = lazy(() => import('@/pages/ward-info-settings'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
+const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
 
 export const Router = () => {
     const {t} = useTypedTranslation();
@@ -40,17 +43,19 @@ export const Router = () => {
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
                 {import.meta.env.DEV ? <Route path={ROUTE.UI_PREVIEW} element={<UiPreviewPage />} /> : null}
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<NotAuthLayout />}>
-                    <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
                     <Route path={ROUTE.LOGIN} element={<LoginPage />} />
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
                 </Route>
                 {/* 인증되지 않은 사용자가 접근할 수 없는 페이지 */}
                 <Route element={<AuthLayout />}>
                     <Route path={ROUTE.REGISTER} element={<RegisterPage />} />
                     <Route path={ROUTE.ENTER_WARD} element={<EnterWard />} />
                     <Route path={ROUTE.REGISTER_WARD} element={<RegisterWard />} />
+                    <Route path={ROUTE.ONBOARDING} element={<OnboardingPage />} />
                     <Route path={ROUTE.ONBOARDING_WARD_CREATE} element={<OnboardingWardCreatePage />} />
                     <Route element={<MainLayout />}>
                         <Route path={ROUTE.MAKE} element={<MakeShiftPage />} />
@@ -59,10 +64,12 @@ export const Router = () => {
                         <Route path={ROUTE.BOARD} element={<BoardPage />} />
                         <Route path={ROUTE.MEMBER} element={<MemberPage />} />
                         <Route path={ROUTE.WARD_SETTINGS} element={<WardSettingsPage />} />
+                        <Route path={ROUTE.WARD_ADMINS} element={<WardAdminsPage />} />
                         <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                     </Route>
                 </Route>
+                <Route path="*" element={<NotFoundPage />} />
             </Routes>
         </Suspense>
     );

@@ -1,10 +1,12 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {clearSocialSignupProfile, saveSocialSignupProfile} from '@/features/auth/model/social-signup';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import RegisterPage from '../index';
 
 const mockHandleGetAccountMe = vi.fn();
 const mockNavigate = vi.fn();
+let mockLocationSearch = '';
 
 let mockAuthState: {
     accountMe: {
@@ -12,10 +14,11 @@ let mockAuthState: {
             | 'INITIAL'
             | 'NURSE_INFO_PENDING'
             | 'WARD_SELECT_PENDING'
-            | 'WARD_ENTRY_PENDING'
             | 'WORKSPACE_SETUP_PENDING'
+            | 'WARD_ENTRY_PENDING'
             | 'LINKED'
             | 'DEMO';
+        phoneNum?: string | null;
     } | null;
     accountMeStatus: 'idle' | 'loading' | 'success' | 'error';
     _loaded: boolean;
@@ -27,6 +30,7 @@ let mockAuthState: {
 
 vi.mock('react-router', () => ({
     Navigate: ({to}: {to: string}) => <div>navigate:{to}</div>,
+    useLocation: () => ({state: null, search: mockLocationSearch}),
     useNavigate: () => mockNavigate,
 }));
 
@@ -44,16 +48,38 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
+vi.mock('../ui/register-nurse', () => ({
+    default: ({mode, onCompleted}: {mode?: 'default' | 'social'; onCompleted?: () => void}) => (
+        <button type="button" onClick={onCompleted}>
+            register nurse {mode ?? 'default'}
+        </button>
+    ),
+}));
+
+vi.mock('../ui/select-enter-or-create', () => ({
+    default: ({onBack}: {onBack?: () => void}) => (
+        <button type="button" onClick={onBack}>
+            select enter or create
+        </button>
+    ),
+}));
+
+vi.mock('../ui/pending-enter', () => ({
+    default: () => <div>pending enter</div>,
+}));
+
 describe('RegisterPage', () => {
     beforeEach(() => {
         mockHandleGetAccountMe.mockReset();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockNavigate.mockReset();
+        mockLocationSearch = '';
         mockAuthState = {
             accountMe: null,
             accountMeStatus: 'loading',
             _loaded: false,
         };
+        clearSocialSignupProfile();
     });
 
     it('shows a loading spinner while account bootstrap is pending', () => {
@@ -80,14 +106,8 @@ describe('RegisterPage', () => {
         expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
     });
 
-    it('redirects every incomplete account status to the new ward creation onboarding page', () => {
-        for (const status of [
-            'INITIAL',
-            'NURSE_INFO_PENDING',
-            'WARD_SELECT_PENDING',
-            'WARD_ENTRY_PENDING',
-            'WORKSPACE_SETUP_PENDING',
-        ] as const) {
+    it('renders the account information step for initial account statuses', () => {
+        for (const status of ['INITIAL', 'NURSE_INFO_PENDING'] as const) {
             mockAuthState = {
                 accountMe: {status},
                 accountMeStatus: 'success',
@@ -96,9 +116,92 @@ describe('RegisterPage', () => {
 
             const {unmount} = render(<RegisterPage />);
 
-            expect(screen.getByText(`navigate:${ROUTE.ONBOARDING_CREATE_WARD}`)).toBeInTheDocument();
+            expect(screen.getByText('register nurse default')).toBeInTheDocument();
             unmount();
         }
+    });
+
+    it('renders ward selection for accounts that already completed account information', () => {
+        mockAuthState = {
+            accountMe: {status: 'WARD_SELECT_PENDING'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('select enter or create')).toBeInTheDocument();
+    });
+
+    it('renders social contact information for workspace setup accounts without a phone number', () => {
+        mockLocationSearch = '?socialSignup=1';
+        mockAuthState = {
+            accountMe: {status: 'WORKSPACE_SETUP_PENDING', phoneNum: null},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('register nurse social')).toBeInTheDocument();
+        expect(screen.queryByText('select enter or create')).not.toBeInTheDocument();
+    });
+
+    it('renders ward selection for workspace setup accounts after contact information is saved', () => {
+        mockLocationSearch = '?socialSignup=1';
+        mockAuthState = {
+            accountMe: {status: 'WORKSPACE_SETUP_PENDING', phoneNum: '01012341234'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('select enter or create')).toBeInTheDocument();
+    });
+
+    it('renders social contact information for new social signup accounts', () => {
+        saveSocialSignupProfile({
+            provider: 'KAKAO',
+            name: 'Kim',
+            capturedAt: new Date().toISOString(),
+        });
+        mockAuthState = {
+            accountMe: {status: 'INITIAL'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('register nurse social')).toBeInTheDocument();
+        expect(screen.queryByText('select enter or create')).not.toBeInTheDocument();
+    });
+
+    it('renders social contact information when the register URL has the social signup marker', () => {
+        mockLocationSearch = '?socialSignup=1';
+        mockAuthState = {
+            accountMe: {status: 'NURSE_INFO_PENDING'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('register nurse social')).toBeInTheDocument();
+        expect(screen.queryByText('select enter or create')).not.toBeInTheDocument();
+    });
+
+    it('renders pending enter for accounts waiting to join a ward', () => {
+        mockAuthState = {
+            accountMe: {status: 'WARD_ENTRY_PENDING'},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('pending enter')).toBeInTheDocument();
     });
 
     it('redirects linked accounts into the app', () => {

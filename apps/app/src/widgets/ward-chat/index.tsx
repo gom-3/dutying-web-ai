@@ -6,6 +6,7 @@ import {Fragment, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import {Button} from '@/shared/ui/primitives/button';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 
@@ -134,17 +135,19 @@ export default function WardChatWidget() {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const acknowledgedMessageIdRef = useRef<number | null>(null);
     const effectiveWardId = wardId ?? 0;
-    const isWidgetAvailable = Boolean(wardId) && !isDemoExpired;
+    const isWidgetAvailable = Boolean(wardId) && !isDemoExpired && isWardChatEnabled();
     const unreadQuery = useQuery({
         queryKey: wardChatQueryKeys.unread(effectiveWardId),
         queryFn: () => WardAPI.getWardChatUnreadCount(effectiveWardId),
         enabled: isWidgetAvailable,
+        retry: false,
         refetchInterval: isOpen ? false : UNREAD_REFETCH_INTERVAL_MS,
     });
     const messagesQuery = useQuery({
         queryKey: wardChatQueryKeys.messages(effectiveWardId),
         queryFn: () => WardAPI.getWardChatMessages(effectiveWardId, {size: CHAT_PAGE_SIZE}),
         enabled: isWidgetAvailable && isOpen,
+        retry: false,
         refetchInterval: isOpen ? OPEN_REFETCH_INTERVAL_MS : false,
     });
     const loadOlderMutation = useMutation({

@@ -60,6 +60,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
+                accountMeStatus: 'success',
                 accountMe: {
                     status: 'WARD_SELECT_PENDING',
                 },
@@ -82,6 +83,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: false,
                 isDemoExpired: false,
+                accountMeStatus: 'idle',
                 accountMe: null,
                 demoStartDate: null,
             },
@@ -108,6 +110,76 @@ describe('AuthLayout', () => {
         });
 
         expect(screen.queryByText('make page')).not.toBeInTheDocument();
+    });
+
+    it('shows an account bootstrap loading state before protected routes render', async () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                isDemoExpired: false,
+                accountMeStatus: 'loading',
+                accountMe: null,
+                demoStartDate: null,
+            },
+            actions: {
+                handleGetAccountMe: vi.fn(),
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('로그인 상태를 확인하고 있어요')).toBeInTheDocument();
+        expect(screen.queryByText('make page')).not.toBeInTheDocument();
+    });
+
+    it('shows retry and logout actions when account bootstrap fails', async () => {
+        const handleGetAccountMe = vi.fn().mockRejectedValue(new Error('boom'));
+
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                isDemoExpired: false,
+                accountMeStatus: 'error',
+                accountMe: null,
+                demoStartDate: null,
+            },
+            actions: {
+                handleGetAccountMe,
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                        <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('로그인 상태를 확인하지 못했어요')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /다시 시도/})).toBeInTheDocument();
+        screen.getByRole('button', {name: '로그아웃'}).click();
+
+        await waitFor(() => {
+            expect(defaultHandleLogout).toHaveBeenCalledWith(ROUTE.LOGIN);
+        });
     });
 
     it('allows onboarding ward create preview route for onboarding accounts', async () => {
@@ -152,6 +224,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
+                accountMeStatus: 'success',
                 accountMe: {
                     status: 'LINKED',
                 },
@@ -190,6 +263,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
+                accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },
@@ -226,6 +300,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
+                accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },
@@ -258,6 +333,7 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: true,
+                accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },

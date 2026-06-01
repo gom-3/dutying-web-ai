@@ -2,12 +2,9 @@ import {act, renderHook} from '@testing-library/react';
 import {describe, expect, it, vi} from 'vitest';
 import {useCreateAccount} from '../model';
 
-const createNurseDTO = {
+const createAccountProfileDTO = {
     name: '홍길동',
-    gender: '여' as const,
-    phoneNum: '01012341234',
-    employmentDate: '2024-01-01',
-    isWorker: true,
+    phoneNum: '01012345678',
     profileImg: {
         defaultProfileImgId: 1,
     },
@@ -32,7 +29,7 @@ describe('useCreateAccount', () => {
         let request: Promise<unknown>;
 
         act(() => {
-            request = result.current.handleCreateAccount(createNurseDTO);
+            request = result.current.handleCreateAccount(createAccountProfileDTO);
         });
 
         expect(result.current.createAccountStatus).toBe('loading');
@@ -75,7 +72,7 @@ describe('useCreateAccount', () => {
         let request: Promise<unknown>;
 
         act(() => {
-            request = result.current.handleCreateAccount(createNurseDTO);
+            request = result.current.handleCreateAccount(createAccountProfileDTO);
         });
 
         await act(async () => {
@@ -99,7 +96,7 @@ describe('useCreateAccount', () => {
         let request: Promise<unknown>;
 
         act(() => {
-            request = result.current.handleCreateAccount(createNurseDTO);
+            request = result.current.handleCreateAccount(createAccountProfileDTO);
         });
 
         await act(async () => {
@@ -128,7 +125,7 @@ describe('useCreateAccount', () => {
         );
 
         act(() => {
-            void result.current.handleCreateAccount(createNurseDTO);
+            void result.current.handleCreateAccount(createAccountProfileDTO);
         });
 
         act(() => {

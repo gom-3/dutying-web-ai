@@ -119,8 +119,8 @@ describe('useEditShiftTeam', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
 
-    it('resets the adding flag after addNurse fails', async () => {
-        mockAddNurseIntoShiftTeam.mockRejectedValue(new Error('network'));
+    it('creates a local draft row without posting invalid empty nurse data', async () => {
+        mockGetQueryData.mockReturnValue(ward);
 
         const {result} = renderHook(() => useEditShiftTeam());
 
@@ -128,57 +128,69 @@ describe('useEditShiftTeam', () => {
             await result.current.actions.addNurse(10);
         });
 
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
         expect(result.current.state.isAddingNurse).toBe(false);
-        expect(result.current.state.selectedNurse).toBeUndefined();
-        expect(mockToastError).toHaveBeenCalledWith('간호사를 추가하지 못했어요.');
-        expect(mockToastSuccess).not.toHaveBeenCalled();
+        expect(useEditNurseStore.getState().selectedNurseId).toBeLessThan(0);
+        expect(result.current.state.selectedNurseDrawerMode).toBe('create');
+        expect(mockSetQueryData).toHaveBeenCalled();
+        expect(mockToastSuccess).toHaveBeenCalledWith('간호사 정보를 입력한 뒤 저장해 주세요.', {
+            position: 'bottom-center',
+        });
     });
 
-    it('keeps the adding flag on until ward invalidation finishes after addNurse succeeds', async () => {
-        let resolveInvalidate: (() => void) | undefined;
+    it('posts the local draft after name is valid without requiring phone number or gender', async () => {
+        const tempWard = {
+            ...ward,
+            shiftTeams: [
+                {
+                    ...ward.shiftTeams[0],
+                    nurses: [
+                        ...ward.shiftTeams[0].nurses,
+                        {
+                            nurseId: -1000000,
+                            shiftTeamId: 10,
+                            wardId: 1,
+                            name: '',
+                            phoneNum: '',
+                            isWorker: true,
+                            employmentDate: '',
+                            isDutyManager: false,
+                            isWardManager: false,
+                            memo: '',
+                        },
+                    ],
+                },
+            ],
+        } as any;
 
+        mockGetQueryData.mockReturnValue(tempWard);
         mockAddNurseIntoShiftTeam.mockResolvedValue({
             nurseId: 22,
+            shiftTeamId: 10,
+            wardId: 1,
+            name: '김신규',
+            phoneNum: '01012345678',
         });
-        mockInvalidateQueries.mockImplementation(
-            () =>
-                new Promise<void>((resolve) => {
-                    resolveInvalidate = resolve;
-                }),
-        );
 
         const {result} = renderHook(() => useEditShiftTeam());
 
-        let actionPromise: Promise<void> | undefined;
-
         await act(async () => {
-            actionPromise = result.current.actions.addNurse(10);
-            await Promise.resolve();
+            await result.current.actions.updateNurse(-1000000, {
+                ...tempWard.shiftTeams[0].nurses[1],
+                name: '김신규',
+                phoneNum: '',
+            });
         });
 
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
-            name: '',
-            phoneNum: '',
-            gender: '',
-            isWorker: true,
-            employmentDate: '',
-            isDutyManager: false,
-            isWardManager: false,
-            memo: '',
-        });
-        expect(result.current.state.isAddingNurse).toBe(true);
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
+            1,
+            10,
+            expect.objectContaining({
+                name: '김신규',
+                phoneNum: null,
+            }),
+        );
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
-        expect(result.current.state.selectedNurseDrawerMode).toBe('create');
-
-        await act(async () => {
-            resolveInvalidate?.();
-            await actionPromise;
-        });
-
-        expect(result.current.state.isAddingNurse).toBe(false);
-        expect(mockToastSuccess).toHaveBeenCalledWith('간호사를 추가했어요. 이름과 연락처를 입력한 뒤 저장해 주세요.', {
-            position: 'bottom-center',
-        });
     });
 
     it('resets the deleting flag and preserves the current selection after deleteNurse fails', async () => {

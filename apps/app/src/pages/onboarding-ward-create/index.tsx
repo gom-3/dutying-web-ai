@@ -181,7 +181,13 @@ function OnboardingWardCreatePage() {
             return;
         }
 
-        if (accountMe && accountMe.status !== 'WARD_SELECT_PENDING') {
+        if (accountMe?.status === 'LINKED' || accountMe?.status === 'DEMO') {
+            navigate(ROUTE.MAKE, {replace: true});
+
+            return;
+        }
+
+        if (accountMe && !['INITIAL', 'NURSE_INFO_PENDING', 'WARD_SELECT_PENDING', 'WORKSPACE_SETUP_PENDING'].includes(accountMe.status)) {
             navigate(ROUTE.REGISTER);
         }
     }, [accountMe, isSubmitting, isSuccess, navigate]);
@@ -199,7 +205,7 @@ function OnboardingWardCreatePage() {
             : true;
 
         window.sessionStorage.setItem(WARD_CREATED_GUIDE_STORAGE_KEY, JSON.stringify(guidePayload));
-        navigate(ROUTE.DUTY, {replace: true, state: {onboardingWardCreated: guidePayload}});
+        navigate(ROUTE.MAKE, {replace: true, state: {onboardingWardCreated: guidePayload}});
 
         return undefined;
     }, [createdWard, isSuccess, navigate]);

@@ -60,8 +60,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
     <section class="desktop-only landing-header">
         <div class="landing-header__inner">
             <a class="brand" href={siteConfig.marketingOrigin} aria-label="듀팅 랜딩 홈">
-                <img src="/logo.svg" alt="" width="32" height="32" />
-                <span>dutying</span>
+                <img src="/logo-wordmark-purple.png" alt="dutying" width="119" height="33" />
             </a>
 
             <nav class="landing-header__nav" aria-label="랜딩 섹션">
@@ -80,8 +79,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
     <section class="mobile-only landing-mobile-header">
         <div class="landing-mobile-header__inner">
             <a class="brand brand--mobile" href={siteConfig.marketingOrigin} aria-label="듀팅 랜딩 홈">
-                <img src="/logo.svg" alt="" width="28" height="28" />
-                <span>dutying</span>
+                <img src="/logo-wordmark-purple.png" alt="dutying" width="101" height="28" />
             </a>
 
             <a class="button button--primary button--compact" href={appStoreLink} target="_blank" rel="noreferrer">다운로드</a>
@@ -278,8 +276,8 @@ const formattedFeatureSections = featureSections.map((section) => ({
         position: sticky;
         top: 0;
         z-index: 20;
-        background: rgba(255, 255, 255, 0.96);
-        backdrop-filter: blur(14px);
+        border-bottom: 1px solid rgba(21, 11, 60, 0.08);
+        background: #fff;
     }
 
     .landing-header__inner,
@@ -301,17 +299,13 @@ const formattedFeatureSections = featureSections.map((section) => ({
     .brand {
         display: inline-flex;
         align-items: center;
-        gap: 12px;
-        font-size: 1.25rem;
-        font-weight: 700;
-        letter-spacing: -0.03em;
     }
 
     .brand img,
     .brand--mobile img {
         display: block;
-        width: 32px;
-        height: 32px;
+        width: 119px;
+        height: auto;
     }
 
     .landing-header__nav {
@@ -640,8 +634,11 @@ const formattedFeatureSections = featureSections.map((section) => ({
         }
 
         .brand--mobile {
-            gap: 8px;
-            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .brand--mobile img {
+            width: 101px;
         }
 
         .button--compact {

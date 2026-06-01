@@ -8,12 +8,12 @@ vi.mock('react-loading', () => ({
 }));
 
 describe('PageState component', () => {
-    it('renders spinner only in loading state', () => {
+    it('renders spinner and guidance copy in loading state', () => {
         render(<PageState tone="loading" title="Loading" description="Please wait a moment." />);
 
         expect(screen.getByRole('status')).toBeInTheDocument();
-        expect(screen.getByText('Loading')).toBeInTheDocument();
-        expect(screen.queryByText('Please wait a moment.')).not.toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: 'Loading'})).toBeInTheDocument();
+        expect(screen.getByText('Please wait a moment.')).toBeInTheDocument();
     });
 
     it('renders white loading dots when requested', () => {

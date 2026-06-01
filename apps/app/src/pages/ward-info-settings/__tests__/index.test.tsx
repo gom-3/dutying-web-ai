@@ -39,6 +39,10 @@ vi.mock('@/shared/api', () => ({
     },
 }));
 
+vi.mock('@/pages/ward-admins', () => ({
+    default: () => <div>ward admins panel</div>,
+}));
+
 vi.mock('react-hot-toast', () => ({
     default: {
         success: mockToastSuccess,
@@ -79,7 +83,8 @@ describe('WardInfoSettingsPage', () => {
         expect(screen.getByLabelText('병동명')).toHaveValue('중환자실');
         expect(screen.queryByText('현재 병동')).not.toBeInTheDocument();
         expect(screen.queryByText('병동 코드')).not.toBeInTheDocument();
-        expect(screen.queryByText('기본 정보')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '관리자'})).not.toBeInTheDocument();
+        expect(screen.getByText('ward admins panel')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '변경사항 저장'})).toBeDisabled();
     });
 
@@ -112,4 +117,5 @@ describe('WardInfoSettingsPage', () => {
         expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: wardQueryKeys.id(1)});
         expect(mockToastSuccess).toHaveBeenCalledWith('병동 정보를 저장했어요.');
     });
+
 });

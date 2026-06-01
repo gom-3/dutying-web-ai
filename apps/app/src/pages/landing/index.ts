@@ -1,1 +1,1 @@
-export {default} from './landing-page-redirect';
+export {default} from './landing-page';

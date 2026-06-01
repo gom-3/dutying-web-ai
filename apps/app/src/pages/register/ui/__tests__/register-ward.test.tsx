@@ -58,4 +58,28 @@ describe('RegisterWard', () => {
         expect(mockCreateWard).not.toHaveBeenCalled();
         expect(screen.getByRole('alert')).toHaveTextContent('근무 이름을 입력해 주세요.');
     });
+
+    it('submits counted shift types and omits empty teams', async () => {
+        const user = userEvent.setup();
+
+        mockGetWardShiftValidationMessage.mockReturnValue(null);
+
+        render(<RegisterWard />);
+
+        await user.type(screen.getAllByRole('textbox')[0], '듀팅병원');
+        await user.type(screen.getAllByRole('textbox')[1], '중환자실');
+        await user.click(screen.getByRole('button', {name: '병동 저장'}));
+
+        expect(mockCreateWard).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: '중환자실',
+                hospitalName: '듀팅병원',
+                shiftTeams: [],
+                wardShiftTypes: expect.arrayContaining([
+                    expect.objectContaining({shortName: 'D', isCounted: true}),
+                    expect.objectContaining({shortName: 'O', isCounted: false}),
+                ]),
+            }),
+        );
+    });
 });

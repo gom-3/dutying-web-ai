@@ -14,7 +14,6 @@ import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
-import {Switch} from '@/shared/ui/primitives/switch';
 import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfileFormDirty} from './model';
 
 type TProfileField = 'name' | 'phoneNum';
@@ -351,24 +350,6 @@ function ProfilePage() {
                             ) : !writeNurse ? (
                                 <p className="mt-1 font-apple text-xs text-gray-3">병동 연결 후 수정할 수 있어요.</p>
                             ) : null}
-                        </div>
-                    </div>
-
-                    <h3 className="mt-6 font-apple text-[18px] font-semibold text-sub-1">근무 설정</h3>
-                    <div className="mt-4 max-w-[440px] rounded-[12px] bg-gray-7 px-3.5 py-3">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <p className="font-apple text-sm font-medium text-sub-1">교대 근무자</p>
-                                <p className="mt-0.5 font-apple text-xs text-gray-3">근무표에 이름 표시</p>
-                            </div>
-                            <Switch
-                                checked={Boolean(writeNurse?.isWorker)}
-                                onCheckedChange={(checked) => writeNurse && handleChange('isWorker', checked)}
-                                className="h-6 w-11 data-[state=checked]:bg-main-1"
-                                thumbClassName="bg-white"
-                                aria-label="교대 근무자 여부"
-                                disabled={!writeNurse}
-                            />
                         </div>
                     </div>
                 </Card>

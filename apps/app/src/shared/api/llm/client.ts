@@ -1,7 +1,8 @@
 import axios from 'axios';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 
 const llmAxiosInstance = axios.create({
-    baseURL: `${import.meta.env.VITE_SERVER_URL}/llm`,
+    baseURL: `${RUNTIME_CONFIG.serverUrl()}/llm`,
     headers: {
         'Content-Type': 'application/json',
     },

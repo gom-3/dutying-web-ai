@@ -1,3 +1,5 @@
+import ROUTE from '@/shared/constant/path';
+
 export type TSocialSignupProvider = 'KAKAO' | 'APPLE';
 
 export type TSocialSignupProfile = {
@@ -9,6 +11,7 @@ export type TSocialSignupProfile = {
 };
 
 const SOCIAL_SIGNUP_PROFILE_STORAGE_KEY = 'dutying.social-signup-profile';
+const SOCIAL_SIGNUP_SEARCH_PARAM = 'socialSignup';
 const SOCIAL_SIGNUP_REQUIRED_FLAGS = new Set(['true', '1', 'yes']);
 const INCOMPLETE_ACCOUNT_STATUSES = new Set([
     'INITIAL',
@@ -72,6 +75,15 @@ export const saveSocialSignupProfile = (profile: TSocialSignupProfile | null) =>
     } catch {
         // The profile is a UX prefill only. If storage is unavailable, the server-backed account profile still drives signup.
     }
+};
+
+export const buildSocialSignupRegisterPath = () => `${ROUTE.REGISTER}?${SOCIAL_SIGNUP_SEARCH_PARAM}=1`;
+
+export const getIsSocialSignupPath = (search: string) => {
+    const queryString = search.includes('?') ? search.slice(search.indexOf('?') + 1) : search;
+    const flag = new URLSearchParams(queryString).get(SOCIAL_SIGNUP_SEARCH_PARAM);
+
+    return Boolean(flag && SOCIAL_SIGNUP_REQUIRED_FLAGS.has(flag.toLowerCase()));
 };
 
 export const readSocialSignupProfile = (): TSocialSignupProfile | null => {
