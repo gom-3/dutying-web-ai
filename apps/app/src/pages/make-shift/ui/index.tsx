@@ -50,7 +50,7 @@ export const MakeShiftPageView = () => {
 
                 <div className="mt-2 flex flex-1 flex-col rounded-[18px] bg-white">
                     {!makeMonthAllowed ? (
-                        <div className="flex flex-1 items-center justify-center px-10 py-16">
+                        <div className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10 md:px-10 md:py-16">
                             <DutyManagementStatusCard
                                 title={t('page.makeShift.monthRangeTitle')}
                                 description={t('page.makeShift.monthRangeDescription')}
@@ -58,7 +58,7 @@ export const MakeShiftPageView = () => {
                             />
                         </div>
                     ) : isOverview ? (
-                        <div className="flex flex-1 items-center justify-center px-10 py-16">
+                        <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 md:px-10 md:py-16">
                             {showNoTeamsState ? (
                                 <PageState
                                     tone="empty"
@@ -105,11 +105,11 @@ export const MakeShiftPageView = () => {
                                     titleClassName="mb-6"
                                     visual={
                                         <img
-                                            src="/img/continue-schedule-nurse.png"
+                                            src="/img/continue-schedule-nurse.webp"
                                             alt=""
                                             aria-hidden="true"
                                             decoding="async"
-                                            className="h-[192px] w-auto object-contain select-none"
+                                            className="h-[160px] w-auto object-contain select-none sm:h-[192px]"
                                         />
                                     }
                                 >
@@ -152,11 +152,11 @@ export const MakeShiftPageView = () => {
                                     titleClassName="mb-6"
                                     visual={
                                         <img
-                                            src="/img/empty-schedule-nurse.png"
+                                            src="/img/empty-schedule-nurse.webp"
                                             alt=""
                                             aria-hidden="true"
                                             decoding="async"
-                                            className="h-[210px] w-auto object-contain select-none"
+                                            className="h-[168px] w-auto object-contain select-none sm:h-[210px]"
                                         />
                                     }
                                 >

@@ -11,10 +11,16 @@ export const NURSE_ROLE_HELP: Record<TNurseRoleHelpType, {label: string; descrip
     },
 };
 
-const PRECEPTEE_MEMO_MARKER = '프리셉티';
+const PRECEPTEE_MEMO_MARKER = '__PRECEPTEE__';
 
 export const hasPrecepteeMemo = (memo?: string | null) =>
     Boolean(memo?.split(/\r?\n/).some((line) => line.trim() === PRECEPTEE_MEMO_MARKER));
+
+export const getMemoWithoutPrecepteeMarker = (memo: string | null | undefined) =>
+    (memo ?? '')
+        .split(/\r?\n/)
+        .filter((line) => line.trim() !== PRECEPTEE_MEMO_MARKER)
+        .join('\n');
 
 export const setPrecepteeMemo = (memo: string | null | undefined, checked: boolean) => {
     const currentMemo = memo ?? '';
@@ -24,14 +30,11 @@ export const setPrecepteeMemo = (memo: string | null | undefined, checked: boole
             return currentMemo;
         }
 
-        const trimmedMemo = currentMemo.trim();
-
-        return trimmedMemo ? `${PRECEPTEE_MEMO_MARKER}\n${trimmedMemo}` : PRECEPTEE_MEMO_MARKER;
+        return currentMemo.length > 0 ? `${PRECEPTEE_MEMO_MARKER}\n${currentMemo}` : PRECEPTEE_MEMO_MARKER;
     }
 
     return currentMemo
         .split(/\r?\n/)
         .filter((line) => line.trim() !== PRECEPTEE_MEMO_MARKER)
-        .join('\n')
-        .trim();
+        .join('\n');
 };

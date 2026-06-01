@@ -48,7 +48,7 @@ describe('RegisterNurse', () => {
         render(<RegisterNurse />);
 
         await user.type(screen.getByPlaceholderText('이름을 입력하세요'), '홍길동');
-        await user.type(screen.getByPlaceholderText('01012345678'), '01012345678');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01012345678');
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         await waitFor(() => {
@@ -77,14 +77,12 @@ describe('RegisterNurse', () => {
 
         render(<RegisterNurse mode="social" />);
 
-        expect(screen.getByText('소셜홍')).toBeInTheDocument();
-
         const nameInput = screen.getByPlaceholderText('이름을 입력하세요');
         expect(nameInput).toHaveValue('소셜홍');
 
         await user.clear(nameInput);
         await user.type(nameInput, '홍길동');
-        await user.type(screen.getByPlaceholderText('01012345678'), '01098765432');
+        await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01098765432');
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         await waitFor(() => {

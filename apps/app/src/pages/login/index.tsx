@@ -61,6 +61,8 @@ function LoginPage() {
     const [signupError, setSignupError] = useState<string | null>(null);
     const [signupVerificationMessage, setSignupVerificationMessage] = useState<string | null>(null);
     const [signupVerificationError, setSignupVerificationError] = useState<string | null>(null);
+    const [signupVerificationCode, setSignupVerificationCode] = useState('');
+    const [hasRequestedSignupVerification, setHasRequestedSignupVerification] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
@@ -99,13 +101,21 @@ function LoginPage() {
     const handleSignupEmailChange = (value: string) => {
         setSignupEmail(value);
         setSignupEmailVerificationToken(null);
+        setSignupVerificationCode('');
+        setHasRequestedSignupVerification(false);
         setSignupVerificationMessage(null);
         setSignupVerificationError(null);
     };
+    const handleSignupVerificationCodeChange = (value: string) => {
+        setSignupVerificationCode(value);
+        setSignupEmailVerificationToken(value.trim() ? value.trim() : null);
+    };
     const handleSendSignupEmailVerification = async () => {
+        setHasRequestedSignupVerification(true);
         setSignupVerificationMessage(null);
         setSignupVerificationError(null);
         setSignupEmailVerificationToken(null);
+        setSignupVerificationCode('');
 
         if (!isSignupEmailValid) {
             setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
@@ -121,6 +131,7 @@ function LoginPage() {
 
             if (response.debugVerificationToken) {
                 setSignupEmailVerificationToken(response.debugVerificationToken);
+                setSignupVerificationCode(response.debugVerificationToken);
                 setSignupVerificationMessage('이메일 인증이 완료됐어요.');
 
                 return;
@@ -220,7 +231,7 @@ function LoginPage() {
                     <img src="/img/group-19.png" alt="" aria-hidden="true" className="mt-8 h-[34px] w-auto max-w-[166px] object-contain" />
                 </button>
 
-                <div className={`mt-10 w-full ${isSignupPage ? 'max-w-[560px]' : 'max-w-[480px]'} md:mt-16`}>
+                <div className={`mt-6 w-full ${isSignupPage ? 'max-w-[560px]' : 'max-w-[480px]'} md:mt-10`}>
                     {isDemoSignupFlow ? (
                         <div className="mb-6 rounded-[16px] border border-main-3/40 bg-main-light px-5 py-4">
                             <p className="font-apple text-sm font-semibold text-main-1">체험 계정을 정식 계정으로 전환해요</p>
@@ -333,13 +344,25 @@ function LoginPage() {
                                     <button
                                         type="button"
                                         disabled={!isSignupEmailValid || isSendingVerification || isSignupEmailVerified}
-                                        className="flex h-11 w-[92px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-3 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                        className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                         onClick={handleSendSignupEmailVerification}
                                     >
                                         {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignupEmailVerified ? '완료' : '인증'}
                                     </button>
                                 </div>
                                 <FieldError id="signup-email-error" message={signupErrors.email} />
+                                {hasRequestedSignupVerification ? (
+                                    <div className="mt-2">
+                                        <input
+                                            id="signup-verification-code"
+                                            value={signupVerificationCode}
+                                            type="text"
+                                            className={getInputClassName(false)}
+                                            placeholder="?몄쬆踰덊샇瑜??낅젰??二쇱꽭??"
+                                            onChange={(event) => handleSignupVerificationCodeChange(event.target.value)}
+                                        />
+                                    </div>
+                                ) : null}
                                 {signupVerificationMessage ? <p className="mt-1 text-xs text-main-1">{signupVerificationMessage}</p> : null}
                                 {signupVerificationError ? (
                                     <p className="mt-1 text-xs text-red">

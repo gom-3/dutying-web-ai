@@ -29,7 +29,7 @@ type TPageStateProps = {
 
 const containerClassName: Record<TPageStateLayout, string> = {
     screen: 'flex min-h-screen w-full items-center justify-center px-6 py-10',
-    panel: 'flex h-full min-h-[300px] w-full items-center justify-center px-6 py-10',
+    panel: 'flex min-h-[300px] w-full items-center justify-center px-4 py-4 sm:px-6 sm:py-10',
     inline: 'flex w-full items-center justify-center px-4 py-6',
 };
 const cardClassName: Record<TPageStateTone, string> = {
@@ -106,7 +106,7 @@ function PageState({
     return (
         <div className={cn(containerClassName[layout], className)}>
             <div
-                className={cn('w-full max-w-[28rem] rounded-[20px] px-6 py-7 text-center', cardClassName[tone])}
+                className={cn('w-full max-w-[28rem] rounded-[20px] px-4 py-6 text-center sm:px-6 sm:py-7', cardClassName[tone])}
                 role={tone === 'error' ? 'alert' : 'status'}
                 aria-live={tone === 'error' ? 'assertive' : 'polite'}
             >

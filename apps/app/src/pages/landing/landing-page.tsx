@@ -1,4 +1,4 @@
-import {CalendarDays, ChevronDown, Monitor, Smartphone} from 'lucide-react';
+﻿import {CalendarDays, ChevronDown, Monitor, Smartphone} from 'lucide-react';
 import {useEffect} from 'react';
 import {Link} from 'react-router';
 import {AppstoreIcon, PlaystoreIcon} from '@/shared/assets/svg';
@@ -15,7 +15,7 @@ const featureSections = [
         label: 'AI 자동채우기',
         title: '빈 근무표를\n처음부터 채우지 않아도 돼요',
         description: '놓치기 쉬운 조건을\n단계별로 확인하고 반영할 수 있어요',
-        image: '/img/image-990.png',
+        image: '/img/124.png',
         align: 'right',
         background: 'bg-white',
     },
@@ -26,7 +26,16 @@ const featureSections = [
         description: '수정이 필요한 부분을\n바로 보고, 수정안까지 볼 수 있어요.',
         image: '/img/landing_3.webp',
         align: 'left',
-        background: 'bg-[#F7F8FB]',
+        background: 'bg-[#F7F9FB]',
+    },
+    {
+        id: 'integration',
+        label: '연동',
+        title: '간호사와 병동을\n연동할 수 있어요',
+        description: '근무표가 앱으로 즉시 전달돼요.\n원티드 신청까지 자연스럽게 이어져요.',
+        image: '/img/landing_5.webp',
+        align: 'left',
+        background: 'bg-white',
     },
     {
         id: 'ward',
@@ -61,7 +70,7 @@ function useRevealOnScroll() {
     useEffect(() => {
         const elements = Array.from(document.querySelectorAll<HTMLElement>('.reveal-on-scroll'));
 
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
             elements.forEach((element) => element.classList.add('is-visible'));
 
             return undefined;
@@ -156,6 +165,7 @@ function DarkActionButton({type}: {type: 'web' | 'app'}) {
 
 function BackgroundFeatureSection({section}: {section: (typeof featureSections)[number]}) {
     const isAiSection = section.id === 'ai';
+    const hideImage = section.id === 'review' || section.id === 'integration' || section.id === 'ward';
     const copy = (
         <article className="reveal-on-scroll relative z-10 max-w-[470px]">
             <Pill>{section.label}</Pill>
@@ -182,9 +192,11 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
 
     return (
         <section id={section.id} className={`relative overflow-hidden ${section.background}`}>
-            <div className="reveal-on-scroll reveal-on-scroll--image absolute inset-y-0 right-0 left-0 hidden md:block" aria-hidden="true">
-                <img src={section.image} alt="" className="size-full object-cover" />
-            </div>
+            {!hideImage && (
+                <div className="reveal-on-scroll reveal-on-scroll--image absolute inset-y-0 right-0 left-0 hidden md:block" aria-hidden="true">
+                    <img src={section.image} alt="" className="size-full object-cover" />
+                </div>
+            )}
 
             <div
                 className={`mx-auto flex min-h-[680px] max-w-[1280px] items-center px-5 py-20 md:min-h-[780px] md:px-8 ${section.align === 'right' ? 'justify-end' : 'justify-start'}`}
@@ -192,13 +204,15 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
                 {copy}
             </div>
 
-            <div className="px-5 pb-16 md:hidden">
-                <img
-                    src={section.image}
-                    alt=""
-                    className="reveal-on-scroll reveal-on-scroll--image mt-6 aspect-video w-full rounded-[8px] object-cover shadow-[0_18px_50px_rgba(37,22,91,0.08)]"
-                />
-            </div>
+            {!hideImage && (
+                <div className="px-5 pb-16 md:hidden">
+                    <img
+                        src={section.image}
+                        alt=""
+                        className="reveal-on-scroll reveal-on-scroll--image mt-6 aspect-video w-full rounded-[8px] object-cover shadow-[0_18px_50px_rgba(37,22,91,0.08)]"
+                    />
+                </div>
+            )}
         </section>
     );
 }
@@ -233,7 +247,7 @@ function LandingPage() {
     useRevealOnScroll();
 
     return (
-        <main className="min-h-screen bg-white font-apple text-[#150B3C]">
+        <main className="landing-main min-h-screen bg-white font-apple text-[#150B3C]">
             <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/95 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5 md:h-18 md:px-8">
                     <Link to={ROUTE.ROOT} aria-label="듀팅 랜딩 홈" className="flex shrink-0 items-center">
@@ -268,8 +282,8 @@ function LandingPage() {
                     className="absolute inset-x-0 top-0 h-[210px] bg-[linear-gradient(135deg,#A18DFF_0%,#6C4DF6_48%,#5F3FE7_100%)] md:h-[360px]"
                     aria-hidden="true"
                 />
-                <div className="relative mx-auto grid min-h-[620px] max-w-[1280px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-20 md:min-h-[700px] md:grid-cols-[0.9fr_1.1fr] md:gap-10 md:px-8 md:pt-32 lg:gap-16">
-                    <div className="relative z-10">
+                <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1280px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-20 md:min-h-[calc(100svh-4.5rem)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:px-8 md:pt-32 lg:gap-16">
+                    <div className="relative z-10 min-w-0">
                         <h1 className="reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold text-white md:text-[51px]">
                             교대 근무표,
                             <br />
@@ -289,7 +303,7 @@ function LandingPage() {
                         <img
                             src="/img/image-999-1.png"
                             alt=""
-                            className="w-[min(92vw,560px)] object-contain object-center md:w-full md:max-w-[650px] lg:max-w-[760px]"
+                            className="w-[92vw] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
                         />
                     </picture>
                 </div>
@@ -301,7 +315,7 @@ function LandingPage() {
             </section>
 
             <section id="web" className="bg-[#F7F8FB]">
-                <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 py-20 md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-28">
+                <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
@@ -316,7 +330,7 @@ function LandingPage() {
                         <h2 className="mt-6 text-[34px] leading-[1.35] font-extrabold text-[#11131A] md:text-[42px]">
                             복잡한 근무표,
                             <br />
-                            이제 AI로 1분 만에 만들기
+                            이제 <span className="text-highlight-soft">AI로 1분</span> 만에 만들기
                         </h2>
                         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                             <Link
@@ -342,9 +356,6 @@ function LandingPage() {
             ))}
 
             <section id="app" className="relative overflow-hidden bg-[#070D18]">
-                <div className="reveal-on-scroll reveal-on-scroll--image absolute inset-0 hidden md:block" aria-hidden="true">
-                    <img src="/img/landing_4.webp" alt="" className="size-full object-cover" />
-                </div>
                 <div className="absolute inset-y-0 left-0 hidden w-[46%] bg-[#070D18] md:block" aria-hidden="true" />
 
                 <div className="relative mx-auto grid min-h-[520px] max-w-[1280px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
@@ -362,9 +373,9 @@ function LandingPage() {
                     </article>
 
                     <img
-                        src="/img/landing_4.webp"
-                        alt=""
-                        className="reveal-on-scroll reveal-on-scroll--image w-full rounded-[12px] object-cover object-right md:hidden"
+                        src="/img/temp.png"
+                        alt="앱 화면"
+                        className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain"
                     />
                 </div>
 

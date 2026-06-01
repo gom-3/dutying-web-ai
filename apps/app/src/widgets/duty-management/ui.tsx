@@ -105,7 +105,7 @@ export function DutyManagementMonthTeamHeader({
                 <div
                     className={cn(
                         'text-center font-apple font-semibold',
-                        isDarkSegmented ? 'min-w-[112px] text-[20px] text-sub-1' : 'text-2xl text-main-1',
+                        isDarkSegmented ? 'min-w-[112px] text-[20px] text-main-1' : 'text-2xl text-main-1',
                     )}
                 >
                     {formatMonthLabel(year, month)}

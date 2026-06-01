@@ -14,8 +14,8 @@ import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useSearchParams} from 'react-router';
 import {events, sendEvent} from '@/analytics';
-import {getWardDisplayCode, getWardDisplayTitle, type TNurse} from '@/entities';
-import useEditShiftTeam from '@/features/edit-shift-team';
+import {getWardDisplayCode, getWardDisplayTitle, type TNurse, type TWardShiftType} from '@/entities';
+import useEditShiftTeam, {type TUpdateNurseShiftMeta} from '@/features/edit-shift-team';
 import useEditWard from '@/features/edit-ward';
 import {
     createWardSkillSettings,
@@ -74,9 +74,9 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(56px,0.78fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_minmax(82px,0.9fr)_44px]';
+    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(56px,0.78fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_minmax(82px,0.9fr)_44px]';
+    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; label: string}[] = [
     {value: 'manual', label: '임의순'},
     {value: 'name', label: '가나다순'},
@@ -185,9 +185,19 @@ function MemberPage() {
         state: {watingNurses},
     } = useEditWard();
     const {
-        state: {ward, shiftTeams, selectedNurse, selectedNurseDrawerMode, isAddingNurse, nurseSaveStatus, isDeletingNurse},
+        state: {
+            ward,
+            shiftTeams,
+            selectedNurse,
+            selectedNurseDrawerMode,
+            isNurseDraftDirty,
+            isAddingNurse,
+            nurseSaveStatus,
+            isDeletingNurse,
+        },
         actions: {
             selectNurse,
+            setNurseDraftDirty,
             createShiftTeam,
             addNurse,
             deleteNurse,
@@ -213,21 +223,37 @@ function MemberPage() {
     const [editingTeamName, setEditingTeamName] = useState('');
     const [activeIndicatorStyle, setActiveIndicatorStyle] = useState<{left: number; width: number} | null>(null);
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
+    const [showUnsavedGuardModal, setShowUnsavedGuardModal] = useState(false);
+    const [runPendingActionAfterSave, setRunPendingActionAfterSave] = useState(false);
     const [connectionManageModalOpen, setConnectionManageModalOpen] = useState(false);
     const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
-    const [drawerStartOffset, setDrawerStartOffset] = useState(0);
     const hasInitializedSelectionRef = useRef(false);
     const rowRefByNurseId = useRef<Record<number, HTMLDivElement | null>>({});
     const previousTopByNurseIdRef = useRef<Record<number, number>>({});
     const previousNurseIdsRef = useRef<number[]>([]);
     const skipFlipAnimationOnceRef = useRef(false);
     const tabListRef = useRef<HTMLDivElement | null>(null);
-    const layoutRowRef = useRef<HTMLDivElement | null>(null);
     const teamNameInputRef = useRef<HTMLInputElement | null>(null);
     const tabButtonRefByTeamId = useRef<Record<number, HTMLButtonElement | null>>({});
+    const pendingUnsavedActionRef = useRef<null | (() => void | Promise<void>)>(null);
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
     const requestedShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
+
+    useEffect(() => {
+        if (!runPendingActionAfterSave) return;
+        if (isNurseDraftDirty) return;
+        if (nurseSaveStatus !== 'success') return;
+
+        const pendingAction = pendingUnsavedActionRef.current;
+
+        pendingUnsavedActionRef.current = null;
+        setRunPendingActionAfterSave(false);
+
+        if (pendingAction) {
+            void pendingAction();
+        }
+    }, [isNurseDraftDirty, nurseSaveStatus, runPendingActionAfterSave]);
 
     useEffect(() => {
         setSkillSettings(getWardSkillSettings(wardId));
@@ -505,31 +531,6 @@ function MemberPage() {
             document.removeEventListener('visibilitychange', onVisibilityChange);
         };
     }, []);
-    useLayoutEffect(() => {
-        const updateDrawerStartOffset = () => {
-            const teamTabElement = tabListRef.current;
-            const layoutRowElement = layoutRowRef.current;
-
-            if (!teamTabElement || !layoutRowElement) {
-                return;
-            }
-
-            const teamTabRect = teamTabElement.getBoundingClientRect();
-            const layoutRowRect = layoutRowElement.getBoundingClientRect();
-            const nextOffset = Math.max(0, Math.round(teamTabRect.top - layoutRowRect.top));
-
-            setDrawerStartOffset(nextOffset);
-        };
-
-        const rafId = requestAnimationFrame(updateDrawerStartOffset);
-
-        window.addEventListener('resize', updateDrawerStartOffset);
-
-        return () => {
-            cancelAnimationFrame(rafId);
-            window.removeEventListener('resize', updateDrawerStartOffset);
-        };
-    }, [activeShiftTeam?.shiftTeamId, selectedNurse?.nurseId, shiftTeams, displayedNurses.length]);
     useEffect(() => {
         const teamId = activeShiftTeam?.shiftTeamId;
 
@@ -546,8 +547,21 @@ function MemberPage() {
         selectNurse(null);
         return true;
     };
+    const shouldBlockForUnsavedChanges = (nextAction: () => void | Promise<void>) => {
+        if (!isNurseDraftDirty) return false;
+
+        pendingUnsavedActionRef.current = nextAction;
+        setShowUnsavedGuardModal(true);
+        return true;
+    };
     const handleSelectTeam = (shiftTeamId: number) => {
         if (!shiftTeams) return;
+        if (
+            shouldBlockForUnsavedChanges(() => {
+                handleSelectTeam(shiftTeamId);
+            })
+        )
+            return;
 
         selectNurse(null);
         setActiveShiftTeamId(shiftTeamId);
@@ -584,6 +598,12 @@ function MemberPage() {
         setNurseSortMode('manual');
     };
     const handleDeleteActiveTeam = async () => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleDeleteActiveTeam();
+            })
+        )
+            return;
         if (!activeShiftTeam) return;
         const deletingTeamName = activeShiftTeam.name;
 
@@ -714,6 +734,13 @@ function MemberPage() {
         });
     }, [allNurses, pendingWorkerByNurseId]);
     const handleCreateShiftTeam = async () => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleCreateShiftTeam();
+            })
+        )
+            return;
+
         const teamCount = shiftTeams?.length ?? 0;
 
         if (teamCount >= MAX_ONBOARDING_TEAMS) {
@@ -733,6 +760,12 @@ function MemberPage() {
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
     const handleAddNurse = async () => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleAddNurse();
+            })
+        )
+            return;
         if (!activeShiftTeam) return;
 
         const activeTeamNurseCount = activeShiftTeam.nurses.length;
@@ -746,6 +779,12 @@ function MemberPage() {
         await addNurse(activeShiftTeam.shiftTeamId);
     };
     const handleMoveSelectedNurseToTeam = async (nextShiftTeamId: number) => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleMoveSelectedNurseToTeam(nextShiftTeamId);
+            })
+        )
+            return false;
         if (!selectedNurse || !shiftTeams) return false;
 
         const payload = createMoveNurseToTeamPayload({
@@ -852,11 +891,66 @@ function MemberPage() {
                       modalRoot,
                   )
                 : null}
+            {showUnsavedGuardModal
+                ? createPortal(
+                      <div
+                          className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]"
+                          onClick={() => setShowUnsavedGuardModal(false)}
+                      >
+                          <div
+                              role="dialog"
+                              aria-modal="true"
+                              className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
+                              onClick={(event) => event.stopPropagation()}
+                          >
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">저장하지 않고 나갈까요?</p>
+                              <p className="mt-2 font-apple text-[15px] text-gray-3">변경사항이 저장되지 않을 수 있어요.</p>
+                              <div className="mt-6 grid grid-cols-3 gap-2">
+                                  <button
+                                      type="button"
+                                      className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                      onClick={() => setShowUnsavedGuardModal(false)}
+                                  >
+                                      취소
+                                  </button>
+                                  <button
+                                      type="button"
+                                                              className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
+                                      onClick={async () => {
+                                          setShowUnsavedGuardModal(false);
+                                          const pendingAction = pendingUnsavedActionRef.current;
+
+                                          pendingUnsavedActionRef.current = null;
+                                          selectNurse(null);
+                                          setNurseDraftDirty(false);
+
+                                          if (pendingAction) {
+                                              await pendingAction();
+                                          }
+                                      }}
+                                  >
+                                      저장 안 함
+                                  </button>
+                                  <button
+                                      type="button"
+                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
+                                      onClick={() => {
+                                          setShowUnsavedGuardModal(false);
+                                          setRunPendingActionAfterSave(true);
+                                      }}
+                                  >
+                                      저장 후 나가기
+                                  </button>
+                              </div>
+                          </div>
+                      </div>,
+                      modalRoot,
+                  )
+                : null}
             <div
-                ref={layoutRowRef}
                 className={cn(
-                    'flex min-h-screen gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14',
-                    selectedNurse ? 'min-w-[1280px] min-[1440px]:min-w-[1360px]' : 'min-w-[900px]',
+                    'flex min-h-screen min-w-[1280px] gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:min-w-[1360px] min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14',
+                    selectedNurse ? 'pr-[376px] min-[1440px]:pr-[420px]' : 'pr-0',
                 )}
             >
                 <section className="min-w-[840px] flex-1">
@@ -1163,7 +1257,6 @@ function MemberPage() {
                                 </span>
                                 <span className="text-center">{t('page.member.table.isWorker')}</span>
                                 <span className="text-center">{t('page.member.table.connection')}</span>
-                                <span className="text-center whitespace-nowrap">근무표 관리자</span>
                                 <span />
                             </div>
                         ) : null}
@@ -1240,6 +1333,13 @@ function MemberPage() {
                                                                     setSkillSettings(nextSettings);
                                                                 }}
                                                                 onSelect={() => {
+                                                                    if (
+                                                                        shouldBlockForUnsavedChanges(() => {
+                                                                            selectNurse(nurse.nurseId);
+                                                                            sendEvent(events.memberPage.focusNurse);
+                                                                        })
+                                                                    )
+                                                                        return;
                                                                     selectNurse(nurse.nurseId);
                                                                     sendEvent(events.memberPage.focusNurse);
                                                                 }}
@@ -1309,14 +1409,15 @@ function MemberPage() {
                 <div
                     id="nurse_edit_drawer"
                     className={cn(
-                        'sticky shrink-0 self-start overflow-hidden transition-[width,margin] duration-300 ease-out',
-                        selectedNurse ? 'w-[360px] min-[1440px]:w-[400px]' : 'w-0',
+                        'fixed top-0 right-0 z-40 h-screen w-[360px] overflow-hidden rounded-l-[16px] border-l border-gray-7/80 bg-white transition-transform duration-250 ease-out will-change-transform min-[1440px]:w-[400px]',
+                        selectedNurse ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none',
                     )}
-                    style={{top: '12px', marginTop: `${drawerStartOffset}px`}}
+                    aria-hidden={!selectedNurse}
                 >
                     {selectedNurse ? (
                         <NurseDetailPanel
                             onClose={handleDismissDetailPanel}
+                            onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
                             onOpenSkillSettings={() => setSkillModalOpen(true)}
                             isSkillFeatureEnabled={isSkillFeatureEnabled}
                             isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
@@ -1352,7 +1453,6 @@ function MemberPage() {
                             shiftTeams={shiftTeams}
                             onMoveShiftTeam={handleMoveSelectedNurseToTeam}
                             wardShiftTypes={ward?.wardShiftTypes}
-                            wardCode={ward?.code}
                         />
                     ) : null}
                 </div>
@@ -1399,14 +1499,19 @@ function MemberNurseRow({
     isSkillFeatureEnabled: boolean;
     skillLevel: number | null | undefined;
     skillConfig: TWardSkillSettings['config'];
-    wardShiftTypes: {name: string; shortName: string; color: string}[] | undefined;
+    wardShiftTypes: TWardShiftType[] | undefined;
     wardCode?: string;
     isBusy: boolean;
     dragRef: (element: HTMLDivElement | null) => void;
     draggableProps: DraggableProvidedDraggableProps;
     dragHandleProps: DraggableProvidedDragHandleProps | null | undefined;
     onUpdateNurse: (nurseId: number, nurse: TNurse) => Promise<boolean>;
-    onUpdateNurseShift: (nurseId: number, nurseShiftTypeId: number, change: {isPossible?: boolean; isPrefer?: boolean}) => Promise<void>;
+    onUpdateNurseShift: (
+        nurseId: number,
+        nurseShiftTypeId: number,
+        change: {isPossible?: boolean; isPrefer?: boolean},
+        shiftTypeMeta?: TUpdateNurseShiftMeta,
+    ) => Promise<boolean>;
     onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<void>;
     onDisconnectNurse: (nurseId: number) => Promise<boolean>;
     onSaveSkillLevel: (nextLevel: number | null) => void;
@@ -1427,6 +1532,35 @@ function MemberNurseRow({
     const shiftTypeColorByName = useMemo(() => {
         return new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.name, shiftType.color]));
     }, [wardShiftTypes]);
+    const shiftTypeOptions = useMemo(() => {
+        if (!wardShiftTypes?.length) {
+            return nurse.nurseShiftTypes.map((shiftType) => ({
+                ...shiftType,
+                apiShiftTypeId: shiftType.nurseShiftTypeId,
+            }));
+        }
+        const nurseShiftTypeByName = new Map(nurse.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
+
+        return wardShiftTypes.map((wardShiftType) => {
+            const matched = nurseShiftTypeByName.get(wardShiftType.name);
+
+            return (
+                matched
+                    ? {
+                          ...matched,
+                          apiShiftTypeId: matched.nurseShiftTypeId,
+                      }
+                    : {
+                          nurseShiftTypeId: wardShiftType.wardShiftTypeId,
+                          name: wardShiftType.name,
+                          shortName: wardShiftType.shortName,
+                          isPossible: true,
+                          isPreferred: false,
+                          apiShiftTypeId: wardShiftType.wardShiftTypeId,
+                      }
+            );
+        });
+    }, [nurse.nurseShiftTypes, wardShiftTypes]);
     const isPreceptor = Boolean(nurse.isWardManager);
     const isPreceptee = hasPrecepteeMemo(nurse.memo);
     const fadedClass = isWorker ? '' : 'opacity-55';
@@ -1575,15 +1709,14 @@ function MemberNurseRow({
                     </div>
                 ) : null}
                 <div className={cn('flex flex-wrap items-center justify-center gap-1', fadedClass)}>
-                    {nurse.nurseShiftTypes.length > 0 ? (
-                        nurse.nurseShiftTypes.map((shiftType) => {
+                    {shiftTypeOptions.length > 0 ? (
+                        shiftTypeOptions.map((shiftType) => {
                             const selected = shiftType.isPossible;
                             const baseColor = shiftTypeColorByName.get(shiftType.name) ?? '#BFC7D4';
                             const badgeBackgroundColor = selected ? baseColor : tintHexColor(baseColor, 0.45);
-
                             return (
                                 <button
-                                    key={shiftType.nurseShiftTypeId}
+                                    key={shiftType.apiShiftTypeId}
                                     type="button"
                                     aria-pressed={selected}
                                     onClick={async (event) => {
@@ -1592,7 +1725,12 @@ function MemberNurseRow({
 
                                         if (isBusy) return;
 
-                                        await onUpdateNurseShift(nurse.nurseId, shiftType.nurseShiftTypeId, {isPossible: !selected});
+                                        await onUpdateNurseShift(
+                                            nurse.nurseId,
+                                            shiftType.apiShiftTypeId,
+                                            {isPossible: !selected},
+                                            {name: shiftType.name, shortName: shiftType.shortName ?? ''},
+                                        );
                                     }}
                                     className={cn(
                                         'group relative cursor-pointer rounded-[7px] p-[1px] transition-opacity duration-150 ease-out focus-visible:outline-2 focus-visible:outline-main-1/35',
@@ -1730,26 +1868,6 @@ function MemberNurseRow({
                         aria-label={`${nurse.name} 연동 상태 안내`}
                     >
                         {nurse.isConnected ? <LinkedIcon className="h-5 w-5" /> : <UnlinkedIcon className="h-5 w-5" />}
-                    </button>
-                </div>
-                <div className={cn('flex items-center justify-center', fadedClass)}>
-                    <button
-                        type="button"
-                        role="checkbox"
-                        aria-checked={nurse.isDutyManager}
-                        className={cn(
-                            'group flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                            nurse.isDutyManager
-                                ? 'border-main-1 bg-main-1 text-white'
-                                : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
-                        )}
-                        onClick={async (event) => {
-                            event.stopPropagation();
-                            onSelect();
-                            await onUpdateNurse(nurse.nurseId, {...nurse, isDutyManager: !nurse.isDutyManager});
-                        }}
-                    >
-                        <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                     </button>
                 </div>
                 <div className={cn('flex w-full justify-end pr-1', fadedClass)}>
