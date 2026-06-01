@@ -240,10 +240,14 @@ export const createEmptyShiftType = (): TOnboardingWardShiftType =>
         classification: 'OTHER_WORK',
     });
 
-export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShiftType[]): TOnboardingNurseDraft =>
+export const createEmptyNurse = (
+    teamId: string,
+    shiftTypes: TOnboardingWardShiftType[],
+    nurseNumber: number,
+): TOnboardingNurseDraft =>
     createNurse({
         teamId,
-        name: `신규 간호사 ${nextId + 1}`,
+        name: `신규 간호사 ${nurseNumber}`,
         memo: '',
         isWorker: true,
         employmentDate: '2024-01-01',
@@ -404,9 +408,11 @@ export const addNurseDraft = (draft: TOnboardingWardDraft, teamId: string): TOnb
         return draft;
     }
 
+    const nurseNumber = draft.nurses.length + 1;
+
     return {
         ...draft,
-        nurses: [...draft.nurses, createEmptyNurse(teamId, draft.shiftTypes)],
+        nurses: [...draft.nurses, createEmptyNurse(teamId, draft.shiftTypes, nurseNumber)],
     };
 };
 

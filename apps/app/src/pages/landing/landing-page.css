@@ -30,10 +30,53 @@
     transform: translateY(0) scale(1);
 }
 
+.text-highlight-soft {
+    position: relative;
+    z-index: 0;
+    display: inline-block;
+    color: #6c4df6;
+}
+
+.text-highlight-soft::after {
+    content: '';
+    position: absolute;
+    left: -0.12em;
+    right: -0.12em;
+    bottom: 0.08em;
+    height: 0.42em;
+    border-radius: 999px;
+    background: rgba(167, 139, 250, 0.16);
+    z-index: -1;
+}
+
+.landing-main {
+    height: 100svh;
+    overflow-y: auto;
+    scroll-snap-type: y proximity;
+    scroll-behavior: smooth;
+    scroll-padding-top: 4rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+.landing-main > section {
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+}
+
 @media (prefers-reduced-motion: reduce) {
+    .landing-main {
+        scroll-behavior: auto;
+    }
+
     .reveal-on-scroll {
         opacity: 1;
         transform: none;
         transition: none;
+    }
+}
+
+@media (min-width: 768px) {
+    .landing-main {
+        scroll-padding-top: 4.5rem;
     }
 }

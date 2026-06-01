@@ -57,14 +57,14 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
     }, [currentTeamId, teams, nurses, editingTeamId, editingTeamName]);
 
     return (
-        <div className="flex h-[44px] items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] px-2 py-1">
-            <div ref={tabListRef} className="relative flex flex-1 items-center justify-start gap-1">
+        <div className="flex w-full min-w-0 items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5">
+            <div ref={tabListRef} className="relative flex min-w-0 flex-1 items-center justify-start gap-1">
                 {activeIndicatorStyle ? (
                     <span
-                        className="pointer-events-none absolute top-1/2 z-0 h-[33px] rounded-[10px] bg-white transition-all duration-250 ease-out"
+                        className="pointer-events-none absolute top-1/2 z-0 h-8 -translate-y-1/2 rounded-[9px] bg-white transition-[left,width] duration-250 ease-out will-change-[left,width]"
                         style={{
+                            left: activeIndicatorStyle.left,
                             width: activeIndicatorStyle.width,
-                            transform: `translate(${activeIndicatorStyle.left}px, -50%)`,
                         }}
                     />
                 ) : null}
@@ -82,7 +82,7 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
                             }}
                             aria-pressed={isActive}
                             className={cn(
-                                'relative z-10 flex h-[33px] shrink-0 items-center justify-center gap-1 rounded-[10px] px-3.5 font-apple text-[14px] leading-none font-semibold transition-[color,opacity] duration-200',
+                                'relative z-10 flex h-8 shrink-0 items-center justify-center gap-1 rounded-[9px] px-3.5 font-apple text-[14px] leading-none font-semibold',
                                 isActive ? 'text-[#111827]' : 'text-[#AEB7C7] hover:text-[#D2D9E5]',
                             )}
                             onClick={() => {
@@ -157,7 +157,7 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
             <button
                 type="button"
                 className={cn(
-                    'group ml-2 shrink-0 rounded-[8px] px-2 py-1 font-apple text-[14px] font-medium text-[#D2D9E5] transition-colors hover:text-white',
+                    'group ml-2 flex h-8 shrink-0 items-center rounded-[9px] px-2 font-apple text-[14px] font-medium text-[#D2D9E5] transition-colors hover:text-white',
                     !canAdd && 'opacity-70',
                 )}
                 onClick={onAdd}

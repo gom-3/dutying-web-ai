@@ -3,15 +3,15 @@ import {hasPrecepteeMemo, setPrecepteeMemo} from '../nurse-role';
 
 describe('nurse preceptee memo marker', () => {
     it('detects an exact preceptee marker line', () => {
-        expect(hasPrecepteeMemo('프리셉티')).toBe(true);
-        expect(hasPrecepteeMemo('프리셉티\n나이트 전담')).toBe(true);
-        expect(hasPrecepteeMemo('프리셉티 교육 예정')).toBe(false);
+        expect(hasPrecepteeMemo('__PRECEPTEE__')).toBe(true);
+        expect(hasPrecepteeMemo('__PRECEPTEE__\nnote')).toBe(true);
+        expect(hasPrecepteeMemo('__PRECEPTEE__ note')).toBe(false);
     });
 
     it('adds and removes the marker without dropping other memo text', () => {
-        const withMarker = setPrecepteeMemo('나이트 전담', true);
+        const withMarker = setPrecepteeMemo('note', true);
 
-        expect(withMarker).toBe('프리셉티\n나이트 전담');
-        expect(setPrecepteeMemo(withMarker, false)).toBe('나이트 전담');
+        expect(withMarker).toBe('__PRECEPTEE__\nnote');
+        expect(setPrecepteeMemo(withMarker, false)).toBe('note');
     });
 });

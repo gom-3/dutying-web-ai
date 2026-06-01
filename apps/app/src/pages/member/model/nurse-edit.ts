@@ -1,24 +1,30 @@
 import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
 
-const nurseEditableKeys = ['name', 'gender', 'employmentDate', 'phoneNum', 'isWorker', 'isDutyManager', 'memo'] as const;
+const nurseProfileEditableKeys = ['name', 'gender', 'employmentDate', 'phoneNum', 'isWorker', 'isWardManager', 'memo'] as const;
+
+export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
+    if (!original || !draft) return false;
+
+    return nurseProfileEditableKeys.some((key) => original[key] !== draft[key]);
+}
 
 export function hasNurseChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
 
-    const hasPrimitiveChanges = nurseEditableKeys.some((key) => original[key] !== draft[key]);
+    if (hasNurseProfileChanges(original, draft)) return true;
 
-    if (hasPrimitiveChanges) return true;
+    const originalShiftTypeByName = new Map(original.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
+    const draftShiftTypeByName = new Map(draft.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
 
-    if (original.nurseShiftTypes.length !== draft.nurseShiftTypes.length) return true;
+    const hasDraftShiftTypeChanges = draft.nurseShiftTypes.some((shiftType) => {
+        const originalIsPossible = originalShiftTypeByName.get(shiftType.name)?.isPossible ?? true;
 
-    return original.nurseShiftTypes.some((shiftType, index) => {
-        const draftShiftType = draft.nurseShiftTypes[index];
-
-        if (!draftShiftType) return true;
-
-        return shiftType.nurseShiftTypeId !== draftShiftType.nurseShiftTypeId || shiftType.isPossible !== draftShiftType.isPossible;
+        return originalIsPossible !== shiftType.isPossible;
     });
+    if (hasDraftShiftTypeChanges) return true;
+
+    return original.nurseShiftTypes.some((shiftType) => !draftShiftTypeByName.has(shiftType.name));
 }
 
 export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStatus: TNurseSaveStatus; isDirty: boolean}) {

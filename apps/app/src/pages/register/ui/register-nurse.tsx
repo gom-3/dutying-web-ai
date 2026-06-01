@@ -71,7 +71,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const socialSignupProfile = readSocialSignupProfile();
     const isSocialMode = mode === 'social';
     const socialDisplayName = accountMe?.name || socialSignupProfile?.name || '';
-    const shouldShowSocialName = isSocialMode && Boolean(socialDisplayName);
     const watchName = watch('name');
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage(
         accountMe?.status === 'WARD_SELECT_PENDING' && accountMe.profileImgUrl
@@ -162,13 +161,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
             </div>
 
             <section className="mt-6 rounded-[24px] bg-white p-6">
-                {shouldShowSocialName ? (
-                    <div className="rounded-[16px] bg-gray-7 px-4 py-3">
-                        <p className="text-sm font-medium text-gray-3">소셜 계정 이름</p>
-                        <p className="mt-1 text-[18px] font-semibold text-sub-1">{socialDisplayName}</p>
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                         <div className="h-18 w-18 shrink-0 rounded-full bg-main-light p-1">
                             <ProfileImage name={watchName} profileImg={profileImg} className="h-full w-full" />
                         </div>
@@ -194,7 +187,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             <input ref={imageInputRef} type="file" className="hidden" onChange={handleChangeImage} accept="image/*" />
                         </div>
                     </div>
-                )}
 
                 <div className="mt-6 space-y-4">
                     <div>
@@ -233,7 +225,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             aria-invalid={Boolean(phoneNumError)}
                             aria-describedby={phoneNumError ? 'register-phone-num-error' : undefined}
                             maxLength={PHONE_NUM_LENGTH}
-                            placeholder="01012345678"
+                            placeholder="연락처를 입력해주세요"
                             {...phoneNumField}
                             onChange={(event) => {
                                 event.target.value = sanitizePhoneNumInput(event.target.value);

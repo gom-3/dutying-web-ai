@@ -54,6 +54,25 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges(nurse, draft)).toBe(true);
     });
 
+    it('detects a synthetic ward shift type only when availability changes from the default', () => {
+        const nurse = createNurse();
+        const syntheticShiftType = {
+            nurseShiftTypeId: 100,
+            name: 'OnCall',
+            shortName: 'O',
+            isPossible: true,
+            isPreferred: false,
+        };
+
+        expect(hasNurseChanges(nurse, {...nurse, nurseShiftTypes: [...nurse.nurseShiftTypes, syntheticShiftType]})).toBe(false);
+        expect(
+            hasNurseChanges(nurse, {
+                ...nurse,
+                nurseShiftTypes: [...nurse.nurseShiftTypes, {...syntheticShiftType, isPossible: false}],
+            }),
+        ).toBe(true);
+    });
+
     it('returns false when the original or draft value is missing', () => {
         const nurse = createNurse();
 
@@ -61,14 +80,14 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges(undefined, nurse)).toBe(false);
     });
 
-    it('detects reordered shift types as a change', () => {
+    it('ignores reordered shift types when availability is unchanged', () => {
         const nurse = createNurse();
         const draft = {
             ...nurse,
             nurseShiftTypes: [...nurse.nurseShiftTypes].reverse(),
         };
 
-        expect(hasNurseChanges(nurse, draft)).toBe(true);
+        expect(hasNurseChanges(nurse, draft)).toBe(false);
     });
 });
 

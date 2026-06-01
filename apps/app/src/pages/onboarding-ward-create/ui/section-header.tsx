@@ -1,11 +1,11 @@
-import type {ReactNode} from 'react';
+﻿import type {ReactNode} from 'react';
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
 
 const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}> = {
     1: {
         title: '병원명과 병동명을 입력해 주세요',
-        description: '병원명은 필수로, 병동명은 선택해서 입력해 주세요',
+        description: '',
     },
     2: {
         title: '이전 근무표 파일이 있다면 업로드해 주세요',
