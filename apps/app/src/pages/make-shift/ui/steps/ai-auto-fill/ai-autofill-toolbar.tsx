@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {AlertTriangle, Check, Eye, EyeOff, Redo2, Undo2, type LucideIcon} from 'lucide-react';
+import {AlertTriangle, Check, Eye, EyeOff, PanelRightOpen, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
@@ -15,6 +15,7 @@ type TAiAutofillToolbarProps = {
     canRedo: boolean;
     onUndo: () => void;
     onRedo: () => void;
+    onOpenSnapshotHistory: () => void;
     onAiFill: () => void;
     isAiGenerating: boolean;
     aiStatus: TAiAutofillStatus;
@@ -22,6 +23,8 @@ type TAiAutofillToolbarProps = {
     onConfirm: () => void;
     isConfirming: boolean;
     canConfirm: boolean;
+    onSaveSnapshot: () => void;
+    isSavingSnapshot: boolean;
 };
 
 const AI_ACTION_LABEL_KEYS = {
@@ -40,6 +43,7 @@ export function AiAutofillToolbar({
     canRedo,
     onUndo,
     onRedo,
+    onOpenSnapshotHistory,
     onAiFill,
     isAiGenerating,
     aiStatus,
@@ -47,6 +51,8 @@ export function AiAutofillToolbar({
     onConfirm,
     isConfirming,
     canConfirm,
+    onSaveSnapshot,
+    isSavingSnapshot,
 }: TAiAutofillToolbarProps) {
     const {t} = useTypedTranslation();
     const actionLabelKey = AI_ACTION_LABEL_KEYS[getAiAutofillActionLabel(aiStatus, hasCompletedAiFill)];
@@ -97,6 +103,13 @@ export function AiAutofillToolbar({
                     <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
                         <Redo2 className="size-3.5" aria-hidden />
                     </IconButton>
+                    <IconButton
+                        className="ai-autofill-toolbar__history-snapshots"
+                        onClick={onOpenSnapshotHistory}
+                        ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
+                    >
+                        <PanelRightOpen className="size-3.5" aria-hidden />
+                    </IconButton>
                 </span>
 
                 <button
@@ -127,6 +140,27 @@ export function AiAutofillToolbar({
                         <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="relative z-10 size-4 shrink-0 object-contain" />
                     )}
                     <span className="relative z-10 truncate">{t(actionLabelKey)}</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={onSaveSnapshot}
+                    disabled={isSavingSnapshot}
+                    aria-busy={isSavingSnapshot}
+                    className={cn(
+                        'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--save',
+                        'inline-flex min-h-[43px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[13px] bg-white border border-gray-6 px-4 py-0',
+                        'font-apple text-[13px] leading-none font-bold whitespace-nowrap text-sub-1 transition-colors duration-150',
+                        'hover:bg-gray-7 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none active:bg-gray-6',
+                        'disabled:cursor-not-allowed disabled:opacity-50',
+                    )}
+                >
+                    {isSavingSnapshot ? (
+                        <BouncingDots className="w-5 shrink-0 text-main-1" />
+                    ) : (
+                        <Save className="size-3.5 text-gray-3" strokeWidth={2.4} aria-hidden />
+                    )}
+                    {isSavingSnapshot ? t('page.makeShift.navigation.saving') : t('page.makeShift.aiRefill.saveSnapshot')}
                 </button>
 
                 <button

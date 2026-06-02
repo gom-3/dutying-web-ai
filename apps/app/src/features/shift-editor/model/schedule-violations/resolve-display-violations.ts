@@ -1,14 +1,12 @@
 import type {TDutyDoc, TViolation} from '../types';
-import {violationsFromApiValidation} from './convert-api-validation';
+import {violationsFromSpringValidation} from './convert-spring-validation';
 import type {TScheduleValidationSnapshot, TScheduleViolationPersisted} from './types';
 
 export function createScheduleValidationSnapshot(
     validation: TScheduleValidationSnapshot['validation'],
-    generationId?: number,
 ): TScheduleValidationSnapshot {
     return {
         validation,
-        generationId,
         capturedAt: Date.now(),
     };
 }
@@ -23,7 +21,7 @@ export function resolveScheduleDisplayViolations(
     legacyDisplayViolations: TViolation[],
 ): TViolation[] {
     if (validationSnapshot) {
-        return violationsFromApiValidation(validationSnapshot.validation, doc);
+        return violationsFromSpringValidation(validationSnapshot.validation, doc);
     }
 
     return legacyDisplayViolations;

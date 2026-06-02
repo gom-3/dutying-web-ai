@@ -1,6 +1,7 @@
 import type {IApiClient} from '../client';
 import type {
     IWardAPI,
+    TAutofillResponse,
     TCreateWardChatMessageDTO,
     TCreateShiftTypeDTO,
     TAddWardAdminByLoginIdDTO,
@@ -8,12 +9,17 @@ import type {
     TCreateWardDTO,
     TDutyRequestResponse,
     TEditWardDTO,
+    TPublishSnapshotRes,
     TReadWardChatDTO,
     TRequestShiftResponse,
     TShiftConstraintRuleCandidatesResponse,
     TShiftResponse,
     TShiftTeamResponse,
+    TSnapshotDetailRes,
+    TSnapshotListRes,
+    TSnapshotSaveRes,
     TUpdateShiftTeamDTO,
+    TValidationRes,
     TWaitingNurseResponse,
     TWardAdminInvitationResponse,
     TWardAdminMembershipResponse,
@@ -23,6 +29,7 @@ import type {
     TWardChatUnreadCountResponse,
     TWardConstraintDTO,
     TWardConstraintResponse,
+    TWorkspaceScheduleResponse,
     TWardResponse,
     TWardShiftTypeResponse,
     TWardShiftsDTO,
@@ -172,4 +179,37 @@ export const createWardApi = (client: IApiClient): IWardAPI => ({
         (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
     deleteWatingNurses: async (wardId: number, nurseId: number) =>
         (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
+
+    getWorkspaceSchedule: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+        (
+            await client.get<TWorkspaceScheduleResponse>(
+                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/workspace?${toYearMonthQuery(year, month)}`,
+            )
+        ).data,
+    validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO) =>
+        (
+            await client.post<TValidationRes>(
+                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/validate-snapshot`,
+                validateSnapshotDTO,
+            )
+        ).data,
+    autofillSchedule: async (wardId, shiftTeamId, autofillDTO) =>
+        (await client.post<TAutofillResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`, autofillDTO)).data,
+    getSnapshots: async (wardId, shiftTeamId, year, month) =>
+        (
+            await client.get<TSnapshotListRes>(
+                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots?${toYearMonthQuery(year, month)}`,
+            )
+        ).data,
+    saveSnapshot: async (wardId, shiftTeamId, saveSnapshotDTO) =>
+        (await client.post<TSnapshotSaveRes>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots`, saveSnapshotDTO)).data,
+    getSnapshot: async (wardId, shiftTeamId, snapshotId) =>
+        (await client.get<TSnapshotDetailRes>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`)).data,
+    publishSnapshot: async (wardId, shiftTeamId, snapshotId, publishDTO = {}) =>
+        (
+            await client.post<TPublishSnapshotRes>(
+                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}/publish`,
+                publishDTO,
+            )
+        ).data,
 });

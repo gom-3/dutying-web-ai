@@ -1,4 +1,5 @@
-import type {TAiValidation} from '@dutying/api/ward';
+import type {TSnapshotCellDTO, TValidationRes} from '@dutying/api/ward';
+import type {TShift} from '@/entities';
 import toast from 'react-hot-toast';
 import {type TWardConstraint} from '@/entities';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -13,6 +14,7 @@ import {
     toScheduleViolationPersisted,
     type TScheduleViolationPersisted,
 } from './schedule-violations';
+import {buildWardShiftTypeMaps} from './shift-adapter';
 import {getCellsInSelection, makeSelectAllSelection, moveSelection as moveSelectionModel, moveSelectionToEdge} from './selection';
 import {useShiftEditorStore} from './store';
 import type {
@@ -239,9 +241,9 @@ export function useShiftEditorCommands() {
 
             persistDocImmediate(doc, history, scheduleViolationsFromState(getState()));
         },
-        /** AI generate 등 서버 validation 스냅샷 저장 — 표시는 현재 doc 기준으로 재변환 */
-        setScheduleValidationFromApi: (validation: TAiValidation, generationId?: number) => {
-            const snapshot = createScheduleValidationSnapshot(validation, generationId);
+        /** AI autofill·validate-snapshot 등 서버 validation 스냅샷 저장 — 표시는 현재 doc 기준으로 재변환 */
+        setScheduleValidationFromApi: (validation: TValidationRes) => {
+            const snapshot = createScheduleValidationSnapshot(validation);
 
             setScheduleValidationSnapshot(snapshot);
             setLegacyDisplayViolations([]);
@@ -350,6 +352,53 @@ export function useShiftEditorCommands() {
             setDoc(nextDoc);
             setHistory(nextHistory);
 
+            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
+        },
+        applyChangedCells: (changedCells: TSnapshotCellDTO[], originalShift: TShift, source: TTxSource = 'ai') => {
+            const {doc, history, selection} = getState();
+            const {idToType} = buildWardShiftTypeMaps(originalShift);
+            const changed: TSetCellsOp['cells'] = [];
+
+            for (const cell of changedCells) {
+                const workerId = String(cell.shiftNurseId);
+                const rowIdx = doc.rows.findIndex((row) => row.workerId === workerId);
+
+                if (rowIdx < 0) continue;
+
+                const colIdx = doc.columns.indexOf(cell.date);
+
+                if (colIdx < 0) continue;
+
+                const key = `${workerId}|${cell.date}`;
+
+                if (doc.fixedCells[key] === true || doc.requestCells[key] === true) continue;
+
+                const resolvedNext =
+                    (cell.shiftCode && cell.shiftCode.length > 0 ? cell.shiftCode : null) ??
+                    (cell.wardShiftTypeId != null ? idToType.get(cell.wardShiftTypeId)?.shortName ?? null : null);
+
+                const row = doc.rows[rowIdx]!;
+                const prev = row.cells[colIdx] ?? null;
+
+                if (prev === resolvedNext) continue;
+
+                changed.push({row: rowIdx, col: colIdx, prev, next: resolvedNext});
+            }
+
+            if (changed.length === 0) return;
+
+            const tx: TTransaction<TOperation> = {
+                ops: [{kind: 'setCells', cells: changed}],
+                source,
+                timestamp: Date.now(),
+            };
+            const inverseOps = invertOps(tx.ops);
+            const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+            const nextHistory = pushHistory(history, entry);
+
+            setDoc(nextDoc);
+            setHistory(nextHistory);
             persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         applySchedule: (schedule: Record<string, TCellValue[]>, source: TTxSource = 'ai') => {

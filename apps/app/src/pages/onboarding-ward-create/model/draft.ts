@@ -177,6 +177,7 @@ const BASE_TEAMS: TOnboardingTeamDraft[] = [
     {id: createId('team'), name: '간호사 2팀'},
     {id: createId('team'), name: '간호사 3팀'},
 ];
+const BASE_NURSE_NAMES = ['홍길동', '김하늘', '이서윤', '박연우'] as const;
 
 export const skillPalettes = SKILL_PALETTES;
 
@@ -258,6 +259,22 @@ export const createEmptyNurse = (
 export const createInitialDraft = (): TOnboardingWardDraft => {
     const shiftTypes = BASE_SHIFT_TYPES.map((shiftType) => ({...shiftType}));
     const teams = BASE_TEAMS.map((team) => ({...team}));
+    const firstTeamId = teams[0]?.id ?? 'team-0';
+    const possibleShiftTypeIds = shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const nurses = BASE_NURSE_NAMES.map((name, index) => {
+        const isOffNurse = name === '박연우';
+
+        return createNurse({
+            teamId: firstTeamId,
+            name,
+            memo: '',
+            isWorker: !isOffNurse,
+            employmentDate: '2024-01-01',
+            possibleShiftTypeIds,
+            level: name === '이서윤' ? 1 : name === '박연우' ? 2 : null,
+            id: `nurse-${index + 1}`,
+        });
+    });
 
     return {
         currentStep: 1,
@@ -266,7 +283,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
         hospitalName: '',
         shiftTypes,
         teams,
-        nurses: [],
+        nurses,
         skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
 };

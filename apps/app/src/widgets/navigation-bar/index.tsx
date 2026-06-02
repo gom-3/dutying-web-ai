@@ -1,15 +1,24 @@
 import {cn} from '@dutying/utils/style';
-import {useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {useEffect} from 'react';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
+import {useNavigationBarFoldStore} from './navigation-bar-fold-store';
 
 const NAV_WIDTH_EXPANDED = 'w-[216px]';
 const NAV_WIDTH_COLLAPSED = 'w-[64px]';
 const NavigationBar = () => {
     const {t} = useTypedTranslation();
-    const [isFold, setIsFold] = useState(false);
+    const isFold = useNavigationBarFoldStore((s) => s.isFold);
+    const setFold = useNavigationBarFoldStore((s) => s.setFold);
+    const resetFold = useNavigationBarFoldStore((s) => s.reset);
+
+    useEffect(() => {
+        return () => {
+            resetFold();
+        };
+    }, [resetFold]);
 
     return (
         <aside
@@ -35,11 +44,8 @@ const NavigationBar = () => {
                             'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
                         )}
                         onClick={() => {
-                            setIsFold((prev) => {
-                                sendEvent(prev ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
-
-                                return !prev;
-                            });
+                            setFold(!isFold);
+                            sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
                         }}
                     >
                         <FoldIcon className={cn('size-[26px]', isFold ? 'rotate-180' : undefined)} />

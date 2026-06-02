@@ -147,7 +147,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
 
         if (!normalizedName) return '근무명을 입력해 주세요.';
 
-        if (duplicatedShiftNames.has(normalizedName)) return '다른 근무명을 입력해 주세요.';
+        if (duplicatedShiftNames.has(normalizedName)) return '중복된 근무명은 사용할 수 없어요.';
 
         return null;
     };
@@ -178,7 +178,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
         const isEndEarlierThanStart = endMinutes < startMinutes;
         const isSameTime = endMinutes === startMinutes;
 
-        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) return '시작/종료 시간을 확인해 주세요.';
+        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) return '퇴근 시간은 출근 시간보다 늦어야 해요.';
 
         return null;
     };

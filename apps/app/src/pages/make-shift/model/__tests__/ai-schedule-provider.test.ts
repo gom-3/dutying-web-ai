@@ -20,6 +20,7 @@ vi.mock('../ai-schedule-mock', () => ({
 }));
 
 const request: TAiScheduleRequest = {
+    wardId: 1,
     shiftTeamId: 2,
     year: 2026,
     month: 3,
@@ -30,30 +31,25 @@ const request: TAiScheduleRequest = {
         fixedCells: {},
         requestCells: {},
     },
+    originalShift: {days: [], wardShiftTypes: [], divisionShiftNurses: []} as never,
+    draftRevision: 1,
+    rulesHash: 'sha256:test',
 };
+
 const response = {
-    generation_id: 1,
-    schedule: {1: ['D']},
+    operationType: 'GENERATE',
+    draftRevision: 1,
+    resultType: 'PATCH',
+    changedCells: [],
     validation: {
-        valid: true,
-        hard_constraints_violated: [],
-        soft_constraints_violated: [],
-        warnings: [],
+        draftRevision: 1,
+        rulesHash: 'sha256:test',
+        summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+        violations: [],
     },
-    metrics: {
-        night_shift_counts: {},
-        weekend_shift_counts: {},
-        fairness_score: 0,
-        satisfaction_estimate: 0,
-        constraint_violations: 0,
-        revision_estimate: 0,
-    },
-    explainable_reasons: [],
-    status: 'GENERATED',
-    llm_model: 'gpt',
-    generation_time_ms: 100,
-    created_at: '2026-03-21T00:00:00.000Z',
-};
+    unmetInstructions: [],
+    sameAsPrevious: false,
+} as const;
 
 describe('requestAiSchedule', () => {
     beforeEach(() => {
@@ -73,7 +69,7 @@ describe('requestAiSchedule', () => {
 
         expect(apiGenerate).toHaveBeenCalledWith(request);
         expect(mockGenerate).not.toHaveBeenCalled();
-        expect(result).toEqual({ok: true, response});
+        expect(result).toEqual({ok: true, response, validation: response.validation});
     });
 
     it('uses mock provider only when feature flag is explicitly set', async () => {
@@ -84,7 +80,7 @@ describe('requestAiSchedule', () => {
 
         expect(mockGenerate).toHaveBeenCalledWith(request);
         expect(apiGenerate).not.toHaveBeenCalled();
-        expect(result).toEqual({ok: true, response});
+        expect(result).toEqual({ok: true, response, validation: response.validation});
     });
 
     it('returns the provider error message for retry UX', async () => {

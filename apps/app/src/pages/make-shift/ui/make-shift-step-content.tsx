@@ -67,7 +67,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
 
         return (
             <div
-                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-[1360px] flex-1 flex-col pb-3 ${widePtClass}`}
+                className={`make-shift-step-content make-shift-step-content--wide flex min-h-0 w-full min-w-[1360px] flex-1 flex-col pb-3 ${widePtClass}`}
             >
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />

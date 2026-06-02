@@ -22,12 +22,12 @@ export type TUpdateNurseShiftMeta = {
 
 const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
 const normalizePhoneNum = (phoneNum: string) => phoneNum.replace(/\D/g, '');
-const toRequiredPhoneNum = (phoneNum: string) => {
+const toOptionalPhoneNum = (phoneNum: string) => {
     const normalizedPhoneNum = normalizePhoneNum(phoneNum);
-
-    return normalizedPhoneNum.length >= 10 && normalizedPhoneNum.length <= 11 ? normalizedPhoneNum : '01000000000';
+    if (!normalizedPhoneNum) return null;
+    return normalizedPhoneNum.length >= 10 && normalizedPhoneNum.length <= 11 ? normalizedPhoneNum : null;
 };
-const toRequiredGender = (gender: string) => (gender === '남' || gender === '여' ? gender : '여');
+const toOptionalGender = (gender: string) => (gender === '남' || gender === '여' ? gender : undefined);
 const getNextNewNurseName = (names: string[]) => {
     const prefix = '신규간호사';
     const usedNumbers = names
@@ -43,11 +43,11 @@ const getNextNewNurseName = (names: string[]) => {
     return `${prefix}${nextNumber}`;
 };
 const canCreateNurse = (nurse: TUpdateNurseDTO) => nurse.name.trim().length > 0;
-const toNursePayload = (nurse: TUpdateNurseDTO) =>
+const toCreateNursePayload = (nurse: TUpdateNurseDTO) =>
     ({
         name: nurse.name.trim(),
-        gender: toRequiredGender(nurse.gender),
-        phoneNum: toRequiredPhoneNum(nurse.phoneNum),
+        gender: toOptionalGender(nurse.gender),
+        phoneNum: toOptionalPhoneNum(nurse.phoneNum),
         isWorker: nurse.isWorker,
         employmentDate: nurse.employmentDate ?? '',
         isDutyManager: false,
@@ -107,35 +107,39 @@ const useEditShiftTeam = () => {
             beginAddingNurse();
 
             try {
-                const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? ward;
-                const targetShiftTeam = currentWard?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
-                const nextName = getNextNewNurseName((targetShiftTeam?.nurses ?? []).map((nurse) => nurse.name.trim()));
-                const createdNurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
-                    name: nextName,
-                    phoneNum: '01000000000',
-                    gender: '여',
-                    isWorker: true,
-                    employmentDate: '',
-                    isDutyManager: false,
-                    isWardManager: false,
-                    memo: '',
-                });
+                const currentWard = (queryClient.getQueryData<TWard>(wardQueryKey) ?? ward) as TWard | undefined;
+                if (!currentWard) return;
+
+                const tempId =
+                    Math.min(
+                        TEMP_NURSE_ID_BASE,
+                        ...currentWard.shiftTeams.flatMap((team) => team.nurses.map((nurse) => nurse.nurseId ?? 0)),
+                    ) - 1;
 
                 queryClient.setQueryData<TWard>(
                     wardQueryKey,
-                    produce((queryClient.getQueryData<TWard>(wardQueryKey) ?? ward) as TWard, (draft) => {
+                    produce(currentWard, (draft) => {
                         const shiftTeam = draft.shiftTeams.find((team) => team.shiftTeamId === shiftTeamId);
-
                         if (!shiftTeam) return;
-                        if (shiftTeam.nurses.some((nurse) => nurse.nurseId === createdNurse.nurseId)) return;
 
-                        shiftTeam.nurses.push(createdNurse);
+                        shiftTeam.nurses.push({
+                            nurseId: tempId,
+                            shiftTeamId,
+                            wardId,
+                            name: '',
+                            phoneNum: '',
+                            gender: '',
+                            isWorker: true,
+                            employmentDate: '',
+                            isDutyManager: false,
+                            isWardManager: false,
+                            memo: '',
+                        } as any);
                         shiftTeam.nurseCnt = Math.max(shiftTeam.nurseCnt ?? 0, shiftTeam.nurses.length);
                     }),
                 );
-                completeAddingNurse(createdNurse.nurseId);
-                void invalidateWard();
-                toast.success(`${nextName}를 추가했어요.`, {position: 'bottom-center'});
+                completeAddingNurse(tempId);
+                toast.success('간호사 정보를 입력한 뒤 저장해 주세요.', {position: 'bottom-center'});
             } catch (error) {
                 showActionErrorFeedback(error, '간호사를 추가하지 못했어요.');
             } finally {
@@ -295,7 +299,7 @@ const useEditShiftTeam = () => {
                     const createdNurse = await WardAPI.addNurseIntoShiftTeam(
                         wardId!,
                         createNurseDTO.shiftTeamId!,
-                        toNursePayload(updateNurseDTO),
+                        toCreateNursePayload(updateNurseDTO),
                     );
                     const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? oldWard;
 
