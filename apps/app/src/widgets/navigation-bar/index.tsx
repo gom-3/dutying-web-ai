@@ -2,6 +2,7 @@ import {cn} from '@dutying/utils/style';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {useEffect} from 'react';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
 import {useNavigationBarFoldStore} from './navigation-bar-fold-store';
 
@@ -11,6 +12,13 @@ const NavigationBar = () => {
     const {t} = useTypedTranslation();
     const isFold = useNavigationBarFoldStore((s) => s.isFold);
     const setFold = useNavigationBarFoldStore((s) => s.setFold);
+    const resetFold = useNavigationBarFoldStore((s) => s.reset);
+
+    useEffect(() => {
+        return () => {
+            resetFold();
+        };
+    }, [resetFold]);
 
     return (
         <aside
