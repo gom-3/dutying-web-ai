@@ -96,7 +96,7 @@ describe('validator combinations', () => {
         expect(violations).toEqual([
             {
                 ruleId: 'duty.excludeNightBeforeReqOff',
-                message: '신청 오프 전날에는 나이트 근무를 권장하지 않습니다.',
+                message: '신청 오프 전날에는 나이트 근무를 피하는 게 좋아요.',
                 level: 'warning',
                 cells: [
                     {row: 0, col: 0},

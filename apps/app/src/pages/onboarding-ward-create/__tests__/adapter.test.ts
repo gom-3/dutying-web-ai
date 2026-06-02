@@ -24,7 +24,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.wardShiftTypes[0]).not.toHaveProperty('id');
         expect(payload.shiftTeams).toHaveLength(draft.teams.length);
         expect(payload.shiftTeams[0]).toEqual({
-            nurseNames: ['홍길동', '김하늘', '박연우', '이서윤'],
+            nurseNames: ['홍길동', '김하늘', '이서윤', '박연우'],
         });
     });
 

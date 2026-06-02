@@ -46,9 +46,11 @@ describe('skill-level', () => {
 
         expect(settings).toEqual({
             config: {
+                enabled: true,
                 levelCount: 4,
                 paletteId: 'cool',
                 autoAssign: false,
+                levelLabels: undefined,
             },
             frozenLevelsByNurseId: {
                 10: 4,
@@ -73,7 +75,13 @@ describe('skill-level', () => {
         };
 
         expect(resolveWardSkillLevels(nurses, settings)).toEqual({
-            config: settings.config,
+            config: {
+                enabled: true,
+                levelCount: 3,
+                paletteId: 'violet',
+                autoAssign: false,
+                levelLabels: undefined,
+            },
             levelsByNurseId: settings.frozenLevelsByNurseId,
         });
     });
@@ -92,7 +100,13 @@ describe('skill-level', () => {
         };
 
         expect(resolveWardSkillLevels(nurses, settings)).toEqual({
-            config: settings.config,
+            config: {
+                enabled: true,
+                levelCount: 4,
+                paletteId: 'cool',
+                autoAssign: false,
+                levelLabels: undefined,
+            },
             levelsByNurseId: {
                 10: 4,
                 11: 2,
@@ -116,7 +130,16 @@ describe('skill-level', () => {
 
         saveWardSkillSettings(7, settings);
 
-        expect(getWardSkillSettings(7)).toEqual(settings);
+        expect(getWardSkillSettings(7)).toEqual({
+            config: {
+                enabled: true,
+                levelCount: 4,
+                paletteId: 'cool',
+                autoAssign: false,
+                levelLabels: undefined,
+            },
+            frozenLevelsByNurseId: settings.frozenLevelsByNurseId,
+        });
         expect(window.localStorage.getItem(getWardSkillSettingsStorageKey())).not.toBeNull();
     });
 });
