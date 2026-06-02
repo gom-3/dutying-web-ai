@@ -60,10 +60,18 @@ const toChatMessagesQuery = (cursorMessageId?: number, size?: number) => {
 
 const toIsoDate = (year: number, month: number, day: number) =>
     `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardDTO => ({
+    name: createWardDTO.name,
+    hospitalName: createWardDTO.hospitalName,
+    wardShiftTypes: createWardDTO.wardShiftTypes,
+    shiftTeams: createWardDTO.shiftTeams.map((shiftTeam) => ({
+        nurseNames: shiftTeam.nurseNames,
+    })),
+});
 
 export const createWardApi = (client: IApiClient): IWardAPI => ({
     getWard: async (wardId: number) => (await client.get<TWardResponse>(`/wards/${wardId}`)).data,
-    createWard: async (createWardDTO: TCreateWardDTO) => (await client.post<TWardResponse>(`/wards`, createWardDTO)).data,
+    createWard: async (createWardDTO: TCreateWardDTO) => (await client.post<TWardResponse>(`/wards`, toCreateWardRequest(createWardDTO))).data,
     editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(`/wards/${wardId}`, ward)).data,
     getWardConstraint: async (wardId: number, shiftTeamId: number) =>
         (await client.get<TWardConstraintResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data,

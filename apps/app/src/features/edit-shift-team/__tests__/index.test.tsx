@@ -119,8 +119,21 @@ describe('useEditShiftTeam', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
 
-    it('creates a local draft row without posting invalid empty nurse data', async () => {
+    it('creates a nurse immediately with generated default data', async () => {
         mockGetQueryData.mockReturnValue(ward);
+        mockAddNurseIntoShiftTeam.mockResolvedValue({
+            nurseId: 22,
+            shiftTeamId: 10,
+            wardId: 1,
+            name: '신규간호사1',
+            phoneNum: '01000000000',
+            gender: '여',
+            isWorker: true,
+            employmentDate: '',
+            isDutyManager: false,
+            isWardManager: false,
+            memo: '',
+        });
 
         const {result} = renderHook(() => useEditShiftTeam());
 
@@ -128,17 +141,25 @@ describe('useEditShiftTeam', () => {
             await result.current.actions.addNurse(10);
         });
 
-        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
+            1,
+            10,
+            expect.objectContaining({
+                name: '신규간호사1',
+                phoneNum: '01000000000',
+                gender: '여',
+            }),
+        );
         expect(result.current.state.isAddingNurse).toBe(false);
-        expect(useEditNurseStore.getState().selectedNurseId).toBeLessThan(0);
+        expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
         expect(mockSetQueryData).toHaveBeenCalled();
-        expect(mockToastSuccess).toHaveBeenCalledWith('간호사 정보를 입력한 뒤 저장해 주세요.', {
+        expect(mockToastSuccess).toHaveBeenCalledWith('신규간호사1를 추가했어요.', {
             position: 'bottom-center',
         });
     });
 
-    it('posts the local draft after name is valid without requiring phone number or gender', async () => {
+    it('posts the local draft with default phone number and gender', async () => {
         const tempWard = {
             ...ward,
             shiftTeams: [
@@ -187,7 +208,8 @@ describe('useEditShiftTeam', () => {
             10,
             expect.objectContaining({
                 name: '김신규',
-                phoneNum: null,
+                phoneNum: '01000000000',
+                gender: '여',
             }),
         );
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);

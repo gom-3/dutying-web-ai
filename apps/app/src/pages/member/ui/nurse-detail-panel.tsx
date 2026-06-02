@@ -3,6 +3,7 @@ import {produce} from 'immer';
 import {ArrowRightLeft, Check, ChevronRight, Loader2, Settings2} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
+import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
@@ -204,6 +205,10 @@ function NurseDetailPanel({
             onSaveSkillLevel(skillDraftLevel);
         }
 
+        if (isDirty || isSkillDirty) {
+            toast.success('근무자 정보를 저장했어요.');
+        }
+
         return true;
     };
     const handleRequestClose = () => {
@@ -217,7 +222,7 @@ function NurseDetailPanel({
 
     if (!selectedNurse || !writeNurse) {
         return (
-            <aside className="h-screen w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
+            <aside className="h-full w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
                 <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-gray-6 bg-main-bg px-6 text-center">
                     <p className="font-apple text-[15px] leading-7 text-gray-3">간호사를 선택하면 상세 정보가 여기에 고정되어 보여요.</p>
                 </div>
@@ -227,7 +232,7 @@ function NurseDetailPanel({
 
     return (
         <TooltipProvider delayDuration={120}>
-            <aside className="flex h-screen w-[360px] flex-col overflow-hidden bg-white min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
+            <aside className="flex h-full w-[360px] flex-col overflow-hidden bg-white min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
                 <div className="px-4 pt-4 pb-3 min-[1440px]:px-5 min-[1440px]:pt-5 min-[1440px]:pb-4">
                     <div className="flex items-center justify-between">
                         <p className="font-apple text-[13px] font-semibold text-gray-3">{t('page.member.table.name')}</p>

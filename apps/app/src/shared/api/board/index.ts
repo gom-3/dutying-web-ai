@@ -134,16 +134,16 @@ class ApiBoardAPI {
     }
 
     public async createPost(wardId: number, post: TCreateWardBoardPostDTO) {
-        const params = new URLSearchParams({
+        const payload: TCreateWardBoardPostDTO = {
             title: post.title,
             content: post.content,
-        });
+        };
 
-        if (post.deadlineDate) params.set('deadlineDate', post.deadlineDate);
+        if (post.deadlineDate) payload.deadlineDate = post.deadlineDate;
 
-        post.imageUrls?.forEach((imageUrl) => params.append('imageUrls', imageUrl));
+        if (post.imageUrls?.length) payload.imageUrls = post.imageUrls;
 
-        return (await axiosInstance.post<TWardBoardPost>(`/wards/${wardId}/board/posts?${params.toString()}`, post)).data;
+        return (await axiosInstance.post<TWardBoardPost>(`/wards/${wardId}/board/posts`, payload)).data;
     }
 
     public async deletePost(wardId: number, postId: number) {

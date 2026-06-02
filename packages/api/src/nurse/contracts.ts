@@ -40,6 +40,11 @@ export type TUpdateNurseDTO = {
     isDutyManager: boolean;
     isWardManager: boolean;
     memo: string;
+    proficiency?: number | null;
+    isPreceptor?: boolean;
+    isPreceptee?: boolean;
+    workStartDate?: string;
+    workEndDate?: string;
 };
 
 export type TUpdateNurseShiftTypeRequest = {

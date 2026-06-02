@@ -1,4 +1,4 @@
-import {adminAxiosInstance} from '../client';
+import axiosInstance, {adminAxiosInstance} from '../client';
 import type {
     TAdminMeResponse,
     TCreateAdminWorkspaceDTO,
@@ -17,7 +17,7 @@ class AdminAPI {
     deleteMe = async () => (await adminAxiosInstance.delete<void>('/admin/accounts/me')).data;
 
     createWorkspace = async (workspace: TCreateAdminWorkspaceDTO) =>
-        (await adminAxiosInstance.post<TCreateAdminWorkspaceResponse>('/admin/workspaces', workspace)).data;
+        (await axiosInstance.post<TCreateAdminWorkspaceResponse>('/accounts/me/admin-workspace', workspace)).data;
 
     joinWardByCode = async (payload: TJoinAdminWardByCodeDTO) =>
         (await adminAxiosInstance.post<TJoinAdminWardByCodeResponse>('/admin/wards/join-by-code', payload)).data;

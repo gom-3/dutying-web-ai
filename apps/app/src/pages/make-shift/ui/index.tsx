@@ -45,7 +45,7 @@ export const MakeShiftPageView = () => {
     return (
         <div className="min-h-screen w-full overflow-x-auto">
             {/* /request와 같은 외곽 밀도. 근무표는 31일 폭이 필요해 최소 폭만 유지한다. */}
-            <div className="mx-auto flex min-h-screen max-w-none min-w-[1510px] flex-col px-6 pt-4 pb-3 min-[1440px]:px-10">
+            <div className="mx-auto flex min-h-screen w-full max-w-[1680px] min-w-[1510px] flex-col px-6 pt-4 pb-3 min-[1440px]:px-10">
                 <MakeShiftHeader />
 
                 <div className="mt-2 flex flex-1 flex-col rounded-[18px] bg-white">

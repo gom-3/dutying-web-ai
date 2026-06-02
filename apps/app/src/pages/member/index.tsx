@@ -74,9 +74,9 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(56px,0.78fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,1.05fr)_minmax(72px,1.05fr)_minmax(76px,0.86fr)_minmax(76px,0.86fr)_minmax(60px,0.74fr)_minmax(56px,0.7fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; label: string}[] = [
     {value: 'manual', label: '임의순'},
     {value: 'name', label: '가나다순'},
@@ -915,7 +915,7 @@ function MemberPage() {
                                   </button>
                                   <button
                                       type="button"
-                                                              className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
+                                      className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
                                       onClick={async () => {
                                           setShowUnsavedGuardModal(false);
                                           const pendingAction = pendingUnsavedActionRef.current;
@@ -947,12 +947,7 @@ function MemberPage() {
                       modalRoot,
                   )
                 : null}
-            <div
-                className={cn(
-                    'flex min-h-screen min-w-[1280px] gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:min-w-[1360px] min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14',
-                    selectedNurse ? 'pr-[376px] min-[1440px]:pr-[420px]' : 'pr-0',
-                )}
-            >
+            <div className="mx-auto flex min-h-screen w-full max-w-[1560px] min-w-[1280px] gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:min-w-[1360px] min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14">
                 <section className="min-w-[840px] flex-1">
                     <div id="ward_info" className="flex min-w-0 items-center gap-4 min-[1440px]:gap-5">
                         <div className="shrink-0">
@@ -1406,56 +1401,60 @@ function MemberPage() {
                     )}
                 </section>
 
-                <div
+                <aside
                     id="nurse_edit_drawer"
                     className={cn(
-                        'fixed top-0 right-0 z-40 h-screen w-[360px] overflow-hidden rounded-l-[16px] border-l border-gray-7/80 bg-white transition-transform duration-250 ease-out will-change-transform min-[1440px]:w-[400px]',
-                        selectedNurse ? 'translate-x-0 pointer-events-auto' : 'translate-x-full pointer-events-none',
+                        'sticky top-4 h-[calc(100vh-2rem)] shrink-0 overflow-hidden rounded-[16px] border bg-white transition-[width,opacity,transform,border-color] duration-250 ease-out will-change-[width,opacity,transform] min-[1440px]:top-5 min-[1440px]:h-[calc(100vh-2.5rem)]',
+                        selectedNurse
+                            ? 'pointer-events-auto w-[360px] translate-x-0 border-gray-7/80 opacity-100 min-[1440px]:w-[400px]'
+                            : 'pointer-events-none w-0 translate-x-3 border-transparent opacity-0',
                     )}
                     aria-hidden={!selectedNurse}
                 >
-                    {selectedNurse ? (
-                        <NurseDetailPanel
-                            onClose={handleDismissDetailPanel}
-                            onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
-                            onOpenSkillSettings={() => setSkillModalOpen(true)}
-                            isSkillFeatureEnabled={isSkillFeatureEnabled}
-                            isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
-                            onSaveSkillLevel={(nextLevel) => {
-                                if (!isSkillFeatureEnabled) return;
+                    <div className="h-full w-[360px] min-[1440px]:w-[400px]">
+                        {selectedNurse ? (
+                            <NurseDetailPanel
+                                onClose={handleDismissDetailPanel}
+                                onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
+                                onOpenSkillSettings={() => setSkillModalOpen(true)}
+                                isSkillFeatureEnabled={isSkillFeatureEnabled}
+                                isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
+                                onSaveSkillLevel={(nextLevel) => {
+                                    if (!isSkillFeatureEnabled) return;
 
-                                if (nextLevel === null) {
-                                    setUnselectedSkillNurseIds((prev) => new Set(prev).add(selectedNurse.nurseId));
+                                    if (nextLevel === null) {
+                                        setUnselectedSkillNurseIds((prev) => new Set(prev).add(selectedNurse.nurseId));
 
-                                    return;
-                                }
+                                        return;
+                                    }
 
-                                setUnselectedSkillNurseIds((prev) => {
-                                    const next = new Set(prev);
+                                    setUnselectedSkillNurseIds((prev) => {
+                                        const next = new Set(prev);
 
-                                    next.delete(selectedNurse.nurseId);
+                                        next.delete(selectedNurse.nurseId);
 
-                                    return next;
-                                });
+                                        return next;
+                                    });
 
-                                if (!wardId) return;
+                                    if (!wardId) return;
 
-                                const normalized = Math.max(1, Math.min(skillConfig.levelCount, nextLevel));
-                                const nextConfig = {...skillConfig, autoAssign: false};
-                                const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
+                                    const normalized = Math.max(1, Math.min(skillConfig.levelCount, nextLevel));
+                                    const nextConfig = {...skillConfig, autoAssign: false};
+                                    const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
 
-                                nextSettings.frozenLevelsByNurseId[selectedNurse.nurseId] = normalized;
-                                saveWardSkillSettings(wardId, nextSettings);
-                                setSkillSettings(nextSettings);
-                            }}
-                            skillConfig={skillConfig}
-                            skillLevel={levelsByNurseId[selectedNurse.nurseId]}
-                            shiftTeams={shiftTeams}
-                            onMoveShiftTeam={handleMoveSelectedNurseToTeam}
-                            wardShiftTypes={ward?.wardShiftTypes}
-                        />
-                    ) : null}
-                </div>
+                                    nextSettings.frozenLevelsByNurseId[selectedNurse.nurseId] = normalized;
+                                    saveWardSkillSettings(wardId, nextSettings);
+                                    setSkillSettings(nextSettings);
+                                }}
+                                skillConfig={skillConfig}
+                                skillLevel={levelsByNurseId[selectedNurse.nurseId]}
+                                shiftTeams={shiftTeams}
+                                onMoveShiftTeam={handleMoveSelectedNurseToTeam}
+                                wardShiftTypes={ward?.wardShiftTypes}
+                            />
+                        ) : null}
+                    </div>
+                </aside>
             </div>
 
             <MemberSkillLevelModal
@@ -1544,21 +1543,19 @@ function MemberNurseRow({
         return wardShiftTypes.map((wardShiftType) => {
             const matched = nurseShiftTypeByName.get(wardShiftType.name);
 
-            return (
-                matched
-                    ? {
-                          ...matched,
-                          apiShiftTypeId: matched.nurseShiftTypeId,
-                      }
-                    : {
-                          nurseShiftTypeId: wardShiftType.wardShiftTypeId,
-                          name: wardShiftType.name,
-                          shortName: wardShiftType.shortName,
-                          isPossible: true,
-                          isPreferred: false,
-                          apiShiftTypeId: wardShiftType.wardShiftTypeId,
-                      }
-            );
+            return matched
+                ? {
+                      ...matched,
+                      apiShiftTypeId: matched.nurseShiftTypeId,
+                  }
+                : {
+                      nurseShiftTypeId: wardShiftType.wardShiftTypeId,
+                      name: wardShiftType.name,
+                      shortName: wardShiftType.shortName,
+                      isPossible: true,
+                      isPreferred: false,
+                      apiShiftTypeId: wardShiftType.wardShiftTypeId,
+                  };
         });
     }, [nurse.nurseShiftTypes, wardShiftTypes]);
     const isPreceptor = Boolean(nurse.isWardManager);
@@ -1708,7 +1705,7 @@ function MemberNurseRow({
                         </div>
                     </div>
                 ) : null}
-                <div className={cn('flex flex-wrap items-center justify-center gap-1', fadedClass)}>
+                <div className={cn('flex min-w-0 flex-nowrap items-center justify-center gap-1 whitespace-nowrap', fadedClass)}>
                     {shiftTypeOptions.length > 0 ? (
                         shiftTypeOptions.map((shiftType) => {
                             const selected = shiftType.isPossible;

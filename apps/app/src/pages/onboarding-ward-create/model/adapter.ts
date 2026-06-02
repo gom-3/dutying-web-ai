@@ -3,6 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {
     createEmptyShiftType,
+    normalizeNurseNameForRequest,
     type TOnboardingNurseDraft,
     type TOnboardingTeamDraft,
     type TOnboardingWardDraft,
@@ -306,13 +307,37 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
     const normalizedWardName = draft.wardName.trim();
     const normalizedHospitalName = draft.hospitalName.trim();
     const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
+    const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
 
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
         hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
         wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
-        shiftTeams: draft.teams.map((team) => ({
-            nurseNames: draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.name),
-        })),
+        shiftTeams: draft.teams.map((team) => {
+            const nurses = draft.nurses
+                .filter((nurse) => nurse.teamId === team.id)
+                .map((nurse) => ({
+                    ...nurse,
+                    requestName: normalizeNurseNameForRequest(nurse.name),
+                }))
+                .filter((nurse) => nurse.requestName);
+
+            return {
+                name: team.name,
+                nurseNames: nurses.map((nurse) => nurse.requestName),
+                nurses: nurses.map((nurse) => ({
+                    name: nurse.requestName,
+                    memo: nurse.memo,
+                    isWorker: nurse.isWorker,
+                    employmentDate: nurse.employmentDate,
+                    level: nurse.level,
+                    isPreceptor: nurse.memo.trim() === '프리셉터',
+                    isPreceptee: nurse.memo.trim() === '프리셉티',
+                    possibleShiftShortNames: nurse.possibleShiftTypeIds
+                        .map((shiftTypeId) => shiftTypeById.get(shiftTypeId)?.shortName)
+                        .filter((shortName): shortName is string => Boolean(shortName)),
+                })),
+            };
+        }),
     };
 };

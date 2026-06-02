@@ -9,6 +9,12 @@ const {mockGet, mockPatch, mockPost, mockDelete} = vi.hoisted(() => ({
 }));
 
 vi.mock('../../client', () => ({
+    default: {
+        get: mockGet,
+        patch: mockPatch,
+        post: mockPost,
+        delete: mockDelete,
+    },
     adminAxiosInstance: {
         get: mockGet,
         patch: mockPatch,
@@ -36,7 +42,7 @@ describe('AdminAPI', () => {
 
         await expect(AdminAPI.createWorkspace(payload)).resolves.toBe(response);
 
-        expect(mockPost).toHaveBeenCalledWith('/admin/workspaces', payload);
+        expect(mockPost).toHaveBeenCalledWith('/accounts/me/admin-workspace', payload);
     });
 
     it('updates the admin profile through the ward admin endpoint', async () => {

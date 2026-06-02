@@ -105,7 +105,9 @@ const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const KOREAN_SYLLABLE_REGEX = /[가-힣]/g;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
-const NAME_SEPARATOR_REGEX = /[\s.'\-・·]/g;
+const NURSE_NAME_REQUEST_ALLOWED_REGEX = /[\uAC00-\uD7A30-9A-Za-z]/g;
+
+export const normalizeNurseNameForRequest = (name: string) => name.match(NURSE_NAME_REQUEST_ALLOWED_REGEX)?.join('') ?? '';
 
 let nextId = 0;
 
@@ -200,7 +202,7 @@ const isValidNurseName = (name: string): boolean => {
         return false;
     }
 
-    const compactName = trimmedName.replace(NAME_SEPARATOR_REGEX, '');
+    const compactName = normalizeNurseNameForRequest(trimmedName);
 
     if (!compactName) {
         return false;

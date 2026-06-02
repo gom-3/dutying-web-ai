@@ -68,7 +68,7 @@ const RequestShiftPage = () => {
                           : null;
 
     return (
-        <div className="mx-auto flex min-h-screen w-full max-w-none flex-col px-10 pt-4 pb-3">
+        <div className="mx-auto flex min-h-screen w-full max-w-[1640px] min-w-[1160px] flex-col px-10 pt-4 pb-3">
             <div className="flex min-h-0 flex-1 flex-col">
                 {shouldShowToolbar ? <Toolbar /> : null}
 

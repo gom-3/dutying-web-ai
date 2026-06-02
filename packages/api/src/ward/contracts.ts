@@ -517,11 +517,28 @@ export type TCreateWardShiftTypeDTO = {
     classification: TWardShiftClassification;
 };
 
+export type TCreateWardSeedNurseDTO = {
+    name: string;
+    memo?: string;
+    isWorker?: boolean;
+    employmentDate?: string;
+    level?: number | null;
+    isPreceptor?: boolean;
+    isPreceptee?: boolean;
+    possibleShiftShortNames?: string[];
+};
+
+export type TCreateWardShiftTeamDTO = {
+    name?: string;
+    nurseNames: string[];
+    nurses?: TCreateWardSeedNurseDTO[];
+};
+
 export type TCreateWardDTO = {
     name: string;
     hospitalName: string;
     wardShiftTypes: TCreateWardShiftTypeDTO[];
-    shiftTeams: {nurseNames: string[]}[];
+    shiftTeams: TCreateWardShiftTeamDTO[];
 };
 
 export type TEditWardDTO = {

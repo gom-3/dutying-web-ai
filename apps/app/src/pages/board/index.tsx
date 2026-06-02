@@ -734,7 +734,7 @@ function WardScheduleModal({
                                 'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
                                 isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
                             )}
-                            placeholder="예: 신규 교육"
+                            placeholder="제목을 입력하세요"
                         />
                         {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
                     </label>
@@ -1623,7 +1623,7 @@ function BoardPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
+        <div className="mx-auto flex min-h-screen w-full max-w-[1520px] min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
             <div className="min-w-0">
                 <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">게시판</h1>
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
