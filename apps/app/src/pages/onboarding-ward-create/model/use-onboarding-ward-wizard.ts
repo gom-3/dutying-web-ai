@@ -215,7 +215,7 @@ function useOnboardingWardWizard() {
         setDraft(nextDraft);
 
         if (addedTeamId) {
-            const addedTeamName = nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '???';
+            const addedTeamName = nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '새 팀';
 
             setSelectedTeamId(addedTeamId);
             toast.success(`${addedTeamName}을 추가했어요.`, {position: 'bottom-center'});
@@ -233,7 +233,7 @@ function useOnboardingWardWizard() {
                 return;
             }
 
-            const targetTeamName = draft.teams.find((team) => team.id === targetTeamId)?.name ?? '?좏깮???';
+            const targetTeamName = draft.teams.find((team) => team.id === targetTeamId)?.name ?? '선택한 팀';
 
             setDraft((prev) => addNurseDraft(prev, targetTeamId));
             toast.success(`${targetTeamName}에 간호사를 추가했어요.`, {position: 'bottom-center'});
@@ -249,7 +249,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        const addedTeamName = withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '???';
+        const addedTeamName = withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '새 팀';
 
         setDraft(addNurseDraft(withTeamDraft, addedTeamId));
         setSelectedTeamId(addedTeamId);
