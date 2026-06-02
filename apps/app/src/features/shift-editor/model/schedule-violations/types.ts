@@ -1,13 +1,12 @@
-import type {TAiValidation} from '@dutying/api/ward';
+import type {TValidationRes} from '@dutying/api/ward';
 import type {TViolation} from '../types';
 
 /**
  * 서버 `validation` 응답 스냅샷.
- * 재진입·수동 편집 후 `refreshScheduleViolations`로 갱신할 예정 — UI는 항상 snapshot + 현재 doc으로 재변환한다.
+ * 재진입·수동 편집 후 `refreshScheduleViolations`로 갱신 — UI는 항상 snapshot + 현재 doc으로 재변환한다.
  */
 export type TScheduleValidationSnapshot = {
-    validation: TAiValidation;
-    generationId?: number;
+    validation: TValidationRes;
     capturedAt: number;
 };
 

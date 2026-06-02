@@ -200,80 +200,224 @@ export type TAiScheduleResponse = {
     created_at: string;
 };
 
-export type TWorkspaceScheduleResponse = {
-    shift: TShift;
-    wardConstraint: TWardConstraint;
-};
-
+/** Spring schedule authoring — 셀/행 순서 공통 DTO */
 export type TSnapshotCellDTO = {
+    cellKey?: string;
     shiftNurseId: number;
+    nurseId?: number;
     date: string;
     wardShiftTypeId: number | null;
+    shiftCode?: string;
+    source?: string;
+    fixed?: boolean;
 };
 
 export type TSnapshotRowOrderDTO = {
     shiftNurseId: number;
-    priority: number;
+    nurseId?: number;
+    displayOrder: number;
+    priority?: number;
     divisionNum: number;
 };
 
-export type TSaveSnapshotDTO = {
-    yearMonth: string;
-    title: string;
-    cells: TSnapshotCellDTO[];
-    rowOrder: TSnapshotRowOrderDTO[];
-    prompt?: string;
-    baseHash?: string;
+export type TScheduleShiftTypeDto = {
+    wardShiftTypeId: number;
+    code: string;
+    name: string;
+    isOff: boolean;
+    isCounted: boolean;
+    classification: TWardShiftClassification;
+    startTime: string;
+    endTime: string;
+    color: string;
 };
 
-export type TSnapshotResponse = {
+export type TScheduleRowDto = {
+    shiftNurseId: number;
+    nurseId: number;
+    name: string;
+    proficiency: number;
+    isPreceptor: boolean;
+    isPreceptee: boolean;
+    isDutyManager: boolean;
+    isWardManager: boolean;
+    isWorker: boolean;
+    divisionNum: number;
+    priority: number;
+};
+
+export type TScheduleRuleDto = {
+    shiftConstraintRuleId: number;
+    templateCode: string;
+    category: string;
+    severity: TShiftConstraintSeverity;
+    displayText: string;
+    params: Record<string, Record<string, unknown>>;
+    sortOrder: number;
+    isValid?: boolean;
+    invalidReason?: string;
+};
+
+export type TScheduleRequestShiftDto = {
+    shiftNurseId: number;
+    nurseId: number;
+    date: string;
+    wardShiftTypeId: number;
+    shiftCode: string;
+    isAccepted: boolean;
+    isRequested: boolean;
+};
+
+export type TSnapshotSummaryDto = {
     snapshotId: number;
     title: string;
-    yearMonth: string;
+    year: number;
+    month: number;
+    cellCount: number;
+    emptyCellCount: number;
     createdAt: string;
-    isPublished: boolean;
+    updatedAt: string;
+};
+
+export type TWorkspaceScheduleResponse = {
+    wardId: number;
+    shiftTeamId: number;
+    year: number;
+    month: number;
+    /** YYYY-MM-DD */
+    days: string[];
+    shiftTypes: TScheduleShiftTypeDto[];
+    rows: TScheduleRowDto[];
+    rowOrder: TSnapshotRowOrderDTO[];
+    cells: TSnapshotCellDTO[];
+    wardShiftBase: TSnapshotCellDTO[];
+    requestShifts: TScheduleRequestShiftDto[];
+    rules: TScheduleRuleDto[];
+    rulesHash: string;
+    latestSnapshot: TSnapshotSummaryDto | null;
+};
+
+export type TValidationSummaryDto = {
+    valid: boolean;
+    hardCount: number;
+    softCount: number;
+    totalCount: number;
+};
+
+export type TAffectedCellDto = {
+    cellKey: string;
+    shiftNurseId: number;
+    nurseId?: number;
+    nurseName?: string;
+    date: string;
+    wardShiftTypeId: number | null;
+    shiftCode?: string;
+};
+
+export type TScheduleViolationDto = {
+    violationId: string;
+    ruleId: number;
+    templateCode: string;
+    severity: TShiftConstraintSeverity;
+    message: string;
+    affectedCells: TAffectedCellDto[];
+    fixable: boolean;
+};
+
+export type TValidationRes = {
+    draftRevision: number;
+    rulesHash: string;
+    summary: TValidationSummaryDto;
+    violations: TScheduleViolationDto[];
 };
 
 export type TValidateSnapshotDTO = {
-    yearMonth: string;
+    year: number;
+    month: number;
     draftRevision: number;
     rulesHash: string;
     cells: TSnapshotCellDTO[];
     rowOrder: TSnapshotRowOrderDTO[];
 };
 
-export type TAutofillMode = 'GENERATE' | 'REPAIR';
-
-export type TAutofillTarget = {
-    type: 'VIOLATION';
+export type TAutofillTargetDto = {
     ruleId: number;
     violationId: string;
+    affectedCellKeys: string[];
 };
 
 export type TAutofillDTO = {
-    mode: TAutofillMode;
-    yearMonth: string;
-    target?: TAutofillTarget;
+    year: number;
+    month: number;
     prompt?: string;
-    snapshot: {
-        cells: TSnapshotCellDTO[];
-        rowOrder: TSnapshotRowOrderDTO[];
-    };
-};
-
-export type TPatchChange = {
-    shiftNurseId: number;
-    date: string;
-    fromWardShiftTypeId: number | null;
-    toWardShiftTypeId: number | null;
+    baseSnapshotId?: number;
+    draftRevision?: number;
+    rulesHash?: string;
+    rowOrder: TSnapshotRowOrderDTO[];
+    cells: TSnapshotCellDTO[];
+    target?: TAutofillTargetDto;
+    lockedCellKeys?: string[];
+    returnMode?: 'PATCH';
 };
 
 export type TAutofillResponse = {
-    resultType: 'FULL_SCHEDULE' | 'PATCH';
-    schedule?: Record<string, (number | null)[]>;
-    patch?: TPatchChange[];
+    operationType: 'GENERATE' | 'REPAIR';
+    draftRevision: number;
+    resultType: 'PATCH';
+    changedCells: TSnapshotCellDTO[];
+    validation: TValidationRes;
+    unmetInstructions: string[];
     sameAsPrevious: boolean;
-    unmetInstructions: {instruction: string; reason: string}[];
+};
+
+export type TSaveSnapshotDTO = {
+    snapshotId?: number;
+    title: string;
+    year: number;
+    month: number;
+    prompt?: string;
+    baseHash?: string;
+    cells: TSnapshotCellDTO[];
+    rowOrder: TSnapshotRowOrderDTO[];
+};
+
+export type TSnapshotSaveRes = {
+    snapshotId: number;
+    title: string;
+    year: number;
+    month: number;
+    savedAt: string;
+};
+
+export type TSnapshotListRes = {
+    snapshots: TSnapshotSummaryDto[];
+};
+
+export type TSnapshotDetailRes = {
+    snapshotId: number;
+    title: string;
+    year: number;
+    month: number;
+    prompt?: string;
+    baseHash?: string;
+    rowOrder: TSnapshotRowOrderDTO[];
+    cells: TSnapshotCellDTO[];
+    createdAt: string;
+    updatedAt: string;
+};
+
+export type TPublishSnapshotDTO = {
+    overwriteWardShift?: boolean;
+    applyRowOrder?: boolean;
+};
+
+export type TPublishSnapshotRes = {
+    snapshotId: number;
+    published: boolean;
+    publishedWardShiftCount: number;
+    emptyCellCount: number;
+    rowOrderApplied: boolean;
+    publishedAt: string;
 };
 
 export interface IWardAPI {
@@ -337,12 +481,17 @@ export interface IWardAPI {
     deleteShiftType: (wardId: number, shiftTypeId: number) => Promise<void>;
 
     getWorkspaceSchedule: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TWorkspaceScheduleResponse>;
-    validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TAiValidation>;
+    validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TValidationRes>;
     autofillSchedule: (wardId: number, shiftTeamId: number, autofillDTO: TAutofillDTO) => Promise<TAutofillResponse>;
-    getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotResponse[]>;
-    saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotResponse>;
-    getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TShiftResponse>;
-    publishSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<void>;
+    getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
+    saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
+    getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
+    publishSnapshot: (
+        wardId: number,
+        shiftTeamId: number,
+        snapshotId: number,
+        publishDTO?: TPublishSnapshotDTO,
+    ) => Promise<TPublishSnapshotRes>;
 
     /** @deprecated use getWaitingNurses */
     getWatingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;

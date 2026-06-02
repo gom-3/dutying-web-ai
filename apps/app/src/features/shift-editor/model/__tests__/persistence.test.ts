@@ -2,7 +2,7 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createScheduleValidationSnapshot} from '../schedule-violations';
 import {createShiftEditorPersistence} from '../persistence';
 import {type TDutyDoc, type THistoryState, type TViolation} from '../types';
-import type {TAiValidation} from '@dutying/api/ward';
+import type {TValidationRes} from '@dutying/api/ward';
 
 const storageKey = 'shift-editor:draft:test';
 const mockDoc: TDutyDoc = {
@@ -17,22 +17,24 @@ const mockHistory: THistoryState = {
     future: [],
     maxDepth: 50,
 };
-const mockValidation: TAiValidation = {
-    valid: false,
-    hard_constraints_violated: [],
-    soft_constraints_violated: [
+const mockValidation: TValidationRes = {
+    draftRevision: 1,
+    rulesHash: 'sha256:test',
+    summary: {valid: false, hardCount: 0, softCount: 1, totalCount: 1},
+    violations: [
         {
-            id: 'test',
+            violationId: 'v-test',
+            ruleId: 1,
+            templateCode: 'TEST',
             severity: 'SOFT',
             message: 'test violation',
-            nurse_id: '1',
-            period: {start_day: 1, end_day: 1},
+            affectedCells: [{cellKey: '1:2026-03-01', shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: null}],
+            fixable: true,
         },
     ],
-    warnings: [],
 };
 const mockScheduleViolations = {
-    validationSnapshot: createScheduleValidationSnapshot(mockValidation, 42),
+    validationSnapshot: createScheduleValidationSnapshot(mockValidation),
 };
 const mockLegacyViolations: TViolation[] = [
     {

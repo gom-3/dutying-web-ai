@@ -177,13 +177,16 @@ export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSn
 }
 
 export function docToSnapshotRowOrderDTO(doc: TDutyDoc): TSnapshotRowOrderDTO[] {
-    return doc.rows.map((row) => {
+    return doc.rows.map((row, index) => {
         const shiftNurseId = Number(row.workerId);
         const meta = doc.workerMeta[row.workerId];
+        const displayOrder = index + 1;
 
         return {
             shiftNurseId,
-            priority: meta?.priority ?? 0,
+            nurseId: meta?.nurseId,
+            displayOrder,
+            priority: meta?.priority ?? displayOrder * 1024,
             divisionNum: meta?.divisionNum ?? 1,
         };
     });

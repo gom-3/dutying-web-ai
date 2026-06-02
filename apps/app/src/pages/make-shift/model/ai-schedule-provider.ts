@@ -22,7 +22,7 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
     try {
         const response = await getAiScheduleProvider().generate(request);
 
-        return {ok: true, response};
+        return {ok: true, response, validation: response.validation};
     } catch (error) {
         return {ok: false, message: toErrorMessage(error)};
     }

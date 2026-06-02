@@ -7,12 +7,14 @@ import {
     buildWorkKeyMap,
     getShiftEditorDraftStorageKey,
     shiftToDoc,
+    workspaceCellsToFixedCells,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
     useShiftEditorStore,
     useViolationMap,
 } from '@/features/shift-editor';
+import WardAPI from '@/shared/api/ward';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 
 function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
@@ -85,6 +87,14 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         enabled,
     });
 
+    const workspaceQuery = useQuery({
+        queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
+        queryFn: () => WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
+        enabled,
+    });
+
+    const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
+
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
@@ -95,6 +105,12 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     const initialHydrationDoneRef = useRef(false);
     const lastHydratedDutyDataRef = useRef<typeof dutyQuery.data | null>(null);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
+
+    useEffect(() => {
+        if (workspaceQuery.data?.rulesHash) {
+            setRulesHash(workspaceQuery.data.rulesHash);
+        }
+    }, [workspaceQuery.data?.rulesHash, setRulesHash]);
 
     useEffect(() => {
         if (!dutyQuery.data || wardId === null || currentShiftTeamId === null) return;
@@ -113,6 +129,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         if (!hasContextChanged && !hasDutyDataChanged && !isStoreEmpty && initialHydrationDoneRef.current) return;
 
         const baseDoc = shiftToDoc(dutyQuery.data, year, month);
+        const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
         const requestValueMap = deriveRequestCells(dutyQuery.data, year, month);
         const requestCells: Record<string, true> = {};
 
@@ -128,7 +145,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
             }
         }
 
-        const nextDoc: TDutyDoc = {...baseDoc, requestCells};
+        const nextDoc: TDutyDoc = {...baseDoc, fixedCells: {...workspaceFixedCells}, requestCells};
         const persisted = commands.getPersisted();
 
         if (persisted && isSameDutyDocShape(persisted.doc, nextDoc)) {
@@ -175,7 +192,18 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         hydratedContextKeyRef.current = currentContextKey;
         lastHydratedDutyDataRef.current = dutyQuery.data;
         initialHydrationDoneRef.current = true;
-    }, [commands, currentContextKey, currentShiftTeamId, dutyQuery.data, month, onContextChanged, wardId, year, editorDoc.columns.length]);
+    }, [
+        commands,
+        currentContextKey,
+        currentShiftTeamId,
+        dutyQuery.data,
+        workspaceQuery.data,
+        month,
+        onContextChanged,
+        wardId,
+        year,
+        editorDoc.columns.length,
+    ]);
 
     const focusEditor = () => {
         editorRef.current?.focus();

@@ -1,7 +1,7 @@
-import {type TAiValidation, type TValidateSnapshotDTO} from '@dutying/api/ward';
+import type {TValidationRes} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
 import WardAPI from '@/shared/api/ward';
-import {docToSnapshotCellsDTO, docToSnapshotRowOrderDTO} from '../shift-adapter';
+import {buildValidateSnapshotDTO} from '../schedule-authoring';
 import type {TDutyDoc} from '../types';
 
 export type TRefreshScheduleViolationsParams = {
@@ -20,16 +20,10 @@ export type TRefreshScheduleViolationsParams = {
  *
  * @returns 갱신된 validation.
  */
-export async function refreshScheduleViolations(params: TRefreshScheduleViolationsParams): Promise<TAiValidation | null> {
+export async function refreshScheduleViolations(params: TRefreshScheduleViolationsParams): Promise<TValidationRes | null> {
     const {wardId, doc, originalShift, shiftTeamId, year, month, draftRevision, rulesHash} = params;
 
-    const dto: TValidateSnapshotDTO = {
-        yearMonth: `${year}-${String(month).padStart(2, '0')}`,
-        draftRevision,
-        rulesHash,
-        cells: docToSnapshotCellsDTO(doc, originalShift),
-        rowOrder: docToSnapshotRowOrderDTO(doc),
-    };
+    const dto = buildValidateSnapshotDTO({year, month, draftRevision, rulesHash, doc, originalShift});
 
     try {
         return await WardAPI.validateSnapshot(wardId, shiftTeamId, dto);

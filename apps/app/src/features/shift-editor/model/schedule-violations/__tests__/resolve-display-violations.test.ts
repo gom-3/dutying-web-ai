@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import type {TAiValidation} from '@dutying/api/ward';
+import type {TValidationRes} from '@dutying/api/ward';
 import type {TDutyDoc, TViolation} from '../../types';
 import {createScheduleValidationSnapshot, resolveScheduleDisplayViolations} from '../resolve-display-violations';
 
@@ -11,19 +11,24 @@ const doc: TDutyDoc = {
     requestCells: {},
 };
 
-const validation: TAiValidation = {
-    valid: false,
-    hard_constraints_violated: [],
-    soft_constraints_violated: [
+const validation: TValidationRes = {
+    draftRevision: 1,
+    rulesHash: 'hash',
+    summary: {valid: false, hardCount: 0, softCount: 1, totalCount: 1},
+    violations: [
         {
-            id: 'test',
+            violationId: 'v-1',
+            ruleId: 1,
+            templateCode: 'TEST',
             severity: 'SOFT',
             message: 'msg',
-            nurse_id: '10',
-            period: {start_day: 1, end_day: 2},
+            affectedCells: [
+                {cellKey: '1:2026-05-01', shiftNurseId: 1, date: '2026-05-01', wardShiftTypeId: null},
+                {cellKey: '1:2026-05-02', shiftNurseId: 1, date: '2026-05-02', wardShiftTypeId: null},
+            ],
+            fixable: true,
         },
     ],
-    warnings: [],
 };
 
 describe('resolveScheduleDisplayViolations', () => {
@@ -43,11 +48,11 @@ describe('resolveScheduleDisplayViolations', () => {
         ]);
     });
 
-    it('uses legacy display violations when snapshot is absent', () => {
+    it('falls back to legacy violations when snapshot is absent', () => {
         const legacy: TViolation[] = [
             {
                 ruleId: 'legacy',
-                message: 'cached',
+                message: 'legacy msg',
                 level: 'warning',
                 cells: [{row: 0, col: 0}],
             },

@@ -1,6 +1,6 @@
 import {useEffect, useRef} from 'react';
 import {useShiftEditorCommands} from './use-shift-editor-commands';
-import {refreshScheduleViolations} from './schedule-violations';
+import {fetchAndApplyScheduleValidation} from './schedule-violations';
 import {useShiftEditorStore} from './store';
 import {type TShift} from '@/entities';
 
@@ -30,33 +30,33 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
 
     const doc = useShiftEditorStore((s) => s.doc);
     const draftRevision = useShiftEditorStore((s) => s.draftRevision);
+    const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const commands = useShiftEditorCommands();
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
-        if (!enabled || !wardId || !shiftTeamId || !originalShift || draftRevision === 0) return;
+        if (!enabled || !wardId || !shiftTeamId || !originalShift || !rulesHash || draftRevision === 0) return;
 
         if (timerRef.current) clearTimeout(timerRef.current);
 
         timerRef.current = setTimeout(async () => {
-            const result = await refreshScheduleViolations({
-                wardId,
-                doc,
-                originalShift,
-                shiftTeamId,
-                year,
-                month,
-                draftRevision,
-                rulesHash: 'latest', // TODO: ruleHash 관리 필요 시 확장
-            });
-
-            if (result && useShiftEditorStore.getState().draftRevision === draftRevision) {
-                commands.setScheduleValidationFromApi(result);
-            }
+            await fetchAndApplyScheduleValidation(
+                {
+                    wardId,
+                    doc,
+                    originalShift,
+                    shiftTeamId,
+                    year,
+                    month,
+                    draftRevision,
+                    rulesHash,
+                },
+                commands.setScheduleValidationFromApi,
+            );
         }, debounceMs);
 
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [doc, draftRevision, enabled, wardId, shiftTeamId, year, month, originalShift, debounceMs, commands]);
+    }, [doc, draftRevision, rulesHash, enabled, wardId, shiftTeamId, year, month, originalShift, debounceMs, commands]);
 }

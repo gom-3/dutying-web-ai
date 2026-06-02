@@ -1,40 +1,47 @@
-import type {TAiScheduleResponse} from '@dutying/api/ward';
+import type {TAutofillResponse} from '@dutying/api/ward';
 import type {TDutyDoc} from '@/features/shift-editor';
 import type {TAiScheduleProvider} from './ai-schedule-contract';
 
-export function generateMockAiSchedule(doc: TDutyDoc): TAiScheduleResponse {
+function buildMockAutofillResponse(doc: TDutyDoc, draftRevision: number, rulesHash: string): TAutofillResponse {
     const patterns = ['D', 'D', 'E', 'E', 'N', 'N', 'O', 'O'];
-    const schedule: Record<string, string[]> = {};
+    const changedCells = doc.rows.flatMap((row, rowIdx) =>
+        doc.columns
+            .map((date, colIdx) => {
+                const key = `${row.workerId}|${date}`;
 
-    doc.rows.forEach((row, idx) => {
-        schedule[row.workerId] = doc.columns.map((_, colIdx) => patterns[(colIdx + idx) % patterns.length]!);
-    });
+                if (doc.fixedCells[key] === true || doc.requestCells[key] === true) return null;
+
+                const shiftCode = patterns[(colIdx + rowIdx) % patterns.length]!;
+
+                return {
+                    cellKey: `${row.workerId}:${date}`,
+                    shiftNurseId: Number(row.workerId),
+                    date,
+                    wardShiftTypeId: 0,
+                    shiftCode,
+                    source: 'AI',
+                    fixed: false,
+                };
+            })
+            .filter((cell): cell is NonNullable<typeof cell> => cell !== null),
+    );
 
     return {
-        generation_id: Date.now(),
-        schedule,
+        operationType: 'GENERATE',
+        draftRevision,
+        resultType: 'PATCH',
+        changedCells,
         validation: {
-            valid: true,
-            hard_constraints_violated: [],
-            soft_constraints_violated: [],
-            warnings: [],
+            draftRevision,
+            rulesHash,
+            summary: {valid: true, hardCount: 0, softCount: 0, totalCount: 0},
+            violations: [],
         },
-        metrics: {
-            night_shift_counts: {},
-            weekend_shift_counts: {},
-            fairness_score: 0,
-            satisfaction_estimate: 0,
-            constraint_violations: 0,
-            revision_estimate: 0,
-        },
-        explainable_reasons: [],
-        status: 'GENERATED',
-        llm_model: 'mock',
-        generation_time_ms: 0,
-        created_at: new Date().toISOString(),
+        unmetInstructions: [],
+        sameAsPrevious: false,
     };
 }
 
 export const mockAiScheduleProvider: TAiScheduleProvider = {
-    generate: async ({doc}) => generateMockAiSchedule(doc),
+    generate: async ({doc, draftRevision, rulesHash}) => buildMockAutofillResponse(doc, draftRevision, rulesHash),
 };

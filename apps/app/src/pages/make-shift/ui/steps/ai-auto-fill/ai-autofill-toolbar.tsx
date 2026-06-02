@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {AlertTriangle, Check, Eye, EyeOff, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
+import {AlertTriangle, Check, Eye, EyeOff, PanelRightOpen, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
@@ -15,6 +15,7 @@ type TAiAutofillToolbarProps = {
     canRedo: boolean;
     onUndo: () => void;
     onRedo: () => void;
+    onOpenSnapshotHistory: () => void;
     onAiFill: () => void;
     isAiGenerating: boolean;
     aiStatus: TAiAutofillStatus;
@@ -42,6 +43,7 @@ export function AiAutofillToolbar({
     canRedo,
     onUndo,
     onRedo,
+    onOpenSnapshotHistory,
     onAiFill,
     isAiGenerating,
     aiStatus,
@@ -101,6 +103,13 @@ export function AiAutofillToolbar({
                     <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
                         <Redo2 className="size-3.5" aria-hidden />
                     </IconButton>
+                    <IconButton
+                        className="ai-autofill-toolbar__history-snapshots"
+                        onClick={onOpenSnapshotHistory}
+                        ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
+                    >
+                        <PanelRightOpen className="size-3.5" aria-hidden />
+                    </IconButton>
                 </span>
 
                 <button
@@ -136,7 +145,7 @@ export function AiAutofillToolbar({
                 <button
                     type="button"
                     onClick={onSaveSnapshot}
-                    disabled={!canConfirm || isSavingSnapshot}
+                    disabled={isSavingSnapshot}
                     aria-busy={isSavingSnapshot}
                     className={cn(
                         'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--save',

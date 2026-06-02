@@ -79,11 +79,14 @@ export type TViolationScope = 'nurse' | 'team';
 
 export type TViolation = {
     ruleId: string;
+    /** Spring violationId — 특정 위반 수정(repair) 요청에 사용 */
+    violationId?: string;
     message: string;
     cells: TCellPos[];
     level: 'warning' | 'error';
     /** team: division 일자 열 전체. nurse(기본): 해당 간호사 행만 */
     scope?: TViolationScope;
+    fixable?: boolean;
 };
 
 export type TDutyRuleLevel = TViolation['level'];
