@@ -405,7 +405,7 @@ describe('OnboardingWardCreatePage', () => {
         const preceptorCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉터'});
         const precepteeCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉티'});
 
-        expect(preceptorCheckbox).toHaveAttribute('aria-checked', 'true');
+        expect(preceptorCheckbox).toHaveAttribute('aria-checked', 'false');
         expect(precepteeCheckbox).toHaveAttribute('aria-checked', 'false');
 
         await user.click(precepteeCheckbox);
@@ -510,7 +510,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         await waitFor(() => {
-            expect(toastError).toHaveBeenCalledWith('서버 오류입니다.');
+            expect(toastError).toHaveBeenCalledWith('병동을 만들지 못했어요. 다시 시도해 주세요.');
         });
 
         expect(screen.queryByTestId('ward-create-error')).not.toBeInTheDocument();
@@ -518,7 +518,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/duty?onboardingWardCreated=1', {replace: true});
+                expect(mockNavigate).toHaveBeenCalledWith('/make', {replace: true, state: {onboardingWardCreated: true}});
             },
             {timeout: 2_000},
         );

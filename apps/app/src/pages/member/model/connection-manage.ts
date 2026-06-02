@@ -96,7 +96,7 @@ export function getConnectionManageResultCopy({
             description:
                 connectMode === 'link'
                     ? `${safeWaitingNurseName} 신청 정보를 ${safeTargetLabel} 계정에 연결하고 있어요. 잠시만 기다려 주세요.`
-                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀으로 추가하고 있어요. 잠시만 기다려 주세요.`,
+                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀으로 추가하고 있어요. 팀과 관계 변경이 반영될 때까지 잠시만 기다려 주세요.`,
         };
     }
 
@@ -105,16 +105,16 @@ export function getConnectionManageResultCopy({
             title: connectMode === 'link' ? '기존 계정과 연결했어요' : '팀 추가를 완료했어요',
             description:
                 connectMode === 'link'
-                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했어요.`
+                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했어요. 이어서 확인할 수 있어요.`
                     : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가했어요.`,
         };
     }
 
     return {
-        title: connectMode === 'link' ? '기존 계정에 연결하지 못했어요' : '팀에 추가하지 못했어요',
+        title: connectMode === 'link' ? '기존 계정과 연결하지 못했어요' : '팀에 추가하지 못했어요',
         description:
             connectMode === 'link'
                 ? getLinkFailureDescription(targetLabel)
-                : `${safeWaitingNurseName}${getObjectParticle(safeWaitingNurseName)} ${safeTargetLabel}에 추가하지 못했어요. 다시 시도해 주세요.`,
+                : `${safeWaitingNurseName}${getObjectParticle(safeWaitingNurseName)} ${safeTargetLabel}에 추가하지 못했어요. 다시 시도하거나 이전 단계로 돌아가 주세요.`,
     };
 }

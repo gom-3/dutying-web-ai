@@ -380,7 +380,7 @@ function useOnboardingWardWizard() {
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         setDraft((prev) => saveSkillLevelConfig(prev, config));
         setIsSkillLevelEnabled(true);
-        toast.success('숙련도 설정을 간호사 목록에 반영했어요.');
+        toast.success('숙련도 설정이 간호사 목록에 반영됐어요.');
     };
     const disableSkillConfig = () => {
         setIsSkillLevelEnabled(false);

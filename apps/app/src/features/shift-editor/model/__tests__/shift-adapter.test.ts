@@ -140,7 +140,9 @@ describe('shift-adapter', () => {
 
         expect(doc.columns).toEqual(['2026-03-01', '2026-03-02']);
         expect(doc.rows).toEqual([{workerId: '1', cells: ['D', null]}]);
-        expect(doc.workerMeta).toEqual({1: {name: 'Kim', nurseId: 100}});
+        expect(doc.workerMeta).toEqual({
+            1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1},
+        });
     });
 
     it('converts editor doc back to ward shifts dto', () => {
