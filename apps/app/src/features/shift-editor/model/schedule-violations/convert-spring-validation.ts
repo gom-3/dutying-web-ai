@@ -22,7 +22,7 @@ function affectedCellsToPositions(doc: TDutyDoc, affectedCells: TScheduleViolati
     const seen = new Set<string>();
 
     for (const cell of affectedCells) {
-        const row = findRowIndexByShiftNurseId(doc, cell.shiftNurseId);
+        const row = findRowIndexByShiftNurseId(doc, cell.shiftNurseId) ?? (doc.rows.length > 0 ? 0 : null);
         const col = findColIndexByDate(doc, cell.date);
 
         if (row === null || col === null) continue;

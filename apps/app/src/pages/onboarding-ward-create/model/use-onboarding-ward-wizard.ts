@@ -389,7 +389,7 @@ function useOnboardingWardWizard() {
             setSortModeState('manual');
         }
 
-        toast.success('숙련도 설정 사용을 껐어요.');
+        toast.success('숙련도 설정을 사용하지 않아요.');
     };
     const complete = async () => {
         if (submissionStatus === 'submitting') {
