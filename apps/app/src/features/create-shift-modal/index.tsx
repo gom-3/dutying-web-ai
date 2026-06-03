@@ -27,6 +27,10 @@ const initialValue: TCreateShiftTypeDTO = {
     classification: 'OTHER_WORK',
 };
 
+const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
+const normalizeShiftShortNameInput = (value: string) =>
+    Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
+
 function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
     const [writeShift, setWriteShift] = useState(initialValue);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -133,9 +137,10 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                           <TextField
                               className="h-13.5 w-13.5 px-0 text-center font-apple text-[1.5rem] font-medium text-sub-1"
                               value={writeShift.shortName}
+                              maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
                               readOnly={writeShift.isDefault}
                               onChange={(e) => {
-                                  setWriteShift({...writeShift, shortName: e.target.value});
+                                  setWriteShift({...writeShift, shortName: normalizeShiftShortNameInput(e.target.value)});
                                   setValidationMessage(null);
                               }}
                           />

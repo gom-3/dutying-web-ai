@@ -33,7 +33,7 @@ const featureSections = [
         label: '연동',
         title: '간호사와 병동을\n연동할 수 있어요',
         description: '근무표가 앱으로 즉시 전달돼요.\n원티드 신청까지 자연스럽게 이어져요.',
-        image: '/img/landing_5.webp',
+        image: '/img/landing-work-schedule-2.png',
         align: 'left',
         background: 'bg-white',
     },
@@ -42,7 +42,7 @@ const featureSections = [
         label: '게시판',
         title: '병동 간호사에게\n필요한 내용 공유하기',
         description: '꼭 봐야 할 공지부터 가벼운 안내까지\n놓치지 않고 한 곳에서',
-        image: '/img/landing_5.webp',
+        image: '/img/image-1002.png',
         align: 'left',
         background: 'bg-white',
     },
@@ -51,9 +51,9 @@ const appFeatureSections = [
     {
         id: 'app-home',
         label: '홈',
-        title: '근무 관리부터\n개인 일정까지 한 번에',
+        title: '근무 일정부터\n개인 일정까지 한 번에',
         description: '앱을 열지 않아도 위젯으로 바로 확인해요',
-        image: '/img/landing_mobile_4.webp',
+        image: '/img/213213123123.png',
         reverse: false,
     },
     {
@@ -61,7 +61,7 @@ const appFeatureSections = [
         label: '병동',
         title: '병동 근무와\n동료 일정도 함께 확인해요',
         description: '교대 근무에 필요한 일정 확인과 조율을 더 간편하게',
-        image: '/img/landing_mobile_5.webp',
+        image: '/img/ward-schedule.png',
         reverse: true,
     },
 ] as const;
@@ -165,7 +165,8 @@ function DarkActionButton({type}: {type: 'web' | 'app'}) {
 
 function BackgroundFeatureSection({section}: {section: (typeof featureSections)[number]}) {
     const isAiSection = section.id === 'ai';
-    const hideImage = section.id === 'review' || section.id === 'integration' || section.id === 'ward';
+    const isIntegrationSection = section.id === 'integration';
+    const isWardSection = section.id === 'ward';
     const copy = (
         <article className="reveal-on-scroll relative z-10 max-w-[470px]">
             <Pill>{section.label}</Pill>
@@ -180,8 +181,8 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
         return (
             <section id={section.id} className={section.background}>
                 <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
-                    <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[620px] items-center justify-center md:mx-0">
-                        <img src={section.image} alt="" className="w-full max-w-[560px] object-contain object-center md:max-w-[620px]" />
+                    <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
+                        <img src={section.image} alt="" className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]" />
                     </picture>
 
                     <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
@@ -190,44 +191,73 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
         );
     }
 
+    if (isIntegrationSection) {
+        return (
+            <section id={section.id} className={section.background}>
+                <div className="mx-auto grid min-h-[680px] max-w-[1280px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
+                    <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
+
+                    <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
+                        <img
+                            src={section.image}
+                            alt="간호사가 앱으로 근무 신청을 확인하는 모습"
+                            className="w-[93%] object-contain object-center"
+                        />
+                    </picture>
+                </div>
+            </section>
+        );
+    }
+
+    if (isWardSection) {
+        return (
+            <section id={section.id} className={section.background}>
+                <div className="mx-auto grid min-h-[680px] max-w-[1280px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.72fr_1.28fr] md:gap-10 md:px-8 md:py-28 lg:gap-14">
+                    <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
+
+                    <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
+                        <img
+                            src={section.image}
+                            alt="병동 게시판 화면"
+                            className="w-full object-contain object-center md:w-[120%] md:max-w-[984px] md:translate-x-20 lg:translate-x-24"
+                        />
+                    </picture>
+                </div>
+            </section>
+        );
+    }
+
     return (
         <section id={section.id} className={`relative overflow-hidden ${section.background}`}>
-            {!hideImage && (
-                <div className="reveal-on-scroll reveal-on-scroll--image absolute inset-y-0 right-0 left-0 hidden md:block" aria-hidden="true">
-                    <img src={section.image} alt="" className="size-full object-cover" />
-                </div>
-            )}
-
-            <div
-                className={`mx-auto flex min-h-[680px] max-w-[1280px] items-center px-5 py-20 md:min-h-[780px] md:px-8 ${section.align === 'right' ? 'justify-end' : 'justify-start'}`}
-            >
+            <div className="mx-auto flex min-h-[680px] max-w-[1280px] items-center justify-start px-5 py-20 md:min-h-[780px] md:px-8">
                 {copy}
             </div>
-
-            {!hideImage && (
-                <div className="px-5 pb-16 md:hidden">
-                    <img
-                        src={section.image}
-                        alt=""
-                        className="reveal-on-scroll reveal-on-scroll--image mt-6 aspect-video w-full rounded-[8px] object-cover shadow-[0_18px_50px_rgba(37,22,91,0.08)]"
-                    />
-                </div>
-            )}
         </section>
     );
 }
 
 function AppFeatureSection({section}: {section: (typeof appFeatureSections)[number]}) {
+    const isHomeSection = section.id === 'app-home';
+    const isWardSection = section.id === 'app-ward';
+
     return (
         <section id={section.id} className={section.reverse ? 'bg-[#F7F8FB]' : 'bg-white'}>
             <div
                 className={`mx-auto grid max-w-[1280px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
-                <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto w-full max-w-[360px]">
+                <picture
+                    className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${isHomeSection ? 'max-w-[566px]' : 'max-w-[560px]'}`}
+                >
                     <img
                         src={section.image}
                         alt=""
-                        className="h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]"
+                        className={
+                            isHomeSection
+                                ? 'w-full object-contain object-center'
+                                : isWardSection
+                                  ? 'w-full object-contain object-center'
+                                  : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]'
+                        }
                     />
                 </picture>
 
@@ -236,7 +266,15 @@ function AppFeatureSection({section}: {section: (typeof appFeatureSections)[numb
                     <h2 className="mt-6 text-[32px] leading-[1.36] font-extrabold text-[#11131A] md:text-[40px]">
                         <TextLines>{section.title}</TextLines>
                     </h2>
-                    <p className="mt-10 text-lg leading-8 font-medium text-[#777487]">{section.description}</p>
+                    {isHomeSection && (
+                        <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
+                            <img src="/img/image-992.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
+                            <img src="/img/image-991.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
+                        </div>
+                    )}
+                    <p className={`${isHomeSection ? 'mt-12' : 'mt-10'} text-lg leading-8 font-medium text-[#777487]`}>
+                        {section.description}
+                    </p>
                 </article>
             </div>
         </section>

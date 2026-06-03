@@ -36,7 +36,7 @@ import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 const POST_PAGE_SIZE = 40;
 const POST_LIST_TITLE_MAX_LENGTH = 24;
 const POST_LIST_CONTENT_MAX_LENGTH = 72;
-const POST_CONTENT_MAX_LENGTH = 1000;
+const POST_CONTENT_MAX_LENGTH = 5000;
 const SCHEDULE_TITLE_MAX_LENGTH = 60;
 const SCHEDULE_CONTENT_MAX_LENGTH = 300;
 const DEADLINE_DDAY_VISIBLE_DAYS = 3;
@@ -60,10 +60,14 @@ type TPostImageAttachment = {
 type TScheduleDraft = {
     title: string;
     content: string;
-    scheduleDate: string;
+    startDate: string;
+    endDate: string;
+    allDay: boolean;
     startTime: string;
     endTime: string;
 };
+
+type TScheduleModalMode = 'create' | 'edit' | 'view';
 
 type TCalendarEvent =
     | {
@@ -100,6 +104,25 @@ const getScheduleId = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleId(s
 const getCommentId = (comment: TWardBoardComment) => comment.commentId ?? comment.id ?? 0;
 const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? '작성자';
 const getScheduleWriterName = (schedule: TWardBoardSchedule) => schedule.writerName ?? schedule.authorName ?? '작성자';
+const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => schedule.sourceType === 'BOARD_DEADLINE';
+const isManualSchedule = (schedule: TWardBoardSchedule) => !schedule.sourceType || schedule.sourceType === 'MANUAL';
+const canEditSchedule = (schedule: TWardBoardSchedule) => isManualSchedule(schedule) && (schedule.editableByMe ?? schedule.isMine ?? false);
+const canDeleteSchedule = (schedule: TWardBoardSchedule) =>
+    isManualSchedule(schedule) && (schedule.deletableByMe ?? schedule.isMine ?? false);
+const getDeadlineEventKey = (deadline: Pick<TWardBoardDeadline, 'postId' | 'deadlineDate'>) =>
+    `deadline-${deadline.postId}-${deadline.deadlineDate}`;
+const getDeadlineFromSchedule = (schedule: TWardBoardSchedule): TWardBoardDeadline | null => {
+    const sourcePostId = schedule.sourcePostId ?? 0;
+
+    if (!sourcePostId) return null;
+
+    return {
+        postId: sourcePostId,
+        postTitle: schedule.title,
+        deadlineDate: schedule.scheduleDate,
+        writerName: schedule.writerName ?? schedule.authorName,
+    };
+};
 const pad2 = (value: number) => value.toString().padStart(2, '0');
 const toDateKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 const parseDateKey = (dateKey: string) => {
@@ -107,6 +130,7 @@ const parseDateKey = (dateKey: string) => {
 
     return new Date(year, month - 1, day);
 };
+const compareDateKey = (a: string, b: string) => a.localeCompare(b);
 const addDays = (date: Date, days: number) => {
     const nextDate = new Date(date);
 
@@ -121,6 +145,8 @@ const formatDate = (dateKey: string) => {
 
     return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 };
+const formatDateRange = (startDate: string, endDate: string) =>
+    startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} - ${formatDate(endDate)}`;
 const formatDateTime = (value?: string) => {
     if (!value) return '방금';
 
@@ -161,12 +187,47 @@ const getMonthBounds = (year: number, month: number) => ({
 const createInitialScheduleDraft = (scheduleDate = toDateKey(new Date())): TScheduleDraft => ({
     title: '',
     content: '',
-    scheduleDate,
+    startDate: scheduleDate,
+    endDate: scheduleDate,
+    allDay: false,
     startTime: '',
     endTime: '',
 });
 const normalizeTimeInput = (value?: string) => (value ? value.slice(0, 5) : '');
-const formatScheduleTimeRange = (startTime?: string, endTime?: string) => {
+const normalizeScheduleDateRange = (startDate: string, endDate?: string) => {
+    const normalizedEndDate = endDate ?? startDate;
+
+    if (!startDate) return {startDate: '', endDate: normalizedEndDate};
+
+    return {
+        startDate,
+        endDate: compareDateKey(normalizedEndDate, startDate) < 0 ? startDate : normalizedEndDate,
+    };
+};
+const getScheduleStartDate = (schedule: TWardBoardSchedule) => schedule.startDate ?? schedule.scheduleDate;
+const getScheduleEndDate = (schedule: TWardBoardSchedule) =>
+    normalizeScheduleDateRange(getScheduleStartDate(schedule), schedule.endDate ?? schedule.scheduleDate).endDate;
+const getScheduleAllDay = (schedule: TWardBoardSchedule) => schedule.allDay ?? schedule.isAllDay ?? false;
+const getDateKeysInRange = (startDate: string, endDate: string) => {
+    const start = parseDateKey(startDate);
+    const end = parseDateKey(endDate);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return [startDate].filter(Boolean);
+
+    const dates: string[] = [];
+    const cursor = new Date(start);
+    const maxVisibleDays = 370;
+
+    while (compareDateKey(toDateKey(cursor), toDateKey(end)) <= 0 && dates.length < maxVisibleDays) {
+        dates.push(toDateKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return dates;
+};
+const formatScheduleTimeRange = (startTime?: string, endTime?: string, allDay = false) => {
+    if (allDay) return '종일';
+
     const start = normalizeTimeInput(startTime);
     const end = normalizeTimeInput(endTime);
 
@@ -177,9 +238,12 @@ const formatScheduleTimeRange = (startTime?: string, endTime?: string) => {
 const toSchedulePayload = (draft: TScheduleDraft): TCreateWardBoardScheduleDTO => ({
     title: draft.title.trim(),
     content: draft.content.trim() || undefined,
-    scheduleDate: draft.scheduleDate,
-    startTime: draft.startTime || undefined,
-    endTime: draft.endTime || undefined,
+    scheduleDate: draft.startDate,
+    startDate: draft.startDate,
+    endDate: draft.endDate,
+    allDay: draft.allDay,
+    startTime: draft.allDay ? undefined : draft.startTime || undefined,
+    endTime: draft.allDay ? undefined : draft.endTime || undefined,
 });
 const getDefaultScheduleDateForMonth = (year: number, month: number) => {
     const today = new Date();
@@ -230,11 +294,23 @@ const getDeadlineMeta = (deadlineDate?: string, options?: {forceDday?: boolean})
     return {label: formatDate(deadlineDate), tone: 'normal' as const};
 };
 
-function Metric({icon: Icon, label}: {icon: typeof Eye; label: string | number}) {
+function Metric({
+    icon: Icon,
+    value,
+    alwaysVisible = false,
+    className,
+}: {
+    icon: typeof Eye;
+    value: number;
+    alwaysVisible?: boolean;
+    className?: string;
+}) {
+    if (!alwaysVisible && value <= 0) return null;
+
     return (
-        <span className="inline-flex items-center gap-1 text-[12px] font-medium whitespace-nowrap text-gray-3">
+        <span className={cn('inline-flex items-center gap-1 text-[12px] font-medium whitespace-nowrap text-gray-3', className)}>
             <Icon className="size-3.5" strokeWidth={1.9} aria-hidden="true" />
-            {label}
+            {value}
         </span>
     );
 }
@@ -289,10 +365,10 @@ function PostListItem({post, selected, onSelect}: {post: TWardBoardPost; selecte
                             {getAuthorName(post)} · {formatDateTime(post.createdAt)}
                         </span>
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:shrink-0">
-                            <Metric icon={Eye} label={post.viewCount ?? 0} />
-                            <Metric icon={Heart} label={post.likeCount ?? 0} />
-                            <Metric icon={CheckCircle2} label={post.checkCount ?? 0} />
-                            <Metric icon={MessageCircle} label={post.commentCount ?? 0} />
+                            <Metric icon={Eye} value={post.viewCount ?? 0} alwaysVisible />
+                            <Metric icon={Heart} value={post.likeCount ?? 0} className="text-red" />
+                            <Metric icon={CheckCircle2} value={post.checkCount ?? 0} className="text-[#217A43]" />
+                            <Metric icon={MessageCircle} value={post.commentCount ?? 0} className="text-main-1" />
                         </span>
                     </div>
                 </div>
@@ -662,6 +738,308 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
     );
 }
 
+function ScheduleDatePicker({
+    label,
+    value,
+    invalid,
+    minDate,
+    disabled,
+    onChange,
+}: {
+    label: string;
+    value: string;
+    invalid: boolean;
+    minDate?: string;
+    disabled: boolean;
+    onChange: (scheduleDate: string) => void;
+}) {
+    const todayKey = toDateKey(new Date());
+    const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
+    const [isOpen, setIsOpen] = useState(false);
+    const [viewMonth, setViewMonth] = useState(() => {
+        const initialDate = value ? parseDateKey(value) : today;
+
+        return {
+            year: initialDate.getFullYear(),
+            month: initialDate.getMonth() + 1,
+        };
+    });
+    const pickerRef = useRef<HTMLDivElement>(null);
+    const cells = useMemo(() => getCalendarCells(viewMonth.year, viewMonth.month), [viewMonth]);
+    const quickChoices = [
+        {label: '오늘', date: today},
+        {label: '내일', date: addDays(today, 1)},
+        {label: '3일 후', date: addDays(today, 3)},
+    ];
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const nextDate = value ? parseDateKey(value) : today;
+
+        if (Number.isNaN(nextDate.getTime())) return;
+
+        setViewMonth({
+            year: nextDate.getFullYear(),
+            month: nextDate.getMonth() + 1,
+        });
+    }, [isOpen, today, value]);
+
+    useEffect(() => {
+        if (!isOpen) return undefined;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!pickerRef.current?.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen]);
+
+    const moveViewMonth = (delta: number) => {
+        setViewMonth((current) => {
+            const nextDate = new Date(current.year, current.month - 1 + delta, 1);
+
+            return {
+                year: nextDate.getFullYear(),
+                month: nextDate.getMonth() + 1,
+            };
+        });
+    };
+    const selectDate = (dateKey: string) => {
+        if (minDate && compareDateKey(dateKey, minDate) < 0) return;
+
+        onChange(dateKey);
+        setIsOpen(false);
+    };
+    const isDateDisabled = (dateKey: string) => Boolean(minDate && compareDateKey(dateKey, minDate) < 0);
+
+    return (
+        <div ref={pickerRef} className="relative grid gap-1.5">
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                {label}
+                <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
+            </span>
+            <button
+                type="button"
+                className={cn(
+                    'flex h-11 w-full items-center justify-between gap-3 rounded-[8px] px-3.5 text-left ring-1 transition outline-none disabled:cursor-default disabled:opacity-100',
+                    isOpen ? 'bg-white shadow-[0_8px_24px_rgba(49,130,246,0.12)] ring-[#CFE0FF]' : 'bg-gray-7 hover:bg-white',
+                    invalid ? 'bg-white ring-[#E85D75]' : isOpen ? undefined : 'ring-transparent focus:ring-main-3',
+                )}
+                onClick={() => {
+                    if (!disabled) setIsOpen((current) => !current);
+                }}
+                disabled={disabled}
+                aria-label={`${label} ${value ? formatDate(value) : '날짜 선택'}`}
+                aria-expanded={isOpen}
+                aria-required="true"
+                aria-invalid={invalid}
+            >
+                <span className="flex min-w-0 items-center gap-2.5">
+                    <span
+                        className={cn(
+                            'grid h-7 w-7 shrink-0 place-items-center rounded-full',
+                            value ? 'bg-[#EEF6FF] text-[#3182F6]' : 'bg-white text-gray-4',
+                        )}
+                    >
+                        <CalendarDays className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 truncate text-[15px] font-semibold text-sub-1">{value ? formatDate(value) : '날짜 선택'}</span>
+                </span>
+                <ChevronRight
+                    className={cn('size-4 shrink-0 text-gray-4 transition-transform', isOpen ? 'rotate-90 text-[#3182F6]' : undefined)}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                />
+            </button>
+
+            {isOpen ? (
+                <div className="absolute top-full left-0 z-50 mt-2 w-full max-w-[calc(100vw-48px)] rounded-[14px] bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-gray-6">
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p className="text-[13px] font-semibold text-gray-3">일정 {label}</p>
+                            <p className="mt-1 text-[18px] font-semibold text-sub-1">{value ? formatDate(value) : '날짜 선택'}</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            onClick={() => setIsOpen(false)}
+                            aria-label="날짜 선택 닫기"
+                            title="날짜 선택 닫기"
+                        >
+                            <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        </button>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        {quickChoices.map((choice) => {
+                            const choiceKey = toDateKey(choice.date);
+                            const isSelected = value === choiceKey;
+                            const choiceDisabled = isDateDisabled(choiceKey);
+
+                            return (
+                                <button
+                                    key={choice.label}
+                                    type="button"
+                                    className={cn(
+                                        'h-9 rounded-[9px] text-[13px] font-semibold transition-colors',
+                                        isSelected
+                                            ? 'bg-[#3182F6] text-white'
+                                            : choiceDisabled
+                                              ? 'bg-gray-7 text-gray-5'
+                                              : 'bg-gray-7 text-sub-2 hover:bg-[#EEF6FF] hover:text-[#3182F6]',
+                                    )}
+                                    disabled={choiceDisabled}
+                                    onClick={() => selectDate(choiceKey)}
+                                >
+                                    {choice.label}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between">
+                        <button
+                            type="button"
+                            className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            onClick={() => moveViewMonth(-1)}
+                            aria-label="이전 달"
+                            title="이전 달"
+                        >
+                            <ChevronLeft className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        </button>
+                        <span className="text-[15px] font-semibold text-sub-1">{formatMonthTitle(viewMonth.year, viewMonth.month)}</span>
+                        <button
+                            type="button"
+                            className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            onClick={() => moveViewMonth(1)}
+                            aria-label="다음 달"
+                            title="다음 달"
+                        >
+                            <ChevronRight className="size-4" strokeWidth={1.8} aria-hidden="true" />
+                        </button>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-7 text-center text-[11px] font-semibold text-gray-4">
+                        {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
+                            <span key={dayLabel} className="h-7 leading-7">
+                                {dayLabel}
+                            </span>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                        {cells.map((cell) => {
+                            const isSelected = value === cell.key;
+                            const isToday = cell.key === todayKey;
+                            const cellDisabled = isDateDisabled(cell.key);
+
+                            return (
+                                <button
+                                    key={cell.key}
+                                    type="button"
+                                    className={cn(
+                                        'grid h-9 place-items-center rounded-full text-[13px] font-semibold transition-colors',
+                                        cell.inMonth ? 'text-sub-2' : 'text-gray-5',
+                                        isSelected
+                                            ? 'bg-[#3182F6] text-white shadow-[0_6px_14px_rgba(49,130,246,0.24)]'
+                                            : cellDisabled
+                                              ? 'text-gray-5'
+                                              : 'hover:bg-gray-7 hover:text-sub-1',
+                                        isToday && !isSelected ? 'text-[#3182F6] ring-1 ring-[#BFD7FF]' : undefined,
+                                    )}
+                                    disabled={cellDisabled}
+                                    onClick={() => selectDate(cell.key)}
+                                    aria-label={`${formatDate(cell.key)} 선택`}
+                                >
+                                    {cell.date.getDate()}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function ScheduleTimeInput({
+    label,
+    value,
+    disabled,
+    onChange,
+}: {
+    label: string;
+    value: string;
+    disabled: boolean;
+    onChange: (time: string) => void;
+}) {
+    return (
+        <label className="group grid min-w-0 gap-1.5">
+            <span className="text-[11px] font-semibold text-gray-3">{label}</span>
+            <span
+                className={cn(
+                    'flex h-11 min-w-0 items-center gap-2 rounded-[8px] bg-gray-7 px-3 ring-1 ring-transparent transition focus-within:bg-white focus-within:ring-main-3',
+                    disabled ? 'cursor-default opacity-100' : undefined,
+                )}
+            >
+                <Clock3 className={cn('size-4 shrink-0', value ? 'text-[#3182F6]' : 'text-gray-4')} strokeWidth={1.8} aria-hidden="true" />
+                <input
+                    type="time"
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    disabled={disabled}
+                    aria-label={`${label} 시간`}
+                    className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-sub-1 outline-none disabled:cursor-default disabled:opacity-100"
+                />
+            </span>
+        </label>
+    );
+}
+
+function ScheduleTimeRangePicker({
+    draft,
+    disabled,
+    onChange,
+}: {
+    draft: TScheduleDraft;
+    disabled: boolean;
+    onChange: (draft: TScheduleDraft) => void;
+}) {
+    return (
+        <div className="grid gap-2">
+            <span className="text-[13px] font-semibold text-sub-2">시간</span>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+                <ScheduleTimeInput
+                    label="시작"
+                    value={draft.startTime}
+                    disabled={disabled}
+                    onChange={(startTime) => onChange({...draft, startTime})}
+                />
+                <span className="text-[13px] font-semibold text-gray-4">~</span>
+                <ScheduleTimeInput
+                    label="종료"
+                    value={draft.endTime}
+                    disabled={disabled}
+                    onChange={(endTime) => onChange({...draft, endTime})}
+                />
+            </div>
+        </div>
+    );
+}
+
 function WardScheduleModal({
     mode,
     draft,
@@ -673,7 +1051,7 @@ function WardScheduleModal({
     onClose,
     onDelete,
 }: {
-    mode: 'create' | 'edit';
+    mode: TScheduleModalMode;
     draft: TScheduleDraft;
     submitAttempted: boolean;
     disabled: boolean;
@@ -684,8 +1062,37 @@ function WardScheduleModal({
     onDelete?: () => void;
 }) {
     const isEditMode = mode === 'edit';
+    const isViewMode = mode === 'view';
     const isTitleInvalid = submitAttempted && !draft.title.trim();
-    const isDateInvalid = submitAttempted && !draft.scheduleDate;
+    const isStartDateInvalid = submitAttempted && !draft.startDate;
+    const isEndDateInvalid = submitAttempted && (!draft.endDate || compareDateKey(draft.endDate, draft.startDate) < 0);
+    const isTimeRangeInvalid =
+        submitAttempted &&
+        !draft.allDay &&
+        draft.startDate === draft.endDate &&
+        Boolean(draft.startTime && draft.endTime && draft.startTime > draft.endTime);
+    const modalTitle = isViewMode ? '일정 보기' : isEditMode ? '일정 수정' : '일정 등록';
+    const updateStartDate = (startDate: string) => {
+        onChange({
+            ...draft,
+            startDate,
+            endDate: draft.endDate && compareDateKey(draft.endDate, startDate) >= 0 ? draft.endDate : startDate,
+        });
+    };
+    const updateEndDate = (endDate: string) => {
+        onChange({
+            ...draft,
+            endDate: compareDateKey(endDate, draft.startDate) < 0 ? draft.startDate : endDate,
+        });
+    };
+    const updateAllDay = (allDay: boolean) => {
+        onChange({
+            ...draft,
+            allDay,
+            startTime: allDay ? '' : draft.startTime,
+            endTime: allDay ? '' : draft.endTime,
+        });
+    };
 
     return (
         <div
@@ -696,7 +1103,7 @@ function WardScheduleModal({
             <form
                 role="dialog"
                 aria-modal="true"
-                aria-label={isEditMode ? '병동 일정 수정' : '병동 일정 등록'}
+                aria-label={`병동 ${modalTitle}`}
                 className="w-full max-w-[440px] rounded-[16px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
                 onMouseDown={(event) => event.stopPropagation()}
                 onSubmit={onSubmit}
@@ -705,7 +1112,7 @@ function WardScheduleModal({
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-gray-3">병동 일정</p>
-                        <h2 className="mt-1 text-[22px] font-semibold text-sub-1">{isEditMode ? '일정 수정' : '일정 등록'}</h2>
+                        <h2 className="mt-1 text-[22px] font-semibold text-sub-1">{modalTitle}</h2>
                     </div>
                     <button
                         type="button"
@@ -730,54 +1137,61 @@ function WardScheduleModal({
                             maxLength={SCHEDULE_TITLE_MAX_LENGTH}
                             aria-required="true"
                             aria-invalid={isTitleInvalid}
+                            readOnly={isViewMode}
                             className={cn(
-                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none read-only:cursor-default focus:bg-white',
                                 isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
                             )}
-                            placeholder="예: 신규 교육"
+                            placeholder="제목을 입력하세요"
                         />
                         {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
                     </label>
 
-                    <label className="grid gap-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                            날짜
-                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
-                        </span>
-                        <input
-                            type="date"
-                            value={draft.scheduleDate}
-                            onChange={(event) => onChange({...draft, scheduleDate: event.target.value})}
-                            aria-required="true"
-                            aria-invalid={isDateInvalid}
-                            className={cn(
-                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] font-semibold text-sub-1 ring-1 transition outline-none focus:bg-white',
-                                isDateInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
-                            )}
-                        />
-                        {isDateInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">날짜를 선택해 주세요.</span> : null}
-                    </label>
-
-                    <div className="grid gap-1.5">
-                        <span className="text-[13px] font-semibold text-sub-2">시간</span>
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                            <input
-                                type="time"
-                                value={draft.startTime}
-                                onChange={(event) => onChange({...draft, startTime: event.target.value})}
-                                className="h-11 min-w-0 rounded-[8px] bg-gray-7 px-3 text-[14px] font-semibold text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
-                                aria-label="시작 시간"
+                    <div className="grid gap-2">
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                            <ScheduleDatePicker
+                                label="시작일"
+                                value={draft.startDate}
+                                invalid={isStartDateInvalid}
+                                disabled={isViewMode}
+                                onChange={updateStartDate}
                             />
-                            <span className="text-[13px] font-semibold text-gray-4">-</span>
-                            <input
-                                type="time"
-                                value={draft.endTime}
-                                onChange={(event) => onChange({...draft, endTime: event.target.value})}
-                                className="h-11 min-w-0 rounded-[8px] bg-gray-7 px-3 text-[14px] font-semibold text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
-                                aria-label="종료 시간"
+                            <ScheduleDatePicker
+                                label="종료일"
+                                value={draft.endDate}
+                                invalid={isEndDateInvalid}
+                                minDate={draft.startDate}
+                                disabled={isViewMode}
+                                onChange={updateEndDate}
                             />
                         </div>
+                        {isStartDateInvalid || isEndDateInvalid ? (
+                            <span className="text-[11px] font-medium text-[#E85D75]">일정 기간을 선택해 주세요.</span>
+                        ) : null}
                     </div>
+
+                    <label className="flex h-10 items-center justify-between rounded-[8px] bg-gray-7 px-3.5">
+                        <span className="text-[13px] font-semibold text-sub-2">종일</span>
+                        <input
+                            type="checkbox"
+                            checked={draft.allDay}
+                            onChange={(event) => updateAllDay(event.target.checked)}
+                            disabled={isViewMode}
+                            aria-label="종일"
+                            className="h-4 w-4 accent-main-1 disabled:cursor-default"
+                        />
+                    </label>
+
+                    {!draft.allDay ? (
+                        <div className="grid gap-1.5">
+                            <ScheduleTimeRangePicker draft={draft} disabled={isViewMode} onChange={onChange} />
+                            {isTimeRangeInvalid ? (
+                                <span className="text-[11px] font-medium text-[#E85D75]">
+                                    같은 날 일정은 종료 시간이 시작 시간보다 늦어야 해요.
+                                </span>
+                            ) : null}
+                        </div>
+                    ) : null}
 
                     <label className="grid gap-1.5">
                         <span className="text-[13px] font-semibold text-sub-2">메모</span>
@@ -786,7 +1200,8 @@ function WardScheduleModal({
                             onChange={(event) => onChange({...draft, content: event.target.value})}
                             maxLength={SCHEDULE_CONTENT_MAX_LENGTH}
                             rows={4}
-                            className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
+                            readOnly={isViewMode}
+                            className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none read-only:cursor-default focus:bg-white focus:ring-main-3"
                             placeholder="필요한 내용을 입력해 주세요"
                         />
                         <span className="justify-self-end text-[11px] font-medium text-gray-4">
@@ -799,7 +1214,7 @@ function WardScheduleModal({
                     {isEditMode && onDelete ? (
                         <button
                             type="button"
-                            className="inline-flex h-10 items-center gap-1.5 rounded-[8px] bg-[#FFF1F3] px-3 text-[13px] font-semibold text-[#D8495F] transition-colors hover:bg-[#FFE5EA] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex h-10 items-center gap-1.5 px-1 text-[13px] font-semibold text-[#D8495F] transition-colors hover:text-[#B93249] disabled:cursor-not-allowed disabled:opacity-40"
                             disabled={disabled || deleting}
                             onClick={onDelete}
                         >
@@ -815,15 +1230,17 @@ function WardScheduleModal({
                             className="h-10 rounded-[8px] bg-gray-7 px-4 text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6"
                             onClick={onClose}
                         >
-                            취소
+                            {isViewMode ? '닫기' : '취소'}
                         </button>
-                        <button
-                            type="submit"
-                            className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
-                            disabled={disabled || deleting}
-                        >
-                            {isEditMode ? '수정' : '등록'}
-                        </button>
+                        {!isViewMode ? (
+                            <button
+                                type="submit"
+                                className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
+                                disabled={disabled || deleting}
+                            >
+                                {isEditMode ? '수정' : '등록'}
+                            </button>
+                        ) : null}
                     </div>
                 </div>
             </form>
@@ -839,7 +1256,7 @@ function DeadlineCalendar({
     onMoveMonth,
     onSelectPost,
     onCreateSchedule,
-    onEditSchedule,
+    onOpenSchedule,
 }: {
     year: number;
     month: number;
@@ -848,51 +1265,90 @@ function DeadlineCalendar({
     onMoveMonth: (delta: number) => void;
     onSelectPost: (postId: number) => void;
     onCreateSchedule: (dateKey?: string) => void;
-    onEditSchedule: (schedule: TWardBoardSchedule) => void;
+    onOpenSchedule: (schedule: TWardBoardSchedule) => void;
 }) {
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const cells = useMemo(() => getCalendarCells(year, month), [month, year]);
-    const events = useMemo<TCalendarEvent[]>(() => {
-        const scheduleEvents = schedules.map<TCalendarEvent>((schedule) => {
-            const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime);
+    const {calendarEvents, monthEvents} = useMemo(() => {
+        const manualSchedules = schedules.filter((schedule) => !isBoardDeadlineSchedule(schedule));
+        const scheduleMonthEvents = manualSchedules.map<TCalendarEvent>((schedule) => {
+            const startDate = getScheduleStartDate(schedule);
+            const endDate = getScheduleEndDate(schedule);
+            const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime, getScheduleAllDay(schedule));
+            const dateRange = formatDateRange(startDate, endDate);
 
             return {
                 kind: 'schedule',
                 key: `schedule-${getScheduleId(schedule)}`,
-                date: schedule.scheduleDate,
+                date: startDate,
                 title: schedule.title,
-                meta: timeRange || getScheduleWriterName(schedule),
+                meta: `${dateRange} · ${timeRange || getScheduleWriterName(schedule)}`,
                 schedule,
             };
         });
-        const deadlineEvents = deadlines.map<TCalendarEvent>((deadline) => ({
+        const scheduleCalendarEvents = manualSchedules
+            .filter((schedule) => !isBoardDeadlineSchedule(schedule))
+            .flatMap<TCalendarEvent>((schedule) => {
+                const startDate = getScheduleStartDate(schedule);
+                const endDate = getScheduleEndDate(schedule);
+                const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime, getScheduleAllDay(schedule));
+
+                return getDateKeysInRange(startDate, endDate).map((dateKey) => ({
+                    kind: 'schedule',
+                    key: `schedule-${getScheduleId(schedule)}-${dateKey}`,
+                    date: dateKey,
+                    title: schedule.title,
+                    meta: timeRange || getScheduleWriterName(schedule),
+                    schedule,
+                }));
+            });
+        const deadlineSchedules = schedules
+            .filter(isBoardDeadlineSchedule)
+            .map(getDeadlineFromSchedule)
+            .filter((deadline): deadline is TWardBoardDeadline => Boolean(deadline));
+        const deadlineScheduleKeys = new Set(deadlineSchedules.map(getDeadlineEventKey));
+        const deadlineEvents = [
+            ...deadlineSchedules,
+            ...deadlines.filter((deadline) => !deadlineScheduleKeys.has(getDeadlineEventKey(deadline))),
+        ].map<TCalendarEvent>((deadline) => ({
             kind: 'deadline',
-            key: `deadline-${deadline.postId}-${deadline.deadlineDate}`,
+            key: getDeadlineEventKey(deadline),
             date: deadline.deadlineDate,
             title: deadline.postTitle,
             meta: '게시글 마감',
             deadline,
         }));
+        const sortEvents = (events: TCalendarEvent[]) =>
+            [...events].sort((a, b) => {
+                if (a.date !== b.date) return a.date.localeCompare(b.date);
 
-        return [...scheduleEvents, ...deadlineEvents].sort((a, b) => {
-            if (a.date !== b.date) return a.date.localeCompare(b.date);
+                if (a.kind !== b.kind) return a.kind === 'schedule' ? -1 : 1;
 
-            if (a.kind !== b.kind) return a.kind === 'schedule' ? -1 : 1;
+                return a.title.localeCompare(b.title);
+            });
 
-            return a.title.localeCompare(b.title);
-        });
+        return {
+            calendarEvents: sortEvents([...scheduleCalendarEvents, ...deadlineEvents]),
+            monthEvents: sortEvents([...scheduleMonthEvents, ...deadlineEvents]),
+        };
     }, [deadlines, schedules]);
     const eventsByDate = useMemo(
         () =>
-            events.reduce<Map<string, TCalendarEvent[]>>((map, event) => {
+            calendarEvents.reduce<Map<string, TCalendarEvent[]>>((map, event) => {
                 const current = map.get(event.date) ?? [];
 
                 map.set(event.date, [...current, event]);
 
                 return map;
             }, new Map()),
-        [events],
+        [calendarEvents],
     );
     const defaultScheduleDate = getDefaultScheduleDateForMonth(year, month);
+    const visibleEvents = selectedDate ? (eventsByDate.get(selectedDate) ?? []) : monthEvents;
+
+    useEffect(() => {
+        setSelectedDate(null);
+    }, [month, year]);
 
     return (
         <aside className="min-w-0 rounded-[8px] bg-white p-3">
@@ -945,11 +1401,9 @@ function DeadlineCalendar({
                     <div className="mt-1 grid grid-cols-7 gap-0.5">
                         {cells.map((cell) => {
                             const dayEvents = eventsByDate.get(cell.key) ?? [];
-                            const firstSchedule = dayEvents.find((event) => event.kind === 'schedule');
-                            const firstDeadline = dayEvents.find((event) => event.kind === 'deadline');
-                            const hasSchedule = Boolean(firstSchedule);
+                            const hasSchedule = dayEvents.some((event) => event.kind === 'schedule');
                             const hasEvent = dayEvents.length > 0;
-                            const canCreateOnDate = cell.inMonth && !hasEvent;
+                            const isSelected = selectedDate === cell.key;
 
                             return (
                                 <button
@@ -958,31 +1412,21 @@ function DeadlineCalendar({
                                     className={cn(
                                         'relative aspect-square rounded-[7px] text-[11px] font-semibold transition-colors disabled:cursor-default',
                                         cell.inMonth ? 'text-sub-2' : 'text-gray-5',
-                                        hasSchedule
-                                            ? 'bg-main-light text-main-1 hover:bg-main-4'
-                                            : hasEvent
-                                              ? 'bg-[#EEF6FF] text-[#2468B2] hover:bg-[#DCEBFF]'
-                                              : cell.inMonth
-                                                ? 'hover:bg-gray-7'
-                                                : undefined,
+                                        isSelected
+                                            ? 'bg-sub-1 text-white hover:bg-sub-1'
+                                            : hasSchedule
+                                              ? 'bg-main-light text-main-1 hover:bg-main-4'
+                                              : hasEvent
+                                                ? 'bg-[#EEF6FF] text-[#2468B2] hover:bg-[#DCEBFF]'
+                                                : cell.inMonth
+                                                  ? 'hover:bg-gray-7'
+                                                  : undefined,
                                     )}
-                                    disabled={!hasEvent && !canCreateOnDate}
+                                    disabled={!cell.inMonth}
                                     onClick={() => {
-                                        if (firstSchedule?.kind === 'schedule') {
-                                            onEditSchedule(firstSchedule.schedule);
-
-                                            return;
-                                        }
-
-                                        if (firstDeadline?.kind === 'deadline') {
-                                            onSelectPost(firstDeadline.deadline.postId);
-
-                                            return;
-                                        }
-
-                                        if (canCreateOnDate) onCreateSchedule(cell.key);
+                                        setSelectedDate(cell.key);
                                     }}
-                                    aria-label={`${formatDate(cell.key)} 일정 ${dayEvents.length}건`}
+                                    aria-label={`${formatDate(cell.key)} 일정 ${dayEvents.length}건${isSelected ? ', 선택됨' : ''}`}
                                 >
                                     {cell.date.getDate()}
                                     {hasEvent ? (
@@ -1006,28 +1450,30 @@ function DeadlineCalendar({
 
                 <div className="min-w-0">
                     <div className="flex items-center justify-between">
-                        <h3 className="text-[13px] font-semibold text-sub-1">이번 달 일정</h3>
-                        <span className="text-[11px] font-semibold text-gray-4">{events.length}건</span>
+                        <h3 className="text-[13px] font-semibold text-sub-1">
+                            {selectedDate ? `${formatDate(selectedDate)} 일정` : '이번 달 일정'}
+                        </h3>
+                        <span className="text-[11px] font-semibold text-gray-4">{visibleEvents.length}건</span>
                     </div>
                     <div className="mt-2.5 space-y-1.5">
-                        {events.length === 0 ? (
+                        {visibleEvents.length === 0 ? (
                             <p className="rounded-[8px] bg-gray-7 px-2.5 py-2.5 text-[12px] leading-5 text-gray-3">
-                                병동 일정을 등록하면 여기에 보여요.
+                                {selectedDate ? '선택한 날짜에 일정이 없어요.' : '병동 일정을 등록하면 여기에 보여요.'}
                             </p>
                         ) : (
-                            events.slice(0, 6).map((event) => (
+                            visibleEvents.slice(0, 6).map((event) => (
                                 <button
                                     key={event.key}
                                     type="button"
                                     className="flex w-full items-center gap-2 rounded-[8px] bg-gray-7 px-2.5 py-2 text-left transition-colors hover:bg-main-light"
                                     onClick={() => {
                                         if (event.kind === 'schedule') {
-                                            onEditSchedule(event.schedule);
+                                            onOpenSchedule(event.schedule);
 
                                             return;
                                         }
 
-                                        onSelectPost(event.deadline.postId);
+                                        if (event.deadline.postId) onSelectPost(event.deadline.postId);
                                     }}
                                 >
                                     <span
@@ -1051,7 +1497,7 @@ function DeadlineCalendar({
                                             <span className="truncate">{event.meta}</span>
                                         </span>
                                     </span>
-                                    {event.kind === 'schedule' ? (
+                                    {event.kind === 'schedule' && canEditSchedule(event.schedule) ? (
                                         <Pencil className="size-3.5 shrink-0 text-gray-4" aria-hidden="true" />
                                     ) : null}
                                 </button>
@@ -1087,7 +1533,8 @@ function BoardPage() {
     const [replyDraft, setReplyDraft] = useState('');
     const [replyingCommentId, setReplyingCommentId] = useState<number | null>(null);
     const [calendarMonth, setCalendarMonth] = useState({year: today.getFullYear(), month: today.getMonth() + 1});
-    const [scheduleModalMode, setScheduleModalMode] = useState<'create' | 'edit' | null>(null);
+    const [scheduleModalMode, setScheduleModalMode] = useState<TScheduleModalMode | null>(null);
+    const [selectedSchedule, setSelectedSchedule] = useState<TWardBoardSchedule | null>(null);
     const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
     const [scheduleDraft, setScheduleDraft] = useState<TScheduleDraft>(() => createInitialScheduleDraft());
     const [scheduleDraftSubmitAttempted, setScheduleDraftSubmitAttempted] = useState(false);
@@ -1188,6 +1635,7 @@ function BoardPage() {
         const handleKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key === 'Escape') {
                 setScheduleModalMode(null);
+                setSelectedSchedule(null);
                 setScheduleDraftSubmitAttempted(false);
             }
         };
@@ -1254,6 +1702,7 @@ function BoardPage() {
             if (!activeWardId) return;
 
             setScheduleModalMode(null);
+            setSelectedSchedule(null);
             setEditingScheduleId(null);
             setScheduleDraft(createInitialScheduleDraft());
             setScheduleDraftSubmitAttempted(false);
@@ -1267,6 +1716,7 @@ function BoardPage() {
             if (!activeWardId) return;
 
             setScheduleModalMode(null);
+            setSelectedSchedule(null);
             setEditingScheduleId(null);
             setScheduleDraft(createInitialScheduleDraft());
             setScheduleDraftSubmitAttempted(false);
@@ -1279,6 +1729,7 @@ function BoardPage() {
             if (!activeWardId) return;
 
             setScheduleModalMode(null);
+            setSelectedSchedule(null);
             setEditingScheduleId(null);
             setScheduleDraft(createInitialScheduleDraft());
             setScheduleDraftSubmitAttempted(false);
@@ -1361,38 +1812,61 @@ function BoardPage() {
         if (isScheduleBusy) return;
 
         setScheduleModalMode(null);
+        setSelectedSchedule(null);
         setEditingScheduleId(null);
         setScheduleDraftSubmitAttempted(false);
     };
     const openCreateSchedule = (dateKey = getDefaultScheduleDateForMonth(calendarMonth.year, calendarMonth.month)) => {
         setScheduleDraft(createInitialScheduleDraft(dateKey));
         setScheduleDraftSubmitAttempted(false);
+        setSelectedSchedule(null);
         setEditingScheduleId(null);
         setScheduleModalMode('create');
     };
-    const openEditSchedule = (schedule: TWardBoardSchedule) => {
+    const openSchedule = (schedule: TWardBoardSchedule) => {
         const scheduleId = getScheduleId(schedule);
+        const startDate = getScheduleStartDate(schedule);
+        const endDate = getScheduleEndDate(schedule);
+        const allDay = getScheduleAllDay(schedule);
 
         if (!scheduleId) return;
 
         setScheduleDraft({
             title: schedule.title,
             content: schedule.content ?? '',
-            scheduleDate: schedule.scheduleDate,
-            startTime: normalizeTimeInput(schedule.startTime),
-            endTime: normalizeTimeInput(schedule.endTime),
+            startDate,
+            endDate,
+            allDay,
+            startTime: allDay ? '' : normalizeTimeInput(schedule.startTime),
+            endTime: allDay ? '' : normalizeTimeInput(schedule.endTime),
         });
         setScheduleDraftSubmitAttempted(false);
+        setSelectedSchedule(schedule);
         setEditingScheduleId(scheduleId);
-        setScheduleModalMode('edit');
+        setScheduleModalMode(canEditSchedule(schedule) ? 'edit' : 'view');
     };
     const handleSubmitSchedule = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+
+        if (scheduleModalMode === 'view') return;
+
         setScheduleDraftSubmitAttempted(true);
 
         const payload = toSchedulePayload(scheduleDraft);
 
-        if (!payload.title || !payload.scheduleDate) return;
+        if (!payload.title || !payload.scheduleDate || !scheduleDraft.endDate) return;
+
+        if (compareDateKey(scheduleDraft.endDate, scheduleDraft.startDate) < 0) return;
+
+        if (
+            !scheduleDraft.allDay &&
+            scheduleDraft.startDate === scheduleDraft.endDate &&
+            scheduleDraft.startTime &&
+            scheduleDraft.endTime &&
+            scheduleDraft.startTime > scheduleDraft.endTime
+        ) {
+            return;
+        }
 
         if (scheduleModalMode === 'edit') {
             if (!editingScheduleId) return;
@@ -1405,7 +1879,7 @@ function BoardPage() {
         createScheduleMutation.mutate(payload);
     };
     const handleDeleteSchedule = () => {
-        if (!editingScheduleId) return;
+        if (!editingScheduleId || !selectedSchedule || !canDeleteSchedule(selectedSchedule)) return;
 
         if (!globalThis.confirm('병동 일정을 삭제할까요?')) return;
 
@@ -1623,7 +2097,7 @@ function BoardPage() {
     }
 
     return (
-        <div className="flex min-h-screen w-full min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
+        <div className="mx-auto flex min-h-screen w-full max-w-[1520px] min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
             <div className="min-w-0">
                 <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">게시판</h1>
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -1897,19 +2371,16 @@ function BoardPage() {
                                             <span>{formatDate(selectedPost.deadlineDate)}</span>
                                         </div>
                                     ) : null}
-                                    {selectedPostQuery.isFetching ? (
-                                        <span className="inline-flex h-7 items-center rounded-full bg-gray-7 px-2.5 text-[12px] font-semibold text-gray-3">
-                                            업데이트 중
-                                        </span>
-                                    ) : null}
                                     {selectedPost.isMine ? (
                                         <button
                                             type="button"
-                                            className="h-8 rounded-[8px] bg-[#FFF1F3] px-3 text-[12px] font-semibold text-[#D8495F] transition-colors hover:bg-[#FFE5EA] disabled:cursor-not-allowed disabled:opacity-40"
+                                            className="grid h-8 w-8 place-items-center rounded-[8px] text-[#D8495F] transition-colors hover:bg-[#FFF1F3] hover:text-[#B93249] disabled:cursor-not-allowed disabled:opacity-40"
                                             disabled={deletePostMutation.isPending}
                                             onClick={() => handleDeletePost(selectedPost)}
+                                            aria-label="글 삭제"
+                                            title="글 삭제"
                                         >
-                                            삭제
+                                            <Trash2 className="size-4" aria-hidden="true" />
                                         </button>
                                     ) : null}
                                 </div>
@@ -2104,7 +2575,7 @@ function BoardPage() {
                             setSelectedPostId(postId);
                         }}
                         onCreateSchedule={openCreateSchedule}
-                        onEditSchedule={openEditSchedule}
+                        onOpenSchedule={openSchedule}
                     />
                 </div>
             </div>
@@ -2118,7 +2589,11 @@ function BoardPage() {
                     onChange={setScheduleDraft}
                     onSubmit={handleSubmitSchedule}
                     onClose={closeScheduleModal}
-                    onDelete={scheduleModalMode === 'edit' ? handleDeleteSchedule : undefined}
+                    onDelete={
+                        scheduleModalMode === 'edit' && selectedSchedule && canDeleteSchedule(selectedSchedule)
+                            ? handleDeleteSchedule
+                            : undefined
+                    }
                 />
             ) : null}
             <BoardTutorial

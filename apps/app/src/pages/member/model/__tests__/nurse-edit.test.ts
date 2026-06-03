@@ -1,6 +1,8 @@
 import {describe, expect, it} from 'vitest';
 import {type TNurse} from '@/entities/nurse';
+import {type TWardShiftType} from '@/entities/ward';
 import {getNurseDrawerFeedback, hasNurseChanges} from '../nurse-edit';
+import {resolveNurseShiftTypeOptions} from '../nurse-shift-types';
 
 const createNurse = (): TNurse => ({
     nurseId: 1,
@@ -88,6 +90,95 @@ describe('hasNurseChanges', () => {
         };
 
         expect(hasNurseChanges(nurse, draft)).toBe(false);
+    });
+
+    it('compares shift type availability by ward shift type id', () => {
+        const nurse = {
+            ...createNurse(),
+            nurseShiftTypes: [
+                {
+                    nurseShiftTypeId: 1,
+                    wardShiftTypeId: 10,
+                    name: 'Old OnCall',
+                    shortName: 'O',
+                    isPossible: true,
+                    isPreferred: false,
+                },
+                {
+                    nurseShiftTypeId: 2,
+                    wardShiftTypeId: 20,
+                    name: 'Old Orientation',
+                    shortName: 'O',
+                    isPossible: false,
+                    isPreferred: false,
+                },
+            ],
+        };
+
+        expect(
+            hasNurseChanges(nurse, {
+                ...nurse,
+                nurseShiftTypes: nurse.nurseShiftTypes.map((shiftType) =>
+                    shiftType.wardShiftTypeId === 20 ? {...shiftType, name: 'Renamed Orientation', shortName: 'A'} : shiftType,
+                ),
+            }),
+        ).toBe(false);
+        expect(
+            hasNurseChanges(nurse, {
+                ...nurse,
+                nurseShiftTypes: nurse.nurseShiftTypes.map((shiftType) =>
+                    shiftType.wardShiftTypeId === 20 ? {...shiftType, isPossible: true} : shiftType,
+                ),
+            }),
+        ).toBe(true);
+    });
+});
+
+const createWardShiftType = (overrides: Partial<TWardShiftType>): TWardShiftType => ({
+    wardShiftTypeId: 1,
+    name: 'Day',
+    shortName: 'D',
+    startTime: '07:00',
+    endTime: '15:00',
+    color: '#7C3AED',
+    isDefault: false,
+    isOff: false,
+    isCounted: true,
+    classification: 'OTHER_WORK',
+    ...overrides,
+});
+
+describe('resolveNurseShiftTypeOptions', () => {
+    it('matches nurse shift type rows by wardShiftTypeId instead of duplicated short names', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 10,
+                    name: 'Old OnCall',
+                    shortName: 'O',
+                    isPossible: false,
+                    isPreferred: false,
+                },
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 20,
+                    name: 'Old Orientation',
+                    shortName: 'O',
+                    isPossible: true,
+                    isPreferred: false,
+                },
+            ],
+            [
+                createWardShiftType({wardShiftTypeId: 20, name: 'Orientation', shortName: 'O'}),
+                createWardShiftType({wardShiftTypeId: 10, name: 'OnCall', shortName: 'O'}),
+            ],
+        );
+
+        expect(options).toMatchObject([
+            {apiShiftTypeId: 101, wardShiftTypeId: 10, name: 'OnCall', shortName: 'O', isPossible: false},
+            {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'Orientation', shortName: 'O', isPossible: true},
+        ]);
     });
 });
 

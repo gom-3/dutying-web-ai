@@ -1,8 +1,9 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
-import {ArrowRightLeft, Check, ChevronRight, Loader2, Settings2} from 'lucide-react';
+import {ArrowRightLeft, Check, ChevronRight, Loader2} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
+import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
@@ -15,11 +16,11 @@ import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {hasNurseChanges, hasNurseProfileChanges} from '../model/nurse-edit';
 import {getMemoWithoutPrecepteeMarker, hasPrecepteeMemo, setPrecepteeMemo} from '../model/nurse-role';
+import {resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
 
 interface INurseDetailPanelProps {
     onClose: () => void;
     onOpenWardCodeGuide: () => void;
-    onOpenSkillSettings: () => void;
     isSkillFeatureEnabled: boolean;
     isSkillUnselected: boolean;
     onSaveSkillLevel: (nextLevel: number | null) => void;
@@ -33,7 +34,6 @@ interface INurseDetailPanelProps {
 function NurseDetailPanel({
     onClose,
     onOpenWardCodeGuide,
-    onOpenSkillSettings,
     isSkillFeatureEnabled,
     isSkillUnselected,
     onSaveSkillLevel,
@@ -91,16 +91,6 @@ function NurseDetailPanel({
             document.removeEventListener('mousedown', closeOnOutsideClick);
         };
     }, [moveTeamMenuOpen]);
-    useEffect(() => {
-        const textarea = memoTextareaRef.current;
-
-        if (!textarea) return;
-
-        const MAX_HEIGHT = 120;
-
-        textarea.style.height = 'auto';
-        textarea.style.height = `${Math.min(textarea.scrollHeight, MAX_HEIGHT)}px`;
-    }, [writeNurse?.memo]);
 
     const initialSkillLevel = isSkillUnselected ? null : (skillLevel ?? null);
     const isSkillDirty = skillDraftLevel !== initialSkillLevel;
@@ -109,40 +99,14 @@ function NurseDetailPanel({
         setNurseDraftDirty(isDirty || isSkillDirty);
     }, [isDirty, isSkillDirty, setNurseDraftDirty]);
 
-    const shiftTypeColorByName = useMemo(
-        () => new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.name, shiftType.color])),
+    const shiftTypeColorById = useMemo(
+        () => new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType.color])),
         [wardShiftTypes],
     );
     const shiftTypeOptions = useMemo(() => {
         if (!writeNurse) return [];
-        const nurseShiftTypeByName = new Map(writeNurse.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
 
-        if (!wardShiftTypes?.length) {
-            return writeNurse.nurseShiftTypes.map((shiftType) => ({
-                ...shiftType,
-                apiShiftTypeId: shiftType.nurseShiftTypeId,
-            }));
-        }
-
-        return wardShiftTypes.map((wardShiftType) => {
-            const matched = nurseShiftTypeByName.get(wardShiftType.name);
-
-            if (matched) {
-                return {
-                    ...matched,
-                    apiShiftTypeId: matched.nurseShiftTypeId,
-                };
-            }
-
-            return {
-                nurseShiftTypeId: wardShiftType.wardShiftTypeId,
-                name: wardShiftType.name,
-                shortName: wardShiftType.shortName,
-                isPossible: true,
-                isPreferred: false,
-                apiShiftTypeId: wardShiftType.wardShiftTypeId,
-            };
-        });
+        return resolveNurseShiftTypeOptions(writeNurse.nurseShiftTypes, wardShiftTypes);
     }, [wardShiftTypes, writeNurse]);
     const selectedShiftTeamId = useMemo(() => {
         if (!selectedNurse) return null;
@@ -162,14 +126,26 @@ function NurseDetailPanel({
 
         if (writeNurse.name.trim().length === 0) {
             setShowNameRequiredError(true);
+
             return false;
         }
 
         if (isCreateMode && !canSaveCreateDraft(writeNurse)) return false;
 
-        const originalShiftTypeByName = new Map(selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
+        const originalShiftTypeByWardShiftTypeId = new Map(
+            selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
+                typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
+            ),
+        );
+        const originalShiftTypeByNurseShiftTypeId = new Map(
+            selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
+        );
         const changedShiftTypes = shiftTypeOptions.filter((draftShiftType) => {
-            const originalIsPossible = originalShiftTypeByName.get(draftShiftType.name)?.isPossible ?? true;
+            const originalShiftType =
+                (typeof draftShiftType.wardShiftTypeId === 'number'
+                    ? originalShiftTypeByWardShiftTypeId.get(draftShiftType.wardShiftTypeId)
+                    : undefined) ?? originalShiftTypeByNurseShiftTypeId.get(draftShiftType.apiShiftTypeId);
+            const originalIsPossible = originalShiftType?.isPossible ?? true;
 
             return originalIsPossible !== draftShiftType.isPossible;
         });
@@ -179,7 +155,11 @@ function NurseDetailPanel({
                 writeNurse.nurseId,
                 shiftType.apiShiftTypeId,
                 {isPossible: shiftType.isPossible},
-                {name: shiftType.name, shortName: shiftType.shortName ?? ''},
+                {
+                    wardShiftTypeId: shiftType.wardShiftTypeId,
+                    name: shiftType.name,
+                    shortName: shiftType.shortName ?? '',
+                },
             );
 
             if (!saved) return false;
@@ -189,10 +169,7 @@ function NurseDetailPanel({
             const saved = await updateNurse(writeNurse.nurseId, {
                 name: writeNurse.name,
                 phoneNum: writeNurse.phoneNum,
-                gender: writeNurse.gender,
                 isWorker: writeNurse.isWorker,
-                employmentDate: writeNurse.employmentDate,
-                isDutyManager: false,
                 isWardManager: writeNurse.isWardManager,
                 memo: writeNurse.memo ?? '',
             });
@@ -204,11 +181,16 @@ function NurseDetailPanel({
             onSaveSkillLevel(skillDraftLevel);
         }
 
+        if (isDirty || isSkillDirty) {
+            toast.success('근무자 정보를 저장했어요.');
+        }
+
         return true;
     };
     const handleRequestClose = () => {
         if (isDirty || isSkillDirty) {
             setExitConfirmModalOpen(true);
+
             return;
         }
 
@@ -217,7 +199,7 @@ function NurseDetailPanel({
 
     if (!selectedNurse || !writeNurse) {
         return (
-            <aside className="h-screen w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
+            <aside className="h-full w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
                 <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-gray-6 bg-main-bg px-6 text-center">
                     <p className="font-apple text-[15px] leading-7 text-gray-3">간호사를 선택하면 상세 정보가 여기에 고정되어 보여요.</p>
                 </div>
@@ -227,20 +209,24 @@ function NurseDetailPanel({
 
     return (
         <TooltipProvider delayDuration={120}>
-            <aside className="flex h-screen w-[360px] flex-col overflow-hidden bg-white min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
-                <div className="px-4 pt-4 pb-3 min-[1440px]:px-5 min-[1440px]:pt-5 min-[1440px]:pb-4">
+            <aside className="flex h-full w-[360px] flex-col overflow-hidden bg-white min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
+                <div className="shrink-0 px-3 pt-3 pb-2.5 min-[1440px]:px-4 min-[1440px]:pt-4 min-[1440px]:pb-3">
                     <div className="flex items-center justify-between">
                         <p className="font-apple text-[13px] font-semibold text-gray-3">{t('page.member.table.name')}</p>
                         <button
                             type="button"
-                            className="grid size-8 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1"
+                            className="grid size-7 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:size-8"
                             onClick={handleRequestClose}
                             aria-label={t('page.member.detail.close')}
                         >
-                            <ChevronRight aria-hidden="true" className="h-5 w-5" strokeWidth={2.4} />
+                            <ChevronRight
+                                aria-hidden="true"
+                                className="h-[18px] w-[18px] min-[1440px]:h-5 min-[1440px]:w-5"
+                                strokeWidth={2.4}
+                            />
                         </button>
                     </div>
-                    <div className="mt-3 grid grid-cols-[minmax(0,88fr)_minmax(0,12fr)] items-center gap-3">
+                    <div className="mt-2 grid grid-cols-[minmax(0,88fr)_minmax(0,12fr)] items-center gap-2.5">
                         <TextField
                             ref={textInputRef}
                             autoFocus
@@ -249,7 +235,7 @@ function NurseDetailPanel({
                             maxLength={30}
                             placeholder={showNameRequiredError ? '이름' : undefined}
                             className={cn(
-                                'h-11 min-w-0 rounded-[12px] border-gray-6 px-3.5 text-[20px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1440px]:h-12 min-[1440px]:text-[22px]',
+                                'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1440px]:h-11 min-[1440px]:text-[20px]',
                                 showNameRequiredError &&
                                     '!border !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-none focus-visible:!border-[#E57373]',
                             )}
@@ -268,7 +254,7 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     disabled={isBusy}
-                                    className="inline-flex h-11 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1440px]:h-12"
+                                    className="inline-flex h-10 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1440px]:h-11"
                                     onClick={() => {
                                         if (writeNurse.isConnected) {
                                             setDisconnectConfirmModalOpen(true);
@@ -287,22 +273,14 @@ function NurseDetailPanel({
                         </Tooltip>
                     </div>
 
-                    {isSkillFeatureEnabled ? <div className="mt-4 border-t border-gray-7 pt-4" /> : null}
+                    {isSkillFeatureEnabled ? <div className="mt-2.5 border-t border-gray-7 pt-2.5" /> : null}
                     {isSkillFeatureEnabled ? (
                         <div>
                             <div className="flex items-center justify-between">
-                                <p className="font-apple text-[14px] font-semibold text-[#5C667D]">숙련도</p>
-                                <button
-                                    type="button"
-                                    className="grid size-7 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1"
-                                    aria-label="숙련도 설정"
-                                    onClick={onOpenSkillSettings}
-                                >
-                                    <Settings2 className="size-4" />
-                                </button>
+                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">숙련도</p>
                             </div>
                             <div
-                                className="mt-3 grid w-full gap-1.5"
+                                className="mt-2 grid w-full gap-1.5"
                                 style={{gridTemplateColumns: `repeat(${skillConfig.levelCount}, minmax(0, 1fr))`}}
                             >
                                 {Array.from({length: skillConfig.levelCount}, (_, index) => index + 1).map((level) => {
@@ -317,8 +295,8 @@ function NurseDetailPanel({
                                             disabled={isBusy}
                                             aria-pressed={isSelected}
                                             className={cn(
-                                                'inline-flex min-h-7 w-full min-w-0 cursor-pointer items-center justify-center rounded-full border py-1 font-apple text-[13px] leading-none font-semibold tabular-nums transition duration-150 hover:-translate-y-[1px] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50',
-                                                isSelected ? 'px-3' : 'px-1.5',
+                                                'inline-flex min-h-6 w-full min-w-0 cursor-pointer items-center justify-center rounded-full border py-0.5 font-apple text-[12px] leading-none tabular-nums transition duration-150 hover:-translate-y-[1px] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:min-h-7 min-[1440px]:py-1 min-[1440px]:text-[13px]',
+                                                isSelected ? 'px-3 font-semibold' : 'px-1.5 font-normal',
                                             )}
                                             style={{
                                                 borderColor: isSelected ? backgroundColor : 'transparent',
@@ -338,271 +316,280 @@ function NurseDetailPanel({
                     ) : null}
                 </div>
 
-                <div className="border-t border-gray-7 px-4 py-3 min-[1440px]:px-5 min-[1440px]:py-4">
-                    <div className="flex items-center justify-between">
-                        <p className="font-apple text-[14px] font-semibold text-[#5C667D]">{t('page.member.detail.shiftTypes')}</p>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <button
-                                    type="button"
-                                    className="grid size-7 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1"
-                                    aria-label="가능 근무 안내"
-                                >
-                                    <InfoIcon className="size-4" />
-                                </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">{t('page.member.detail.shiftTypesHint')}</TooltipContent>
-                        </Tooltip>
-                    </div>
-                    <div className="mt-3 grid w-full grid-cols-4 gap-1.5">
-                        {shiftTypeOptions.map(({isPossible, name, shortName, apiShiftTypeId}) => {
-                            const baseColor = shiftTypeColorByName.get(name) ?? '#BFC7D4';
+                <div className="flex min-h-0 flex-1 flex-col">
+                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
+                        <div className="flex items-center justify-between">
+                            <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                                {t('page.member.detail.shiftTypes')}
+                            </p>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:size-7"
+                                        aria-label="가능 근무 안내"
+                                    >
+                                        <InfoIcon className="size-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">{t('page.member.detail.shiftTypesHint')}</TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
+                            {shiftTypeOptions.map(({isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId}) => {
+                                const baseColor =
+                                    (typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined) ??
+                                    '#BFC7D4';
 
-                            return (
+                                return (
+                                    <button
+                                        key={apiShiftTypeId}
+                                        type="button"
+                                        disabled={isBusy}
+                                        aria-pressed={isPossible}
+                                        className={cn(
+                                            'inline-flex min-h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:min-h-8 min-[1440px]:px-2.5 min-[1440px]:text-[14px]',
+                                        )}
+                                        style={
+                                            isPossible
+                                                ? {borderColor: baseColor, backgroundColor: baseColor, color: '#FFFFFF'}
+                                                : {borderColor: 'transparent', backgroundColor: '#ECEFF3', color: '#6B7280'}
+                                        }
+                                        onClick={() => {
+                                            setWriteNurse((prev) =>
+                                                prev
+                                                    ? {
+                                                          ...prev,
+                                                          nurseShiftTypes: produce(prev.nurseShiftTypes, (draft) => {
+                                                              const target = draft.find(
+                                                                  (x) =>
+                                                                      (typeof wardShiftTypeId === 'number' &&
+                                                                          x.wardShiftTypeId === wardShiftTypeId) ||
+                                                                      x.nurseShiftTypeId === apiShiftTypeId,
+                                                              );
+
+                                                              if (target) {
+                                                                  target.isPossible = !isPossible;
+
+                                                                  return;
+                                                              }
+
+                                                              draft.push({
+                                                                  nurseShiftTypeId: apiShiftTypeId,
+                                                                  wardShiftTypeId,
+                                                                  name,
+                                                                  shortName: shortName ?? '',
+                                                                  isPossible: !isPossible,
+                                                                  isPreferred: false,
+                                                              });
+                                                          }),
+                                                      }
+                                                    : prev,
+                                            );
+                                            sendEvent(events.memberPage.editNurseDrawer.changeNurseShiftTypes);
+                                        }}
+                                    >
+                                        <span className="relative inline-flex h-[16px] w-[14px] items-center justify-center overflow-hidden">
+                                            <span
+                                                className={cn(
+                                                    'absolute inset-0 flex items-center justify-center font-medium transition-all duration-200',
+                                                    isPossible ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
+                                                )}
+                                            >
+                                                {shortName || ''}
+                                            </span>
+                                            <Check
+                                                className={cn(
+                                                    'absolute h-3.5 w-3.5 transition-all duration-200',
+                                                    isPossible ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
+                                                )}
+                                                strokeWidth={3}
+                                            />
+                                        </span>
+                                        <span className="font-normal">{name}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
+                        <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">역할 및 권한</p>
+                        <div className="mt-2 grid grid-cols-2 gap-1.5">
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉터</p>
                                 <button
-                                    key={apiShiftTypeId}
                                     type="button"
+                                    role="checkbox"
+                                    aria-checked={Boolean(writeNurse.isWardManager)}
+                                    aria-label={`${writeNurse.name || '간호사'} 프리셉터`}
                                     disabled={isBusy}
-                                    aria-pressed={isPossible}
                                     className={cn(
-                                        'inline-flex w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-2 py-1.5 font-apple text-[14px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:px-3 min-[1440px]:text-[15px]',
+                                        'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
+                                        writeNurse.isWardManager
+                                            ? 'border-main-1 bg-main-1 text-white'
+                                            : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
                                     )}
-                                    style={
-                                        isPossible
-                                            ? {borderColor: baseColor, backgroundColor: baseColor, color: '#FFFFFF'}
-                                            : {borderColor: 'transparent', backgroundColor: '#ECEFF3', color: '#6B7280'}
-                                    }
-                                    onClick={() => {
+                                    onClick={() =>
                                         setWriteNurse((prev) =>
                                             prev
                                                 ? {
                                                       ...prev,
-                                                      nurseShiftTypes: produce(prev.nurseShiftTypes, (draft) => {
-                                                          const target = draft.find((x) => x.name === name);
-
-                                                          if (target) {
-                                                              target.isPossible = !isPossible;
-                                                              return;
-                                                          }
-
-                                                          draft.push({
-                                                              nurseShiftTypeId: apiShiftTypeId,
-                                                              name,
-                                                              shortName: shortName ?? '',
-                                                              isPossible: !isPossible,
-                                                              isPreferred: false,
-                                                          });
-                                                      }),
+                                                      isWardManager: !prev.isWardManager,
+                                                      memo: !prev.isWardManager ? setPrecepteeMemo(prev.memo, false) : prev.memo,
                                                   }
                                                 : prev,
-                                        );
-                                        sendEvent(events.memberPage.editNurseDrawer.changeNurseShiftTypes);
-                                    }}
+                                        )
+                                    }
                                 >
-                                    <span className="relative inline-flex h-[16px] w-[14px] items-center justify-center overflow-hidden">
-                                        <span
-                                            className={cn(
-                                                'absolute inset-0 flex items-center justify-center font-medium transition-all duration-200',
-                                                isPossible ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
-                                            )}
-                                        >
-                                            {shortName || ''}
-                                        </span>
-                                        <Check
-                                            className={cn(
-                                                'absolute h-3.5 w-3.5 transition-all duration-200',
-                                                isPossible ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
-                                            )}
-                                            strokeWidth={3}
-                                        />
-                                    </span>
-                                    <span className="font-normal">{name}</span>
+                                    <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                                 </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-7 px-4 py-3 min-[1440px]:px-5 min-[1440px]:py-4">
-                    <p className="font-apple text-[14px] font-semibold text-[#5C667D]">역할 및 권한</p>
-                    <div className="mt-2 grid grid-cols-2 gap-1.5">
-                        <div className="flex min-h-10 items-center justify-between rounded-[10px] bg-gray-7 px-3">
-                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉터</p>
-                            <button
-                                type="button"
-                                role="checkbox"
-                                aria-checked={Boolean(writeNurse.isWardManager)}
-                                aria-label={`${writeNurse.name || '간호사'} 프리셉터`}
-                                disabled={isBusy}
-                                className={cn(
-                                    'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
-                                    writeNurse.isWardManager
-                                        ? 'border-main-1 bg-main-1 text-white'
-                                        : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
-                                )}
-                                onClick={() =>
-                                    setWriteNurse((prev) =>
-                                        prev
-                                            ? {
-                                                  ...prev,
-                                                  isWardManager: !prev.isWardManager,
-                                                  memo: !prev.isWardManager ? setPrecepteeMemo(prev.memo, false) : prev.memo,
-                                              }
-                                            : prev,
-                                    )
-                                }
-                            >
-                                <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
-                            </button>
-                        </div>
-                        <div className="flex min-h-10 items-center justify-between rounded-[10px] bg-gray-7 px-3">
-                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉티</p>
-                            <button
-                                type="button"
-                                role="checkbox"
-                                aria-checked={isPreceptee}
-                                aria-label={`${writeNurse.name || '간호사'} 프리셉티`}
-                                disabled={isBusy}
-                                className={cn(
-                                    'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
-                                    isPreceptee
-                                        ? 'border-main-1 bg-main-1 text-white'
-                                        : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
-                                )}
-                                onClick={() =>
-                                    setWriteNurse((prev) => {
-                                        if (!prev) return prev;
-                                        const nextIsPreceptee = !hasPrecepteeMemo(prev.memo);
-
-                                        return {
-                                            ...prev,
-                                            isWardManager: nextIsPreceptee ? false : prev.isWardManager,
-                                            memo: setPrecepteeMemo(prev.memo, nextIsPreceptee),
-                                        };
-                                    })
-                                }
-                            >
-                                <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
-                            </button>
-                        </div>
-                        <div className="flex min-h-10 items-center justify-between rounded-[10px] bg-gray-7 px-3">
-                            <p className="font-apple text-[13px] font-medium text-sub-2 min-[1440px]:text-[14px]">근무투입</p>
-                            <Switch
-                                checked={writeNurse.isWorker}
-                                disabled={isBusy}
-                                onCheckedChange={(checked) =>
-                                    setWriteNurse((prev) => (prev ? {...prev, isWorker: checked} : prev))
-                                }
-                                className="relative h-6 w-11 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
-                                thumbClassName="absolute top-0.5 left-0.5 h-5 w-5 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-5"
-                                aria-label={`${writeNurse.name} 근무투입`}
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="border-t border-gray-7 px-4 py-3 min-[1440px]:px-5 min-[1440px]:py-4">
-                    <p className="font-apple text-[14px] font-semibold text-[#5C667D]">전화번호</p>
-                    <input
-                        type="tel"
-                        disabled={isBusy}
-                        name="nursePhoneNum"
-                        className="mt-2 h-10 w-full rounded-[10px] border border-gray-6 bg-main-bg px-3 font-poppins text-[14px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50"
-                        value={writeNurse.phoneNum}
-                        onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
-                    />
-                </div>
-
-                <div className="border-t border-gray-7 px-4 pt-3 pb-4 min-[1440px]:px-5 min-[1440px]:pt-4 min-[1440px]:pb-5">
-                    <p className="font-apple text-[14px] font-semibold text-[#5C667D]">메모</p>
-                    <textarea
-                        ref={memoTextareaRef}
-                        name="nurseMemo"
-                        aria-label={t('page.member.detail.memo')}
-                        value={getMemoWithoutPrecepteeMarker(writeNurse.memo)}
-                        disabled={isBusy}
-                        className="mt-2 min-h-16 w-full resize-none overflow-hidden rounded-[10px] border border-gray-6 bg-main-bg p-3 font-apple text-[14px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1"
-                        onChange={(event) =>
-                            setWriteNurse((prev) =>
-                                prev ? {...prev, memo: setPrecepteeMemo(event.target.value, hasPrecepteeMemo(prev.memo))} : prev,
-                            )
-                        }
-                    />
-                    <div ref={moveTeamMenuRef} className="pt-2">
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                            <button
-                                type="button"
-                                aria-haspopup="listbox"
-                                aria-expanded={moveTeamMenuOpen}
-                                disabled={isBusy || moveTargetShiftTeams.length === 0}
-                                className={cn(
-                                    'inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-[#F3F4F6] px-3 font-apple text-[14px] font-semibold text-[#5C667D] transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-45',
-                                    moveTeamMenuOpen && 'bg-[#EAECEF] text-sub-1',
-                                )}
-                                onClick={() => setMoveTeamMenuOpen((prev) => !prev)}
-                            >
-                                {isMovingTeam ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.4} />
-                                ) : (
-                                    <ArrowRightLeft className="h-4 w-4" strokeWidth={2.4} />
-                                )}
-                                팀 이동
-                            </button>
-                            <button
-                                type="button"
-                                disabled={isBusy}
-                                className="h-10 w-full rounded-[10px] bg-[#FFF5F5] px-3 font-apple text-[14px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50"
-                                onClick={() => setDeleteConfirmModalOpen(true)}
-                            >
-                                삭제하기
-                            </button>
-                        </div>
-                        {moveTeamMenuOpen ? (
-                            <div
-                                role="listbox"
-                                className="mt-2 overflow-hidden rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
-                            >
-                                <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">이동할 팀</p>
-                                <div className="px-2">
-                                    {moveTargetShiftTeams.map((shiftTeam) => (
-                                        <button
-                                            key={shiftTeam.shiftTeamId}
-                                            type="button"
-                                            role="option"
-                                            aria-selected={false}
-                                            disabled={isMovingTeam}
-                                            className="flex min-h-10 w-full items-center gap-2 rounded-[9px] px-2.5 text-left transition-colors hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
-                                            onClick={async () => {
-                                                if (isMovingTeam) return;
-
-                                                setIsMovingTeam(true);
-
-                                                try {
-                                                    const moved = await onMoveShiftTeam(shiftTeam.shiftTeamId);
-
-                                                    if (moved) {
-                                                        setMoveTeamMenuOpen(false);
-                                                    }
-                                                } finally {
-                                                    setIsMovingTeam(false);
-                                                }
-                                            }}
-                                        >
-                                            <span className="min-w-0 flex-1 truncate font-apple text-[14px] font-semibold text-sub-1">
-                                                {shiftTeam.name}
-                                            </span>
-                                            <span className="shrink-0 rounded-full bg-gray-7 px-2 py-0.5 font-poppins text-[12px] font-semibold text-gray-3">
-                                                {shiftTeam.nurses.length}
-                                            </span>
-                                            <ChevronRight className="h-4 w-4 shrink-0 text-gray-4" strokeWidth={2.4} />
-                                        </button>
-                                    ))}
-                                </div>
                             </div>
-                        ) : null}
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉티</p>
+                                <button
+                                    type="button"
+                                    role="checkbox"
+                                    aria-checked={isPreceptee}
+                                    aria-label={`${writeNurse.name || '간호사'} 프리셉티`}
+                                    disabled={isBusy}
+                                    className={cn(
+                                        'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
+                                        isPreceptee
+                                            ? 'border-main-1 bg-main-1 text-white'
+                                            : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
+                                    )}
+                                    onClick={() =>
+                                        setWriteNurse((prev) => {
+                                            if (!prev) return prev;
+
+                                            const nextIsPreceptee = !hasPrecepteeMemo(prev.memo);
+
+                                            return {
+                                                ...prev,
+                                                isWardManager: nextIsPreceptee ? false : prev.isWardManager,
+                                                memo: setPrecepteeMemo(prev.memo, nextIsPreceptee),
+                                            };
+                                        })
+                                    }
+                                >
+                                    <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
+                                </button>
+                            </div>
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">근무투입</p>
+                                <Switch
+                                    checked={writeNurse.isWorker}
+                                    disabled={isBusy}
+                                    onCheckedChange={(checked) => setWriteNurse((prev) => (prev ? {...prev, isWorker: checked} : prev))}
+                                    className="relative h-6 w-11 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                                    thumbClassName="absolute top-0.5 left-0.5 h-5 w-5 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-5"
+                                    aria-label={`${writeNurse.name} 근무투입`}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex min-h-0 flex-1 flex-col border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
+                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">전화번호</p>
+                        <input
+                            type="tel"
+                            disabled={isBusy}
+                            name="nursePhoneNum"
+                            className="mt-2 h-10 w-full shrink-0 rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-poppins text-[13px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:text-[14px]"
+                            value={writeNurse.phoneNum ?? ''}
+                            onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
+                        />
+                        <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">메모</p>
+                        <textarea
+                            ref={memoTextareaRef}
+                            name="nurseMemo"
+                            aria-label={t('page.member.detail.memo')}
+                            value={getMemoWithoutPrecepteeMarker(writeNurse.memo)}
+                            disabled={isBusy}
+                            className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1440px]:h-16 min-[1440px]:text-[14px]"
+                            onChange={(event) =>
+                                setWriteNurse((prev) =>
+                                    prev ? {...prev, memo: setPrecepteeMemo(event.target.value, hasPrecepteeMemo(prev.memo))} : prev,
+                                )
+                            }
+                        />
+                        <div ref={moveTeamMenuRef} className="relative shrink-0 pt-1.5">
+                            <div className="grid grid-cols-2 gap-2">
+                                <button
+                                    type="button"
+                                    aria-haspopup="listbox"
+                                    aria-expanded={moveTeamMenuOpen}
+                                    disabled={isBusy || moveTargetShiftTeams.length === 0}
+                                    className={cn(
+                                        'inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#F3F4F6] px-3 font-apple text-[13px] font-semibold text-[#5C667D] transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-45 min-[1440px]:h-10 min-[1440px]:text-[14px]',
+                                        moveTeamMenuOpen && 'bg-[#EAECEF] text-sub-1',
+                                    )}
+                                    onClick={() => setMoveTeamMenuOpen((prev) => !prev)}
+                                >
+                                    {isMovingTeam ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.4} />
+                                    ) : (
+                                        <ArrowRightLeft className="h-4 w-4" strokeWidth={2.4} />
+                                    )}
+                                    팀 이동
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={isBusy}
+                                    className="h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1440px]:h-10 min-[1440px]:text-[14px]"
+                                    onClick={() => setDeleteConfirmModalOpen(true)}
+                                >
+                                    삭제하기
+                                </button>
+                            </div>
+                            {moveTeamMenuOpen ? (
+                                <div
+                                    role="listbox"
+                                    className="absolute right-0 bottom-full left-0 z-20 mb-2 overflow-hidden rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
+                                >
+                                    <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">이동할 팀</p>
+                                    <div className="px-2">
+                                        {moveTargetShiftTeams.map((shiftTeam) => (
+                                            <button
+                                                key={shiftTeam.shiftTeamId}
+                                                type="button"
+                                                role="option"
+                                                aria-selected={false}
+                                                disabled={isMovingTeam}
+                                                className="flex min-h-10 w-full items-center gap-2 rounded-[9px] px-2.5 text-left transition-colors hover:bg-main-light focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50"
+                                                onClick={async () => {
+                                                    if (isMovingTeam) return;
+
+                                                    setIsMovingTeam(true);
+
+                                                    try {
+                                                        const moved = await onMoveShiftTeam(shiftTeam.shiftTeamId);
+
+                                                        if (moved) {
+                                                            setMoveTeamMenuOpen(false);
+                                                        }
+                                                    } finally {
+                                                        setIsMovingTeam(false);
+                                                    }
+                                                }}
+                                            >
+                                                <span className="min-w-0 flex-1 truncate font-apple text-[14px] font-semibold text-sub-1">
+                                                    {shiftTeam.name}
+                                                </span>
+                                                <span className="shrink-0 rounded-full bg-gray-7 px-2 py-0.5 font-poppins text-[12px] font-semibold text-gray-3">
+                                                    {shiftTeam.nurses.length}
+                                                </span>
+                                                <ChevronRight className="h-4 w-4 shrink-0 text-gray-4" strokeWidth={2.4} />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
                     </div>
                 </div>
-                <div className="mt-auto border-t border-gray-7 px-4 py-3 min-[1440px]:px-5 min-[1440px]:py-4">
+                <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
                     <button
                         type="button"
                         disabled={isBusy || (!isDirty && !isSkillDirty)}

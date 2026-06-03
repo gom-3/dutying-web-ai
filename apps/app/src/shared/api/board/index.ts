@@ -45,12 +45,18 @@ export type TWardBoardDeadline = {
     writerName?: string;
 };
 
+export type TWardBoardScheduleSourceType = 'MANUAL' | 'BOARD_DEADLINE';
+
 export type TWardBoardSchedule = {
     id?: number;
     scheduleId?: number;
     title: string;
     content?: string;
     scheduleDate: string;
+    startDate?: string;
+    endDate?: string;
+    allDay?: boolean;
+    isAllDay?: boolean;
     startTime?: string;
     endTime?: string;
     writerName?: string;
@@ -58,6 +64,10 @@ export type TWardBoardSchedule = {
     createdAt?: string;
     modifiedAt?: string;
     isMine?: boolean;
+    editableByMe?: boolean;
+    deletableByMe?: boolean;
+    sourceType?: TWardBoardScheduleSourceType;
+    sourcePostId?: number | null;
 };
 
 type TPostListResponse = {
@@ -92,6 +102,9 @@ export type TCreateWardBoardScheduleDTO = {
     title: string;
     content?: string;
     scheduleDate: string;
+    startDate?: string;
+    endDate?: string;
+    allDay?: boolean;
     startTime?: string;
     endTime?: string;
 };
@@ -134,16 +147,16 @@ class ApiBoardAPI {
     }
 
     public async createPost(wardId: number, post: TCreateWardBoardPostDTO) {
-        const params = new URLSearchParams({
+        const payload: TCreateWardBoardPostDTO = {
             title: post.title,
             content: post.content,
-        });
+        };
 
-        if (post.deadlineDate) params.set('deadlineDate', post.deadlineDate);
+        if (post.deadlineDate) payload.deadlineDate = post.deadlineDate;
 
-        post.imageUrls?.forEach((imageUrl) => params.append('imageUrls', imageUrl));
+        if (post.imageUrls?.length) payload.imageUrls = post.imageUrls;
 
-        return (await axiosInstance.post<TWardBoardPost>(`/wards/${wardId}/board/posts?${params.toString()}`, post)).data;
+        return (await axiosInstance.post<TWardBoardPost>(`/wards/${wardId}/board/posts`, payload)).data;
     }
 
     public async deletePost(wardId: number, postId: number) {

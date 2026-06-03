@@ -1,0 +1,237 @@
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {render, screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import type {ReactNode} from 'react';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import BoardPage from '..';
+
+const {
+    mockUseAuth,
+    mockGetPosts,
+    mockGetDeadlines,
+    mockGetSchedules,
+    mockGetPostId,
+    mockGetScheduleId,
+    mockCreatePost,
+    mockDeletePost,
+    mockCreateSchedule,
+    mockUpdateSchedule,
+    mockDeleteSchedule,
+    mockLikePost,
+    mockUnlikePost,
+    mockCheckPost,
+    mockUncheckPost,
+    mockGetPost,
+    mockGetComments,
+    mockGetCheckers,
+    mockCreateComment,
+    mockCreateReply,
+    mockDeleteComment,
+} = vi.hoisted(() => ({
+    mockUseAuth: vi.fn(),
+    mockGetPosts: vi.fn(),
+    mockGetDeadlines: vi.fn(),
+    mockGetSchedules: vi.fn(),
+    mockGetPostId: vi.fn(),
+    mockGetScheduleId: vi.fn(),
+    mockCreatePost: vi.fn(),
+    mockDeletePost: vi.fn(),
+    mockCreateSchedule: vi.fn(),
+    mockUpdateSchedule: vi.fn(),
+    mockDeleteSchedule: vi.fn(),
+    mockLikePost: vi.fn(),
+    mockUnlikePost: vi.fn(),
+    mockCheckPost: vi.fn(),
+    mockUncheckPost: vi.fn(),
+    mockGetPost: vi.fn(),
+    mockGetComments: vi.fn(),
+    mockGetCheckers: vi.fn(),
+    mockCreateComment: vi.fn(),
+    mockCreateReply: vi.fn(),
+    mockDeleteComment: vi.fn(),
+}));
+
+vi.mock('@/features/auth', () => ({
+    default: () => mockUseAuth(),
+}));
+
+vi.mock('@/shared/api', () => ({
+    BoardAPI: {
+        getPosts: mockGetPosts,
+        getPost: mockGetPost,
+        getComments: mockGetComments,
+        getCheckers: mockGetCheckers,
+        getDeadlines: mockGetDeadlines,
+        getSchedules: mockGetSchedules,
+        createPost: mockCreatePost,
+        deletePost: mockDeletePost,
+        createSchedule: mockCreateSchedule,
+        updateSchedule: mockUpdateSchedule,
+        deleteSchedule: mockDeleteSchedule,
+        likePost: mockLikePost,
+        unlikePost: mockUnlikePost,
+        checkPost: mockCheckPost,
+        uncheckPost: mockUncheckPost,
+        createComment: mockCreateComment,
+        createReply: mockCreateReply,
+        deleteComment: mockDeleteComment,
+        getPostId: mockGetPostId,
+        getScheduleId: mockGetScheduleId,
+    },
+}));
+
+vi.mock('../ui/board-tutorial', () => ({
+    BoardTutorial: () => null,
+}));
+
+function renderPage(children: ReactNode) {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                retry: false,
+            },
+        },
+    });
+
+    return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+}
+
+describe('BoardPage', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockUseAuth.mockReturnValue({
+            state: {
+                wardId: 287,
+                accountId: 1,
+                accountMeStatus: 'success',
+                _loaded: true,
+                isAuth: true,
+            },
+            actions: {
+                handleGetAccountMe: vi.fn(),
+            },
+        });
+        mockGetPosts.mockResolvedValue({posts: [], hasNext: false});
+        mockGetDeadlines.mockResolvedValue([]);
+        mockGetSchedules.mockResolvedValue([]);
+        mockGetPost.mockResolvedValue(null);
+        mockGetComments.mockResolvedValue({comments: []});
+        mockGetCheckers.mockResolvedValue({checkers: [], checkedUserNames: []});
+        mockGetPostId.mockImplementation((post: {postId?: number; id?: number}) => post.postId ?? post.id ?? 0);
+        mockGetScheduleId.mockImplementation((schedule: {scheduleId?: number; id?: number}) => schedule.scheduleId ?? schedule.id ?? 0);
+    });
+
+    it('matches the backend post content length contract in the composer', async () => {
+        const user = userEvent.setup();
+        const {container} = renderPage(<BoardPage />);
+
+        await waitFor(() => expect(mockGetPosts).toHaveBeenCalled());
+        await user.click(container.querySelector<HTMLButtonElement>('#board_create_button')!);
+
+        const contentTextarea = container.querySelector<HTMLTextAreaElement>('#board_composer_required_fields textarea');
+
+        expect(contentTextarea).not.toBeNull();
+        expect(contentTextarea).toHaveAttribute('maxLength', '5000');
+    });
+
+    it('shows post list engagement metrics only when they have counts, except views', async () => {
+        mockGetPosts.mockResolvedValue({
+            posts: [
+                {
+                    postId: 1,
+                    title: 'zero metrics',
+                    content: 'plain body',
+                    writerName: 'writer',
+                    viewCount: 0,
+                    likeCount: 0,
+                    checkCount: 0,
+                    commentCount: 0,
+                },
+                {
+                    postId: 2,
+                    title: 'active metrics',
+                    content: 'plain body',
+                    writerName: 'writer',
+                    viewCount: 7,
+                    likeCount: 2,
+                    checkCount: 3,
+                    commentCount: 4,
+                },
+            ],
+            hasNext: false,
+        });
+
+        renderPage(<BoardPage />);
+
+        const zeroMetricsPost = (await screen.findByText('zero metrics')).closest('button');
+        const activeMetricsPost = (await screen.findByText('active metrics')).closest('button');
+
+        expect(zeroMetricsPost).not.toBeNull();
+        expect(activeMetricsPost).not.toBeNull();
+
+        expect(zeroMetricsPost!.querySelectorAll('svg')).toHaveLength(1);
+        expect(within(zeroMetricsPost!).getByText('0')).toHaveClass('text-gray-3');
+
+        expect(activeMetricsPost!.querySelectorAll('svg')).toHaveLength(4);
+        expect(within(activeMetricsPost!).getByText('7')).toHaveClass('text-gray-3');
+        expect(within(activeMetricsPost!).getByText('2')).toHaveClass('text-red');
+        expect(within(activeMetricsPost!).getByText('3')).toHaveClass('text-[#217A43]');
+        expect(within(activeMetricsPost!).getByText('4')).toHaveClass('text-main-1');
+    });
+
+    it('creates an all-day ward schedule spanning multiple days', async () => {
+        const user = userEvent.setup();
+        const tomorrow = new Date();
+
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const threeDaysLater = new Date();
+
+        threeDaysLater.setDate(threeDaysLater.getDate() + 3);
+
+        const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(
+            tomorrow.getDate(),
+        ).padStart(2, '0')}`;
+        const threeDaysLaterKey = `${threeDaysLater.getFullYear()}-${String(threeDaysLater.getMonth() + 1).padStart(2, '0')}-${String(
+            threeDaysLater.getDate(),
+        ).padStart(2, '0')}`;
+
+        mockCreateSchedule.mockResolvedValue({
+            scheduleId: 1,
+            title: '신규 교육',
+            content: '',
+            scheduleDate: tomorrowKey,
+            startDate: tomorrowKey,
+            endDate: threeDaysLaterKey,
+            allDay: true,
+        });
+
+        const {container} = renderPage(<BoardPage />);
+
+        await waitFor(() => expect(mockGetSchedules).toHaveBeenCalled());
+        await user.click(container.querySelector<HTMLButtonElement>('#board_schedule_create_button')!);
+
+        const dialog = await screen.findByRole('dialog', {name: '병동 일정 등록'});
+
+        await user.type(within(dialog).getByPlaceholderText('제목을 입력하세요'), '신규 교육');
+        await user.click(within(dialog).getByRole('button', {name: /시작일/}));
+        await user.click(within(dialog).getByRole('button', {name: '내일'}));
+        await user.click(within(dialog).getByRole('button', {name: /종료일/}));
+        await user.click(within(dialog).getByRole('button', {name: '3일 후'}));
+        await user.click(within(dialog).getByLabelText('종일'));
+        await user.click(within(dialog).getByRole('button', {name: '등록'}));
+
+        await waitFor(() =>
+            expect(mockCreateSchedule).toHaveBeenCalledWith(287, {
+                title: '신규 교육',
+                content: undefined,
+                scheduleDate: tomorrowKey,
+                startDate: tomorrowKey,
+                endDate: threeDaysLaterKey,
+                allDay: true,
+                startTime: undefined,
+                endTime: undefined,
+            }),
+        );
+    });
+});

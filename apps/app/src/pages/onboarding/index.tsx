@@ -44,11 +44,16 @@ function OnboardingPage() {
                                 onClick={() => navigate(-1)}
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                怨꾩젙 ?뺣낫濡?                            </button>
+                                병동 선택으로
+                            </button>
 
                             <div>
-                                <h1 className="text-[32px] font-semibold text-sub-1">{`${accountMe?.name ?? '愿由ъ옄'}?? 蹂묐룞???곌껐?댁슂`}</h1>
-                                <p className="mt-2 text-sm text-gray-3">처음이면 새 병동을 만들고, 초대 코드를 받았다면 기존 병동에 들어가세요.</p>
+                                <h1 className="text-[32px] font-semibold text-sub-1">
+                                    {`${accountMe?.name ?? '관리자'}님, 병동을 연결해 주세요`}
+                                </h1>
+                                <p className="mt-2 text-sm text-gray-3">
+                                    처음이면 새 병동을 만들고, 초대 코드를 받았다면 기존 병동에 들어가세요.
+                                </p>
                             </div>
 
                             <div className="mt-6 space-y-3">
@@ -61,8 +66,8 @@ function OnboardingPage() {
                                         <Building2 className="h-6 w-6" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-[22px] font-semibold text-sub-1">??蹂묐룞 留뚮뱾湲?/span>
-</span>
+                                        <span className="block text-[22px] font-semibold text-sub-1">새 병동 만들기</span>
+                                    </span>
                                     <ChevronRight className="h-5 w-5 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />
                                 </button>
 
@@ -75,8 +80,8 @@ function OnboardingPage() {
                                         <DoorOpen className="h-5 w-5" />
                                     </span>
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-[17px] font-semibold text-sub-1">湲곗〈 蹂묐룞 ?낆옣?섍린</span>
-</span>
+                                        <span className="block text-[17px] font-semibold text-sub-1">기존 병동 입장하기</span>
+                                    </span>
                                     <ChevronRight className="h-4 w-4 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />
                                 </button>
                             </div>

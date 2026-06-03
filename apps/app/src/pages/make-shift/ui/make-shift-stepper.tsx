@@ -92,21 +92,28 @@ export function MakeShiftStepper({
     const {t} = useTypedTranslation();
     const isConfirmedStep = currentStep === 6;
     const showConfirmedStep = isConfirmedStep || maxReachedStep >= 6;
+    const visibleSteps = isConfirmedStep ? ([6] as TMakeShiftStep[]) : MAKE_SHIFT_STEPS;
 
     return (
         <nav id="make_stepper" className="make-shift-stepper w-full px-3 pt-8" aria-label={t('page.makeShift.progress.ariaLabel')}>
             <div className="relative pb-6 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-['']">
                 <ol
-                    className="grid px-1 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none"
+                    className={cn(
+                        'grid px-1 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none',
+                        isConfirmedStep && 'mx-auto max-w-[220px]',
+                    )}
                     style={{
-                        gridTemplateColumns: showConfirmedStep ? 'repeat(6, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr)) minmax(0, 0fr)',
+                        gridTemplateColumns: isConfirmedStep
+                            ? 'minmax(0, 1fr)'
+                            : showConfirmedStep
+                              ? 'repeat(6, minmax(0, 1fr))'
+                              : 'repeat(5, minmax(0, 1fr)) minmax(0, 0fr)',
                     }}
                 >
-                    {MAKE_SHIFT_STEPS.map((step) => {
+                    {visibleSteps.map((step) => {
                         const stepMeta = MAKE_SHIFT_STEP_META[step];
                         const state = getStepState(step, currentStep, maxReachedStep);
                         const isFinalConfirmedStep = step === 6 && state === 'current';
-                        const isDimmedByConfirmedStep = isConfirmedStep && step < 6;
                         const isStepHidden = step === 6 && !showConfirmedStep;
                         const clickable = !isConfirmedStep && step !== currentStep && state !== 'locked';
                         const showRightConnector = step !== 6 && (step !== 5 || showConfirmedStep);
@@ -121,8 +128,8 @@ export function MakeShiftStepper({
                                         : 'max-w-[999px] scale-100 overflow-visible opacity-100',
                                 )}
                             >
-                                {step !== 1 && <StepConnector side="left" active={step <= currentStep} dimmed={isConfirmedStep} />}
-                                {showRightConnector && <StepConnector side="right" active={step < currentStep} dimmed={isConfirmedStep} />}
+                                {!isConfirmedStep && step !== 1 && <StepConnector side="left" active={step <= currentStep} />}
+                                {!isConfirmedStep && showRightConnector && <StepConnector side="right" active={step < currentStep} />}
                                 <button
                                     type="button"
                                     disabled={state === 'locked' || isConfirmedStep}
@@ -136,7 +143,6 @@ export function MakeShiftStepper({
                                         state === 'current' && (isFinalConfirmedStep ? 'text-[#167A52]' : 'text-main-1'),
                                         state === 'available' && 'text-sub-2',
                                         state === 'locked' && 'cursor-not-allowed text-gray-4',
-                                        isDimmedByConfirmedStep && 'opacity-[0.18] saturate-0',
                                         clickable ? 'cursor-pointer' : 'cursor-default',
                                     )}
                                 >

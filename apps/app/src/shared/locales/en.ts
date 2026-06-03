@@ -230,6 +230,7 @@ export const en: TLocale = {
                     level: 'Level',
                     shiftTypes: 'Available shifts',
                     preceptor: 'Preceptor',
+                    preceptee: 'Preceptee',
                     isWorker: 'Included',
                     memo: 'Memo',
                 },
@@ -473,8 +474,8 @@ export const en: TLocale = {
             sortListMenuAria: 'Open list sort options',
             canMakeDuty: 'Duty schedule',
             canMakeDutyTooltip: 'Only selected people can create the duty schedule.',
-            emptyTeamTitle: 'There are no members in this team yet.',
-            emptyTeamDescription: 'Add a nurse to start managing skill levels and work conditions.',
+            emptyTeamTitle: 'There are no nurses.',
+            emptyTeamDescription: 'Please add a nurse.',
             confirmDeleteTeam: 'Delete team {{teamName}}? Nurses in the team will be removed together.',
             table: {
                 name: 'Name',

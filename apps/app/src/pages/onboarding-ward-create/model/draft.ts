@@ -103,9 +103,13 @@ export const MAX_ONBOARDING_NURSE_NAME_LENGTH = 20;
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 3, 4];
 const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
-const KOREAN_SYLLABLE_REGEX = /[가-힣]/g;
+const ASCII_SPACE_EDGE_REGEX = /^ +| +$/g;
+const KOREAN_SYLLABLE_REGEX = /[\uAC00-\uD7A3]/g;
+const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
-const NAME_SEPARATOR_REGEX = /[\s.'\-・·]/g;
+const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A30-9A-Za-z ]+$/u;
+
+export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
 
 let nextId = 0;
 
@@ -186,29 +190,27 @@ export const getSkillPalette = (paletteId: string) => skillPalettes.find((palett
 const normalizeSkillPaletteId = (paletteId: string) =>
     skillPalettes.some((palette) => palette.id === paletteId) ? paletteId : skillPalettes[0].id;
 const isValidNurseName = (name: string): boolean => {
-    const trimmedName = name.trim();
+    const requestName = normalizeNurseNameForRequest(name);
 
-    if (!trimmedName) {
+    if (!requestName) {
         return false;
     }
 
-    if (KOREAN_JAMO_REGEX.test(trimmedName)) {
+    if (KOREAN_JAMO_REGEX.test(requestName)) {
         return false;
     }
 
-    if (trimmedName.length > MAX_ONBOARDING_NURSE_NAME_LENGTH) {
+    if (requestName.length > MAX_ONBOARDING_NURSE_NAME_LENGTH) {
         return false;
     }
 
-    const compactName = trimmedName.replace(NAME_SEPARATOR_REGEX, '');
-
-    if (!compactName) {
+    if (!NURSE_NAME_ALLOWED_REGEX.test(requestName)) {
         return false;
     }
 
-    const koreanSyllableCount = compactName.match(KOREAN_SYLLABLE_REGEX)?.length ?? 0;
+    const koreanSyllableCount = requestName.match(KOREAN_SYLLABLE_REGEX)?.length ?? 0;
 
-    if (/^[가-힣]+$/u.test(compactName) && koreanSyllableCount < 2) {
+    if (KOREAN_SYLLABLE_OR_SPACE_REGEX.test(requestName) && koreanSyllableCount < 2) {
         return false;
     }
 
@@ -490,6 +492,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     const shiftNameCountByValue = new Map<string, number>();
     const shiftShortNameCountByValue = new Map<string, number>();
     const step: TOnboardingStep = 3;
+    const getShiftShortNameDuplicateKey = (value: string) => Array.from(value.trim().toLocaleUpperCase())[0] ?? '';
 
     if (draft.shiftTypes.length === 0) {
         issues.push({code: 'empty-shift-types', step});
@@ -497,7 +500,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
 
     draft.shiftTypes.forEach((shiftType) => {
         const normalizedName = shiftType.name.trim().toLocaleLowerCase();
-        const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+        const normalizedShortName = getShiftShortNameDuplicateKey(shiftType.shortName);
 
         if (normalizedName) {
             shiftNameCountByValue.set(normalizedName, (shiftNameCountByValue.get(normalizedName) ?? 0) + 1);
@@ -511,6 +514,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     draft.shiftTypes.forEach((shiftType) => {
         const normalizedName = shiftType.name.trim().toLocaleLowerCase();
         const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+        const normalizedShortNameDuplicateKey = getShiftShortNameDuplicateKey(shiftType.shortName);
 
         if (!normalizedName) {
             issues.push({code: 'missing-shift-name', step, targetId: shiftType.id});
@@ -520,7 +524,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
 
         if (!normalizedShortName) {
             issues.push({code: 'missing-shift-short-name', step, targetId: shiftType.id});
-        } else if ((shiftShortNameCountByValue.get(normalizedShortName) ?? 0) > 1) {
+        } else if ((shiftShortNameCountByValue.get(normalizedShortNameDuplicateKey) ?? 0) > 1) {
             issues.push({code: 'duplicate-shift-short-name', step, targetId: shiftType.id});
         }
 

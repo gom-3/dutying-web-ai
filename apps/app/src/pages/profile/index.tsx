@@ -12,6 +12,7 @@ import useProfileImage from '@/features/file';
 import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import Card from '@/shared/ui/Card';
+import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
 import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfileFormDirty} from './model';
@@ -19,6 +20,7 @@ import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfi
 type TProfileField = 'name' | 'phoneNum';
 type TProfileErrors = Partial<Record<TProfileField, string>>;
 type TProfileTouched = Partial<Record<TProfileField, boolean>>;
+type TConfirmAction = 'logout' | 'deleteAccount';
 
 const NURSE_NAME_MAX_LENGTH = 20;
 const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
@@ -60,6 +62,7 @@ function ProfilePage() {
     const [draftName, setDraftName] = useState('');
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
+    const [confirmAction, setConfirmAction] = useState<TConfirmAction | null>(null);
     const {profileImg, isLoading: isProfileImageLoading, setRandomImage, setPhotoImage, resetProfileImage} = useProfileImage();
     const wardQuery = useQuery({
         ...wardQueryOptions.id(accountMe?.wardId ?? 0),
@@ -194,6 +197,36 @@ function ProfilePage() {
             void wardQuery.refetch();
         }
     };
+    const closeConfirmDialog = () => {
+        setConfirmAction(null);
+    };
+    const confirmActionDialog = () => {
+        const action = confirmAction;
+
+        closeConfirmDialog();
+
+        if (action === 'logout') {
+            void handleLogout(ROUTE.ROOT);
+        }
+
+        if (action === 'deleteAccount') {
+            void deleteAccount();
+        }
+    };
+    const confirmDialogContent =
+        confirmAction === 'deleteAccount'
+            ? {
+                  title: '회원 탈퇴할까요?',
+                  description: '탈퇴하면 계정 정보가 삭제되며 되돌릴 수 없어요.',
+                  confirmLabel: '탈퇴하기',
+                  tone: 'danger' as const,
+              }
+            : {
+                  title: '로그아웃할까요?',
+                  description: '현재 계정에서 로그아웃하고 첫 화면으로 이동해요.',
+                  confirmLabel: '로그아웃',
+                  tone: 'default' as const,
+              };
 
     if (isAccountBootstrapPending || isWardProfilePending) {
         return (
@@ -347,8 +380,6 @@ function ProfilePage() {
                                 <p id="profile-phone-error" className="mt-1 font-apple text-xs text-red">
                                     {fieldErrors.phoneNum}
                                 </p>
-                            ) : !writeNurse ? (
-                                <p className="mt-1 font-apple text-xs text-gray-3">병동 연결 후 수정할 수 있어요.</p>
                             ) : null}
                         </div>
                     </div>
@@ -357,7 +388,7 @@ function ProfilePage() {
                     <button
                         type="button"
                         className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                        onClick={() => handleLogout(ROUTE.ROOT)}
+                        onClick={() => setConfirmAction('logout')}
                     >
                         로그아웃
                     </button>
@@ -373,7 +404,7 @@ function ProfilePage() {
                     <button
                         type="button"
                         className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-red underline-offset-4 hover:underline"
-                        onClick={deleteAccount}
+                        onClick={() => setConfirmAction('deleteAccount')}
                     >
                         회원 탈퇴
                     </button>
@@ -385,6 +416,15 @@ function ProfilePage() {
                     변경사항 저장
                 </Button>
             </div>
+            <ConfirmActionDialog
+                open={confirmAction !== null}
+                title={confirmDialogContent.title}
+                description={confirmDialogContent.description}
+                confirmLabel={confirmDialogContent.confirmLabel}
+                tone={confirmDialogContent.tone}
+                onClose={closeConfirmDialog}
+                onConfirm={confirmActionDialog}
+            />
         </div>
     );
 }

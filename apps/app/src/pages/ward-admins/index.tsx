@@ -1,4 +1,4 @@
-import type {TWardAdminMembershipResponse} from '@dutying/api/ward';
+import type {TWardAdminMembershipResponse, TWardReservedAdminEmailResponse} from '@dutying/api/ward';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Plus, Trash2, UserPlus} from 'lucide-react';
 import {type FormEvent, useState} from 'react';
@@ -12,35 +12,90 @@ const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const getRoleLabel = (role: string) => (role === 'OWNER' ? '최고 관리자' : '관리자');
+const compareAdminRolePriority = (a: TWardAdminMembershipResponse, b: TWardAdminMembershipResponse) =>
+    Number(b.role === 'OWNER') - Number(a.role === 'OWNER');
 const isEmail = (value: string) => EMAIL_PATTERN.test(value);
-const getFallbackInvitationName = (email: string) => email.split('@')[0] || email;
+const getAccountRole = (account: unknown) =>
+    typeof account === 'object' && account !== null && 'role' in account ? (account as {role?: string | null}).role : undefined;
+const getApiErrorCode = (error: unknown) =>
+    typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
+
+function showAdminActionError(error: unknown, fallbackMessage: string) {
+    const code = getApiErrorCode(error);
+
+    if (code === 403) {
+        toast.error('최고 관리자만 변경할 수 있어요.');
+        return;
+    }
+
+    if (code === 409) {
+        toast.error('이미 등록된 관리자 이메일이에요.');
+        return;
+    }
+
+    toast.error(fallbackMessage);
+}
 
 function ActiveAdminRow({
     admin,
     canRemove,
+    isRemoving,
     onRemove,
 }: {
     admin: TWardAdminMembershipResponse;
     canRemove: boolean;
+    isRemoving: boolean;
     onRemove: (admin: TWardAdminMembershipResponse) => void;
 }) {
-    const adminName = admin.name || admin.loginId || admin.email || `계정 #${admin.accountId}`;
+    const adminEmail = admin.email || `계정 #${admin.accountId}`;
 
     return (
         <div className="flex items-center justify-between gap-4 border-b border-gray-6 py-3 last:border-b-0">
             <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-sub-1">{adminName}</p>
-                <p className="mt-0.5 truncate text-xs text-gray-3">
-                    {[admin.loginId, admin.email].filter(Boolean).join(' · ') || `계정 #${admin.accountId}`}
-                </p>
+                <p className="truncate text-sm font-semibold text-sub-1">{adminEmail}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
                 <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{getRoleLabel(admin.role)}</span>
                 {canRemove && admin.role !== 'OWNER' ? (
                     <button
                         type="button"
-                        aria-label={`${adminName} 관리자 제거`}
-                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-red"
+                        aria-label={`${adminEmail} 관리자 삭제`}
+                        disabled={isRemoving}
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-red disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => onRemove(admin)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </button>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
+function ReservedAdminEmailRow({
+    admin,
+    canRemove,
+    isRemoving,
+    onRemove,
+}: {
+    admin: TWardReservedAdminEmailResponse;
+    canRemove: boolean;
+    isRemoving: boolean;
+    onRemove: (admin: TWardReservedAdminEmailResponse) => void;
+}) {
+    return (
+        <div className="flex items-center justify-between gap-4 border-b border-gray-6 py-3 last:border-b-0">
+            <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-sub-1">{admin.email}</p>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{getRoleLabel(admin.role)}</span>
+                {canRemove ? (
+                    <button
+                        type="button"
+                        aria-label={`${admin.email} 예약 관리자 삭제`}
+                        disabled={isRemoving}
+                        className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-red disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => onRemove(admin)}
                     >
                         <Trash2 className="h-4 w-4" />
@@ -56,7 +111,7 @@ function WardAdminsPage() {
         state: {accountMe, wardId},
     } = useAuth();
     const queryClient = useQueryClient();
-    const [credential, setCredential] = useState('');
+    const [email, setEmail] = useState('');
     const [error, setError] = useState<string | null>(null);
     const adminsQuery = useQuery({
         queryKey: ['ward-admins', wardId],
@@ -66,46 +121,60 @@ function WardAdminsPage() {
     const invalidateAdmins = async () => {
         await queryClient.invalidateQueries({queryKey: ['ward-admins', wardId]});
     };
-    const inviteByEmailMutation = useMutation({
-        mutationFn: () =>
-            WardAPI.createWardAdminInvitation(wardId ?? 0, {
-                invitedEmail: credential.trim(),
-                invitedName: getFallbackInvitationName(credential.trim()),
+    const createAdminEmailMutation = useMutation({
+        mutationFn: (normalizedEmail: string) =>
+            WardAPI.createWardAdminEmail(wardId ?? 0, {
+                email: normalizedEmail,
                 role: 'EDITOR',
             }),
-        onSuccess: async () => {
-            toast.success('관리자 초대 메일을 보냈어요.');
-            setCredential('');
+        onSuccess: async (result) => {
+            toast.success(result.status === 'ACTIVE' ? '관리자를 등록했어요.' : '관리자 이메일을 예약했어요.');
+            setEmail('');
             await invalidateAdmins();
         },
+        onError: (mutationError) => {
+            showAdminActionError(mutationError, '관리자를 등록하지 못했어요.');
+        },
     });
-    const removeMutation = useMutation({
+    const removeMemberMutation = useMutation({
         mutationFn: (admin: TWardAdminMembershipResponse) => WardAPI.removeWardAdmin(wardId ?? 0, admin.membershipId),
         onSuccess: async () => {
-            toast.success('관리자를 제거했어요.');
+            toast.success('관리자를 삭제했어요.');
             await invalidateAdmins();
         },
+        onError: (mutationError) => {
+            showAdminActionError(mutationError, '관리자를 삭제하지 못했어요.');
+        },
     });
-    const isOwner = accountMe?.role === 'OWNER';
-    const isSubmitting = inviteByEmailMutation.isPending;
+    const removeReservedEmailMutation = useMutation({
+        mutationFn: (admin: TWardReservedAdminEmailResponse) => WardAPI.removeWardAdminEmail(wardId ?? 0, admin.emailRegistrationId),
+        onSuccess: async () => {
+            toast.success('예약된 관리자 이메일을 삭제했어요.');
+            await invalidateAdmins();
+        },
+        onError: (mutationError) => {
+            showAdminActionError(mutationError, '예약된 관리자 이메일을 삭제하지 못했어요.');
+        },
+    });
+    const isOwner = getAccountRole(accountMe) === 'OWNER';
+    const isSubmitting = createAdminEmailMutation.isPending;
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
 
-        const normalizedCredential = credential.trim();
+        const normalizedEmail = email.trim().toLowerCase();
 
-        if (!normalizedCredential) {
+        if (!normalizedEmail) {
             setError('이메일을 입력해 주세요.');
             return;
         }
 
-        if (isEmail(normalizedCredential)) {
-            inviteByEmailMutation.mutate();
-
+        if (!isEmail(normalizedEmail)) {
+            setError('올바른 이메일을 입력해 주세요.');
             return;
         }
 
-        setError('올바른 이메일을 입력해 주세요.');
+        createAdminEmailMutation.mutate(normalizedEmail);
     };
 
     if (!wardId) {
@@ -137,7 +206,9 @@ function WardAdminsPage() {
         );
     }
 
-    const admins = adminsQuery.data?.members ?? [];
+    const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
+    const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
+    const hasAdmins = members.length > 0 || reservedEmails.length > 0;
 
     return (
         <div className="mx-auto w-full">
@@ -151,40 +222,59 @@ function WardAdminsPage() {
                     </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-4">
-                    <div className="flex gap-2">
-                        <input
-                            value={credential}
-                            className={FIELD_CLASS}
-                            placeholder="이메일"
-                            autoComplete="off"
-                            onChange={(event) => setCredential(event.target.value)}
-                        />
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            aria-label="관리자 추가"
-                            className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-main-3"
-                        >
-                            <Plus className="h-5 w-5" />
-                        </button>
-                    </div>
-                    {error ? <p className="mt-2 text-xs text-red">{error}</p> : null}
-                </form>
+                {isOwner ? (
+                    <form onSubmit={handleSubmit} className="mt-4">
+                        <div className="flex gap-2">
+                            <input
+                                value={email}
+                                className={FIELD_CLASS}
+                                placeholder="이메일"
+                                inputMode="email"
+                                autoComplete="email"
+                                onChange={(event) => setEmail(event.target.value)}
+                            />
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                aria-label="관리자 추가"
+                                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-main-3"
+                            >
+                                <Plus className="h-5 w-5" />
+                            </button>
+                        </div>
+                        {error ? <p className="mt-2 text-xs text-red">{error}</p> : null}
+                    </form>
+                ) : (
+                    <p className="mt-4 rounded-[12px] bg-gray-7 px-4 py-3 text-sm text-gray-3">
+                        최고 관리자만 관리자 권한을 변경할 수 있어요.
+                    </p>
+                )}
 
                 <div className="mt-6 border-t border-gray-6 pt-5">
                     <h2 className="font-apple text-sm font-medium text-sub-2">등록된 관리자</h2>
                 </div>
                 <div className="mt-3">
-                    {admins.length > 0 ? (
-                        admins.map((admin) => (
-                            <ActiveAdminRow
-                                key={admin.membershipId}
-                                admin={admin}
-                                canRemove={isOwner}
-                                onRemove={removeMutation.mutate}
-                            />
-                        ))
+                    {hasAdmins ? (
+                        <>
+                            {members.map((admin) => (
+                                <ActiveAdminRow
+                                    key={`member-${admin.membershipId}`}
+                                    admin={admin}
+                                    canRemove={isOwner}
+                                    isRemoving={removeMemberMutation.isPending}
+                                    onRemove={removeMemberMutation.mutate}
+                                />
+                            ))}
+                            {reservedEmails.map((admin) => (
+                                <ReservedAdminEmailRow
+                                    key={`reserved-${admin.emailRegistrationId}`}
+                                    admin={admin}
+                                    canRemove={isOwner}
+                                    isRemoving={removeReservedEmailMutation.isPending}
+                                    onRemove={removeReservedEmailMutation.mutate}
+                                />
+                            ))}
+                        </>
                     ) : (
                         <p className="rounded-[12px] bg-gray-7 px-4 py-5 text-sm text-gray-3">아직 등록된 관리자가 없어요.</p>
                     )}

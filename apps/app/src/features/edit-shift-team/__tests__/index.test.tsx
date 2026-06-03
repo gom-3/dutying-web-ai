@@ -119,8 +119,58 @@ describe('useEditShiftTeam', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
 
-    it('creates a local draft row without posting invalid empty nurse data', async () => {
+    it('patches an existing nurse with null blank phone and without retired nurse fields', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.updateNurse(11, {
+                name: '김하나',
+                phoneNum: '',
+                gender: '남',
+                employmentDate: '2025-01-01',
+                isDutyManager: true,
+            } as any);
+        });
+
+        expect(isSuccess).toBe(true);
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
+            phoneNum: null,
+            name: '김하나',
+        });
+    });
+
+    it('clears an existing nurse dummy phone when saving', async () => {
+        const {result} = renderHook(() => useEditShiftTeam());
+
+        await act(async () => {
+            await result.current.actions.updateNurse(11, {
+                name: '김하나',
+                phoneNum: '01000000000',
+            });
+        });
+
+        expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
+            name: '김하나',
+            phoneNum: null,
+        });
+    });
+
+    it('creates a nurse immediately with the nurse create request contract', async () => {
         mockGetQueryData.mockReturnValue(ward);
+        mockAddNurseIntoShiftTeam.mockResolvedValue({
+            nurseId: 22,
+            shiftTeamId: 10,
+            wardId: 1,
+            name: '신규간호사1',
+            gender: '여',
+            isWorker: true,
+            employmentDate: '',
+            isDutyManager: false,
+            isWardManager: false,
+            memo: '',
+        });
 
         const {result} = renderHook(() => useEditShiftTeam());
 
@@ -128,17 +178,26 @@ describe('useEditShiftTeam', () => {
             await result.current.actions.addNurse(10);
         });
 
-        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
+            1,
+            10,
+            {
+                name: '신규간호사1',
+                isWorker: true,
+                isWardManager: false,
+                memo: '',
+            },
+        );
         expect(result.current.state.isAddingNurse).toBe(false);
-        expect(useEditNurseStore.getState().selectedNurseId).toBeLessThan(0);
+        expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
         expect(mockSetQueryData).toHaveBeenCalled();
-        expect(mockToastSuccess).toHaveBeenCalledWith('간호사 정보를 입력한 뒤 저장해 주세요.', {
+        expect(mockToastSuccess).toHaveBeenCalledWith('신규간호사1를 추가했어요.', {
             position: 'bottom-center',
         });
     });
 
-    it('posts the local draft after name is valid without requiring phone number or gender', async () => {
+    it('posts the local draft without blank phone or retired nurse fields', async () => {
         const tempWard = {
             ...ward,
             shiftTeams: [
@@ -185,10 +244,12 @@ describe('useEditShiftTeam', () => {
         expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
             1,
             10,
-            expect.objectContaining({
+            {
                 name: '김신규',
-                phoneNum: null,
-            }),
+                isWorker: true,
+                isWardManager: false,
+                memo: '',
+            },
         );
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
     });

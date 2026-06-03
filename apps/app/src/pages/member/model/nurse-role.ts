@@ -11,15 +11,15 @@ export const NURSE_ROLE_HELP: Record<TNurseRoleHelpType, {label: string; descrip
     },
 };
 
-const PRECEPTEE_MEMO_MARKER = '__PRECEPTEE__';
+const PRECEPTEE_MEMO_MARKERS = new Set(['__PRECEPTEE__', '프리셉티']);
 
 export const hasPrecepteeMemo = (memo?: string | null) =>
-    Boolean(memo?.split(/\r?\n/).some((line) => line.trim() === PRECEPTEE_MEMO_MARKER));
+    Boolean(memo?.split(/\r?\n/).some((line) => PRECEPTEE_MEMO_MARKERS.has(line.trim())));
 
 export const getMemoWithoutPrecepteeMarker = (memo: string | null | undefined) =>
     (memo ?? '')
         .split(/\r?\n/)
-        .filter((line) => line.trim() !== PRECEPTEE_MEMO_MARKER)
+        .filter((line) => !PRECEPTEE_MEMO_MARKERS.has(line.trim()))
         .join('\n');
 
 export const setPrecepteeMemo = (memo: string | null | undefined, checked: boolean) => {
@@ -30,11 +30,11 @@ export const setPrecepteeMemo = (memo: string | null | undefined, checked: boole
             return currentMemo;
         }
 
-        return currentMemo.length > 0 ? `${PRECEPTEE_MEMO_MARKER}\n${currentMemo}` : PRECEPTEE_MEMO_MARKER;
+        return currentMemo.length > 0 ? `__PRECEPTEE__\n${currentMemo}` : '__PRECEPTEE__';
     }
 
     return currentMemo
         .split(/\r?\n/)
-        .filter((line) => line.trim() !== PRECEPTEE_MEMO_MARKER)
+        .filter((line) => !PRECEPTEE_MEMO_MARKERS.has(line.trim()))
         .join('\n');
 };

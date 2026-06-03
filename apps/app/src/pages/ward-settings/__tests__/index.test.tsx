@@ -4,7 +4,7 @@ import WardSettingsPage from '../index';
 
 const mockUseWardSettings = vi.fn();
 const translations: Record<string, string> = {
-    'page.wardSettings.title': '근무 관리',
+    'page.wardSettings.title': '근무 설정',
     'page.wardSettings.tabs.shiftTypes': '근무 유형',
     'page.wardSettings.tabs.constraints': '제약 조건',
     'page.wardSettings.addShiftType': '근무 추가하기',
@@ -46,9 +46,7 @@ vi.mock('@/features/create-shift-modal', () => ({
 
 vi.mock('@/pages/make-shift/ui/steps/constraints', () => ({
     Constraints: ({wardId, shiftTeamId, variant}: {wardId?: number | null; shiftTeamId?: number | null; variant?: string}) => (
-        <div data-testid="shift-constraint-rules">
-            {`rules:${wardId ?? 'none'}:${shiftTeamId ?? 'none'}:${variant ?? 'flow'}`}
-        </div>
+        <div data-testid="shift-constraint-rules">{`rules:${wardId ?? 'none'}:${shiftTeamId ?? 'none'}:${variant ?? 'flow'}`}</div>
     ),
 }));
 
@@ -145,7 +143,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('근무 관리')).toBeInTheDocument();
+        expect(screen.getByText('근무 설정')).toBeInTheDocument();
         expect(screen.getByText('근무명')).toBeInTheDocument();
         expect(screen.getByText('약자')).toBeInTheDocument();
         expect(screen.getByText('근무 시간')).toBeInTheDocument();
@@ -193,7 +191,7 @@ describe('WardSettingsPage', () => {
 
         await user.click(screen.getByRole('button', {name: '데이 색상 선택'}));
 
-        expect(screen.getByRole('button', {name: '#9AD7CB 선택'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '#63C8B8 선택'})).toBeInTheDocument();
     });
 
     it('휴무 버튼을 누르면 draft만 휴무 상태로 바꾼다', async () => {

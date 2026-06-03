@@ -7,14 +7,38 @@ import {
     createInitialDraft,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
+    type TOnboardingNurseDraft,
 } from '../model';
+
+const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDraft> = {}): TOnboardingNurseDraft => ({
+    id: overrides.id ?? `nurse-${overrides.name ?? 'seed'}`,
+    teamId,
+    name: overrides.name ?? '홍길동',
+    memo: overrides.memo ?? '',
+    isWorker: overrides.isWorker ?? true,
+    employmentDate: overrides.employmentDate ?? '2024-01-01',
+    possibleShiftTypeIds: overrides.possibleShiftTypeIds ?? [],
+    level: overrides.level ?? null,
+});
 
 describe('OnboardingWardCreatePage adapter', () => {
     it('builds create ward payload outside the UI draft layer', () => {
+        const initialDraft = createInitialDraft();
+        const firstTeamId = initialDraft.teams[0]?.id ?? '';
+        const defaultPossibleShiftTypeIds = initialDraft.shiftTypes
+            .filter((shiftType) => !shiftType.isOff)
+            .map((shiftType) => shiftType.id);
         const draft = {
-            ...createInitialDraft(),
+            ...initialDraft,
             wardName: '중환자실',
             hospitalName: '듀팅병원',
+            nurses: ['홍길동', '김하늘', '이서윤', '박연우'].map((name) =>
+                createNurseDraft(firstTeamId, {
+                    id: `nurse-${name}`,
+                    name,
+                    possibleShiftTypeIds: defaultPossibleShiftTypeIds,
+                }),
+            ),
         };
         const payload = buildCreateWardPayload(draft);
 
@@ -23,9 +47,41 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.wardShiftTypes).toHaveLength(draft.shiftTypes.length);
         expect(payload.wardShiftTypes[0]).not.toHaveProperty('id');
         expect(payload.shiftTeams).toHaveLength(draft.teams.length);
-        expect(payload.shiftTeams[0]).toEqual({
-            nurseNames: ['홍길동', '김하늘', '이서윤', '박연우'],
-        });
+        expect(payload.shiftTeams[0]).toEqual(
+            expect.objectContaining({
+                nurseNames: ['홍길동', '김하늘', '이서윤', '박연우'],
+                nurses: expect.arrayContaining([
+                    expect.objectContaining({
+                        name: '홍길동',
+                        isWorker: true,
+                        possibleShiftShortNames: expect.arrayContaining(['D']),
+                    }),
+                ]),
+            }),
+        );
+    });
+
+    it('preserves ordinary spaces in nurse names when building the create ward payload', () => {
+        const initialDraft = createInitialDraft();
+        const firstTeamId = initialDraft.teams[0]?.id ?? '';
+        const draft = {
+            ...initialDraft,
+            nurses: [
+                createNurseDraft(firstTeamId, {
+                    id: 'nurse-spaced-ko',
+                    name: ' 신규 간호사 1 ',
+                }),
+                createNurseDraft(firstTeamId, {
+                    id: 'nurse-spaced-en',
+                    name: 'Nurse 1',
+                }),
+            ],
+        };
+
+        const payload = buildCreateWardPayload(draft);
+
+        expect(payload.shiftTeams[0]?.nurseNames).toEqual(['신규 간호사 1', 'Nurse 1']);
+        expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1']);
     });
 
     it('uses a safe fallback name when both ward and hospital names are blank', () => {
@@ -117,10 +173,19 @@ describe('OnboardingWardCreatePage adapter', () => {
     });
 
     it('remaps existing nurse possible shifts by short name after uploaded shift types replace ids', () => {
-        const draft = createInitialDraft();
-        const dayShift = draft.shiftTypes.find((shiftType) => shiftType.shortName === 'D');
-        const eveningShift = draft.shiftTypes.find((shiftType) => shiftType.shortName === 'E');
-        const nurseId = draft.nurses[0]?.id ?? '';
+        const initialDraft = createInitialDraft();
+        const dayShift = initialDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'D');
+        const eveningShift = initialDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'E');
+        const nurseId = 'nurse-remap-target';
+        const draft = {
+            ...initialDraft,
+            nurses: [
+                createNurseDraft(initialDraft.teams[0]?.id ?? '', {
+                    id: nurseId,
+                    possibleShiftTypeIds: [dayShift?.id ?? '', eveningShift?.id ?? ''],
+                }),
+            ],
+        };
         const nurseScopedDraft = {
             ...draft,
             nurses: draft.nurses.map((nurse) =>

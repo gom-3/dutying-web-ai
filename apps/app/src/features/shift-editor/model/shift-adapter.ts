@@ -196,13 +196,16 @@ export function buildWorkKeyMap(shift?: TShift): TWorkKeyMap {
     if (!shift) return {};
 
     return shift.wardShiftTypes.reduce<TWorkKeyMap>((acc, shiftType) => {
-        if (shiftType.shortName.length !== 1) return acc;
+        const normalizedShortName = shiftType.shortName.trim();
+        const keySource = Array.from(normalizedShortName)[0];
 
-        const key = shiftType.shortName.toLowerCase();
+        if (!keySource) return acc;
+
+        const key = keySource.toLowerCase();
 
         if (acc[key] !== undefined) return acc;
 
-        acc[key] = shiftType.shortName;
+        acc[key] = normalizedShortName;
 
         return acc;
     }, {});

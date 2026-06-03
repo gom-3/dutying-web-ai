@@ -161,10 +161,11 @@ describe('shift-adapter', () => {
         ]);
     });
 
-    it('builds work key map from single-character short names only', () => {
+    it('builds work key map from the first character of each short name', () => {
         expect(buildWorkKeyMap(createShift())).toEqual({
             d: 'D',
             o: 'O',
+            t: 'TR',
         });
     });
 
