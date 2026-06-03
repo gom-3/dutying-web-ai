@@ -227,6 +227,7 @@ export const ko = {
                     level: '숙련도',
                     shiftTypes: '가능 근무',
                     preceptor: '프리셉터',
+                    preceptee: '프리셉티',
                     isWorker: '근무투입',
                     memo: '비고',
                 },
@@ -470,8 +471,8 @@ export const ko = {
             sortListMenuAria: '목록 정렬 기준 열기',
             canMakeDuty: '근무표 작성',
             canMakeDutyTooltip: '선택된 사람만 근무표를 작성할 수 있어요.',
-            emptyTeamTitle: '아직 팀원이 없어요.',
-            emptyTeamDescription: '간호사를 추가하면 숙련도와 근무 조건을 바로 설정할 수 있어요.',
+            emptyTeamTitle: '간호사가 없어요',
+            emptyTeamDescription: '간호사를 추가해주세요',
             confirmDeleteTeam: '{{teamName}} 팀을 삭제할까요? 팀에 속한 간호사도 함께 삭제해요.',
             table: {
                 name: '이름',
@@ -549,7 +550,7 @@ export const ko = {
             },
         },
         wardSettings: {
-            title: '근무 관리',
+            title: '근무 설정',
             tabs: {
                 shiftTypes: '근무 유형',
                 constraints: '제약 조건',

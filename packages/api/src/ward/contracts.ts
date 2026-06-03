@@ -50,14 +50,36 @@ export type TWardChatUnreadCountResponse = {
 
 export type TWardAdminRole = 'OWNER' | 'EDITOR';
 
+export type TWardAdminStatus = 'ACTIVE' | 'RESERVED';
+
 export type TWardAdminMembershipResponse = {
     membershipId: number;
     accountId: number;
-    name: string;
+    wardId?: number;
     loginId?: string | null;
     email?: string | null;
     role: TWardAdminRole;
+    status?: 'ACTIVE';
     createdAt?: string;
+};
+
+export type TWardReservedAdminEmailResponse = {
+    emailRegistrationId: number;
+    wardId?: number;
+    email: string;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
+    status: 'RESERVED';
+    createdAt?: string;
+};
+
+export type TWardAdminEmailRegistrationResponse = {
+    emailRegistrationId?: number;
+    membershipId?: number;
+    accountId?: number;
+    wardId: number;
+    email: string;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
+    status: TWardAdminStatus;
 };
 
 export type TWardAdminInvitationResponse = {
@@ -72,7 +94,13 @@ export type TWardAdminInvitationResponse = {
 
 export type TWardAdminsResponse = {
     members: TWardAdminMembershipResponse[];
-    invitations: TWardAdminInvitationResponse[];
+    reservedEmails?: TWardReservedAdminEmailResponse[];
+    invitations?: TWardAdminInvitationResponse[];
+};
+
+export type TCreateWardAdminEmailDTO = {
+    email: string;
+    role: Exclude<TWardAdminRole, 'OWNER'>;
 };
 
 export type TCreateWardAdminInvitationDTO = {
@@ -440,11 +468,13 @@ export interface IWardAPI {
     getWardChatUnreadCount: (wardId: number) => Promise<TWardChatUnreadCountResponse>;
     getMyWardChatUnreadCounts: () => Promise<TWardChatUnreadCountResponse[]>;
     getWardAdmins: (wardId: number) => Promise<TWardAdminsResponse>;
+    createWardAdminEmail: (wardId: number, adminEmail: TCreateWardAdminEmailDTO) => Promise<TWardAdminEmailRegistrationResponse>;
     createWardAdminInvitation: (wardId: number, invitation: TCreateWardAdminInvitationDTO) => Promise<TWardAdminInvitationResponse>;
     addWardAdminByLoginId: (wardId: number, admin: TAddWardAdminByLoginIdDTO) => Promise<TWardAdminMembershipResponse>;
     resendWardAdminInvitation: (wardId: number, invitationId: number) => Promise<void>;
     cancelWardAdminInvitation: (wardId: number, invitationId: number) => Promise<void>;
     removeWardAdmin: (wardId: number, membershipId: number) => Promise<void>;
+    removeWardAdminEmail: (wardId: number, emailRegistrationId: number) => Promise<void>;
     getReqShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TRequestShiftResponse>;
     getShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftResponse>;
     getRequestList: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TDutyRequestResponse[]>;
@@ -469,7 +499,7 @@ export interface IWardAPI {
     postShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<void>;
     getShiftTeamNurses: (wardId: number, shiftTeamId: number) => Promise<TNurseResponse[]>;
     getShiftTeams: (wardId: number) => Promise<TShiftTeamResponse[]>;
-    addNurseIntoShiftTeam: (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO: TUpdateNurseDTO) => Promise<TNurseResponse>;
+    addNurseIntoShiftTeam: (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO: TAddShiftTeamNurseDTO) => Promise<TNurseResponse>;
     createShiftTeam: (wardId: number) => Promise<TShiftTeamResponse>;
     buildShiftTeam: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftTeamResponse>;
     updateShiftTeam: (wardId: number, shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) => Promise<TShiftTeamResponse>;
@@ -519,6 +549,7 @@ export type TCreateWardShiftTypeDTO = {
 
 export type TCreateWardSeedNurseDTO = {
     name: string;
+    phoneNum?: string | null;
     memo?: string;
     isWorker?: boolean;
     employmentDate?: string;
@@ -544,6 +575,10 @@ export type TCreateWardDTO = {
 export type TEditWardDTO = {
     name: string;
     hospitalName: string;
+};
+
+export type TAddShiftTeamNurseDTO = Omit<TUpdateNurseDTO, 'name'> & {
+    name: string;
 };
 
 export type TWardConstraintDTO = TWardConstraintResponse;

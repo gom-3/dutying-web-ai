@@ -11,25 +11,31 @@ interface IShiftTypeStepProps {
     onDelete: (shiftTypeId: string) => void;
 }
 
-const PASTEL_SHIFT_COLORS = [
-    '#9AD7CB',
-    '#F3A9B9',
-    '#8FB7FF',
-    '#9AA8C7',
-    '#F4C6A8',
-    '#F7D98F',
-    '#C7D98B',
-    '#9ED8E8',
-    '#CBB8F3',
-    '#F2B3DE',
+const SHIFT_COLOR_OPTIONS = [
+    '#63C8B8',
+    '#F790A4',
+    '#5A95F8',
+    '#7688B2',
+    '#F5A978',
+    '#EFCB55',
+    '#9AC760',
+    '#62CAD8',
+    '#AD87F1',
+    '#EC84BB',
 ] as const;
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_56px_112px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_72px_112px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
+const normalizeShiftShortNameInput = (value: string) =>
+    Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
+const hasInvalidShiftShortNameInput = (value: string) =>
+    /\s/.test(value) || Array.from(value.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
+const getShiftShortNameDuplicateKey = (value: string) => Array.from(value.trim().toLocaleUpperCase())[0] ?? '';
 const parseShiftTimeToMinutes = (value: string) => {
     if (!SHIFT_TIME_FORMAT_REGEX.test(value)) return null;
 
@@ -125,21 +131,21 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                 .map(([name]) => name),
         );
     }, [shiftTypes]);
-    const duplicatedShiftShortNames = useMemo(() => {
-        const countByShortName = new Map<string, number>();
+    const duplicatedShiftShortNameKeys = useMemo(() => {
+        const countByShortNameKey = new Map<string, number>();
 
         shiftTypes.forEach((shiftType) => {
-            const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+            const normalizedShortNameKey = getShiftShortNameDuplicateKey(shiftType.shortName);
 
-            if (!normalizedShortName) return;
+            if (!normalizedShortNameKey) return;
 
-            countByShortName.set(normalizedShortName, (countByShortName.get(normalizedShortName) ?? 0) + 1);
+            countByShortNameKey.set(normalizedShortNameKey, (countByShortNameKey.get(normalizedShortNameKey) ?? 0) + 1);
         });
 
         return new Set(
-            Array.from(countByShortName.entries())
+            Array.from(countByShortNameKey.entries())
                 .filter(([, count]) => count > 1)
-                .map(([shortName]) => shortName),
+                .map(([shortNameKey]) => shortNameKey),
         );
     }, [shiftTypes]);
     const getShiftNameError = (name: string) => {
@@ -158,7 +164,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
 
         if (!normalizedShortName) return '약자를 입력해 주세요.';
 
-        if (duplicatedShiftShortNames.has(normalizedShortName)) return '다른 약자를 입력해 주세요.';
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) return '다른 약자를 입력해 주세요.';
 
         return null;
     };
@@ -237,7 +243,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                 <span>색상</span>
                 <span />
             </div>
-            <div className="overflow-hidden rounded-[16px] bg-white px-1 py-1">
+            <div className="overflow-visible rounded-[16px] bg-white px-1 py-1">
                 {shiftTypes.map((shiftType) => (
                     <div key={shiftType.id} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-4 px-3 py-3`}>
                         <div className="flex flex-col gap-1">
@@ -265,21 +271,20 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                         <div className="flex flex-col items-center gap-1">
                             <Input
                                 value={shiftType.shortName}
-                                maxLength={1}
+                                maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
                                 onChange={(event) => {
-                                    const upper = event.target.value.toUpperCase();
-                                    const alphaOnly = upper.replace(/[^A-Z]/g, '').slice(0, 1);
+                                    const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 
-                                    if (upper !== alphaOnly) {
+                                    if (hasInvalidShiftShortNameInput(event.target.value)) {
                                         setShortNameErrorById((prev) => ({
                                             ...prev,
-                                            [shiftType.id]: '영문 1글자만 입력해 주세요.',
+                                            [shiftType.id]: '공백 없이 2글자까지 입력해 주세요.',
                                         }));
                                     } else {
                                         setShortNameErrorById((prev) => ({...prev, [shiftType.id]: ''}));
                                     }
 
-                                    onChange(shiftType.id, {shortName: alphaOnly});
+                                    onChange(shiftType.id, {shortName: normalizedShortName});
                                 }}
                                 variant="foundation"
                                 fieldSize="lg"
@@ -289,7 +294,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                         ? `onboarding-shift-short-name-error-${shiftType.id}`
                                         : undefined
                                 }
-                                className={`h-10 w-10 px-0 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                className={`h-10 w-14 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                     getShiftShortNameError(shiftType.id, shiftType.shortName) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                 }`}
                                 placeholder="-"
@@ -402,8 +407,8 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 <span className="h-6 w-6 rounded-[7px]" style={{backgroundColor: shiftType.color}} />
                             </button>
                             {openedColorShiftTypeId === shiftType.id ? (
-                                <div className="absolute top-full left-1/2 z-20 mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2">
-                                    {PASTEL_SHIFT_COLORS.map((color) => {
+                                <div className="absolute top-full left-1/2 z-[1000] mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]">
+                                    {SHIFT_COLOR_OPTIONS.map((color) => {
                                         const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
 
                                         return (
@@ -411,7 +416,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                                 key={color}
                                                 type="button"
                                                 aria-label={`${color} 선택`}
-                                                className="flex h-5 w-5 items-center justify-center rounded-[6px]"
+                                                className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
                                                 style={{backgroundColor: color}}
                                                 onClick={() => {
                                                     onChange(shiftType.id, {color});

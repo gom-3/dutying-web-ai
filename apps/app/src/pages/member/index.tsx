@@ -8,7 +8,7 @@ import {
     type DraggableProvidedDraggableProps,
     type DropResult,
 } from '@hello-pangea/dnd';
-import {Check, ChevronDown, ChevronRight, Copy, Info, Link2, Plus, Trash2, X} from 'lucide-react';
+import {Check, ChevronDown, Copy, Info, Link2, Plus, Settings2, Trash2, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {NURSE_ROLE_HELP, hasPrecepteeMemo, setPrecepteeMemo, type TNurseRoleHelpType} from './model/nurse-role';
+import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
 import {createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
 import MemberSkillLevelModal from './ui/member-skill-level-modal';
@@ -753,6 +754,11 @@ function MemberPage() {
         if (createdShiftTeam?.shiftTeamId) {
             setActiveShiftTeamId(createdShiftTeam.shiftTeamId);
             selectNurse(null);
+
+            const nextSearchParams = new URLSearchParams(searchParams);
+
+            nextSearchParams.set('shiftTeamId', String(createdShiftTeam.shiftTeamId));
+            setSearchParams(nextSearchParams, {replace: true});
         }
         sendEvent(events.memberPage.createShiftTeam);
         toast.success(`간호사 ${teamCount + 1}팀을 추가했어요.`, {position: 'bottom-center'});
@@ -1046,11 +1052,18 @@ function MemberPage() {
                         <button
                             id="member_skill_settings_button"
                             type="button"
-                            className="ml-auto flex h-10 shrink-0 items-center gap-1.5 rounded-[8px] bg-gray-6 px-3 font-apple text-[14px] font-medium text-sub-2 transition-colors hover:bg-gray-5 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[42px] min-[1440px]:gap-2 min-[1440px]:px-4 min-[1440px]:text-[16px]"
+                            aria-label={t('page.member.skillSettings')}
+                            title={t('page.member.skillSettings')}
+                            className={cn(
+                                'ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[42px]',
+                                selectedNurse
+                                    ? 'min-[1440px]:w-[42px] min-[1440px]:px-0'
+                                    : 'min-[1440px]:w-auto min-[1440px]:gap-1.5 min-[1440px]:px-4',
+                            )}
                             onClick={() => setSkillModalOpen(true)}
                         >
-                            {t('page.member.skillSettings')}
-                            <ChevronRight className="h-4 w-4 text-[#5C667D]" />
+                            <span className={cn('hidden', !selectedNurse && 'min-[1440px]:inline')}>{t('page.member.skillSettings')}</span>
+                            <Settings2 className="h-5 w-5 text-[#7658D8]" />
                         </button>
                     </div>
                     <ConnectionManage open={connectionManageModalOpen} setOpen={setConnectionManageModalOpen} />
@@ -1347,44 +1360,37 @@ function MemberPage() {
                                         )}
                                     </Droppable>
                                 </DragDropContext>
-                            ) : null}
+                            ) : (
+                                <div className="mt-2 flex min-h-[280px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#C8CFDB] bg-white px-6 py-12 text-center">
+                                    <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.emptyTeamTitle')}</p>
+                                    <p className="mt-2 font-apple text-[16px] text-gray-3">{t('page.member.emptyTeamDescription')}</p>
+                                    <button
+                                        id="member_add_nurse_button"
+                                        type="button"
+                                        disabled={!activeShiftTeam || isAddingNurse}
+                                        className="group mt-6 flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
+                                        onClick={() => void handleAddNurse()}
+                                    >
+                                        <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
+                                            <Plus className="h-[11px] w-[11px] text-white" />
+                                        </span>
+                                        {isAddingNurse ? t('page.member.addingNurse') : t('page.member.addNurse')}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
-                    {isActiveTeamEmpty ? (
-                        <div className="mt-4 flex items-center justify-between">
-                            <button
-                                type="button"
-                                disabled={!activeShiftTeam}
-                                className="group flex items-center gap-2 font-apple text-[16px] font-medium text-[#E24B4B] transition-colors hover:text-[#C93838] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
-                                onClick={handleDeleteActiveTeam}
-                            >
-                                <Trash2 className="h-[16px] w-[16px]" strokeWidth={2.2} />
-                                {t('page.member.deleteTeam')}
-                            </button>
-                            <button
-                                id="member_add_nurse_button"
-                                type="button"
-                                disabled={!activeShiftTeam || isAddingNurse}
-                                className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-40"
-                                onClick={() => void handleAddNurse()}
-                            >
-                                <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
-                                    <Plus className="h-[11px] w-[11px] text-white" />
-                                </span>
-                                {isAddingNurse ? t('page.member.addingNurse') : t('page.member.addNurse')}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="mt-4 flex items-center justify-between">
-                            <button
-                                type="button"
-                                disabled={!activeShiftTeam}
-                                className="group flex items-center gap-2 font-apple text-[16px] font-medium text-[#E24B4B] transition-colors hover:text-[#C93838] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
-                                onClick={handleDeleteActiveTeam}
-                            >
-                                <Trash2 className="h-[16px] w-[16px]" strokeWidth={2.2} />
-                                {t('page.member.deleteTeam')}
-                            </button>
+                    <div className="mt-4 flex items-center justify-between">
+                        <button
+                            type="button"
+                            disabled={!activeShiftTeam}
+                            className="group flex items-center gap-2 font-apple text-[16px] font-medium text-[#E24B4B] transition-colors hover:text-[#C93838] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-40"
+                            onClick={handleDeleteActiveTeam}
+                        >
+                            <Trash2 className="h-[16px] w-[16px]" strokeWidth={2.2} />
+                            {t('page.member.deleteTeam')}
+                        </button>
+                        {!isActiveTeamEmpty ? (
                             <button
                                 id="member_add_nurse_button"
                                 type="button"
@@ -1397,14 +1403,14 @@ function MemberPage() {
                                 </span>
                                 {isAddingNurse ? t('page.member.addingNurse') : t('page.member.addNurse')}
                             </button>
-                        </div>
-                    )}
+                        ) : null}
+                    </div>
                 </section>
 
                 <aside
                     id="nurse_edit_drawer"
                     className={cn(
-                        'sticky top-4 h-[calc(100vh-2rem)] shrink-0 overflow-hidden rounded-[16px] border bg-white transition-[width,opacity,transform,border-color] duration-250 ease-out will-change-[width,opacity,transform] min-[1440px]:top-5 min-[1440px]:h-[calc(100vh-2.5rem)]',
+                        'sticky top-11 h-[calc(100vh-5.75rem)] shrink-0 overflow-hidden rounded-[16px] border bg-white transition-[width,opacity,transform,border-color] duration-250 ease-out will-change-[width,opacity,transform] min-[1440px]:top-[52px] min-[1440px]:h-[calc(100vh-6.75rem)]',
                         selectedNurse
                             ? 'pointer-events-auto w-[360px] translate-x-0 border-gray-7/80 opacity-100 min-[1440px]:w-[400px]'
                             : 'pointer-events-none w-0 translate-x-3 border-transparent opacity-0',
@@ -1416,7 +1422,6 @@ function MemberPage() {
                             <NurseDetailPanel
                                 onClose={handleDismissDetailPanel}
                                 onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
-                                onOpenSkillSettings={() => setSkillModalOpen(true)}
                                 isSkillFeatureEnabled={isSkillFeatureEnabled}
                                 isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
                                 onSaveSkillLevel={(nextLevel) => {
@@ -1508,7 +1513,7 @@ function MemberNurseRow({
     onUpdateNurseShift: (
         nurseId: number,
         nurseShiftTypeId: number,
-        change: {isPossible?: boolean; isPrefer?: boolean},
+        change: {isPossible?: boolean; isPreferred?: boolean; isPrefer?: boolean},
         shiftTypeMeta?: TUpdateNurseShiftMeta,
     ) => Promise<boolean>;
     onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<void>;
@@ -1528,35 +1533,11 @@ function MemberNurseRow({
         setNameDraft(nurse.name);
     }, [nurse.name, nurse.nurseId]);
 
-    const shiftTypeColorByName = useMemo(() => {
-        return new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.name, shiftType.color]));
+    const shiftTypeColorById = useMemo(() => {
+        return new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType.color]));
     }, [wardShiftTypes]);
     const shiftTypeOptions = useMemo(() => {
-        if (!wardShiftTypes?.length) {
-            return nurse.nurseShiftTypes.map((shiftType) => ({
-                ...shiftType,
-                apiShiftTypeId: shiftType.nurseShiftTypeId,
-            }));
-        }
-        const nurseShiftTypeByName = new Map(nurse.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
-
-        return wardShiftTypes.map((wardShiftType) => {
-            const matched = nurseShiftTypeByName.get(wardShiftType.name);
-
-            return matched
-                ? {
-                      ...matched,
-                      apiShiftTypeId: matched.nurseShiftTypeId,
-                  }
-                : {
-                      nurseShiftTypeId: wardShiftType.wardShiftTypeId,
-                      name: wardShiftType.name,
-                      shortName: wardShiftType.shortName,
-                      isPossible: true,
-                      isPreferred: false,
-                      apiShiftTypeId: wardShiftType.wardShiftTypeId,
-                  };
-        });
+        return resolveNurseShiftTypeOptions(nurse.nurseShiftTypes, wardShiftTypes);
     }, [nurse.nurseShiftTypes, wardShiftTypes]);
     const isPreceptor = Boolean(nurse.isWardManager);
     const isPreceptee = hasPrecepteeMemo(nurse.memo);
@@ -1709,7 +1690,10 @@ function MemberNurseRow({
                     {shiftTypeOptions.length > 0 ? (
                         shiftTypeOptions.map((shiftType) => {
                             const selected = shiftType.isPossible;
-                            const baseColor = shiftTypeColorByName.get(shiftType.name) ?? '#BFC7D4';
+                            const baseColor =
+                                (typeof shiftType.wardShiftTypeId === 'number'
+                                    ? shiftTypeColorById.get(shiftType.wardShiftTypeId)
+                                    : undefined) ?? '#BFC7D4';
                             const badgeBackgroundColor = selected ? baseColor : tintHexColor(baseColor, 0.45);
                             return (
                                 <button
@@ -1726,7 +1710,11 @@ function MemberNurseRow({
                                             nurse.nurseId,
                                             shiftType.apiShiftTypeId,
                                             {isPossible: !selected},
-                                            {name: shiftType.name, shortName: shiftType.shortName ?? ''},
+                                            {
+                                                wardShiftTypeId: shiftType.wardShiftTypeId,
+                                                name: shiftType.name,
+                                                shortName: shiftType.shortName ?? '',
+                                            },
                                         );
                                     }}
                                     className={cn(

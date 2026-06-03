@@ -99,8 +99,6 @@ const useEditAccount = () => {
     const deleteAccount = async () => {
         if (!accountMe) return;
 
-        if (!confirm('계정을 탈퇴할까요?')) return;
-
         try {
             setLoading(true);
 

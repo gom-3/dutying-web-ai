@@ -2,6 +2,7 @@ import type {TDay} from './shift';
 
 export type TNurseShiftType = {
     nurseShiftTypeId: number;
+    wardShiftTypeId?: number;
     name: string;
     shortName: string;
     isPossible: boolean;
@@ -19,7 +20,7 @@ export type TNurse = {
     shiftTeamId: number | null;
     wardId: number;
     name: string;
-    phoneNum: string;
+    phoneNum: string | null;
     isConnected: boolean;
     nurseShiftTypes: TNurseShiftType[];
     isWorker: boolean;

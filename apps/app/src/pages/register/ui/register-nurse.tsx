@@ -8,7 +8,6 @@ import toast from 'react-hot-toast';
 import * as yup from 'yup';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TCreateAccountProfileDTO, useCreateAccount} from '@/features/account/model';
-import {readSocialSignupProfile} from '@/features/auth/model/social-signup';
 import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
 import {RandomIcon} from '@/shared/assets/svg';
@@ -68,9 +67,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         state: {accountMe},
         actions: {registerAccountProfile},
     } = useRegister();
-    const socialSignupProfile = readSocialSignupProfile();
     const isSocialMode = mode === 'social';
-    const socialDisplayName = accountMe?.name || socialSignupProfile?.name || '';
     const watchName = watch('name');
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage(
         accountMe?.status === 'WARD_SELECT_PENDING' && accountMe.profileImgUrl
@@ -129,18 +126,12 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     }, [profileImg, setValue]);
 
     useEffect(() => {
-        if (!accountMe?.name) {
+        if (isSocialMode || !accountMe?.name) {
             return;
         }
 
         setValue('name', accountMe.name, {shouldValidate: true});
-    }, [accountMe?.name, setValue]);
-
-    useEffect(() => {
-        if (isSocialMode && socialDisplayName) {
-            setValue('name', socialDisplayName, {shouldValidate: true});
-        }
-    }, [isSocialMode, setValue, socialDisplayName]);
+    }, [accountMe?.name, isSocialMode, setValue]);
 
     useEffect(() => {
         const subscription = watch(() => {
@@ -155,38 +146,36 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     return (
         <form onSubmit={handleSubmit(handleCreateAccount, handleCreateAccountValidationFailure)} className="flex w-full flex-col">
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">
-                    계정 정보를 입력해 주세요
-                </h1>
+                <h1 className="text-[32px] font-semibold text-sub-1">계정 정보를 입력해 주세요</h1>
             </div>
 
             <section className="mt-6 rounded-[24px] bg-white p-6">
                 <div className="flex items-center justify-between gap-4">
-                        <div className="h-18 w-18 shrink-0 rounded-full bg-main-light p-1">
-                            <ProfileImage name={watchName} profileImg={profileImg} className="h-full w-full" />
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                                onClick={setRandomImage}
-                                aria-label="랜덤 아바타"
-                                title="랜덤 아바타"
-                            >
-                                <RandomIcon className="h-4 w-4" />
-                            </button>
-                            <button
-                                type="button"
-                                className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                                onClick={handleUploadImage}
-                                aria-label="사진 업로드"
-                                title="사진 업로드"
-                            >
-                                <Camera className="h-4 w-4" />
-                            </button>
-                            <input ref={imageInputRef} type="file" className="hidden" onChange={handleChangeImage} accept="image/*" />
-                        </div>
+                    <div className="h-18 w-18 shrink-0 rounded-full bg-main-light p-1">
+                        <ProfileImage name={watchName} profileImg={profileImg} className="h-full w-full" />
                     </div>
+                    <div className="flex items-center gap-1">
+                        <button
+                            type="button"
+                            className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
+                            onClick={setRandomImage}
+                            aria-label="랜덤 아바타"
+                            title="랜덤 아바타"
+                        >
+                            <RandomIcon className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
+                            onClick={handleUploadImage}
+                            aria-label="사진 업로드"
+                            title="사진 업로드"
+                        >
+                            <Camera className="h-4 w-4" />
+                        </button>
+                        <input ref={imageInputRef} type="file" className="hidden" onChange={handleChangeImage} accept="image/*" />
+                    </div>
+                </div>
 
                 <div className="mt-6 space-y-4">
                     <div>
@@ -199,7 +188,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             aria-invalid={Boolean(nameError)}
                             aria-describedby={nameError ? 'register-name-error' : undefined}
                             maxLength={NURSE_NAME_MAX_LENGTH}
-                            placeholder="이름을 입력하세요"
+                            placeholder="이름을 입력해주세요"
                             {...nameField}
                             onChange={(event) => {
                                 event.target.value = sanitizeNurseNameInput(event.target.value);

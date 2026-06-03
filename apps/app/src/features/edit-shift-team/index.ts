@@ -1,5 +1,5 @@
 ﻿import {type TUpdateNurseDTO, type TUpdateNurseShiftTypeRequest} from '@dutying/api/nurse';
-import {type TUpdateShiftTeamDTO} from '@dutying/api/ward';
+import {type TAddShiftTeamNurseDTO, type TUpdateShiftTeamDTO} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {produce} from 'immer';
 import {useCallback} from 'react';
@@ -14,20 +14,29 @@ import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const TEMP_NURSE_ID_BASE = -1_000_000;
+const DUMMY_PHONE_NUM = '01000000000';
 
 export type TUpdateNurseShiftMeta = {
+    wardShiftTypeId?: number;
     name: string;
     shortName: string;
 };
 
 const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
-const normalizePhoneNum = (phoneNum: string) => phoneNum.replace(/\D/g, '');
-const toRequiredPhoneNum = (phoneNum: string) => {
-    const normalizedPhoneNum = normalizePhoneNum(phoneNum);
+const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').replace(/\D/g, '');
+const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
+const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clearBlank?: boolean} = {}) => {
+    if (phoneNum === undefined) return undefined;
+    if (phoneNum === null) return options.clearBlank ? null : undefined;
 
-    return normalizedPhoneNum.length >= 10 && normalizedPhoneNum.length <= 11 ? normalizedPhoneNum : '01000000000';
+    const trimmedPhoneNum = phoneNum.trim();
+
+    if (isDummyPhoneNum(trimmedPhoneNum)) return options.clearBlank ? null : undefined;
+
+    return trimmedPhoneNum.length > 0 ? trimmedPhoneNum : options.clearBlank ? null : undefined;
 };
-const toRequiredGender = (gender: string) => (gender === '남' || gender === '여' ? gender : '여');
+const compactRequest = <T extends Record<string, unknown>>(request: T) =>
+    Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
 const getNextNewNurseName = (names: string[]) => {
     const prefix = '신규간호사';
     const usedNumbers = names
@@ -42,7 +51,7 @@ const getNextNewNurseName = (names: string[]) => {
     const nextNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
     return `${prefix}${nextNumber}`;
 };
-const canCreateNurse = (nurse: TUpdateNurseDTO) => nurse.name.trim().length > 0;
+const canCreateNurse = (nurse: TUpdateNurseDTO) => (nurse.name ?? '').trim().length > 0;
 type TShiftTeamNurse = TWard['shiftTeams'][number]['nurses'][number];
 
 const getShiftTeamNurseCount = (shiftTeams: TWard['shiftTeams'] | undefined) =>
@@ -84,17 +93,18 @@ const mergeWardShiftTeams = (ward: TWard | undefined, shiftTeams: TWard['shiftTe
         nurseCnt: getShiftTeamNurseCount(shiftTeams),
     };
 };
-const toNursePayload = (nurse: TUpdateNurseDTO) =>
-    ({
-        name: nurse.name.trim(),
-        gender: toRequiredGender(nurse.gender),
-        phoneNum: toRequiredPhoneNum(nurse.phoneNum),
+const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: boolean} = {}) =>
+    compactRequest({
+        name: nurse.name?.trim(),
+        phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
         isWorker: nurse.isWorker,
-        employmentDate: nurse.employmentDate ?? '',
-        isDutyManager: false,
         isWardManager: nurse.isWardManager,
-        memo: nurse.memo ?? '',
+        memo: nurse.memo ?? undefined,
     }) as TUpdateNurseDTO;
+const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => ({
+    ...toNursePayload(nurse),
+    name: (nurse.name ?? '').trim(),
+});
 const useEditShiftTeam = () => {
     const {
         selectedNurseId,
@@ -163,11 +173,7 @@ const useEditShiftTeam = () => {
                 const nextName = getNextNewNurseName((targetShiftTeam?.nurses ?? []).map((nurse) => nurse.name.trim()));
                 const createdNurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
                     name: nextName,
-                    phoneNum: '01000000000',
-                    gender: '여',
                     isWorker: true,
-                    employmentDate: '',
-                    isDutyManager: false,
                     isWardManager: false,
                     memo: '',
                 });
@@ -358,7 +364,7 @@ const useEditShiftTeam = () => {
                     const createdNurse = await WardAPI.addNurseIntoShiftTeam(
                         wardId!,
                         createNurseDTO.shiftTeamId!,
-                        toNursePayload(updateNurseDTO),
+                        toCreateNursePayload(updateNurseDTO),
                     );
                     const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? oldWard;
 
@@ -384,7 +390,7 @@ const useEditShiftTeam = () => {
 
                     selectNurseState(createdNurse.nurseId, 'edit');
                 } else {
-                    await NurseAPI.updateNurse(nurseId, toNursePayload(updateNurseDTO));
+                    await NurseAPI.updateNurse(nurseId, toNursePayload(updateNurseDTO, {clearBlankPhoneNum: true}));
                 }
 
                 completeSavingNurse();
@@ -444,10 +450,11 @@ const useEditShiftTeam = () => {
                                 if (!targetShiftType && shiftTypeMeta) {
                                     nurse.nurseShiftTypes.push({
                                         nurseShiftTypeId,
+                                        wardShiftTypeId: shiftTypeMeta.wardShiftTypeId,
                                         name: shiftTypeMeta.name,
                                         shortName: shiftTypeMeta.shortName,
                                         isPossible: change.isPossible ?? true,
-                                        isPreferred: change.isPrefer ?? false,
+                                        isPreferred: change.isPreferred ?? change.isPrefer ?? false,
                                     });
                                     targetShiftType = nurse.nurseShiftTypes[nurse.nurseShiftTypes.length - 1];
                                 }
@@ -458,8 +465,10 @@ const useEditShiftTeam = () => {
                                     targetShiftType.isPossible = change.isPossible;
                                 }
 
-                                if (typeof change.isPrefer === 'boolean') {
-                                    targetShiftType.isPreferred = change.isPrefer;
+                                const nextIsPreferred = change.isPreferred ?? change.isPrefer;
+
+                                if (typeof nextIsPreferred === 'boolean') {
+                                    targetShiftType.isPreferred = nextIsPreferred;
                                 }
                             });
                         });

@@ -1,7 +1,8 @@
 import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
+import {getNurseShiftTypeKey} from './nurse-shift-types';
 
-const nurseProfileEditableKeys = ['name', 'gender', 'employmentDate', 'phoneNum', 'isWorker', 'isWardManager', 'memo'] as const;
+const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager', 'memo'] as const;
 
 export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
@@ -14,17 +15,17 @@ export function hasNurseChanges(original: TNurse | null | undefined, draft: TNur
 
     if (hasNurseProfileChanges(original, draft)) return true;
 
-    const originalShiftTypeByName = new Map(original.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
-    const draftShiftTypeByName = new Map(draft.nurseShiftTypes.map((shiftType) => [shiftType.name, shiftType]));
-
+    const originalShiftTypeByKey = new Map(original.nurseShiftTypes.map((shiftType) => [getNurseShiftTypeKey(shiftType), shiftType]));
+    const draftShiftTypeByKey = new Map(draft.nurseShiftTypes.map((shiftType) => [getNurseShiftTypeKey(shiftType), shiftType]));
     const hasDraftShiftTypeChanges = draft.nurseShiftTypes.some((shiftType) => {
-        const originalIsPossible = originalShiftTypeByName.get(shiftType.name)?.isPossible ?? true;
+        const originalIsPossible = originalShiftTypeByKey.get(getNurseShiftTypeKey(shiftType))?.isPossible ?? true;
 
         return originalIsPossible !== shiftType.isPossible;
     });
+
     if (hasDraftShiftTypeChanges) return true;
 
-    return original.nurseShiftTypes.some((shiftType) => !draftShiftTypeByName.has(shiftType.name));
+    return original.nurseShiftTypes.some((shiftType) => !draftShiftTypeByKey.has(getNurseShiftTypeKey(shiftType)));
 }
 
 export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStatus: TNurseSaveStatus; isDirty: boolean}) {

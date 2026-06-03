@@ -61,6 +61,29 @@ describe('OnboardingWardCreatePage adapter', () => {
         );
     });
 
+    it('preserves ordinary spaces in nurse names when building the create ward payload', () => {
+        const initialDraft = createInitialDraft();
+        const firstTeamId = initialDraft.teams[0]?.id ?? '';
+        const draft = {
+            ...initialDraft,
+            nurses: [
+                createNurseDraft(firstTeamId, {
+                    id: 'nurse-spaced-ko',
+                    name: ' 신규 간호사 1 ',
+                }),
+                createNurseDraft(firstTeamId, {
+                    id: 'nurse-spaced-en',
+                    name: 'Nurse 1',
+                }),
+            ],
+        };
+
+        const payload = buildCreateWardPayload(draft);
+
+        expect(payload.shiftTeams[0]?.nurseNames).toEqual(['신규 간호사 1', 'Nurse 1']);
+        expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1']);
+    });
+
     it('uses a safe fallback name when both ward and hospital names are blank', () => {
         const payload = buildCreateWardPayload(createInitialDraft());
 

@@ -1,7 +1,8 @@
 ﻿import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {Check, CircleAlert, Plus, X} from 'lucide-react';
-import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/constraints';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -20,25 +21,43 @@ type TWardSettingsPageViewProps = {
 };
 
 const TAB_ORDER: TWardSettingsTab[] = ['shiftTypes', 'constraints'];
-const PASTEL_SHIFT_COLORS = [
-    '#9AD7CB',
-    '#F3A9B9',
-    '#8FB7FF',
-    '#9AA8C7',
-    '#F4C6A8',
-    '#F7D98F',
-    '#C7D98B',
-    '#9ED8E8',
-    '#CBB8F3',
-    '#F2B3DE',
+const SHIFT_COLOR_OPTIONS = [
+    '#63C8B8',
+    '#F790A4',
+    '#5A95F8',
+    '#7688B2',
+    '#F5A978',
+    '#EFCB55',
+    '#9AC760',
+    '#62CAD8',
+    '#AD87F1',
+    '#EC84BB',
 ] as const;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_56px_112px_minmax(230px,1.45fr)_48px_40px]';
+const COLOR_PICKER_WIDTH = 126;
+const COLOR_PICKER_VIEWPORT_PADDING = 12;
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_72px_112px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_NAME_MAX_LENGTH = 12;
+const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
+
+type TColorPickerPosition = {
+    left: number;
+    top: number;
+};
+
+function getColorPickerPosition(targetRect: DOMRect): TColorPickerPosition {
+    const centeredLeft = targetRect.left + targetRect.width / 2 - COLOR_PICKER_WIDTH / 2;
+    const maxLeft = window.innerWidth - COLOR_PICKER_WIDTH - COLOR_PICKER_VIEWPORT_PADDING;
+
+    return {
+        left: Math.max(COLOR_PICKER_VIEWPORT_PADDING, Math.min(centeredLeft, maxLeft)),
+        top: targetRect.bottom + 8,
+    };
+}
 
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
     return {
@@ -52,6 +71,18 @@ function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTy
         isCounted: shiftType.isCounted,
         classification: shiftType.isOff ? 'OTHER_LEAVE' : 'OTHER_WORK',
     };
+}
+
+function normalizeShiftShortNameInput(value: string) {
+    return Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
+}
+
+function hasInvalidShiftShortNameInput(value: string) {
+    return /\s/.test(value) || Array.from(value.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
+}
+
+function getShiftShortNameDuplicateKey(value: string) {
+    return Array.from(value.trim().toLocaleUpperCase())[0] ?? '';
 }
 
 function parseShiftTimeToMinutes(value: string) {
@@ -179,7 +210,9 @@ function ShiftTypeTable({
     const [showValidationHighlight, setShowValidationHighlight] = useState(false);
     const [draftShiftTypes, setDraftShiftTypes] = useState<TWardSettingsShiftType[]>([]);
     const [deletedShiftTypeIds, setDeletedShiftTypeIds] = useState<number[]>([]);
+    const [colorPickerPosition, setColorPickerPosition] = useState<TColorPickerPosition | null>(null);
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
+    const openedColorMenuRef = useRef<HTMLDivElement | null>(null);
     const tempShiftTypeIdRef = useRef(-1);
 
     useEffect(() => {
@@ -205,23 +238,42 @@ function ShiftTypeTable({
                 .map(([name]) => name),
         );
     }, [draftShiftTypes]);
-    const duplicatedShiftShortNames = useMemo(() => {
-        const countByShortName = new Map<string, number>();
+    const duplicatedShiftShortNameKeys = useMemo(() => {
+        const countByShortNameKey = new Map<string, number>();
 
         draftShiftTypes.forEach((shiftType) => {
-            const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
+            const normalizedShortNameKey = getShiftShortNameDuplicateKey(shiftType.shortName);
 
-            if (!normalizedShortName) return;
+            if (!normalizedShortNameKey) return;
 
-            countByShortName.set(normalizedShortName, (countByShortName.get(normalizedShortName) ?? 0) + 1);
+            countByShortNameKey.set(normalizedShortNameKey, (countByShortNameKey.get(normalizedShortNameKey) ?? 0) + 1);
         });
 
         return new Set(
-            Array.from(countByShortName.entries())
+            Array.from(countByShortNameKey.entries())
                 .filter(([, count]) => count > 1)
-                .map(([shortName]) => shortName),
+                .map(([shortNameKey]) => shortNameKey),
         );
     }, [draftShiftTypes]);
+    const updateColorPickerPosition = useCallback(() => {
+        if (!openedColorContainerRef.current) return;
+
+        setColorPickerPosition(getColorPickerPosition(openedColorContainerRef.current.getBoundingClientRect()));
+    }, []);
+    const closeColorPicker = useCallback(() => {
+        setOpenedColorShiftTypeId(null);
+        setColorPickerPosition(null);
+    }, []);
+    const handleColorButtonClick = (shiftTypeId: number, target: HTMLElement) => {
+        if (openedColorShiftTypeId === shiftTypeId) {
+            closeColorPicker();
+
+            return;
+        }
+
+        setColorPickerPosition(getColorPickerPosition(target.getBoundingClientRect()));
+        setOpenedColorShiftTypeId(shiftTypeId);
+    };
 
     useEffect(() => {
         if (!openedColorShiftTypeId) return;
@@ -231,13 +283,22 @@ function ShiftTypeTable({
 
             if (openedColorContainerRef.current?.contains(target)) return;
 
-            setOpenedColorShiftTypeId(null);
+            if (openedColorMenuRef.current?.contains(target)) return;
+
+            closeColorPicker();
         };
 
+        updateColorPickerPosition();
         document.addEventListener('mousedown', handleOutsideClick);
+        window.addEventListener('resize', updateColorPickerPosition);
+        window.addEventListener('scroll', updateColorPickerPosition, true);
 
-        return () => document.removeEventListener('mousedown', handleOutsideClick);
-    }, [openedColorShiftTypeId]);
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            window.removeEventListener('resize', updateColorPickerPosition);
+            window.removeEventListener('scroll', updateColorPickerPosition, true);
+        };
+    }, [closeColorPicker, openedColorShiftTypeId, updateColorPickerPosition]);
 
     const patchDraft = (shiftTypeId: number, updater: Partial<TWardSettingsShiftType>) => {
         setDraftShiftTypes((prev) => prev.map((item) => (item.wardShiftTypeId === shiftTypeId ? {...item, ...updater} : item)));
@@ -258,7 +319,7 @@ function ShiftTypeTable({
 
         if (!normalizedShortName) return '약자를 입력해 주세요.';
 
-        if (duplicatedShiftShortNames.has(normalizedShortName)) return '다른 약자를 입력해 주세요.';
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) return '다른 약자를 입력해 주세요.';
 
         return null;
     };
@@ -297,7 +358,7 @@ function ShiftTypeTable({
                 shortName: 'W',
                 startTime: '09:00',
                 endTime: '18:00',
-                color: '#9AD7CB',
+                color: '#63C8B8',
                 isDefault: false,
                 isOff: false,
                 isCounted: true,
@@ -447,21 +508,20 @@ function ShiftTypeTable({
                                     <Input
                                         data-shift-shortname-input={shiftType.wardShiftTypeId}
                                         value={shiftType.shortName}
-                                        maxLength={1}
+                                        maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
                                         onChange={(event) => {
-                                            const upper = event.target.value.toUpperCase();
-                                            const alphaOnly = upper.replace(/[^A-Z]/g, '').slice(0, 1);
+                                            const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 
-                                            if (upper !== alphaOnly) {
+                                            if (hasInvalidShiftShortNameInput(event.target.value)) {
                                                 setShortNameErrorById((prev) => ({
                                                     ...prev,
-                                                    [shiftType.wardShiftTypeId]: '영문 1글자만 입력해 주세요.',
+                                                    [shiftType.wardShiftTypeId]: '공백 없이 2글자까지 입력해 주세요.',
                                                 }));
                                             } else {
                                                 setShortNameErrorById((prev) => ({...prev, [shiftType.wardShiftTypeId]: ''}));
                                             }
 
-                                            patchDraft(shiftType.wardShiftTypeId, {shortName: alphaOnly});
+                                            patchDraft(shiftType.wardShiftTypeId, {shortName: normalizedShortName});
                                         }}
                                         variant="foundation"
                                         fieldSize="lg"
@@ -476,7 +536,7 @@ function ShiftTypeTable({
                                                 : undefined
                                         }
                                         className={cn(
-                                            `h-10 w-10 px-0 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
+                                            `h-10 w-14 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
                                             showValidationHighlight &&
                                                 getShiftShortNameError(shiftType.wardShiftTypeId, shiftType.shortName)
                                                 ? SHIFT_TYPE_INPUT_ERROR_CLASS
@@ -621,37 +681,45 @@ function ShiftTypeTable({
                                         type="button"
                                         aria-label={`${shiftType.name || '근무'} 색상 선택`}
                                         className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
-                                        onClick={() =>
-                                            setOpenedColorShiftTypeId((prev) =>
-                                                prev === shiftType.wardShiftTypeId ? null : shiftType.wardShiftTypeId,
-                                            )
-                                        }
+                                        onClick={(event) => handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)}
                                     >
                                         <span className="h-6 w-6 rounded-[7px]" style={{backgroundColor: shiftType.color}} />
                                     </button>
-                                    {openedColorShiftTypeId === shiftType.wardShiftTypeId ? (
-                                        <div className="absolute top-full left-1/2 z-20 mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2">
-                                            {PASTEL_SHIFT_COLORS.map((color) => {
-                                                const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
+                                    {openedColorShiftTypeId === shiftType.wardShiftTypeId &&
+                                    colorPickerPosition &&
+                                    typeof document !== 'undefined'
+                                        ? createPortal(
+                                              <div
+                                                  ref={openedColorMenuRef}
+                                                  style={{
+                                                      left: `${colorPickerPosition.left}px`,
+                                                      top: `${colorPickerPosition.top}px`,
+                                                  }}
+                                                  className="fixed z-[1000] grid w-[126px] grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]"
+                                              >
+                                                  {SHIFT_COLOR_OPTIONS.map((color) => {
+                                                      const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
 
-                                                return (
-                                                    <button
-                                                        key={color}
-                                                        type="button"
-                                                        aria-label={`${color} 선택`}
-                                                        className="flex h-5 w-5 items-center justify-center rounded-[6px]"
-                                                        style={{backgroundColor: color}}
-                                                        onClick={() => {
-                                                            patchDraft(shiftType.wardShiftTypeId, {color});
-                                                            setOpenedColorShiftTypeId(null);
-                                                        }}
-                                                    >
-                                                        {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    ) : null}
+                                                      return (
+                                                          <button
+                                                              key={color}
+                                                              type="button"
+                                                              aria-label={`${color} 선택`}
+                                                              className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
+                                                              style={{backgroundColor: color}}
+                                                              onClick={() => {
+                                                                  patchDraft(shiftType.wardShiftTypeId, {color});
+                                                                  closeColorPicker();
+                                                              }}
+                                                          >
+                                                              {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
+                                                          </button>
+                                                      );
+                                                  })}
+                                              </div>,
+                                              document.body,
+                                          )
+                                        : null}
                                 </div>
                                 {shiftType.isDefault ? (
                                     <div className="h-10 w-10" aria-hidden="true" />

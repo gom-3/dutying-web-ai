@@ -85,6 +85,37 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(duplicateDraft)).toBe(false);
     });
 
+    it('blocks shift short names that start with the same character', () => {
+        const initialDraft = createInitialDraft();
+        const firstShift = initialDraft.shiftTypes[0];
+        const secondShift = initialDraft.shiftTypes[1];
+
+        if (!firstShift || !secondShift) {
+            throw new Error('base shift types are required for this test');
+        }
+
+        const duplicateDraft = updateShiftTypeDraft(
+            {
+                ...initialDraft,
+                currentStep: 3,
+            },
+            secondShift.id,
+            {
+                name: 'Unique shift',
+                shortName: `${firstShift.shortName}X`,
+            },
+        );
+        const validation = getStepValidation(duplicateDraft, 3);
+
+        expect(validation.issues).toEqual(
+            expect.arrayContaining([
+                {code: 'duplicate-shift-short-name', step: 3, targetId: firstShift.id},
+                {code: 'duplicate-shift-short-name', step: 3, targetId: secondShift.id},
+            ]),
+        );
+        expect(canGoNext(duplicateDraft)).toBe(false);
+    });
+
     it('limits shift types to the maximum count', () => {
         const draft = createInitialDraft();
         const maxShiftDraft = Array.from({length: MAX_ONBOARDING_SHIFT_TYPES - draft.shiftTypes.length}).reduce(
@@ -163,6 +194,41 @@ describe('OnboardingWardCreatePage model', () => {
             expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
         );
         expect(canGoNext(shortKoreanNameDraft)).toBe(false);
+    });
+
+    it('allows ordinary internal spaces in nurse names', () => {
+        const draft = {
+            ...createInitialDraft(),
+            currentStep: 4 as const,
+        };
+        const nurseId = draft.nurses[0]?.id ?? '';
+
+        const koreanNameDraft = updateNurseDraft(draft, nurseId, {name: '신규 간호사 1'});
+        const englishNameDraft = updateNurseDraft(draft, nurseId, {name: 'Nurse 1'});
+
+        expect(getStepValidation(koreanNameDraft, 4).issues).not.toEqual(
+            expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
+        );
+        expect(getStepValidation(englishNameDraft, 4).issues).not.toEqual(
+            expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
+        );
+    });
+
+    it('rejects unsupported nurse name separators and special characters', () => {
+        const draft = {
+            ...createInitialDraft(),
+            currentStep: 4 as const,
+        };
+        const nurseId = draft.nurses[0]?.id ?? '';
+        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김　길동'];
+
+        invalidNames.forEach((name) => {
+            const invalidDraft = updateNurseDraft(draft, nurseId, {name});
+
+            expect(getStepValidation(invalidDraft, 4).issues).toEqual(
+                expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
+            );
+        });
     });
 
     it('allows off shifts without times but blocks working shifts without times', () => {

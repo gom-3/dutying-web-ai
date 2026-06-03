@@ -2,6 +2,7 @@ import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {type ComponentProps} from 'react';
 import {type TNurse} from '@/entities';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
+import {getMemoWithoutPrecepteeMarker, hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -15,9 +16,9 @@ const SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     O: {bg: '#465b7a', text: '#ffffff'},
 };
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL =
-    'minmax(136px,1.2fr) clamp(58px,4.8vw,76px) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
+    'minmax(136px,1.2fr) clamp(58px,4.8vw,76px) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL =
-    'minmax(136px,1.2fr) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
+    'minmax(136px,1.2fr) clamp(128px,10vw,166px) clamp(66px,5vw,84px) clamp(66px,5vw,84px) clamp(74px,5.4vw,92px) minmax(116px,0.9fr)';
 const WORKERS_GRID_GAP = 'gap-[clamp(8px,0.85vw,14px)]';
 const WORKERS_ROW_PADDING_X = 'px-[clamp(12px,1.2vw,18px)]';
 const MEMO_PREVIEW_LENGTH = 20;
@@ -74,6 +75,9 @@ export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
             </p>
             <p className="make-shift-workers__col-label make-shift-workers__col-label--preceptor text-center">
                 {t('page.makeShift.workers.column.preceptor')}
+            </p>
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--preceptee text-center">
+                {t('page.makeShift.workers.column.preceptee')}
             </p>
             <p className="make-shift-workers__col-label make-shift-workers__col-label--is-worker text-center">
                 {t('page.makeShift.workers.column.isWorker')}
@@ -158,7 +162,8 @@ type TWorkerRowProps = {
 function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBusy, onToggleWorker, setRowRef}: TWorkerRowProps) {
     const {t} = useTypedTranslation();
     const shiftCodes = buildShiftCodes(nurse);
-    const memo = nurse.memo?.trim();
+    const isPreceptee = hasPrecepteeMemo(nurse.memo);
+    const memo = getMemoWithoutPrecepteeMarker(nurse.memo).trim();
     const memoPreview = memo ? formatMemoPreview(memo) : '';
     const fadedRowClass = isWorker ? '' : 'opacity-55';
 
@@ -219,6 +224,15 @@ function WorkerRow({nurse, index, level, skillConfig, showSkill, isWorker, isBus
                         </div>
                         <div className="make-shift-workers__row-preceptor flex items-center justify-center">
                             {nurse.isWardManager ? (
+                                <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
+                                    {t('page.makeShift.workers.preceptorActive')}
+                                </span>
+                            ) : (
+                                <span className="text-[clamp(10px,0.85vw,14px)] font-normal text-gray-4">-</span>
+                            )}
+                        </div>
+                        <div className="make-shift-workers__row-preceptee flex items-center justify-center">
+                            {isPreceptee ? (
                                 <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
                                     {t('page.makeShift.workers.preceptorActive')}
                                 </span>

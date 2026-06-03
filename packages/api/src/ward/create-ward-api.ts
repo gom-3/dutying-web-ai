@@ -2,9 +2,11 @@ import type {IApiClient} from '../client';
 import type {
     IWardAPI,
     TAutofillResponse,
+    TAddShiftTeamNurseDTO,
     TCreateWardChatMessageDTO,
     TCreateShiftTypeDTO,
     TAddWardAdminByLoginIdDTO,
+    TCreateWardAdminEmailDTO,
     TCreateWardAdminInvitationDTO,
     TCreateWardDTO,
     TDutyRequestResponse,
@@ -21,6 +23,7 @@ import type {
     TUpdateShiftTeamDTO,
     TValidationRes,
     TWaitingNurseResponse,
+    TWardAdminEmailRegistrationResponse,
     TWardAdminInvitationResponse,
     TWardAdminMembershipResponse,
     TWardAdminsResponse,
@@ -35,6 +38,8 @@ import type {
     TWardShiftsDTO,
 } from './contracts';
 import type {TNurseResponse} from '../nurse';
+
+const DUMMY_PHONE_NUM = '01000000000';
 
 const toYearMonthQuery = (year: number, month: number) =>
     new URLSearchParams({
@@ -60,6 +65,17 @@ const toChatMessagesQuery = (cursorMessageId?: number, size?: number) => {
 
 const toIsoDate = (year: number, month: number, day: number) =>
     `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+export type TCreateWardApiOptions = {
+    basePath?: string;
+};
+
+const normalizeBasePath = (basePath: string | undefined) => {
+    const path = basePath?.trim() || '/wards';
+
+    return path.endsWith('/') ? path.slice(0, -1) : path;
+};
+
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardDTO => ({
     name: createWardDTO.name,
     hospitalName: createWardDTO.hospitalName,
@@ -69,155 +85,253 @@ const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardDTO => (
     })),
 });
 
-export const createWardApi = (client: IApiClient): IWardAPI => ({
-    getWard: async (wardId: number) => (await client.get<TWardResponse>(`/wards/${wardId}`)).data,
-    createWard: async (createWardDTO: TCreateWardDTO) => (await client.post<TWardResponse>(`/wards`, toCreateWardRequest(createWardDTO))).data,
-    editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(`/wards/${wardId}`, ward)).data,
-    getWardConstraint: async (wardId: number, shiftTeamId: number) =>
-        (await client.get<TWardConstraintResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`)).data,
-    getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number) =>
-        (
-            await client.get<TShiftConstraintRuleCandidatesResponse>(
-                `/wards/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`,
-            )
-        ).data,
-    updateWardConstraint: async (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) =>
-        (await client.patch<TWardConstraintResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/constraint`, constraint)).data,
-    getWardByCode: async (code: string) => (await client.get<TWardResponse>(`/wards/search?${new URLSearchParams({code}).toString()}`)).data,
-    getWaitingNurses: async (wardId: number) =>
-        (await client.get<{nurses: TWaitingNurseResponse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses,
-    addMeToWaitingNurses: async (wardId: number) => (await client.post<void>(`/wards/${wardId}/waiting-nurses`)).data,
-    connectWaitingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
-        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`)).data,
-    approveWaitingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
-        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
-    deleteWaitingNurses: async (wardId: number, nurseId: number) =>
-        (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
-    quitWard: async (wardId: number) => (await client.delete<void>(`/wards/${wardId}/quit`)).data,
-    getReqShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.get<TRequestShiftResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/req-duty?${toYearMonthQuery(year, month)}`)).data,
-    getShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.get<TShiftResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/duty?${toYearMonthQuery(year, month)}`)).data,
-    getRequestList: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.get<TDutyRequestResponse[]>(`/wards/${wardId}/shift-teams/${shiftTeamId}/req-duty/req-list?${toYearMonthQuery(year, month)}`)).data,
-    updateShift: async (wardId: number, year: number, month: number, day: number, shiftNurseId: number, wardShiftTypeId: number | null) =>
-        (
-            await client.patch<null>(`/wards/${wardId}/shifts`, {
-                shiftNurseId,
-                date: toIsoDate(year, month, day),
-                wardShiftTypeId,
-            })
-        ).data,
-    updateShifts: async (wardId: number, wardShifts: TWardShiftsDTO) =>
-        (
-            await client.patch<void>(`/wards/${wardId}/shifts/list`, {
-                wardShifts,
-            })
-        ).data,
-    getWardChatMessages: async (wardId: number, options) => {
-        const query = toChatMessagesQuery(options?.cursorMessageId, options?.size);
+const compactRequest = <T extends Record<string, unknown>>(request: T) =>
+    Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
+const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').replace(/\D/g, '');
+const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
 
-        return (await client.get<TWardChatMessagesResponse>(`/wards/${wardId}/chat/messages${query ? `?${query}` : ''}`)).data;
-    },
-    createWardChatMessage: async (wardId: number, message: TCreateWardChatMessageDTO) =>
-        (await client.post<TWardChatMessageResponse>(`/wards/${wardId}/chat/messages`, message)).data,
-    readWardChat: async (wardId: number, read: TReadWardChatDTO) => (await client.put<void>(`/wards/${wardId}/chat/read`, read)).data,
-    getWardChatUnreadCount: async (wardId: number) => (await client.get<TWardChatUnreadCountResponse>(`/wards/${wardId}/chat/unread-count`)).data,
-    getMyWardChatUnreadCounts: async () => (await client.get<TWardChatUnreadCountResponse[]>(`/wards/chat/unread-counts`)).data,
-    getWardAdmins: async (wardId: number) => (await client.get<TWardAdminsResponse>(`/wards/${wardId}/admins`)).data,
-    createWardAdminInvitation: async (wardId: number, invitation: TCreateWardAdminInvitationDTO) =>
-        (await client.post<TWardAdminInvitationResponse>(`/wards/${wardId}/admin-invitations`, invitation)).data,
-    addWardAdminByLoginId: async (wardId: number, admin: TAddWardAdminByLoginIdDTO) =>
-        (await client.post<TWardAdminMembershipResponse>(`/wards/${wardId}/admins/by-login-id`, admin)).data,
-    resendWardAdminInvitation: async (wardId: number, invitationId: number) =>
-        (await client.post<void>(`/wards/${wardId}/admin-invitations/${invitationId}/resend`)).data,
-    cancelWardAdminInvitation: async (wardId: number, invitationId: number) =>
-        (await client.delete<void>(`/wards/${wardId}/admin-invitations/${invitationId}`)).data,
-    removeWardAdmin: async (wardId: number, membershipId: number) =>
-        (await client.delete<void>(`/wards/${wardId}/admins/${membershipId}`)).data,
-    updateReqShift: async (
-        wardId: number,
-        year: number,
-        month: number,
-        day: number,
-        shiftNurseId: number,
-        wardShiftTypeId: number | null,
-    ) =>
-        (
-            await client.patch<void>(`/wards/${wardId}/req-shifts`, {
-                shiftNurseId,
-                date: toIsoDate(year, month, day),
-                wardShiftTypeId,
-            })
-        ).data,
-    acceptRequestShift: async (wardId: number, reqShiftId: number, isAccepted: boolean | null) =>
-        (
-            await client.patch<void>(`/wards/${wardId}/req-shifts/${reqShiftId}/accept`, {
-                isAccepted,
-            })
-        ).data,
-    postShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.post<void>(`/wards/${wardId}/shift-teams/${shiftTeamId}/post?${toPostShiftQuery(year, month)}`)).data,
-    getShiftTeamNurses: async (wardId: number, shiftTeamId: number) =>
-        (await client.get<{nurses: TShiftTeamResponse['nurses']}>(`/wards/${wardId}/shift-teams/${shiftTeamId}/nurses`)).data.nurses,
-    addNurseIntoShiftTeam: async (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO) =>
-        (await client.post<TNurseResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/nurses`, addShiftTeamNurseDTO)).data,
-    removeNurseFromShiftTeam: async (wardId: number, shiftTeamId: number, nurseId: number) =>
-        (await client.delete<TNurseResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/nurses/${nurseId}`)).data,
-    getShiftTeams: async (wardId: number) => (await client.get<{shiftTeams: TShiftTeamResponse[]}>(`/wards/${wardId}/shift-teams`)).data.shiftTeams,
-    createShiftTeam: async (wardId: number) => (await client.post<TShiftTeamResponse>(`/wards/${wardId}/shift-teams`)).data,
-    buildShiftTeam: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (await client.post<TShiftTeamResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}?${toYearMonthQuery(year, month)}`)).data,
-    deleteShiftTeam: async (wardId: number, shiftTeamId: number) =>
-        (await client.delete<TShiftTeamResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}`)).data,
-    updateShiftTeam: async (wardId: number, shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) =>
-        (await client.patch<TShiftTeamResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}`, updateShiftTeamDTO)).data,
-    getShiftTypes: async (wardId: number) => (await client.get<TWardShiftTypeResponse[]>(`/wards/${wardId}/shift-types`)).data,
-    createShiftType: async (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
-        (await client.post<TWardShiftTypeResponse>(`/wards/${wardId}/shift-types`, createShiftTypeDTO)).data,
-    deleteShiftType: async (wardId: number, shiftTypeId: number) => (await client.delete<void>(`/wards/${wardId}/shift-types/${shiftTypeId}`)).data,
-    updateShiftType: async (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
-        (await client.put<TWardShiftTypeResponse>(`/wards/${wardId}/shift-types/${shiftTypeId}`, createShiftTypeDTO)).data,
-    getWatingNurses: async (wardId: number) =>
-        (await client.get<{nurses: TWaitingNurseResponse[]}>(`/wards/${wardId}/waiting-nurses/v2`)).data.nurses,
-    addMeToWatingNurses: async (wardId: number) => (await client.post<void>(`/wards/${wardId}/waiting-nurses`)).data,
-    connectWatingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
-        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`)).data,
-    approveWatingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
-        (await client.post<void>(`/wards/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`)).data,
-    deleteWatingNurses: async (wardId: number, nurseId: number) =>
-        (await client.delete<void>(`/wards/${wardId}/waiting-nurses?nurseId=${nurseId}`)).data,
+const toOptionalPhoneNum = (phoneNum: string | null | undefined) => {
+    if (phoneNum == null) return undefined;
 
-    getWorkspaceSchedule: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
-        (
-            await client.get<TWorkspaceScheduleResponse>(
-                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/workspace?${toYearMonthQuery(year, month)}`,
-            )
-        ).data,
-    validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO) =>
-        (
-            await client.post<TValidationRes>(
-                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/validate-snapshot`,
-                validateSnapshotDTO,
-            )
-        ).data,
-    autofillSchedule: async (wardId, shiftTeamId, autofillDTO) =>
-        (await client.post<TAutofillResponse>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`, autofillDTO)).data,
-    getSnapshots: async (wardId, shiftTeamId, year, month) =>
-        (
-            await client.get<TSnapshotListRes>(
-                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots?${toYearMonthQuery(year, month)}`,
-            )
-        ).data,
-    saveSnapshot: async (wardId, shiftTeamId, saveSnapshotDTO) =>
-        (await client.post<TSnapshotSaveRes>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots`, saveSnapshotDTO)).data,
-    getSnapshot: async (wardId, shiftTeamId, snapshotId) =>
-        (await client.get<TSnapshotDetailRes>(`/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`)).data,
-    publishSnapshot: async (wardId, shiftTeamId, snapshotId, publishDTO = {}) =>
-        (
-            await client.post<TPublishSnapshotRes>(
-                `/wards/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}/publish`,
-                publishDTO,
-            )
-        ).data,
+    const trimmedPhoneNum = phoneNum.trim();
+
+    if (isDummyPhoneNum(trimmedPhoneNum)) return undefined;
+
+    return trimmedPhoneNum.length > 0 ? trimmedPhoneNum : undefined;
+};
+
+const toOptionalText = (value: string | null | undefined) => {
+    if (value == null) return undefined;
+
+    const trimmedValue = value.trim();
+
+    return trimmedValue.length > 0 ? trimmedValue : undefined;
+};
+
+const toAddShiftTeamNurseRequest = (nurse: TAddShiftTeamNurseDTO) =>
+    compactRequest({
+        name: nurse.name.trim(),
+        phoneNum: toOptionalPhoneNum(nurse.phoneNum),
+        isWorker: nurse.isWorker,
+        isWardManager: nurse.isWardManager,
+        memo: nurse.memo ?? undefined,
+        proficiency: nurse.proficiency,
+        isPreceptor: nurse.isPreceptor,
+        isPreceptee: nurse.isPreceptee,
+        workStartDate: toOptionalText(nurse.workStartDate),
+        workEndDate: toOptionalText(nurse.workEndDate),
+    });
+const normalizeNurseResponse = <T extends {phoneNum?: string | null}>(nurse: T): T =>
+    isDummyPhoneNum(nurse.phoneNum) ? {...nurse, phoneNum: null} : nurse;
+const normalizeShiftTeamResponse = (shiftTeam: TShiftTeamResponse): TShiftTeamResponse => ({
+    ...shiftTeam,
+    nurses: (shiftTeam.nurses ?? []).map(normalizeNurseResponse),
 });
+const normalizeWardResponse = (ward: TWardResponse): TWardResponse => ({
+    ...ward,
+    shiftTeams: (ward.shiftTeams ?? []).map(normalizeShiftTeamResponse),
+});
+
+export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions = {}): IWardAPI => {
+    const basePath = normalizeBasePath(options.basePath);
+    const wardPath = (path = '') => `${basePath}${path}`;
+
+    return {
+        getWard: async (wardId: number) => normalizeWardResponse((await client.get<TWardResponse>(wardPath(`/${wardId}`))).data),
+        createWard: async (createWardDTO: TCreateWardDTO) =>
+            normalizeWardResponse((await client.post<TWardResponse>(wardPath(), toCreateWardRequest(createWardDTO))).data),
+        editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(wardPath(`/${wardId}`), ward)).data,
+        getWardConstraint: async (wardId: number, shiftTeamId: number) =>
+            (await client.get<TWardConstraintResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/constraint`))).data,
+        getShiftConstraintRuleCandidates: async (wardId: number, shiftTeamId: number) =>
+            (
+                await client.get<TShiftConstraintRuleCandidatesResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`),
+                )
+            ).data,
+        updateWardConstraint: async (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) =>
+            (await client.patch<TWardConstraintResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/constraint`), constraint)).data,
+        getWardByCode: async (code: string) =>
+            normalizeWardResponse((await client.get<TWardResponse>(wardPath(`/search?${new URLSearchParams({code}).toString()}`))).data),
+        getWaitingNurses: async (wardId: number) =>
+            (await client.get<{nurses: TWaitingNurseResponse[]}>(wardPath(`/${wardId}/waiting-nurses/v2`))).data.nurses,
+        addMeToWaitingNurses: async (wardId: number) => (await client.post<void>(wardPath(`/${wardId}/waiting-nurses`))).data,
+        connectWaitingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`))).data,
+        approveWaitingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`))).data,
+        deleteWaitingNurses: async (wardId: number, nurseId: number) =>
+            (await client.delete<void>(wardPath(`/${wardId}/waiting-nurses?nurseId=${nurseId}`))).data,
+        quitWard: async (wardId: number) => (await client.delete<void>(wardPath(`/${wardId}/quit`))).data,
+        getReqShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            (
+                await client.get<TRequestShiftResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/req-duty?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        getShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            (await client.get<TShiftResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/duty?${toYearMonthQuery(year, month)}`)))
+                .data,
+        getRequestList: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            (
+                await client.get<TDutyRequestResponse[]>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/req-duty/req-list?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        updateShift: async (
+            wardId: number,
+            year: number,
+            month: number,
+            day: number,
+            shiftNurseId: number,
+            wardShiftTypeId: number | null,
+        ) =>
+            (
+                await client.patch<null>(wardPath(`/${wardId}/shifts`), {
+                    shiftNurseId,
+                    date: toIsoDate(year, month, day),
+                    wardShiftTypeId,
+                })
+            ).data,
+        updateShifts: async (wardId: number, wardShifts: TWardShiftsDTO) =>
+            (
+                await client.patch<void>(wardPath(`/${wardId}/shifts/list`), {
+                    wardShifts,
+                })
+            ).data,
+        getWardChatMessages: async (wardId: number, options) => {
+            const query = toChatMessagesQuery(options?.cursorMessageId, options?.size);
+
+            return (await client.get<TWardChatMessagesResponse>(wardPath(`/${wardId}/chat/messages${query ? `?${query}` : ''}`))).data;
+        },
+        createWardChatMessage: async (wardId: number, message: TCreateWardChatMessageDTO) =>
+            (await client.post<TWardChatMessageResponse>(wardPath(`/${wardId}/chat/messages`), message)).data,
+        readWardChat: async (wardId: number, read: TReadWardChatDTO) =>
+            (await client.put<void>(wardPath(`/${wardId}/chat/read`), read)).data,
+        getWardChatUnreadCount: async (wardId: number) =>
+            (await client.get<TWardChatUnreadCountResponse>(wardPath(`/${wardId}/chat/unread-count`))).data,
+        getMyWardChatUnreadCounts: async () => (await client.get<TWardChatUnreadCountResponse[]>(wardPath('/chat/unread-counts'))).data,
+        getWardAdmins: async (wardId: number) => (await client.get<TWardAdminsResponse>(`/admin/wards/${wardId}/admins`)).data,
+        createWardAdminEmail: async (wardId: number, adminEmail: TCreateWardAdminEmailDTO) =>
+            (await client.post<TWardAdminEmailRegistrationResponse>(`/admin/wards/${wardId}/admin-emails`, adminEmail)).data,
+        createWardAdminInvitation: async (wardId: number, invitation: TCreateWardAdminInvitationDTO) =>
+            (await client.post<TWardAdminInvitationResponse>(wardPath(`/${wardId}/admin-invitations`), invitation)).data,
+        addWardAdminByLoginId: async (wardId: number, admin: TAddWardAdminByLoginIdDTO) =>
+            (await client.post<TWardAdminMembershipResponse>(wardPath(`/${wardId}/admins/by-login-id`), admin)).data,
+        resendWardAdminInvitation: async (wardId: number, invitationId: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/admin-invitations/${invitationId}/resend`))).data,
+        cancelWardAdminInvitation: async (wardId: number, invitationId: number) =>
+            (await client.delete<void>(wardPath(`/${wardId}/admin-invitations/${invitationId}`))).data,
+        removeWardAdmin: async (wardId: number, membershipId: number) =>
+            (await client.delete<void>(`/admin/wards/${wardId}/admins/${membershipId}`)).data,
+        removeWardAdminEmail: async (wardId: number, emailRegistrationId: number) =>
+            (await client.delete<void>(`/admin/wards/${wardId}/admin-emails/${emailRegistrationId}`)).data,
+        updateReqShift: async (
+            wardId: number,
+            year: number,
+            month: number,
+            day: number,
+            shiftNurseId: number,
+            wardShiftTypeId: number | null,
+        ) =>
+            (
+                await client.patch<void>(wardPath(`/${wardId}/req-shifts`), {
+                    shiftNurseId,
+                    date: toIsoDate(year, month, day),
+                    wardShiftTypeId,
+                })
+            ).data,
+        acceptRequestShift: async (wardId: number, reqShiftId: number, isAccepted: boolean | null) =>
+            (
+                await client.patch<void>(wardPath(`/${wardId}/req-shifts/${reqShiftId}/accept`), {
+                    isAccepted,
+                })
+            ).data,
+        postShift: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/post?${toPostShiftQuery(year, month)}`))).data,
+        getShiftTeamNurses: async (wardId: number, shiftTeamId: number) =>
+            (
+                await client.get<{nurses: TShiftTeamResponse['nurses']}>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses`))
+            ).data.nurses.map(normalizeNurseResponse),
+        addNurseIntoShiftTeam: async (wardId: number, shiftTeamId: number, addShiftTeamNurseDTO) =>
+            normalizeNurseResponse(
+                (
+                    await client.post<TNurseResponse>(
+                        wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses`),
+                        toAddShiftTeamNurseRequest(addShiftTeamNurseDTO),
+                    )
+                ).data,
+            ),
+        removeNurseFromShiftTeam: async (wardId: number, shiftTeamId: number, nurseId: number) =>
+            normalizeNurseResponse(
+                (await client.delete<TNurseResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/nurses/${nurseId}`))).data,
+            ),
+        getShiftTeams: async (wardId: number) =>
+            (await client.get<{shiftTeams: TShiftTeamResponse[]}>(wardPath(`/${wardId}/shift-teams`))).data.shiftTeams.map(
+                normalizeShiftTeamResponse,
+            ),
+        createShiftTeam: async (wardId: number) =>
+            normalizeShiftTeamResponse((await client.post<TShiftTeamResponse>(wardPath(`/${wardId}/shift-teams`))).data),
+        buildShiftTeam: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            normalizeShiftTeamResponse(
+                (await client.post<TShiftTeamResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}?${toYearMonthQuery(year, month)}`)))
+                    .data,
+            ),
+        deleteShiftTeam: async (wardId: number, shiftTeamId: number) =>
+            normalizeShiftTeamResponse((await client.delete<TShiftTeamResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}`))).data),
+        updateShiftTeam: async (wardId: number, shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) =>
+            normalizeShiftTeamResponse(
+                (await client.patch<TShiftTeamResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}`), updateShiftTeamDTO)).data,
+            ),
+        getShiftTypes: async (wardId: number) => (await client.get<TWardShiftTypeResponse[]>(wardPath(`/${wardId}/shift-types`))).data,
+        createShiftType: async (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
+            (await client.post<TWardShiftTypeResponse>(wardPath(`/${wardId}/shift-types`), createShiftTypeDTO)).data,
+        deleteShiftType: async (wardId: number, shiftTypeId: number) =>
+            (await client.delete<void>(wardPath(`/${wardId}/shift-types/${shiftTypeId}`))).data,
+        updateShiftType: async (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
+            (await client.put<TWardShiftTypeResponse>(wardPath(`/${wardId}/shift-types/${shiftTypeId}`), createShiftTypeDTO)).data,
+        getWatingNurses: async (wardId: number) =>
+            (await client.get<{nurses: TWaitingNurseResponse[]}>(wardPath(`/${wardId}/waiting-nurses/v2`))).data.nurses,
+        addMeToWatingNurses: async (wardId: number) => (await client.post<void>(wardPath(`/${wardId}/waiting-nurses`))).data,
+        connectWatingNurses: async (wardId: number, waitingNurseId: number, targetNurseId: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`))).data,
+        approveWatingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
+            (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`))).data,
+        deleteWatingNurses: async (wardId: number, nurseId: number) =>
+            (await client.delete<void>(wardPath(`/${wardId}/waiting-nurses?nurseId=${nurseId}`))).data,
+
+        getWorkspaceSchedule: async (wardId: number, shiftTeamId: number, year: number, month: number) =>
+            (
+                await client.get<TWorkspaceScheduleResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/workspace?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO) =>
+            (
+                await client.post<TValidationRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/validate-snapshot`),
+                    validateSnapshotDTO,
+                )
+            ).data,
+        autofillSchedule: async (wardId, shiftTeamId, autofillDTO) =>
+            (await client.post<TAutofillResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`), autofillDTO)).data,
+        getSnapshots: async (wardId, shiftTeamId, year, month) =>
+            (
+                await client.get<TSnapshotListRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        saveSnapshot: async (wardId, shiftTeamId, saveSnapshotDTO) =>
+            (await client.post<TSnapshotSaveRes>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots`), saveSnapshotDTO))
+                .data,
+        getSnapshot: async (wardId, shiftTeamId, snapshotId) =>
+            (await client.get<TSnapshotDetailRes>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`))).data,
+        publishSnapshot: async (wardId, shiftTeamId, snapshotId, publishDTO = {}) =>
+            (
+                await client.post<TPublishSnapshotRes>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}/publish`),
+                    publishDTO,
+                )
+            ).data,
+    };
+};

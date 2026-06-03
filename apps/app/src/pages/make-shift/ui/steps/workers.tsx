@@ -22,7 +22,7 @@ import {
     freshenMakeShiftDisplayWorkers,
     sortMakeShiftWorkersInitialOrder,
 } from '../../model/make-shift-worker-order';
-import {WorkersList} from './workers-sections';
+import {WorkersList, WorkersTableHeader} from './workers-sections';
 
 const MAKE_SHIFT_WORKER_SORT_OPTIONS = [
     {value: 'priority', labelKey: 'page.makeShift.workers.sortBySavedOrder'},
@@ -555,6 +555,7 @@ export function Workers() {
                     </div>
                 ) : currentShiftTeamId !== null ? (
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+                        <WorkersTableHeader showSkill={skillConfig.enabled} />
                         <WorkersList
                             grouped={grouped}
                             shiftTeamId={currentShiftTeamId}

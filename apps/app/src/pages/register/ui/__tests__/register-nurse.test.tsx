@@ -4,6 +4,7 @@ import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import RegisterNurse from '../register-nurse';
 
 const mocks = vi.hoisted(() => ({
+    accountMe: null as {name?: string; status?: string; profileImgUrl?: string | null} | null,
     profileImg: {defaultProfileImgId: 1},
     registerAccountProfile: vi.fn(),
     setPhotoImage: vi.fn(),
@@ -13,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/features/register', () => ({
     default: () => ({
         state: {
-            accountMe: null,
+            accountMe: mocks.accountMe,
         },
         actions: {
             registerAccountProfile: mocks.registerAccountProfile,
@@ -35,6 +36,7 @@ vi.mock('@/entities/account/ui/profile-image', () => ({
 
 describe('RegisterNurse', () => {
     beforeEach(() => {
+        mocks.accountMe = null;
         mocks.registerAccountProfile.mockReset();
         mocks.registerAccountProfile.mockResolvedValue(undefined);
         mocks.setPhotoImage.mockReset();
@@ -47,7 +49,7 @@ describe('RegisterNurse', () => {
 
         render(<RegisterNurse />);
 
-        await user.type(screen.getByPlaceholderText('이름을 입력하세요'), '홍길동');
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), '홍길동');
         await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01012345678');
         await user.click(screen.getByRole('button', {name: '다음'}));
 
@@ -66,7 +68,7 @@ describe('RegisterNurse', () => {
         expect(screen.queryByText('근무자로 참여하기')).not.toBeInTheDocument();
     });
 
-    it('prefills the social name and submits the edited real name in social signup mode', async () => {
+    it('does not prefill the social name and submits the typed real name in social signup mode', async () => {
         const user = userEvent.setup();
 
         saveSocialSignupProfile({
@@ -77,10 +79,10 @@ describe('RegisterNurse', () => {
 
         render(<RegisterNurse mode="social" />);
 
-        const nameInput = screen.getByPlaceholderText('이름을 입력하세요');
-        expect(nameInput).toHaveValue('소셜홍');
+        const nameInput = screen.getByPlaceholderText('이름을 입력해주세요');
 
-        await user.clear(nameInput);
+        expect(nameInput).toHaveValue('');
+
         await user.type(nameInput, '홍길동');
         await user.type(screen.getByPlaceholderText('연락처를 입력해주세요'), '01098765432');
         await user.click(screen.getByRole('button', {name: '다음'}));
@@ -93,6 +95,22 @@ describe('RegisterNurse', () => {
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );
+        });
+    });
+
+    it('does not prefill the account name in social signup mode', async () => {
+        mocks.accountMe = {
+            name: '소셜홍',
+            status: 'WORKSPACE_SETUP_PENDING',
+            profileImgUrl: null,
+        };
+
+        render(<RegisterNurse mode="social" />);
+
+        const nameInput = screen.getByPlaceholderText('이름을 입력해주세요');
+
+        await waitFor(() => {
+            expect(nameInput).toHaveValue('');
         });
     });
 });

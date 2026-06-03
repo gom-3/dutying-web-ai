@@ -1,5 +1,11 @@
-import {type TUpdateNurseDTO} from '@dutying/api/nurse';
-import {type TCreateWardDTO, type TCreateWardSeedNurseDTO, type TCreateWardShiftTeamDTO, type TWardResponse} from '@dutying/api/ward';
+import {
+    type TAddShiftTeamNurseDTO,
+    type TCreateWardDTO,
+    type TCreateWardSeedNurseDTO,
+    type TCreateWardShiftTeamDTO,
+    type TWardResponse,
+} from '@dutying/api/ward';
+import * as Sentry from '@sentry/react';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
@@ -29,11 +35,10 @@ type TAdminProfileSource = {
 };
 type TNurseShiftTypesSeedTarget = TWardResponse['shiftTeams'][number]['nurses'][number]['nurseShiftTypes'];
 
-const DEFAULT_SEED_NURSE_PHONE_NUM = '01000000000';
-const DEFAULT_SEED_NURSE_GENDER = '여';
-
 const normalizeShiftTypeTime = (value: string | null | undefined) => value?.trim() ?? '';
 const normalizeShiftTypeText = (value: string | null | undefined) => value?.trim().toLocaleUpperCase() ?? '';
+const compactRequest = <T extends Record<string, unknown>>(request: T) =>
+    Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
 const getShiftTeamSeedNurses = (shiftTeam: TCreateWardShiftTeamDTO): TCreateWardSeedNurseDTO[] =>
     shiftTeam.nurses?.length ? shiftTeam.nurses : shiftTeam.nurseNames.map((name) => ({name}));
 const hasWardSeedData = (createWardDTO: TCreateWardDTO) =>
@@ -62,26 +67,24 @@ const hasSameWardShiftTypes = (currentShiftTypes: TWardResponse['wardShiftTypes'
         );
     });
 };
-const toSeedNursePayload = (nurse: TCreateWardSeedNurseDTO): TUpdateNurseDTO => {
+const toSeedNursePayload = (nurse: TCreateWardSeedNurseDTO): TAddShiftTeamNurseDTO => {
     const memo = nurse.memo?.trim() ?? '';
     const employmentDate = nurse.employmentDate?.trim() ?? '';
+    const phoneNum = nurse.phoneNum?.trim();
     const isPreceptor = nurse.isPreceptor ?? memo === '프리셉터';
     const isPreceptee = nurse.isPreceptee ?? memo === '프리셉티';
 
-    return {
+    return compactRequest({
         name: nurse.name.trim(),
-        phoneNum: DEFAULT_SEED_NURSE_PHONE_NUM,
-        gender: DEFAULT_SEED_NURSE_GENDER,
+        phoneNum: phoneNum || undefined,
         isWorker: nurse.isWorker ?? true,
-        employmentDate,
-        isDutyManager: false,
         isWardManager: false,
         memo,
         proficiency: nurse.level ?? undefined,
         isPreceptor,
         isPreceptee,
         workStartDate: employmentDate || undefined,
-    };
+    });
 };
 const syncSeedNurseShiftTypes = async (
     nurseId: number,
@@ -104,6 +107,12 @@ const syncSeedNurseShiftTypes = async (
         }),
     );
 };
+const reportWardSeedError = (error: unknown, context: Record<string, unknown>) => {
+    Sentry.captureException(error, {
+        tags: {feature: 'register-ward-seed'},
+        extra: context,
+    });
+};
 const syncWardShiftTypes = async (wardId: number, createdWard: TWardResponse | undefined, createWardDTO: TCreateWardDTO) => {
     if (createWardDTO.wardShiftTypes.length === 0) return;
 
@@ -113,9 +122,7 @@ const syncWardShiftTypes = async (wardId: number, createdWard: TWardResponse | u
     if (hasSameWardShiftTypes(currentShiftTypes, createWardDTO.wardShiftTypes)) return;
     if (currentShiftTypes.length > 0) return;
 
-    for (const shiftType of createWardDTO.wardShiftTypes) {
-        await WardAPI.createShiftType(wardId, shiftType);
-    }
+    await Promise.all(createWardDTO.wardShiftTypes.map((shiftType) => WardAPI.createShiftType(wardId, shiftType)));
 };
 const syncShiftTeamsAndNurses = async (wardId: number, createWardDTO: TCreateWardDTO) => {
     const seedShiftTeams = createWardDTO.shiftTeams.filter(
@@ -125,38 +132,47 @@ const syncShiftTeamsAndNurses = async (wardId: number, createWardDTO: TCreateWar
     if (seedShiftTeams.length === 0) return undefined;
 
     const shiftTeams = [...(await WardAPI.getShiftTeams(wardId).catch(() => []))];
+    const missingShiftTeamCount = Math.max(0, seedShiftTeams.length - shiftTeams.length);
 
-    while (shiftTeams.length < seedShiftTeams.length) {
-        shiftTeams.push(await WardAPI.createShiftTeam(wardId));
+    if (missingShiftTeamCount > 0) {
+        const createdShiftTeams = await Promise.all(Array.from({length: missingShiftTeamCount}, () => WardAPI.createShiftTeam(wardId)));
+
+        shiftTeams.push(...createdShiftTeams);
     }
 
-    for (const [index, seedShiftTeam] of seedShiftTeams.entries()) {
-        const targetShiftTeam = shiftTeams[index];
+    await Promise.all(
+        seedShiftTeams.map(async (seedShiftTeam, index) => {
+            const targetShiftTeam = shiftTeams[index];
 
-        if (!targetShiftTeam) continue;
+            if (!targetShiftTeam) return;
 
-        const seedShiftTeamName = seedShiftTeam.name?.trim();
+            const seedShiftTeamName = seedShiftTeam.name?.trim();
 
-        if (seedShiftTeamName && targetShiftTeam.name !== seedShiftTeamName) {
-            const updatedShiftTeam = await WardAPI.updateShiftTeam(wardId, targetShiftTeam.shiftTeamId, {name: seedShiftTeamName}).catch(
-                () => undefined,
-            );
-            targetShiftTeam.name = updatedShiftTeam?.name ?? seedShiftTeamName;
-        }
-
-        for (const seedNurse of getShiftTeamSeedNurses(seedShiftTeam)) {
-            if (!seedNurse.name.trim()) continue;
-
-            const createdNurse = await WardAPI.addNurseIntoShiftTeam(wardId, targetShiftTeam.shiftTeamId, toSeedNursePayload(seedNurse));
-
-            if (!targetShiftTeam.nurses.some((nurse) => nurse.nurseId === createdNurse.nurseId)) {
-                targetShiftTeam.nurses.push(createdNurse);
-                targetShiftTeam.nurseCnt = Math.max(targetShiftTeam.nurseCnt ?? 0, targetShiftTeam.nurses.length);
+            if (seedShiftTeamName && targetShiftTeam.name !== seedShiftTeamName) {
+                const updatedShiftTeam = await WardAPI.updateShiftTeam(wardId, targetShiftTeam.shiftTeamId, {
+                    name: seedShiftTeamName,
+                }).catch(() => undefined);
+                targetShiftTeam.name = updatedShiftTeam?.name ?? seedShiftTeamName;
             }
 
-            await syncSeedNurseShiftTypes(createdNurse.nurseId, createdNurse.nurseShiftTypes, seedNurse).catch(() => undefined);
-        }
-    }
+            for (const seedNurse of getShiftTeamSeedNurses(seedShiftTeam)) {
+                if (!seedNurse.name.trim()) continue;
+
+                const createdNurse = await WardAPI.addNurseIntoShiftTeam(
+                    wardId,
+                    targetShiftTeam.shiftTeamId,
+                    toSeedNursePayload(seedNurse),
+                );
+
+                if (!targetShiftTeam.nurses.some((nurse) => nurse.nurseId === createdNurse.nurseId)) {
+                    targetShiftTeam.nurses.push(createdNurse);
+                    targetShiftTeam.nurseCnt = Math.max(targetShiftTeam.nurseCnt ?? 0, targetShiftTeam.nurses.length);
+                }
+
+                await syncSeedNurseShiftTypes(createdNurse.nurseId, createdNurse.nurseShiftTypes, seedNurse).catch(() => undefined);
+            }
+        }),
+    );
 
     return shiftTeams;
 };
@@ -184,8 +200,15 @@ const hydrateWardWithShiftTeams = async (wardId: number, fallbackWard: TWardResp
 const seedCreatedWard = async (wardId: number | undefined, createdWard: TWardResponse | undefined, createWardDTO: TCreateWardDTO) => {
     if (!wardId || !hasWardSeedData(createWardDTO)) return createdWard;
 
-    await syncWardShiftTypes(wardId, createdWard, createWardDTO).catch(() => undefined);
-    const seededShiftTeams = await syncShiftTeamsAndNurses(wardId, createWardDTO);
+    await syncWardShiftTypes(wardId, createdWard, createWardDTO).catch((error) => {
+        reportWardSeedError(error, {wardId, step: 'shift-types'});
+    });
+
+    const seededShiftTeams = await syncShiftTeamsAndNurses(wardId, createWardDTO).catch((error) => {
+        reportWardSeedError(error, {wardId, step: 'shift-teams-and-nurses'});
+
+        return undefined;
+    });
     const hydratedWard = await hydrateWardWithShiftTeams(wardId, createdWard);
 
     if (hydratedWard && getShiftTeamNurseCount(seededShiftTeams) > getShiftTeamNurseCount(hydratedWard.shiftTeams)) {

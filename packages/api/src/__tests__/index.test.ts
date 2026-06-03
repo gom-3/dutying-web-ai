@@ -71,6 +71,45 @@ describe('@dutying/api public entry', () => {
         expect(getMock).toHaveBeenNthCalledWith(3, '/wards/chat/unread-counts');
     });
 
+    it('builds ward admin email registration endpoints', async () => {
+        const client = createClient();
+        const getMock = client.get as ReturnType<typeof vi.fn>;
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+        const deleteMock = client.delete as ReturnType<typeof vi.fn>;
+
+        getMock.mockResolvedValueOnce({
+            data: {
+                members: [],
+                reservedEmails: [],
+                invitations: [],
+            },
+        });
+        postMock.mockResolvedValueOnce({
+            data: {
+                wardId: 7,
+                email: 'editor@example.com',
+                role: 'EDITOR',
+                status: 'RESERVED',
+                emailRegistrationId: 301,
+            },
+        });
+        deleteMock.mockResolvedValue({data: undefined});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.getWardAdmins(7)).resolves.toMatchObject({reservedEmails: []});
+        await expect(wardApi.createWardAdminEmail(7, {email: 'editor@example.com', role: 'EDITOR'})).resolves.toMatchObject({
+            status: 'RESERVED',
+        });
+        await expect(wardApi.removeWardAdmin(7, 201)).resolves.toBeUndefined();
+        await expect(wardApi.removeWardAdminEmail(7, 301)).resolves.toBeUndefined();
+
+        expect(getMock).toHaveBeenCalledWith('/admin/wards/7/admins');
+        expect(postMock).toHaveBeenCalledWith('/admin/wards/7/admin-emails', {email: 'editor@example.com', role: 'EDITOR'});
+        expect(deleteMock).toHaveBeenNthCalledWith(1, '/admin/wards/7/admins/201');
+        expect(deleteMock).toHaveBeenNthCalledWith(2, '/admin/wards/7/admin-emails/301');
+    });
+
     it('builds request shift endpoints', async () => {
         const client = createClient();
         const getMock = client.get as ReturnType<typeof vi.fn>;
@@ -95,5 +134,141 @@ describe('@dutying/api public entry', () => {
             wardShiftTypeId: 99,
         });
         expect(patchMock).toHaveBeenNthCalledWith(2, '/wards/7/req-shifts/301/accept', {isAccepted: true});
+    });
+
+    it('filters retired fields from shift-team nurse create payloads', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+
+        postMock.mockResolvedValueOnce({data: {nurseId: 12}});
+
+        const wardApi = createWardApi(client);
+
+        await expect(
+            wardApi.addNurseIntoShiftTeam(7, 3, {
+                name: ' 김간호사 ',
+                phoneNum: '',
+                gender: '여',
+                employmentDate: '',
+                isDutyManager: false,
+                isWorker: true,
+                isWardManager: false,
+                memo: '',
+            } as never),
+        ).resolves.toEqual({nurseId: 12});
+
+        expect(postMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/nurses', {
+            name: '김간호사',
+            isWorker: true,
+            isWardManager: false,
+            memo: '',
+        });
+    });
+
+    it('filters retired fields from nurse patch payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {nurseId: 12}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(
+            nurseApi.updateNurse(12, {
+                name: '김간호사',
+                phoneNum: '010-1234-5678',
+                gender: '여',
+                employmentDate: '2025-01-01',
+                isDutyManager: false,
+                isWorker: true,
+                isWardManager: false,
+                memo: '메모',
+            } as never),
+        ).resolves.toEqual({nurseId: 12});
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            name: '김간호사',
+            phoneNum: '010-1234-5678',
+            isWorker: true,
+            isWardManager: false,
+            memo: '메모',
+        });
+    });
+
+    it('preserves explicit null phone values in nurse patch payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {nurseId: 12}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurse(12, {phoneNum: null})).resolves.toEqual({nurseId: 12});
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            phoneNum: null,
+        });
+    });
+
+    it('clears dummy phone values in nurse patch payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {nurseId: 12, phoneNum: '01000000000'}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurse(12, {phoneNum: '010-0000-0000'})).resolves.toMatchObject({
+            phoneNum: null,
+        });
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            phoneNum: null,
+        });
+    });
+
+    it('normalizes dummy phone values from shift-team responses', async () => {
+        const client = createClient();
+        const getMock = client.get as ReturnType<typeof vi.fn>;
+
+        getMock.mockResolvedValueOnce({
+            data: {
+                shiftTeams: [
+                    {
+                        shiftTeamId: 3,
+                        name: 'A',
+                        nurseCnt: 1,
+                        nurses: [{nurseId: 12, name: 'Kim', phoneNum: '01000000000'}],
+                    },
+                ],
+            },
+        });
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.getShiftTeams(7)).resolves.toEqual([
+            {
+                shiftTeamId: 3,
+                name: 'A',
+                nurseCnt: 1,
+                nurses: [{nurseId: 12, name: 'Kim', phoneNum: null}],
+            },
+        ]);
+    });
+
+    it('normalizes nurse shift type preference payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: undefined});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurseShiftType(7, 104, {isPossible: false, isPrefer: true})).resolves.toBeUndefined();
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/7/shift-types/104', {
+            isPossible: false,
+            isPreferred: true,
+        });
     });
 });
