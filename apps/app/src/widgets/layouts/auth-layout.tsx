@@ -17,7 +17,7 @@ export const AuthLayout = () => {
     const {pathname} = useLocation();
     const {t} = useTypedTranslation();
     const {
-        state: {isAuth, isDemoExpired, accountMe, accountMeStatus, demoStartDate},
+        state: {isAuth, isDemoExpired, accountMe, accountMeStatus, accessToken, demoStartDate, _loaded},
         actions: {handleGetAccountMe, handleLogout, setDemoExpired, startDemoSignupTransition},
     } = useAuth();
     const demoSessionInfo = getDemoSessionInfo(demoStartDate, currentTime);
@@ -25,8 +25,13 @@ export const AuthLayout = () => {
     const isDemoAccount = accountMe?.status === 'DEMO' || Boolean(demoStartDate);
 
     useEffect(() => {
-        if (!isAuth) {
+        if (!_loaded) {
+            return;
+        }
+
+        if (!isAuth || !accessToken) {
             navigate(ROUTE.LOGIN);
+            return;
         }
 
         /**
@@ -41,7 +46,7 @@ export const AuthLayout = () => {
             if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
                 navigate(ROUTE.REGISTER);
         }
-    }, [accountMe, isAuth, navigate, pathname]);
+    }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname]);
 
     useEffect(() => {
         setCurrentTime(Date.now());
@@ -72,7 +77,11 @@ export const AuthLayout = () => {
         demoStartDate ? 1000 : null,
     );
 
-    if (!isAuth) {
+    if (!_loaded || (isAuth && !accessToken)) {
+        return <PageState tone="loading" layout="screen" title="로그인 상태를 확인하고 있어요" />;
+    }
+
+    if (!isAuth || !accessToken) {
         return null;
     }
 
