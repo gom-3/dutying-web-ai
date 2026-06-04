@@ -60,13 +60,11 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'success',
                 accountMe: {
                     status: 'WARD_SELECT_PENDING',
                 },
                 demoStartDate: null,
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,
@@ -85,11 +83,9 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: false,
                 isDemoExpired: false,
-                accessToken: null,
                 accountMeStatus: 'idle',
                 accountMe: null,
                 demoStartDate: null,
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,
@@ -116,50 +112,14 @@ describe('AuthLayout', () => {
         expect(screen.queryByText('make page')).not.toBeInTheDocument();
     });
 
-    it('waits for persisted auth hydration before rendering protected routes', () => {
-        mockedUseAuth.mockReturnValue({
-            state: {
-                isAuth: true,
-                isDemoExpired: false,
-                accessToken: null,
-                accountMeStatus: 'idle',
-                accountMe: null,
-                demoStartDate: null,
-                _loaded: false,
-            },
-            actions: {
-                handleLogout: defaultHandleLogout,
-                setDemoExpired: defaultSetDemoExpired,
-                startDemoSignupTransition: defaultStartDemoSignupTransition,
-            },
-        } as never);
-
-        render(
-            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
-                <Routes>
-                    <Route element={<AuthLayout />}>
-                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
-                    </Route>
-                    <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
-                </Routes>
-            </MemoryRouter>,
-        );
-
-        expect(screen.getByText('로그인 상태를 확인하고 있어요')).toBeInTheDocument();
-        expect(screen.queryByText('make page')).not.toBeInTheDocument();
-        expect(screen.queryByText('login page')).not.toBeInTheDocument();
-    });
-
     it('shows an account bootstrap loading state before protected routes render', async () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'loading',
                 accountMe: null,
                 demoStartDate: null,
-                _loaded: true,
             },
             actions: {
                 handleGetAccountMe: vi.fn(),
@@ -190,11 +150,9 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'error',
                 accountMe: null,
                 demoStartDate: null,
-                _loaded: true,
             },
             actions: {
                 handleGetAccountMe,
@@ -266,13 +224,11 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'success',
                 accountMe: {
                     status: 'LINKED',
                 },
                 demoStartDate: null,
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,
@@ -307,13 +263,11 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },
                 demoStartDate: '2026-03-24T23:31:00.000Z',
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,
@@ -346,13 +300,11 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: false,
-                accessToken: 'token',
                 accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },
                 demoStartDate: 'not-a-date',
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,
@@ -381,13 +333,11 @@ describe('AuthLayout', () => {
             state: {
                 isAuth: true,
                 isDemoExpired: true,
-                accessToken: 'token',
                 accountMeStatus: 'success',
                 accountMe: {
                     status: 'DEMO',
                 },
                 demoStartDate: '2026-03-25T00:00:00.000Z',
-                _loaded: true,
             },
             actions: {
                 handleLogout: defaultHandleLogout,

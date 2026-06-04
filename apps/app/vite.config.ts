@@ -54,7 +54,6 @@ export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
     const appSiteUrl = stripTrailingSlash(env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL || defaultAppSiteUrl);
     const isWindows = process.platform === 'win32';
-    const isTest = mode === 'test';
 
     return {
         envDir: workspaceRoot,
@@ -89,7 +88,7 @@ export default defineConfig(({mode}) => {
             }),
             tsconfigPaths({projects: ['./tsconfig.app.json']}),
             tailwindcss(),
-            ...(isTest ? [] : [mkcert()]),
+            mkcert(),
             {
                 name: 'app-site-url-assets',
                 transformIndexHtml(html) {

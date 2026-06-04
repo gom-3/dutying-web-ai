@@ -66,10 +66,6 @@ const authStoreStorage: PersistStorage<TPersistedAuthState> = {
     setItem: (name, value) => localStorage.setItem(name, JSON.stringify(value)),
     removeItem: (name) => localStorage.removeItem(name),
 };
-const syncApiClientTokens = (accessToken: string | null | undefined) => {
-    setAccessToken(accessToken ?? '');
-    setAdminAccessToken(isWardAdminAccessToken(accessToken) ? (accessToken ?? '') : '');
-};
 const useAuthStore = create<IStore>()(
     devtools(
         persist(
@@ -130,7 +126,10 @@ const useAuthStore = create<IStore>()(
                 name: 'useAuthStore',
                 storage: authStoreStorage,
                 partialize: ({isAuth, accessToken, accountId, nurseId, wardId, demoStartDate}: IStore): TPersistedAuthState => {
-                    syncApiClientTokens(accessToken);
+                    if (accessToken) {
+                        setAccessToken(accessToken);
+                        setAdminAccessToken(isWardAdminAccessToken(accessToken) ? accessToken : '');
+                    }
 
                     return {
                         isAuth,
@@ -142,10 +141,7 @@ const useAuthStore = create<IStore>()(
                     };
                 },
                 onRehydrateStorage: (state) => (rehydratedState) => {
-                    const nextState = rehydratedState ?? state;
-
-                    syncApiClientTokens(nextState.accessToken);
-                    nextState.markHydrated();
+                    (rehydratedState ?? state).markHydrated();
                 },
             },
         ),
