@@ -158,7 +158,7 @@ pnpm run changeset:version
 
 ## 링크
 
-- 랜딩: [https://dutying.net](https://dutying.net)
+- 랜딩 화면: [https://dutying.net](https://dutying.net)
 - 웹 앱: [https://app.dutying.net](https://app.dutying.net)
 - 가이드 문서 사이트: [https://docs.dutying.net](https://docs.dutying.net)
 - 모바일 앱 저장소: [gom-3/dutying-mobile](https://github.com/gom-3/dutying-mobile)
