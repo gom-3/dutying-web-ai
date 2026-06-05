@@ -21,17 +21,26 @@ const useEditAccount = () => {
     const {setLoading} = useLoadingUseCase();
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const isWardAdmin = isWardAdminAccessToken(accessToken);
     const handleEditProfile = async (nurse: TNurse, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
         if (!accountMe) return false;
 
         try {
             setLoading(true);
-            await NurseAPI.updateNurse(nurse.nurseId, nurse);
-            await AccountAPI.editAccount({
-                accountId: accountMe.accountId,
-                name: nurse.name,
-                ...profileImg,
-            });
+            if (isWardAdmin) {
+                await AdminAPI.updateMe({
+                    name: nurse.name,
+                    phoneNum: nurse.phoneNum,
+                    ...profileImg,
+                });
+            } else {
+                await NurseAPI.updateNurse(nurse.nurseId, nurse);
+                await AccountAPI.editAccount({
+                    accountId: accountMe.accountId,
+                    name: nurse.name,
+                    ...profileImg,
+                });
+            }
 
             await queryClient.invalidateQueries({queryKey: getWardQueryKey});
             await handleGetAccountMe();
@@ -55,11 +64,18 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
-            await AccountAPI.editAccount({
-                accountId: accountMe.accountId,
-                name,
-                ...profileImg,
-            });
+            if (isWardAdmin) {
+                await AdminAPI.updateMe({
+                    name,
+                    ...profileImg,
+                });
+            } else {
+                await AccountAPI.editAccount({
+                    accountId: accountMe.accountId,
+                    name,
+                    ...profileImg,
+                });
+            }
             await handleGetAccountMe();
 
             return true;
@@ -77,6 +93,10 @@ const useEditAccount = () => {
     };
     const quitWard = async () => {
         if (!accountMe?.wardId) return;
+        if (isWardAdmin) {
+            toast.error('관리자 계정은 병동 관리자 설정에서 권한을 관리해 주세요.');
+            return;
+        }
 
         if (!confirm('병동을 나갈까요?')) return;
 
@@ -102,7 +122,7 @@ const useEditAccount = () => {
         try {
             setLoading(true);
 
-            if (isWardAdminAccessToken(accessToken)) {
+            if (isWardAdmin) {
                 await AdminAPI.deleteMe();
             } else {
                 await AccountAPI.deleteAccount(accountMe.accountId);
