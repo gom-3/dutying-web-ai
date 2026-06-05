@@ -115,6 +115,75 @@ describe('MemberPage', () => {
         expect(within(dialog).getByText('ABC123')).toBeInTheDocument();
     });
 
+    it('미연동 간호사 아이콘을 클릭하면 공용 병동코드 안내 모달을 연다', async () => {
+        const selectNurse = vi.fn(() => true);
+        const nurse = {
+            nurseId: 101,
+            accountId: null,
+            shiftTeamId: 10,
+            wardId: 1,
+            name: '신규간호사1',
+            phoneNum: null,
+            isConnected: false,
+            nurseShiftTypes: [],
+            isWorker: true,
+            isDutyManager: false,
+            isWardManager: false,
+            gender: '',
+            employmentDate: '',
+            memo: '',
+            isDeleted: false,
+            divisionNum: 1,
+            priority: 100,
+        };
+
+        mockUseEditShiftTeam.mockReturnValue({
+            state: {
+                ward: {
+                    wardId: 1,
+                    hospitalName: '대학교병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    nurseCnt: 1,
+                    wardShiftTypes: [],
+                    shiftTeams: [{shiftTeamId: 10, name: 'A팀', nurseCnt: 1, nurses: [nurse]}],
+                },
+                shiftTeams: [{shiftTeamId: 10, name: 'A팀', nurseCnt: 1, nurses: [nurse]}],
+                selectedNurse: null,
+                selectedNurseDrawerMode: null,
+                isAddingNurse: false,
+                nurseSaveStatus: 'idle',
+                isDeletingNurse: false,
+            },
+            actions: {
+                selectNurse,
+                createShiftTeam: vi.fn(),
+                addNurse: vi.fn(),
+                deleteNurse: vi.fn(),
+                deleteShiftTeam: vi.fn(),
+                updateShiftTeam: vi.fn(),
+                updateNurse: vi.fn(),
+                updateNurseShift: vi.fn(),
+                disconnectNurse: vi.fn(),
+            },
+        });
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: '신규간호사1 연동 상태 안내'}));
+
+        const dialog = screen.getByRole('dialog', {name: '소속 간호사에게 병동코드를 알려주세요'});
+
+        expect(selectNurse).toHaveBeenCalledWith(nurse.nurseId);
+        expect(within(dialog).getByText('대학교병원 중환자실 병동코드')).toBeInTheDocument();
+        expect(within(dialog).getByText('ABC123')).toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: '병동코드 안내'})).not.toBeInTheDocument();
+    });
+
     it('URL의 shiftTeamId와 같은 팀을 근무자 관리 토글에서 선택한다', async () => {
         mockUseEditShiftTeam.mockReturnValue({
             state: {

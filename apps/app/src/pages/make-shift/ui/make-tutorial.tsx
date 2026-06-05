@@ -1,8 +1,9 @@
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {type TTutorialKey} from '@dutying/api/account';
 import useAuth from '@/features/auth';
-import useTutorialUseCase from '@/features/tutorial';
+import {isTutorialDismissedForAccount, setTutorialDismissedForAccount} from '@/features/tutorial/model/tutorial-dismiss-storage';
 import {useTutorialStore} from '@/features/tutorial/model/store';
-import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
+import {AccountAPI} from '@/shared/api';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import {TutorialPortal} from '@/widgets/tutorial/TutorialPortal';
 import {type TMakeShiftStep, useMakeShiftStore} from '../model/make-shift-store';
@@ -89,28 +90,55 @@ function getHighlightIds(config: ITutorialConfig | undefined) {
     return [...new Set(config?.steps.flatMap((step) => step.highlightIds) ?? [])];
 }
 
+function getMakeStepTutorialKey(step: TMakeShiftStep): TTutorialKey | null {
+    if (step < 1 || step > 5) return null;
+
+    return `make-step-${step}` as TTutorialKey;
+}
+
 const MakeTutorial = () => {
     const showMakeTutorial = useTutorialStore((state) => state.showMakeTutorial);
     const phase = useMakeShiftStore((state) => state.phase);
     const currentStep = useMakeShiftStore((state) => state.currentStep);
-    const {setMakeTutorial} = useTutorialUseCase();
+    const markedSeenKeysRef = useRef<Set<TTutorialKey>>(new Set());
     const [completedSteps, setCompletedSteps] = useState<Set<TMakeShiftStep>>(() => new Set());
     const [targetsReady, setTargetsReady] = useState(false);
     const {
-        state: {accountId},
+        state: {accountId, accountMe},
     } = useAuth();
-    const dismissMakeTutorial = useTutorialDismissPersistence('make', accountId, setMakeTutorial);
     const config = useMemo(() => makeTutorialConfigByStep[currentStep], [currentStep]);
-    const openCandidate = showMakeTutorial && phase === 'stepping' && config !== undefined && !completedSteps.has(currentStep);
+    const currentTutorialKey = getMakeStepTutorialKey(currentStep);
+    const backendCurrentStepSeen = currentTutorialKey != null && (accountMe?.tutorials?.seen?.includes(currentTutorialKey) ?? false);
+    const localCurrentStepSeen = accountId != null && currentTutorialKey != null && isTutorialDismissedForAccount(currentTutorialKey, accountId);
+    const currentStepSeen = backendCurrentStepSeen || localCurrentStepSeen;
+    const openCandidate =
+        showMakeTutorial &&
+        phase === 'stepping' &&
+        config !== undefined &&
+        currentTutorialKey !== null &&
+        !completedSteps.has(currentStep) &&
+        !currentStepSeen;
+    const open = openCandidate && targetsReady;
     const closeCurrentTutorial = useCallback(() => {
-        if (currentStep === 5) {
-            dismissMakeTutorial();
-
-            return;
-        }
-
         setCompletedSteps((prev) => new Set(prev).add(currentStep));
-    }, [currentStep, dismissMakeTutorial]);
+
+        if (accountId != null && currentTutorialKey != null) {
+            setTutorialDismissedForAccount(currentTutorialKey, accountId);
+        }
+    }, [accountId, currentStep, currentTutorialKey]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        if (accountId == null || currentTutorialKey == null) return;
+
+        setTutorialDismissedForAccount(currentTutorialKey, accountId);
+
+        if (markedSeenKeysRef.current.has(currentTutorialKey)) return;
+
+        markedSeenKeysRef.current.add(currentTutorialKey);
+        void AccountAPI.markTutorialSeen(currentTutorialKey).catch(() => undefined);
+    }, [accountId, currentTutorialKey, open]);
 
     useEffect(() => {
         setTargetsReady(false);
@@ -138,7 +166,7 @@ const MakeTutorial = () => {
 
     return (
         <TutorialPortal
-            open={openCandidate && targetsReady}
+            open={open}
             config={config ?? EMPTY_TUTORIAL_CONFIG}
             closeCallback={closeCurrentTutorial}
             initialStepIndex={0}

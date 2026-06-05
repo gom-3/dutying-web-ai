@@ -1,5 +1,5 @@
 import type {TAccountResponse} from '@dutying/api/account';
-import type {TWardResponse} from '@dutying/api/ward';
+import type {TCreateWardDTO, TWardResponse} from '@dutying/api/ward';
 
 export type TAdminRole = 'OWNER' | 'EDITOR';
 
@@ -38,6 +38,8 @@ export type TCreateAdminWorkspaceDTO = {
     adminName?: string | null;
     phoneNum?: string | null;
     profileImgUrl?: string | null;
+    wardShiftTypes: TCreateWardDTO['wardShiftTypes'];
+    shiftTeams: TCreateWardDTO['shiftTeams'];
 };
 
 export type TUpdateAdminProfileDTO = {

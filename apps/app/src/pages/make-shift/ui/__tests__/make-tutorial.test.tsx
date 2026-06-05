@@ -1,9 +1,10 @@
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {type TTutorialKey} from '@dutying/api/account';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import MakeTutorial from '../make-tutorial';
 
-const setMakeTutorialMock = vi.fn();
+const markTutorialSeenMock = vi.hoisted(() => vi.fn());
 const tutorialPortalMock = vi.fn();
 
 let tutorialStoreState = {
@@ -13,22 +14,29 @@ let makeShiftStoreState = {
     phase: 'stepping' as 'overview' | 'stepping',
     currentStep: 1 as 1 | 2 | 3 | 4 | 5 | 6,
 };
+let authStoreState: {
+    accountId: number | null;
+    accountMe: {tutorials?: {seen?: TTutorialKey[]}} | null;
+} = {
+    accountId: null,
+    accountMe: null,
+};
 
 vi.mock('@/features/tutorial/model/store', () => ({
     useTutorialStore: (selector: (state: typeof tutorialStoreState) => unknown) => selector(tutorialStoreState),
 }));
 
-vi.mock('@/features/tutorial', () => ({
+vi.mock('@/features/auth', () => ({
     default: () => ({
-        setMakeTutorial: setMakeTutorialMock,
+        state: authStoreState,
+        actions: {},
     }),
 }));
 
-vi.mock('@/features/auth', () => ({
-    default: () => ({
-        state: {accountId: null as number | null},
-        actions: {},
-    }),
+vi.mock('@/shared/api', () => ({
+    AccountAPI: {
+        markTutorialSeen: markTutorialSeenMock,
+    },
 }));
 
 vi.mock('../../model/make-shift-store', () => ({
@@ -76,9 +84,12 @@ function getLastTutorialCall() {
 describe('make-tutorial', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
+        localStorage.clear();
         tutorialStoreState = {showMakeTutorial: true};
         makeShiftStoreState = {phase: 'stepping', currentStep: 1};
-        setMakeTutorialMock.mockReset();
+        authStoreState = {accountId: null, accountMe: null};
+        markTutorialSeenMock.mockReset();
+        markTutorialSeenMock.mockResolvedValue(undefined);
         tutorialPortalMock.mockReset();
     });
 
@@ -104,6 +115,40 @@ describe('make-tutorial', () => {
         expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-initial-step-index', '0');
         expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([['make_stepper']]);
         expect(lastCall.config.steps[0]?.title).toBe('근무표 만들기');
+    });
+
+    it('marks the current make step tutorial as seen when it actually opens', async () => {
+        authStoreState = {accountId: 7, accountMe: {tutorials: {seen: []}}};
+        addTutorialTargets(['make_stepper']);
+
+        render(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
+
+        await waitFor(() => expect(markTutorialSeenMock).toHaveBeenCalledWith('make-step-1'));
+        expect(markTutorialSeenMock).not.toHaveBeenCalledWith('make');
+    });
+
+    it('opens the current step when only another make step has already been seen', async () => {
+        authStoreState = {accountId: 7, accountMe: {tutorials: {seen: ['make-step-3']}}};
+        addTutorialTargets(['make_stepper']);
+
+        render(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
+
+        expect(markTutorialSeenMock).toHaveBeenCalledWith('make-step-1');
+    });
+
+    it('does not open when the account has already seen the current make step tutorial', async () => {
+        authStoreState = {accountId: 7, accountMe: {tutorials: {seen: ['make-step-1']}}};
+        addTutorialTargets(['make_stepper']);
+
+        render(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false'));
+
+        expect(markTutorialSeenMock).not.toHaveBeenCalled();
     });
 
     it('uses current-tab tutorial targets instead of a full flow tour', async () => {
@@ -139,10 +184,10 @@ describe('make-tutorial', () => {
         expect(lastCall.config.steps[0]?.title).toBe('고정 근무 입력하기');
     });
 
-    it('keeps later tab tutorials available after completing an earlier tab', async () => {
+    it('keeps later step tutorials available after completing an earlier step', async () => {
         addTutorialTargets(['make_stepper']);
 
-        render(<MakeTutorial />);
+        const {rerender} = render(<MakeTutorial />);
 
         await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
 
@@ -150,7 +195,12 @@ describe('make-tutorial', () => {
             getLastTutorialCall().closeCallback();
         });
 
-        expect(setMakeTutorialMock).not.toHaveBeenCalled();
         await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false'));
+
+        makeShiftStoreState = {phase: 'stepping', currentStep: 2};
+        addTutorialTargets(['make_constraint_add_button']);
+        rerender(<MakeTutorial />);
+
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
     });
 });

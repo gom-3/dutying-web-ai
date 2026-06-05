@@ -4,6 +4,8 @@ import {match} from 'ts-pattern';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 
+const AUTH_REDIRECT_IGNORED_PATHS = new Set(['/demo/start', '/token/refresh', '/token/blacklist']);
+const AUTH_REDIRECT_IGNORED_PREFIXES = ['/auth/'];
 const createAxiosInstance = () =>
     axios.create({
         baseURL: RUNTIME_CONFIG.serverUrl(),
@@ -13,6 +15,26 @@ const createAxiosInstance = () =>
 
         withCredentials: true,
     });
+const getRequestPathname = (requestUrl?: string) => {
+    if (!requestUrl) return '';
+
+    try {
+        return new URL(requestUrl, 'http://dutying.local').pathname;
+    } catch {
+        return requestUrl.split('?')[0] ?? '';
+    }
+};
+
+export const shouldRedirectToRefreshOnUnauthorized = (requestUrl: string | undefined, currentPathname = window.location.pathname) => {
+    if (currentPathname === ROUTE.REFRESH) return false;
+
+    const requestPathname = getRequestPathname(requestUrl);
+
+    if (AUTH_REDIRECT_IGNORED_PATHS.has(requestPathname)) return false;
+
+    return !AUTH_REDIRECT_IGNORED_PREFIXES.some((prefix) => requestPathname.startsWith(prefix));
+};
+
 const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstance>) => {
     instance.interceptors.response.use(
         (response) => response,
@@ -23,7 +45,7 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
 
             match(status)
                 .with(401, () => {
-                    if (window.location.pathname !== ROUTE.REFRESH) {
+                    if (shouldRedirectToRefreshOnUnauthorized(error?.config?.url)) {
                         const next = `${window.location.pathname}${window.location.search}`;
 
                         location.replace(`${ROUTE.REFRESH}?next=${encodeURIComponent(next)}`);

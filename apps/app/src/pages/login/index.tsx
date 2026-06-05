@@ -187,7 +187,7 @@ function LoginPage() {
                 password: signupPassword,
             });
 
-            handleLogin(response.accessToken, ROUTE.ONBOARDING);
+            handleLogin(response.accessToken, ROUTE.REGISTER);
         } catch (error) {
             setSignupError(error instanceof Error ? error.message : '가입을 완료하지 못했어요. 다시 시도해 주세요.');
         } finally {

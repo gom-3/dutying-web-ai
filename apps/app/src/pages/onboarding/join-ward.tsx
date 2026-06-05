@@ -209,7 +209,7 @@ function OnboardingJoinWardPage() {
                             <button
                                 type="button"
                                 className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
-                                onClick={() => navigate(ROUTE.ONBOARDING)}
+                                onClick={() => navigate(ROUTE.REGISTER)}
                             >
                                 <ArrowLeft className="h-4 w-4" />
                                 병동 선택으로

@@ -114,6 +114,6 @@ describe('LoginPage', () => {
             emailVerificationToken: 'verify-token',
             password: 'password1234',
         });
-        expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.ONBOARDING);
+        expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.REGISTER);
     });
 });

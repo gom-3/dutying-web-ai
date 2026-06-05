@@ -27,7 +27,7 @@ function RegisterPage() {
     const isAccountBootstrapError = accountMeStatus === 'error';
     const isSocialSignup = getIsSocialSignupPath(search) || Boolean(readSocialSignupProfile());
     const accountStatus = accountMe?.status as string | undefined;
-    const shouldCollectSocialContact = isSocialSignup && accountStatus === 'WORKSPACE_SETUP_PENDING' && !accountMe?.phoneNum;
+    const shouldCollectContact = accountStatus === 'WORKSPACE_SETUP_PENDING' && !accountMe?.phoneNum;
     const [stepOverride, setStepOverride] = useState<'nurse-info' | null>(null);
 
     useEffect(() => {
@@ -56,9 +56,9 @@ function RegisterPage() {
                 match(accountStatus)
                     .with('INITIAL', 'NURSE_INFO_PENDING', () => <RegisterNurse mode={isSocialSignup ? 'social' : 'default'} />)
                     .with('WARD_SELECT_PENDING', 'WORKSPACE_SETUP_PENDING', () =>
-                        stepOverride === 'nurse-info' || shouldCollectSocialContact ? (
+                        stepOverride === 'nurse-info' || shouldCollectContact ? (
                             <RegisterNurse
-                                mode={shouldCollectSocialContact ? 'social' : 'default'}
+                                mode={shouldCollectContact && isSocialSignup ? 'social' : 'default'}
                                 onCompleted={() => setStepOverride(null)}
                             />
                         ) : (

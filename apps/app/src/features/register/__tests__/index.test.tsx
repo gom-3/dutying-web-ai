@@ -221,7 +221,7 @@ describe('useRegister', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('seeds onboarding shift types, teams, and nurses after creating an admin workspace', async () => {
+    it('sends onboarding shift types, teams, and nurses with admin workspace creation', async () => {
         const createdWard = {
             wardId: 10,
             name: 'ICU',
@@ -266,7 +266,7 @@ describe('useRegister', () => {
             status: 'WORKSPACE_SETUP_PENDING',
         };
         mockCreateWorkspace.mockResolvedValue({
-            ward: createdWard,
+            ward: latestWard,
             account: {
                 accountId: 1,
                 wardId: 10,
@@ -333,26 +333,32 @@ describe('useRegister', () => {
             ).resolves.toEqual(latestWard);
         });
 
-        expect(mockCreateShiftType).toHaveBeenCalledTimes(2);
-        expect(mockUpdateShiftTeam).toHaveBeenCalledWith(10, 1, {name: 'A팀'});
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            10,
-            1,
-            {
-                name: '홍길동',
-                isWorker: false,
-                isWardManager: false,
-                memo: '프리셉터',
-                proficiency: 2,
-                isPreceptor: true,
-                isPreceptee: false,
-                workStartDate: '2025-01-01',
-            },
+        expect(mockCreateWorkspace).toHaveBeenCalledWith(
+            expect.objectContaining({
+                hospitalName: 'Dutying Hospital',
+                wardName: 'ICU',
+                adminName: 'Kim',
+                phoneNum: '01012341234',
+                profileImgUrl: '',
+                wardShiftTypes: expect.arrayContaining([
+                    expect.objectContaining({shortName: 'D'}),
+                    expect.objectContaining({shortName: 'E'}),
+                ]),
+                shiftTeams: expect.arrayContaining([
+                    expect.objectContaining({
+                        nurseNames: expect.arrayContaining([expect.any(String)]),
+                        nurses: expect.arrayContaining([expect.objectContaining({employmentDate: '2025-01-01', level: 2})]),
+                    }),
+                ]),
+            }),
         );
-        expect(mockUpdateNurseShiftType).toHaveBeenCalledWith(99, 2, {isPossible: false});
+        expect(mockCreateShiftType).not.toHaveBeenCalled();
+        expect(mockUpdateShiftTeam).not.toHaveBeenCalled();
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
+        expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
     });
 
-    it('seeds onboarding nurses when workspace creation returns only an account ward id', async () => {
+    it('sends onboarding nurses when workspace creation returns only an account ward id', async () => {
         mockAccountMe.current = {
             accountId: 1,
             nurseId: null,
@@ -393,18 +399,26 @@ describe('useRegister', () => {
             );
         });
 
-        expect(mockGetShiftTeams).toHaveBeenCalledWith(10);
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            10,
-            1,
+        expect(mockCreateWorkspace).toHaveBeenCalledWith(
             expect.objectContaining({
-                name: '홍길동',
-                isWorker: true,
+                hospitalName: 'Dutying Hospital',
+                wardName: 'ICU',
+                adminName: 'Kim',
+                phoneNum: '01012341234',
+                profileImgUrl: '',
+                wardShiftTypes: [],
+                shiftTeams: expect.arrayContaining([
+                    expect.objectContaining({
+                        nurseNames: expect.arrayContaining([expect.any(String)]),
+                    }),
+                ]),
             }),
         );
+        expect(mockGetShiftTeams).not.toHaveBeenCalled();
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
     });
 
-    it('keeps workspace creation successful when onboarding seeding fails after linking the account', async () => {
+    it('does not run legacy seed APIs after creating an admin workspace', async () => {
         const createdWard = {
             wardId: 10,
             name: 'ICU',
@@ -439,7 +453,6 @@ describe('useRegister', () => {
         });
         mockGetWard.mockResolvedValue(createdWard);
         mockGetShiftTeams.mockResolvedValue([{shiftTeamId: 1, name: 'A팀', nurseCnt: 0, nurses: []}]);
-        mockAddNurseIntoShiftTeam.mockRejectedValueOnce(new Error('seed failed'));
 
         const {result} = renderHook(() => useRegister());
 
@@ -461,10 +474,13 @@ describe('useRegister', () => {
             ...linkedAccount,
             status: 'LINKED',
         });
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
+        expect(mockCreateShiftType).not.toHaveBeenCalled();
+        expect(mockUpdateShiftTeam).not.toHaveBeenCalled();
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('does not delete existing workspace shift types before seeding onboarding nurses', async () => {
+    it('does not mutate existing workspace shift types through legacy seed APIs', async () => {
         const createdWard = {
             wardId: 288,
             name: 'ICU',
@@ -510,16 +526,14 @@ describe('useRegister', () => {
             },
         });
         mockGetWard.mockResolvedValue(createdWard);
-        mockGetShiftTeams
-            .mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}])
-            .mockResolvedValueOnce([
-                {
-                    shiftTeamId: 1,
-                    name: '기본팀',
-                    nurseCnt: 1,
-                    nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
-                },
-            ]);
+        mockGetShiftTeams.mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}]).mockResolvedValueOnce([
+            {
+                shiftTeamId: 1,
+                name: '기본팀',
+                nurseCnt: 1,
+                nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
+            },
+        ]);
 
         const {result} = renderHook(() => useRegister());
 
@@ -551,13 +565,7 @@ describe('useRegister', () => {
 
         expect(mockDeleteShiftType).not.toHaveBeenCalled();
         expect(mockCreateShiftType).not.toHaveBeenCalled();
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            288,
-            1,
-            expect.objectContaining({
-                name: '김간호사',
-            }),
-        );
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
     });
 
     it('retries onboarding nurse seeding into an already linked ward instead of creating another ward', async () => {
@@ -584,16 +592,14 @@ describe('useRegister', () => {
             status: 'LINKED',
         };
         mockGetWard.mockResolvedValue(existingWard);
-        mockGetShiftTeams
-            .mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}])
-            .mockResolvedValueOnce([
-                {
-                    shiftTeamId: 1,
-                    name: '기본팀',
-                    nurseCnt: 1,
-                    nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
-                },
-            ]);
+        mockGetShiftTeams.mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}]).mockResolvedValueOnce([
+            {
+                shiftTeamId: 1,
+                name: '기본팀',
+                nurseCnt: 1,
+                nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
+            },
+        ]);
 
         const {result} = renderHook(() => useRegister());
 

@@ -23,12 +23,13 @@ const RedirectPage = () => {
     useEffect(() => {
         const query = qs.parse(location.search, {ignoreQueryPrefix: true});
         const accessToken = typeof query?.['accessToken'] === 'string' ? query['accessToken'] : undefined;
-        const nextPageUrl = typeof query?.['nextPageUrl'] === 'string' ? resolveSafeRedirectTarget(query['nextPageUrl']) : undefined;
+        const resolvedNextPageUrl = typeof query?.['nextPageUrl'] === 'string' ? resolveSafeRedirectTarget(query['nextPageUrl']) : undefined;
+        const nextPageUrl = resolvedNextPageUrl === ROUTE.ONBOARDING ? ROUTE.REGISTER : resolvedNextPageUrl;
         const socialSignupProfile = getSocialSignupProfileFromQuery(query);
         const isSocialSignupRequired =
             getIsSocialSignupRequired(query) ||
             getIsSocialSignupPath(nextPageUrl ?? '') ||
-            (nextPageUrl === ROUTE.ONBOARDING && socialSignupProfile !== null);
+            (resolvedNextPageUrl === ROUTE.ONBOARDING && socialSignupProfile !== null);
 
         saveSocialSignupProfile(socialSignupProfile ?? (isSocialSignupRequired ? {capturedAt: new Date().toISOString()} : null));
 

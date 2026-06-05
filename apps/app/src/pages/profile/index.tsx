@@ -15,7 +15,7 @@ import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
-import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfileFormDirty} from './model';
+import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, getProfilePhoneNum, isProfileFormDirty} from './model';
 
 type TProfileField = 'name' | 'phoneNum';
 type TProfileErrors = Partial<Record<TProfileField, string>>;
@@ -60,6 +60,7 @@ function ProfilePage() {
     const {quitWard, handleEditProfile, handleEditAccountBasic, deleteAccount} = useEditAccount();
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [draftName, setDraftName] = useState('');
+    const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
     const [confirmAction, setConfirmAction] = useState<TConfirmAction | null>(null);
@@ -70,6 +71,11 @@ function ProfilePage() {
     });
     const selectedNurse = findProfileNurse(wardQuery.data, accountMe?.accountId);
     const displayName = getProfileDisplayName(writeNurse, accountMe);
+    const phoneInputValue = writeNurse
+        ? hasEditedPhoneNum
+            ? (writeNurse.phoneNum ?? '')
+            : getProfilePhoneNum(writeNurse, accountMe)
+        : (accountMe?.phoneNum ?? '');
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
@@ -97,9 +103,10 @@ function ProfilePage() {
     const validateForm = () => {
         if (!writeNurse) return false;
 
+        const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
         const nextErrors: TProfileErrors = {
             name: validateName(writeNurse.name ?? ''),
-            phoneNum: validatePhoneNum(writeNurse.phoneNum ?? ''),
+            phoneNum: validatePhoneNum(phoneNum),
         };
 
         setFieldErrors(nextErrors);
@@ -118,7 +125,9 @@ function ProfilePage() {
         if (writeNurse) {
             if (!validateForm()) return;
 
-            isSaved = await handleEditProfile(writeNurse, currentProfileImage);
+            const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
+
+            isSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
         } else {
             const nextName = (draftName.trim() || accountMe?.name) ?? '';
             const nameError = validateName(nextName);
@@ -136,6 +145,7 @@ function ProfilePage() {
         }
 
         if (isSaved) {
+            setHasEditedPhoneNum(false);
             resetProfileImage();
         }
     };
@@ -144,6 +154,7 @@ function ProfilePage() {
         if (!selectedNurse) {
             setWriteNurse(null);
             setDraftName(accountMe?.name ?? '');
+            setHasEditedPhoneNum(false);
 
             return;
         }
@@ -164,6 +175,10 @@ function ProfilePage() {
         setFieldErrors({});
         setFieldTouched({});
     }, [accountMe?.name, profileImg, selectedNurse]);
+
+    useEffect(() => {
+        setHasEditedPhoneNum(false);
+    }, [accountMe?.accountId, selectedNurse?.nurseId]);
 
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImage = () => {
@@ -358,12 +373,13 @@ function ProfilePage() {
                                     !writeNurse && 'cursor-not-allowed text-gray-4',
                                 )}
                                 placeholder="전화번호를 입력하세요"
-                                value={writeNurse?.phoneNum ?? ''}
+                                value={phoneInputValue}
                                 onChange={(e) => {
                                     const nextValue = normalizePhone(e.target.value);
 
                                     if (!writeNurse) return;
 
+                                    setHasEditedPhoneNum(true);
                                     handleChange('phoneNum', nextValue);
 
                                     if (fieldTouched.phoneNum) setFieldError('phoneNum', nextValue);

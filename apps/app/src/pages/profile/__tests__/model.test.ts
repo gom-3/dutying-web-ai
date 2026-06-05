@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import type {TAccount} from '@/entities/account';
 import type {TNurse} from '@/entities/nurse';
 import type {TWard} from '@/entities/ward';
-import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, isProfileFormDirty} from '../model';
+import {findProfileNurse, getCurrentProfileImage, getProfileDisplayName, getProfilePhoneNum, isProfileFormDirty} from '../model';
 
 const baseNurse: TNurse = {
     nurseId: 11,
@@ -89,5 +89,12 @@ describe('ProfilePage model', () => {
 
         expect(getProfileDisplayName({...baseNurse, name: '   '}, account)).toBe('계정 이름');
         expect(getProfileDisplayName({...baseNurse, name: '   '}, {name: '   '} as TAccount)).toBe('이름 미등록');
+    });
+
+    it('uses the account phone number when the nurse phone number is missing', () => {
+        const account = {phoneNum: '01098765432'} as TAccount;
+
+        expect(getProfilePhoneNum({...baseNurse, phoneNum: null}, account)).toBe('01098765432');
+        expect(getProfilePhoneNum({...baseNurse, phoneNum: '01012341234'}, account)).toBe('01012341234');
     });
 });

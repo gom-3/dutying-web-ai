@@ -355,6 +355,8 @@ const useRegister = () => {
                     adminName: accountProfile?.name ?? null,
                     phoneNum: accountProfile?.phoneNum ?? null,
                     profileImgUrl: accountProfile?.profileImgUrl ?? null,
+                    wardShiftTypes: createWardDTO.wardShiftTypes,
+                    shiftTeams: createWardDTO.shiftTeams,
                 });
                 const createdWard = getWardFromAdminWorkspaceResponse(createdWorkspace);
                 const createdWardId = getWardIdFromAdminWorkspaceResponse(createdWorkspace);
@@ -372,8 +374,7 @@ const useRegister = () => {
                     });
                 }
 
-                const seededWard = await seedCreatedWard(createdWardId, createdWard, createWardDTO);
-                cacheCreatedWard(seededWard);
+                cacheCreatedWard(createdWard);
 
                 if (options?.navigateOnLinked !== false) {
                     navigate(ROUTE.MAKE);
@@ -383,7 +384,7 @@ const useRegister = () => {
                     void handleGetAccountMe().catch(() => undefined);
                 }
 
-                return seededWard;
+                return createdWard;
             } finally {
                 setLoading(false);
             }

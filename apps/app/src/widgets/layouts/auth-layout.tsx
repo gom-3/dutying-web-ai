@@ -43,7 +43,7 @@ export const AuthLayout = () => {
          * 온보딩/회원가입 관련 라우트는 아래 허용 목록에 둔다.
          */
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
-            if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
+            if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
                 navigate(ROUTE.REGISTER);
         }
     }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname]);

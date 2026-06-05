@@ -1288,7 +1288,6 @@ function MemberPage() {
                                                                 skillLevel={levelsByNurseId[nurse.nurseId]}
                                                                 skillConfig={skillConfig}
                                                                 wardShiftTypes={ward?.wardShiftTypes}
-                                                                wardCode={ward?.code}
                                                                 isBusy={nurseSaveStatus === 'saving' || isDeletingNurse}
                                                                 dragRef={(element) => {
                                                                     dragProvided.innerRef(element);
@@ -1298,6 +1297,7 @@ function MemberPage() {
                                                                 dragHandleProps={dragProvided.dragHandleProps}
                                                                 onDeleteNurse={deleteNurse}
                                                                 onDisconnectNurse={disconnectNurse}
+                                                                onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
                                                                 onUpdateNurse={(nurseId, nextNurse) => {
                                                                     if (nurseId !== nurse.nurseId) {
                                                                         return updateNurse(nurseId, nextNurse);
@@ -1483,7 +1483,6 @@ function MemberNurseRow({
     skillLevel,
     skillConfig,
     wardShiftTypes,
-    wardCode,
     isBusy,
     dragRef,
     draggableProps,
@@ -1492,6 +1491,7 @@ function MemberNurseRow({
     onUpdateNurseShift,
     onDeleteNurse,
     onDisconnectNurse,
+    onOpenWardCodeGuide,
     onSaveSkillLevel,
     onSelect,
 }: {
@@ -1504,7 +1504,6 @@ function MemberNurseRow({
     skillLevel: number | null | undefined;
     skillConfig: TWardSkillSettings['config'];
     wardShiftTypes: TWardShiftType[] | undefined;
-    wardCode?: string;
     isBusy: boolean;
     dragRef: (element: HTMLDivElement | null) => void;
     draggableProps: DraggableProvidedDraggableProps;
@@ -1518,12 +1517,12 @@ function MemberNurseRow({
     ) => Promise<boolean>;
     onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<void>;
     onDisconnectNurse: (nurseId: number) => Promise<boolean>;
+    onOpenWardCodeGuide: () => void;
     onSaveSkillLevel: (nextLevel: number | null) => void;
     onSelect: () => void;
 }) {
     const [nameDraft, setNameDraft] = useState(nurse.name);
     const [skillMenuOpen, setSkillMenuOpen] = useState(false);
-    const [connectionModalOpen, setConnectionModalOpen] = useState(false);
     const [disconnectConfirmModalOpen, setDisconnectConfirmModalOpen] = useState(false);
     const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
     const skillMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1848,7 +1847,7 @@ function MemberNurseRow({
                                 return;
                             }
 
-                            setConnectionModalOpen(true);
+                            onOpenWardCodeGuide();
                         }}
                         aria-label={`${nurse.name} 연동 상태 안내`}
                     >
@@ -1956,49 +1955,6 @@ function MemberNurseRow({
                       modalRoot,
                   )
                 : null}
-            {connectionModalOpen ? (
-                <div
-                    className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-6"
-                    onClick={() => setConnectionModalOpen(false)}
-                >
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby={`member-connection-modal-title-${nurse.nurseId}`}
-                        aria-describedby={`member-connection-modal-description-${nurse.nurseId}`}
-                        className="w-full max-w-[520px] rounded-[20px] bg-white px-8 py-7"
-                        onClick={(event) => event.stopPropagation()}
-                    >
-                        <h2
-                            id={`member-connection-modal-title-${nurse.nurseId}`}
-                            className="font-apple text-[28px] font-semibold text-sub-1"
-                        >
-                            병동코드 안내
-                        </h2>
-                        <p
-                            id={`member-connection-modal-description-${nurse.nurseId}`}
-                            className="mt-3 font-apple text-[18px] whitespace-pre-line text-gray-3"
-                        >
-                            간호사에게 병동코드를 전달하면 듀팅앱에서 등록 후 병동에 참여할 수 있어요.
-                        </p>
-                        <div className="mt-5 rounded-[12px] border border-main-4 bg-main-light px-5 py-4">
-                            <p className="font-apple text-[14px] font-medium text-gray-3">병동코드</p>
-                            <p className="mt-1 text-center font-poppins text-[28px] font-extrabold tracking-[0.08em] text-main-1">
-                                {wardCode || '-'}
-                            </p>
-                        </div>
-                        <div className="mt-7 flex justify-end">
-                            <button
-                                type="button"
-                                className="rounded-[10px] bg-main-1 px-5 py-2.5 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
-                                onClick={() => setConnectionModalOpen(false)}
-                            >
-                                확인
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            ) : null}
         </>
     );
 }

@@ -1,7 +1,8 @@
-import type {TAccount, TAccountStatus} from '@dutying/domain';
+import type {TAccount, TAccountStatus, TTutorialKey} from '@dutying/domain';
 import type {TWardResponse} from '../ward';
 
 export type {TAccountStatus};
+export type {TTutorialKey};
 
 export type TAccountResponse = TAccount;
 export type TDefaultProfileImageResponse = {
@@ -18,6 +19,7 @@ export interface IAccountAPI {
     editAccountStatus: (accountId: number, status: TAccountStatus) => Promise<TAccountResponse>;
     initAccount: (dto: TEditProfileRequest) => Promise<TAccountResponse>;
     deleteAccount: (accountId: number) => Promise<void>;
+    markTutorialSeen: (tutorialKey: TTutorialKey) => Promise<void>;
 }
 
 export type TEditProfileRequest = {

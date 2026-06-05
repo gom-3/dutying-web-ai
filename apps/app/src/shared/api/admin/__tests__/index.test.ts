@@ -35,6 +35,8 @@ describe('AdminAPI', () => {
             adminName: 'Kim',
             phoneNum: '01012345678',
             profileImgUrl: '',
+            wardShiftTypes: [],
+            shiftTeams: [],
         };
         const response = {ward: {wardId: 10}};
 

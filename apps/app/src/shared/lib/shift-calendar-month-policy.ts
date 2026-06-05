@@ -8,7 +8,14 @@ export function getCalendarYearMonthNow(): {year: number; month: number} {
     return {year: d.getFullYear(), month: d.getMonth() + 1};
 }
 
-/** 오늘이 속한 달 대비 `year`/`month`가 몇 달 뒤인지 (과거면 음수). */
+/** Returns the calendar month immediately after the current month. */
+export function getNextCalendarYearMonth(): {year: number; month: number} {
+    const {year, month} = getCalendarYearMonthNow();
+
+    return month >= 12 ? {year: year + 1, month: 1} : {year, month: month + 1};
+}
+
+/** Returns the month offset from the current calendar month. */
 export function monthsAfterTodayYearMonth(year: number, month: number): number {
     const {year: y0, month: m0} = getCalendarYearMonthNow();
 

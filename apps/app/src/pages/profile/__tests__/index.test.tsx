@@ -41,6 +41,7 @@ describe('ProfilePage account actions', () => {
                     nurseId: null,
                     email: 'user@example.com',
                     name: '홍길동',
+                    phoneNum: '01012345678',
                     profileImgUrl: '',
                     status: 'WARD_SELECT_PENDING',
                 },
@@ -65,6 +66,16 @@ describe('ProfilePage account actions', () => {
             setPhotoImage: vi.fn(),
             resetProfileImage: vi.fn(),
         });
+    });
+
+    it('fills the phone input from accountMe when no nurse profile is loaded', () => {
+        const {container} = render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        expect(container.querySelector('#phoneNum')).toHaveValue('01012345678');
     });
 
     it('로그아웃 버튼을 누르면 확인 팝업을 먼저 띄운다', async () => {

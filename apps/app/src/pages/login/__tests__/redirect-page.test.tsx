@@ -67,6 +67,16 @@ describe('RedirectPage', () => {
         });
     });
 
+    it('maps legacy onboarding callback targets to register', async () => {
+        window.history.replaceState({}, '', `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=%2Fonboarding`);
+
+        render(<RedirectPage />);
+
+        await waitFor(() => {
+            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/register');
+        });
+    });
+
     it('routes new social accounts to register and keeps the provider profile for prefill', async () => {
         window.history.replaceState(
             {},

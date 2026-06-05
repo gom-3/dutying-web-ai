@@ -17,10 +17,41 @@ const PHONE_NUM_LENGTH = 11;
 const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
 const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
 const PHONE_NUM_INPUT_SANITIZE_REGEXP = /[^0-9]/g;
+const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
+const DUPLICATE_PHONE_NUM_ERROR_MESSAGE = '이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.';
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const sanitizePhoneNumInput = (rawValue: string) => rawValue.replace(PHONE_NUM_INPUT_SANITIZE_REGEXP, '').slice(0, PHONE_NUM_LENGTH);
+const getErrorTextValues = (value: unknown): string[] => {
+    if (typeof value === 'string') return [value];
+
+    if (typeof value !== 'object' || value === null) return [];
+
+    const record = value as Record<string, unknown>;
+
+    return [
+        record.message,
+        record.code,
+        record.errorCode,
+        record.reason,
+        record.field,
+        record.originalError,
+        record.response,
+        record.data,
+    ].flatMap(getErrorTextValues);
+};
+const isDuplicatePhoneNumError = (error: unknown) => {
+    const code = typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
+
+    if (code !== 400 && code !== 409) return false;
+
+    const errorText = getErrorTextValues(error).join(' ').toLowerCase();
+    const hasPhoneHint = /phone|phone_num|phonenum|전화|연락처|휴대/.test(errorText);
+    const hasAlreadyUsedHint = /already used|이미 사용|사용 중/.test(errorText);
+
+    return code === 409 ? hasPhoneHint || hasAlreadyUsedHint : hasPhoneHint && hasAlreadyUsedHint;
+};
 const schema = yup
     .object()
     .shape({
@@ -55,6 +86,8 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
         formState: {errors},
         watch,
         setValue,
+        setError,
+        clearErrors,
         register,
         handleSubmit,
     } = useForm<TCreateAccountProfileDTO>({
@@ -77,9 +110,26 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const {createAccountFeedback, isSubmitting, handleCreateAccount, handleCreateAccountValidationFailure, resetCreateAccountStatus} =
         useCreateAccount({
             submit: async (accountProfileDTO) => {
-                await registerAccountProfile(accountProfileDTO);
-                onCompleted?.();
+                try {
+                    await registerAccountProfile(accountProfileDTO);
+                    onCompleted?.();
+                } catch (error) {
+                    if (isDuplicatePhoneNumError(error)) {
+                        setError(
+                            'phoneNum',
+                            {
+                                type: DUPLICATE_PHONE_NUM_ERROR_TYPE,
+                                message: DUPLICATE_PHONE_NUM_ERROR_MESSAGE,
+                            },
+                            {shouldFocus: true},
+                        );
+                    }
+
+                    throw error;
+                }
             },
+            isHandledError: isDuplicatePhoneNumError,
+            shouldRethrowError: false,
         });
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImage = () => {
@@ -113,11 +163,13 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
               ? "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요."
               : undefined;
     const phoneNumError =
-        errors.phoneNum?.type === 'required'
-            ? '연락처를 입력해 주세요.'
-            : errors.phoneNum
-              ? '연락처는 숫자 11자리로 입력해 주세요.'
-              : undefined;
+        errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE && errors.phoneNum.message
+            ? errors.phoneNum.message
+            : errors.phoneNum?.type === 'required'
+              ? '연락처를 입력해 주세요.'
+              : errors.phoneNum
+                ? '연락처는 숫자 11자리로 입력해 주세요.'
+                : undefined;
 
     useEffect(() => {
         if (profileImg) {
@@ -217,6 +269,10 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             placeholder="연락처를 입력해주세요"
                             {...phoneNumField}
                             onChange={(event) => {
+                                if (errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE) {
+                                    clearErrors('phoneNum');
+                                }
+
                                 event.target.value = sanitizePhoneNumInput(event.target.value);
                                 void phoneNumField.onChange(event);
                             }}

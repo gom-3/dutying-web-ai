@@ -18,6 +18,8 @@ type TCreateAccountFeedback = {
 
 type TUseCreateAccountParams = {
     submit: (createAccountProfileDTO: TCreateAccountProfileDTO) => Promise<unknown>;
+    isHandledError?: (error: unknown) => boolean;
+    shouldRethrowError?: boolean;
 };
 
 const DEFAULT_FEEDBACK: TCreateAccountFeedback = {
@@ -43,13 +45,13 @@ const FEEDBACK_BY_STATUS: Record<Exclude<TCreateAccountStatus, 'idle'>, TCreateA
     },
 };
 
-function isHandledFailure(error: unknown) {
+function isHandledFailure(error: unknown, customIsHandledError?: (error: unknown) => boolean) {
     const code = typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
 
-    return code === 400 || code === 401 || code === 404;
+    return code === 400 || code === 401 || code === 404 || Boolean(customIsHandledError?.(error));
 }
 
-const useCreateAccount = ({submit}: TUseCreateAccountParams) => {
+const useCreateAccount = ({submit, isHandledError, shouldRethrowError = true}: TUseCreateAccountParams) => {
     const [createAccountStatus, setCreateAccountStatus] = useState<TCreateAccountStatus>('idle');
     const createAccountFeedback = useMemo(() => {
         if (createAccountStatus === 'idle') {
@@ -72,11 +74,14 @@ const useCreateAccount = ({submit}: TUseCreateAccountParams) => {
                 await submit(createAccountProfileDTO);
                 setCreateAccountStatus('success');
             } catch (error) {
-                setCreateAccountStatus(isHandledFailure(error) ? 'failure' : 'exception');
-                throw error;
+                setCreateAccountStatus(isHandledFailure(error, isHandledError) ? 'failure' : 'exception');
+
+                if (shouldRethrowError) {
+                    throw error;
+                }
             }
         },
-        [submit],
+        [isHandledError, shouldRethrowError, submit],
     );
 
     return {
