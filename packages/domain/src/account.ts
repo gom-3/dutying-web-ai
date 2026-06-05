@@ -1,5 +1,25 @@
 export type TAccountStatus = 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED' | 'DEMO';
 
+export type TTutorialKey =
+    | 'make'
+    | 'make-step-1'
+    | 'make-step-2'
+    | 'make-step-3'
+    | 'make-step-4'
+    | 'make-step-5'
+    | 'request'
+    | 'member'
+    | 'board'
+    | 'board-list'
+    | 'board-composer'
+    | 'board-detail';
+
+export type TTutorialProgress = {
+    seen?: TTutorialKey[];
+    completed?: TTutorialKey[];
+    skipped?: TTutorialKey[];
+};
+
 export type TAccount = {
     accountId: number;
     nurseId: number | null;
@@ -13,4 +33,5 @@ export type TAccount = {
     profileImgUrl: string;
     isManager: boolean;
     status: TAccountStatus;
+    tutorials?: TTutorialProgress;
 };

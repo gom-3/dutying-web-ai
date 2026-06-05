@@ -76,7 +76,7 @@ const useAuth = (activeEffect = false) => {
         beginLogin(DEV_AUTH_BYPASS_TOKEN);
         syncAccessTokenHeaders(DEV_AUTH_BYPASS_TOKEN);
         setAccountMeSuccess(createDevAuthBypassAccount());
-        navigate(ROUTE.ONBOARDING);
+        navigate(ROUTE.REGISTER);
     };
     const setDemoExpired = (expired: boolean) => {
         setAuthDemoExpired(expired);

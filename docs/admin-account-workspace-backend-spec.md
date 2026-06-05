@@ -5,8 +5,8 @@
 - 웹은 병원/병동 관리자 전용 SaaS다.
 - 가입은 항상 계정부터 만든다. 계정 생성 직후에는 아직 병동에 소속되지 않은 상태다.
 - 로그인한 계정이 병동이 없으면 `/onboarding`에서 두 가지를 선택한다.
-  - 새 병동 만들기
-  - 기존 병동 들어가기
+    - 새 병동 만들기
+    - 기존 병동 들어가기
 - 새 병동 만들기는 항상 새 고객 단위를 생성한다. 같은 병원명/병동명이 이미 있어도 중복 생성 허용.
 - 고객 단위는 `hospitalName + wardName`이거나 `hospitalName` 단독이다. 병동이 없는 병원/기관도 가능해야 한다.
 - 기존 병동 들어가기는 병동코드만으로는 입장할 수 없다. 병동코드는 병동을 찾는 용도이고, 최고 관리자가 미리 등록한 계정만 들어갈 수 있다.
@@ -47,21 +47,21 @@
 
 로그인 주체다. ID/PW와 소셜 계정을 모두 같은 테이블에서 관리한다.
 
-| column | type | note |
-| --- | --- | --- |
-| account_id | bigint PK | |
-| login_id | varchar(40) unique nullable | ID/PW 계정만 필수. 소문자 정규화 추천 |
-| password_hash | varchar nullable | ID/PW 계정만 필수 |
-| email | varchar(255) nullable | 소셜 계정은 provider email 저장. 초대 매칭에 사용 |
-| email_normalized | varchar(255) nullable index | lower(trim(email)) |
-| name | varchar(40) | 관리자 이름 |
-| phone_num | varchar(20) nullable | 숫자만 저장 추천 |
-| profile_img_url | text nullable | |
-| auth_provider | enum | `PASSWORD`, `KAKAO`, `APPLE` |
-| provider_user_id | varchar nullable | 소셜 provider 식별자 |
-| status | enum | `WORKSPACE_SETUP_PENDING`, `LINKED`, `DEMO` |
-| current_ward_id | bigint nullable FK | 현재 프론트 호환용. 기존 `wardId`로 내려도 됨 |
-| created_at / updated_at | datetime | |
+| column                  | type                        | note                                              |
+| ----------------------- | --------------------------- | ------------------------------------------------- |
+| account_id              | bigint PK                   |                                                   |
+| login_id                | varchar(40) unique nullable | ID/PW 계정만 필수. 소문자 정규화 추천             |
+| password_hash           | varchar nullable            | ID/PW 계정만 필수                                 |
+| email                   | varchar(255) nullable       | 소셜 계정은 provider email 저장. 초대 매칭에 사용 |
+| email_normalized        | varchar(255) nullable index | lower(trim(email))                                |
+| name                    | varchar(40)                 | 관리자 이름                                       |
+| phone_num               | varchar(20) nullable        | 숫자만 저장 추천                                  |
+| profile_img_url         | text nullable               |                                                   |
+| auth_provider           | enum                        | `PASSWORD`, `KAKAO`, `APPLE`                      |
+| provider_user_id        | varchar nullable            | 소셜 provider 식별자                              |
+| status                  | enum                        | `WORKSPACE_SETUP_PENDING`, `LINKED`, `DEMO`       |
+| current_ward_id         | bigint nullable FK          | 현재 프론트 호환용. 기존 `wardId`로 내려도 됨     |
+| created_at / updated_at | datetime                    |                                                   |
 
 Unique indexes:
 
@@ -77,15 +77,15 @@ Unique indexes:
 
 현재 코드의 `Ward`가 고객 데이터 경계다.
 
-| column | type | note |
-| --- | --- | --- |
-| ward_id | bigint PK | |
-| hospital_name | varchar(80) not null | 병원/기관명 |
-| name | varchar(80) not null | 병동명이 없으면 hospital_name 복사 저장 권장 |
-| ward_name | varchar(80) nullable | 선택. 스키마 변경이 어렵다면 name만 사용 |
-| code | varchar(12) unique not null | 병동 찾기/간호사 연동용. 서버 생성 |
-| created_by_account_id | bigint FK | 최초 OWNER |
-| created_at / updated_at | datetime | |
+| column                  | type                        | note                                         |
+| ----------------------- | --------------------------- | -------------------------------------------- |
+| ward_id                 | bigint PK                   |                                              |
+| hospital_name           | varchar(80) not null        | 병원/기관명                                  |
+| name                    | varchar(80) not null        | 병동명이 없으면 hospital_name 복사 저장 권장 |
+| ward_name               | varchar(80) nullable        | 선택. 스키마 변경이 어렵다면 name만 사용     |
+| code                    | varchar(12) unique not null | 병동 찾기/간호사 연동용. 서버 생성           |
+| created_by_account_id   | bigint FK                   | 최초 OWNER                                   |
+| created_at / updated_at | datetime                    |                                              |
 
 Rules:
 
@@ -96,15 +96,15 @@ Rules:
 
 계정이 병동에서 어떤 관리자 권한을 갖는지 나타낸다.
 
-| column | type | note |
-| --- | --- | --- |
-| membership_id | bigint PK | |
-| ward_id | bigint FK not null | |
-| account_id | bigint FK not null | |
-| role | enum not null | `OWNER`, `EDITOR` |
-| status | enum not null | `ACTIVE` |
-| created_by_account_id | bigint FK nullable | OWNER가 추가한 경우 |
-| created_at / updated_at | datetime | |
+| column                  | type               | note                |
+| ----------------------- | ------------------ | ------------------- |
+| membership_id           | bigint PK          |                     |
+| ward_id                 | bigint FK not null |                     |
+| account_id              | bigint FK not null |                     |
+| role                    | enum not null      | `OWNER`, `EDITOR`   |
+| status                  | enum not null      | `ACTIVE`            |
+| created_by_account_id   | bigint FK nullable | OWNER가 추가한 경우 |
+| created_at / updated_at | datetime           |                     |
 
 Indexes:
 
@@ -122,20 +122,20 @@ Indexes:
 
 이메일로 관리자 권한을 예약하고 안내 메일을 보내는 테이블이다.
 
-| column | type | note |
-| --- | --- | --- |
-| invitation_id | bigint PK | |
-| ward_id | bigint FK not null | |
-| invited_email | varchar(255) not null | 원본 |
-| invited_email_normalized | varchar(255) not null | lower(trim(email)) |
-| invited_name | varchar(40) nullable | |
-| role | enum not null | 현재는 `EDITOR`만 허용 |
-| status | enum not null | `PENDING`, `ACCEPTED`, `CANCELED`, `EXPIRED` |
-| invited_by_account_id | bigint FK not null | OWNER |
-| accepted_by_account_id | bigint FK nullable | 수락한 계정 |
-| accepted_at | datetime nullable | |
-| expires_at | datetime not null | 추천 14일 |
-| created_at / updated_at | datetime | |
+| column                   | type                  | note                                         |
+| ------------------------ | --------------------- | -------------------------------------------- |
+| invitation_id            | bigint PK             |                                              |
+| ward_id                  | bigint FK not null    |                                              |
+| invited_email            | varchar(255) not null | 원본                                         |
+| invited_email_normalized | varchar(255) not null | lower(trim(email))                           |
+| invited_name             | varchar(40) nullable  |                                              |
+| role                     | enum not null         | 현재는 `EDITOR`만 허용                       |
+| status                   | enum not null         | `PENDING`, `ACCEPTED`, `CANCELED`, `EXPIRED` |
+| invited_by_account_id    | bigint FK not null    | OWNER                                        |
+| accepted_by_account_id   | bigint FK nullable    | 수락한 계정                                  |
+| accepted_at              | datetime nullable     |                                              |
+| expires_at               | datetime not null     | 추천 14일                                    |
+| created_at / updated_at  | datetime              |                                              |
 
 Indexes:
 
@@ -153,16 +153,16 @@ Indexes:
 
 관리자 권한 변경은 병원 SaaS에서 민감한 작업이므로 로그를 권장한다.
 
-| column | type | note |
-| --- | --- | --- |
-| audit_id | bigint PK | |
-| ward_id | bigint FK | |
-| actor_account_id | bigint FK | |
-| target_account_id | bigint FK nullable | |
-| invitation_id | bigint FK nullable | |
-| action | varchar | `ADD_BY_LOGIN_ID`, `INVITE_EMAIL`, `RESEND_INVITE`, `CANCEL_INVITE`, `REMOVE_ADMIN`, `ACCEPT_INVITE` |
-| before_json / after_json | json nullable | |
-| created_at | datetime | |
+| column                   | type               | note                                                                                                 |
+| ------------------------ | ------------------ | ---------------------------------------------------------------------------------------------------- |
+| audit_id                 | bigint PK          |                                                                                                      |
+| ward_id                  | bigint FK          |                                                                                                      |
+| actor_account_id         | bigint FK          |                                                                                                      |
+| target_account_id        | bigint FK nullable |                                                                                                      |
+| invitation_id            | bigint FK nullable |                                                                                                      |
+| action                   | varchar            | `ADD_BY_LOGIN_ID`, `INVITE_EMAIL`, `RESEND_INVITE`, `CANCEL_INVITE`, `REMOVE_ADMIN`, `ACCEPT_INVITE` |
+| before_json / after_json | json nullable      |                                                                                                      |
+| created_at               | datetime           |                                                                                                      |
 
 ## 4. 권한 모델
 
@@ -186,16 +186,16 @@ Indexes:
 
 ```json
 {
-  "role": "OWNER",
-  "permissions": [
-    "DUTY_MANAGE",
-    "REQUEST_MANAGE",
-    "BOARD_MANAGE",
-    "MEMBER_MANAGE",
-    "WARD_SETTING_MANAGE",
-    "ADMIN_MANAGE",
-    "BILLING_MANAGE"
-  ]
+    "role": "OWNER",
+    "permissions": [
+        "DUTY_MANAGE",
+        "REQUEST_MANAGE",
+        "BOARD_MANAGE",
+        "MEMBER_MANAGE",
+        "WARD_SETTING_MANAGE",
+        "ADMIN_MANAGE",
+        "BILLING_MANAGE"
+    ]
 }
 ```
 
@@ -216,11 +216,11 @@ Request:
 
 ```json
 {
-  "loginId": "headnurse_7a",
-  "password": "password1234",
-  "name": "김관리",
-  "phoneNum": "01012341234",
-  "email": "head@example.com"
+    "loginId": "headnurse_7a",
+    "password": "password1234",
+    "name": "김관리",
+    "phoneNum": "01012341234",
+    "email": "head@example.com"
 }
 ```
 
@@ -228,20 +228,20 @@ Response:
 
 ```json
 {
-  "accessToken": "jwt-access-token",
-  "account": {
-    "accountId": 1,
-    "nurseId": null,
-    "wardId": null,
-    "shiftTeamId": null,
-    "email": "head@example.com",
-    "name": "김관리",
-    "phoneNum": "01012341234",
-    "profileImgUrl": "",
-    "authProvider": "PASSWORD",
-    "isManager": true,
-    "status": "WORKSPACE_SETUP_PENDING"
-  }
+    "accessToken": "jwt-access-token",
+    "account": {
+        "accountId": 1,
+        "nurseId": null,
+        "wardId": null,
+        "shiftTeamId": null,
+        "email": "head@example.com",
+        "name": "김관리",
+        "phoneNum": "01012341234",
+        "profileImgUrl": "",
+        "authProvider": "PASSWORD",
+        "isManager": true,
+        "status": "WORKSPACE_SETUP_PENDING"
+    }
 }
 ```
 
@@ -271,8 +271,8 @@ Request:
 
 ```json
 {
-  "loginId": "headnurse_7a",
-  "password": "password1234"
+    "loginId": "headnurse_7a",
+    "password": "password1234"
 }
 ```
 
@@ -280,17 +280,17 @@ Response:
 
 ```json
 {
-  "accessToken": "jwt-access-token",
-  "account": {
-    "accountId": 1,
-    "wardId": 10,
-    "name": "김관리",
-    "email": "head@example.com",
-    "isManager": true,
-    "status": "LINKED",
-    "role": "OWNER",
-    "permissions": ["DUTY_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "ADMIN_MANAGE"]
-  }
+    "accessToken": "jwt-access-token",
+    "account": {
+        "accountId": 1,
+        "wardId": 10,
+        "name": "김관리",
+        "email": "head@example.com",
+        "isManager": true,
+        "status": "LINKED",
+        "role": "OWNER",
+        "permissions": ["DUTY_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "ADMIN_MANAGE"]
+    }
 }
 ```
 
@@ -311,12 +311,12 @@ OAuth 콜백에서 provider 프로필을 받은 뒤 서버가 분기한다.
 
 ```json
 {
-  "authProvider": "KAKAO",
-  "providerUserId": "123456",
-  "email": "head@example.com",
-  "name": "김관리",
-  "profileImgUrl": "https://cdn.example.com/profile.png",
-  "status": "WORKSPACE_SETUP_PENDING"
+    "authProvider": "KAKAO",
+    "providerUserId": "123456",
+    "email": "head@example.com",
+    "name": "김관리",
+    "profileImgUrl": "https://cdn.example.com/profile.png",
+    "status": "WORKSPACE_SETUP_PENDING"
 }
 ```
 
@@ -345,34 +345,27 @@ Response:
 
 ```json
 {
-  "accountId": 1,
-  "nurseId": null,
-  "wardId": 10,
-  "shiftTeamId": null,
-  "email": "head@example.com",
-  "name": "김관리",
-  "phoneNum": "01012341234",
-  "profileImgUrl": "",
-  "authProvider": "PASSWORD",
-  "isManager": true,
-  "status": "LINKED",
-  "role": "OWNER",
-  "permissions": [
-    "DUTY_MANAGE",
-    "REQUEST_MANAGE",
-    "BOARD_MANAGE",
-    "MEMBER_MANAGE",
-    "WARD_SETTING_MANAGE",
-    "ADMIN_MANAGE"
-  ],
-  "memberships": [
-    {
-      "membershipId": 100,
-      "wardId": 10,
-      "role": "OWNER",
-      "status": "ACTIVE"
-    }
-  ]
+    "accountId": 1,
+    "nurseId": null,
+    "wardId": 10,
+    "shiftTeamId": null,
+    "email": "head@example.com",
+    "name": "김관리",
+    "phoneNum": "01012341234",
+    "profileImgUrl": "",
+    "authProvider": "PASSWORD",
+    "isManager": true,
+    "status": "LINKED",
+    "role": "OWNER",
+    "permissions": ["DUTY_MANAGE", "REQUEST_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "WARD_SETTING_MANAGE", "ADMIN_MANAGE"],
+    "memberships": [
+        {
+            "membershipId": 100,
+            "wardId": 10,
+            "role": "OWNER",
+            "status": "ACTIVE"
+        }
+    ]
 }
 ```
 
@@ -392,44 +385,74 @@ Request:
 
 ```json
 {
-  "hospitalName": "듀팅병원",
-  "wardName": "7A",
-  "adminName": "김관리",
-  "phoneNum": "01012341234",
-  "includeAdminAsWorker": false,
-  "profileImgUrl": ""
+    "hospitalName": "듀팅병원",
+    "wardName": "7A",
+    "adminName": "김관리",
+    "phoneNum": "01012341234",
+    "includeAdminAsWorker": false,
+    "profileImgUrl": "",
+    "wardShiftTypes": [
+        {
+            "name": "데이",
+            "shortName": "D",
+            "startTime": "07:00",
+            "endTime": "15:00",
+            "color": "#4DC2AD",
+            "isDefault": true,
+            "isOff": false,
+            "isCounted": true,
+            "classification": "DAY"
+        }
+    ],
+    "shiftTeams": [
+        {
+            "name": "A팀",
+            "nurseNames": ["홍길동"],
+            "nurses": [
+                {
+                    "name": "홍길동",
+                    "memo": "프리셉터",
+                    "isWorker": true,
+                    "employmentDate": "2026-06-05",
+                    "level": 2,
+                    "possibleShiftShortNames": ["D"]
+                }
+            ]
+        }
+    ]
 }
 ```
 
 `wardName`은 null 또는 빈 문자열 가능.
+온보딩 병동 생성은 마지막 완료 버튼에서 이 요청 한 번으로 병동, 근무유형, 팀, 간호사를 함께 생성한다.
 
 Response:
 
 ```json
 {
-  "account": {
-    "accountId": 1,
-    "nurseId": null,
-    "wardId": 10,
-    "shiftTeamId": null,
-    "email": "head@example.com",
-    "name": "김관리",
-    "phoneNum": "01012341234",
-    "profileImgUrl": "",
-    "isManager": true,
-    "status": "LINKED",
-    "role": "OWNER",
-    "permissions": ["DUTY_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "ADMIN_MANAGE"]
-  },
-  "ward": {
-    "wardId": 10,
-    "hospitalName": "듀팅병원",
-    "name": "7A",
-    "code": "A7K29Q",
-    "nurseCnt": 0,
-    "wardShiftTypes": [],
-    "shiftTeams": []
-  }
+    "account": {
+        "accountId": 1,
+        "nurseId": null,
+        "wardId": 10,
+        "shiftTeamId": null,
+        "email": "head@example.com",
+        "name": "김관리",
+        "phoneNum": "01012341234",
+        "profileImgUrl": "",
+        "isManager": true,
+        "status": "LINKED",
+        "role": "OWNER",
+        "permissions": ["DUTY_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "ADMIN_MANAGE"]
+    },
+    "ward": {
+        "wardId": 10,
+        "hospitalName": "듀팅병원",
+        "name": "7A",
+        "code": "A7K29Q",
+        "nurseCnt": 0,
+        "wardShiftTypes": [],
+        "shiftTeams": []
+    }
 }
 ```
 
@@ -438,7 +461,7 @@ Transaction:
 1. account row lock.
 2. account profile update: `name`, `phone_num`, `profile_img_url`.
 3. ward 생성. `code`는 서버가 unique 생성.
-4. 기본 shift type / 기본 shift team 생성.
+4. 요청의 `wardShiftTypes`, `shiftTeams`, `nurses`를 같은 transaction 안에서 생성. 값이 비어 있으면 기본 shift type / 기본 shift team 생성.
 5. `ward_admin_memberships` 생성: `role = OWNER`.
 6. `accounts.current_ward_id = ward_id`, `status = LINKED`.
 7. `includeAdminAsWorker = true`면 nurse 생성 및 account 연결.
@@ -465,7 +488,7 @@ Request:
 
 ```json
 {
-  "code": "A7K29Q"
+    "code": "A7K29Q"
 }
 ```
 
@@ -473,30 +496,30 @@ Response:
 
 ```json
 {
-  "account": {
-    "accountId": 2,
-    "wardId": 10,
-    "name": "이관리",
-    "email": "editor@example.com",
-    "isManager": true,
-    "status": "LINKED",
-    "role": "EDITOR",
-    "permissions": ["DUTY_MANAGE", "REQUEST_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "WARD_SETTING_MANAGE"]
-  },
-  "ward": {
-    "wardId": 10,
-    "hospitalName": "듀팅병원",
-    "name": "7A",
-    "code": "A7K29Q"
-  },
-  "membership": {
-    "membershipId": 200,
-    "accountId": 2,
-    "wardId": 10,
-    "role": "EDITOR",
-    "status": "ACTIVE",
-    "createdAt": "2026-05-27T09:00:00.000Z"
-  }
+    "account": {
+        "accountId": 2,
+        "wardId": 10,
+        "name": "이관리",
+        "email": "editor@example.com",
+        "isManager": true,
+        "status": "LINKED",
+        "role": "EDITOR",
+        "permissions": ["DUTY_MANAGE", "REQUEST_MANAGE", "BOARD_MANAGE", "MEMBER_MANAGE", "WARD_SETTING_MANAGE"]
+    },
+    "ward": {
+        "wardId": 10,
+        "hospitalName": "듀팅병원",
+        "name": "7A",
+        "code": "A7K29Q"
+    },
+    "membership": {
+        "membershipId": 200,
+        "accountId": 2,
+        "wardId": 10,
+        "role": "EDITOR",
+        "status": "ACTIVE",
+        "createdAt": "2026-05-27T09:00:00.000Z"
+    }
 }
 ```
 
@@ -534,32 +557,32 @@ Response:
 
 ```json
 {
-  "members": [
-    {
-      "membershipId": 100,
-      "accountId": 1,
-      "wardId": 10,
-      "role": "OWNER",
-      "status": "ACTIVE",
-      "name": "김관리",
-      "loginId": "headnurse_7a",
-      "email": "head@example.com",
-      "createdAt": "2026-05-27T09:00:00.000Z"
-    }
-  ],
-  "invitations": [
-    {
-      "invitationId": 300,
-      "wardId": 10,
-      "invitedEmail": "editor@example.com",
-      "invitedName": "이관리",
-      "role": "EDITOR",
-      "status": "PENDING",
-      "invitedByAccountId": 1,
-      "expiresAt": "2026-06-10T09:00:00.000Z",
-      "createdAt": "2026-05-27T09:00:00.000Z"
-    }
-  ]
+    "members": [
+        {
+            "membershipId": 100,
+            "accountId": 1,
+            "wardId": 10,
+            "role": "OWNER",
+            "status": "ACTIVE",
+            "name": "김관리",
+            "loginId": "headnurse_7a",
+            "email": "head@example.com",
+            "createdAt": "2026-05-27T09:00:00.000Z"
+        }
+    ],
+    "invitations": [
+        {
+            "invitationId": 300,
+            "wardId": 10,
+            "invitedEmail": "editor@example.com",
+            "invitedName": "이관리",
+            "role": "EDITOR",
+            "status": "PENDING",
+            "invitedByAccountId": 1,
+            "expiresAt": "2026-06-10T09:00:00.000Z",
+            "createdAt": "2026-05-27T09:00:00.000Z"
+        }
+    ]
 }
 ```
 
@@ -573,8 +596,8 @@ Request:
 
 ```json
 {
-  "loginId": "editor_7a",
-  "role": "EDITOR"
+    "loginId": "editor_7a",
+    "role": "EDITOR"
 }
 ```
 
@@ -582,15 +605,15 @@ Response:
 
 ```json
 {
-  "membershipId": 201,
-  "accountId": 2,
-  "wardId": 10,
-  "role": "EDITOR",
-  "status": "ACTIVE",
-  "name": "이관리",
-  "loginId": "editor_7a",
-  "email": "editor@example.com",
-  "createdAt": "2026-05-27T09:00:00.000Z"
+    "membershipId": 201,
+    "accountId": 2,
+    "wardId": 10,
+    "role": "EDITOR",
+    "status": "ACTIVE",
+    "name": "이관리",
+    "loginId": "editor_7a",
+    "email": "editor@example.com",
+    "createdAt": "2026-05-27T09:00:00.000Z"
 }
 ```
 
@@ -613,9 +636,9 @@ Request:
 
 ```json
 {
-  "invitedEmail": "editor@example.com",
-  "invitedName": "이관리",
-  "role": "EDITOR"
+    "invitedEmail": "editor@example.com",
+    "invitedName": "이관리",
+    "role": "EDITOR"
 }
 ```
 
@@ -623,15 +646,15 @@ Response:
 
 ```json
 {
-  "invitationId": 300,
-  "wardId": 10,
-  "invitedEmail": "editor@example.com",
-  "invitedName": "이관리",
-  "role": "EDITOR",
-  "status": "PENDING",
-  "invitedByAccountId": 1,
-  "expiresAt": "2026-06-10T09:00:00.000Z",
-  "createdAt": "2026-05-27T09:00:00.000Z"
+    "invitationId": 300,
+    "wardId": 10,
+    "invitedEmail": "editor@example.com",
+    "invitedName": "이관리",
+    "role": "EDITOR",
+    "status": "PENDING",
+    "invitedByAccountId": 1,
+    "expiresAt": "2026-06-10T09:00:00.000Z",
+    "createdAt": "2026-05-27T09:00:00.000Z"
 }
 ```
 

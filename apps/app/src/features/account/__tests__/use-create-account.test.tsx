@@ -84,6 +84,33 @@ describe('useCreateAccount', () => {
         expect(result.current.createAccountStatus).toBe('failure');
     });
 
+    it('can classify custom handled errors without rethrowing', async () => {
+        const submit = vi.fn().mockRejectedValue({code: 409, message: 'PHONE_NUM_ALREADY_USED'});
+        const {result} = renderHook(() =>
+            useCreateAccount({
+                submit,
+                isHandledError: (error) =>
+                    typeof error === 'object' &&
+                    error !== null &&
+                    'message' in error &&
+                    (error as {message?: string}).message === 'PHONE_NUM_ALREADY_USED',
+                shouldRethrowError: false,
+            }),
+        );
+
+        let request: Promise<unknown>;
+
+        act(() => {
+            request = result.current.handleCreateAccount(createAccountProfileDTO);
+        });
+
+        await act(async () => {
+            await request!;
+        });
+
+        expect(result.current.createAccountStatus).toBe('failure');
+    });
+
     it('classifies unexpected errors as exception', async () => {
         const error = new Error('network');
         const submit = vi.fn().mockRejectedValue(error);

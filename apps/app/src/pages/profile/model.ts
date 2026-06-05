@@ -9,6 +9,11 @@ const getMeaningfulDisplayName = (name?: string | null) => {
 
     return trimmedName === '' ? undefined : trimmedName;
 };
+const getMeaningfulPhoneNum = (phoneNum?: string | null) => {
+    const trimmedPhoneNum = phoneNum?.trim();
+
+    return trimmedPhoneNum === '' ? undefined : trimmedPhoneNum;
+};
 
 export const findProfileNurse = (ward: TWard | undefined, accountId: number | null | undefined) => {
     if (!ward || !accountId) return null;
@@ -43,4 +48,11 @@ export const getProfileDisplayName = (draftNurse: TNurse | null, account: TAccou
     const accountName = getMeaningfulDisplayName(account?.name);
 
     return draftName ?? accountName ?? '이름 미등록';
+};
+
+export const getProfilePhoneNum = (draftNurse: TNurse | null, account: TAccount | null) => {
+    const draftPhoneNum = getMeaningfulPhoneNum(draftNurse?.phoneNum);
+    const accountPhoneNum = getMeaningfulPhoneNum(account?.phoneNum);
+
+    return draftPhoneNum ?? accountPhoneNum ?? '';
 };

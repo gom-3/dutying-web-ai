@@ -2,6 +2,7 @@ import {type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
+import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {useMakeShiftStore} from '../make-shift-store';
@@ -84,6 +85,7 @@ describe('useMakeShiftBootstrap', () => {
     });
 
     it('enters the confirmed step when saved progress is already confirmed', async () => {
+        useMakeShiftStore.getState().setYearMonth({year: 2026, month: 6});
         saveDraftStep(1, 10, 2026, 6, 6);
         saveMaxReachedStep(1, 10, 2026, 6, 6);
 
@@ -96,6 +98,28 @@ describe('useMakeShiftBootstrap', () => {
                 currentStep: 6,
                 restoreDraftModalOpen: false,
             });
+        });
+    });
+
+    it('starts on next month when there is no saved month', async () => {
+        const nextYearMonth = getNextCalendarYearMonth();
+
+        renderHook(() => useMakeShiftBootstrap(1), {wrapper});
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
+        });
+    });
+
+    it('prefers next month for onboarding entry even when a saved month exists', async () => {
+        useMakeShiftStore.getState().setYearMonth({year: 2026, month: 6});
+
+        const nextYearMonth = getNextCalendarYearMonth();
+
+        renderHook(() => useMakeShiftBootstrap(1, {preferNextMonth: true}), {wrapper});
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
         });
     });
 });

@@ -35,6 +35,32 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/post?year=2026&month=03');
     });
 
+    it('builds the account deletion endpoint', async () => {
+        const client = createClient();
+        const deleteMock = client.delete as ReturnType<typeof vi.fn>;
+
+        deleteMock.mockResolvedValueOnce({data: undefined});
+
+        const accountApi = createAccountApi(client);
+
+        await expect(accountApi.deleteAccount(7)).resolves.toBeUndefined();
+
+        expect(deleteMock).toHaveBeenCalledWith('/accounts/7');
+    });
+
+    it('builds the tutorial seen endpoint', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+
+        postMock.mockResolvedValueOnce({data: undefined});
+
+        const accountApi = createAccountApi(client);
+
+        await expect(accountApi.markTutorialSeen('make-step-1')).resolves.toBeUndefined();
+
+        expect(postMock).toHaveBeenCalledWith('/accounts/me/tutorials/make-step-1/seen');
+    });
+
     it('builds ward chat endpoints', async () => {
         const client = createClient();
         const getMock = client.get as ReturnType<typeof vi.fn>;

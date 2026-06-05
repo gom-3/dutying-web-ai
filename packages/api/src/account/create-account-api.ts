@@ -11,4 +11,5 @@ export const createAccountApi = (client: IApiClient): IAccountAPI => ({
     editAccountStatus: async (accountId, status) => (await client.patch<TAccountResponse>(`/accounts/${accountId}/status?status=${status}`)).data,
     initAccount: async ({accountId, ...dto}: TEditProfileRequest) => (await client.patch<TAccountResponse>(`/accounts/v2/${accountId}/init`, dto)).data,
     deleteAccount: async (accountId) => (await client.delete<void>(`/accounts/${accountId}`)).data,
+    markTutorialSeen: async (tutorialKey) => (await client.post<void>(`/accounts/me/tutorials/${tutorialKey}/seen`)).data,
 });

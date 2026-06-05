@@ -2,6 +2,7 @@
 import {describe, expect, it} from 'vitest';
 import {
     getCalendarYearMonthNow,
+    getNextCalendarYearMonth,
     isDutyAtMaxFutureMonth,
     isDutyCalendarViewAllowed,
     isDutyPastStrictlyBeforeLastMonth,
@@ -15,6 +16,12 @@ describe('dutyMonthPolicy', () => {
         const {year, month} = getCalendarYearMonthNow();
 
         expect(monthsAfterTodayYearMonth(year, month)).toBe(0);
+    });
+
+    it('getNextCalendarYearMonth returns the next calendar month', () => {
+        const {year, month} = getNextCalendarYearMonth();
+
+        expect(monthsAfterTodayYearMonth(year, month)).toBe(1);
     });
 
     it('allows this month, next month, and past months; blocks month after next', () => {

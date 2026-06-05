@@ -27,6 +27,7 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
+
             if (isWardAdmin) {
                 await AdminAPI.updateMe({
                     name: nurse.name,
@@ -64,6 +65,7 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
+
             if (isWardAdmin) {
                 await AdminAPI.updateMe({
                     name,
@@ -76,6 +78,7 @@ const useEditAccount = () => {
                     ...profileImg,
                 });
             }
+
             await handleGetAccountMe();
 
             return true;
@@ -93,8 +96,10 @@ const useEditAccount = () => {
     };
     const quitWard = async () => {
         if (!accountMe?.wardId) return;
+
         if (isWardAdmin) {
             toast.error('관리자 계정은 병동 관리자 설정에서 권한을 관리해 주세요.');
+
             return;
         }
 
@@ -128,7 +133,8 @@ const useEditAccount = () => {
                 await AccountAPI.deleteAccount(accountMe.accountId);
             }
 
-            await handleLogout();
+            queryClient.clear();
+            await handleLogout(ROUTE.ROOT);
         } catch (e) {
             Sentry.captureException(e, {
                 tags: {feature: 'account', action: 'delete-account'},

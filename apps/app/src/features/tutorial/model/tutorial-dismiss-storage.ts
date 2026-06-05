@@ -1,4 +1,6 @@
-export type TTutorialDismissKind = 'make' | 'request' | 'member' | 'board' | 'board-list' | 'board-composer' | 'board-detail';
+import type {TTutorialKey} from '@dutying/domain';
+
+export type TTutorialDismissKind = TTutorialKey;
 
 const STORAGE_VERSION = 1;
 const PREFIX = 'dutying.tutorial.dismissed';

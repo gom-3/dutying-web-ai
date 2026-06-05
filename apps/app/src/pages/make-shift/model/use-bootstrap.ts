@@ -2,6 +2,7 @@ import {useEffect, useRef} from 'react';
 import {useSearchParams} from 'react-router';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
+import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {bumpMaxReachedStep, loadDraftStep, saveDraftStep} from './make-shift-progress-storage';
 import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
@@ -13,8 +14,13 @@ function parsePositiveInt(raw: string | null): number | null {
     return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-export function useMakeShiftBootstrap(wardId: number | null) {
+type TUseMakeShiftBootstrapOptions = {
+    preferNextMonth?: boolean;
+};
+
+export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeShiftBootstrapOptions = {}) {
     const [searchParams] = useSearchParams();
+    const {preferNextMonth = false} = options;
     const editor = useShiftEditorCommands();
     const editorRef = useRef(editor);
     const initializedWardIdRef = useRef<number | null>(null);
@@ -53,13 +59,14 @@ export function useMakeShiftBootstrap(wardId: number | null) {
         if (isHydrated || !wardId) return;
 
         const savedYearMonth = loadPersistedYearMonth();
+        const hasExplicitYearMonth = searchParams.has('year') || searchParams.has('month');
 
-        if (savedYearMonth && !searchParams.has('year') && !searchParams.has('month')) {
-            setYearMonth(savedYearMonth);
+        if (!hasExplicitYearMonth) {
+            setYearMonth(preferNextMonth ? getNextCalendarYearMonth() : (savedYearMonth ?? getNextCalendarYearMonth()));
         }
 
         setHydrated();
-    }, [isHydrated, wardId, setHydrated, searchParams, setYearMonth]);
+    }, [isHydrated, preferNextMonth, wardId, setHydrated, searchParams, setYearMonth]);
 
     useEffect(() => {
         if (!wardId || !isHydrated || !currentShiftTeamId) return;
@@ -88,15 +95,15 @@ export function useMakeShiftBootstrap(wardId: number | null) {
 
         initializedWardIdRef.current = wardId;
 
-        const now = new Date();
+        const nextCalendarYearMonth = getNextCalendarYearMonth();
         const queryYear = parsePositiveInt(searchParams.get('year'));
         const queryMonth = parsePositiveInt(searchParams.get('month'));
         const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
 
         if (queryYear !== null || queryMonth !== null) {
             const hasValidQueryMonth = queryMonth !== null && queryMonth >= 1 && queryMonth <= 12;
-            const nextYear = queryYear ?? now.getFullYear();
-            const nextMonth = hasValidQueryMonth ? queryMonth : now.getMonth() + 1;
+            const nextYear = queryYear ?? nextCalendarYearMonth.year;
+            const nextMonth = hasValidQueryMonth ? queryMonth : nextCalendarYearMonth.month;
 
             setYearMonth({year: nextYear, month: nextMonth});
         }

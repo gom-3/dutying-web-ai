@@ -1,5 +1,6 @@
 export {
     getCalendarYearMonthNow,
+    getNextCalendarYearMonth,
     monthsAfterTodayYearMonth,
     isDutyCalendarViewAllowed,
     isDutyAtMaxFutureMonth,

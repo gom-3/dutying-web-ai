@@ -113,4 +113,27 @@ describe('RegisterNurse', () => {
             expect(nameInput).toHaveValue('');
         });
     });
+
+    it('shows a contact field error when the phone number is already used', async () => {
+        const user = userEvent.setup();
+
+        mocks.registerAccountProfile.mockRejectedValue({
+            code: 409,
+            message: 'PHONE_NUM_ALREADY_USED',
+        });
+
+        render(<RegisterNurse />);
+
+        const phoneInput = screen.getByPlaceholderText('연락처를 입력해주세요');
+
+        await user.type(screen.getByPlaceholderText('이름을 입력해주세요'), '홍길동');
+        await user.type(phoneInput, '01012345678');
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(screen.getByText('이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.')).toBeInTheDocument();
+        });
+
+        expect(phoneInput).toHaveAttribute('aria-invalid', 'true');
+    });
 });

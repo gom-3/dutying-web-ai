@@ -147,6 +147,19 @@ describe('RegisterPage', () => {
         expect(screen.queryByText('select enter or create')).not.toBeInTheDocument();
     });
 
+    it('renders account contact information for password signup workspace accounts without a phone number', () => {
+        mockAuthState = {
+            accountMe: {status: 'WORKSPACE_SETUP_PENDING', phoneNum: null},
+            accountMeStatus: 'success',
+            _loaded: true,
+        };
+
+        render(<RegisterPage />);
+
+        expect(screen.getByText('register nurse default')).toBeInTheDocument();
+        expect(screen.queryByText('select enter or create')).not.toBeInTheDocument();
+    });
+
     it('renders ward selection for workspace setup accounts after contact information is saved', () => {
         mockLocationSearch = '?socialSignup=1';
         mockAuthState = {
