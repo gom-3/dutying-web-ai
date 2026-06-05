@@ -1,3 +1,4 @@
+import type {TCreateWardDTO} from '@dutying/api/ward';
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useRegister from '..';
@@ -221,19 +222,27 @@ describe('useRegister', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('sends onboarding shift types, teams, and nurses with admin workspace creation', async () => {
-        const createdWard = {
+    it('creates a setup-pending admin ward through POST /wards with onboarding data', async () => {
+        const latestWard = {
             wardId: 10,
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
             code: 'A7K29Q',
-            nurseCnt: 0,
-            wardShiftTypes: [],
-            shiftTeams: [],
-        };
-        const latestWard = {
-            ...createdWard,
             nurseCnt: 1,
+            wardShiftTypes: [
+                {
+                    wardShiftTypeId: 1,
+                    name: '데이',
+                    shortName: 'D',
+                    startTime: '07:00',
+                    endTime: '15:00',
+                    color: '#4DC2AD',
+                    isOff: false,
+                    isDefault: true,
+                    isCounted: true,
+                    classification: 'DAY',
+                },
+            ],
             shiftTeams: [
                 {
                     shiftTeamId: 1,
@@ -252,6 +261,50 @@ describe('useRegister', () => {
                 },
             ],
         };
+        const payload: TCreateWardDTO = {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                {
+                    name: '데이',
+                    shortName: 'D',
+                    startTime: '07:00',
+                    endTime: '15:00',
+                    color: '#4DC2AD',
+                    isOff: false,
+                    isDefault: true,
+                    isCounted: true,
+                    classification: 'DAY',
+                },
+                {
+                    name: '이브닝',
+                    shortName: 'E',
+                    startTime: '15:00',
+                    endTime: '23:00',
+                    color: '#FF8BA5',
+                    isOff: false,
+                    isDefault: true,
+                    isCounted: true,
+                    classification: 'EVENING',
+                },
+            ],
+            shiftTeams: [
+                {
+                    name: 'A팀',
+                    nurseNames: ['홍길동'],
+                    nurses: [
+                        {
+                            name: '홍길동',
+                            memo: '프리셉터',
+                            isWorker: false,
+                            employmentDate: '2025-01-01',
+                            level: 2,
+                            possibleShiftShortNames: ['D'],
+                        },
+                    ],
+                },
+            ],
+        };
 
         mockAccountMe.current = {
             accountId: 1,
@@ -265,81 +318,18 @@ describe('useRegister', () => {
             isManager: true,
             status: 'WORKSPACE_SETUP_PENDING',
         };
-        mockCreateWorkspace.mockResolvedValue({
-            ward: latestWard,
-            account: {
-                accountId: 1,
-                wardId: 10,
-                status: 'LINKED',
-                memberships: [],
-            },
-        });
-        mockGetWard.mockResolvedValue(latestWard);
-        mockGetShiftTeams
-            .mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}])
-            .mockResolvedValueOnce(latestWard.shiftTeams);
+        mockCreateWard.mockResolvedValue(latestWard);
 
         const {result} = renderHook(() => useRegister());
 
         await act(async () => {
-            await expect(
-                result.current.actions.createWard(
-                    {
-                        name: 'ICU',
-                        hospitalName: 'Dutying Hospital',
-                        wardShiftTypes: [
-                            {
-                                name: '데이',
-                                shortName: 'D',
-                                startTime: '07:00',
-                                endTime: '15:00',
-                                color: '#4DC2AD',
-                                isOff: false,
-                                isDefault: true,
-                                isCounted: true,
-                                classification: 'DAY',
-                            },
-                            {
-                                name: '이브닝',
-                                shortName: 'E',
-                                startTime: '15:00',
-                                endTime: '23:00',
-                                color: '#FF8BA5',
-                                isOff: false,
-                                isDefault: true,
-                                isCounted: true,
-                                classification: 'EVENING',
-                            },
-                        ],
-                        shiftTeams: [
-                            {
-                                name: 'A팀',
-                                nurseNames: ['홍길동'],
-                                nurses: [
-                                    {
-                                        name: '홍길동',
-                                        memo: '프리셉터',
-                                        isWorker: false,
-                                        employmentDate: '2025-01-01',
-                                        level: 2,
-                                        possibleShiftShortNames: ['D'],
-                                    },
-                                ],
-                            },
-                        ],
-                    },
-                    {navigateOnLinked: false},
-                ),
-            ).resolves.toEqual(latestWard);
+            await expect(result.current.actions.createWard(payload, {navigateOnLinked: false})).resolves.toEqual(latestWard);
         });
 
-        expect(mockCreateWorkspace).toHaveBeenCalledWith(
+        expect(mockCreateWard).toHaveBeenCalledWith(
             expect.objectContaining({
+                name: 'ICU',
                 hospitalName: 'Dutying Hospital',
-                wardName: 'ICU',
-                adminName: 'Kim',
-                phoneNum: '01012341234',
-                profileImgUrl: '',
                 wardShiftTypes: expect.arrayContaining([
                     expect.objectContaining({shortName: 'D'}),
                     expect.objectContaining({shortName: 'E'}),
@@ -352,73 +342,21 @@ describe('useRegister', () => {
                 ]),
             }),
         );
+        expect(mockCreateWorkspace).not.toHaveBeenCalled();
+        expect(mockGetWard).not.toHaveBeenCalled();
+        expect(mockGetShiftTeams).not.toHaveBeenCalled();
         expect(mockCreateShiftType).not.toHaveBeenCalled();
         expect(mockUpdateShiftTeam).not.toHaveBeenCalled();
         expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
         expect(mockUpdateNurseShiftType).not.toHaveBeenCalled();
+        expect(mockApplyAccountMe).toHaveBeenCalledWith({
+            ...mockAccountMe.current,
+            wardId: 10,
+            status: 'LINKED',
+        });
     });
 
-    it('sends onboarding nurses when workspace creation returns only an account ward id', async () => {
-        mockAccountMe.current = {
-            accountId: 1,
-            nurseId: null,
-            wardId: null,
-            shiftTeamId: null,
-            email: 'admin@example.com',
-            name: 'Kim',
-            profileImgUrl: '',
-            phoneNum: '01012341234',
-            isManager: true,
-            status: 'WORKSPACE_SETUP_PENDING',
-        };
-        mockCreateWorkspace.mockResolvedValue({
-            account: {
-                accountId: 1,
-                wardId: 10,
-                status: 'LINKED',
-                memberships: [],
-            },
-        });
-
-        const {result} = renderHook(() => useRegister());
-
-        await act(async () => {
-            await result.current.actions.createWard(
-                {
-                    name: 'ICU',
-                    hospitalName: 'Dutying Hospital',
-                    wardShiftTypes: [],
-                    shiftTeams: [
-                        {
-                            name: 'A팀',
-                            nurseNames: ['홍길동'],
-                        },
-                    ],
-                },
-                {navigateOnLinked: false},
-            );
-        });
-
-        expect(mockCreateWorkspace).toHaveBeenCalledWith(
-            expect.objectContaining({
-                hospitalName: 'Dutying Hospital',
-                wardName: 'ICU',
-                adminName: 'Kim',
-                phoneNum: '01012341234',
-                profileImgUrl: '',
-                wardShiftTypes: [],
-                shiftTeams: expect.arrayContaining([
-                    expect.objectContaining({
-                        nurseNames: expect.arrayContaining([expect.any(String)]),
-                    }),
-                ]),
-            }),
-        );
-        expect(mockGetShiftTeams).not.toHaveBeenCalled();
-        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
-    });
-
-    it('does not run legacy seed APIs after creating an admin workspace', async () => {
+    it('does not run legacy seed APIs after POST /wards succeeds', async () => {
         const createdWard = {
             wardId: 10,
             name: 'ICU',
@@ -428,12 +366,6 @@ describe('useRegister', () => {
             wardShiftTypes: [],
             shiftTeams: [],
         };
-        const linkedAccount = {
-            accountId: 1,
-            wardId: 10,
-            status: 'LINKED',
-            memberships: [],
-        };
 
         mockAccountMe.current = {
             accountId: 1,
@@ -447,12 +379,7 @@ describe('useRegister', () => {
             isManager: true,
             status: 'WORKSPACE_SETUP_PENDING',
         };
-        mockCreateWorkspace.mockResolvedValue({
-            ward: createdWard,
-            account: linkedAccount,
-        });
-        mockGetWard.mockResolvedValue(createdWard);
-        mockGetShiftTeams.mockResolvedValue([{shiftTeamId: 1, name: 'A팀', nurseCnt: 0, nurses: []}]);
+        mockCreateWard.mockResolvedValue(createdWard);
 
         const {result} = renderHook(() => useRegister());
 
@@ -470,8 +397,11 @@ describe('useRegister', () => {
             ).resolves.toMatchObject({wardId: 10});
         });
 
+        expect(mockCreateWard).toHaveBeenCalledTimes(1);
+        expect(mockCreateWorkspace).not.toHaveBeenCalled();
         expect(mockApplyAccountMe).toHaveBeenCalledWith({
-            ...linkedAccount,
+            ...mockAccountMe.current,
+            wardId: 10,
             status: 'LINKED',
         });
         expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
@@ -480,7 +410,7 @@ describe('useRegister', () => {
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('does not mutate existing workspace shift types through legacy seed APIs', async () => {
+    it('does not mutate created ward data through legacy seed APIs', async () => {
         const createdWard = {
             wardId: 288,
             name: 'ICU',
@@ -516,24 +446,7 @@ describe('useRegister', () => {
             isManager: true,
             status: 'WORKSPACE_SETUP_PENDING',
         };
-        mockCreateWorkspace.mockResolvedValue({
-            ward: createdWard,
-            account: {
-                accountId: 1,
-                wardId: 288,
-                status: 'LINKED',
-                memberships: [],
-            },
-        });
-        mockGetWard.mockResolvedValue(createdWard);
-        mockGetShiftTeams.mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}]).mockResolvedValueOnce([
-            {
-                shiftTeamId: 1,
-                name: '기본팀',
-                nurseCnt: 1,
-                nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
-            },
-        ]);
+        mockCreateWard.mockResolvedValue(createdWard);
 
         const {result} = renderHook(() => useRegister());
 
@@ -563,12 +476,16 @@ describe('useRegister', () => {
             ).resolves.toMatchObject({wardId: 288});
         });
 
+        expect(mockCreateWard).toHaveBeenCalledTimes(1);
+        expect(mockCreateWorkspace).not.toHaveBeenCalled();
+        expect(mockGetWard).not.toHaveBeenCalled();
+        expect(mockGetShiftTeams).not.toHaveBeenCalled();
         expect(mockDeleteShiftType).not.toHaveBeenCalled();
         expect(mockCreateShiftType).not.toHaveBeenCalled();
         expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
     });
 
-    it('retries onboarding nurse seeding into an already linked ward instead of creating another ward', async () => {
+    it('returns an already linked ward without creating or seeding another ward', async () => {
         const existingWard = {
             wardId: 288,
             name: 'ICU',
@@ -592,58 +509,34 @@ describe('useRegister', () => {
             status: 'LINKED',
         };
         mockGetWard.mockResolvedValue(existingWard);
-        mockGetShiftTeams.mockResolvedValueOnce([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}]).mockResolvedValueOnce([
-            {
-                shiftTeamId: 1,
-                name: '기본팀',
-                nurseCnt: 1,
-                nurses: [{nurseId: 99, name: '김간호사', nurseShiftTypes: []}],
-            },
-        ]);
 
         const {result} = renderHook(() => useRegister());
 
         await act(async () => {
-            await result.current.actions.createWard(
-                {
-                    name: 'ICU',
-                    hospitalName: 'Dutying Hospital',
-                    wardShiftTypes: [],
-                    shiftTeams: [{name: '기본팀', nurseNames: ['김간호사']}],
-                },
-                {navigateOnLinked: false},
-            );
+            await expect(
+                result.current.actions.createWard(
+                    {
+                        name: 'ICU',
+                        hospitalName: 'Dutying Hospital',
+                        wardShiftTypes: [],
+                        shiftTeams: [{name: '기본팀', nurseNames: ['김간호사']}],
+                    },
+                    {navigateOnLinked: false},
+                ),
+            ).resolves.toEqual(existingWard);
         });
 
         expect(mockCreateWorkspace).not.toHaveBeenCalled();
         expect(mockCreateWard).not.toHaveBeenCalled();
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            288,
-            1,
-            expect.objectContaining({
-                name: '김간호사',
-            }),
-        );
+        expect(mockGetWard).toHaveBeenCalledWith(288);
+        expect(mockGetShiftTeams).not.toHaveBeenCalled();
+        expect(mockAddNurseIntoShiftTeam).not.toHaveBeenCalled();
+        expect(mockCreateShiftType).not.toHaveBeenCalled();
+        expect(mockUpdateShiftTeam).not.toHaveBeenCalled();
     });
 
     it('does not let a stale account refetch overwrite the linked account after ward creation', async () => {
         const createdWard = {wardId: 271, name: 'ICU'};
-        const linkedAccount = {
-            adminAccountId: 1,
-            accountId: 1,
-            nurseId: null,
-            wardId: 271,
-            shiftTeamId: null,
-            email: 'admin@example.com',
-            name: 'Kim',
-            phoneNum: '01012341234',
-            profileImgUrl: '',
-            isManager: true,
-            status: 'LINKED',
-            role: 'OWNER',
-            permissions: ['DUTY_MANAGE'],
-            memberships: [],
-        };
 
         mockAccountMe.current = {
             accountId: 1,
@@ -662,10 +555,7 @@ describe('useRegister', () => {
             status: 'WORKSPACE_SETUP_PENDING',
             wardId: null,
         });
-        mockCreateWorkspace.mockResolvedValue({
-            account: linkedAccount,
-            ward: createdWard,
-        });
+        mockCreateWard.mockResolvedValue(createdWard);
 
         const {result} = renderHook(() => useRegister());
 
@@ -674,92 +564,25 @@ describe('useRegister', () => {
                 {
                     name: 'ICU',
                     hospitalName: 'Dutying Hospital',
-                    shiftTeams: [],
                     wardShiftTypes: [],
+                    shiftTeams: [{name: '기본팀', nurseNames: ['김간호사']}],
                 },
                 {navigateOnLinked: false},
             );
         });
 
         expect(mockApplyAccountMe).toHaveBeenCalledTimes(1);
-        expect(mockApplyAccountMe).toHaveBeenCalledWith(linkedAccount);
-        expect(mockHandleGetAccountMe).not.toHaveBeenCalled();
-    });
-
-    it('prefers the linked admin account returned by workspace creation', async () => {
-        const createdWard = {wardId: 271, name: 'ICU'};
-        const linkedAccount = {
-            adminAccountId: 1,
-            accountId: 1,
-            nurseId: null,
+        expect(mockApplyAccountMe).toHaveBeenCalledWith({
+            ...mockAccountMe.current,
             wardId: 271,
-            shiftTeamId: null,
-            email: 'admin@example.com',
-            name: 'Kim',
-            phoneNum: '01012341234',
-            profileImgUrl: '',
-            isManager: true,
             status: 'LINKED',
-            role: 'OWNER',
-            permissions: ['DUTY_MANAGE'],
-            memberships: [],
-        };
-
-        mockAccountMe.current = {
-            accountId: 1,
-            nurseId: null,
-            wardId: null,
-            shiftTeamId: null,
-            email: 'admin@example.com',
-            name: 'Kim',
-            profileImgUrl: '',
-            phoneNum: '01012341234',
-            isManager: true,
-            status: 'WORKSPACE_SETUP_PENDING',
-        };
-        mockCreateWorkspace.mockResolvedValue({
-            account: linkedAccount,
-            ward: createdWard,
         });
-
-        const {result} = renderHook(() => useRegister());
-
-        await act(async () => {
-            await expect(
-                result.current.actions.createWard(
-                    {
-                        name: 'ICU',
-                        hospitalName: 'Dutying Hospital',
-                        shiftTeams: [],
-                        wardShiftTypes: [],
-                    },
-                    {navigateOnLinked: false},
-                ),
-            ).resolves.toBe(createdWard);
-        });
-
-        expect(mockApplyAccountMe).toHaveBeenCalledWith(linkedAccount);
+        expect(mockHandleGetAccountMe).not.toHaveBeenCalled();
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
-    it('normalizes a returned setup-pending admin account after workspace creation', async () => {
+    it('navigates after creating a setup-pending admin ward through POST /wards', async () => {
         const createdWard = {wardId: 271, name: 'ICU'};
-        const setupPendingAccount = {
-            adminAccountId: 1,
-            accountId: 1,
-            nurseId: null,
-            wardId: null,
-            shiftTeamId: null,
-            email: 'admin@example.com',
-            name: 'Kim',
-            phoneNum: '01012341234',
-            profileImgUrl: '',
-            isManager: true,
-            status: 'WORKSPACE_SETUP_PENDING',
-            role: 'OWNER',
-            permissions: ['DUTY_MANAGE'],
-            memberships: [],
-        };
 
         mockAccountMe.current = {
             accountId: 1,
@@ -773,10 +596,7 @@ describe('useRegister', () => {
             isManager: true,
             status: 'WORKSPACE_SETUP_PENDING',
         };
-        mockCreateWorkspace.mockResolvedValue({
-            account: setupPendingAccount,
-            ward: createdWard,
-        });
+        mockCreateWard.mockResolvedValue(createdWard);
 
         const {result} = renderHook(() => useRegister());
 
@@ -791,8 +611,10 @@ describe('useRegister', () => {
             ).resolves.toBe(createdWard);
         });
 
+        expect(mockCreateWard).toHaveBeenCalledTimes(1);
+        expect(mockCreateWorkspace).not.toHaveBeenCalled();
         expect(mockApplyAccountMe).toHaveBeenCalledWith({
-            ...setupPendingAccount,
+            ...mockAccountMe.current,
             wardId: 271,
             status: 'LINKED',
         });

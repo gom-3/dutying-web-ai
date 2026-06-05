@@ -232,6 +232,31 @@ describe('NavigationBar', () => {
         expect(await screen.findByText('profile page')).toBeInTheDocument();
     });
 
+    it('로고를 클릭하면 랜딩 메인 페이지로 이동한다', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route
+                        path={ROUTE.MAKE}
+                        element={
+                            <div className="flex">
+                                <NavigationBar />
+                                <div>make page</div>
+                            </div>
+                        }
+                    />
+                    <Route path={ROUTE.ROOT} element={<div>landing main page</div>} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('make page')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('link', {name: '랜딩 페이지로 이동'}));
+
+        expect(await screen.findByText('landing main page')).toBeInTheDocument();
+    });
+
     it('병동 설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>

@@ -19,17 +19,15 @@ import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
-import {
-    prependSnapshotToListCache,
-    useInvalidateScheduleSnapshots,
-    useScheduleSnapshots,
-} from '../../../model/use-schedule-snapshots';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
+import {prependSnapshotToListCache, useInvalidateScheduleSnapshots, useScheduleSnapshots} from '../../../model/use-schedule-snapshots';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {maskDutyDocNonFixedCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
+
+const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
 
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
@@ -50,7 +48,6 @@ export function AiAutofill() {
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const activeValidationSummary = useShiftEditorStore((s) => s.scheduleValidationSnapshot?.validation.summary ?? null);
     const useCase = useMakeShiftUseCase();
-
     /** true: AI·기타로 채운 표 포함 전체 표시. false: 고정 근무 칸만 표시. */
     const [autoFillEnabled, setAutoFillEnabled] = useState(true);
     const [showFaults, setShowFaults] = useState(true);
@@ -62,7 +59,6 @@ export function AiAutofill() {
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
     const [activeSnapshotId, setActiveSnapshotId] = useState<number | null>(null);
     const [loadingSnapshotId, setLoadingSnapshotId] = useState<number | null>(null);
-
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -72,14 +68,11 @@ export function AiAutofill() {
         month,
         enabled: isSnapshotSidebarOpen,
     });
-
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
-
     const openSnapshotSidebar = useCallback(() => {
         collapseNavigationBar();
         setIsSnapshotSidebarOpen(true);
     }, [collapseNavigationBar]);
-
     const {
         dutyQuery,
         editorRef,
@@ -90,7 +83,6 @@ export function AiAutofill() {
         teamViolations,
         focusEditor,
     } = useDutyEditorStep({onContextChanged: resetAiStatus});
-
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
@@ -112,11 +104,24 @@ export function AiAutofill() {
         setActiveSnapshotId(null);
     }, [wardId, currentShiftTeamId, year, month]);
 
+    useEffect(() => {
+        const root = document.documentElement;
+
+        if (isSnapshotSidebarOpen) {
+            root.style.setProperty('--make-ai-snapshot-sidebar-offset', `${AI_SNAPSHOT_SIDEBAR_WIDTH}px`);
+        } else {
+            root.style.removeProperty('--make-ai-snapshot-sidebar-offset');
+        }
+
+        return () => {
+            root.style.removeProperty('--make-ai-snapshot-sidebar-offset');
+        };
+    }, [isSnapshotSidebarOpen]);
+
     const calendarDoc = useMemo(
         () => (autoFillEnabled ? hydratedDoc : maskDutyDocNonFixedCells(hydratedDoc)),
         [autoFillEnabled, hydratedDoc],
     );
-
     const canConfirm =
         !isWorking &&
         !isSavingSnapshot &&
@@ -125,12 +130,13 @@ export function AiAutofill() {
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
         canConfirmAiAutofill(aiStatus);
-
     const handleSaveSnapshot = async () => {
         if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
 
         setIsSavingSnapshot(true);
+
         const progressToastId = 'make-shift-snapshot-save-progress';
+
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
         try {
@@ -150,7 +156,6 @@ export function AiAutofill() {
             prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
             invalidateSnapshots(wardId, currentShiftTeamId, year, month);
             setActiveSnapshotId(saved.snapshotId);
-            openSnapshotSidebar();
             toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: progressToastId});
@@ -158,7 +163,6 @@ export function AiAutofill() {
             setIsSavingSnapshot(false);
         }
     };
-
     const handleLoadSnapshot = async (snapshotId: number) => {
         if (!wardId || !currentShiftTeamId || !dutyQuery.data || loadingSnapshotId != null) return;
 
@@ -166,16 +170,10 @@ export function AiAutofill() {
 
         try {
             const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
-            const nextDoc = snapshotDetailToDoc(
-                detail,
-                dutyQuery.data,
-                year,
-                month,
-                {
-                    fixedCells: editorDoc.fixedCells,
-                    requestCells: editorDoc.requestCells,
-                },
-            );
+            const nextDoc = snapshotDetailToDoc(detail, dutyQuery.data, year, month, {
+                fixedCells: editorDoc.fixedCells,
+                requestCells: editorDoc.requestCells,
+            });
 
             commands.init(nextDoc);
             setActiveSnapshotId(snapshotId);
@@ -198,6 +196,7 @@ export function AiAutofill() {
                     commands.setScheduleValidationFromApi,
                 );
             }
+
             toast.success(t('page.makeShift.aiRefill.snapshotSidebar.loadSuccess'));
         } catch {
             toast.error(t('page.makeShift.aiRefill.snapshotSidebar.loadFailed'));
@@ -205,7 +204,6 @@ export function AiAutofill() {
             setLoadingSnapshotId(null);
         }
     };
-
     const handleConfirm = async () => {
         if (!wardId || !dutyQuery.data || !canConfirm) return;
 
@@ -248,11 +246,12 @@ export function AiAutofill() {
             setIsWorking(false);
         }
     };
-
     const handleAiFill = async () => {
         if (isAiGenerating) return;
+
         if (wardId == null || currentShiftTeamId == null || !rulesHash || !dutyQuery.data) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
+
             return;
         }
 
@@ -334,62 +333,62 @@ export function AiAutofill() {
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex min-h-0 w-full min-w-0 flex-1">
             <div
-                className="ai-autofill-root__main flex min-h-0 min-w-0 flex-1 flex-col gap-3 pt-3 outline-none"
+                className="ai-autofill-root__main flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden pt-3 outline-none"
                 ref={editorRef}
                 onKeyDown={onKeyDown}
                 onPasteCapture={onPasteCapture}
                 tabIndex={0}
             >
-            <AiAutofillToolbar
-                autoFillEnabled={autoFillEnabled}
-                onToggleAutoFill={() => setAutoFillEnabled((prev) => !prev)}
-                showFaults={showFaults}
-                onToggleFaults={() => setShowFaults((prev) => !prev)}
-                canUndo={history.past.length > 0}
-                canRedo={history.future.length > 0}
-                onUndo={() => commands.undo()}
-                onRedo={() => commands.redo()}
-                onOpenSnapshotHistory={openSnapshotSidebar}
-                onAiFill={handleAiFill}
-                isAiGenerating={isAiGenerating}
-                aiStatus={aiStatus}
-                hasCompletedAiFill={hasCompletedAiFill}
-                onConfirm={handleConfirm}
-                isConfirming={isWorking}
-                canConfirm={canConfirm}
-                onSaveSnapshot={handleSaveSnapshot}
-                isSavingSnapshot={isSavingSnapshot}
-            />
-
-            {dutyQuery.isLoading && (
-                <PageState
-                    tone="loading"
-                    loadingColor="purple"
-                    title={t('page.makeShift.aiRefill.loading')}
-                    description={t('page.state.loadingDescription')}
-                />
-            )}
-            {dutyQuery.isError && (
-                <PageState
-                    tone="error"
-                    title={t('page.makeShift.aiRefill.error')}
-                    description={t('page.state.errorDescription')}
-                    action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
-                />
-            )}
-            {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
-                <MakeShiftCalendar
-                    shift={dutyQuery.data}
-                    doc={calendarDoc}
-                    violationMap={violationMap}
-                    teamViolations={teamViolations}
+                <AiAutofillToolbar
+                    autoFillEnabled={autoFillEnabled}
+                    onToggleAutoFill={() => setAutoFillEnabled((prev) => !prev)}
                     showFaults={showFaults}
-                    onCellClick={focusEditor}
+                    onToggleFaults={() => setShowFaults((prev) => !prev)}
+                    canUndo={history.past.length > 0}
+                    canRedo={history.future.length > 0}
+                    onUndo={() => commands.undo()}
+                    onRedo={() => commands.redo()}
+                    onOpenSnapshotHistory={openSnapshotSidebar}
+                    onAiFill={handleAiFill}
+                    isAiGenerating={isAiGenerating}
+                    aiStatus={aiStatus}
+                    hasCompletedAiFill={hasCompletedAiFill}
+                    onConfirm={handleConfirm}
+                    isConfirming={isWorking}
+                    canConfirm={canConfirm}
+                    onSaveSnapshot={handleSaveSnapshot}
+                    isSavingSnapshot={isSavingSnapshot}
                 />
-            )}
-            {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
-                <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
-            )}
+
+                {dutyQuery.isLoading && (
+                    <PageState
+                        tone="loading"
+                        loadingColor="purple"
+                        title={t('page.makeShift.aiRefill.loading')}
+                        description={t('page.state.loadingDescription')}
+                    />
+                )}
+                {dutyQuery.isError && (
+                    <PageState
+                        tone="error"
+                        title={t('page.makeShift.aiRefill.error')}
+                        description={t('page.state.errorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
+                    />
+                )}
+                {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
+                    <MakeShiftCalendar
+                        shift={dutyQuery.data}
+                        doc={calendarDoc}
+                        violationMap={violationMap}
+                        teamViolations={teamViolations}
+                        showFaults={showFaults}
+                        onCellClick={focusEditor}
+                    />
+                )}
+                {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
+                    <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
+                )}
             </div>
 
             <AiSnapshotSidebar

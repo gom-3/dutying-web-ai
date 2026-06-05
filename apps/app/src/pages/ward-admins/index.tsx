@@ -15,8 +15,33 @@ const getRoleLabel = (role: string) => (role === 'OWNER' ? '최고 관리자' : 
 const compareAdminRolePriority = (a: TWardAdminMembershipResponse, b: TWardAdminMembershipResponse) =>
     Number(b.role === 'OWNER') - Number(a.role === 'OWNER');
 const isEmail = (value: string) => EMAIL_PATTERN.test(value);
-const getAccountRole = (account: unknown) =>
-    typeof account === 'object' && account !== null && 'role' in account ? (account as {role?: string | null}).role : undefined;
+
+type TAccountRoleSource = {
+    role?: string | null;
+    wardId?: number | null;
+    currentWardId?: number | null;
+    memberships?: {
+        wardId?: number | null;
+        role?: string | null;
+        status?: string | null;
+    }[];
+};
+
+const getAccountRole = (account: unknown, currentWardId?: number | null) => {
+    if (typeof account !== 'object' || account === null) return undefined;
+
+    const roleSource = account as TAccountRoleSource;
+    const memberships = Array.isArray(roleSource.memberships) ? roleSource.memberships : [];
+    const wardId = currentWardId ?? roleSource.wardId ?? roleSource.currentWardId;
+    const currentWardMembership =
+        wardId === undefined || wardId === null
+            ? undefined
+            : (memberships.find((membership) => membership.status === 'ACTIVE' && membership.wardId === wardId) ??
+              memberships.find((membership) => membership.wardId === wardId));
+    const activeMembership = memberships.find((membership) => membership.status === 'ACTIVE');
+
+    return currentWardMembership?.role ?? activeMembership?.role ?? roleSource.role ?? undefined;
+};
 const getApiErrorCode = (error: unknown) =>
     typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
 
@@ -25,11 +50,13 @@ function showAdminActionError(error: unknown, fallbackMessage: string) {
 
     if (code === 403) {
         toast.error('최고 관리자만 변경할 수 있어요.');
+
         return;
     }
 
     if (code === 409) {
         toast.error('이미 등록된 관리자 이메일이에요.');
+
         return;
     }
 
@@ -47,7 +74,7 @@ function ActiveAdminRow({
     isRemoving: boolean;
     onRemove: (admin: TWardAdminMembershipResponse) => void;
 }) {
-    const adminEmail = admin.email || `계정 #${admin.accountId}`;
+    const adminEmail = admin.email ?? `계정 #${admin.accountId}`;
 
     return (
         <div className="flex items-center justify-between gap-4 border-b border-gray-6 py-3 last:border-b-0">
@@ -156,7 +183,7 @@ function WardAdminsPage() {
             showAdminActionError(mutationError, '예약된 관리자 이메일을 삭제하지 못했어요.');
         },
     });
-    const isOwner = getAccountRole(accountMe) === 'OWNER';
+    const isOwner = getAccountRole(accountMe, wardId) === 'OWNER';
     const isSubmitting = createAdminEmailMutation.isPending;
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -166,11 +193,13 @@ function WardAdminsPage() {
 
         if (!normalizedEmail) {
             setError('이메일을 입력해 주세요.');
+
             return;
         }
 
         if (!isEmail(normalizedEmail)) {
             setError('올바른 이메일을 입력해 주세요.');
+
             return;
         }
 

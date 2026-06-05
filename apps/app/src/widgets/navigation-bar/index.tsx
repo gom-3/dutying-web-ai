@@ -1,8 +1,10 @@
 import {cn} from '@dutying/utils/style';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useEffect} from 'react';
+import {Link} from 'react-router';
 import NavigationBarItemGroups from './NavigationBarItemGroup';
 import {useNavigationBarFoldStore} from './navigation-bar-fold-store';
 
@@ -30,11 +32,22 @@ const NavigationBar = () => {
         >
             <div className={cn('flex h-full flex-col', isFold ? 'px-2 py-3' : 'px-3 py-4')}>
                 <div className={cn('flex min-h-11 items-center', isFold ? 'flex-col gap-2' : 'justify-between')}>
-                    {isFold ? (
-                        <img src="/img/image-43-2.png" alt="" aria-hidden="true" className="mt-2 size-[22px] shrink-0 object-contain" />
-                    ) : (
-                        <img src="/img/group-19.png" alt="" aria-hidden="true" className="h-[26px] w-auto max-w-[128px] object-contain" />
-                    )}
+                    <Link
+                        to={ROUTE.ROOT}
+                        aria-label="랜딩 페이지로 이동"
+                        className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    >
+                        {isFold ? (
+                            <img src="/img/image-43-2.png" alt="" aria-hidden="true" className="mt-2 size-[22px] object-contain" />
+                        ) : (
+                            <img
+                                src="/img/group-19.png"
+                                alt=""
+                                aria-hidden="true"
+                                className="h-[26px] w-auto max-w-[128px] object-contain"
+                            />
+                        )}
+                    </Link>
                     <button
                         data-testid="navigation-bar-fold-trigger"
                         type="button"
