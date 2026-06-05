@@ -134,6 +134,35 @@ describe('WardAdminsPage', () => {
         });
     });
 
+    it('registers an admin when owner role comes from the current ward membership', async () => {
+        const user = userEvent.setup();
+
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    wardId: 10,
+                    memberships: [
+                        {wardId: 10, role: 'OWNER', status: 'ACTIVE'},
+                        {wardId: 11, role: 'EDITOR', status: 'ACTIVE'},
+                    ],
+                },
+                wardId: 10,
+            },
+        });
+
+        renderPage(<WardAdminsPage />);
+
+        await user.type(await screen.findByPlaceholderText('이메일'), ' Owner.Path@Example.COM ');
+        await user.click(screen.getByRole('button', {name: '관리자 추가'}));
+
+        await waitFor(() => {
+            expect(mockCreateWardAdminEmail).toHaveBeenCalledWith(10, {
+                email: 'owner.path@example.com',
+                role: 'EDITOR',
+            });
+        });
+    });
+
     it('deletes active admins and reserved emails with separate endpoints', async () => {
         const user = userEvent.setup();
 

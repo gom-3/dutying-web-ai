@@ -112,8 +112,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                         <p>근무 일정 관리 (일반 간호사 용)</p>
                     </div>
                     <div class="cta-row">
-                        <a class="button button--store" href={appStoreLink} target="_blank" rel="noreferrer">Google Play</a>
-                        <a class="button button--store" href={appStoreLink} target="_blank" rel="noreferrer">App Store</a>
+                        <a class="button button--store" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
+                        </a>
+                        <a class="button button--store" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
+                            App Store
+                        </a>
                     </div>
                 </div>
 
@@ -146,8 +152,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                     <p>근무 일정 관리 (일반 간호사 용)</p>
                 </div>
                 <div class="cta-row cta-row--mobile">
-                    <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">Google Play</a>
-                    <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">App Store</a>
+                    <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                        <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                        Google Play
+                    </a>
+                    <a class="button button--store button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                        <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
+                        App Store
+                    </a>
                 </div>
             </div>
         </div>
@@ -195,8 +207,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-row">
                     <span>모바일 앱</span>
                     <div class="cta-row">
-                        <a class="button button--footer" href={appStoreLink} target="_blank" rel="noreferrer">Google Play</a>
-                        <a class="button button--footer" href={appStoreLink} target="_blank" rel="noreferrer">App Store</a>
+                        <a class="button button--footer" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
+                        </a>
+                        <a class="button button--footer" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
+                            App Store
+                        </a>
                     </div>
                 </div>
 
@@ -228,8 +246,14 @@ const formattedFeatureSections = featureSections.map((section) => ({
                 <div class="footer-column">
                     <span>모바일 앱</span>
                     <div class="cta-row cta-row--mobile">
-                        <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">Google Play</a>
-                        <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">App Store</a>
+                        <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/play.png" alt="" aria-hidden="true" />
+                            Google Play
+                        </a>
+                        <a class="button button--footer button--mobile" href={appStoreLink} target="_blank" rel="noreferrer">
+                            <img class="store-logo" src="/img/apple.png" alt="" aria-hidden="true" />
+                            App Store
+                        </a>
                     </div>
                 </div>
 
@@ -376,6 +400,7 @@ const formattedFeatureSections = featureSections.map((section) => ({
 
     .button--store,
     .button--footer {
+        gap: 8px;
         min-width: 245px;
         min-height: 60px;
         padding: 0 24px;
@@ -391,6 +416,18 @@ const formattedFeatureSections = featureSections.map((section) => ({
         background: #f5f5f7;
         box-shadow: none;
         font-size: 1rem;
+    }
+
+    .store-logo {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        object-fit: contain;
+    }
+
+    .button--footer .store-logo {
+        width: 18px;
+        height: 18px;
     }
 
     .hero,

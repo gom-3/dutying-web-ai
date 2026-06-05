@@ -1,14 +1,19 @@
-﻿import {CalendarDays, ChevronDown, Monitor, Smartphone} from 'lucide-react';
-import {useEffect} from 'react';
+﻿import {CalendarDays, ChevronDown, Monitor, Smartphone, UserRound} from 'lucide-react';
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
-import {AppstoreIcon, PlaystoreIcon} from '@/shared/assets/svg';
-import {RUNTIME_CONFIG} from '@/shared/config/runtime';
+import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import './landing-page.css';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
 const inquiryLink = 'https://ye620.channel.io';
-const webMakeLink = `${ROUTE.LOGIN}?next=%2Fmake`;
+const termsOfServiceLink = 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link';
+const privacyPolicyLink = 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
+const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
+const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
+const heroTitlePhrases = ['교대 근무표,', '병동 관리,'] as const;
+const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
+const softPurpleGradient = 'linear-gradient(135deg,#FEFDFF 0%,#FBF9FF 48%,#F7F3FF 100%)';
 const featureSections = [
     {
         id: 'ai',
@@ -26,12 +31,13 @@ const featureSections = [
         description: '수정이 필요한 부분을\n바로 보고, 수정안까지 볼 수 있어요.',
         image: '/img/landing_3.webp',
         align: 'left',
-        background: 'bg-[#F7F9FB]',
+        background: softPurpleBackground,
     },
     {
         id: 'integration',
         label: '연동',
         title: '간호사와 병동을\n연동할 수 있어요',
+        titleHighlights: ['연동'],
         description: '근무표가 앱으로 즉시 전달돼요.\n원티드 신청까지 자연스럽게 이어져요.',
         image: '/img/landing-work-schedule-2.png',
         align: 'left',
@@ -41,12 +47,14 @@ const featureSections = [
         id: 'ward',
         label: '게시판',
         title: '병동 간호사에게\n필요한 내용 공유하기',
+        titleHighlights: ['간호사', '공유'],
         description: '꼭 봐야 할 공지부터 가벼운 안내까지\n놓치지 않고 한 곳에서',
         image: '/img/image-1002.png',
         align: 'left',
         background: 'bg-white',
     },
 ] as const;
+const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
 const appFeatureSections = [
     {
         id: 'app-home',
@@ -55,6 +63,7 @@ const appFeatureSections = [
         description: '앱을 열지 않아도 위젯으로 바로 확인해요',
         image: '/img/213213123123.png',
         reverse: false,
+        background: 'bg-white',
     },
     {
         id: 'app-ward',
@@ -63,6 +72,17 @@ const appFeatureSections = [
         description: '교대 근무에 필요한 일정 확인과 조율을 더 간편하게',
         image: '/img/ward-schedule.png',
         reverse: true,
+        background: softPurpleBackground,
+    },
+    {
+        id: 'app-community',
+        label: '널톡',
+        title: '간호사들의 진짜 이야기가\n모이는 곳',
+        titleHighlights: ['진짜 이야기'],
+        description: '궁금했던 정보부터\n말하기 어려웠던 고민까지 익명으로 나눠요.',
+        image: '/img/12223.png',
+        reverse: false,
+        background: 'bg-white',
     },
 ] as const;
 
@@ -103,14 +123,36 @@ function useRevealOnScroll() {
     }, []);
 }
 
-function TextLines({children}: {children: string}) {
+function escapeRegExp(text: string) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function HighlightedText({text, highlights = []}: {text: string; highlights?: readonly string[]}) {
+    if (highlights.length === 0) {
+        return text;
+    }
+
+    const highlightedTextPattern = new RegExp(`(${highlights.map(escapeRegExp).join('|')})`, 'g');
+
+    return text.split(highlightedTextPattern).map((part, index) =>
+        highlights.includes(part) ? (
+            <span key={`${part}-${index}`} className="text-highlight-soft">
+                {part}
+            </span>
+        ) : (
+            part
+        ),
+    );
+}
+
+function TextLines({children, highlights}: {children: string; highlights?: readonly string[]}) {
     const lines = children.split('\n');
 
     return (
         <>
-            {lines.map((line) => (
-                <span key={line} className="block">
-                    {line}
+            {lines.map((line, index) => (
+                <span key={`${line}-${index}`} className="block">
+                    <HighlightedText text={line} highlights={highlights} />
                 </span>
             ))}
         </>
@@ -121,28 +163,100 @@ function Pill({children}: {children: string}) {
     return <span className="inline-flex rounded-[6px] bg-main-light px-3 py-1 text-sm font-bold text-main-1">{children}</span>;
 }
 
+function RotatingHeroPhrase() {
+    const [rotationState, setRotationState] = useState<{activeIndex: number; previousIndex: number | null}>({
+        activeIndex: 0,
+        previousIndex: null,
+    });
+
+    useEffect(() => {
+        if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            return undefined;
+        }
+
+        const intervalId = window.setInterval(() => {
+            setRotationState(({activeIndex}) => ({
+                activeIndex: (activeIndex + 1) % heroTitlePhrases.length,
+                previousIndex: activeIndex,
+            }));
+        }, 2600);
+
+        return () => window.clearInterval(intervalId);
+    }, []);
+
+    return (
+        <span className="hero-title-rotator" aria-hidden="true">
+            {heroTitlePhrases.map((phrase, index) => (
+                <span
+                    key={phrase}
+                    className={`hero-gradient-text hero-title-rotator__item ${
+                        rotationState.activeIndex === index ? 'is-active' : ''
+                    } ${rotationState.previousIndex === index && rotationState.activeIndex !== index ? 'is-exiting' : ''}`}
+                >
+                    {phrase}
+                </span>
+            ))}
+        </span>
+    );
+}
+
 function StoreButton({store}: {store: 'google' | 'apple'}) {
-    const Icon = store === 'google' ? PlaystoreIcon : AppstoreIcon;
     const label = store === 'google' ? 'Google Play' : 'App Store';
+    const logoSrc = store === 'google' ? '/img/play.png' : '/img/apple.png';
 
     return (
         <a
             href={appStoreLink}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-[8px] bg-white px-5 text-base font-bold text-[#18151F] shadow-[0_12px_34px_rgba(18,20,31,0.12)] transition-transform hover:-translate-y-0.5 sm:w-[180px]"
         >
-            <Icon className="size-5" />
-            {label}
+            <img src={logoSrc} alt="" aria-hidden="true" className="size-6 shrink-0 object-contain" />
+            <span className="whitespace-nowrap">{label}</span>
         </a>
     );
 }
 
-function DarkActionButton({type}: {type: 'web' | 'app'}) {
+function HeaderActions({isAuth}: {isAuth: boolean}) {
+    if (!isAuth) {
+        return (
+            <Link
+                to={ROUTE.LOGIN}
+                className="flex h-10 items-center rounded-[10px] bg-main-1 px-4 text-sm font-bold text-white transition-colors hover:bg-[#5832E7]"
+            >
+                로그인
+            </Link>
+        );
+    }
+
+    return (
+        <>
+            <Link
+                to={ROUTE.MAKE}
+                aria-label="근무표 만들기"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-[#5832E7] sm:px-4"
+            >
+                <CalendarDays className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">근무표 만들기</span>
+                <span className="sm:hidden">근무표</span>
+            </Link>
+            <Link
+                to={ROUTE.PROFILE}
+                aria-label="마이페이지"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E5DEF8] bg-white px-3 text-sm font-bold text-[#5F557F] transition-colors hover:border-main-3 hover:text-main-1 sm:px-4"
+            >
+                <UserRound className="size-4" aria-hidden="true" />
+                <span className="hidden sm:inline">마이페이지</span>
+            </Link>
+        </>
+    );
+}
+
+function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean}) {
     const isWeb = type === 'web';
     const Icon = isWeb ? CalendarDays : Smartphone;
-    const label = isWeb ? '웹에서 근무표 만들기' : '앱에서 근무표 확인하기';
-    const href = isWeb ? webMakeLink : appStoreLink;
+    const label = isWeb ? (isAuth ? '근무표 만들기' : '웹에서 근무표 만들기') : '앱에서 근무표 확인하기';
+    const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : appStoreLink;
     const className =
         'inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5';
 
@@ -168,10 +282,10 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
     const isIntegrationSection = section.id === 'integration';
     const isWardSection = section.id === 'ward';
     const copy = (
-        <article className="reveal-on-scroll relative z-10 max-w-[470px]">
+        <article className="reveal-on-scroll relative z-10 max-w-[470px] text-left">
             <Pill>{section.label}</Pill>
             <h2 className="mt-6 text-[34px] leading-[1.35] font-extrabold text-[#11131A] md:text-[42px]">
-                <TextLines>{section.title}</TextLines>
+                <TextLines highlights={'titleHighlights' in section ? section.titleHighlights : undefined}>{section.title}</TextLines>
             </h2>
             <p className="mt-12 text-lg leading-8 font-medium whitespace-pre-line text-[#777487]">{section.description}</p>
         </article>
@@ -180,12 +294,12 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
     if (isAiSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
+                <div className="mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
                     <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
                         <img src={section.image} alt="" className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]" />
                     </picture>
 
-                    <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
+                    <div className="mx-auto w-full max-w-[470px] md:mx-0 lg:translate-x-10">{copy}</div>
                 </div>
             </section>
         );
@@ -194,7 +308,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
     if (isIntegrationSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid min-h-[680px] max-w-[1280px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
+                <div className="mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
                     <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
@@ -212,7 +326,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
     if (isWardSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid min-h-[680px] max-w-[1280px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.72fr_1.28fr] md:gap-10 md:px-8 md:py-28 lg:gap-14">
+                <div className="mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.72fr_1.28fr] md:gap-10 md:px-8 md:py-28 lg:gap-14">
                     <div className="mx-auto w-full max-w-[470px] md:mx-0">{copy}</div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
@@ -229,7 +343,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
 
     return (
         <section id={section.id} className={`relative overflow-hidden ${section.background}`}>
-            <div className="mx-auto flex min-h-[680px] max-w-[1280px] items-center justify-start px-5 py-20 md:min-h-[780px] md:px-8">
+            <div className="mx-auto flex min-h-[680px] max-w-[1440px] items-center justify-start px-5 py-20 md:min-h-[780px] md:px-8">
                 {copy}
             </div>
         </section>
@@ -239,32 +353,33 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
 function AppFeatureSection({section}: {section: (typeof appFeatureSections)[number]}) {
     const isHomeSection = section.id === 'app-home';
     const isWardSection = section.id === 'app-ward';
+    const isCommunitySection = section.id === 'app-community';
+    const imageMaxWidthClass = isHomeSection ? 'max-w-[566px]' : isCommunitySection ? 'max-w-[748px]' : 'max-w-[560px]';
+    const imageClassName = isCommunitySection
+        ? 'h-[506px] w-full object-contain object-center md:h-[792px]'
+        : isHomeSection
+          ? 'w-full object-contain object-center'
+          : isWardSection
+            ? 'w-full object-contain object-center'
+            : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]';
 
     return (
-        <section id={section.id} className={section.reverse ? 'bg-[#F7F8FB]' : 'bg-white'}>
+        <section id={section.id} className={section.background}>
             <div
-                className={`mx-auto grid max-w-[1280px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
+                className={`mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
-                <picture
-                    className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${isHomeSection ? 'max-w-[566px]' : 'max-w-[560px]'}`}
-                >
-                    <img
-                        src={section.image}
-                        alt=""
-                        className={
-                            isHomeSection
-                                ? 'w-full object-contain object-center'
-                                : isWardSection
-                                  ? 'w-full object-contain object-center'
-                                  : 'h-[520px] w-full rounded-[24px] object-cover object-bottom shadow-[0_24px_80px_rgba(37,22,91,0.14)]'
-                        }
-                    />
+                <picture className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${imageMaxWidthClass}`}>
+                    <img src={section.image} alt="" className={imageClassName} />
                 </picture>
 
-                <article className="reveal-on-scroll mx-auto w-full max-w-[470px]">
+                <article
+                    className={`reveal-on-scroll mx-auto w-full max-w-[470px] text-left ${section.reverse ? '' : 'lg:translate-x-7 2xl:-translate-x-2'}`}
+                >
                     <Pill>{section.label}</Pill>
                     <h2 className="mt-6 text-[32px] leading-[1.36] font-extrabold text-[#11131A] md:text-[40px]">
-                        <TextLines>{section.title}</TextLines>
+                        <TextLines highlights={'titleHighlights' in section ? section.titleHighlights : undefined}>
+                            {section.title}
+                        </TextLines>
                     </h2>
                     {isHomeSection && (
                         <div className="mt-14 flex items-center gap-3 md:mt-16 md:gap-4">
@@ -272,7 +387,7 @@ function AppFeatureSection({section}: {section: (typeof appFeatureSections)[numb
                             <img src="/img/image-991.png" alt="" className="h-[136px] w-auto rounded-[8px] object-contain md:h-[158px]" />
                         </div>
                     )}
-                    <p className={`${isHomeSection ? 'mt-12' : 'mt-10'} text-lg leading-8 font-medium text-[#777487]`}>
+                    <p className={`${isHomeSection ? 'mt-12' : 'mt-10'} text-lg leading-8 font-medium whitespace-pre-line text-[#777487]`}>
                         {section.description}
                     </p>
                 </article>
@@ -282,12 +397,17 @@ function AppFeatureSection({section}: {section: (typeof appFeatureSections)[numb
 }
 
 function LandingPage() {
+    const {
+        state: {isAuth},
+    } = useAuth();
+    const webMakeLink = getWebMakeLink(isAuth);
+
     useRevealOnScroll();
 
     return (
         <main className="landing-main min-h-screen bg-white font-apple text-[#150B3C]">
             <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/95 backdrop-blur">
-                <div className="mx-auto flex h-16 max-w-[1280px] items-center justify-between px-5 md:h-18 md:px-8">
+                <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:h-18 md:px-8">
                     <Link to={ROUTE.ROOT} aria-label="듀팅 랜딩 홈" className="flex shrink-0 items-center">
                         <img src="/img/group-19.png" alt="dutying" className="h-[28px] w-auto md:h-[32px]" />
                     </Link>
@@ -304,32 +424,32 @@ function LandingPage() {
                         </a>
                     </nav>
 
-                    <div className="flex items-center gap-3">
-                        <Link
-                            to={ROUTE.LOGIN}
-                            className="flex h-10 items-center rounded-[10px] bg-main-1 px-4 text-sm font-bold text-white transition-colors hover:bg-[#5832E7]"
-                        >
-                            로그인
-                        </Link>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <HeaderActions isAuth={isAuth} />
                     </div>
                 </div>
             </header>
 
-            <section className="relative overflow-hidden bg-white">
-                <div
-                    className="absolute inset-x-0 top-0 h-[210px] bg-[linear-gradient(135deg,#A18DFF_0%,#6C4DF6_48%,#5F3FE7_100%)] md:h-[360px]"
-                    aria-hidden="true"
-                />
-                <div className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1280px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-20 md:min-h-[calc(100svh-4.5rem)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:px-8 md:pt-32 lg:gap-16">
+            <section className={`relative overflow-hidden ${softPurpleBackground}`}>
+                <div className="relative mx-auto grid min-h-[calc(88svh-4rem)] max-w-[1440px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-10 md:min-h-[calc(88svh-4.5rem)] md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:px-8 md:pt-32 md:pb-6 lg:gap-20">
                     <div className="relative z-10 min-w-0">
-                        <h1 className="reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold text-white md:text-[51px]">
-                            교대 근무표,
+                        <h1
+                            aria-label="교대 근무표, 듀팅으로 더 간편하게"
+                            className="reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold md:text-[51px]"
+                        >
+                            <RotatingHeroPhrase />
                             <br />
-                            듀팅으로 더 간편하게
+                            <span className="hero-gradient-text">듀팅으로 더 간편하게</span>
                         </h1>
+                        <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-5 max-w-[620px] text-base leading-7 font-medium text-[#6F6B7A] md:text-lg md:leading-8 2xl:whitespace-nowrap">
+                            AI로 근무표를 쉽고 빠르게 만들고,
+                            <br className="hidden md:block 2xl:hidden" />
+                            <span className="md:hidden 2xl:inline"> </span>
+                            간호사와 연동해 병동 관리를 더 간편하게
+                        </p>
 
                         <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-24 flex max-w-[560px] flex-col gap-4 sm:flex-row md:mt-28">
-                            <DarkActionButton type="web" />
+                            <DarkActionButton type="web" isAuth={isAuth} />
                             <DarkActionButton type="app" />
                         </div>
                     </div>
@@ -352,8 +472,8 @@ function LandingPage() {
                 />
             </section>
 
-            <section id="web" className="bg-[#F7F8FB]">
-                <div className="mx-auto grid max-w-[1280px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
+            <section id="web" className={softPurpleBackground}>
+                <div className="mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
@@ -363,7 +483,7 @@ function LandingPage() {
                         />
                     </div>
 
-                    <article className="reveal-on-scroll reveal-on-scroll--delay-1">
+                    <article className="reveal-on-scroll reveal-on-scroll--delay-1 text-left lg:translate-x-3">
                         <Pill>Web</Pill>
                         <h2 className="mt-6 text-[34px] leading-[1.35] font-extrabold text-[#11131A] md:text-[42px]">
                             복잡한 근무표,
@@ -371,32 +491,44 @@ function LandingPage() {
                             이제 <span className="text-highlight-soft">AI로 1분</span> 만에 만들기
                         </h2>
                         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
-                            <Link
-                                to={webMakeLink}
-                                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
-                            >
-                                체험하기
-                            </Link>
-                            <Link
-                                to={ROUTE.LOGIN}
-                                className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
-                            >
-                                <Monitor className="size-5" />
-                                근무표 만들기
-                            </Link>
+                            {isAuth ? (
+                                <Link
+                                    to={webMakeLink}
+                                    className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
+                                >
+                                    <Monitor className="size-5" />
+                                    근무표 만들기
+                                </Link>
+                            ) : (
+                                <>
+                                    <Link
+                                        to={webMakeLink}
+                                        className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
+                                    >
+                                        체험하기
+                                    </Link>
+                                    <Link
+                                        to={ROUTE.LOGIN}
+                                        className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
+                                    >
+                                        <Monitor className="size-5" />
+                                        근무표 만들기
+                                    </Link>
+                                </>
+                            )}
                         </div>
                     </article>
                 </div>
             </section>
 
-            {featureSections.map((section) => (
+            {visibleFeatureSections.map((section) => (
                 <BackgroundFeatureSection key={section.id} section={section} />
             ))}
 
             <section id="app" className="relative overflow-hidden bg-[#070D18]">
                 <div className="absolute inset-y-0 left-0 hidden w-[46%] bg-[#070D18] md:block" aria-hidden="true" />
 
-                <div className="relative mx-auto grid min-h-[520px] max-w-[1280px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
+                <div className="relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
                     <article className="reveal-on-scroll max-w-[500px] text-white">
                         <Pill>APP</Pill>
                         <h2 className="mt-6 text-[34px] leading-[1.36] font-extrabold md:text-[42px]">
@@ -413,7 +545,7 @@ function LandingPage() {
                     <img
                         src="/img/temp.png"
                         alt="앱 화면"
-                        className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain"
+                        className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14"
                     />
                 </div>
 
@@ -427,22 +559,19 @@ function LandingPage() {
                 <AppFeatureSection key={section.id} section={section} />
             ))}
 
-            <section className="bg-white">
-                <div className="mx-auto grid max-w-[1280px] items-center gap-12 px-5 py-20 md:grid-cols-[1.05fr_0.95fr] md:px-8 md:py-28">
-                    <img
-                        src="/img/landing_1.webp"
-                        alt="듀팅 웹과 앱 연동 화면"
-                        className="reveal-on-scroll reveal-on-scroll--image w-full rounded-[8px] object-cover object-right shadow-[0_20px_70px_rgba(37,22,91,0.1)]"
-                    />
-
-                    <article className="reveal-on-scroll reveal-on-scroll--delay-1">
+            <section
+                className="relative overflow-hidden bg-cover bg-center bg-no-repeat"
+                style={{backgroundImage: `url('/img/landing-app-download-bg.png'), ${softPurpleGradient}`}}
+            >
+                <div className="mx-auto flex min-h-[520px] max-w-[1440px] items-center px-5 py-20 md:min-h-[560px] md:px-8 md:py-28">
+                    <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
                         <p className="text-lg font-extrabold text-main-1">1분이면 충분해요</p>
                         <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-[#11131A] md:text-[42px]">
                             웹과 앱을 연동해서
                             <br />
                             관리해 보세요
                         </h2>
-                        <p className="mt-12 text-xl font-extrabold text-[#777487]">앱 다운로드</p>
+                        <p className="mt-12 text-xl font-extrabold text-[#33313A]">앱 다운로드</p>
                         <div className="mt-5 flex flex-col gap-4 sm:flex-row">
                             <StoreButton store="google" />
                             <StoreButton store="apple" />
@@ -451,27 +580,17 @@ function LandingPage() {
                 </div>
             </section>
 
-            <section className="bg-[#15111E] px-5 py-16 text-white md:px-8 md:py-24">
-                <div className="reveal-on-scroll mx-auto flex max-w-[1280px] flex-col gap-8 md:flex-row md:items-center md:justify-between">
-                    <h2 className="text-[34px] leading-[1.35] font-extrabold md:text-[42px]">
-                        교대근무,
-                        <br />더 이상 어렵지 않게
-                    </h2>
-                    <img src="/img/group-19.png" alt="dutying" className="h-[54px] w-auto brightness-0 invert md:h-[72px]" />
-                </div>
-            </section>
-
-            <footer className="bg-[#F7F8FB] px-5 py-10 text-sm font-medium text-[#777487] md:px-8">
-                <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
+            <footer className={`${softPurpleBackground} px-5 py-10 text-sm font-medium text-[#777487] md:px-8`}>
+                <div className="mx-auto flex max-w-[1440px] flex-col gap-6">
                     <div className="flex flex-wrap gap-5">
-                        <a href={RUNTIME_CONFIG.docs.termsOfService} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
                             이용약관
                         </a>
-                        <a href={RUNTIME_CONFIG.docs.privacyPolicy} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
                             개인정보 처리방침
                         </a>
                     </div>
-                    <p>ⓒ 2024 리팅랩. All Rights Reserved</p>
+                    <p>ⓒ 2026 듀팅. All Rights Reserved</p>
                 </div>
             </footer>
         </main>

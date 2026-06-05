@@ -9,6 +9,7 @@ import type {
     TCreateWardAdminEmailDTO,
     TCreateWardAdminInvitationDTO,
     TCreateWardDTO,
+    TCreateWardShiftTypeDTO,
     TDutyRequestResponse,
     TEditWardDTO,
     TPublishSnapshotRes,
@@ -70,16 +71,29 @@ export type TCreateWardApiOptions = {
     basePath?: string;
 };
 
+type TCreateWardShiftTypeRequest = Omit<TCreateWardShiftTypeDTO, 'startTime' | 'endTime'> & {
+    startTime: string | null;
+    endTime: string | null;
+};
+
+type TCreateWardRequest = Omit<TCreateWardDTO, 'wardShiftTypes'> & {
+    wardShiftTypes: TCreateWardShiftTypeRequest[];
+};
+
 const normalizeBasePath = (basePath: string | undefined) => {
     const path = basePath?.trim() || '/wards';
 
     return path.endsWith('/') ? path.slice(0, -1) : path;
 };
 
-const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardDTO => ({
+const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
     name: createWardDTO.name,
     hospitalName: createWardDTO.hospitalName,
-    wardShiftTypes: createWardDTO.wardShiftTypes,
+    wardShiftTypes: createWardDTO.wardShiftTypes.map((shiftType) => ({
+        ...shiftType,
+        startTime: shiftType.isOff ? null : shiftType.startTime,
+        endTime: shiftType.isOff ? null : shiftType.endTime,
+    })),
     shiftTeams: createWardDTO.shiftTeams.map((shiftTeam) => ({
         nurseNames: shiftTeam.nurseNames,
     })),

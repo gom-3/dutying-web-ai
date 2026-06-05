@@ -137,19 +137,32 @@ export function AiAutofillToolbar({
                         disabled={isAiGenerating}
                         aria-busy={isAiGenerating}
                         className={cn(
-                            'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill',
+                            'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--ai-fill group isolate',
                             'relative inline-flex min-h-[43px] min-w-[142px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[13px] px-4 py-0',
                             'bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white',
-                            'transition-[box-shadow,filter,transform] duration-150',
-                            'hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
+                            'shadow-[0_8px_22px_rgba(107,69,244,0.2)] transition-[box-shadow,filter,transform] duration-300 ease-out',
+                            'enabled:hover:-translate-y-0.5 enabled:hover:shadow-[0_14px_34px_rgba(107,69,244,0.32),0_0_0_1px_rgba(255,255,255,0.16)_inset] enabled:hover:brightness-105',
+                            'focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95',
                             'disabled:cursor-wait disabled:opacity-100',
                             isAiGenerating && 'shadow-[0_0_0_3px_rgba(169,120,255,0.24),0_8px_22px_rgba(107,69,244,0.2)]',
                         )}
                     >
+                        {!isAiGenerating && (
+                            <>
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute -inset-6 z-0 translate-y-3 scale-90 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.52),rgba(216,180,254,0.2)_34%,transparent_62%)] opacity-0 blur-xl transition-[opacity,transform] duration-500 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
+                                />
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute top-[-60%] bottom-[-60%] left-[-30%] z-0 w-10 -translate-x-[180%] rotate-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] opacity-0 blur-[6px] transition-[opacity,transform] duration-700 ease-out group-hover:translate-x-[520%] group-hover:opacity-100 motion-reduce:transition-none"
+                                />
+                            </>
+                        )}
                         {isAiGenerating && (
                             <span
                                 aria-hidden
-                                className="pointer-events-none absolute inset-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
+                                className="pointer-events-none absolute inset-0 z-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
                             />
                         )}
                         {isAiGenerating ? (

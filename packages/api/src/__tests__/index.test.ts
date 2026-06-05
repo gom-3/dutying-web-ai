@@ -35,6 +35,77 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/post?year=2026&month=03');
     });
 
+    it('posts onboarding ward creation payload to /wards once', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+
+        postMock.mockResolvedValueOnce({
+            data: {
+                wardId: 10,
+                name: 'ICU',
+                hospitalName: 'Dutying Hospital',
+                code: 'A7K29Q',
+                nurseCnt: 1,
+                wardShiftTypes: [],
+                shiftTeams: [{shiftTeamId: 1, name: 'Team 1', nurseCnt: 1, nurses: []}],
+            },
+        });
+
+        const wardApi = createWardApi(client);
+        const payload = {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                {
+                    name: 'Day',
+                    shortName: 'D',
+                    startTime: '07:00',
+                    endTime: '15:00',
+                    color: '#4DC2AD',
+                    isOff: false,
+                    isDefault: true,
+                    isCounted: true,
+                    classification: 'DAY' as const,
+                },
+                {
+                    name: 'Off',
+                    shortName: 'O',
+                    startTime: '',
+                    endTime: '',
+                    color: '#465B7A',
+                    isOff: true,
+                    isDefault: true,
+                    isCounted: false,
+                    classification: 'OFF' as const,
+                },
+            ],
+            shiftTeams: [
+                {
+                    name: 'Team 1',
+                    nurseNames: ['Kim Nurse'],
+                    nurses: [{name: 'Kim Nurse', memo: 'preceptor'}],
+                },
+            ],
+        };
+
+        await expect(wardApi.createWard(payload)).resolves.toMatchObject({wardId: 10});
+
+        expect(postMock).toHaveBeenCalledTimes(1);
+        expect(postMock).toHaveBeenCalledWith('/wards', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                payload.wardShiftTypes[0],
+                {
+                    ...payload.wardShiftTypes[1],
+                    startTime: null,
+                    endTime: null,
+                },
+            ],
+            shiftTeams: [{nurseNames: ['Kim Nurse']}],
+        });
+    });
+
     it('builds the account deletion endpoint', async () => {
         const client = createClient();
         const deleteMock = client.delete as ReturnType<typeof vi.fn>;
