@@ -74,7 +74,7 @@ const makeTutorialConfigByStep: Partial<Record<TMakeShiftStep, ITutorialConfig>>
                 infoBoxAlignment: 'right',
             },
             {
-                highlightIds: ['make_ai_view_tools', 'make_ai_history_tools'],
+                highlightIds: ['make_ai_view_tools', 'make_ai_history_undo_redo_tools', 'make_ai_history_snapshot_tools'],
                 title: '보조 도구 활용하기',
                 info: '보기 옵션과 되돌리기·다시 실행을 활용해 근무표를 더 쉽게 다듬어 보세요.',
                 infoBoxAlignment: 'right',

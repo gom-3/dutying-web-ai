@@ -153,7 +153,12 @@ describe('make-tutorial', () => {
 
     it('uses current-tab tutorial targets instead of a full flow tour', async () => {
         makeShiftStoreState = {phase: 'stepping', currentStep: 5};
-        addTutorialTargets(['make_ai_fill_button', 'make_ai_view_tools', 'make_ai_history_tools']);
+        addTutorialTargets([
+            'make_ai_fill_button',
+            'make_ai_view_tools',
+            'make_ai_history_undo_redo_tools',
+            'make_ai_history_snapshot_tools',
+        ]);
 
         render(<MakeTutorial />);
 
@@ -164,7 +169,7 @@ describe('make-tutorial', () => {
         expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '2');
         expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([
             ['make_ai_fill_button'],
-            ['make_ai_view_tools', 'make_ai_history_tools'],
+            ['make_ai_view_tools', 'make_ai_history_undo_redo_tools', 'make_ai_history_snapshot_tools'],
         ]);
         expect(lastCall.config.steps.map((step) => step.title)).toEqual(['AI 자동 채우기', '보조 도구 활용하기']);
     });

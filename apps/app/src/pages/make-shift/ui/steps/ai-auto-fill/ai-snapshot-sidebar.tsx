@@ -1,6 +1,6 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
-import {CheckCircle2, ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw, Trash2} from 'lucide-react';
+import {ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw, Trash2} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
@@ -10,10 +10,9 @@ type TAiSnapshotSidebarProps = {
     snapshots: TSnapshotSummaryDto[];
     isLoading: boolean;
     isError: boolean;
-    activeSnapshotId: number | null;
     loadingSnapshotId: number | null;
     deletingSnapshotId: number | null;
-    onSelectSnapshot: (snapshotId: number) => void;
+    onSelectSnapshot: (snapshot: TSnapshotSummaryDto) => void;
     onRenameSnapshot: (snapshotId: number, title: string) => Promise<void>;
     onRequestDeleteSnapshot: (snapshot: TSnapshotSummaryDto) => void;
     onRetry: () => void;
@@ -55,7 +54,6 @@ export function AiSnapshotSidebar({
     snapshots,
     isLoading,
     isError,
-    activeSnapshotId,
     loadingSnapshotId,
     deletingSnapshotId,
     onSelectSnapshot,
@@ -151,7 +149,6 @@ export function AiSnapshotSidebar({
                     <ul className="flex flex-col gap-3">
                         {orderedSnapshots.map((snapshot, index) => {
                             const versionIndex = orderedSnapshots.length - index;
-                            const isActive = activeSnapshotId === snapshot.snapshotId;
                             const isLoadingItem = loadingSnapshotId === snapshot.snapshotId;
                             const isDeletingItem = deletingSnapshotId === snapshot.snapshotId;
                             const isRenamingItem = renamingSnapshotId === snapshot.snapshotId;
@@ -173,7 +170,7 @@ export function AiSnapshotSidebar({
                                         className={cn(
                                             'group flex w-full flex-col items-stretch rounded-[14px] bg-white p-4 text-left ring-1 transition-[background-color,box-shadow,transform] duration-150',
                                             'hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(61,70,88,0.10)]',
-                                            isActive ? 'bg-main-light/60 ring-main-2' : 'ring-gray-6 hover:ring-main-3',
+                                            'ring-gray-6 hover:ring-main-3',
                                         )}
                                     >
                                         <div className="flex items-start justify-between gap-3">
@@ -211,29 +208,22 @@ export function AiSnapshotSidebar({
                                                             'hover:bg-gray-7 focus:bg-white focus:ring-2 focus:ring-main-2 disabled:opacity-70',
                                                         )}
                                                     />
-                                                    {isActive && (
-                                                        <span className="shrink-0 font-apple text-[11px] leading-none font-bold text-main-1">
-                                                            {t('page.makeShift.aiRefill.snapshotSidebar.active')}
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </div>
 
                                             <div className="flex shrink-0 items-center gap-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => onSelectSnapshot(snapshot.snapshotId)}
+                                                    onClick={() => onSelectSnapshot(snapshot)}
                                                     disabled={isLoadingItem || isRenamingItem || isDeletingItem}
                                                     aria-label={t('page.makeShift.aiRefill.snapshotSidebar.restore')}
                                                     className={cn(
                                                         'grid size-8 cursor-pointer place-items-center rounded-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60',
-                                                        isActive ? 'bg-white text-main-1' : 'bg-gray-7 text-gray-4 group-hover:text-main-1',
+                                                        'bg-gray-7 text-gray-4 group-hover:text-main-1',
                                                     )}
                                                 >
                                                     {isLoadingItem || isRenamingItem ? (
                                                         <Loader2 className="size-4 animate-spin" aria-hidden />
-                                                    ) : isActive ? (
-                                                        <CheckCircle2 className="size-4" aria-hidden />
                                                     ) : (
                                                         <ChevronRight className="size-4" aria-hidden />
                                                     )}

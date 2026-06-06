@@ -56,7 +56,9 @@ function ConfirmActionDialog({
                     </div>
 
                     <Dialog.Title className="mt-4 font-apple text-[22px] leading-7 font-semibold text-sub-1">{title}</Dialog.Title>
-                    <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 text-gray-3">{description}</Dialog.Description>
+                    <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 whitespace-pre-line text-gray-3">
+                        {description}
+                    </Dialog.Description>
 
                     <div className="mt-6 grid grid-cols-2 gap-2">
                         <Dialog.Close asChild>

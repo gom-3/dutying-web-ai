@@ -40,6 +40,12 @@ import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
 
+type TSnapshotLimitContext = {
+    snapshots: TSnapshotSummaryDto[];
+    oldestSnapshot: TSnapshotSummaryDto;
+    intent: 'save' | 'confirm';
+};
+
 function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
     const updatedAt = new Date(snapshot.updatedAt).getTime();
 
@@ -78,6 +84,28 @@ function resolveHistoryTitle(title: string | undefined, fallbackTitle: string): 
     return fallbackTitle;
 }
 
+function resolveSnapshotDisplayTitle(params: {
+    snapshotId: number;
+    snapshots: TSnapshotSummaryDto[];
+    detailTitle: string | undefined;
+    defaultTitle: string;
+    fallbackTitle: string;
+}) {
+    const {snapshotId, snapshots, detailTitle, defaultTitle, fallbackTitle} = params;
+    const snapshotIndex = snapshots.findIndex((snapshot) => snapshot.snapshotId === snapshotId);
+
+    if (snapshotIndex >= 0) {
+        const snapshot = snapshots[snapshotIndex]!;
+        const trimmedTitle = snapshot.title.trim();
+
+        if (trimmedTitle.length > 0 && trimmedTitle !== defaultTitle) return trimmedTitle;
+
+        return `V${snapshots.length - snapshotIndex}`;
+    }
+
+    return resolveHistoryTitle(detailTitle, fallbackTitle);
+}
+
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
@@ -105,14 +133,11 @@ export function AiAutofill() {
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
-    const [activeSnapshotId, setActiveSnapshotId] = useState<number | null>(null);
     const [loadingSnapshotId, setLoadingSnapshotId] = useState<number | null>(null);
     const [deletingSnapshotId, setDeletingSnapshotId] = useState<number | null>(null);
+    const [snapshotLoadTarget, setSnapshotLoadTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
-    const [snapshotLimitContext, setSnapshotLimitContext] = useState<{
-        snapshots: TSnapshotSummaryDto[];
-        oldestSnapshot: TSnapshotSummaryDto;
-    } | null>(null);
+    const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -155,7 +180,7 @@ export function AiAutofill() {
     useEffect(() => {
         setHasCompletedAiFill(false);
         setIsSnapshotSidebarOpen(false);
-        setActiveSnapshotId(null);
+        setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
         setSnapshotLimitContext(null);
     }, [wardId, currentShiftTeamId, year, month]);
@@ -198,10 +223,6 @@ export function AiAutofill() {
                 setDeletingSnapshotId(snapshotToDelete.snapshotId);
                 await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
                 removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
-
-                if (activeSnapshotId === snapshotToDelete.snapshotId) {
-                    setActiveSnapshotId(null);
-                }
             }
 
             const saved = await WardAPI.saveSnapshot(
@@ -218,13 +239,48 @@ export function AiAutofill() {
 
             prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
             invalidateSnapshots(wardId, currentShiftTeamId, year, month);
-            setActiveSnapshotId(saved.snapshotId);
             toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
         } finally {
             if (snapshotToDelete) {
                 setDeletingSnapshotId(null);
             }
         }
+    };
+    const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
+        if (!wardId || !currentShiftTeamId || !dutyQuery.data) return;
+
+        if (snapshotToDelete) {
+            setDeletingSnapshotId(snapshotToDelete.snapshotId);
+            await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
+            removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
+        }
+
+        const snapshot = await WardAPI.saveSnapshot(
+            wardId,
+            currentShiftTeamId,
+            buildSaveSnapshotDTO({
+                title: getNextSnapshotTitle(snapshots),
+                year,
+                month,
+                doc: editorDoc,
+                originalShift: dutyQuery.data,
+            }),
+        );
+
+        prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshot);
+        invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+
+        await WardAPI.publishSnapshot(wardId, currentShiftTeamId, snapshot.snapshotId, {
+            overwriteWardShift: true,
+            applyRowOrder: true,
+        });
+
+        const nextShift = docToShift(editorDoc, dutyQuery.data);
+        const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
+
+        useCase.confirm(nextShift);
+        queryClient.setQueryData(queryKey, nextShift);
+        void queryClient.invalidateQueries({queryKey});
     };
     const handleSaveSnapshot = async () => {
         if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
@@ -244,7 +300,7 @@ export function AiAutofill() {
                 const oldestSnapshot = getOldestSnapshot(snapshots);
 
                 if (oldestSnapshot) {
-                    setSnapshotLimitContext({snapshots, oldestSnapshot});
+                    setSnapshotLimitContext({snapshots, oldestSnapshot, intent: 'save'});
                 } else {
                     toast.error(t('page.makeShift.aiRefill.snapshotLimitReached'));
                 }
@@ -262,6 +318,7 @@ export function AiAutofill() {
     const handleLoadSnapshot = async (snapshotId: number) => {
         if (!wardId || !currentShiftTeamId || !dutyQuery.data || loadingSnapshotId != null) return;
 
+        setSnapshotLoadTarget(null);
         setLoadingSnapshotId(snapshotId);
 
         try {
@@ -272,7 +329,6 @@ export function AiAutofill() {
             });
 
             commands.init(nextDoc);
-            setActiveSnapshotId(snapshotId);
             resetAiStatus();
 
             const stateAfterInit = useShiftEditorStore.getState();
@@ -293,15 +349,29 @@ export function AiAutofill() {
                 );
             }
 
-            toast.success(t('page.makeShift.aiRefill.snapshotSidebar.loadSuccess'));
+            const loadedSnapshotTitle = resolveSnapshotDisplayTitle({
+                snapshotId,
+                snapshots: snapshotsQuery.data ?? [],
+                detailTitle: detail.title,
+                defaultTitle: t('page.makeShift.aiRefill.snapshotSidebar.defaultTitle'),
+                fallbackTitle: t('page.makeShift.aiRefill.snapshotSidebar.selectedHistory'),
+            });
+
+            setIsSnapshotSidebarOpen(false);
+            toast.success(t('page.makeShift.aiRefill.snapshotSidebar.loadSuccess', {title: loadedSnapshotTitle}));
         } catch {
             toast.error(t('page.makeShift.aiRefill.snapshotSidebar.loadFailed'));
         } finally {
             setLoadingSnapshotId(null);
         }
     };
+    const handleRequestLoadSnapshot = (snapshot: TSnapshotSummaryDto) => {
+        if (loadingSnapshotId != null) return;
+
+        setSnapshotLoadTarget(snapshot);
+    };
     const handleConfirm = async () => {
-        if (!wardId || !dutyQuery.data || !canConfirm) return;
+        if (!wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
 
         setIsWorking(true);
 
@@ -310,47 +380,29 @@ export function AiAutofill() {
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            const snapshotList = await WardAPI.getSnapshots(wardId, currentShiftTeamId ?? -1, year, month);
+            const snapshotList = await WardAPI.getSnapshots(wardId, currentShiftTeamId, year, month);
+            const snapshots = snapshotList.snapshots;
             const normalizedSnapshots = normalizeScheduleSnapshots(snapshotList.snapshots);
-            const snapshotForPublishSave =
-                snapshotList.snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT
-                    ? (normalizedSnapshots.find((snapshotItem) => snapshotItem.snapshotId === activeSnapshotId) ?? normalizedSnapshots[0])
-                    : undefined;
-            const nextSnapshotTitle = snapshotForPublishSave?.title.trim()
-                ? snapshotForPublishSave.title
-                : `V${snapshotList.snapshots.length + 1}`;
 
-            queryClient.setQueryData(scheduleSnapshotsQueryKey(wardId, currentShiftTeamId ?? -1, year, month), normalizedSnapshots);
+            queryClient.setQueryData(scheduleSnapshotsQueryKey(wardId, currentShiftTeamId, year, month), normalizedSnapshots);
 
-            // 스냅샷 저장 후 바로 게시(Publish)하는 시나리오로 간주
-            const snapshot = await WardAPI.saveSnapshot(
-                wardId,
-                currentShiftTeamId ?? -1,
-                buildSaveSnapshotDTO({
-                    snapshotId: snapshotForPublishSave?.snapshotId,
-                    title: nextSnapshotTitle,
-                    year,
-                    month,
-                    doc: editorDoc,
-                    originalShift: dutyQuery.data,
-                }),
-            );
+            if (snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT) {
+                const oldestSnapshot = getOldestSnapshot(snapshots);
 
-            await WardAPI.publishSnapshot(wardId, currentShiftTeamId ?? -1, snapshot.snapshotId, {
-                overwriteWardShift: true,
-                applyRowOrder: true,
-            });
+                if (oldestSnapshot) {
+                    toast.dismiss(progressToastId);
+                    setSnapshotLimitContext({snapshots, oldestSnapshot, intent: 'confirm'});
+                } else {
+                    toast.error(t('page.makeShift.aiRefill.snapshotLimitReached'), {id: progressToastId});
+                }
 
-            const nextShift = docToShift(editorDoc, dutyQuery.data);
-            const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId ?? -1, year, month).queryKey;
+                return;
+            }
 
-            useCase.confirm(nextShift);
-            queryClient.setQueryData(queryKey, nextShift);
-            void queryClient.invalidateQueries({queryKey});
+            await publishCurrentSchedule(snapshots);
             toast.success(t('page.makeShift.aiRefill.publishSuccess'), {id: progressToastId});
         } catch {
-            toast.error(t('page.makeShift.aiRefill.saveFailed'));
-            toast.dismiss(progressToastId);
+            toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
         } finally {
             setIsWorking(false);
         }
@@ -395,10 +447,6 @@ export function AiAutofill() {
             removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, deletingSnapshot.snapshotId);
             invalidateSnapshots(wardId, currentShiftTeamId, year, month);
 
-            if (activeSnapshotId === deletingSnapshot.snapshotId) {
-                setActiveSnapshotId(null);
-            }
-
             setSnapshotDeleteTarget(null);
             toast.success(t('page.makeShift.aiRefill.snapshotSidebar.deleteSuccess'));
         } catch {
@@ -408,19 +456,44 @@ export function AiAutofill() {
         }
     };
     const handleConfirmDeleteOldestAndSave = async () => {
-        if (!snapshotLimitContext || isSavingSnapshot) return;
+        if (!snapshotLimitContext) return;
 
-        const {snapshots, oldestSnapshot} = snapshotLimitContext;
+        const {snapshots, oldestSnapshot, intent} = snapshotLimitContext;
 
         setSnapshotLimitContext(null);
-        setIsSavingSnapshot(true);
+
+        if (intent === 'save') {
+            if (isSavingSnapshot) return;
+
+            setIsSavingSnapshot(true);
+
+            try {
+                await saveSnapshotFromList(snapshots, oldestSnapshot);
+            } catch {
+                toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+            } finally {
+                setIsSavingSnapshot(false);
+            }
+
+            return;
+        }
+
+        if (isWorking) return;
+
+        setIsWorking(true);
+
+        const progressToastId = 'make-shift-confirm-progress';
+
+        toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            await saveSnapshotFromList(snapshots, oldestSnapshot);
+            await publishCurrentSchedule(snapshots, oldestSnapshot);
+            toast.success(t('page.makeShift.aiRefill.publishSuccess'), {id: progressToastId});
         } catch {
-            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+            toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
         } finally {
-            setIsSavingSnapshot(false);
+            setIsWorking(false);
+            setDeletingSnapshotId(null);
         }
     };
     const handleAiFill = async () => {
@@ -507,6 +580,15 @@ export function AiAutofill() {
         }
     };
     const fallbackHistoryTitle = t('page.makeShift.aiRefill.snapshotSidebar.selectedHistory');
+    const snapshotLoadTargetTitle = snapshotLoadTarget
+        ? resolveSnapshotDisplayTitle({
+              snapshotId: snapshotLoadTarget.snapshotId,
+              snapshots: snapshotsQuery.data ?? [],
+              detailTitle: snapshotLoadTarget.title,
+              defaultTitle: t('page.makeShift.aiRefill.snapshotSidebar.defaultTitle'),
+              fallbackTitle: fallbackHistoryTitle,
+          })
+        : fallbackHistoryTitle;
     const snapshotDeleteTargetTitle = resolveHistoryTitle(snapshotDeleteTarget?.title, fallbackHistoryTitle);
     const limitOldestSnapshotTitle = resolveHistoryTitle(snapshotLimitContext?.oldestSnapshot.title, fallbackHistoryTitle);
 
@@ -577,13 +659,26 @@ export function AiAutofill() {
                 snapshots={snapshotsQuery.data ?? []}
                 isLoading={snapshotsQuery.isLoading}
                 isError={snapshotsQuery.isError}
-                activeSnapshotId={activeSnapshotId}
                 loadingSnapshotId={loadingSnapshotId}
                 deletingSnapshotId={deletingSnapshotId}
-                onSelectSnapshot={handleLoadSnapshot}
+                onSelectSnapshot={handleRequestLoadSnapshot}
                 onRenameSnapshot={handleRenameSnapshot}
                 onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
+            />
+            <ConfirmActionDialog
+                open={snapshotLoadTarget != null}
+                title={t('page.makeShift.aiRefill.snapshotSidebar.loadTitle')}
+                description={t('page.makeShift.aiRefill.snapshotSidebar.loadDescription', {title: snapshotLoadTargetTitle})}
+                confirmLabel={t('page.makeShift.aiRefill.snapshotSidebar.loadConfirm')}
+                cancelLabel={t('page.makeShift.aiRefill.snapshotSidebar.loadCancel')}
+                tone="danger"
+                onClose={() => setSnapshotLoadTarget(null)}
+                onConfirm={() => {
+                    if (!snapshotLoadTarget) return;
+
+                    void handleLoadSnapshot(snapshotLoadTarget.snapshotId);
+                }}
             />
             <ConfirmActionDialog
                 open={snapshotDeleteTarget != null}
