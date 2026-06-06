@@ -84,6 +84,18 @@ describe('getConnectionManageResultCopy', () => {
         ).toContain('이어서 확인할 수 있어요');
     });
 
+    it('uses one sentence without a duplicated team suffix on add success', () => {
+        const result = getConnectionManageResultCopy({
+            submitStatus: 'success',
+            connectMode: 'add',
+            waitingNurseName: '김간호',
+            targetLabel: 'A팀',
+        });
+
+        expect(result.title).toBe('김간호님을 A팀에 추가했어요');
+        expect(result.description).toBe('');
+    });
+
     it('guides retry and recovery on add failure', () => {
         expect(
             getConnectionManageResultCopy({

@@ -102,11 +102,11 @@ export function getConnectionManageResultCopy({
 
     if (submitStatus === 'success') {
         return {
-            title: connectMode === 'link' ? '기존 계정과 연결했어요' : '팀 추가를 완료했어요',
+            title: connectMode === 'link' ? '기존 계정과 연결했어요' : `${safeWaitingNurseName}님을 ${safeTargetLabel}에 추가했어요`,
             description:
                 connectMode === 'link'
                     ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했어요. 이어서 확인할 수 있어요.`
-                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀에 추가했어요.`,
+                    : '',
         };
     }
 

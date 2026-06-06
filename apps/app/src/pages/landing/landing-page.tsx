@@ -20,8 +20,8 @@ const mobileHeroPhrases = [
         lines: ['내 근무 일정,', '듀팅에서 바로 확인해요'],
     },
     {
-        ariaLabel: '병동 연동으로 원티드를 더 쉽게 신청해요',
-        lines: ['병동 연동으로', '원티드를 더 쉽게 신청해요'],
+        ariaLabel: '신청근무와 휴일 요청을 더 쉽게 보내요',
+        lines: ['신청근무와 휴일 요청을', '더 쉽게 보내요'],
     },
     {
         ariaLabel: '병동 소식도 듀팅으로 바로 받아요',
@@ -117,7 +117,7 @@ const mobileAppBenefits = [
     },
     {
         title: '병동 연동',
-        description: '병동과 연결해 동료 근무와 신청 근무를 함께 볼 수 있어요.',
+        description: '병동과 연결해 신청근무와 휴일 요청을 간편하게 보내요.',
         icon: UsersRound,
     },
     {
@@ -644,7 +644,7 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                             <RotatingMobileHeroPhrase />
                         </h1>
                         <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-4 text-base leading-7 font-medium text-[#6F6B7A]">
-                            근무 확인부터 원티드 신청, 병동 소식과 널톡까지 앱에서 바로 시작해요.
+                            근무 확인부터 신청근무/휴일 요청, 병동 소식까지 앱에서 바로 챙겨요.
                         </p>
 
                         <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid grid-cols-2 gap-3">
