@@ -47,6 +47,27 @@ type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
 
+const DRAFT_WARD_ID_STORAGE_KEY = 'dutying:onboardingWardDraftId';
+
+const readStoredDraftWardId = () => {
+    if (typeof window === 'undefined') return null;
+
+    const rawValue = window.sessionStorage.getItem(DRAFT_WARD_ID_STORAGE_KEY);
+    const wardId = rawValue ? Number(rawValue) : null;
+
+    return Number.isFinite(wardId) && wardId && wardId > 0 ? wardId : null;
+};
+const persistDraftWardId = (wardId: number) => {
+    if (typeof window === 'undefined') return;
+
+    window.sessionStorage.setItem(DRAFT_WARD_ID_STORAGE_KEY, String(wardId));
+};
+const clearStoredDraftWardId = () => {
+    if (typeof window === 'undefined') return;
+
+    window.sessionStorage.removeItem(DRAFT_WARD_ID_STORAGE_KEY);
+};
+
 const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
     const next = [...items];
     const [moved] = next.splice(sourceIndex, 1);
@@ -171,7 +192,8 @@ function useOnboardingWardWizard() {
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
-    const [draftWardId, setDraftWardId] = useState<number | null>(null);
+    const [draftWardId, setDraftWardId] = useState<number | null>(() => readStoredDraftWardId());
+    const [hasLoadedStoredParseResult, setHasLoadedStoredParseResult] = useState(() => readStoredDraftWardId() == null);
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
     const onboardingWardCreateExecutor = useMemo(
@@ -184,6 +206,49 @@ function useOnboardingWardWizard() {
             setSelectedTeamId(draft.teams[0].id);
         }
     }, [draft.teams, selectedTeamId]);
+
+    useEffect(() => {
+        if (!draftWardId || hasLoadedStoredParseResult) {
+            return undefined;
+        }
+
+        let canceled = false;
+        const restoreParseResult = async () => {
+            try {
+                const result = await FileAPI.getOnboardingWardParseResult(draftWardId);
+
+                if (canceled) {
+                    return;
+                }
+
+                if (result.exists && result.payload) {
+                    const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(
+                        result.payload,
+                        result.fileName ?? '기존 근무표',
+                    );
+
+                    setDraft((prev) => applyParsedWardData(prev, parsedWardData));
+                    setUploadWarnings(warnings);
+                    setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
+                }
+            } catch (error) {
+                Sentry.captureException(error, {
+                    tags: {feature: 'onboarding-ward-create'},
+                    extra: {phase: 'restore-parse-result', draftWardId},
+                });
+            } finally {
+                if (!canceled) {
+                    setHasLoadedStoredParseResult(true);
+                }
+            }
+        };
+
+        void restoreParseResult();
+
+        return () => {
+            canceled = true;
+        };
+    }, [draftWardId, hasLoadedStoredParseResult]);
 
     useEffect(() => {
         if (!isSkillLevelEnabled && sortMode === 'skill') {
@@ -207,11 +272,11 @@ function useOnboardingWardWizard() {
     };
     const ensureDraftWard = async () => {
         if (draftWardId) {
-            return true;
+            return draftWardId;
         }
 
         if (draftCreationStatus === 'creating') {
-            return false;
+            return null;
         }
 
         setDraftCreationStatus('creating');
@@ -224,9 +289,11 @@ function useOnboardingWardWizard() {
             }
 
             setDraftWardId(draftWard.wardId);
+            persistDraftWardId(draftWard.wardId);
+            setHasLoadedStoredParseResult(true);
             setDraftCreationStatus('created');
 
-            return true;
+            return draftWard.wardId;
         } catch (error) {
             Sentry.captureException(error, {
                 tags: {feature: 'onboarding-ward-create'},
@@ -235,14 +302,14 @@ function useOnboardingWardWizard() {
             setDraftCreationStatus('error');
             toast.error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
 
-            return false;
+            return null;
         }
     };
     const goNextStep = async () => {
         if (draft.currentStep === 1) {
-            const isDraftReady = await ensureDraftWard();
+            const readyDraftWardId = await ensureDraftWard();
 
-            if (!isDraftReady) {
+            if (!readyDraftWardId) {
                 return;
             }
         }
@@ -467,7 +534,13 @@ function useOnboardingWardWizard() {
         setUploadWarnings([]);
 
         try {
-            const response = await FileAPI.parseOnboardingWardExcel(file);
+            const readyDraftWardId = await ensureDraftWard();
+
+            if (!readyDraftWardId) {
+                throw new Error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
+            }
+
+            const response = await FileAPI.parseOnboardingWardExcel(file, {wardId: readyDraftWardId});
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name);
 
             setDraft((prev) => applyParsedWardData(prev, parsedWardData));
@@ -527,6 +600,7 @@ function useOnboardingWardWizard() {
         try {
             const submission = await onboardingWardCreateExecutor(nextDraft);
 
+            clearStoredDraftWardId();
             setCreatedWard(submission.ward ?? null);
             setSubmissionStatus('success');
             toast.success(submission.successMessage);

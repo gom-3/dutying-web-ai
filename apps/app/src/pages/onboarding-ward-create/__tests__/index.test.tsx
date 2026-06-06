@@ -11,6 +11,7 @@ const mockCreateOnboardingWardDraft = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+const mockGetOnboardingWardParseResult = vi.fn();
 const TEST_HOSPITAL_NAME = '테스트 병원';
 const TEST_WARD_NAME = '테스트 병동';
 const typedTranslations = {
@@ -87,6 +88,7 @@ vi.mock('@/shared/api', async () => {
         FileAPI: {
             ...actual.FileAPI,
             parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+            getOnboardingWardParseResult: (...args: unknown[]) => mockGetOnboardingWardParseResult(...args),
         },
     };
 });
@@ -124,6 +126,8 @@ describe('OnboardingWardCreatePage', () => {
         toastSuccess.mockReset();
         toastError.mockReset();
         mockParseOnboardingWardExcel.mockReset();
+        mockGetOnboardingWardParseResult.mockReset();
+        window.sessionStorage.clear();
         mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
     });
 
@@ -179,7 +183,7 @@ describe('OnboardingWardCreatePage', () => {
             expect(screen.getByText('업로드됨: march-duty.xlsx')).toBeInTheDocument();
         });
 
-        expect(mockParseOnboardingWardExcel).toHaveBeenCalledTimes(1);
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(expect.any(File), {wardId: 10});
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
 
         await user.click(screen.getByRole('button', {name: '다음'}));

@@ -92,6 +92,18 @@ export type TOnboardingWardParseApiResponse = {
     message?: string | null;
 };
 
+export type TOnboardingWardParseResultApiResponse = {
+    wardId?: number | null;
+    exists?: boolean | null;
+    fileName?: string | null;
+    payload?: TOnboardingWardParseApiResponse | null;
+    savedAt?: string | null;
+};
+
+export type TOnboardingWardParseOptions = {
+    wardId?: number | null;
+};
+
 export interface IPresignedUrlResponse {
     presignedUrl: string;
     fileUrl: string;
@@ -102,5 +114,6 @@ export interface IPresignedUrlResponse {
 export interface IFileAPI {
     // POST
     getPresignedUrl: (fileType: TPresignedUrlRequest, fileExtension: string) => Promise<IPresignedUrlResponse>;
-    parseOnboardingWardExcel: (file: File) => Promise<TOnboardingWardParseApiResponse>;
+    parseOnboardingWardExcel: (file: File, options?: TOnboardingWardParseOptions) => Promise<TOnboardingWardParseApiResponse>;
+    getOnboardingWardParseResult: (wardId: number) => Promise<TOnboardingWardParseResultApiResponse>;
 }

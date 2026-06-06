@@ -1,5 +1,5 @@
 import type {DropResult} from '@hello-pangea/dnd';
-import {act} from 'react';
+import {act, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook} from '@/shared/util/test-utils';
@@ -11,6 +11,7 @@ const mockCreateWard = vi.fn();
 const mockCreateOnboardingWardDraft = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+const mockGetOnboardingWardParseResult = vi.fn();
 
 vi.mock('react-hot-toast', () => ({
     default: {
@@ -37,6 +38,7 @@ vi.mock('@/shared/api', async () => {
         FileAPI: {
             ...actual.FileAPI,
             parseOnboardingWardExcel: (...args: unknown[]) => mockParseOnboardingWardExcel(...args),
+            getOnboardingWardParseResult: (...args: unknown[]) => mockGetOnboardingWardParseResult(...args),
         },
     };
 });
@@ -54,6 +56,8 @@ describe('useOnboardingWardWizard upload flow', () => {
         mockCompleteOnboardingWardDraft.mockReset();
         mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
         mockParseOnboardingWardExcel.mockReset();
+        mockGetOnboardingWardParseResult.mockReset();
+        window.sessionStorage.clear();
         toastSuccess.mockReset();
         toastError.mockReset();
     });
@@ -70,6 +74,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
 
         expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({hospitalName: '듀팅병원', name: '중환자실'});
+        expect(window.sessionStorage.getItem('dutying:onboardingWardDraftId')).toBe('10');
         expect(result.current.draft.currentStep).toBe(2);
         expect(result.current.draftCreationStatus).toBe('created');
     });
@@ -107,6 +112,7 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         await uploadFile(result.current.applyUploadedFile, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(expect.any(File), {wardId: 10});
         expect(result.current.uploadStatus).toBe('success');
         expect(result.current.uploadError).toBeNull();
         expect(result.current.uploadWarnings).toEqual([]);
@@ -123,6 +129,42 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
         expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('restores saved parse result for a draft ward from the Spring query endpoint', async () => {
+        window.sessionStorage.setItem('dutying:onboardingWardDraftId', '10');
+        mockGetOnboardingWardParseResult.mockResolvedValue({
+            wardId: 10,
+            exists: true,
+            fileName: 'saved-duty.xlsx',
+            payload: {
+                wardName: '중환자실',
+                hospitalName: '듀팅병원',
+                shiftTypes: [{name: '데이', shortName: 'D'}],
+                teams: [{name: 'A팀'}],
+                nurses: [{name: '복구 간호사', teamName: 'A팀'}],
+                constraint_candidates: [
+                    {
+                        key: 'required_staff',
+                        template_code: 'MIN_STAFF_BY_SHIFT',
+                        params: {staffing: [{shift: 'D', count: 2}]},
+                        evidence_summary: '저장된 분석 결과',
+                    },
+                ],
+            },
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        await waitFor(() => {
+            expect(result.current.draft.uploadedFileName).toBe('saved-duty.xlsx');
+        });
+
+        expect(mockGetOnboardingWardParseResult).toHaveBeenCalledWith(10);
+        expect(result.current.uploadStatus).toBe('success');
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이']);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['복구 간호사']);
+        expect(result.current.draft.constraintCandidates).toHaveLength(1);
     });
 
     it('updates uploaded constraint candidate selection and staffing counts', async () => {
