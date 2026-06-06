@@ -10,6 +10,8 @@ const {
     mockSetLoading,
     mockInitTutorial,
     mockCreateWard,
+    mockCreateOnboardingWardDraft,
+    mockCompleteOnboardingWardDraft,
     mockCreateWorkspace,
     mockJoinWardByCode,
     mockUpdateAdminMe,
@@ -34,6 +36,8 @@ const {
     mockSetLoading: vi.fn(),
     mockInitTutorial: vi.fn(),
     mockCreateWard: vi.fn(),
+    mockCreateOnboardingWardDraft: vi.fn(),
+    mockCompleteOnboardingWardDraft: vi.fn(),
     mockCreateWorkspace: vi.fn(),
     mockJoinWardByCode: vi.fn(),
     mockUpdateAdminMe: vi.fn(),
@@ -121,6 +125,8 @@ vi.mock('@/shared/api', () => ({
     },
     WardAPI: {
         createWard: mockCreateWard,
+        createOnboardingWardDraft: mockCreateOnboardingWardDraft,
+        completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         getWard: mockGetWard,
         getShiftTeams: mockGetShiftTeams,
         createShiftTeam: mockCreateShiftTeam,
@@ -138,6 +144,8 @@ describe('useRegister', () => {
         vi.clearAllMocks();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockGetWard.mockResolvedValue({wardId: 10, wardShiftTypes: [], shiftTeams: []});
+        mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
+        mockCompleteOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'ACTIVE', wardShiftTypes: [], shiftTeams: []});
         mockGetShiftTeams.mockResolvedValue([{shiftTeamId: 1, name: '기본팀', nurseCnt: 0, nurses: []}]);
         mockCreateShiftTeam.mockResolvedValue({shiftTeamId: 2, name: '추가팀', nurseCnt: 0, nurses: []});
         mockUpdateShiftTeam.mockResolvedValue({shiftTeamId: 1, name: 'A팀', nurseCnt: 0, nurses: []});
@@ -219,6 +227,77 @@ describe('useRegister', () => {
         });
         expect(mockSetQueryData).toHaveBeenCalled();
         expect(mockHandleGetAccountMe).not.toHaveBeenCalled();
+        expect(mockNavigate).not.toHaveBeenCalled();
+    });
+
+    it('creates an onboarding draft first and links the account only when the draft is completed', async () => {
+        const draftWard = {
+            wardId: 10,
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            code: 'A7K29Q',
+            nurseCnt: 0,
+            setupStatus: 'SETUP_IN_PROGRESS',
+            wardShiftTypes: [],
+            shiftTeams: [],
+        };
+        const completedWard = {
+            ...draftWard,
+            nurseCnt: 1,
+            setupStatus: 'ACTIVE',
+        };
+
+        mockAccountMe.current = {
+            accountId: 1,
+            nurseId: null,
+            wardId: null,
+            shiftTeamId: null,
+            email: 'nurse@example.com',
+            name: 'Kim',
+            profileImgUrl: '',
+            isManager: true,
+            status: 'WARD_SELECT_PENDING',
+        };
+        mockCreateOnboardingWardDraft.mockResolvedValue(draftWard);
+        mockCompleteOnboardingWardDraft.mockResolvedValue(completedWard);
+
+        const {result} = renderHook(() => useRegister());
+
+        await act(async () => {
+            await expect(result.current.actions.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'})).resolves.toEqual(
+                draftWard,
+            );
+        });
+
+        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({name: 'ICU', hospitalName: 'Dutying Hospital'});
+        expect(mockApplyAccountMe).not.toHaveBeenCalled();
+
+        await act(async () => {
+            await expect(
+                result.current.actions.completeOnboardingWardDraft(
+                    10,
+                    {
+                        name: 'ICU',
+                        hospitalName: 'Dutying Hospital',
+                        shiftTeams: [{nurseNames: ['홍길동']}],
+                        wardShiftTypes: [],
+                    },
+                    {navigateOnLinked: false},
+                ),
+            ).resolves.toEqual(completedWard);
+        });
+
+        expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledWith(10, {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            shiftTeams: [{nurseNames: ['홍길동']}],
+            wardShiftTypes: [],
+        });
+        expect(mockApplyAccountMe).toHaveBeenCalledWith({
+            ...mockAccountMe.current,
+            wardId: 10,
+            status: 'LINKED',
+        });
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 

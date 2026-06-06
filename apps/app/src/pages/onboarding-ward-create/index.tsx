@@ -54,6 +54,7 @@ function OnboardingWardCreatePage() {
         uploadStatus,
         uploadError,
         uploadWarnings,
+        draftCreationStatus,
         createdWard,
         saveSkillConfig,
         disableSkillConfig,
@@ -69,7 +70,8 @@ function OnboardingWardCreatePage() {
     const [showIdentityNameError, setShowIdentityNameError] = useState(false);
     const isSubmitting = submissionStatus === 'submitting';
     const isSuccess = submissionStatus === 'success';
-    const actionsDisabled = isSubmitting || isSuccess;
+    const isSavingDraft = draftCreationStatus === 'creating';
+    const actionsDisabled = isSavingDraft || isSubmitting || isSuccess;
     const isNurseRegistrationStep = draft.currentStep === 4;
     const isUploadStep = draft.currentStep === 2;
     const hasUploadedFile = Boolean(draft.uploadedFileName);
@@ -137,7 +139,7 @@ function OnboardingWardCreatePage() {
 
         if (canGoNext) {
             setShowIdentityNameError(false);
-            goNextStep();
+            void goNextStep();
 
             return;
         }
@@ -367,7 +369,7 @@ function OnboardingWardCreatePage() {
                         }
 
                         if (draft.currentStep < 4) {
-                            goNextStep();
+                            void goNextStep();
 
                             return;
                         }
@@ -407,10 +409,12 @@ function OnboardingWardCreatePage() {
                         ) : undefined
                     }
                     nextDisabled={
-                        draft.currentStep < 4 ? !canGoNext || isSubmitting || isSuccess : !canComplete || isSubmitting || isSuccess
+                        draft.currentStep < 4
+                            ? !canGoNext || isSavingDraft || isSubmitting || isSuccess
+                            : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}
-                    nextLabel={draft.currentStep < 4 ? '다음' : isSubmitting ? '생성 중...' : isSuccess ? '생성 완료' : '완료'}
+                    nextLabel={draft.currentStep === 1 && isSavingDraft ? '저장 중...' : draft.currentStep < 4 ? '다음' : isSubmitting ? '생성 중...' : isSuccess ? '생성 완료' : '완료'}
                 >
                     {stepContent}
                 </OnboardingStepLayout>

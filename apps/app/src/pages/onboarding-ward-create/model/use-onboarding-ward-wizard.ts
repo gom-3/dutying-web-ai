@@ -43,6 +43,7 @@ const MAX_STEP = 4;
 
 type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
+type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
 
 const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
     const next = [...items];
@@ -119,10 +120,20 @@ const removeEmptyTeamsForCompletion = (draft: TOnboardingWardDraft): TOnboarding
         nurses: nextNurses,
     };
 };
+const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft) => {
+    const normalizedWardName = draft.wardName.trim();
+    const normalizedHospitalName = draft.hospitalName.trim();
+    const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
+
+    return {
+        name: normalizedWardName || normalizedHospitalName || fallbackName,
+        hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
+    };
+};
 
 function useOnboardingWardWizard() {
     const {
-        actions: {createWard},
+        actions: {createWard, createOnboardingWardDraft, completeOnboardingWardDraft},
     } = useRegister();
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
     const [selectedTeamId, setSelectedTeamId] = useState('');
@@ -133,8 +144,13 @@ function useOnboardingWardWizard() {
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
+    const [draftWardId, setDraftWardId] = useState<number | null>(null);
+    const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
-    const onboardingWardCreateExecutor = useMemo(() => createOnboardingWardCreateExecutor(createWard), [createWard]);
+    const onboardingWardCreateExecutor = useMemo(
+        () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
+        [completeOnboardingWardDraft, createWard, draftWardId],
+    );
 
     useEffect(() => {
         if (!selectedTeamId && draft.teams[0]) {
@@ -162,7 +178,48 @@ function useOnboardingWardWizard() {
 
         setSortModeState(nextSortMode);
     };
-    const goNextStep = () => {
+    const ensureDraftWard = async () => {
+        if (draftWardId) {
+            return true;
+        }
+
+        if (draftCreationStatus === 'creating') {
+            return false;
+        }
+
+        setDraftCreationStatus('creating');
+
+        try {
+            const draftWard = await createOnboardingWardDraft(buildDraftWardIdentityPayload(draft));
+
+            if (!draftWard?.wardId) {
+                throw new Error('Onboarding draft ward id missing.');
+            }
+
+            setDraftWardId(draftWard.wardId);
+            setDraftCreationStatus('created');
+
+            return true;
+        } catch (error) {
+            Sentry.captureException(error, {
+                tags: {feature: 'onboarding-ward-create'},
+                extra: {step: draft.currentStep, phase: 'create-draft'},
+            });
+            setDraftCreationStatus('error');
+            toast.error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
+
+            return false;
+        }
+    };
+    const goNextStep = async () => {
+        if (draft.currentStep === 1) {
+            const isDraftReady = await ensureDraftWard();
+
+            if (!isDraftReady) {
+                return;
+            }
+        }
+
         setDraft((prev) => goNextStepDraft(prev));
     };
     const goPreviousStep = () => {
@@ -435,7 +492,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        goNextStep();
+        void goNextStep();
     };
 
     return {
@@ -465,6 +522,7 @@ function useOnboardingWardWizard() {
         uploadStatus,
         uploadError,
         uploadWarnings,
+        draftCreationStatus,
         createdWard,
         saveSkillConfig,
         disableSkillConfig,

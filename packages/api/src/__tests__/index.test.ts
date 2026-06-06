@@ -102,7 +102,73 @@ describe('@dutying/api public entry', () => {
                     endTime: null,
                 },
             ],
-            shiftTeams: [{nurseNames: ['Kim Nurse']}],
+            shiftTeams: [
+                {
+                    name: 'Team 1',
+                    nurseNames: ['Kim Nurse'],
+                    nurses: [{name: 'Kim Nurse', memo: 'preceptor'}],
+                },
+            ],
+        });
+    });
+
+    it('posts onboarding draft and completion to split onboarding endpoints', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+        const wardApi = createWardApi(client);
+
+        postMock
+            .mockResolvedValueOnce({
+                data: {
+                    wardId: 10,
+                    name: 'ICU',
+                    hospitalName: 'Dutying Hospital',
+                    code: 'A7K29Q',
+                    nurseCnt: 0,
+                    setupStatus: 'SETUP_IN_PROGRESS',
+                    wardShiftTypes: [],
+                    shiftTeams: [],
+                },
+            })
+            .mockResolvedValueOnce({
+                data: {
+                    wardId: 10,
+                    name: 'ICU',
+                    hospitalName: 'Dutying Hospital',
+                    code: 'A7K29Q',
+                    nurseCnt: 1,
+                    setupStatus: 'ACTIVE',
+                    wardShiftTypes: [],
+                    shiftTeams: [],
+                },
+            });
+
+        await expect(wardApi.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'})).resolves.toMatchObject({
+            wardId: 10,
+            setupStatus: 'SETUP_IN_PROGRESS',
+        });
+
+        await expect(
+            wardApi.completeOnboardingWardDraft(10, {
+                name: 'ICU',
+                hospitalName: 'Dutying Hospital',
+                wardShiftTypes: [],
+                shiftTeams: [{name: 'Team 1', nurseNames: ['Kim Nurse'], nurses: [{name: 'Kim Nurse'}]}],
+            }),
+        ).resolves.toMatchObject({
+            wardId: 10,
+            setupStatus: 'ACTIVE',
+        });
+
+        expect(postMock).toHaveBeenNthCalledWith(1, '/wards/onboarding/drafts', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+        });
+        expect(postMock).toHaveBeenNthCalledWith(2, '/wards/10/onboarding/complete', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [],
+            shiftTeams: [{name: 'Team 1', nurseNames: ['Kim Nurse'], nurses: [{name: 'Kim Nurse'}]}],
         });
     });
 

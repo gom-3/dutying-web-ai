@@ -9,6 +9,7 @@ import type {
     TCreateWardAdminEmailDTO,
     TCreateWardAdminInvitationDTO,
     TCreateWardDTO,
+    TCreateOnboardingWardDraftDTO,
     TCreateWardShiftTypeDTO,
     TDutyRequestResponse,
     TEditWardDTO,
@@ -85,6 +86,14 @@ const normalizeBasePath = (basePath: string | undefined) => {
 
     return path.endsWith('/') ? path.slice(0, -1) : path;
 };
+const compactRequest = <T extends Record<string, unknown>>(request: T) =>
+    Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
+const toCreateWardShiftTeamRequest = (shiftTeam: TCreateWardDTO['shiftTeams'][number]) =>
+    compactRequest({
+        name: shiftTeam.name,
+        nurseNames: shiftTeam.nurseNames,
+        nurses: shiftTeam.nurses,
+    }) as TCreateWardRequest['shiftTeams'][number];
 
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
     name: createWardDTO.name,
@@ -94,13 +103,9 @@ const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest 
         startTime: shiftType.isOff ? null : shiftType.startTime,
         endTime: shiftType.isOff ? null : shiftType.endTime,
     })),
-    shiftTeams: createWardDTO.shiftTeams.map((shiftTeam) => ({
-        nurseNames: shiftTeam.nurseNames,
-    })),
+    shiftTeams: createWardDTO.shiftTeams.map(toCreateWardShiftTeamRequest),
 });
 
-const compactRequest = <T extends Record<string, unknown>>(request: T) =>
-    Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
 const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').replace(/\D/g, '');
 const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
 
@@ -154,6 +159,12 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         getWard: async (wardId: number) => normalizeWardResponse((await client.get<TWardResponse>(wardPath(`/${wardId}`))).data),
         createWard: async (createWardDTO: TCreateWardDTO) =>
             normalizeWardResponse((await client.post<TWardResponse>(wardPath(), toCreateWardRequest(createWardDTO))).data),
+        createOnboardingWardDraft: async (draftDTO: TCreateOnboardingWardDraftDTO) =>
+            normalizeWardResponse((await client.post<TWardResponse>(wardPath('/onboarding/drafts'), draftDTO)).data),
+        completeOnboardingWardDraft: async (wardId: number, createWardDTO: TCreateWardDTO) =>
+            normalizeWardResponse(
+                (await client.post<TWardResponse>(wardPath(`/${wardId}/onboarding/complete`), toCreateWardRequest(createWardDTO))).data,
+            ),
         editWard: async (wardId: number, ward: TEditWardDTO) => (await client.patch<TWardResponse>(wardPath(`/${wardId}`), ward)).data,
         getWardConstraint: async (wardId: number, shiftTeamId: number) =>
             (await client.get<TWardConstraintResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/constraint`))).data,

@@ -15,13 +15,28 @@ export type TOnboardingWardCreateAction = (
     },
 ) => Promise<TWardResponse | void>;
 
+export type TOnboardingWardCompleteDraftAction = (
+    wardId: number,
+    createWardDTO: TCreateWardDTO,
+    options?: {
+        navigateOnLinked?: boolean;
+    },
+) => Promise<TWardResponse | void>;
+
 export type TOnboardingWardCreateExecutor = (draft: TOnboardingWardDraft) => Promise<TOnboardingWardCreateSubmission>;
 
 export const createOnboardingWardCreateExecutor =
-    (createWard: TOnboardingWardCreateAction): TOnboardingWardCreateExecutor =>
+    (
+        createWard: TOnboardingWardCreateAction,
+        completeOnboardingWardDraft?: TOnboardingWardCompleteDraftAction,
+        draftWardId?: number | null,
+    ): TOnboardingWardCreateExecutor =>
     async (draft) => {
         const wardCreatePayload = buildCreateWardPayload(draft);
-        const ward = await createWard(wardCreatePayload, {navigateOnLinked: false});
+        const ward =
+            draftWardId && completeOnboardingWardDraft
+                ? await completeOnboardingWardDraft(draftWardId, wardCreatePayload, {navigateOnLinked: false})
+                : await createWard(wardCreatePayload, {navigateOnLinked: false});
 
         return {
             mode: 'created',

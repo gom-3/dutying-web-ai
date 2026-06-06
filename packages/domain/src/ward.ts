@@ -8,6 +8,7 @@ export type TWard = {
     code: string;
     hospitalName: string;
     nurseCnt: number;
+    setupStatus?: 'SETUP_IN_PROGRESS' | 'ACTIVE' | 'CANCELLED';
     wardShiftTypes: TWardShiftType[];
     shiftTeams: TShiftTeam[];
 };

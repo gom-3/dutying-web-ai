@@ -460,6 +460,8 @@ export interface IWardAPI {
     getWardByCode: (code: string) => Promise<TWardResponse>;
     getWaitingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;
     createWard: (createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
+    createOnboardingWardDraft: (draftDTO: TCreateOnboardingWardDraftDTO) => Promise<TWardResponse>;
+    completeOnboardingWardDraft: (wardId: number, createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
     addMeToWaitingNurses: (wardId: number) => Promise<void>;
     connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
     approveWaitingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
@@ -576,6 +578,11 @@ export type TCreateWardDTO = {
     hospitalName: string;
     wardShiftTypes: TCreateWardShiftTypeDTO[];
     shiftTeams: TCreateWardShiftTeamDTO[];
+};
+
+export type TCreateOnboardingWardDraftDTO = {
+    name: string;
+    hospitalName: string;
 };
 
 export type TEditWardDTO = {

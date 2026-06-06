@@ -1,4 +1,4 @@
-import {type TCreateWardDTO, type TWardResponse} from '@dutying/api/ward';
+import {type TCreateOnboardingWardDraftDTO, type TCreateWardDTO, type TWardResponse} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
@@ -84,6 +84,71 @@ const useRegister = () => {
                 }
 
                 const createdWard = await WardAPI.createWard(createWardDTO);
+
+                initTutorial();
+
+                if (accountMe) {
+                    applyAccountMe({
+                        ...accountMe,
+                        wardId: createdWard.wardId,
+                        status: 'LINKED',
+                    });
+                }
+
+                cacheCreatedWard(createdWard);
+
+                if (options?.navigateOnLinked !== false) {
+                    navigate(ROUTE.MAKE);
+                }
+
+                if (!accountMe) {
+                    void handleGetAccountMe().catch(() => undefined);
+                }
+
+                return createdWard;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [accountMe, applyAccountMe, cacheCreatedWard, handleGetAccountMe, initTutorial, navigate, setLoading],
+    );
+    const createOnboardingWardDraft = useCallback(
+        async (draftDTO: TCreateOnboardingWardDraftDTO) => {
+            setLoading(true);
+
+            try {
+                const draftWard = await WardAPI.createOnboardingWardDraft(draftDTO);
+
+                cacheCreatedWard(draftWard);
+
+                return draftWard;
+            } finally {
+                setLoading(false);
+            }
+        },
+        [cacheCreatedWard, setLoading],
+    );
+    const completeOnboardingWardDraft = useCallback(
+        async (wardId: number, createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {
+            setLoading(true);
+
+            try {
+                const linkedWardId = getLinkedWardId(accountMe);
+
+                if (linkedWardId) {
+                    const existingWard = await WardAPI.getWard(linkedWardId).catch(() => undefined);
+
+                    initTutorial();
+                    cacheCreatedWard(existingWard);
+
+                    if (options?.navigateOnLinked !== false) {
+                        navigate(ROUTE.MAKE);
+                    }
+
+                    return existingWard;
+                }
+
+                const createdWard = await WardAPI.completeOnboardingWardDraft(wardId, createWardDTO);
 
                 initTutorial();
 
@@ -223,6 +288,8 @@ const useRegister = () => {
         actions: {
             registerAccountProfile,
             createWard,
+            createOnboardingWardDraft,
+            completeOnboardingWardDraft,
             joinWardByCode,
             enterWard,
             cancelWaiting,

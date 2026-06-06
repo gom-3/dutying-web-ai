@@ -8,6 +8,8 @@ import useOnboardingWardWizard from '../use-onboarding-ward-wizard';
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
 const mockCreateWard = vi.fn();
+const mockCreateOnboardingWardDraft = vi.fn();
+const mockCompleteOnboardingWardDraft = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
 
 vi.mock('react-hot-toast', () => ({
@@ -21,6 +23,8 @@ vi.mock('@/features/register', () => ({
     default: () => ({
         actions: {
             createWard: mockCreateWard,
+            createOnboardingWardDraft: mockCreateOnboardingWardDraft,
+            completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
 }));
@@ -46,9 +50,28 @@ const uploadFile = async (applyUploadedFile: (file: File) => Promise<void>, file
 describe('useOnboardingWardWizard upload flow', () => {
     beforeEach(() => {
         mockCreateWard.mockReset();
+        mockCreateOnboardingWardDraft.mockReset();
+        mockCompleteOnboardingWardDraft.mockReset();
+        mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
         mockParseOnboardingWardExcel.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
+    });
+
+    it('creates a draft ward before moving from identity to upload step', async () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({hospitalName: '듀팅병원', name: '중환자실'});
+        expect(result.current.draft.currentStep).toBe(2);
+        expect(result.current.draftCreationStatus).toBe('created');
     });
 
     it('stores parsed draft data and success feedback when the upload succeeds without warnings', async () => {
