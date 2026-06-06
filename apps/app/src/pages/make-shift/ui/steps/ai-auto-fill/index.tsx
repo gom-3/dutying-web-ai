@@ -1,3 +1,4 @@
+import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -14,13 +15,23 @@ import {
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
-import {prependSnapshotToListCache, useInvalidateScheduleSnapshots, useScheduleSnapshots} from '../../../model/use-schedule-snapshots';
+import {
+    MAX_SCHEDULE_SNAPSHOT_COUNT,
+    normalizeScheduleSnapshots,
+    prependSnapshotToListCache,
+    removeSnapshotFromListCache,
+    scheduleSnapshotsQueryKey,
+    updateSnapshotTitleInListCache,
+    useInvalidateScheduleSnapshots,
+    useScheduleSnapshots,
+} from '../../../model/use-schedule-snapshots';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {maskDutyDocNonFixedCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
@@ -28,6 +39,44 @@ import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
+
+function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
+    const updatedAt = new Date(snapshot.updatedAt).getTime();
+
+    if (!Number.isNaN(updatedAt)) return updatedAt;
+
+    const createdAt = new Date(snapshot.createdAt).getTime();
+
+    return Number.isNaN(createdAt) ? 0 : createdAt;
+}
+
+function getOldestSnapshot(snapshots: TSnapshotSummaryDto[]): TSnapshotSummaryDto | null {
+    return snapshots.reduce<TSnapshotSummaryDto | null>((oldest, snapshot) => {
+        if (!oldest) return snapshot;
+
+        return getSnapshotTimeValue(snapshot) < getSnapshotTimeValue(oldest) ? snapshot : oldest;
+    }, null);
+}
+
+function getNextSnapshotTitle(snapshots: TSnapshotSummaryDto[]): string {
+    const maxVersion = snapshots.reduce((max, snapshot) => {
+        const match = /^V(\d+)$/i.exec(snapshot.title.trim());
+
+        if (!match) return max;
+
+        return Math.max(max, Number(match[1]));
+    }, 0);
+
+    return `V${Math.max(maxVersion + 1, snapshots.length + 1)}`;
+}
+
+function resolveHistoryTitle(title: string | undefined, fallbackTitle: string): string {
+    const trimmedTitle = title?.trim() ?? '';
+
+    if (trimmedTitle.length > 0) return trimmedTitle;
+
+    return fallbackTitle;
+}
 
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
@@ -46,7 +95,6 @@ export function AiAutofill() {
     const history = useShiftEditorStore((s) => s.history);
     const draftRevision = useShiftEditorStore((s) => s.draftRevision);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
-    const activeValidationSummary = useShiftEditorStore((s) => s.scheduleValidationSnapshot?.validation.summary ?? null);
     const useCase = useMakeShiftUseCase();
     /** true: AI·기타로 채운 표 포함 전체 표시. false: 고정 근무 칸만 표시. */
     const [autoFillEnabled, setAutoFillEnabled] = useState(true);
@@ -59,6 +107,12 @@ export function AiAutofill() {
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
     const [activeSnapshotId, setActiveSnapshotId] = useState<number | null>(null);
     const [loadingSnapshotId, setLoadingSnapshotId] = useState<number | null>(null);
+    const [deletingSnapshotId, setDeletingSnapshotId] = useState<number | null>(null);
+    const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
+    const [snapshotLimitContext, setSnapshotLimitContext] = useState<{
+        snapshots: TSnapshotSummaryDto[];
+        oldestSnapshot: TSnapshotSummaryDto;
+    } | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -102,6 +156,8 @@ export function AiAutofill() {
         setHasCompletedAiFill(false);
         setIsSnapshotSidebarOpen(false);
         setActiveSnapshotId(null);
+        setSnapshotDeleteTarget(null);
+        setSnapshotLimitContext(null);
     }, [wardId, currentShiftTeamId, year, month]);
 
     useEffect(() => {
@@ -130,22 +186,29 @@ export function AiAutofill() {
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
         canConfirmAiAutofill(aiStatus);
-    const handleSaveSnapshot = async () => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
-
-        setIsSavingSnapshot(true);
+    const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
+        if (!wardId || !currentShiftTeamId || !dutyQuery.data) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
 
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
         try {
-            const versionLabel = (snapshotsQuery.data?.length ?? 0) + 1;
+            if (snapshotToDelete) {
+                setDeletingSnapshotId(snapshotToDelete.snapshotId);
+                await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, snapshotToDelete.snapshotId);
+                removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, snapshotToDelete.snapshotId);
+
+                if (activeSnapshotId === snapshotToDelete.snapshotId) {
+                    setActiveSnapshotId(null);
+                }
+            }
+
             const saved = await WardAPI.saveSnapshot(
                 wardId,
                 currentShiftTeamId,
                 buildSaveSnapshotDTO({
-                    title: `V${versionLabel}`,
+                    title: getNextSnapshotTitle(snapshots),
                     year,
                     month,
                     doc: editorDoc,
@@ -157,8 +220,41 @@ export function AiAutofill() {
             invalidateSnapshots(wardId, currentShiftTeamId, year, month);
             setActiveSnapshotId(saved.snapshotId);
             toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
+        } finally {
+            if (snapshotToDelete) {
+                setDeletingSnapshotId(null);
+            }
+        }
+    };
+    const handleSaveSnapshot = async () => {
+        if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
+
+        setIsSavingSnapshot(true);
+
+        try {
+            const snapshotList = await WardAPI.getSnapshots(wardId, currentShiftTeamId, year, month);
+            const snapshots = snapshotList.snapshots;
+
+            queryClient.setQueryData(
+                scheduleSnapshotsQueryKey(wardId, currentShiftTeamId, year, month),
+                normalizeScheduleSnapshots(snapshots),
+            );
+
+            if (snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT) {
+                const oldestSnapshot = getOldestSnapshot(snapshots);
+
+                if (oldestSnapshot) {
+                    setSnapshotLimitContext({snapshots, oldestSnapshot});
+                } else {
+                    toast.error(t('page.makeShift.aiRefill.snapshotLimitReached'));
+                }
+
+                return;
+            }
+
+            await saveSnapshotFromList(snapshots);
         } catch {
-            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: progressToastId});
+            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
         } finally {
             setIsSavingSnapshot(false);
         }
@@ -214,12 +310,25 @@ export function AiAutofill() {
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
+            const snapshotList = await WardAPI.getSnapshots(wardId, currentShiftTeamId ?? -1, year, month);
+            const normalizedSnapshots = normalizeScheduleSnapshots(snapshotList.snapshots);
+            const snapshotForPublishSave =
+                snapshotList.snapshots.length >= MAX_SCHEDULE_SNAPSHOT_COUNT
+                    ? (normalizedSnapshots.find((snapshotItem) => snapshotItem.snapshotId === activeSnapshotId) ?? normalizedSnapshots[0])
+                    : undefined;
+            const nextSnapshotTitle = snapshotForPublishSave?.title.trim()
+                ? snapshotForPublishSave.title
+                : `V${snapshotList.snapshots.length + 1}`;
+
+            queryClient.setQueryData(scheduleSnapshotsQueryKey(wardId, currentShiftTeamId ?? -1, year, month), normalizedSnapshots);
+
             // 스냅샷 저장 후 바로 게시(Publish)하는 시나리오로 간주
             const snapshot = await WardAPI.saveSnapshot(
                 wardId,
                 currentShiftTeamId ?? -1,
                 buildSaveSnapshotDTO({
-                    title: `${month}월 최종 확정본`,
+                    snapshotId: snapshotForPublishSave?.snapshotId,
+                    title: nextSnapshotTitle,
                     year,
                     month,
                     doc: editorDoc,
@@ -244,6 +353,74 @@ export function AiAutofill() {
             toast.dismiss(progressToastId);
         } finally {
             setIsWorking(false);
+        }
+    };
+    const handleRenameSnapshot = async (snapshotId: number, title: string) => {
+        if (!wardId || !currentShiftTeamId) return;
+
+        const nextTitle = title.trim();
+
+        if (!nextTitle) return;
+
+        try {
+            const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
+            const saved = await WardAPI.saveSnapshot(wardId, currentShiftTeamId, {
+                snapshotId,
+                title: nextTitle,
+                year: detail.year,
+                month: detail.month,
+                cells: detail.cells,
+                rowOrder: detail.rowOrder,
+                ...(detail.prompt != null ? {prompt: detail.prompt} : {}),
+                ...(detail.baseHash != null ? {baseHash: detail.baseHash} : {}),
+            });
+
+            updateSnapshotTitleInListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
+            invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+            toast.success(t('page.makeShift.aiRefill.snapshotSidebar.renameSuccess'));
+        } catch (error) {
+            toast.error(t('page.makeShift.aiRefill.snapshotSidebar.renameFailed'));
+            throw error;
+        }
+    };
+    const handleConfirmDeleteSnapshot = async () => {
+        if (!wardId || !currentShiftTeamId || !snapshotDeleteTarget) return;
+
+        const deletingSnapshot = snapshotDeleteTarget;
+
+        setDeletingSnapshotId(deletingSnapshot.snapshotId);
+
+        try {
+            await WardAPI.deleteSnapshot(wardId, currentShiftTeamId, deletingSnapshot.snapshotId);
+            removeSnapshotFromListCache(queryClient, wardId, currentShiftTeamId, year, month, deletingSnapshot.snapshotId);
+            invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+
+            if (activeSnapshotId === deletingSnapshot.snapshotId) {
+                setActiveSnapshotId(null);
+            }
+
+            setSnapshotDeleteTarget(null);
+            toast.success(t('page.makeShift.aiRefill.snapshotSidebar.deleteSuccess'));
+        } catch {
+            toast.error(t('page.makeShift.aiRefill.snapshotSidebar.deleteFailed'));
+        } finally {
+            setDeletingSnapshotId(null);
+        }
+    };
+    const handleConfirmDeleteOldestAndSave = async () => {
+        if (!snapshotLimitContext || isSavingSnapshot) return;
+
+        const {snapshots, oldestSnapshot} = snapshotLimitContext;
+
+        setSnapshotLimitContext(null);
+        setIsSavingSnapshot(true);
+
+        try {
+            await saveSnapshotFromList(snapshots, oldestSnapshot);
+        } catch {
+            toast.error(t('page.makeShift.aiRefill.saveSnapshotFailed'), {id: 'make-shift-snapshot-save-progress'});
+        } finally {
+            setIsSavingSnapshot(false);
         }
     };
     const handleAiFill = async () => {
@@ -329,6 +506,9 @@ export function AiAutofill() {
             }
         }
     };
+    const fallbackHistoryTitle = t('page.makeShift.aiRefill.snapshotSidebar.selectedHistory');
+    const snapshotDeleteTargetTitle = resolveHistoryTitle(snapshotDeleteTarget?.title, fallbackHistoryTitle);
+    const limitOldestSnapshotTitle = resolveHistoryTitle(snapshotLimitContext?.oldestSnapshot.title, fallbackHistoryTitle);
 
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex min-h-0 w-full min-w-0 flex-1">
@@ -399,9 +579,31 @@ export function AiAutofill() {
                 isError={snapshotsQuery.isError}
                 activeSnapshotId={activeSnapshotId}
                 loadingSnapshotId={loadingSnapshotId}
-                activeValidationSummary={activeValidationSummary}
+                deletingSnapshotId={deletingSnapshotId}
                 onSelectSnapshot={handleLoadSnapshot}
+                onRenameSnapshot={handleRenameSnapshot}
+                onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
+            />
+            <ConfirmActionDialog
+                open={snapshotDeleteTarget != null}
+                title={t('page.makeShift.aiRefill.snapshotSidebar.deleteTitle')}
+                description={t('page.makeShift.aiRefill.snapshotSidebar.deleteDescription', {title: snapshotDeleteTargetTitle})}
+                confirmLabel={t('page.makeShift.aiRefill.snapshotSidebar.deleteConfirm')}
+                cancelLabel={t('page.makeShift.aiRefill.snapshotSidebar.deleteCancel')}
+                tone="danger"
+                onClose={() => setSnapshotDeleteTarget(null)}
+                onConfirm={() => void handleConfirmDeleteSnapshot()}
+            />
+            <ConfirmActionDialog
+                open={snapshotLimitContext != null}
+                title={t('page.makeShift.aiRefill.snapshotLimitDialog.title')}
+                description={t('page.makeShift.aiRefill.snapshotLimitDialog.description', {title: limitOldestSnapshotTitle})}
+                confirmLabel={t('page.makeShift.aiRefill.snapshotLimitDialog.confirm')}
+                cancelLabel={t('page.makeShift.aiRefill.snapshotLimitDialog.cancel')}
+                tone="danger"
+                onClose={() => setSnapshotLimitContext(null)}
+                onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
         </div>
     );

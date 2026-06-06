@@ -340,6 +340,8 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                 .data,
         getSnapshot: async (wardId, shiftTeamId, snapshotId) =>
             (await client.get<TSnapshotDetailRes>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`))).data,
+        deleteSnapshot: async (wardId, shiftTeamId, snapshotId) =>
+            (await client.delete<void>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/snapshots/${snapshotId}`))).data,
         publishSnapshot: async (wardId, shiftTeamId, snapshotId, publishDTO = {}) =>
             (
                 await client.post<TPublishSnapshotRes>(

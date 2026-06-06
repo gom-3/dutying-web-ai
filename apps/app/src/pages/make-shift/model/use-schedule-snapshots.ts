@@ -1,16 +1,20 @@
-import {useQuery, useQueryClient} from '@tanstack/react-query';
 import type {TSnapshotListRes, TSnapshotSaveRes, TSnapshotSummaryDto} from '@dutying/api/ward';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import WardAPI from '@/shared/api/ward';
 
-export const scheduleSnapshotsQueryKey = (
-    wardId: number,
-    shiftTeamId: number,
-    year: number,
-    month: number,
-) => ['schedule', 'snapshots', wardId, shiftTeamId, year, month] as const;
+export const MAX_SCHEDULE_SNAPSHOT_COUNT = 10;
+
+export const scheduleSnapshotsQueryKey = (wardId: number, shiftTeamId: number, year: number, month: number) =>
+    ['schedule', 'snapshots', wardId, shiftTeamId, year, month] as const;
 
 export const scheduleSnapshotDetailQueryKey = (wardId: number, shiftTeamId: number, snapshotId: number) =>
     ['schedule', 'snapshot', wardId, shiftTeamId, snapshotId] as const;
+
+export function normalizeScheduleSnapshots(snapshots: TSnapshotSummaryDto[]): TSnapshotSummaryDto[] {
+    return [...snapshots]
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .slice(0, MAX_SCHEDULE_SNAPSHOT_COUNT);
+}
 
 export function useScheduleSnapshots(params: {
     wardId: number | null;
@@ -26,9 +30,7 @@ export function useScheduleSnapshots(params: {
         queryFn: async (): Promise<TSnapshotSummaryDto[]> => {
             const res: TSnapshotListRes = await WardAPI.getSnapshots(wardId!, shiftTeamId!, year, month);
 
-            return [...res.snapshots].sort(
-                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-            );
+            return normalizeScheduleSnapshots(res.snapshots);
         },
         enabled: enabled && wardId != null && shiftTeamId != null,
     });
@@ -80,5 +82,49 @@ export function prependSnapshotToListCache(
         updatedAt: saved.savedAt,
     };
 
-    queryClient.setQueryData(key, [summary, ...prev.filter((item) => item.snapshotId !== saved.snapshotId)]);
+    queryClient.setQueryData(key, normalizeScheduleSnapshots([summary, ...prev.filter((item) => item.snapshotId !== saved.snapshotId)]));
+}
+
+export function updateSnapshotTitleInListCache(
+    queryClient: ReturnType<typeof useQueryClient>,
+    wardId: number,
+    shiftTeamId: number,
+    year: number,
+    month: number,
+    saved: TSnapshotSaveRes,
+) {
+    const key = scheduleSnapshotsQueryKey(wardId, shiftTeamId, year, month);
+    const prev = queryClient.getQueryData<TSnapshotSummaryDto[]>(key) ?? [];
+
+    queryClient.setQueryData(
+        key,
+        normalizeScheduleSnapshots(
+            prev.map((item) =>
+                item.snapshotId === saved.snapshotId
+                    ? {
+                          ...item,
+                          title: saved.title,
+                          updatedAt: saved.savedAt,
+                      }
+                    : item,
+            ),
+        ),
+    );
+}
+
+export function removeSnapshotFromListCache(
+    queryClient: ReturnType<typeof useQueryClient>,
+    wardId: number,
+    shiftTeamId: number,
+    year: number,
+    month: number,
+    snapshotId: number,
+) {
+    const key = scheduleSnapshotsQueryKey(wardId, shiftTeamId, year, month);
+    const prev = queryClient.getQueryData<TSnapshotSummaryDto[]>(key) ?? [];
+
+    queryClient.setQueryData(
+        key,
+        prev.filter((item) => item.snapshotId !== snapshotId),
+    );
 }

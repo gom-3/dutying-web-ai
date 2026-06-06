@@ -1,11 +1,11 @@
 import {cn} from '@dutying/utils/style';
 import {X} from 'lucide-react';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {type CSSProperties, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
-import {type TDutyDoc, type TViolation, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
+import {type TCellValue, type TDutyDoc, type TViolation, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor/model';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
@@ -172,6 +172,22 @@ type TViolationPopover = {
     placement: 'top' | 'bottom';
 };
 
+type TShiftTypeDropdownPosition = {
+    left: number;
+    top?: number;
+    bottom?: number;
+    width: number;
+    placement: 'top' | 'bottom';
+};
+
+type TShiftTypeDropdownState = {
+    target: HTMLElement;
+    rowIndex: number;
+    colIndex: number;
+    currentValue: TCellValue;
+    position: TShiftTypeDropdownPosition;
+};
+
 function getViolationColSpan(violation: TViolation): {startCol: number; span: number} | null {
     if (violation.cells.length === 0) return null;
 
@@ -335,6 +351,150 @@ function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover 
     );
 }
 
+function getShiftTypeDropdownPosition(target: HTMLElement, optionCount: number): TShiftTypeDropdownPosition {
+    const rect = target.getBoundingClientRect();
+    const viewportPadding = 8;
+    const width = Math.max(148, rect.width);
+    const estimatedHeight = Math.min(280, Math.max(44, optionCount * 40 + 8));
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const placement = spaceBelow < estimatedHeight && spaceAbove > spaceBelow ? 'top' : 'bottom';
+    const centeredLeft = rect.left + rect.width / 2 - width / 2;
+    const left = Math.max(viewportPadding, Math.min(centeredLeft, window.innerWidth - width - viewportPadding));
+
+    return placement === 'top'
+        ? {left, bottom: window.innerHeight - rect.top + 6, width, placement}
+        : {left, top: rect.bottom + 6, width, placement};
+}
+
+function isSameShiftTypeDropdownPosition(a: TShiftTypeDropdownPosition, b: TShiftTypeDropdownPosition): boolean {
+    return a.left === b.left && a.top === b.top && a.bottom === b.bottom && a.width === b.width && a.placement === b.placement;
+}
+
+function isEditableDutyCell(rowIndex: number, colIndex: number, readonly: boolean): boolean {
+    if (readonly) return false;
+
+    const {doc, editorMode} = useShiftEditorStore.getState();
+    const row = doc.rows[rowIndex];
+    const date = doc.columns[colIndex];
+
+    if (!row || !date) return false;
+
+    const key = `${row.workerId}|${date}`;
+
+    if (doc.requestCells[key] === true) return false;
+
+    if (editorMode !== 'fixed' && doc.fixedCells[key] === true) return false;
+
+    return true;
+}
+
+function ShiftTypeDropdown({
+    dropdown,
+    shiftTypes,
+    onClose,
+    onSelect,
+    onReposition,
+}: {
+    dropdown: TShiftTypeDropdownState | null;
+    shiftTypes: TWardShiftType[];
+    onClose: () => void;
+    onSelect: (rowIndex: number, colIndex: number, value: TCellValue) => void;
+    onReposition: () => void;
+}) {
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!dropdown) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof Node)) return;
+
+            if (dropdown.target.contains(target) || menuRef.current?.contains(target)) return;
+
+            onClose();
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('resize', onReposition);
+        window.addEventListener('scroll', onReposition, true);
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+            window.removeEventListener('resize', onReposition);
+            window.removeEventListener('scroll', onReposition, true);
+        };
+    }, [dropdown, onClose, onReposition]);
+
+    if (!dropdown) return null;
+
+    const menuStyle: CSSProperties = {
+        left: dropdown.position.left,
+        width: dropdown.position.width,
+        ...(dropdown.position.placement === 'top' ? {bottom: dropdown.position.bottom} : {top: dropdown.position.top}),
+    };
+    const clearSelected = dropdown.currentValue === null;
+
+    return createPortal(
+        <div
+            ref={menuRef}
+            role="listbox"
+            aria-label="근무유형 선택"
+            style={menuStyle}
+            className={cn(
+                'fixed z-[2147483647] max-h-[280px] overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0_16px_36px_rgba(15,23,42,0.18)]',
+                'animate-in duration-150 fade-in-0 zoom-in-95',
+                dropdown.position.placement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1',
+            )}
+        >
+            <button
+                type="button"
+                role="option"
+                aria-selected={clearSelected}
+                className={cn(
+                    'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                    clearSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
+                )}
+                onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, null)}
+            >
+                <ShiftBadge shiftType={null} className="size-6 shrink-0 text-[12px]" />
+                <span className="min-w-0 truncate font-apple text-[13px] font-semibold">비우기</span>
+            </button>
+            {shiftTypes.map((shiftType) => {
+                const isSelected = dropdown.currentValue === shiftType.shortName;
+
+                return (
+                    <button
+                        key={shiftType.wardShiftTypeId}
+                        type="button"
+                        role="option"
+                        aria-selected={isSelected}
+                        className={cn(
+                            'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                            isSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
+                        )}
+                        onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, shiftType.shortName)}
+                    >
+                        <ShiftBadge shiftType={shiftType} className="size-6 shrink-0 text-[12px]" />
+                        <span className="min-w-0 flex-1 truncate font-apple text-[13px] font-semibold">{shiftType.name}</span>
+                        <span className="shrink-0 font-poppins text-[12px] font-semibold" style={{color: shiftType.color}}>
+                            {shiftType.shortName}
+                        </span>
+                    </button>
+                );
+            })}
+        </div>,
+        document.body,
+    );
+}
+
 export function MakeShiftCalendar({
     shift,
     doc,
@@ -353,7 +513,9 @@ export function MakeShiftCalendar({
     const selectionRect = useMemo(() => (selection ? normalizeSelection(selection) : null), [selection]);
     const didClearInitialSelection = useRef(false);
     const [violationPopover, setViolationPopover] = useState<TViolationPopover | null>(null);
+    const [shiftTypeDropdown, setShiftTypeDropdown] = useState<TShiftTypeDropdownState | null>(null);
     const closeViolationPopover = useCallback(() => setViolationPopover(null), []);
+    const closeShiftTypeDropdown = useCallback(() => setShiftTypeDropdown(null), []);
     const showViolationPopover = useCallback((target: HTMLElement, violations: TViolation[], title: string) => {
         if (violations.length === 0) return;
 
@@ -372,6 +534,47 @@ export function MakeShiftCalendar({
             placement: shouldOpenAbove ? 'top' : 'bottom',
         });
     }, []);
+    const repositionShiftTypeDropdown = useCallback(() => {
+        setShiftTypeDropdown((prev) => {
+            if (!prev) return prev;
+
+            const nextPosition = getShiftTypeDropdownPosition(prev.target, shift.wardShiftTypes.length + 1);
+
+            return isSameShiftTypeDropdownPosition(prev.position, nextPosition) ? prev : {...prev, position: nextPosition};
+        });
+    }, [shift.wardShiftTypes.length]);
+    const openShiftTypeDropdown = useCallback(
+        (target: HTMLElement, rowIndex: number, colIndex: number, currentValue: TCellValue) => {
+            if (shift.wardShiftTypes.length === 0 || !isEditableDutyCell(rowIndex, colIndex, readonly)) return;
+
+            closeViolationPopover();
+            commands.select({row: rowIndex, col: colIndex});
+            onCellClick?.(rowIndex, colIndex);
+            setShiftTypeDropdown({
+                target,
+                rowIndex,
+                colIndex,
+                currentValue,
+                position: getShiftTypeDropdownPosition(target, shift.wardShiftTypes.length + 1),
+            });
+        },
+        [closeViolationPopover, commands, onCellClick, readonly, shift.wardShiftTypes.length],
+    );
+    const handleShiftTypeDropdownSelect = useCallback(
+        (rowIndex: number, colIndex: number, value: TCellValue) => {
+            if (!isEditableDutyCell(rowIndex, colIndex, readonly)) {
+                closeShiftTypeDropdown();
+
+                return;
+            }
+
+            commands.select({row: rowIndex, col: colIndex});
+            commands.setCells([{row: rowIndex, col: colIndex}], value);
+            closeShiftTypeDropdown();
+            onCellClick?.(rowIndex, colIndex);
+        },
+        [closeShiftTypeDropdown, commands, onCellClick, readonly],
+    );
 
     useEffect(() => {
         if (!disableInitialSelection || didClearInitialSelection.current) return;
@@ -385,6 +588,10 @@ export function MakeShiftCalendar({
     useEffect(() => {
         if (!showFaults) closeViolationPopover();
     }, [closeViolationPopover, showFaults]);
+
+    useEffect(() => {
+        if (readonly) closeShiftTypeDropdown();
+    }, [closeShiftTypeDropdown, readonly]);
 
     /**
      * 셀 클릭 처리.
@@ -474,6 +681,7 @@ export function MakeShiftCalendar({
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
     const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : LEFT_GRID_TEMPLATE_COLUMNS;
+
     let didAssignTutorialCell = false;
 
     return (
@@ -649,6 +857,7 @@ export function MakeShiftCalendar({
                                                 selectionRect={selectionRect}
                                                 tutorialCellId={rowTutorialCellId}
                                                 onCellClick={handleCellClick}
+                                                onCellDoubleClick={openShiftTypeDropdown}
                                                 onViolationClick={showViolationPopover}
                                             />
                                         </div>
@@ -689,6 +898,13 @@ export function MakeShiftCalendar({
             {!isSimplified && hasSummaryShiftTypes && (
                 <DailySummary doc={doc} shortNameToType={shortNameToType} summaryShiftTypes={summaryShiftTypes} />
             )}
+            <ShiftTypeDropdown
+                dropdown={shiftTypeDropdown}
+                shiftTypes={shift.wardShiftTypes}
+                onClose={closeShiftTypeDropdown}
+                onSelect={handleShiftTypeDropdownSelect}
+                onReposition={repositionShiftTypeDropdown}
+            />
             <ViolationReasonPopover popover={violationPopover} onClose={closeViolationPopover} />
         </div>
     );
@@ -727,6 +943,7 @@ type TCalendarRowLeftProps = {
     selectionRect: {top: number; left: number; bottom: number; right: number} | null;
     tutorialCellId?: string;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
+    onCellDoubleClick: (target: HTMLElement, rowIndex: number, colIndex: number, currentValue: TCellValue) => void;
     onViolationClick: (target: HTMLElement, violations: TViolation[], title: string) => void;
 };
 
@@ -752,6 +969,7 @@ function CalendarRowLeft({
     selectionRect,
     tutorialCellId,
     onCellClick,
+    onCellDoubleClick,
     onViolationClick,
 }: TCalendarRowLeftProps) {
     const rowViolationPrefix = `${shiftNurseId},`;
@@ -890,12 +1108,16 @@ function CalendarRowLeft({
                                 data-selected={isSelected || undefined}
                                 data-violation-trigger={hasCellViolations ? 'true' : undefined}
                                 data-violation-count={hasCellViolations ? cellViolations.length : undefined}
+                                aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onClick={(event) => {
                                     onCellClick?.(rowIndex, j);
 
                                     if (hasCellViolations) {
                                         onViolationClick(event.currentTarget, cellViolations, `${displayNurseName} · ${day.day}일`);
                                     }
+                                }}
+                                onDoubleClick={(event) => {
+                                    onCellDoubleClick(event.currentTarget, rowIndex, j, cells[j] ?? null);
                                 }}
                                 title={cellViolationTitle}
                                 style={{gridRow: 1, gridColumn: j + 1, paddingInline: DAY_CELL_PADDING_X}}

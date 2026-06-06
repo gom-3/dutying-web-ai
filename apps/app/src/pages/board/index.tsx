@@ -18,7 +18,7 @@ import {
     Trash2,
     X,
 } from 'lucide-react';
-import {type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
+import {type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
 import {BoardAPI} from '@/shared/api';
 import {
@@ -103,23 +103,41 @@ const getPostId = (post: TWardBoardPost) => BoardAPI.getPostId(post);
 const getScheduleId = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleId(schedule);
 const getCommentId = (comment: TWardBoardComment) => comment.commentId ?? comment.id ?? 0;
 const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? '작성자';
-const getScheduleWriterName = (schedule: TWardBoardSchedule) => schedule.writerName ?? schedule.authorName ?? '작성자';
-const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => schedule.sourceType === 'BOARD_DEADLINE';
-const isManualSchedule = (schedule: TWardBoardSchedule) => !schedule.sourceType || schedule.sourceType === 'MANUAL';
-const canEditSchedule = (schedule: TWardBoardSchedule) => isManualSchedule(schedule) && (schedule.editableByMe ?? schedule.isMine ?? false);
+const readBooleanLike = (value: unknown) => {
+    if (typeof value === 'boolean') return value;
+
+    if (typeof value === 'number') return value === 1;
+
+    if (typeof value === 'string') {
+        const normalizedValue = value.trim().toLowerCase();
+
+        if (normalizedValue === 'true' || normalizedValue === '1') return true;
+
+        if (normalizedValue === 'false' || normalizedValue === '0') return false;
+    }
+
+    return undefined;
+};
+const getScheduleWriterName = (schedule: TWardBoardSchedule) =>
+    schedule.writerName ?? schedule.writer_name ?? schedule.authorName ?? schedule.author_name ?? '작성자';
+const getScheduleSourceType = (schedule: TWardBoardSchedule) => schedule.sourceType ?? schedule.source_type;
+const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => getScheduleSourceType(schedule) === 'BOARD_DEADLINE';
+const isManualSchedule = (schedule: TWardBoardSchedule) => !getScheduleSourceType(schedule) || getScheduleSourceType(schedule) === 'MANUAL';
+const canEditSchedule = (schedule: TWardBoardSchedule) =>
+    isManualSchedule(schedule) && (readBooleanLike(schedule.editableByMe ?? schedule.editable_by_me) ?? schedule.isMine ?? false);
 const canDeleteSchedule = (schedule: TWardBoardSchedule) =>
-    isManualSchedule(schedule) && (schedule.deletableByMe ?? schedule.isMine ?? false);
+    isManualSchedule(schedule) && (readBooleanLike(schedule.deletableByMe ?? schedule.deletable_by_me) ?? schedule.isMine ?? false);
 const getDeadlineEventKey = (deadline: Pick<TWardBoardDeadline, 'postId' | 'deadlineDate'>) =>
     `deadline-${deadline.postId}-${deadline.deadlineDate}`;
 const getDeadlineFromSchedule = (schedule: TWardBoardSchedule): TWardBoardDeadline | null => {
-    const sourcePostId = schedule.sourcePostId ?? 0;
+    const sourcePostId = schedule.sourcePostId ?? schedule.source_post_id ?? 0;
 
     if (!sourcePostId) return null;
 
     return {
         postId: sourcePostId,
         postTitle: schedule.title,
-        deadlineDate: schedule.scheduleDate,
+        deadlineDate: schedule.scheduleDate ?? schedule.schedule_date ?? getScheduleStartDate(schedule),
         writerName: schedule.writerName ?? schedule.authorName,
     };
 };
@@ -189,11 +207,11 @@ const createInitialScheduleDraft = (scheduleDate = toDateKey(new Date())): TSche
     content: '',
     startDate: scheduleDate,
     endDate: scheduleDate,
-    allDay: false,
+    allDay: true,
     startTime: '',
     endTime: '',
 });
-const normalizeTimeInput = (value?: string) => (value ? value.slice(0, 5) : '');
+const normalizeTimeInput = (value?: string | null) => (value ? value.slice(0, 5) : '');
 const normalizeScheduleDateRange = (startDate: string, endDate?: string) => {
     const normalizedEndDate = endDate ?? startDate;
 
@@ -204,10 +222,17 @@ const normalizeScheduleDateRange = (startDate: string, endDate?: string) => {
         endDate: compareDateKey(normalizedEndDate, startDate) < 0 ? startDate : normalizedEndDate,
     };
 };
-const getScheduleStartDate = (schedule: TWardBoardSchedule) => schedule.startDate ?? schedule.scheduleDate;
+const getScheduleStartDate = (schedule: TWardBoardSchedule) =>
+    schedule.startDate ?? schedule.start_date ?? schedule.scheduleDate ?? schedule.schedule_date;
 const getScheduleEndDate = (schedule: TWardBoardSchedule) =>
-    normalizeScheduleDateRange(getScheduleStartDate(schedule), schedule.endDate ?? schedule.scheduleDate).endDate;
-const getScheduleAllDay = (schedule: TWardBoardSchedule) => schedule.allDay ?? schedule.isAllDay ?? false;
+    normalizeScheduleDateRange(
+        getScheduleStartDate(schedule),
+        schedule.endDate ?? schedule.end_date ?? schedule.scheduleDate ?? schedule.schedule_date,
+    ).endDate;
+const getScheduleAllDay = (schedule: TWardBoardSchedule) =>
+    readBooleanLike(schedule.allDay ?? schedule.isAllDay ?? schedule.all_day ?? schedule.is_all_day) ?? false;
+const getScheduleStartTime = (schedule: TWardBoardSchedule) => schedule.startTime ?? schedule.start_time;
+const getScheduleEndTime = (schedule: TWardBoardSchedule) => schedule.endTime ?? schedule.end_time;
 const getDateKeysInRange = (startDate: string, endDate: string) => {
     const start = parseDateKey(startDate);
     const end = parseDateKey(endDate);
@@ -225,7 +250,7 @@ const getDateKeysInRange = (startDate: string, endDate: string) => {
 
     return dates;
 };
-const formatScheduleTimeRange = (startTime?: string, endTime?: string, allDay = false) => {
+const formatScheduleTimeRange = (startTime?: string | null, endTime?: string | null, allDay = false) => {
     if (allDay) return '종일';
 
     const start = normalizeTimeInput(startTime);
@@ -235,6 +260,33 @@ const formatScheduleTimeRange = (startTime?: string, endTime?: string, allDay = 
 
     return start || end || '';
 };
+const formatScheduleDateTime = (dateKey: string, time?: string | null) => {
+    const normalizedTime = normalizeTimeInput(time);
+
+    return normalizedTime ? `${formatDate(dateKey)} ${normalizedTime}` : formatDate(dateKey);
+};
+const getScheduleDateTimeDetail = (draft: TScheduleDraft) => {
+    if (draft.allDay) {
+        return {
+            primary: formatDateRange(draft.startDate, draft.endDate),
+            badge: '종일',
+        };
+    }
+
+    const timeRange = formatScheduleTimeRange(draft.startTime, draft.endTime);
+
+    if (draft.startDate === draft.endDate) {
+        return {
+            primary: formatDate(draft.startDate),
+            secondary: timeRange || '시간 미정',
+        };
+    }
+
+    return {
+        primary: `${formatScheduleDateTime(draft.startDate, draft.startTime)} - ${formatScheduleDateTime(draft.endDate, draft.endTime)}`,
+        secondary: timeRange ? undefined : '시간 미정',
+    };
+};
 const toSchedulePayload = (draft: TScheduleDraft): TCreateWardBoardScheduleDTO => ({
     title: draft.title.trim(),
     content: draft.content.trim() || undefined,
@@ -242,8 +294,9 @@ const toSchedulePayload = (draft: TScheduleDraft): TCreateWardBoardScheduleDTO =
     startDate: draft.startDate,
     endDate: draft.endDate,
     allDay: draft.allDay,
-    startTime: draft.allDay ? undefined : draft.startTime || undefined,
-    endTime: draft.allDay ? undefined : draft.endTime || undefined,
+    isAllDay: draft.allDay,
+    startTime: draft.allDay ? null : normalizeTimeInput(draft.startTime),
+    endTime: draft.allDay ? null : normalizeTimeInput(draft.endTime),
 });
 const getDefaultScheduleDateForMonth = (year: number, month: number) => {
     const today = new Date();
@@ -1040,6 +1093,35 @@ function ScheduleTimeRangePicker({
     );
 }
 
+function ScheduleDetailField({
+    label,
+    children,
+    icon: Icon,
+    className,
+    contentClassName,
+}: {
+    label: string;
+    children: ReactNode;
+    icon?: typeof CalendarDays;
+    className?: string;
+    contentClassName?: string;
+}) {
+    return (
+        <div className={cn('grid gap-1.5', className)}>
+            <span className="text-[13px] font-semibold text-sub-2">{label}</span>
+            <div
+                className={cn(
+                    'flex min-h-11 items-center gap-2 rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 font-semibold text-sub-1',
+                    contentClassName,
+                )}
+            >
+                {Icon ? <Icon className="size-4 shrink-0 text-main-1" aria-hidden="true" /> : null}
+                <div className="min-w-0 flex-1">{children}</div>
+            </div>
+        </div>
+    );
+}
+
 function WardScheduleModal({
     mode,
     draft,
@@ -1050,6 +1132,7 @@ function WardScheduleModal({
     onSubmit,
     onClose,
     onDelete,
+    onEdit,
 }: {
     mode: TScheduleModalMode;
     draft: TScheduleDraft;
@@ -1060,18 +1143,22 @@ function WardScheduleModal({
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
     onClose: () => void;
     onDelete?: () => void;
+    onEdit?: () => void;
 }) {
     const isEditMode = mode === 'edit';
     const isViewMode = mode === 'view';
     const isTitleInvalid = submitAttempted && !draft.title.trim();
     const isStartDateInvalid = submitAttempted && !draft.startDate;
     const isEndDateInvalid = submitAttempted && (!draft.endDate || compareDateKey(draft.endDate, draft.startDate) < 0);
+    const isTimeMissingInvalid = submitAttempted && !draft.allDay && (!draft.startTime || !draft.endTime);
     const isTimeRangeInvalid =
         submitAttempted &&
         !draft.allDay &&
         draft.startDate === draft.endDate &&
-        Boolean(draft.startTime && draft.endTime && draft.startTime > draft.endTime);
+        Boolean(draft.startTime && draft.endTime && draft.startTime >= draft.endTime);
     const modalTitle = isViewMode ? '일정 보기' : isEditMode ? '일정 수정' : '일정 등록';
+    const headerTitle = isViewMode ? draft.title || modalTitle : modalTitle;
+    const detailDateTime = getScheduleDateTimeDetail(draft);
     const updateStartDate = (startDate: string) => {
         onChange({
             ...draft,
@@ -1089,8 +1176,8 @@ function WardScheduleModal({
         onChange({
             ...draft,
             allDay,
-            startTime: allDay ? '' : draft.startTime,
-            endTime: allDay ? '' : draft.endTime,
+            startTime: allDay ? '' : draft.startTime || '09:00',
+            endTime: allDay ? '' : draft.endTime || '10:00',
         });
     };
 
@@ -1112,103 +1199,142 @@ function WardScheduleModal({
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-gray-3">병동 일정</p>
-                        <h2 className="mt-1 text-[22px] font-semibold text-sub-1">{modalTitle}</h2>
+                        <h2 className="mt-1 text-[22px] leading-7 font-semibold break-words text-sub-1">{headerTitle}</h2>
                     </div>
-                    <button
-                        type="button"
-                        className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                        onClick={onClose}
-                        aria-label="병동 일정 닫기"
-                        title="병동 일정 닫기"
-                    >
-                        <X className="size-4" aria-hidden="true" />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                        {isViewMode && onEdit ? (
+                            <button
+                                type="button"
+                                className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-main-light hover:text-main-1"
+                                onClick={onEdit}
+                                aria-label="병동 일정 수정"
+                                title="병동 일정 수정"
+                            >
+                                <Pencil className="size-4" aria-hidden="true" />
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            onClick={onClose}
+                            aria-label="병동 일정 닫기"
+                            title="병동 일정 닫기"
+                        >
+                            <X className="size-4" aria-hidden="true" />
+                        </button>
+                    </div>
                 </div>
 
-                <div className="mt-5 grid gap-4">
-                    <label className="grid gap-1.5">
-                        <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                            제목
-                            <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
-                        </span>
-                        <input
-                            value={draft.title}
-                            onChange={(event) => onChange({...draft, title: event.target.value})}
-                            maxLength={SCHEDULE_TITLE_MAX_LENGTH}
-                            aria-required="true"
-                            aria-invalid={isTitleInvalid}
-                            readOnly={isViewMode}
-                            className={cn(
-                                'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none read-only:cursor-default focus:bg-white',
-                                isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
-                            )}
-                            placeholder="제목을 입력하세요"
-                        />
-                        {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
-                    </label>
-
-                    <div className="grid gap-2">
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                            <ScheduleDatePicker
-                                label="시작일"
-                                value={draft.startDate}
-                                invalid={isStartDateInvalid}
-                                disabled={isViewMode}
-                                onChange={updateStartDate}
-                            />
-                            <ScheduleDatePicker
-                                label="종료일"
-                                value={draft.endDate}
-                                invalid={isEndDateInvalid}
-                                minDate={draft.startDate}
-                                disabled={isViewMode}
-                                onChange={updateEndDate}
-                            />
-                        </div>
-                        {isStartDateInvalid || isEndDateInvalid ? (
-                            <span className="text-[11px] font-medium text-[#E85D75]">일정 기간을 선택해 주세요.</span>
-                        ) : null}
+                {isViewMode ? (
+                    <div className="mt-5 grid gap-4">
+                        <ScheduleDetailField label="날짜 및 시간" icon={CalendarDays} contentClassName="items-start">
+                            <div className="grid gap-1">
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <span className="min-w-0 break-words">{detailDateTime.primary}</span>
+                                    {detailDateTime.badge ? (
+                                        <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-main-light px-2.5 text-[12px] font-semibold text-main-1">
+                                            {detailDateTime.badge}
+                                        </span>
+                                    ) : null}
+                                </div>
+                                {detailDateTime.secondary ? (
+                                    <span className="text-[12px] leading-4 font-medium text-gray-3">{detailDateTime.secondary}</span>
+                                ) : null}
+                            </div>
+                        </ScheduleDetailField>
+                        <ScheduleDetailField label="메모" contentClassName="min-h-[112px] items-start font-medium">
+                            <p className={cn('min-h-5 whitespace-pre-line', draft.content.trim() ? 'text-sub-1' : 'text-gray-4')}>
+                                {draft.content.trim() || '메모 없음'}
+                            </p>
+                        </ScheduleDetailField>
                     </div>
+                ) : (
+                    <div className="mt-5 grid gap-4">
+                        <label className="grid gap-1.5">
+                            <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
+                                제목
+                                <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
+                            </span>
+                            <input
+                                value={draft.title}
+                                onChange={(event) => onChange({...draft, title: event.target.value})}
+                                maxLength={SCHEDULE_TITLE_MAX_LENGTH}
+                                aria-required="true"
+                                aria-invalid={isTitleInvalid}
+                                className={cn(
+                                    'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
+                                    isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
+                                )}
+                                placeholder="제목을 입력하세요"
+                            />
+                            {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
+                        </label>
 
-                    <label className="flex h-10 items-center justify-between rounded-[8px] bg-gray-7 px-3.5">
-                        <span className="text-[13px] font-semibold text-sub-2">종일</span>
-                        <input
-                            type="checkbox"
-                            checked={draft.allDay}
-                            onChange={(event) => updateAllDay(event.target.checked)}
-                            disabled={isViewMode}
-                            aria-label="종일"
-                            className="h-4 w-4 accent-main-1 disabled:cursor-default"
-                        />
-                    </label>
-
-                    {!draft.allDay ? (
                         <div className="grid gap-1.5">
-                            <ScheduleTimeRangePicker draft={draft} disabled={isViewMode} onChange={onChange} />
-                            {isTimeRangeInvalid ? (
-                                <span className="text-[11px] font-medium text-[#E85D75]">
-                                    같은 날 일정은 종료 시간이 시작 시간보다 늦어야 해요.
-                                </span>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                <ScheduleDatePicker
+                                    label="시작일"
+                                    value={draft.startDate}
+                                    invalid={isStartDateInvalid}
+                                    disabled={false}
+                                    onChange={updateStartDate}
+                                />
+                                <ScheduleDatePicker
+                                    label="종료일"
+                                    value={draft.endDate}
+                                    invalid={isEndDateInvalid}
+                                    minDate={draft.startDate}
+                                    disabled={false}
+                                    onChange={updateEndDate}
+                                />
+                            </div>
+                            {isStartDateInvalid || isEndDateInvalid ? (
+                                <span className="text-[11px] font-medium text-[#E85D75]">일정 기간을 선택해 주세요.</span>
                             ) : null}
                         </div>
-                    ) : null}
 
-                    <label className="grid gap-1.5">
-                        <span className="text-[13px] font-semibold text-sub-2">메모</span>
-                        <textarea
-                            value={draft.content}
-                            onChange={(event) => onChange({...draft, content: event.target.value})}
-                            maxLength={SCHEDULE_CONTENT_MAX_LENGTH}
-                            rows={4}
-                            readOnly={isViewMode}
-                            className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none read-only:cursor-default focus:bg-white focus:ring-main-3"
-                            placeholder="필요한 내용을 입력해 주세요"
-                        />
-                        <span className="justify-self-end text-[11px] font-medium text-gray-4">
-                            {draft.content.length}/{SCHEDULE_CONTENT_MAX_LENGTH}
-                        </span>
-                    </label>
-                </div>
+                        <label className="flex h-10 items-center justify-between rounded-[8px] bg-gray-7 px-3.5">
+                            <span className="text-[13px] font-semibold text-sub-2">종일</span>
+                            <input
+                                type="checkbox"
+                                checked={draft.allDay}
+                                onChange={(event) => updateAllDay(event.target.checked)}
+                                aria-label="종일"
+                                className="h-4 w-4 accent-main-1"
+                            />
+                        </label>
+
+                        {!draft.allDay ? (
+                            <div className="grid gap-1.5">
+                                <ScheduleTimeRangePicker draft={draft} disabled={false} onChange={onChange} />
+                                {isTimeMissingInvalid ? (
+                                    <span className="text-[11px] font-medium text-[#E85D75]">
+                                        시간 일정은 시작 시간과 종료 시간을 모두 입력해 주세요.
+                                    </span>
+                                ) : isTimeRangeInvalid ? (
+                                    <span className="text-[11px] font-medium text-[#E85D75]">
+                                        같은 날 일정은 종료 시간이 시작 시간보다 늦어야 해요.
+                                    </span>
+                                ) : null}
+                            </div>
+                        ) : null}
+
+                        <label className="grid gap-1.5">
+                            <span className="text-[13px] font-semibold text-sub-2">메모</span>
+                            <textarea
+                                value={draft.content}
+                                onChange={(event) => onChange({...draft, content: event.target.value})}
+                                maxLength={SCHEDULE_CONTENT_MAX_LENGTH}
+                                rows={4}
+                                className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
+                                placeholder="필요한 내용을 입력해 주세요"
+                            />
+                            <span className="justify-self-end text-[11px] font-medium text-gray-4">
+                                {draft.content.length}/{SCHEDULE_CONTENT_MAX_LENGTH}
+                            </span>
+                        </label>
+                    </div>
+                )}
 
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-2">
                     {isEditMode && onDelete ? (
@@ -1274,7 +1400,11 @@ function DeadlineCalendar({
         const scheduleMonthEvents = manualSchedules.map<TCalendarEvent>((schedule) => {
             const startDate = getScheduleStartDate(schedule);
             const endDate = getScheduleEndDate(schedule);
-            const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime, getScheduleAllDay(schedule));
+            const timeRange = formatScheduleTimeRange(
+                getScheduleStartTime(schedule),
+                getScheduleEndTime(schedule),
+                getScheduleAllDay(schedule),
+            );
             const dateRange = formatDateRange(startDate, endDate);
 
             return {
@@ -1291,7 +1421,11 @@ function DeadlineCalendar({
             .flatMap<TCalendarEvent>((schedule) => {
                 const startDate = getScheduleStartDate(schedule);
                 const endDate = getScheduleEndDate(schedule);
-                const timeRange = formatScheduleTimeRange(schedule.startTime, schedule.endTime, getScheduleAllDay(schedule));
+                const timeRange = formatScheduleTimeRange(
+                    getScheduleStartTime(schedule),
+                    getScheduleEndTime(schedule),
+                    getScheduleAllDay(schedule),
+                );
 
                 return getDateKeysInRange(startDate, endDate).map((dateKey) => ({
                     kind: 'schedule',
@@ -1636,6 +1770,7 @@ function BoardPage() {
             if (event.key === 'Escape') {
                 setScheduleModalMode(null);
                 setSelectedSchedule(null);
+                setEditingScheduleId(null);
                 setScheduleDraftSubmitAttempted(false);
             }
         };
@@ -1837,13 +1972,19 @@ function BoardPage() {
             startDate,
             endDate,
             allDay,
-            startTime: allDay ? '' : normalizeTimeInput(schedule.startTime),
-            endTime: allDay ? '' : normalizeTimeInput(schedule.endTime),
+            startTime: allDay ? '' : normalizeTimeInput(getScheduleStartTime(schedule)),
+            endTime: allDay ? '' : normalizeTimeInput(getScheduleEndTime(schedule)),
         });
         setScheduleDraftSubmitAttempted(false);
         setSelectedSchedule(schedule);
         setEditingScheduleId(scheduleId);
-        setScheduleModalMode(canEditSchedule(schedule) ? 'edit' : 'view');
+        setScheduleModalMode('view');
+    };
+    const openEditSchedule = () => {
+        if (!selectedSchedule || !canEditSchedule(selectedSchedule)) return;
+
+        setScheduleDraftSubmitAttempted(false);
+        setScheduleModalMode('edit');
     };
     const handleSubmitSchedule = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -1858,12 +1999,14 @@ function BoardPage() {
 
         if (compareDateKey(scheduleDraft.endDate, scheduleDraft.startDate) < 0) return;
 
+        if (!scheduleDraft.allDay && (!scheduleDraft.startTime || !scheduleDraft.endTime)) return;
+
         if (
             !scheduleDraft.allDay &&
             scheduleDraft.startDate === scheduleDraft.endDate &&
             scheduleDraft.startTime &&
             scheduleDraft.endTime &&
-            scheduleDraft.startTime > scheduleDraft.endTime
+            scheduleDraft.startTime >= scheduleDraft.endTime
         ) {
             return;
         }
@@ -2589,6 +2732,9 @@ function BoardPage() {
                     onChange={setScheduleDraft}
                     onSubmit={handleSubmitSchedule}
                     onClose={closeScheduleModal}
+                    onEdit={
+                        scheduleModalMode === 'view' && selectedSchedule && canEditSchedule(selectedSchedule) ? openEditSchedule : undefined
+                    }
                     onDelete={
                         scheduleModalMode === 'edit' && selectedSchedule && canDeleteSchedule(selectedSchedule)
                             ? handleDeleteSchedule

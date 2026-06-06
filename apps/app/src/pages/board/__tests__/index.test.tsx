@@ -218,7 +218,6 @@ describe('BoardPage', () => {
         await user.click(within(dialog).getByRole('button', {name: '내일'}));
         await user.click(within(dialog).getByRole('button', {name: /종료일/}));
         await user.click(within(dialog).getByRole('button', {name: '3일 후'}));
-        await user.click(within(dialog).getByLabelText('종일'));
         await user.click(within(dialog).getByRole('button', {name: '등록'}));
 
         await waitFor(() =>
@@ -229,9 +228,202 @@ describe('BoardPage', () => {
                 startDate: tomorrowKey,
                 endDate: threeDaysLaterKey,
                 allDay: true,
-                startTime: undefined,
-                endTime: undefined,
+                isAllDay: true,
+                startTime: null,
+                endTime: null,
             }),
         );
+    });
+
+    it('creates a timed ward schedule with required start and end times', async () => {
+        const user = userEvent.setup();
+
+        mockCreateSchedule.mockResolvedValue({
+            scheduleId: 2,
+            title: '인수인계',
+            content: '',
+            scheduleDate: '2026-06-06',
+            startDate: '2026-06-06',
+            endDate: '2026-06-06',
+            allDay: false,
+            startTime: '09:00',
+            endTime: '10:00',
+        });
+
+        const {container} = renderPage(<BoardPage />);
+
+        await waitFor(() => expect(mockGetSchedules).toHaveBeenCalled());
+        await user.click(container.querySelector<HTMLButtonElement>('#board_schedule_create_button')!);
+
+        const dialog = await screen.findByRole('dialog', {name: '병동 일정 등록'});
+
+        await user.type(within(dialog).getByPlaceholderText('제목을 입력하세요'), '인수인계');
+        await user.click(within(dialog).getByLabelText('종일'));
+        await user.click(within(dialog).getByRole('button', {name: '등록'}));
+
+        await waitFor(() =>
+            expect(mockCreateSchedule).toHaveBeenCalledWith(
+                287,
+                expect.objectContaining({
+                    title: '인수인계',
+                    allDay: false,
+                    isAllDay: false,
+                    startTime: '09:00',
+                    endTime: '10:00',
+                }),
+            ),
+        );
+    });
+
+    it('opens an existing ward schedule in view mode before allowing edit', async () => {
+        const user = userEvent.setup();
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0',
+        )}`;
+
+        mockGetSchedules.mockResolvedValue([
+            {
+                scheduleId: 42,
+                title: '정기 회의',
+                content: 'A팀 회의',
+                scheduleDate: todayKey,
+                startDate: todayKey,
+                endDate: todayKey,
+                allDay: false,
+                startTime: '09:00:00',
+                endTime: '10:00:00',
+                editableByMe: true,
+                deletableByMe: true,
+            },
+        ]);
+
+        renderPage(<BoardPage />);
+
+        const scheduleButton = (await screen.findByText('정기 회의')).closest('button');
+
+        expect(scheduleButton).not.toBeNull();
+
+        await user.click(scheduleButton!);
+
+        const viewDialog = await screen.findByRole('dialog', {name: '병동 일정 보기'});
+
+        expect(within(viewDialog).getByRole('heading', {name: '정기 회의'})).toBeInTheDocument();
+        expect(within(viewDialog).queryByText('제목')).not.toBeInTheDocument();
+        expect(within(viewDialog).getByText('날짜 및 시간')).toBeInTheDocument();
+        expect(within(viewDialog).getByText('09:00-10:00')).toBeInTheDocument();
+        expect(within(viewDialog).queryByText('종일')).not.toBeInTheDocument();
+        expect(within(viewDialog).queryByRole('button', {name: '수정'})).not.toBeInTheDocument();
+
+        await user.click(within(viewDialog).getByRole('button', {name: '병동 일정 수정'}));
+
+        const editDialog = await screen.findByRole('dialog', {name: '병동 일정 수정'});
+
+        await user.click(within(editDialog).getByRole('button', {name: '수정'}));
+
+        await waitFor(() =>
+            expect(mockUpdateSchedule).toHaveBeenCalledWith(287, 42, {
+                title: '정기 회의',
+                content: 'A팀 회의',
+                scheduleDate: todayKey,
+                startDate: todayKey,
+                endDate: todayKey,
+                allDay: false,
+                isAllDay: false,
+                startTime: '09:00',
+                endTime: '10:00',
+            }),
+        );
+    });
+
+    it('shows all-day multi-day schedules clearly in the view modal', async () => {
+        const user = userEvent.setup();
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0',
+        )}`;
+        const tomorrow = new Date(today);
+
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const tomorrowKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(
+            tomorrow.getDate(),
+        ).padStart(2, '0')}`;
+
+        mockGetSchedules.mockResolvedValue([
+            {
+                scheduleId: 43,
+                title: '종일 워크숍',
+                content: '',
+                scheduleDate: todayKey,
+                startDate: todayKey,
+                endDate: tomorrowKey,
+                isAllDay: true,
+                startTime: null,
+                endTime: null,
+                editableByMe: true,
+                deletableByMe: true,
+            },
+        ]);
+
+        renderPage(<BoardPage />);
+
+        const scheduleButton = (await screen.findByText('종일 워크숍')).closest('button');
+
+        expect(scheduleButton).not.toBeNull();
+
+        await user.click(scheduleButton!);
+
+        const viewDialog = await screen.findByRole('dialog', {name: '병동 일정 보기'});
+
+        expect(within(viewDialog).getByRole('heading', {name: '종일 워크숍'})).toBeInTheDocument();
+        expect(within(viewDialog).getByText('날짜 및 시간')).toBeInTheDocument();
+        expect(within(viewDialog).getByText('종일')).toBeInTheDocument();
+        expect(within(viewDialog).queryByText('시간 미정')).not.toBeInTheDocument();
+    });
+
+    it('keeps all-day checked when the backend returns snake_case all-day fields', async () => {
+        const user = userEvent.setup();
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0',
+        )}`;
+
+        mockGetSchedules.mockResolvedValue([
+            {
+                scheduleId: 44,
+                title: '종일 교육',
+                content: '',
+                scheduleDate: todayKey,
+                start_date: todayKey,
+                end_date: todayKey,
+                all_day: 'true',
+                start_time: null,
+                end_time: null,
+                editable_by_me: 1,
+                deletable_by_me: 1,
+            },
+        ]);
+
+        renderPage(<BoardPage />);
+
+        const scheduleButton = (await screen.findByText('종일 교육')).closest('button');
+
+        expect(scheduleButton).not.toBeNull();
+
+        await user.click(scheduleButton!);
+
+        const viewDialog = await screen.findByRole('dialog', {name: '병동 일정 보기'});
+
+        expect(within(viewDialog).getByText('종일')).toBeInTheDocument();
+
+        await user.click(within(viewDialog).getByRole('button', {name: '병동 일정 수정'}));
+
+        const editDialog = await screen.findByRole('dialog', {name: '병동 일정 수정'});
+
+        expect(within(editDialog).getByLabelText('종일')).toBeChecked();
     });
 });

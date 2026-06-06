@@ -72,7 +72,7 @@ describe('BoardAPI', () => {
 
         mockGet.mockResolvedValue({data: response});
 
-        await expect(BoardAPI.getSchedules(287, '2026-05-01', '2026-05-31')).resolves.toBe(response);
+        await expect(BoardAPI.getSchedules(287, '2026-05-01', '2026-05-31')).resolves.toEqual(response);
 
         expect(mockGet).toHaveBeenCalledWith('/wards/287/board/schedules?startDate=2026-05-01&endDate=2026-05-31');
     });
@@ -91,7 +91,42 @@ describe('BoardAPI', () => {
 
         mockGet.mockResolvedValue({data: response});
 
-        await expect(BoardAPI.getSchedules(287, '2026-06-01', '2026-06-30')).resolves.toBe(response.schedules);
+        await expect(BoardAPI.getSchedules(287, '2026-06-01', '2026-06-30')).resolves.toEqual(response.schedules);
+    });
+
+    it('normalizes snake_case board schedule response fields', async () => {
+        const response = [
+            {
+                scheduleId: 4,
+                title: '종일 교육',
+                scheduleDate: '2026-06-03',
+                start_date: '2026-06-03',
+                end_date: '2026-06-04',
+                all_day: 'true',
+                start_time: null,
+                end_time: null,
+                editable_by_me: 1,
+                deletable_by_me: 1,
+                source_type: 'MANUAL' as const,
+            },
+        ];
+
+        mockGet.mockResolvedValue({data: response});
+
+        await expect(BoardAPI.getSchedules(287, '2026-06-01', '2026-06-30')).resolves.toEqual([
+            {
+                ...response[0],
+                startDate: '2026-06-03',
+                endDate: '2026-06-04',
+                allDay: true,
+                isAllDay: true,
+                startTime: null,
+                endTime: null,
+                editableByMe: true,
+                deletableByMe: true,
+                sourceType: 'MANUAL',
+            },
+        ]);
     });
 
     it('creates, updates, and deletes board schedules on the schedule endpoints', async () => {
@@ -114,5 +149,31 @@ describe('BoardAPI', () => {
         expect(mockPost).toHaveBeenCalledWith('/wards/287/board/schedules', payload);
         expect(mockPut).toHaveBeenCalledWith('/wards/287/board/schedules/1', {...payload, title: '수정 교육'});
         expect(mockDelete).toHaveBeenCalledWith('/wards/287/board/schedules/1');
+    });
+
+    it('sends both all-day field names for board schedule create and update payloads', async () => {
+        const payload = {
+            title: '종일 교육',
+            content: '온라인',
+            scheduleDate: '2026-05-12',
+            startDate: '2026-05-12',
+            endDate: '2026-05-12',
+            allDay: true,
+            startTime: null,
+            endTime: null,
+        };
+        const expectedPayload = {
+            ...payload,
+            isAllDay: true,
+        };
+
+        mockPost.mockResolvedValue({data: {...expectedPayload, scheduleId: 1}});
+        mockPut.mockResolvedValue({data: {...expectedPayload, scheduleId: 1}});
+
+        await BoardAPI.createSchedule(287, payload);
+        await BoardAPI.updateSchedule(287, 1, payload);
+
+        expect(mockPost).toHaveBeenCalledWith('/wards/287/board/schedules', expectedPayload);
+        expect(mockPut).toHaveBeenCalledWith('/wards/287/board/schedules/1', expectedPayload);
     });
 });

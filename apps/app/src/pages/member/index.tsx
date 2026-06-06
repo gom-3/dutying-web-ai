@@ -9,7 +9,7 @@ import {
     type DropResult,
 } from '@hello-pangea/dnd';
 import {Check, ChevronDown, Copy, Info, Link2, Plus, Settings2, Trash2, X} from 'lucide-react';
-import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useSearchParams} from 'react-router';
@@ -40,6 +40,7 @@ import NurseDetailPanel from './ui/nurse-detail-panel';
 
 type TMemberNurseSortMode = 'manual' | 'name' | 'skill';
 type TManualOrderByTeamId = Record<number, number[]>;
+type TNurseDraftActions = {save: () => Promise<boolean>; discard: () => void};
 
 const getMemberManualOrderStorageKey = (wardId: number | null) => `member:manual-order:${wardId ?? 'unknown'}`;
 const parsePositiveInt = (value: string | null): number | null => {
@@ -225,7 +226,6 @@ function MemberPage() {
     const [activeIndicatorStyle, setActiveIndicatorStyle] = useState<{left: number; width: number} | null>(null);
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
     const [showUnsavedGuardModal, setShowUnsavedGuardModal] = useState(false);
-    const [runPendingActionAfterSave, setRunPendingActionAfterSave] = useState(false);
     const [connectionManageModalOpen, setConnectionManageModalOpen] = useState(false);
     const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
     const hasInitializedSelectionRef = useRef(false);
@@ -237,24 +237,11 @@ function MemberPage() {
     const teamNameInputRef = useRef<HTMLInputElement | null>(null);
     const tabButtonRefByTeamId = useRef<Record<number, HTMLButtonElement | null>>({});
     const pendingUnsavedActionRef = useRef<null | (() => void | Promise<void>)>(null);
+    const selectedNurseDraftActionsRef = useRef<TNurseDraftActions | null>(null);
+    const isRunningPendingUnsavedActionRef = useRef(false);
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
     const requestedShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
-
-    useEffect(() => {
-        if (!runPendingActionAfterSave) return;
-        if (isNurseDraftDirty) return;
-        if (nurseSaveStatus !== 'success') return;
-
-        const pendingAction = pendingUnsavedActionRef.current;
-
-        pendingUnsavedActionRef.current = null;
-        setRunPendingActionAfterSave(false);
-
-        if (pendingAction) {
-            void pendingAction();
-        }
-    }, [isNurseDraftDirty, nurseSaveStatus, runPendingActionAfterSave]);
 
     useEffect(() => {
         setSkillSettings(getWardSkillSettings(wardId));
@@ -546,17 +533,72 @@ function MemberPage() {
 
     const handleDismissDetailPanel = () => {
         selectNurse(null);
+
         return true;
     };
+    const handleRegisterNurseDraftActions = useCallback((actions: TNurseDraftActions | null) => {
+        selectedNurseDraftActionsRef.current = actions;
+    }, []);
+    const cancelPendingUnsavedAction = () => {
+        pendingUnsavedActionRef.current = null;
+        setShowUnsavedGuardModal(false);
+    };
+    const runPendingUnsavedAction = async () => {
+        const pendingAction = pendingUnsavedActionRef.current;
+
+        pendingUnsavedActionRef.current = null;
+
+        if (!pendingAction) return;
+
+        isRunningPendingUnsavedActionRef.current = true;
+
+        try {
+            await pendingAction();
+        } finally {
+            isRunningPendingUnsavedActionRef.current = false;
+        }
+    };
+    const discardDraftAndRunPendingAction = async () => {
+        setShowUnsavedGuardModal(false);
+        selectedNurseDraftActionsRef.current?.discard();
+        setNurseDraftDirty(false);
+        await runPendingUnsavedAction();
+    };
+    const saveDraftAndRunPendingAction = async () => {
+        const saveDraft = selectedNurseDraftActionsRef.current?.save;
+
+        if (!saveDraft) {
+            pendingUnsavedActionRef.current = null;
+
+            return;
+        }
+
+        setShowUnsavedGuardModal(false);
+
+        const saved = await saveDraft();
+
+        if (!saved) {
+            pendingUnsavedActionRef.current = null;
+
+            return;
+        }
+
+        setNurseDraftDirty(false);
+        await runPendingUnsavedAction();
+    };
     const shouldBlockForUnsavedChanges = (nextAction: () => void | Promise<void>) => {
+        if (isRunningPendingUnsavedActionRef.current) return false;
+
         if (!isNurseDraftDirty) return false;
 
         pendingUnsavedActionRef.current = nextAction;
         setShowUnsavedGuardModal(true);
+
         return true;
     };
     const handleSelectTeam = (shiftTeamId: number) => {
         if (!shiftTeams) return;
+
         if (
             shouldBlockForUnsavedChanges(() => {
                 handleSelectTeam(shiftTeamId);
@@ -901,7 +943,7 @@ function MemberPage() {
                 ? createPortal(
                       <div
                           className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]"
-                          onClick={() => setShowUnsavedGuardModal(false)}
+                          onClick={cancelPendingUnsavedAction}
                       >
                           <div
                               role="dialog"
@@ -915,35 +957,21 @@ function MemberPage() {
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                      onClick={() => setShowUnsavedGuardModal(false)}
+                                      onClick={cancelPendingUnsavedAction}
                                   >
                                       취소
                                   </button>
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
-                                      onClick={async () => {
-                                          setShowUnsavedGuardModal(false);
-                                          const pendingAction = pendingUnsavedActionRef.current;
-
-                                          pendingUnsavedActionRef.current = null;
-                                          selectNurse(null);
-                                          setNurseDraftDirty(false);
-
-                                          if (pendingAction) {
-                                              await pendingAction();
-                                          }
-                                      }}
+                                      onClick={() => void discardDraftAndRunPendingAction()}
                                   >
                                       저장 안 함
                                   </button>
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
-                                      onClick={() => {
-                                          setShowUnsavedGuardModal(false);
-                                          setRunPendingActionAfterSave(true);
-                                      }}
+                                      onClick={() => void saveDraftAndRunPendingAction()}
                                   >
                                       저장 후 나가기
                                   </button>
@@ -1422,6 +1450,7 @@ function MemberPage() {
                             <NurseDetailPanel
                                 onClose={handleDismissDetailPanel}
                                 onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
+                                onRegisterDraftActions={handleRegisterNurseDraftActions}
                                 isSkillFeatureEnabled={isSkillFeatureEnabled}
                                 isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
                                 onSaveSkillLevel={(nextLevel) => {

@@ -1,10 +1,8 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
-import {CheckCircle2, ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw} from 'lucide-react';
-import {useMemo} from 'react';
+import {CheckCircle2, ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw, Trash2} from 'lucide-react';
+import {useMemo, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-
-type TValidationSummary = {hardCount: number; softCount: number; totalCount: number};
 
 type TAiSnapshotSidebarProps = {
     open: boolean;
@@ -14,8 +12,10 @@ type TAiSnapshotSidebarProps = {
     isError: boolean;
     activeSnapshotId: number | null;
     loadingSnapshotId: number | null;
-    activeValidationSummary: TValidationSummary | null;
+    deletingSnapshotId: number | null;
     onSelectSnapshot: (snapshotId: number) => void;
+    onRenameSnapshot: (snapshotId: number, title: string) => Promise<void>;
+    onRequestDeleteSnapshot: (snapshot: TSnapshotSummaryDto) => void;
     onRetry: () => void;
 };
 
@@ -40,15 +40,13 @@ function formatSnapshotTime(iso: string): string {
     });
 }
 
-function getSnapshotDisplay(index: number, title: string, fallbackTitle: string) {
-    const version = `V${index}`;
+function getSnapshotTitle(index: number, title: string, defaultTitle: string) {
+    const fallbackTitle = `V${index}`;
     const trimmedTitle = title.trim();
-    const titleWithoutVersion = trimmedTitle.replace(new RegExp(`^${version}\\s*(?:·|-)?\\s*`), '').trim();
 
-    return {
-        version,
-        title: titleWithoutVersion || fallbackTitle,
-    };
+    if (!trimmedTitle || trimmedTitle === defaultTitle) return fallbackTitle;
+
+    return trimmedTitle;
 }
 
 export function AiSnapshotSidebar({
@@ -59,12 +57,36 @@ export function AiSnapshotSidebar({
     isError,
     activeSnapshotId,
     loadingSnapshotId,
-    activeValidationSummary,
+    deletingSnapshotId,
     onSelectSnapshot,
+    onRenameSnapshot,
+    onRequestDeleteSnapshot,
     onRetry,
 }: TAiSnapshotSidebarProps) {
     const {t} = useTypedTranslation();
     const orderedSnapshots = useMemo(() => snapshots, [snapshots]);
+    const [draftTitles, setDraftTitles] = useState<Record<number, string>>({});
+    const [renamingSnapshotId, setRenamingSnapshotId] = useState<number | null>(null);
+    const commitTitle = async (snapshotId: number, currentTitle: string, nextTitle: string) => {
+        const trimmedTitle = nextTitle.trim() || currentTitle;
+
+        if (trimmedTitle === currentTitle) {
+            setDraftTitles((prev) => ({...prev, [snapshotId]: currentTitle}));
+
+            return;
+        }
+
+        setRenamingSnapshotId(snapshotId);
+
+        try {
+            await onRenameSnapshot(snapshotId, trimmedTitle);
+            setDraftTitles((prev) => ({...prev, [snapshotId]: trimmedTitle}));
+        } catch {
+            setDraftTitles((prev) => ({...prev, [snapshotId]: currentTitle}));
+        } finally {
+            setRenamingSnapshotId(null);
+        }
+    };
 
     if (!open) return null;
 
@@ -78,15 +100,9 @@ export function AiSnapshotSidebar({
             <div className="border-b border-gray-6 bg-white px-5 pt-5 pb-5">
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <div className="inline-flex h-7 items-center rounded-full bg-main-light px-3 font-apple text-[12px] font-bold text-main-1">
-                            {t('page.makeShift.aiRefill.snapshotSidebar.savedCount', {count: orderedSnapshots.length})}
-                        </div>
-                        <h2 className="mt-3 truncate font-apple text-[20px] leading-7 font-bold text-sub-1">
+                        <h2 className="truncate font-apple text-[20px] leading-7 font-bold text-sub-1">
                             {t('page.makeShift.aiRefill.snapshotSidebar.title')}
                         </h2>
-                        <p className="mt-1 font-apple text-[13px] leading-5 font-medium text-gray-3">
-                            {t('page.makeShift.aiRefill.snapshotSidebar.description')}
-                        </p>
                     </div>
                     <button
                         type="button"
@@ -137,61 +153,105 @@ export function AiSnapshotSidebar({
                             const versionIndex = orderedSnapshots.length - index;
                             const isActive = activeSnapshotId === snapshot.snapshotId;
                             const isLoadingItem = loadingSnapshotId === snapshot.snapshotId;
-                            const summary = isActive ? activeValidationSummary : null;
-                            const display = getSnapshotDisplay(
+                            const isDeletingItem = deletingSnapshotId === snapshot.snapshotId;
+                            const isRenamingItem = renamingSnapshotId === snapshot.snapshotId;
+                            const currentTitle = getSnapshotTitle(
                                 versionIndex,
                                 snapshot.title,
                                 t('page.makeShift.aiRefill.snapshotSidebar.defaultTitle'),
                             );
+                            const draftTitle = draftTitles[snapshot.snapshotId] ?? currentTitle;
+                            const hardViolationCount = snapshot.hardCount ?? 0;
+                            const softViolationCount = snapshot.softCount ?? 0;
+                            const hasHardViolations = hardViolationCount > 0;
+                            const hasSoftViolations = softViolationCount > 0;
+                            const hasViolations = hasHardViolations || hasSoftViolations;
 
                             return (
                                 <li key={snapshot.snapshotId}>
-                                    <button
-                                        type="button"
-                                        onClick={() => onSelectSnapshot(snapshot.snapshotId)}
-                                        disabled={isLoadingItem}
+                                    <article
                                         className={cn(
-                                            'group flex w-full cursor-pointer flex-col items-stretch rounded-[14px] bg-white p-4 text-left ring-1 transition-[background-color,box-shadow,transform] duration-150 disabled:cursor-wait',
-                                            'hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(61,70,88,0.10)] focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:outline-none',
+                                            'group flex w-full flex-col items-stretch rounded-[14px] bg-white p-4 text-left ring-1 transition-[background-color,box-shadow,transform] duration-150',
+                                            'hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(61,70,88,0.10)]',
                                             isActive ? 'bg-main-light/60 ring-main-2' : 'ring-gray-6 hover:ring-main-3',
                                         )}
                                     >
                                         <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
+                                            <div className="min-w-0 flex-1">
                                                 <div className="flex min-w-0 items-center gap-2">
-                                                    <span
+                                                    <input
+                                                        type="text"
+                                                        value={draftTitle}
+                                                        disabled={isRenamingItem}
+                                                        onChange={(event) =>
+                                                            setDraftTitles((prev) => ({
+                                                                ...prev,
+                                                                [snapshot.snapshotId]: event.target.value,
+                                                            }))
+                                                        }
+                                                        onBlur={(event) =>
+                                                            void commitTitle(snapshot.snapshotId, currentTitle, event.currentTarget.value)
+                                                        }
+                                                        onKeyDown={(event) => {
+                                                            if (event.key === 'Enter') {
+                                                                event.currentTarget.blur();
+                                                            }
+
+                                                            if (event.key === 'Escape') {
+                                                                setDraftTitles((prev) => ({
+                                                                    ...prev,
+                                                                    [snapshot.snapshotId]: currentTitle,
+                                                                }));
+                                                                event.currentTarget.blur();
+                                                            }
+                                                        }}
+                                                        aria-label={t('page.makeShift.aiRefill.snapshotSidebar.renameTitleAria')}
                                                         className={cn(
-                                                            'inline-flex h-6 shrink-0 items-center rounded-[8px] px-2.5 font-poppins text-[12px] leading-none font-bold',
-                                                            isActive ? 'bg-white text-main-1' : 'bg-gray-7 text-sub-2',
+                                                            'min-w-0 flex-1 rounded-[8px] bg-transparent px-1 py-1 font-apple text-[15px] leading-5 font-bold text-sub-1 transition-colors outline-none',
+                                                            'hover:bg-gray-7 focus:bg-white focus:ring-2 focus:ring-main-2 disabled:opacity-70',
                                                         )}
-                                                    >
-                                                        {display.version}
-                                                    </span>
+                                                    />
                                                     {isActive && (
-                                                        <span className="min-w-0 truncate font-apple text-[11px] leading-none font-bold text-main-1">
+                                                        <span className="shrink-0 font-apple text-[11px] leading-none font-bold text-main-1">
                                                             {t('page.makeShift.aiRefill.snapshotSidebar.active')}
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="mt-2 truncate font-apple text-[15px] leading-5 font-bold text-sub-1">
-                                                    {display.title}
-                                                </p>
                                             </div>
 
-                                            <span
-                                                className={cn(
-                                                    'grid size-8 shrink-0 place-items-center rounded-[10px] transition-colors',
-                                                    isActive ? 'bg-white text-main-1' : 'bg-gray-7 text-gray-4 group-hover:text-main-1',
-                                                )}
-                                            >
-                                                {isLoadingItem ? (
-                                                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                                                ) : isActive ? (
-                                                    <CheckCircle2 className="size-4" aria-hidden />
-                                                ) : (
-                                                    <ChevronRight className="size-4" aria-hidden />
-                                                )}
-                                            </span>
+                                            <div className="flex shrink-0 items-center gap-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onSelectSnapshot(snapshot.snapshotId)}
+                                                    disabled={isLoadingItem || isRenamingItem || isDeletingItem}
+                                                    aria-label={t('page.makeShift.aiRefill.snapshotSidebar.restore')}
+                                                    className={cn(
+                                                        'grid size-8 cursor-pointer place-items-center rounded-[10px] transition-colors focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:outline-none disabled:cursor-wait disabled:opacity-60',
+                                                        isActive ? 'bg-white text-main-1' : 'bg-gray-7 text-gray-4 group-hover:text-main-1',
+                                                    )}
+                                                >
+                                                    {isLoadingItem || isRenamingItem ? (
+                                                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                                                    ) : isActive ? (
+                                                        <CheckCircle2 className="size-4" aria-hidden />
+                                                    ) : (
+                                                        <ChevronRight className="size-4" aria-hidden />
+                                                    )}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onRequestDeleteSnapshot(snapshot)}
+                                                    disabled={isLoadingItem || isRenamingItem || isDeletingItem}
+                                                    aria-label={t('page.makeShift.aiRefill.snapshotSidebar.delete')}
+                                                    className="grid size-8 cursor-pointer place-items-center rounded-[10px] bg-gray-7 text-gray-4 transition-colors hover:bg-[#FFF1F5] hover:text-[#D92D55] focus-visible:ring-2 focus-visible:ring-[#FCA5A5] focus-visible:outline-none disabled:cursor-wait disabled:opacity-60"
+                                                >
+                                                    {isDeletingItem ? (
+                                                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                                                    ) : (
+                                                        <Trash2 className="size-4" aria-hidden />
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
 
                                         <div className="mt-3 flex items-center gap-1.5 font-apple text-[12px] font-medium text-gray-4">
@@ -199,49 +259,34 @@ export function AiSnapshotSidebar({
                                             <span className="truncate">{formatSnapshotTime(snapshot.updatedAt)}</span>
                                         </div>
 
-                                        <div className="mt-3 grid grid-cols-2 gap-2">
-                                            <SnapshotMetric
-                                                label={t('page.makeShift.aiRefill.snapshotSidebar.filledCells', {
-                                                    count: snapshot.cellCount,
-                                                })}
-                                            />
-                                            <SnapshotMetric
-                                                label={t('page.makeShift.aiRefill.snapshotSidebar.emptyCells', {
-                                                    count: snapshot.emptyCellCount,
-                                                })}
-                                            />
-                                        </div>
-
-                                        <div className="mt-3 border-t border-gray-6/80 pt-3">
-                                            {summary ? (
-                                                <div className="grid grid-cols-3 gap-1.5">
-                                                    <ValidationBadge
-                                                        tone="hard"
-                                                        label={t('page.makeShift.aiRefill.snapshotSidebar.hardViolations', {
-                                                            count: summary.hardCount,
-                                                        })}
-                                                    />
-                                                    <ValidationBadge
-                                                        tone="soft"
-                                                        label={t('page.makeShift.aiRefill.snapshotSidebar.softViolations', {
-                                                            count: summary.softCount,
-                                                        })}
-                                                    />
-                                                    <ValidationBadge
-                                                        tone="total"
-                                                        label={t('page.makeShift.aiRefill.snapshotSidebar.totalViolations', {
-                                                            count: summary.totalCount,
-                                                        })}
-                                                    />
+                                        {hasViolations && (
+                                            <div className="mt-3 border-t border-gray-6/80 pt-3">
+                                                <div
+                                                    className={cn(
+                                                        'grid gap-2',
+                                                        hasHardViolations && hasSoftViolations ? 'grid-cols-2' : 'grid-cols-1',
+                                                    )}
+                                                >
+                                                    {hasHardViolations && (
+                                                        <ValidationBadge
+                                                            tone="hard"
+                                                            label={t('page.makeShift.aiRefill.snapshotSidebar.hardViolations', {
+                                                                count: hardViolationCount,
+                                                            })}
+                                                        />
+                                                    )}
+                                                    {hasSoftViolations && (
+                                                        <ValidationBadge
+                                                            tone="soft"
+                                                            label={t('page.makeShift.aiRefill.snapshotSidebar.softViolations', {
+                                                                count: softViolationCount,
+                                                            })}
+                                                        />
+                                                    )}
                                                 </div>
-                                            ) : (
-                                                <span className="inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-[8px] bg-gray-7 px-2 font-apple text-[12px] font-bold text-sub-2">
-                                                    <RotateCcw className="size-3.5" aria-hidden />
-                                                    {t('page.makeShift.aiRefill.snapshotSidebar.restore')}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </button>
+                                            </div>
+                                        )}
+                                    </article>
                                 </li>
                             );
                         })}
@@ -252,21 +297,11 @@ export function AiSnapshotSidebar({
     );
 }
 
-function SnapshotMetric({label}: {label: string}) {
-    return (
-        <span className="inline-flex min-w-0 items-center justify-center truncate rounded-[9px] bg-gray-7 px-2 py-2 font-apple text-[12px] leading-none font-bold text-sub-2">
-            {label}
-        </span>
-    );
-}
-
-function ValidationBadge({tone, label}: {tone: 'hard' | 'soft' | 'total'; label: string}) {
+function ValidationBadge({tone, label}: {tone: 'hard' | 'soft'; label: string}) {
     const styles =
         tone === 'hard'
             ? {bg: 'bg-[#FFF1F5]', dot: 'bg-red', text: 'text-[#D92D55]'}
-            : tone === 'soft'
-              ? {bg: 'bg-[#FFF8EA]', dot: 'bg-[#F59E0B]', text: 'text-[#B54708]'}
-              : {bg: 'bg-main-light', dot: 'bg-main-1', text: 'text-main-1'};
+            : {bg: 'bg-[#FFF8EA]', dot: 'bg-[#F59E0B]', text: 'text-[#B54708]'};
 
     return (
         <span

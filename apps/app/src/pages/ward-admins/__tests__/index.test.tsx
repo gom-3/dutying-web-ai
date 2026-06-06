@@ -1,3 +1,4 @@
+import {WARD_ADMIN_MAX_COUNT} from '@dutying/api/ward';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {render as rtlRender, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -62,6 +63,26 @@ const createAdminsResponse = () => ({
             status: 'ACTIVE' as const,
         },
     ],
+    reservedEmails: [
+        {
+            emailRegistrationId: 301,
+            wardId: 10,
+            email: 'future-editor@example.com',
+            role: 'EDITOR' as const,
+            status: 'RESERVED' as const,
+        },
+    ],
+    invitations: [],
+});
+const createMaxAdminsResponse = () => ({
+    members: Array.from({length: WARD_ADMIN_MAX_COUNT - 1}, (_, index) => ({
+        membershipId: 100 + index,
+        accountId: 1000 + index,
+        wardId: 10,
+        email: index === 0 ? 'owner@example.com' : `editor-${index}@example.com`,
+        role: index === 0 ? ('OWNER' as const) : ('EDITOR' as const),
+        status: 'ACTIVE' as const,
+    })),
     reservedEmails: [
         {
             emailRegistrationId: 301,
@@ -161,6 +182,25 @@ describe('WardAdminsPage', () => {
                 role: 'EDITOR',
             });
         });
+    });
+
+    it('blocks adding admins once active and reserved admins reach the ward limit', async () => {
+        const user = userEvent.setup();
+
+        mockGetWardAdmins.mockResolvedValue(createMaxAdminsResponse());
+
+        renderPage(<WardAdminsPage />);
+
+        expect(await screen.findByText(`병동 관리자는 최대 ${WARD_ADMIN_MAX_COUNT}명까지 추가할 수 있어요.`)).toBeInTheDocument();
+
+        const addButton = screen.getByRole('button', {name: '관리자 추가'});
+
+        expect(screen.getByPlaceholderText('이메일')).toBeDisabled();
+        expect(addButton).toBeDisabled();
+
+        await user.click(addButton);
+
+        expect(mockCreateWardAdminEmail).not.toHaveBeenCalled();
     });
 
     it('deletes active admins and reserved emails with separate endpoints', async () => {
