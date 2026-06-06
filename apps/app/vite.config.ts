@@ -48,12 +48,20 @@ const dependencies = {
 };
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 const defaultAppSiteUrl = 'https://app.dutying.net';
+const defaultPreviewAppSiteUrl = 'https://dev.dutying.net';
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
 const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
     const explicitUrl = env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL;
-    const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
-    const appSiteUrl = explicitUrl || vercelUrl || defaultAppSiteUrl;
+    const vercelUrl =
+        process.env.VERCEL_ENV === 'production'
+            ? process.env.VERCEL_PROJECT_PRODUCTION_URL
+            : process.env.VERCEL_BRANCH_URL || process.env.VERCEL_URL;
+    const appSiteUrl =
+        explicitUrl ||
+        (process.env.VERCEL_ENV === 'preview' ? defaultPreviewAppSiteUrl : undefined) ||
+        vercelUrl ||
+        defaultAppSiteUrl;
 
     return stripTrailingSlash(withHttpsProtocol(appSiteUrl));
 };
