@@ -6,6 +6,8 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export const REFRESH_DEMO_EXPIRED_REDIRECT_ERROR = 'refresh_demo_expired_redirect';
 
+const SESSION_EXPIRED_TOAST_ID = 'auth-session-expired';
+
 export default function useRefresh() {
     const {
         state: {isDemoExpired},
@@ -28,7 +30,7 @@ export default function useRefresh() {
                 throw new Error(REFRESH_DEMO_EXPIRED_REDIRECT_ERROR);
             }
 
-            toast.error(t('feature.auth.sessionExpired'));
+            toast.error(t('feature.auth.sessionExpired'), {id: SESSION_EXPIRED_TOAST_ID});
             await handleLogout();
             throw new Error('refresh_failed');
         }

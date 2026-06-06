@@ -60,7 +60,7 @@ const featureSections = [
         label: '연동',
         title: '간호사와 병동을\n연동할 수 있어요',
         titleHighlights: ['연동'],
-        description: '근무표가 앱으로 즉시 전달돼요.\n원티드 신청까지 자연스럽게 이어져요.',
+        description: '신청근무를 앱에서 보낼 수 있어요.\n근무표가 확정되면 앱으로 즉시 전달돼요.',
         image: '/img/landing-work-schedule-2.png',
         align: 'left',
         background: 'bg-white',
@@ -908,7 +908,7 @@ function LandingPage() {
             ))}
 
             <section className="relative overflow-hidden bg-black">
-                <div className="mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 py-[68px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:py-[95px]">
+                <div className="mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:pt-[95px] md:pb-[32px]">
                     <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
                         <p className="text-lg font-extrabold text-[#F4EDFF]">1분이면 충분해요</p>
                         <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-white md:text-[42px]">

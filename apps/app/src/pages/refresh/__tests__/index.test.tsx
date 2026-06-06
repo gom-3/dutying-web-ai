@@ -102,6 +102,47 @@ describe('RefreshPage', () => {
         });
     });
 
+    it('does not retry refresh when auth state changes recreate the refresh callback', async () => {
+        let rejectRefresh: (error: Error) => void = () => undefined;
+
+        const firstRefreshSpy = vi.fn(
+            () =>
+                new Promise((_resolve, reject) => {
+                    rejectRefresh = reject;
+                }),
+        );
+        const recreatedRefreshSpy = vi.fn();
+        const refreshRoute = (
+            <MemoryRouter initialEntries={['/refresh?next=%2F']}>
+                <Routes>
+                    <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                </Routes>
+            </MemoryRouter>
+        );
+
+        mockedUseRefresh.mockReset();
+        mockedUseRefresh.mockReturnValueOnce({
+            refresh: firstRefreshSpy,
+        } as never);
+        mockedUseRefresh.mockReturnValue({
+            refresh: recreatedRefreshSpy,
+        } as never);
+
+        const {rerender} = render(refreshRoute);
+
+        rerender(refreshRoute);
+
+        expect(firstRefreshSpy).toHaveBeenCalledTimes(1);
+        expect(recreatedRefreshSpy).not.toHaveBeenCalled();
+
+        rejectRefresh(new Error('expired'));
+
+        await waitFor(() => {
+            expect(replaceSpy).toHaveBeenCalledWith(ROUTE.ROOT);
+        });
+        expect(recreatedRefreshSpy).not.toHaveBeenCalled();
+    });
+
     it('does not overwrite the demo-expired signup redirect when refresh already redirected', async () => {
         refreshSpy.mockRejectedValue(new Error(REFRESH_DEMO_EXPIRED_REDIRECT_ERROR));
 

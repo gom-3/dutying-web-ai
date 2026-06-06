@@ -94,38 +94,46 @@ export function AiAutofillToolbar({
                         />
                     </div>
 
-                    <span
-                        id="make_ai_history_tools"
-                        className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1"
-                    >
-                        <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="Undo">
-                            <Undo2 className="size-3.5" aria-hidden />
-                        </IconButton>
-                        <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
-                            <Redo2 className="size-3.5" aria-hidden />
-                        </IconButton>
-                        <IconButton
-                            className="ai-autofill-toolbar__history-snapshots"
-                            onClick={onOpenSnapshotHistory}
-                            ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
+                    <span id="make_ai_history_tools" className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-2">
+                        <span
+                            id="make_ai_history_undo_redo_tools"
+                            className="ai-autofill-toolbar__history-group ai-autofill-toolbar__history-group--undo-redo flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1"
                         >
-                            <History className="size-3.5" aria-hidden />
-                        </IconButton>
-                        <IconButton
-                            className="ai-autofill-toolbar__history-save"
-                            onClick={onSaveSnapshot}
-                            disabled={isSavingSnapshot}
-                            ariaBusy={isSavingSnapshot}
-                            ariaLabel={t(
-                                isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
-                            )}
+                            <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="Undo">
+                                <Undo2 className="size-3.5" aria-hidden />
+                            </IconButton>
+                            <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
+                                <Redo2 className="size-3.5" aria-hidden />
+                            </IconButton>
+                        </span>
+
+                        <span
+                            id="make_ai_history_snapshot_tools"
+                            className="ai-autofill-toolbar__history-group ai-autofill-toolbar__history-group--snapshots flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1"
                         >
-                            {isSavingSnapshot ? (
-                                <BouncingDots className="w-5 shrink-0 text-main-1" />
-                            ) : (
-                                <Save className="size-3.5" strokeWidth={2.2} aria-hidden />
-                            )}
-                        </IconButton>
+                            <IconButton
+                                className="ai-autofill-toolbar__history-save"
+                                onClick={onSaveSnapshot}
+                                disabled={isSavingSnapshot}
+                                ariaBusy={isSavingSnapshot}
+                                ariaLabel={t(
+                                    isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
+                                )}
+                            >
+                                {isSavingSnapshot ? (
+                                    <BouncingDots className="w-5 shrink-0 text-main-1" />
+                                ) : (
+                                    <Save className="size-3.5" strokeWidth={2.2} aria-hidden />
+                                )}
+                            </IconButton>
+                            <IconButton
+                                className="ai-autofill-toolbar__history-snapshots"
+                                onClick={onOpenSnapshotHistory}
+                                ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
+                            >
+                                <History className="size-3.5" aria-hidden />
+                            </IconButton>
+                        </span>
                     </span>
                 </div>
 
