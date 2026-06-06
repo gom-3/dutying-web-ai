@@ -403,6 +403,7 @@ describe('useOnboardingWardWizard skill config behavior', () => {
 
         act(() => {
             result.current.saveSkillConfig({
+                enabled: true,
                 levelCount: 3,
                 paletteId: 'cool',
                 autoAssign: false,
@@ -410,6 +411,7 @@ describe('useOnboardingWardWizard skill config behavior', () => {
         });
 
         expect(result.current.draft.skillLevelConfig).toEqual({
+            enabled: true,
             levelCount: 3,
             paletteId: 'cool',
             autoAssign: false,
@@ -424,6 +426,7 @@ describe('useOnboardingWardWizard skill config behavior', () => {
 
         act(() => {
             result.current.saveSkillConfig({
+                enabled: true,
                 levelCount: 3,
                 paletteId: 'cool',
                 autoAssign: false,

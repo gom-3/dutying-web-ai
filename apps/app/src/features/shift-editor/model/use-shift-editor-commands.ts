@@ -112,7 +112,7 @@ export function useShiftEditorCommands() {
     const notifyFixedLocked = () => toast.error(t('page.makeShift.fixedShifts.lockedToast'));
     const notifyRequestLocked = () => toast.error(t('page.makeShift.requests.lockedToast'));
     const cmdSetCells = (cells: TCellPos[], value: TCellValue, source: TTxSource = 'user') => {
-        const {doc, history, dutyValidationInput, selection, editorMode} = getState();
+        const {doc, history, selection, editorMode} = getState();
 
         if (cells.length === 0) return;
 
@@ -212,7 +212,7 @@ export function useShiftEditorCommands() {
         },
         getPersisted: (): TPersisted | null => persistence.load(),
         hydrate: (persisted: TPersisted) => {
-            const {dutyValidationInput, history: currentHistory} = getState();
+            const {history: currentHistory} = getState();
 
             let nextHistory: THistoryState | null = null;
 
@@ -253,8 +253,6 @@ export function useShiftEditorCommands() {
             persistDocImmediate(doc, history, {validationSnapshot: snapshot});
         },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
-            const {doc} = getState();
-
             setDutyValidationInput(input);
 
             // constraints board는 input을 기반으로 UI에서 드래그/편집하기 쉽도록 별도로 유지한다.
@@ -280,12 +278,10 @@ export function useShiftEditorCommands() {
                 ruleLevelByKey: nextRuleLevelByKey,
             };
             // validation도 즉시 재계산 (규칙 활성/레벨 변경 반영)
-            const {doc} = getState();
-
             setDutyValidationInput(nextInput);
         },
         setWardConstraint: (wardConstraint: TWardConstraint) => {
-            const {dutyValidationInput, doc} = getState();
+            const {dutyValidationInput} = getState();
 
             if (!dutyValidationInput) return;
 
@@ -315,7 +311,7 @@ export function useShiftEditorCommands() {
         setSelectionValue: cmdSetSelectionValue,
         clearSelectionCells: (source?: TTxSource) => cmdSetSelectionValue(null, source),
         resetAutofilled: (source: TTxSource = 'user') => {
-            const {doc, history, dutyValidationInput, selection} = getState();
+            const {doc, history, selection} = getState();
             const changed: TSetCellsOp['cells'] = [];
 
             for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
@@ -402,7 +398,7 @@ export function useShiftEditorCommands() {
             persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         applySchedule: (schedule: Record<string, TCellValue[]>, source: TTxSource = 'ai') => {
-            const {doc, history, dutyValidationInput, selection} = getState();
+            const {doc, history, selection} = getState();
             const changed: TSetCellsOp['cells'] = [];
 
             for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
@@ -447,7 +443,7 @@ export function useShiftEditorCommands() {
             persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         reorderRowsByName: (source: TTxSource = 'user') => {
-            const {doc, history, dutyValidationInput, selection} = getState();
+            const {doc, history, selection} = getState();
 
             if (doc.rows.length <= 1) return;
 
@@ -482,7 +478,7 @@ export function useShiftEditorCommands() {
             return copySelection(doc, selection);
         },
         paste: (payload: TClipboardPayload, source: TTxSource = 'user') => {
-            const {doc, selection, history, dutyValidationInput, editorMode} = getState();
+            const {doc, selection, history, editorMode} = getState();
 
             if (!selection) return;
 
@@ -584,7 +580,7 @@ export function useShiftEditorCommands() {
             }
         },
         undo: () => {
-            const {doc, history, dutyValidationInput, selection} = getState();
+            const {doc, history, selection} = getState();
             const entry = history.past[history.past.length - 1];
 
             if (!entry) return;
@@ -603,7 +599,7 @@ export function useShiftEditorCommands() {
             persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
         },
         redo: () => {
-            const {doc, history, dutyValidationInput, selection} = getState();
+            const {doc, history, selection} = getState();
             const entry = history.future[history.future.length - 1];
 
             if (!entry) return;

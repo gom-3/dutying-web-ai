@@ -108,7 +108,7 @@ vi.mock('@/shared/api/ward', () => ({
 }));
 
 vi.mock('@/features/shift-editor', async (importOriginal) => {
-    const actual = await importOriginal();
+    const actual = (await importOriginal()) as Record<string, unknown>;
 
     return {
         ...actual,

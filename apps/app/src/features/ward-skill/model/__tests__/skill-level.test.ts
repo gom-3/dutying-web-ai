@@ -34,6 +34,7 @@ describe('skill-level', () => {
         const settings = createWardSkillSettings(
             nurses,
             {
+                enabled: true,
                 levelCount: 4,
                 paletteId: 'cool',
                 autoAssign: false,
@@ -63,6 +64,7 @@ describe('skill-level', () => {
     it('고정 저장된 숙련도를 다시 읽어야 한다', () => {
         const settings = {
             config: {
+                enabled: true,
                 levelCount: 3,
                 paletteId: 'violet',
                 autoAssign: false,
@@ -89,6 +91,7 @@ describe('skill-level', () => {
     it('고정 저장에 없는 간호사는 최저 숙련도로 처리해야 한다', () => {
         const settings = {
             config: {
+                enabled: true,
                 levelCount: 4,
                 paletteId: 'cool',
                 autoAssign: false,
@@ -118,6 +121,7 @@ describe('skill-level', () => {
     it('브라우저 저장소에 병동별 숙련도 설정을 저장하고 읽어야 한다', () => {
         const settings = {
             config: {
+                enabled: true,
                 levelCount: 4,
                 paletteId: 'cool',
                 autoAssign: false,

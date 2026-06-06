@@ -367,7 +367,7 @@ function NurseStep({
                                     const isPreceptor = nurse.memo.trim() === '프리셉터';
                                     const isPreceptee = nurse.memo.trim() === '프리셉티';
                                     const isSkillUnselected = nurse.level == null;
-                                    const skillBadgeLabel = isSkillUnselected ? SKILL_UNSELECTED_LABEL : getSkillLabel(nurse.level);
+                                    const skillBadgeLabel = isSkillUnselected ? SKILL_UNSELECTED_LABEL : getSkillLabel(nurse.level ?? 1);
                                     const fadedClass = nurse.isWorker ? '' : 'opacity-45';
 
                                     return (

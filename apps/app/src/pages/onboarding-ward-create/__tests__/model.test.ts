@@ -119,10 +119,11 @@ describe('OnboardingWardCreatePage model', () => {
 
     it('limits shift types to the maximum count', () => {
         const draft = createInitialDraft();
-        const maxShiftDraft = Array.from({length: MAX_ONBOARDING_SHIFT_TYPES - draft.shiftTypes.length}).reduce(
-            (acc) => addShiftTypeDraft(acc),
-            draft,
-        );
+        let maxShiftDraft = draft;
+
+        for (let index = draft.shiftTypes.length; index < MAX_ONBOARDING_SHIFT_TYPES; index += 1) {
+            maxShiftDraft = addShiftTypeDraft(maxShiftDraft);
+        }
 
         expect(maxShiftDraft.shiftTypes).toHaveLength(MAX_ONBOARDING_SHIFT_TYPES);
 
@@ -145,7 +146,7 @@ describe('OnboardingWardCreatePage model', () => {
         const draft = createInitialDraft();
         const teamId = draft.teams[0]?.id ?? '';
         const nextDraft = addNurseDraft(draft, teamId);
-        const addedNurse = nextDraft.nurses.at(-1);
+        const addedNurse = nextDraft.nurses[nextDraft.nurses.length - 1];
 
         expect(addedNurse).toBeDefined();
         expect(addedNurse?.possibleShiftTypeIds).toEqual(nextDraft.shiftTypes.map((shiftType) => shiftType.id));
@@ -393,12 +394,14 @@ describe('OnboardingWardCreatePage model', () => {
             })),
         };
         const nextDraft = saveSkillLevelConfig(withCustomLevels, {
+            enabled: true,
             levelCount: 3,
             paletteId: 'cool',
             autoAssign: false,
         });
 
         expect(nextDraft.skillLevelConfig).toEqual({
+            enabled: true,
             levelCount: 3,
             paletteId: 'cool',
             autoAssign: false,

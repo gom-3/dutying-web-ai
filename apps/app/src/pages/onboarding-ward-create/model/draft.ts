@@ -44,6 +44,7 @@ export type TSkillPalette = {
 };
 
 export type TSkillLevelConfig = {
+    enabled: boolean;
     levelCount: number;
     paletteId: string;
     autoAssign: boolean;
@@ -104,6 +105,7 @@ const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
 const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
+    enabled: true,
     levelCount: 5,
     paletteId: 'warm',
     autoAssign: true,

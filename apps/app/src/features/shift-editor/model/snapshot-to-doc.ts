@@ -27,7 +27,7 @@ export function snapshotDetailToDoc(
 ): TDutyDoc {
     const base = shiftToDoc(shift, year, month);
     const {idToType} = buildWardShiftTypeMaps(shift);
-    const cellByKey = new Map(detail.cells.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell] as const));
+    const cellByKey = new Map<string, TSnapshotCellDTO>(detail.cells.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell]));
 
     const orderedRowIds = [...detail.rowOrder]
         .sort((a, b) => a.displayOrder - b.displayOrder)
