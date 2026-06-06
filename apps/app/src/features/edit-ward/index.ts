@@ -13,6 +13,7 @@ const useEditWard = () => {
     } = useAuth();
     const wardQueryKey = wardQueryKeys.id(wardId ?? 0);
     const wardWaitingNursesQueryKey = wardQueryKeys.waitingNurses(wardId ?? 0);
+    const shiftTeamsQueryKey = wardQueryKeys.shiftTeams(wardId ?? 0);
     const wardQueryOptionsValue = wardQueryOptions.id(wardId ?? 0);
     const wardWaitingNursesQueryOptions = wardQueryOptions.waitingNurses(wardId ?? 0);
     const queryClient = useQueryClient();
@@ -73,6 +74,7 @@ const useEditWard = () => {
             try {
                 await WardAPI.approveWaitingNurses(wardId, waitingNurseId, shiftTeamId);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
+                await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
                 toast.success('선택한 팀에 간호사를 추가했어요.');
@@ -84,7 +86,7 @@ const useEditWard = () => {
                 return false;
             }
         },
-        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [queryClient, shiftTeamsQueryKey, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const connectWaitingNurses = useCallback(
         async (waitingNurseId: number, targetNurseId: number) => {
@@ -93,6 +95,7 @@ const useEditWard = () => {
             try {
                 await WardAPI.connectWaitingNurses(wardId, waitingNurseId, targetNurseId);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
+                await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
                 toast.success('기존 간호사 계정과 연결했어요.');
@@ -104,7 +107,7 @@ const useEditWard = () => {
                 return false;
             }
         },
-        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [queryClient, shiftTeamsQueryKey, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const cancelWaiting = useCallback(
         async (nurseId: number) => {

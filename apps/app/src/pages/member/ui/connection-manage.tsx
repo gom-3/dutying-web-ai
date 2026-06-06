@@ -29,11 +29,9 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
             setToLinkNurseId,
             setToAddShiftTeamId,
             initialize,
-            goToWaitingList,
             goToMethodSelection,
             goToTargetSelection,
             handleSelectWaitingNurse,
-            handleAutoConnectWaitingNurse,
             handleCompleteSelection,
             retryCompleteSelection,
         },
@@ -49,7 +47,6 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         toLinkNurseId,
         toAddShiftTeamId,
     });
-    const normalizePhone = (phoneNum?: string | null) => (phoneNum ?? '').replace(/\D/g, '');
     const normalizeName = (name?: string | null) => (name ?? '').trim();
     const handleAcceptWaitingNurse = (waitingNurse: (typeof watingNurses)[number]) => {
         const waitingName = normalizeName(waitingNurse.name);

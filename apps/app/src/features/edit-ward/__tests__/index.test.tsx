@@ -69,8 +69,29 @@ describe('useEditWard', () => {
         expect(isSuccess).toBe(true);
         expect(mockApproveWaitingNurses).toHaveBeenCalledWith(1, 7, 20);
         expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
-        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.shiftTeams(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(3, {queryKey: wardQueryKeys.waitingNurses(1)});
         expect(mockToastSuccess).toHaveBeenCalledWith('선택한 팀에 간호사를 추가했어요.');
+        expect(mockToastError).not.toHaveBeenCalled();
+    });
+
+    it('invalidates shift teams after connecting a waiting nurse to an existing nurse', async () => {
+        mockConnectWaitingNurses.mockResolvedValue(undefined);
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.connectWaitingNurses(7, 99);
+        });
+
+        expect(isSuccess).toBe(true);
+        expect(mockConnectWaitingNurses).toHaveBeenCalledWith(1, 7, 99);
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.shiftTeams(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(3, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockToastSuccess).toHaveBeenCalledWith('기존 간호사 계정과 연결했어요.');
         expect(mockToastError).not.toHaveBeenCalled();
     });
 

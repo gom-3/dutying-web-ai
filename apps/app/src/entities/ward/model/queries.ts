@@ -1,6 +1,8 @@
 import {queryOptions} from '@tanstack/react-query';
 import {WardAPI} from '@/shared/api';
 
+export const WAITING_NURSES_REFETCH_INTERVAL_MS = 30_000;
+
 export const wardQueryKeys = {
     all: () => ['ward'],
     // Ward
@@ -57,6 +59,10 @@ export const wardQueryOptions = {
         queryOptions({
             queryKey: wardQueryKeys.waitingNurses(wardId),
             queryFn: () => WardAPI.getWaitingNurses(wardId),
+            refetchInterval: WAITING_NURSES_REFETCH_INTERVAL_MS,
+            refetchIntervalInBackground: false,
+            refetchOnReconnect: true,
+            refetchOnWindowFocus: true,
         }),
     constraint: (wardId: number, shiftTeamId: number) =>
         queryOptions({
