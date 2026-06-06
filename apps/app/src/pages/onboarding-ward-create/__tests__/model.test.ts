@@ -10,6 +10,7 @@ import {
     deleteShiftTypeDraft,
     getStepValidation,
     MAX_ONBOARDING_SHIFT_TYPES,
+    prepareManualEntryDraft,
     reorderNursesWithinTeam,
     saveSkillLevelConfig,
     updateNurseDraft,
@@ -148,6 +149,15 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(addedNurse).toBeDefined();
         expect(addedNurse?.possibleShiftTypeIds).toEqual(nextDraft.shiftTypes.map((shiftType) => shiftType.id));
+    });
+
+    it('clears sample nurses when starting manual entry without an upload', () => {
+        const draft = createInitialDraft();
+        const manualDraft = prepareManualEntryDraft(draft);
+
+        expect(manualDraft.teams).toHaveLength(1);
+        expect(manualDraft.nurses).toEqual([]);
+        expect(manualDraft.constraintCandidates).toEqual([]);
     });
 
     it('removes deleted shift ids from nurse possible shifts', () => {

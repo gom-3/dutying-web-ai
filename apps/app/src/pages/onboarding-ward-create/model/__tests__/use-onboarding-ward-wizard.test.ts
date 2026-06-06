@@ -186,6 +186,33 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(toastSuccess).not.toHaveBeenCalled();
     });
 
+    it('clears sample nurses when users skip the optional upload step', async () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        act(() => {
+            result.current.skipOrComplete();
+        });
+
+        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['간호사 1팀']);
+        expect(result.current.draft.nurses).toEqual([]);
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(result.current.draft.currentStep).toBe(4);
+        expect(result.current.canComplete).toBe(false);
+    });
+
     it('preserves the draft and stores failure feedback when the parse request fails', async () => {
         mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
 

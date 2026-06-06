@@ -108,11 +108,7 @@ const moveToNurseStep = async (user: ReturnType<typeof userEvent.setup>) => {
 };
 const prepareValidCreationState = async (user: ReturnType<typeof userEvent.setup>) => {
     await moveToNurseStep(user);
-    await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
     await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
-    await user.click(screen.getByRole('button', {name: /간호사 3팀/}));
-    await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
-    await user.click(screen.getByRole('button', {name: /간호사 1팀/}));
 };
 
 describe('OnboardingWardCreatePage', () => {
@@ -179,6 +175,9 @@ describe('OnboardingWardCreatePage', () => {
             expect(screen.getByText('업로드됨: march-duty.xlsx')).toBeInTheDocument();
         });
 
+        expect(screen.getByText('근무유형')).toBeInTheDocument();
+        expect(screen.getByText('간호사')).toBeInTheDocument();
+        expect(screen.getByText('불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.')).toBeInTheDocument();
         expect(mockParseOnboardingWardExcel).toHaveBeenCalledTimes(1);
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
 
@@ -212,16 +211,27 @@ describe('OnboardingWardCreatePage', () => {
                     confidence: 0.9,
                     evidence_summary: 'D 근무 최소 2명을 관찰했어요.',
                 },
+                {
+                    key: 'max_work',
+                    template_code: 'MAX_CONSECUTIVE_WORK_DAYS',
+                    params: {target: 'ALL', count: 5},
+                    severity_recommendation: 'HARD_AFTER_CONFIRM',
+                    confidence_band: 'HIGH',
+                    evidence_summary: '관찰된 최대 연속 근무일은 5일',
+                },
             ],
         });
 
         await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         await waitFor(() => {
-            expect(screen.getByText('기존 근무표 제약조건')).toBeInTheDocument();
+            expect(screen.getByText('기존 근무표에서 발견한 제약 후보')).toBeInTheDocument();
         });
 
         expect(screen.getByText('근무별 최소 인원')).toBeInTheDocument();
+        expect(screen.getByText('최대 연속 근무')).toBeInTheDocument();
+        expect(screen.getByText('기본 제약 보정')).toBeInTheDocument();
+        expect(screen.getByText('높은 확신')).toBeInTheDocument();
         expect(screen.getByDisplayValue('2')).toBeInTheDocument();
 
         const toggle = screen.getByRole('switch', {name: '근무별 최소 인원 저장 여부'});
@@ -383,6 +393,7 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
 
         await moveToNurseStep(user);
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
         await user.click(screen.getByRole('button', {name: /팀 추가하기/}));
 
         expect(screen.getByRole('button', {name: '완료'})).toHaveAttribute('aria-disabled', 'false');
@@ -397,7 +408,7 @@ describe('OnboardingWardCreatePage', () => {
         const submittedShiftTeams = submittedPayload.shiftTeams as {nurseNames: string[]}[];
 
         expect(submittedShiftTeams).toHaveLength(1);
-        expect(submittedShiftTeams[0]).toEqual(expect.objectContaining({nurseNames: ['홍길동', '김하늘', '이서윤', '박연우']}));
+        expect(submittedShiftTeams[0]).toEqual(expect.objectContaining({nurseNames: ['신규 간호사 1']}));
     });
 
     it('shows team delete confirm modal and deletes team with nurses', async () => {
@@ -406,6 +417,7 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
 
         await moveToNurseStep(user);
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
 
         await user.click(screen.getByRole('button', {name: '팀 삭제하기'}));
 
@@ -428,8 +440,9 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
 
         await moveToNurseStep(user);
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
 
-        const nurseInputs = screen.getAllByDisplayValue(/홍길동|김하늘|박연우|이서윤/);
+        const nurseInputs = screen.getAllByDisplayValue(/신규 간호사 1/);
 
         await user.clear(nurseInputs[0] as HTMLInputElement);
 
@@ -442,6 +455,7 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
 
         await moveToNurseStep(user);
+        await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
 
         const precepteeHelpButton = screen.getByRole('button', {name: '프리셉티 설명'});
 
@@ -452,8 +466,8 @@ describe('OnboardingWardCreatePage', () => {
         expect(precepteeHelpButton).toHaveAttribute('aria-expanded', 'true');
         expect(screen.getByText('프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.')).toBeInTheDocument();
 
-        const preceptorCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉터'});
-        const precepteeCheckbox = screen.getByRole('checkbox', {name: '홍길동 프리셉티'});
+        const preceptorCheckbox = screen.getByRole('checkbox', {name: '신규 간호사 1 프리셉터'});
+        const precepteeCheckbox = screen.getByRole('checkbox', {name: '신규 간호사 1 프리셉티'});
 
         expect(preceptorCheckbox).toHaveAttribute('aria-checked', 'false');
         expect(precepteeCheckbox).toHaveAttribute('aria-checked', 'false');
@@ -480,6 +494,11 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByText('근무명')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
         expect(toastError).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        expect(screen.queryByDisplayValue('홍길동')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '완료'})).toHaveAttribute('aria-disabled', 'true');
     });
 
     it('shows skip only on upload step and moves to the next step when clicked', async () => {

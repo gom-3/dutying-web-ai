@@ -350,6 +350,13 @@ export const goPreviousStep = (draft: TOnboardingWardDraft): TOnboardingWardDraf
     currentStep: Math.max(MIN_STEP, draft.currentStep - 1) as TOnboardingStep,
 });
 
+export const prepareManualEntryDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
+    ...draft,
+    teams: draft.teams[0] ? [draft.teams[0]] : [{id: createId('team'), name: '간호사 1팀'}],
+    nurses: [],
+    constraintCandidates: [],
+});
+
 export const updateShiftTypeDraft = (
     draft: TOnboardingWardDraft,
     shiftTypeId: string,

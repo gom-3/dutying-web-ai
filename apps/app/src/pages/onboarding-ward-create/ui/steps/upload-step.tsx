@@ -28,6 +28,12 @@ const CONSTRAINT_TITLES: Record<string, string> = {
     FORBID_N_THEN_E: '나이트 다음 이브닝 금지',
     FORBID_E_THEN_D: '이브닝 다음 데이 금지',
 };
+const CORE_ADJUSTMENT_TEMPLATE_CODES = new Set(['MAX_CONSECUTIVE_WORK_DAYS', 'MAX_CONSECUTIVE_N', 'MIN_OFF_AFTER_N']);
+const CONFIDENCE_BAND_LABELS: Record<string, string> = {
+    HIGH: '높은 확신',
+    MEDIUM: '보통 확신',
+    LOW: '낮은 확신',
+};
 const SEVERITY_OPTIONS = [
     {value: 'HARD', label: '강제'},
     {value: 'SOFT', label: '권장'},
@@ -36,7 +42,13 @@ const SEVERITY_OPTIONS = [
 const asRecord = (value: unknown): Record<string, unknown> | null =>
     value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 const asNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
-const getConfidenceLabel = (confidence: number | null) => (confidence == null ? null : `${Math.round(confidence * 100)}%`);
+const getConfidenceLabel = (confidence: number | null, confidenceBand: string | null) => {
+    const bandLabel = confidenceBand ? CONFIDENCE_BAND_LABELS[confidenceBand.toUpperCase()] : null;
+
+    if (bandLabel) return bandLabel;
+
+    return confidence == null ? null : `${Math.round(confidence * 100)}%`;
+};
 const getShiftLabel = (value: unknown) => {
     if (typeof value === 'string') return value;
 
@@ -44,6 +56,12 @@ const getShiftLabel = (value: unknown) => {
 
     return typeof shift?.label === 'string' ? shift.label : typeof shift?.code === 'string' ? shift.code : '';
 };
+const getUploadSummaryItems = (draft: TOnboardingWardDraft) => [
+    {label: '근무유형', value: draft.shiftTypes.length},
+    {label: '팀', value: draft.teams.length},
+    {label: '간호사', value: draft.nurses.length},
+    {label: '제약 후보', value: draft.constraintCandidates.length},
+];
 
 function ConstraintCountInput({
     value,
@@ -147,6 +165,7 @@ function UploadStep({
 }: IUploadStepProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const selectedConstraintCount = draft.constraintCandidates.filter((candidate) => candidate.selected).length;
+    const uploadSummaryItems = getUploadSummaryItems(draft);
 
     return (
         <div className="space-y-6">
@@ -194,21 +213,33 @@ function UploadStep({
                 </Button>
             </Card>
             {draft.uploadedFileName ? (
-                <Card variant="success" padding="none" className="rounded-[10px] px-5 py-4 font-apple text-[18px]">
-                    업로드됨: {draft.uploadedFileName}
+                <Card variant="success" padding="none" className="rounded-[10px] px-5 py-4 font-apple">
+                    <p className="text-[18px] font-semibold">업로드됨: {draft.uploadedFileName}</p>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                        {uploadSummaryItems.map((item) => (
+                            <div key={item.label} className="rounded-[8px] bg-white/70 px-3 py-2">
+                                <p className="text-[13px] text-gray-3">{item.label}</p>
+                                <p className="mt-0.5 text-[17px] font-semibold text-sub-1">{item.value}개</p>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="mt-3 text-[14px] text-gray-3">불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.</p>
                 </Card>
             ) : null}
             {draft.constraintCandidates.length > 0 ? (
                 <Card padding="none" className="rounded-[10px] border border-[#DDE8F4] bg-white px-5 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p className="font-apple text-[18px] font-semibold text-sub-1">기존 근무표 제약조건</p>
-                            <p className="mt-1 font-apple text-[14px] text-gray-3">{selectedConstraintCount}개 저장 예정</p>
+                            <p className="font-apple text-[18px] font-semibold text-sub-1">기존 근무표에서 발견한 제약 후보</p>
+                            <p className="mt-1 font-apple text-[14px] text-gray-3">
+                                {selectedConstraintCount}개 선택됨 · 연속근무/나이트/OFF 후보는 기본 주요 제약의 값으로 반영돼요.
+                            </p>
                         </div>
                     </div>
                     <div className="mt-4 space-y-3">
                         {draft.constraintCandidates.map((candidate) => {
-                            const confidenceLabel = getConfidenceLabel(candidate.confidence);
+                            const confidenceLabel = getConfidenceLabel(candidate.confidence, candidate.confidenceBand);
+                            const isCoreAdjustment = CORE_ADJUSTMENT_TEMPLATE_CODES.has(candidate.templateCode);
 
                             return (
                                 <div
@@ -222,6 +253,11 @@ function UploadStep({
                                                 <p className="font-apple text-[16px] font-semibold text-sub-1">
                                                     {CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode}
                                                 </p>
+                                                {isCoreAdjustment ? (
+                                                    <span className="rounded-full bg-[#EAF8F4] px-2 py-0.5 font-apple text-[12px] font-medium text-main-1">
+                                                        기본 제약 보정
+                                                    </span>
+                                                ) : null}
                                                 {confidenceLabel ? (
                                                     <span className="rounded-full bg-[#EEF4FF] px-2 py-0.5 font-apple text-[12px] font-medium text-[#315D9E]">
                                                         {confidenceLabel}

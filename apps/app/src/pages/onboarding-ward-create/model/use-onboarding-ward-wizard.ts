@@ -27,6 +27,7 @@ import {
     goPreviousStep as goPreviousStepDraft,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
+    prepareManualEntryDraft,
     saveSkillLevelConfig,
     type TOnboardingNurseDraft,
     type TOnboardingConstraintDraft,
@@ -545,6 +546,12 @@ function useOnboardingWardWizard() {
     const skipOrComplete = () => {
         if (draft.currentStep === MAX_STEP) {
             void complete();
+
+            return;
+        }
+
+        if (draft.currentStep === 2 && !draft.uploadedFileName) {
+            setDraft((prev) => goNextStepDraft(prepareManualEntryDraft(prev)));
 
             return;
         }
