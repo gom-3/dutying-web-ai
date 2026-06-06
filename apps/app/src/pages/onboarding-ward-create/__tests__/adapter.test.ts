@@ -325,6 +325,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(nextDraft.constraintCandidates).toHaveLength(1);
         expect(nextDraft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',
+            severity: 'HARD',
             selected: true,
             confidence: 0.86,
         });

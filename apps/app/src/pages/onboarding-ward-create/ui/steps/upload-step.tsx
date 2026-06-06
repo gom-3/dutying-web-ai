@@ -2,6 +2,7 @@ import {Upload} from 'lucide-react';
 import {useRef} from 'react';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
+import Select from '@/shared/ui/form-controls/Select';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import type {TOnboardingConstraintDraft, TOnboardingWardDraft} from '../../model';
@@ -13,6 +14,7 @@ interface IUploadStepProps {
     uploadError: string | null;
     uploadWarnings: string[];
     onConstraintToggle: (constraintId: string, selected: boolean) => void;
+    onConstraintSeverityChange: (constraintId: string, severity: TOnboardingConstraintDraft['severity']) => void;
     onConstraintCountChange: (constraintId: string, count: number) => void;
     onConstraintStaffingCountChange: (constraintId: string, staffingIndex: number, count: number) => void;
 }
@@ -26,6 +28,10 @@ const CONSTRAINT_TITLES: Record<string, string> = {
     FORBID_N_THEN_E: '나이트 다음 이브닝 금지',
     FORBID_E_THEN_D: '이브닝 다음 데이 금지',
 };
+const SEVERITY_OPTIONS = [
+    {value: 'HARD', label: '강제'},
+    {value: 'SOFT', label: '권장'},
+] satisfies Array<{value: TOnboardingConstraintDraft['severity']; label: string}>;
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
     value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
@@ -135,6 +141,7 @@ function UploadStep({
     uploadError,
     uploadWarnings,
     onConstraintToggle,
+    onConstraintSeverityChange,
     onConstraintCountChange,
     onConstraintStaffingCountChange,
 }: IUploadStepProps) {
@@ -226,12 +233,28 @@ function UploadStep({
                                                 <p className="mt-1 font-apple text-[13px] leading-5 text-[#8A6A2A]">{candidate.riskNote}</p>
                                             ) : null}
                                         </div>
-                                        <Switch
-                                            checked={candidate.selected}
-                                            onCheckedChange={(checked) => onConstraintToggle(candidate.id, checked)}
-                                            aria-label={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 저장 여부`}
-                                            className="data-[state=checked]:bg-main-1"
-                                        />
+                                        <div className="flex shrink-0 items-center gap-3">
+                                            <Select
+                                                value={candidate.severity}
+                                                options={SEVERITY_OPTIONS}
+                                                disabled={!candidate.selected}
+                                                aria-label={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 강도`}
+                                                className="h-9 w-[92px]"
+                                                selectClassName="rounded-[8px] px-3 pr-8 text-[14px] outline-gray-5 disabled:opacity-50"
+                                                onChange={(event) =>
+                                                    onConstraintSeverityChange(
+                                                        candidate.id,
+                                                        event.target.value as TOnboardingConstraintDraft['severity'],
+                                                    )
+                                                }
+                                            />
+                                            <Switch
+                                                checked={candidate.selected}
+                                                onCheckedChange={(checked) => onConstraintToggle(candidate.id, checked)}
+                                                aria-label={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 저장 여부`}
+                                                className="data-[state=checked]:bg-main-1"
+                                            />
+                                        </div>
                                     </div>
                                     <ConstraintCandidateControls
                                         candidate={candidate}

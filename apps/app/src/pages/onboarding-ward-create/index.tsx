@@ -50,6 +50,7 @@ function OnboardingWardCreatePage() {
         updateNurse,
         updateTeamName,
         toggleConstraintCandidate,
+        updateConstraintCandidateSeverity,
         updateConstraintCandidateCount,
         updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
@@ -260,6 +261,7 @@ function OnboardingWardCreatePage() {
                         uploadError={uploadError}
                         uploadWarnings={uploadWarnings}
                         onConstraintToggle={toggleConstraintCandidate}
+                        onConstraintSeverityChange={updateConstraintCandidateSeverity}
                         onConstraintCountChange={updateConstraintCandidateCount}
                         onConstraintStaffingCountChange={updateConstraintCandidateStaffingCount}
                     />

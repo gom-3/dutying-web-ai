@@ -225,10 +225,16 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByDisplayValue('2')).toBeInTheDocument();
 
         const toggle = screen.getByRole('switch', {name: '근무별 최소 인원 저장 여부'});
+        const severitySelect = screen.getByRole('combobox', {name: '근무별 최소 인원 강도'});
 
         expect(toggle).toHaveAttribute('aria-checked', 'true');
+        expect(severitySelect).toHaveValue('SOFT');
+        await user.selectOptions(severitySelect, 'HARD');
+        expect(severitySelect).toHaveValue('HARD');
+
         await user.click(toggle);
         expect(toggle).toHaveAttribute('aria-checked', 'false');
+        expect(severitySelect).toBeDisabled();
     });
 
     it('shows upload warnings when the parse api partially succeeds', async () => {

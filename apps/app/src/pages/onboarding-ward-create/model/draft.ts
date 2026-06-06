@@ -1,4 +1,4 @@
-import {type TCreateWardDTO} from '@dutying/api/ward';
+import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
 
 export type TOnboardingStep = 1 | 2 | 3 | 4;
@@ -27,6 +27,7 @@ export type TOnboardingConstraintDraft = {
     id: string;
     key: string;
     templateCode: string;
+    severity: TShiftConstraintSeverity;
     category: string | null;
     params: Record<string, unknown>;
     severityRecommendation: string | null;

@@ -119,6 +119,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.constraintCandidates).toHaveLength(1);
         expect(result.current.draft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',
+            severity: 'HARD',
             selected: true,
         });
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
@@ -153,12 +154,14 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         act(() => {
             result.current.toggleConstraintCandidate(staffingCandidate?.id ?? '', false);
+            result.current.updateConstraintCandidateSeverity(maxWorkCandidate?.id ?? '', 'SOFT');
             result.current.updateConstraintCandidateStaffingCount(staffingCandidate?.id ?? '', 0, 3);
             result.current.updateConstraintCandidateCount(maxWorkCandidate?.id ?? '', 6);
         });
 
         expect(result.current.draft.constraintCandidates[0]?.selected).toBe(false);
         expect(result.current.draft.constraintCandidates[0]?.params).toEqual({staffing: [{shift: 'D', count: 3}]});
+        expect(result.current.draft.constraintCandidates[1]?.severity).toBe('SOFT');
         expect(result.current.draft.constraintCandidates[1]?.params).toEqual({target: 'ALL', count: 6});
     });
 

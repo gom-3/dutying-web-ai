@@ -59,6 +59,7 @@ const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
 ]);
+const DEFAULT_CONSTRAINT_SEVERITY: TShiftConstraintSeverity = 'SOFT';
 const SHIFT_CODE_LABELS: Record<string, string> = {
     D: '데이',
     E: '이브닝',
@@ -333,6 +334,16 @@ const normalizeParsedNurses = (response: TOnboardingWardParseApiResponse): TOnbo
         }))
         .filter((nurse) => Boolean(nurse.name));
 };
+const normalizeConstraintSeverity = (severityRecommendation: string | null | undefined): TShiftConstraintSeverity | undefined => {
+    const normalized = severityRecommendation?.trim().toUpperCase();
+
+    if (!normalized) return undefined;
+
+    if (normalized.includes('HARD')) return 'HARD';
+    if (normalized.includes('SOFT')) return 'SOFT';
+
+    return undefined;
+};
 const normalizeParsedConstraintCandidates = (response: TOnboardingWardParseApiResponse): TOnboardingParsedConstraintCandidate[] | undefined => {
     const rawCandidates = response.constraintCandidates ?? response.constraint_candidates;
 
@@ -351,6 +362,9 @@ const normalizeParsedConstraintCandidates = (response: TOnboardingWardParseApiRe
             return {
                 key: trimToUndefined(candidate.key) ?? templateCode,
                 templateCode,
+                severity:
+                    normalizeConstraintSeverity(candidate.severityRecommendation ?? candidate.severity_recommendation) ??
+                    DEFAULT_CONSTRAINT_SEVERITY,
                 category: trimToUndefined(candidate.category) ?? null,
                 params: candidate.params ?? {},
                 severityRecommendation: trimToUndefined(candidate.severityRecommendation ?? candidate.severity_recommendation) ?? null,
@@ -367,22 +381,12 @@ const toDraftConstraintCandidate = (candidate: TOnboardingParsedConstraintCandid
     ...candidate,
     id: createLocalId(`constraint-${index + 1}`),
 });
-const normalizeConstraintSeverity = (severityRecommendation: string | null): TShiftConstraintSeverity | undefined => {
-    const normalized = severityRecommendation?.trim().toUpperCase();
-
-    if (!normalized) return undefined;
-
-    if (normalized.includes('HARD')) return 'HARD';
-    if (normalized.includes('SOFT')) return 'SOFT';
-
-    return undefined;
-};
 const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) =>
     draft.constraintCandidates
         .filter((constraint) => constraint.selected && constraint.templateCode)
         .map((constraint) => ({
             templateCode: constraint.templateCode,
-            severity: normalizeConstraintSeverity(constraint.severityRecommendation),
+            severity: constraint.severity,
             selected: constraint.selected,
             params: constraint.params,
         }));

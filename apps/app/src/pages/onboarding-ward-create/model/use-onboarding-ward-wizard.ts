@@ -368,6 +368,9 @@ function useOnboardingWardWizard() {
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
         setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {selected}));
     };
+    const updateConstraintCandidateSeverity = (constraintId: string, severity: TOnboardingConstraintDraft['severity']) => {
+        setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {severity}));
+    };
     const updateConstraintCandidateCount = (constraintId: string, count: number) => {
         setDraft((prev) => {
             const constraint = prev.constraintCandidates.find((candidate) => candidate.id === constraintId);
@@ -572,6 +575,7 @@ function useOnboardingWardWizard() {
         updateNurse,
         updateTeamName,
         toggleConstraintCandidate,
+        updateConstraintCandidateSeverity,
         updateConstraintCandidateCount,
         updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
