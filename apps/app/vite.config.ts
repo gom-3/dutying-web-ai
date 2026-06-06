@@ -49,10 +49,18 @@ const dependencies = {
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 const defaultAppSiteUrl = 'https://app.dutying.net';
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
+const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
+const getConfiguredAppSiteUrl = (env: Record<string, string>) => {
+    const explicitUrl = env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL;
+    const vercelUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.VERCEL_URL;
+    const appSiteUrl = explicitUrl || vercelUrl || defaultAppSiteUrl;
+
+    return stripTrailingSlash(withHttpsProtocol(appSiteUrl));
+};
 
 export default defineConfig(({mode}) => {
     const env = loadEnv(mode, workspaceRoot, '');
-    const appSiteUrl = stripTrailingSlash(env.VITE_APP_PUBLIC_URL || env.VITE_APP_SITE_URL || defaultAppSiteUrl);
+    const appSiteUrl = getConfiguredAppSiteUrl(env);
     const isWindows = process.platform === 'win32';
     const isTest = mode === 'test';
 
