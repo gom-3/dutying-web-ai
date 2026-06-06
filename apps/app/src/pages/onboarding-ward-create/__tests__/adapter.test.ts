@@ -115,6 +115,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(nextDraft.uploadedFileName).toBe('ward.xlsx');
         expect(nextDraft.wardName).toBe('중환자실');
         expect(nextDraft.hospitalName).toBe('듀팅병원');
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
         expect(nextDraft.teams).toHaveLength(1);
         expect(nextDraft.teams[0]?.name).toBe('A팀');
         expect(nextDraft.nurses[0]?.teamId).toBe(nextDraft.teams[0]?.id);
@@ -207,7 +208,8 @@ describe('OnboardingWardCreatePage adapter', () => {
         const remappedNurse = nextDraft.nurses.find((nurse) => nurse.id === nurseId);
         const defaultShiftTypeIds = nextDraft.shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
 
-        expect(remappedNurse?.possibleShiftTypeIds).toEqual([nextDraft.shiftTypes[0]?.id]);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'M']);
+        expect(remappedNurse?.possibleShiftTypeIds).toEqual([nextDraft.shiftTypes[0]?.id, nextDraft.shiftTypes[1]?.id]);
         expect(remappedNurse?.possibleShiftTypeIds).not.toEqual(defaultShiftTypeIds);
     });
 
@@ -321,6 +323,8 @@ describe('OnboardingWardCreatePage adapter', () => {
         const payload = buildCreateWardPayload(nextDraft);
 
         expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
         expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N']);
         expect(nextDraft.constraintCandidates).toHaveLength(1);
         expect(nextDraft.constraintCandidates[0]).toMatchObject({

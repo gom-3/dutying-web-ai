@@ -113,7 +113,8 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '이브닝', '나이트', '오프']);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
         expect(result.current.draft.constraintCandidates).toHaveLength(1);
