@@ -220,7 +220,7 @@ function ToggleIconButton({
             aria-pressed={active}
             className={cn(
                 'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] transition-colors duration-150',
-                'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                'hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
                 active ? 'bg-white text-sub-1' : 'text-gray-3',
                 className,
             )}

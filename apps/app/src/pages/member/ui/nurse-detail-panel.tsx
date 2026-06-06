@@ -1,7 +1,7 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
 import {ArrowRightLeft, Check, ChevronRight, Loader2} from 'lucide-react';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
@@ -21,6 +21,7 @@ import {resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
 interface INurseDetailPanelProps {
     onClose: () => void;
     onOpenWardCodeGuide: () => void;
+    onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void} | null) => void;
     isSkillFeatureEnabled: boolean;
     isSkillUnselected: boolean;
     onSaveSkillLevel: (nextLevel: number | null) => void;
@@ -34,6 +35,7 @@ interface INurseDetailPanelProps {
 function NurseDetailPanel({
     onClose,
     onOpenWardCodeGuide,
+    onRegisterDraftActions,
     isSkillFeatureEnabled,
     isSkillUnselected,
     onSaveSkillLevel,
@@ -121,7 +123,7 @@ function NurseDetailPanel({
         () => (shiftTeams ?? []).filter((shiftTeam) => shiftTeam.shiftTeamId !== selectedShiftTeamId),
         [selectedShiftTeamId, shiftTeams],
     );
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!selectedNurse || !writeNurse || isBusy) return false;
 
         if (writeNurse.name.trim().length === 0) {
@@ -186,7 +188,39 @@ function NurseDetailPanel({
         }
 
         return true;
-    };
+    }, [
+        isBusy,
+        isCreateMode,
+        isDirty,
+        isSkillDirty,
+        isSkillFeatureEnabled,
+        onSaveSkillLevel,
+        selectedNurse,
+        skillDraftLevel,
+        shiftTypeOptions,
+        updateNurse,
+        updateNurseShift,
+        writeNurse,
+    ]);
+    const handleDiscardDraft = useCallback(() => {
+        setWriteNurse(selectedNurse ?? null);
+        setSkillDraftLevel(initialSkillLevel);
+        setShowNameRequiredError(false);
+        setMoveTeamMenuOpen(false);
+        setNurseDraftDirty(false);
+    }, [initialSkillLevel, selectedNurse, setNurseDraftDirty]);
+
+    useEffect(() => {
+        if (!onRegisterDraftActions) return;
+
+        onRegisterDraftActions({
+            save: handleSave,
+            discard: handleDiscardDraft,
+        });
+
+        return () => onRegisterDraftActions(null);
+    }, [handleDiscardDraft, handleSave, onRegisterDraftActions]);
+
     const handleRequestClose = () => {
         if (isDirty || isSkillDirty) {
             setExitConfirmModalOpen(true);

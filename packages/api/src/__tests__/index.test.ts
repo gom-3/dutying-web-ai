@@ -119,6 +119,19 @@ describe('@dutying/api public entry', () => {
         expect(deleteMock).toHaveBeenCalledWith('/accounts/7');
     });
 
+    it('builds the schedule snapshot deletion endpoint', async () => {
+        const client = createClient();
+        const deleteMock = client.delete as ReturnType<typeof vi.fn>;
+
+        deleteMock.mockResolvedValueOnce({data: undefined});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.deleteSnapshot(7, 3, 99)).resolves.toBeUndefined();
+
+        expect(deleteMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/schedule/snapshots/99');
+    });
+
     it('builds the tutorial seen endpoint', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;

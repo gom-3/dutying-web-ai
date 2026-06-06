@@ -5,6 +5,10 @@ import MemberPage from '..';
 
 const mockUseEditWard = vi.fn();
 const mockUseEditShiftTeam = vi.fn();
+const {mockNurseDetailDiscard, mockNurseDetailSave} = vi.hoisted(() => ({
+    mockNurseDetailDiscard: vi.fn(),
+    mockNurseDetailSave: vi.fn(),
+}));
 
 vi.mock('@/analytics', () => ({
     events: {memberPage: {createShiftTeam: 'createShiftTeam', focusNurse: 'focusNurse'}},
@@ -49,7 +53,14 @@ vi.mock('../ui/member-skill-level-modal', () => ({
 }));
 
 vi.mock('../ui/nurse-detail-panel', () => ({
-    default: () => null,
+    default: ({onRegisterDraftActions}: {onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void}) => void}) => {
+        onRegisterDraftActions?.({
+            save: mockNurseDetailSave,
+            discard: mockNurseDetailDiscard,
+        });
+
+        return null;
+    },
 }));
 
 const LocationProbe = () => {
@@ -57,11 +68,73 @@ const LocationProbe = () => {
 
     return <span data-testid="location-search">{location.search}</span>;
 };
+const createMemberTestNurse = () => ({
+    nurseId: 101,
+    accountId: null,
+    shiftTeamId: 10,
+    wardId: 1,
+    name: 'Nurse One',
+    phoneNum: null,
+    isConnected: false,
+    nurseShiftTypes: [],
+    isWorker: true,
+    isDutyManager: false,
+    isWardManager: false,
+    gender: '',
+    employmentDate: '',
+    memo: '',
+    isDeleted: false,
+    divisionNum: 1,
+    priority: 100,
+});
+const mockDirtySelectedNurseState = () => {
+    const nurse = createMemberTestNurse();
+    const shiftTeams = [
+        {shiftTeamId: 10, name: 'Team A', nurseCnt: 1, nurses: [nurse]},
+        {shiftTeamId: 20, name: 'Team B', nurseCnt: 0, nurses: []},
+    ];
+
+    mockUseEditShiftTeam.mockReturnValue({
+        state: {
+            ward: {
+                wardId: 1,
+                hospitalName: 'Hospital',
+                name: 'Ward',
+                code: 'ABC123',
+                nurseCnt: 1,
+                wardShiftTypes: [],
+                shiftTeams,
+            },
+            shiftTeams,
+            selectedNurse: nurse,
+            selectedNurseDrawerMode: 'edit',
+            isNurseDraftDirty: true,
+            isAddingNurse: false,
+            nurseSaveStatus: 'idle',
+            isDeletingNurse: false,
+        },
+        actions: {
+            selectNurse: vi.fn(() => true),
+            setNurseDraftDirty: vi.fn(),
+            createShiftTeam: vi.fn(),
+            addNurse: vi.fn(),
+            deleteNurse: vi.fn(),
+            deleteShiftTeam: vi.fn(),
+            updateShiftTeam: vi.fn(),
+            updateNurse: vi.fn(),
+            updateNurseShift: vi.fn(),
+            disconnectNurse: vi.fn(),
+        },
+    });
+};
 
 describe('MemberPage', () => {
     beforeEach(() => {
         mockUseEditWard.mockReset();
         mockUseEditShiftTeam.mockReset();
+        mockNurseDetailDiscard.mockReset();
+        mockNurseDetailSave.mockReset();
+        mockNurseDetailSave.mockResolvedValue(true);
         mockUseEditWard.mockReturnValue({
             state: {
                 watingNurses: [],
@@ -81,12 +154,14 @@ describe('MemberPage', () => {
                 shiftTeams: [],
                 selectedNurse: null,
                 selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
                 isAddingNurse: false,
                 nurseSaveStatus: 'idle',
                 isDeletingNurse: false,
             },
             actions: {
                 selectNurse: vi.fn(() => true),
+                setNurseDraftDirty: vi.fn(),
                 createShiftTeam: vi.fn(),
                 addNurse: vi.fn(),
                 deleteNurse: vi.fn(),
@@ -151,12 +226,14 @@ describe('MemberPage', () => {
                 shiftTeams: [{shiftTeamId: 10, name: 'A팀', nurseCnt: 1, nurses: [nurse]}],
                 selectedNurse: null,
                 selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
                 isAddingNurse: false,
                 nurseSaveStatus: 'idle',
                 isDeletingNurse: false,
             },
             actions: {
                 selectNurse,
+                setNurseDraftDirty: vi.fn(),
                 createShiftTeam: vi.fn(),
                 addNurse: vi.fn(),
                 deleteNurse: vi.fn(),
@@ -205,12 +282,14 @@ describe('MemberPage', () => {
                 ],
                 selectedNurse: null,
                 selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
                 isAddingNurse: false,
                 nurseSaveStatus: 'idle',
                 isDeletingNurse: false,
             },
             actions: {
                 selectNurse: vi.fn(() => true),
+                setNurseDraftDirty: vi.fn(),
                 createShiftTeam: vi.fn(),
                 addNurse: vi.fn(),
                 deleteNurse: vi.fn(),
@@ -256,12 +335,14 @@ describe('MemberPage', () => {
                 shiftTeams: [{shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []}],
                 selectedNurse: null,
                 selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
                 isAddingNurse: false,
                 nurseSaveStatus: 'idle',
                 isDeletingNurse: false,
             },
             actions: {
                 selectNurse: vi.fn(() => true),
+                setNurseDraftDirty: vi.fn(),
                 createShiftTeam: vi.fn(),
                 addNurse,
                 deleteNurse: vi.fn(),
@@ -314,12 +395,14 @@ describe('MemberPage', () => {
                 ],
                 selectedNurse: null,
                 selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
                 isAddingNurse: false,
                 nurseSaveStatus: 'idle',
                 isDeletingNurse: false,
             },
             actions: {
                 selectNurse: vi.fn(() => true),
+                setNurseDraftDirty: vi.fn(),
                 createShiftTeam,
                 addNurse: vi.fn(),
                 deleteNurse: vi.fn(),
@@ -344,5 +427,63 @@ describe('MemberPage', () => {
             expect(screen.getByTestId('location-search')).toHaveTextContent('shiftTeamId=30');
         });
         expect(createShiftTeam).toHaveBeenCalledTimes(1);
+    });
+
+    it('수정 중 팀 탭을 눌러 뜬 확인 모달에서 취소하면 원래 팀에 머문다', async () => {
+        mockDirtySelectedNurseState();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: /Team B/}));
+        await userEvent.click(screen.getByRole('button', {name: '취소'}));
+
+        expect(screen.getByTestId('location-search')).toHaveTextContent('');
+        expect(mockNurseDetailDiscard).not.toHaveBeenCalled();
+        expect(mockNurseDetailSave).not.toHaveBeenCalled();
+    });
+
+    it('수정 중 팀 탭을 눌러 뜬 확인 모달에서 저장 안 함을 누르면 저장 없이 원래 팀 이동을 실행한다', async () => {
+        mockDirtySelectedNurseState();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: /Team B/}));
+        await userEvent.click(screen.getByRole('button', {name: '저장 안 함'}));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('location-search')).toHaveTextContent('shiftTeamId=20');
+        });
+        expect(mockNurseDetailDiscard).toHaveBeenCalledTimes(1);
+        expect(mockNurseDetailSave).not.toHaveBeenCalled();
+    });
+
+    it('수정 중 팀 탭을 눌러 뜬 확인 모달에서 저장 후 나가기를 누르면 저장 후 원래 팀 이동을 실행한다', async () => {
+        mockDirtySelectedNurseState();
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: /Team B/}));
+        await userEvent.click(screen.getByRole('button', {name: '저장 후 나가기'}));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('location-search')).toHaveTextContent('shiftTeamId=20');
+        });
+        expect(mockNurseDetailSave).toHaveBeenCalledTimes(1);
+        expect(mockNurseDetailDiscard).not.toHaveBeenCalled();
     });
 });

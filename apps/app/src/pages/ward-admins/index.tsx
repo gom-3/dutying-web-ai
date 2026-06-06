@@ -1,4 +1,4 @@
-import type {TWardAdminMembershipResponse, TWardReservedAdminEmailResponse} from '@dutying/api/ward';
+import {WARD_ADMIN_MAX_COUNT, type TWardAdminMembershipResponse, type TWardReservedAdminEmailResponse} from '@dutying/api/ward';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {Plus, Trash2, UserPlus} from 'lucide-react';
 import {type FormEvent, useState} from 'react';
@@ -15,6 +15,8 @@ const getRoleLabel = (role: string) => (role === 'OWNER' ? '최고 관리자' : 
 const compareAdminRolePriority = (a: TWardAdminMembershipResponse, b: TWardAdminMembershipResponse) =>
     Number(b.role === 'OWNER') - Number(a.role === 'OWNER');
 const isEmail = (value: string) => EMAIL_PATTERN.test(value);
+const getAdminCount = (members: TWardAdminMembershipResponse[], reservedEmails: TWardReservedAdminEmailResponse[]) =>
+    members.length + reservedEmails.length;
 
 type TAccountRoleSource = {
     role?: string | null;
@@ -185,9 +187,19 @@ function WardAdminsPage() {
     });
     const isOwner = getAccountRole(accountMe, wardId) === 'OWNER';
     const isSubmitting = createAdminEmailMutation.isPending;
+    const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
+    const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
+    const adminCount = getAdminCount(members, reservedEmails);
+    const hasReachedAdminLimit = adminCount >= WARD_ADMIN_MAX_COUNT;
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
+
+        if (hasReachedAdminLimit) {
+            setError(`병동 관리자는 최대 ${WARD_ADMIN_MAX_COUNT}명까지 추가할 수 있어요.`);
+
+            return;
+        }
 
         const normalizedEmail = email.trim().toLowerCase();
 
@@ -235,8 +247,6 @@ function WardAdminsPage() {
         );
     }
 
-    const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
-    const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
     const hasAdmins = members.length > 0 || reservedEmails.length > 0;
 
     return (
@@ -260,11 +270,12 @@ function WardAdminsPage() {
                                 placeholder="이메일"
                                 inputMode="email"
                                 autoComplete="email"
+                                disabled={hasReachedAdminLimit}
                                 onChange={(event) => setEmail(event.target.value)}
                             />
                             <button
                                 type="submit"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || hasReachedAdminLimit}
                                 aria-label="관리자 추가"
                                 className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-main-3"
                             >
@@ -272,6 +283,9 @@ function WardAdminsPage() {
                             </button>
                         </div>
                         {error ? <p className="mt-2 text-xs text-red">{error}</p> : null}
+                        {hasReachedAdminLimit ? (
+                            <p className="mt-2 text-xs text-gray-3">병동 관리자는 최대 {WARD_ADMIN_MAX_COUNT}명까지 추가할 수 있어요.</p>
+                        ) : null}
                     </form>
                 ) : (
                     <p className="mt-4 rounded-[12px] bg-gray-7 px-4 py-3 text-sm text-gray-3">

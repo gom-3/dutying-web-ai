@@ -52,6 +52,8 @@ export type TWardAdminRole = 'OWNER' | 'EDITOR';
 
 export type TWardAdminStatus = 'ACTIVE' | 'RESERVED';
 
+export const WARD_ADMIN_MAX_COUNT = 10;
+
 export type TWardAdminMembershipResponse = {
     membershipId: number;
     accountId: number;
@@ -303,6 +305,9 @@ export type TSnapshotSummaryDto = {
     month: number;
     cellCount: number;
     emptyCellCount: number;
+    hardCount?: number;
+    softCount?: number;
+    totalCount?: number;
     createdAt: string;
     updatedAt: string;
 };
@@ -516,6 +521,7 @@ export interface IWardAPI {
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;
+    deleteSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<void>;
     publishSnapshot: (
         wardId: number,
         shiftTeamId: number,
