@@ -567,10 +567,18 @@ export type TCreateWardSeedNurseDTO = {
     possibleShiftShortNames?: string[];
 };
 
+export type TCreateWardConstraintRuleDTO = {
+    templateCode: string;
+    severity?: TShiftConstraintSeverity;
+    selected?: boolean;
+    params: Record<string, unknown>;
+};
+
 export type TCreateWardShiftTeamDTO = {
     name?: string;
     nurseNames: string[];
     nurses?: TCreateWardSeedNurseDTO[];
+    constraintRules?: TCreateWardConstraintRuleDTO[];
 };
 
 export type TCreateWardDTO = {

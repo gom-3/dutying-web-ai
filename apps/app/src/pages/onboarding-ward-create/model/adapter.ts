@@ -1,9 +1,10 @@
-import {type TCreateWardDTO} from '@dutying/api/ward';
+import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {
     createEmptyShiftType,
     normalizeNurseNameForRequest,
+    type TOnboardingConstraintDraft,
     type TOnboardingNurseDraft,
     type TOnboardingTeamDraft,
     type TOnboardingWardDraft,
@@ -25,6 +26,8 @@ export type TOnboardingParsedNurse = Partial<Pick<TOnboardingNurseDraft, 'name' 
     possibleShiftShortNames?: string[];
 };
 
+export type TOnboardingParsedConstraintCandidate = Omit<TOnboardingConstraintDraft, 'id'>;
+
 export type TOnboardingParsedWardData = {
     fileName?: string;
     wardName?: string;
@@ -32,6 +35,7 @@ export type TOnboardingParsedWardData = {
     shiftTypes?: TOnboardingParsedShiftType[];
     teams?: TOnboardingParsedTeam[];
     nurses?: TOnboardingParsedNurse[];
+    constraintCandidates?: TOnboardingParsedConstraintCandidate[];
     skillLevelConfig?: Partial<TSkillLevelConfig>;
 };
 
@@ -45,7 +49,30 @@ const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = 
     E: {startTime: '15:00', endTime: '23:00'},
     N: {startTime: '23:00', endTime: '07:00'},
 };
-const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls', 'csv'] as const;
+const SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS = ['xlsx', 'xls'] as const;
+const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
+    'MIN_STAFF_BY_SHIFT',
+    'MAX_CONSECUTIVE_WORK_DAYS',
+    'MAX_CONSECUTIVE_N',
+    'MIN_OFF_AFTER_N',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
+]);
+const SHIFT_CODE_LABELS: Record<string, string> = {
+    D: '데이',
+    E: '이브닝',
+    N: '나이트',
+    O: '오프',
+};
+const VALID_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classification']>([
+    'DAY',
+    'EVENING',
+    'NIGHT',
+    'OTHER_WORK',
+    'OFF',
+    'OTHER_LEAVE',
+]);
 const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
 const getTodayDate = () => new Date().toISOString().slice(0, 10);
 const trimToUndefined = (value?: string | null) => {
@@ -78,6 +105,41 @@ const inferClassificationFromShortName = (shortName: string, isOff: boolean): TO
         default:
             return 'OTHER_WORK';
     }
+};
+const normalizeShiftClassification = (
+    classification: string | null | undefined,
+    shortName: string,
+): TOnboardingWardShiftType['classification'] => {
+    const normalizedClassification = classification?.trim().toUpperCase();
+
+    if (normalizedClassification && VALID_SHIFT_CLASSIFICATIONS.has(normalizedClassification as TOnboardingWardShiftType['classification'])) {
+        return normalizedClassification as TOnboardingWardShiftType['classification'];
+    }
+
+    return inferClassificationFromShortName(shortName, shortName.toUpperCase() === 'O');
+};
+const getShiftTypeNameFromShortName = (shortName: string) => SHIFT_CODE_LABELS[shortName.toUpperCase()] ?? shortName;
+const normalizeShiftShortName = (value?: string | null) => trimToUndefined(value)?.toUpperCase();
+const collectObservedWorkShiftCodes = (assignments?: Record<string, string | null> | null, monthlyCounts?: Record<string, number | null> | null) => {
+    const shiftCodes = new Set<string>();
+
+    Object.values(assignments ?? {}).forEach((code) => {
+        const normalizedCode = normalizeShiftShortName(code);
+
+        if (normalizedCode && normalizedCode !== 'O') {
+            shiftCodes.add(normalizedCode);
+        }
+    });
+
+    Object.entries(monthlyCounts ?? {}).forEach(([code, count]) => {
+        const normalizedCode = normalizeShiftShortName(code);
+
+        if (normalizedCode && normalizedCode !== 'O' && (count ?? 0) > 0) {
+            shiftCodes.add(normalizedCode);
+        }
+    });
+
+    return Array.from(shiftCodes);
 };
 const normalizeUploadedShiftTypes = (shiftTypes: TOnboardingWardShiftType[]): TOnboardingWardShiftType[] =>
     shiftTypes.map((shiftType) => {
@@ -192,27 +254,45 @@ const buildParsedNurses = (
 const collectWarnings = (response: TOnboardingWardParseApiResponse) =>
     [
         ...(response.warnings ?? []),
+        ...(response.quality_report?.warnings ?? []),
         ...(response.failedSheets ?? []).map((sheetName) => `시트 "${sheetName}" 데이터를 불러오지 못했어요.`),
         ...(response.failedRows ?? []).map((rowLabel) => `일부 행(${rowLabel})을 해석하지 못해 제외했어요.`),
     ].filter((warning): warning is string => Boolean(warning?.trim()));
 const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): TOnboardingParsedShiftType[] | undefined => {
     const rawShiftTypes = response.shiftTypes ?? response.wardShiftTypes;
 
-    if (!rawShiftTypes) {
+    if (rawShiftTypes) {
+        return rawShiftTypes
+            .map((shiftType) => ({
+                name: trimToUndefined(shiftType.name),
+                shortName: normalizeShiftShortName(shiftType.shortName),
+                startTime: trimToUndefined(shiftType.startTime),
+                endTime: trimToUndefined(shiftType.endTime),
+                color: trimToUndefined(shiftType.color),
+                isDefault: shiftType.isDefault ?? undefined,
+                isOff: shiftType.isOff ?? undefined,
+                classification: shiftType.classification ?? undefined,
+            }))
+            .filter((shiftType) => Boolean(shiftType.name ?? shiftType.shortName));
+    }
+
+    if (!response.shift_type_candidates) {
         return undefined;
     }
 
-    return rawShiftTypes
-        .map((shiftType) => ({
-            name: trimToUndefined(shiftType.name),
-            shortName: trimToUndefined(shiftType.shortName)?.toUpperCase(),
-            startTime: trimToUndefined(shiftType.startTime),
-            endTime: trimToUndefined(shiftType.endTime),
-            color: trimToUndefined(shiftType.color),
-            isDefault: shiftType.isDefault ?? undefined,
-            isOff: shiftType.isOff ?? undefined,
-            classification: shiftType.classification ?? undefined,
-        }))
+    return response.shift_type_candidates
+        .map((candidate) => {
+            const shortName = normalizeShiftShortName(candidate.code);
+            const classification = shortName ? normalizeShiftClassification(candidate.classification, shortName) : undefined;
+
+            return {
+                name: shortName ? getShiftTypeNameFromShortName(shortName) : undefined,
+                shortName,
+                isDefault: ['D', 'E', 'N', 'O'].includes(shortName ?? ''),
+                isOff: classification === 'OFF' || shortName === 'O',
+                classification,
+            };
+        })
         .filter((shiftType) => Boolean(shiftType.name ?? shiftType.shortName));
 };
 const normalizeParsedTeams = (response: TOnboardingWardParseApiResponse): TOnboardingParsedTeam[] | undefined => {
@@ -225,25 +305,87 @@ const normalizeParsedTeams = (response: TOnboardingWardParseApiResponse): TOnboa
     return rawTeams.map((team) => ({name: trimToUndefined(team.name) ?? ''})).filter((team) => Boolean(team.name));
 };
 const normalizeParsedNurses = (response: TOnboardingWardParseApiResponse): TOnboardingParsedNurse[] | undefined => {
-    if (!response.nurses) {
+    if (response.nurses) {
+        return response.nurses
+            .map((nurse) => ({
+                name: trimToUndefined(nurse.name),
+                memo: nurse.memo ?? undefined,
+                isWorker: nurse.isWorker ?? undefined,
+                employmentDate: trimToUndefined(nurse.employmentDate),
+                level: nurse.level ?? undefined,
+                teamName: trimToUndefined(nurse.teamName),
+                possibleShiftShortNames:
+                    nurse.possibleShiftShortNames
+                        ?.map((shortName) => normalizeShiftShortName(shortName))
+                        .filter((shortName): shortName is string => Boolean(shortName)) ?? undefined,
+            }))
+            .filter((nurse) => Boolean(nurse.name ?? nurse.teamName));
+    }
+
+    if (!response.nurse_candidates) {
         return undefined;
     }
 
-    return response.nurses
+    return response.nurse_candidates
         .map((nurse) => ({
-            name: trimToUndefined(nurse.name),
-            memo: nurse.memo ?? undefined,
-            isWorker: nurse.isWorker ?? undefined,
-            employmentDate: trimToUndefined(nurse.employmentDate),
-            level: nurse.level ?? undefined,
-            teamName: trimToUndefined(nurse.teamName),
-            possibleShiftShortNames:
-                nurse.possibleShiftShortNames
-                    ?.map((shortName) => trimToUndefined(shortName)?.toUpperCase())
-                    .filter((shortName): shortName is string => Boolean(shortName)) ?? undefined,
+            name: trimToUndefined(nurse.raw_name),
+            possibleShiftShortNames: collectObservedWorkShiftCodes(nurse.assignments, nurse.monthly_counts),
         }))
-        .filter((nurse) => Boolean(nurse.name ?? nurse.teamName));
+        .filter((nurse) => Boolean(nurse.name));
 };
+const normalizeParsedConstraintCandidates = (response: TOnboardingWardParseApiResponse): TOnboardingParsedConstraintCandidate[] | undefined => {
+    const rawCandidates = response.constraintCandidates ?? response.constraint_candidates;
+
+    if (!rawCandidates) {
+        return undefined;
+    }
+
+    return rawCandidates
+        .map((candidate) => {
+            const templateCode = trimToUndefined(candidate.templateCode ?? candidate.template_code)?.toUpperCase();
+
+            if (!templateCode || !SUPPORTED_CONSTRAINT_TEMPLATE_CODES.has(templateCode)) {
+                return null;
+            }
+
+            return {
+                key: trimToUndefined(candidate.key) ?? templateCode,
+                templateCode,
+                category: trimToUndefined(candidate.category) ?? null,
+                params: candidate.params ?? {},
+                severityRecommendation: trimToUndefined(candidate.severityRecommendation ?? candidate.severity_recommendation) ?? null,
+                confidence: typeof candidate.confidence === 'number' ? candidate.confidence : null,
+                confidenceBand: trimToUndefined(candidate.confidenceBand ?? candidate.confidence_band) ?? null,
+                evidenceSummary: trimToUndefined(candidate.evidenceSummary ?? candidate.evidence_summary) ?? templateCode,
+                riskNote: trimToUndefined(candidate.riskNote ?? candidate.risk_note) ?? null,
+                selected: candidate.prefill !== false,
+            } satisfies TOnboardingParsedConstraintCandidate;
+        })
+        .filter((candidate): candidate is TOnboardingParsedConstraintCandidate => Boolean(candidate));
+};
+const toDraftConstraintCandidate = (candidate: TOnboardingParsedConstraintCandidate, index: number): TOnboardingConstraintDraft => ({
+    ...candidate,
+    id: createLocalId(`constraint-${index + 1}`),
+});
+const normalizeConstraintSeverity = (severityRecommendation: string | null): TShiftConstraintSeverity | undefined => {
+    const normalized = severityRecommendation?.trim().toUpperCase();
+
+    if (!normalized) return undefined;
+
+    if (normalized.includes('HARD')) return 'HARD';
+    if (normalized.includes('SOFT')) return 'SOFT';
+
+    return undefined;
+};
+const buildConstraintRulePayloads = (draft: TOnboardingWardDraft) =>
+    draft.constraintCandidates
+        .filter((constraint) => constraint.selected && constraint.templateCode)
+        .map((constraint) => ({
+            templateCode: constraint.templateCode,
+            severity: normalizeConstraintSeverity(constraint.severityRecommendation),
+            selected: constraint.selected,
+            params: constraint.params,
+        }));
 
 export const getOnboardingUploadExtension = (fileName: string) => fileName.split('.').pop()?.toLowerCase() ?? '';
 
@@ -278,6 +420,7 @@ export const buildOnboardingParseDraftInjection = (
         shiftTypes: normalizeParsedShiftTypes(response),
         teams: normalizeParsedTeams(response),
         nurses: normalizeParsedNurses(response),
+        constraintCandidates: normalizeParsedConstraintCandidates(response),
     },
     warnings: collectWarnings(response),
 });
@@ -299,6 +442,9 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
         shiftTypes: nextShiftTypes,
         teams: nextTeams,
         nurses: nextNurses,
+        constraintCandidates: parsed.constraintCandidates
+            ? parsed.constraintCandidates.map(toDraftConstraintCandidate)
+            : draft.constraintCandidates,
         skillLevelConfig: parsed.skillLevelConfig ? {...draft.skillLevelConfig, ...parsed.skillLevelConfig} : draft.skillLevelConfig,
     };
 };
@@ -308,6 +454,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
     const normalizedHospitalName = draft.hospitalName.trim();
     const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
     const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
+    const constraintRules = buildConstraintRulePayloads(draft);
 
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
@@ -325,6 +472,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
             return {
                 name: team.name,
                 nurseNames: nurses.map((nurse) => nurse.requestName),
+                constraintRules: constraintRules.length > 0 ? constraintRules : undefined,
                 nurses: nurses.map((nurse) => ({
                     name: nurse.requestName,
                     memo: nurse.memo,

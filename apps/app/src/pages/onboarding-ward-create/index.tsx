@@ -49,6 +49,9 @@ function OnboardingWardCreatePage() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        toggleConstraintCandidate,
+        updateConstraintCandidateCount,
+        updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
         applyUploadedFile,
         uploadStatus,
@@ -256,6 +259,9 @@ function OnboardingWardCreatePage() {
                         isUploading={uploadStatus === 'uploading'}
                         uploadError={uploadError}
                         uploadWarnings={uploadWarnings}
+                        onConstraintToggle={toggleConstraintCandidate}
+                        onConstraintCountChange={updateConstraintCandidateCount}
+                        onConstraintStaffingCountChange={updateConstraintCandidateStaffingCount}
                     />
                 );
             case 3:

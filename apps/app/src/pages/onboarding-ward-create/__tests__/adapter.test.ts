@@ -278,6 +278,67 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(warnings).toEqual(['근속 연수가 없는 간호사는 오늘 날짜로 반영되었어요.']);
     });
 
+    it('normalizes llm onboarding analyze responses into draft data and constraint candidates', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            shift_type_candidates: [
+                {code: 'D', classification: 'DAY'},
+                {code: 'N', classification: 'NIGHT'},
+                {code: 'O', classification: 'OFF'},
+            ],
+            nurse_candidates: [
+                {
+                    raw_name: '신규 간호사',
+                    assignments: {'2025-03-01': 'D', '2025-03-02': 'N', '2025-03-03': 'O'},
+                    monthly_counts: {D: 1, N: 1, O: 1},
+                },
+            ],
+            constraint_candidates: [
+                {
+                    key: 'required_staff',
+                    template_code: 'MIN_STAFF_BY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    params: {staffing: [{shift: 'D', count: 2}]},
+                    severity_recommendation: 'HARD_AFTER_CONFIRM',
+                    confidence: 0.86,
+                    evidence_summary: '날짜별 근무코드 배치 수의 최빈값을 기준으로 계산',
+                    risk_note: '확인이 필요합니다.',
+                },
+                {
+                    key: 'unsupported',
+                    params: {count: 6},
+                    severity_recommendation: 'SOFT',
+                    confidence: 0.5,
+                    evidence_summary: '지원되지 않는 후보',
+                },
+            ],
+            quality_report: {
+                warnings: ['확정표가 없어 신뢰도를 낮췄어요.'],
+            },
+        };
+
+        const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+        const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
+        const payload = buildCreateWardPayload(nextDraft);
+
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
+        expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N']);
+        expect(nextDraft.constraintCandidates).toHaveLength(1);
+        expect(nextDraft.constraintCandidates[0]).toMatchObject({
+            templateCode: 'MIN_STAFF_BY_SHIFT',
+            selected: true,
+            confidence: 0.86,
+        });
+        expect(payload.shiftTeams[0]?.constraintRules).toEqual([
+            {
+                templateCode: 'MIN_STAFF_BY_SHIFT',
+                severity: 'HARD',
+                selected: true,
+                params: {staffing: [{shift: 'D', count: 2}]},
+            },
+        ]);
+        expect(warnings).toEqual(['확정표가 없어 신뢰도를 낮췄어요.']);
+    });
+
     it('collects warnings from failed sheets and rows while trimming parsed upload fields', () => {
         const response: TOnboardingWardParseApiResponse = {
             fileName: ' parsed.xlsx ',
@@ -324,7 +385,7 @@ describe('OnboardingWardCreatePage adapter', () => {
 
     it('detects supported upload file extensions', () => {
         expect(isSupportedOnboardingUploadFile('march-duty.xlsx')).toBe(true);
-        expect(isSupportedOnboardingUploadFile('march-duty.csv')).toBe(true);
+        expect(isSupportedOnboardingUploadFile('march-duty.csv')).toBe(false);
         expect(isSupportedOnboardingUploadFile('march-duty.pdf')).toBe(false);
     });
 

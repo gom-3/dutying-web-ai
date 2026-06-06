@@ -91,6 +91,16 @@ describe('useOnboardingWardWizard upload flow', () => {
                     employmentDate: '2025-01-01',
                 },
             ],
+            constraint_candidates: [
+                {
+                    key: 'required_staff',
+                    template_code: 'MIN_STAFF_BY_SHIFT',
+                    params: {staffing: [{shift: 'D', count: 2}]},
+                    severity_recommendation: 'HARD_AFTER_CONFIRM',
+                    confidence: 0.9,
+                    evidence_summary: 'D 근무 최소 2명을 관찰했어요.',
+                },
+            ],
         });
 
         const {result} = renderHook(() => useOnboardingWardWizard());
@@ -106,8 +116,50 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
+        expect(result.current.draft.constraintCandidates).toHaveLength(1);
+        expect(result.current.draft.constraintCandidates[0]).toMatchObject({
+            templateCode: 'MIN_STAFF_BY_SHIFT',
+            selected: true,
+        });
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
         expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('updates uploaded constraint candidate selection and staffing counts', async () => {
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            constraint_candidates: [
+                {
+                    key: 'required_staff',
+                    template_code: 'MIN_STAFF_BY_SHIFT',
+                    params: {staffing: [{shift: 'D', count: 2}]},
+                    severity_recommendation: 'SOFT',
+                    evidence_summary: 'D 근무 최소 2명을 관찰했어요.',
+                },
+                {
+                    key: 'max_work',
+                    template_code: 'MAX_CONSECUTIVE_WORK_DAYS',
+                    params: {target: 'ALL', count: 5},
+                    severity_recommendation: 'HARD_AFTER_CONFIRM',
+                    evidence_summary: '최대 연속 근무 5일을 관찰했어요.',
+                },
+            ],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        await uploadFile(result.current.applyUploadedFile, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+
+        const [staffingCandidate, maxWorkCandidate] = result.current.draft.constraintCandidates;
+
+        act(() => {
+            result.current.toggleConstraintCandidate(staffingCandidate?.id ?? '', false);
+            result.current.updateConstraintCandidateStaffingCount(staffingCandidate?.id ?? '', 0, 3);
+            result.current.updateConstraintCandidateCount(maxWorkCandidate?.id ?? '', 6);
+        });
+
+        expect(result.current.draft.constraintCandidates[0]?.selected).toBe(false);
+        expect(result.current.draft.constraintCandidates[0]?.params).toEqual({staffing: [{shift: 'D', count: 3}]});
+        expect(result.current.draft.constraintCandidates[1]?.params).toEqual({target: 'ALL', count: 6});
     });
 
     it('stores partial draft data and warning feedback when the upload succeeds with warnings', async () => {
@@ -154,10 +206,10 @@ describe('useOnboardingWardWizard upload flow', () => {
 
         expect(mockParseOnboardingWardExcel).not.toHaveBeenCalled();
         expect(result.current.uploadStatus).toBe('error');
-        expect(result.current.uploadError).toBe('엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있어요.');
+        expect(result.current.uploadError).toBe('엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.');
         expect(result.current.uploadWarnings).toEqual([]);
         expect(result.current.draft).toEqual(initialDraft);
-        expect(toastError).toHaveBeenCalledWith('엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있어요.');
+        expect(toastError).toHaveBeenCalledWith('엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.');
         expect(toastSuccess).not.toHaveBeenCalled();
     });
 });

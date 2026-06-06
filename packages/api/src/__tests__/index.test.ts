@@ -153,7 +153,21 @@ describe('@dutying/api public entry', () => {
                 name: 'ICU',
                 hospitalName: 'Dutying Hospital',
                 wardShiftTypes: [],
-                shiftTeams: [{name: 'Team 1', nurseNames: ['Kim Nurse'], nurses: [{name: 'Kim Nurse'}]}],
+                shiftTeams: [
+                    {
+                        name: 'Team 1',
+                        nurseNames: ['Kim Nurse'],
+                        nurses: [{name: 'Kim Nurse'}],
+                        constraintRules: [
+                            {
+                                templateCode: 'MIN_STAFF_BY_SHIFT',
+                                severity: 'HARD',
+                                selected: true,
+                                params: {staffing: [{shift: 'D', count: 2}]},
+                            },
+                        ],
+                    },
+                ],
             }),
         ).resolves.toMatchObject({
             wardId: 10,
@@ -168,7 +182,21 @@ describe('@dutying/api public entry', () => {
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
             wardShiftTypes: [],
-            shiftTeams: [{name: 'Team 1', nurseNames: ['Kim Nurse'], nurses: [{name: 'Kim Nurse'}]}],
+            shiftTeams: [
+                {
+                    name: 'Team 1',
+                    nurseNames: ['Kim Nurse'],
+                    nurses: [{name: 'Kim Nurse'}],
+                    constraintRules: [
+                        {
+                            templateCode: 'MIN_STAFF_BY_SHIFT',
+                            severity: 'HARD',
+                            selected: true,
+                            params: {staffing: [{shift: 'D', count: 2}]},
+                        },
+                    ],
+                },
+            ],
         });
     });
 

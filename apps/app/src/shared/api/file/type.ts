@@ -31,6 +31,45 @@ export type TOnboardingWardParseApiNurse = {
     possibleShiftShortNames?: Array<string | null> | null;
 };
 
+export type TOnboardingWardAnalyzeApiNurseCandidate = {
+    candidate_nurse_key?: string | null;
+    raw_name?: string | null;
+    display_order?: number | null;
+    assignments?: Record<string, string | null> | null;
+    monthly_counts?: Record<string, number | null> | null;
+};
+
+export type TOnboardingWardAnalyzeApiShiftTypeCandidate = {
+    code?: string | null;
+    classification?: string | null;
+    confidence?: number | null;
+    observed_count?: number | null;
+};
+
+export type TOnboardingWardParseApiConstraintCandidate = {
+    key?: string | null;
+    templateCode?: string | null;
+    template_code?: string | null;
+    category?: string | null;
+    params?: Record<string, unknown> | null;
+    level?: string | null;
+    candidateValue?: unknown;
+    candidate_value?: unknown;
+    severityRecommendation?: string | null;
+    severity_recommendation?: string | null;
+    confidence?: number | null;
+    confidenceBand?: string | null;
+    confidence_band?: string | null;
+    evidenceSummary?: string | null;
+    evidence_summary?: string | null;
+    prefill?: boolean | null;
+    state?: string | null;
+    confirmRequired?: boolean | null;
+    confirm_required?: boolean | null;
+    riskNote?: string | null;
+    risk_note?: string | null;
+};
+
 export type TOnboardingWardParseApiResponse = {
     fileName?: string | null;
     wardName?: string | null;
@@ -40,6 +79,13 @@ export type TOnboardingWardParseApiResponse = {
     teams?: TOnboardingWardParseApiTeam[] | null;
     shiftTeams?: TOnboardingWardParseApiTeam[] | null;
     nurses?: TOnboardingWardParseApiNurse[] | null;
+    nurse_candidates?: TOnboardingWardAnalyzeApiNurseCandidate[] | null;
+    shift_type_candidates?: TOnboardingWardAnalyzeApiShiftTypeCandidate[] | null;
+    constraintCandidates?: TOnboardingWardParseApiConstraintCandidate[] | null;
+    constraint_candidates?: TOnboardingWardParseApiConstraintCandidate[] | null;
+    quality_report?: {
+        warnings?: string[] | null;
+    } | null;
     warnings?: string[] | null;
     failedRows?: string[] | null;
     failedSheets?: string[] | null;

@@ -7,6 +7,8 @@ import OnboardingWardCreatePage from '../index';
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
 const mockCreateWard = vi.fn();
+const mockCreateOnboardingWardDraft = vi.fn();
+const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
 const TEST_HOSPITAL_NAME = '테스트 병원';
@@ -45,6 +47,8 @@ vi.mock('@/features/register', () => ({
     default: () => ({
         actions: {
             createWard: mockCreateWard,
+            createOnboardingWardDraft: mockCreateOnboardingWardDraft,
+            completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
 }));
@@ -114,10 +118,13 @@ const prepareValidCreationState = async (user: ReturnType<typeof userEvent.setup
 describe('OnboardingWardCreatePage', () => {
     beforeEach(() => {
         mockCreateWard.mockReset();
+        mockCreateOnboardingWardDraft.mockReset();
+        mockCompleteOnboardingWardDraft.mockReset();
         mockNavigate.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
         mockParseOnboardingWardExcel.mockReset();
+        mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
     });
 
     it('renders separate hospital and ward name fields on the first step', () => {
@@ -185,6 +192,43 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
         expect(screen.getByDisplayValue('신규 간호사')).toBeInTheDocument();
+    });
+
+    it('shows uploaded constraint candidates and lets users toggle them', async () => {
+        const user = userEvent.setup();
+        const {container} = render(<OnboardingWardCreatePage />);
+
+        await prepareValidFinalStep(user);
+
+        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            constraint_candidates: [
+                {
+                    key: 'required_staff',
+                    template_code: 'MIN_STAFF_BY_SHIFT',
+                    params: {staffing: [{shift: 'D', count: 2}]},
+                    severity_recommendation: 'SOFT',
+                    confidence: 0.9,
+                    evidence_summary: 'D 근무 최소 2명을 관찰했어요.',
+                },
+            ],
+        });
+
+        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+
+        await waitFor(() => {
+            expect(screen.getByText('기존 근무표 제약조건')).toBeInTheDocument();
+        });
+
+        expect(screen.getByText('근무별 최소 인원')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('2')).toBeInTheDocument();
+
+        const toggle = screen.getByRole('switch', {name: '근무별 최소 인원 저장 여부'});
+
+        expect(toggle).toHaveAttribute('aria-checked', 'true');
+        await user.click(toggle);
+        expect(toggle).toHaveAttribute('aria-checked', 'false');
     });
 
     it('shows upload warnings when the parse api partially succeeds', async () => {
@@ -328,7 +372,7 @@ describe('OnboardingWardCreatePage', () => {
     it('removes empty teams before completion instead of blocking submit', async () => {
         const user = userEvent.setup();
 
-        mockCreateWard.mockResolvedValue(undefined);
+        mockCompleteOnboardingWardDraft.mockResolvedValue(undefined);
 
         render(<OnboardingWardCreatePage />);
 
@@ -340,10 +384,10 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '완료'}));
 
         await waitFor(() => {
-            expect(mockCreateWard).toHaveBeenCalledTimes(1);
+            expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(1);
         });
 
-        const [submittedPayload] = mockCreateWard.mock.calls[0] as [Record<string, unknown>, unknown?];
+        const [, submittedPayload] = mockCompleteOnboardingWardDraft.mock.calls[0] as [number, Record<string, unknown>, unknown?];
         const submittedShiftTeams = submittedPayload.shiftTeams as {nurseNames: string[]}[];
 
         expect(submittedShiftTeams).toHaveLength(1);
@@ -451,7 +495,7 @@ describe('OnboardingWardCreatePage', () => {
 
         let resolveCreateWard!: () => void;
 
-        mockCreateWard.mockImplementation(
+        mockCompleteOnboardingWardDraft.mockImplementation(
             () =>
                 new Promise<void>((resolve) => {
                     resolveCreateWard = resolve;
@@ -473,7 +517,8 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('button', {name: '완료'}));
 
-        expect(mockCreateWard).toHaveBeenCalledWith(
+        expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledWith(
+            10,
             expect.objectContaining({
                 name: TEST_WARD_NAME,
                 hospitalName: TEST_HOSPITAL_NAME,
@@ -501,8 +546,8 @@ describe('OnboardingWardCreatePage', () => {
     it('shows toast only and allows retry when ward creation fails', async () => {
         const user = userEvent.setup();
 
-        mockCreateWard.mockRejectedValueOnce(new Error('서버 오류입니다.'));
-        mockCreateWard.mockResolvedValueOnce(undefined);
+        mockCompleteOnboardingWardDraft.mockRejectedValueOnce(new Error('서버 오류입니다.'));
+        mockCompleteOnboardingWardDraft.mockResolvedValueOnce(undefined);
 
         render(<OnboardingWardCreatePage />);
 
@@ -523,6 +568,6 @@ describe('OnboardingWardCreatePage', () => {
             {timeout: 2_000},
         );
 
-        expect(mockCreateWard).toHaveBeenCalledTimes(2);
+        expect(mockCompleteOnboardingWardDraft).toHaveBeenCalledTimes(2);
     });
 });

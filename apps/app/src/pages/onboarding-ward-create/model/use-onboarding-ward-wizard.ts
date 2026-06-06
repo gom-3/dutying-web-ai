@@ -29,8 +29,10 @@ import {
     MAX_ONBOARDING_TEAMS,
     saveSkillLevelConfig,
     type TOnboardingNurseDraft,
+    type TOnboardingConstraintDraft,
     type TOnboardingWardDraft,
     type TSkillLevelConfig,
+    updateConstraintCandidateDraft,
     updateNurseDraft,
     updateShiftTypeDraft,
     updateTeamNameDraft,
@@ -118,6 +120,31 @@ const removeEmptyTeamsForCompletion = (draft: TOnboardingWardDraft): TOnboarding
         ...draft,
         teams: nextTeams,
         nurses: nextNurses,
+    };
+};
+const clampConstraintCount = (count: number) => Math.max(1, Math.min(100, Math.round(count)));
+const updateConstraintParamsCount = (constraint: TOnboardingConstraintDraft, count: number): Record<string, unknown> => ({
+    ...constraint.params,
+    count: clampConstraintCount(count),
+});
+const updateConstraintParamsStaffingCount = (
+    constraint: TOnboardingConstraintDraft,
+    staffingIndex: number,
+    count: number,
+): Record<string, unknown> => {
+    const staffing = constraint.params.staffing;
+
+    if (!Array.isArray(staffing)) {
+        return constraint.params;
+    }
+
+    return {
+        ...constraint.params,
+        staffing: staffing.map((item, index) =>
+            index === staffingIndex && item && typeof item === 'object'
+                ? {...(item as Record<string, unknown>), count: clampConstraintCount(count)}
+                : item,
+        ),
     };
 };
 const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft) => {
@@ -338,6 +365,33 @@ function useOnboardingWardWizard() {
     const updateTeamName = (teamId: string, teamName: string) => {
         setDraft((prev) => updateTeamNameDraft(prev, teamId, teamName));
     };
+    const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
+        setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {selected}));
+    };
+    const updateConstraintCandidateCount = (constraintId: string, count: number) => {
+        setDraft((prev) => {
+            const constraint = prev.constraintCandidates.find((candidate) => candidate.id === constraintId);
+
+            if (!constraint) {
+                return prev;
+            }
+
+            return updateConstraintCandidateDraft(prev, constraintId, {params: updateConstraintParamsCount(constraint, count)});
+        });
+    };
+    const updateConstraintCandidateStaffingCount = (constraintId: string, staffingIndex: number, count: number) => {
+        setDraft((prev) => {
+            const constraint = prev.constraintCandidates.find((candidate) => candidate.id === constraintId);
+
+            if (!constraint) {
+                return prev;
+            }
+
+            return updateConstraintCandidateDraft(prev, constraintId, {
+                params: updateConstraintParamsStaffingCount(constraint, staffingIndex, count),
+            });
+        });
+    };
     const handleNurseDragEnd = ({destination, source}: DropResult) => {
         if (!destination) {
             return;
@@ -398,7 +452,7 @@ function useOnboardingWardWizard() {
     };
     const applyUploadedFile = async (file: File) => {
         if (!isSupportedOnboardingUploadFile(file.name)) {
-            const message = '엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있어요.';
+            const message = '엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.';
 
             setUploadStatus('error');
             setUploadError(message);
@@ -517,6 +571,9 @@ function useOnboardingWardWizard() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        toggleConstraintCandidate,
+        updateConstraintCandidateCount,
+        updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
         applyUploadedFile,
         uploadStatus,

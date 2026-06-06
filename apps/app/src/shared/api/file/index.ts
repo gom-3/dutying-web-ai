@@ -1,4 +1,5 @@
 import axiosInstance from '../client';
+import llmAxiosInstance from '../llm/client';
 import {type IFileAPI, type IPresignedUrlResponse, type TOnboardingWardParseApiResponse, type TPresignedUrlRequest} from './type';
 
 class FileAPI implements IFileAPI {
@@ -14,10 +15,10 @@ class FileAPI implements IFileAPI {
     public async parseOnboardingWardExcel(file: File) {
         const formData = new FormData();
 
-        formData.append('file', file);
+        formData.append('files', file);
 
         return (
-            await axiosInstance.post<TOnboardingWardParseApiResponse>(`/files/wards/onboarding/parse`, formData, {
+            await llmAxiosInstance.post<TOnboardingWardParseApiResponse>(`/onboarding/analyze`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

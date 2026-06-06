@@ -23,6 +23,20 @@ export type TOnboardingNurseDraft = {
     level: number | null;
 };
 
+export type TOnboardingConstraintDraft = {
+    id: string;
+    key: string;
+    templateCode: string;
+    category: string | null;
+    params: Record<string, unknown>;
+    severityRecommendation: string | null;
+    confidence: number | null;
+    confidenceBand: string | null;
+    evidenceSummary: string;
+    riskNote: string | null;
+    selected: boolean;
+};
+
 export type TSkillPalette = {
     id: string;
     colors: string[];
@@ -43,6 +57,7 @@ export type TOnboardingWardDraft = {
     shiftTypes: TOnboardingWardShiftType[];
     teams: TOnboardingTeamDraft[];
     nurses: TOnboardingNurseDraft[];
+    constraintCandidates: TOnboardingConstraintDraft[];
     skillLevelConfig: TSkillLevelConfig;
 };
 
@@ -286,6 +301,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
         shiftTypes,
         teams,
         nurses,
+        constraintCandidates: [],
         skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
 };
@@ -389,6 +405,17 @@ export const updateTeamNameDraft = (draft: TOnboardingWardDraft, teamId: string,
         teams: draft.teams.map((team) => (team.id === teamId ? {...team, name: trimmedName} : team)),
     };
 };
+
+export const updateConstraintCandidateDraft = (
+    draft: TOnboardingWardDraft,
+    constraintId: string,
+    updater: Partial<TOnboardingConstraintDraft>,
+): TOnboardingWardDraft => ({
+    ...draft,
+    constraintCandidates: draft.constraintCandidates.map((constraint) =>
+        constraint.id === constraintId ? {...constraint, ...updater} : constraint,
+    ),
+});
 
 export const addTeamDraft = (draft: TOnboardingWardDraft) => {
     if (draft.teams.length >= MAX_ONBOARDING_TEAMS) {
