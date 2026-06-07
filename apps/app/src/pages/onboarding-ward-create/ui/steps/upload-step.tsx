@@ -2,47 +2,18 @@ import {Upload} from 'lucide-react';
 import {useRef, useState} from 'react';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
-import Select from '@/shared/ui/form-controls/Select';
 import {Input} from '@/shared/ui/primitives/input';
-import {Switch} from '@/shared/ui/primitives/switch';
-import type {TOnboardingConstraintDraft, TOnboardingWardDraft} from '../../model';
 
 interface IUploadStepProps {
-    draft: TOnboardingWardDraft;
     onUpload: (file: File, options?: TUploadTargetMonth) => void;
     isUploading: boolean;
     uploadError: string | null;
-    uploadWarnings: string[];
-    onConstraintToggle: (constraintId: string, selected: boolean) => void;
-    onConstraintSeverityChange: (constraintId: string, severity: TOnboardingConstraintDraft['severity']) => void;
-    onConstraintCountChange: (constraintId: string, count: number) => void;
-    onConstraintStaffingCountChange: (constraintId: string, staffingIndex: number, count: number) => void;
 }
 
 type TUploadTargetMonth = {
     targetYear: number;
     targetMonth: number;
 };
-
-const CONSTRAINT_TITLES: Record<string, string> = {
-    MIN_STAFF_BY_SHIFT: '근무별 최소 인원',
-    MAX_CONSECUTIVE_WORK_DAYS: '최대 연속 근무',
-    MAX_CONSECUTIVE_N: '최대 연속 나이트',
-    MIN_OFF_AFTER_N: '나이트 후 최소 오프',
-    FORBID_N_THEN_D: '나이트 다음 데이 금지',
-    FORBID_N_THEN_E: '나이트 다음 이브닝 금지',
-    FORBID_E_THEN_D: '이브닝 다음 데이 금지',
-};
-const CORE_ADJUSTMENT_TEMPLATE_CODES = new Set(['MAX_CONSECUTIVE_WORK_DAYS', 'MAX_CONSECUTIVE_N', 'MIN_OFF_AFTER_N']);
-const CONFIDENCE_BAND_LABELS: Record<string, string> = {
-    HIGH: '높은 확신',
-    MEDIUM: '보통 확신',
-    LOW: '낮은 확신',
-};
-const SEVERITY_OPTIONS = [
-    {value: 'HARD', label: '강제'},
-    {value: 'SOFT', label: '권장'},
-] satisfies Array<{value: TOnboardingConstraintDraft['severity']; label: string}>;
 
 const getCurrentMonthValue = () => {
     const now = new Date();
@@ -59,134 +30,10 @@ const parseTargetMonthValue = (value: string): TUploadTargetMonth | undefined =>
 
     return {targetYear: year, targetMonth: month};
 };
-const asRecord = (value: unknown): Record<string, unknown> | null =>
-    value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
-const asNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
-const getConfidenceLabel = (confidence: number | null, confidenceBand: string | null) => {
-    const bandLabel = confidenceBand ? CONFIDENCE_BAND_LABELS[confidenceBand.toUpperCase()] : null;
 
-    if (bandLabel) return bandLabel;
-
-    return confidence == null ? null : `${Math.round(confidence * 100)}%`;
-};
-const getShiftLabel = (value: unknown) => {
-    if (typeof value === 'string') return value;
-
-    const shift = asRecord(value);
-
-    return typeof shift?.label === 'string' ? shift.label : typeof shift?.code === 'string' ? shift.code : '';
-};
-const getUploadSummaryItems = (draft: TOnboardingWardDraft) => [
-    {label: '근무유형', value: draft.shiftTypes.length},
-    {label: '팀', value: draft.teams.length},
-    {label: '간호사', value: draft.nurses.length},
-    {label: '제약 후보', value: draft.constraintCandidates.length},
-];
-
-function ConstraintCountInput({
-    value,
-    disabled,
-    ariaLabel,
-    onChange,
-}: {
-    value: number;
-    disabled: boolean;
-    ariaLabel: string;
-    onChange: (value: number) => void;
-}) {
-    return (
-        <Input
-            type="number"
-            min={1}
-            max={100}
-            value={value}
-            disabled={disabled}
-            aria-label={ariaLabel}
-            variant="foundation"
-            fieldSize="md"
-            className="h-9 w-20 rounded-[8px] text-center font-apple text-[15px]"
-            onChange={(event) => {
-                const nextValue = Number(event.target.value);
-
-                if (Number.isFinite(nextValue)) {
-                    onChange(nextValue);
-                }
-            }}
-        />
-    );
-}
-
-function ConstraintCandidateControls({
-    candidate,
-    onCountChange,
-    onStaffingCountChange,
-}: {
-    candidate: TOnboardingConstraintDraft;
-    onCountChange: (constraintId: string, count: number) => void;
-    onStaffingCountChange: (constraintId: string, staffingIndex: number, count: number) => void;
-}) {
-    const count = asNumber(candidate.params.count);
-    const staffing = Array.isArray(candidate.params.staffing) ? candidate.params.staffing : null;
-
-    if (staffing && staffing.length > 0) {
-        return (
-            <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                {staffing.map((item, index) => {
-                    const record = asRecord(item);
-                    const shiftLabel = getShiftLabel(record?.shift);
-                    const staffingCount = asNumber(record?.count) ?? 1;
-
-                    return (
-                        <label
-                            key={`${candidate.id}-staffing-${index}`}
-                            className="flex min-h-10 items-center justify-between gap-2 rounded-[8px] bg-gray-7 px-3 font-apple text-[14px] text-gray-3"
-                        >
-                            <span className="font-medium text-sub-1">{shiftLabel || '근무'}</span>
-                            <ConstraintCountInput
-                                value={staffingCount}
-                                disabled={!candidate.selected}
-                                ariaLabel={`${shiftLabel || '근무'} 최소 인원`}
-                                onChange={(value) => onStaffingCountChange(candidate.id, index, value)}
-                            />
-                        </label>
-                    );
-                })}
-            </div>
-        );
-    }
-
-    if (count != null) {
-        return (
-            <label className="mt-3 flex w-fit items-center gap-2 rounded-[8px] bg-gray-7 px-3 py-2 font-apple text-[14px] text-gray-3">
-                <span className="font-medium text-sub-1">값</span>
-                <ConstraintCountInput
-                    value={count}
-                    disabled={!candidate.selected}
-                    ariaLabel={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 값`}
-                    onChange={(value) => onCountChange(candidate.id, value)}
-                />
-            </label>
-        );
-    }
-
-    return null;
-}
-
-function UploadStep({
-    draft,
-    onUpload,
-    isUploading,
-    uploadError,
-    uploadWarnings,
-    onConstraintToggle,
-    onConstraintSeverityChange,
-    onConstraintCountChange,
-    onConstraintStaffingCountChange,
-}: IUploadStepProps) {
+function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [targetMonthValue, setTargetMonthValue] = useState(getCurrentMonthValue);
-    const selectedConstraintCount = draft.constraintCandidates.filter((candidate) => candidate.selected).length;
-    const uploadSummaryItems = getUploadSummaryItems(draft);
     const uploadFile = (file: File) => onUpload(file, parseTargetMonthValue(targetMonthValue));
 
     return (
@@ -247,111 +94,6 @@ function UploadStep({
                     <Upload className="h-5 w-5" />
                 </Button>
             </Card>
-            {draft.uploadedFileName ? (
-                <Card variant="success" padding="none" className="rounded-[10px] px-5 py-4 font-apple">
-                    <p className="text-[18px] font-semibold">업로드됨: {draft.uploadedFileName}</p>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                        {uploadSummaryItems.map((item) => (
-                            <div key={item.label} className="rounded-[8px] bg-white/70 px-3 py-2">
-                                <p className="text-[13px] text-gray-3">{item.label}</p>
-                                <p className="mt-0.5 text-[17px] font-semibold text-sub-1">{item.value}개</p>
-                            </div>
-                        ))}
-                    </div>
-                    <p className="mt-3 text-[14px] text-gray-3">불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.</p>
-                </Card>
-            ) : null}
-            {draft.constraintCandidates.length > 0 ? (
-                <Card padding="none" className="rounded-[10px] border border-[#DDE8F4] bg-white px-5 py-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p className="font-apple text-[18px] font-semibold text-sub-1">기존 근무표에서 발견한 제약 후보</p>
-                            <p className="mt-1 font-apple text-[14px] text-gray-3">
-                                {selectedConstraintCount}개 선택됨 · 연속근무/나이트/OFF 후보는 기본 주요 제약의 값으로 반영돼요.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="mt-4 space-y-3">
-                        {draft.constraintCandidates.map((candidate) => {
-                            const confidenceLabel = getConfidenceLabel(candidate.confidence, candidate.confidenceBand);
-                            const isCoreAdjustment = CORE_ADJUSTMENT_TEMPLATE_CODES.has(candidate.templateCode);
-
-                            return (
-                                <div
-                                    key={candidate.id}
-                                    data-testid="constraint-candidate"
-                                    className="rounded-[10px] border border-gray-6 bg-[#FAFCFE] px-4 py-3"
-                                >
-                                    <div className="flex items-start justify-between gap-4">
-                                        <div className="min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-apple text-[16px] font-semibold text-sub-1">
-                                                    {CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode}
-                                                </p>
-                                                {isCoreAdjustment ? (
-                                                    <span className="rounded-full bg-[#EAF8F4] px-2 py-0.5 font-apple text-[12px] font-medium text-main-1">
-                                                        기본 제약 보정
-                                                    </span>
-                                                ) : null}
-                                                {confidenceLabel ? (
-                                                    <span className="rounded-full bg-[#EEF4FF] px-2 py-0.5 font-apple text-[12px] font-medium text-[#315D9E]">
-                                                        {confidenceLabel}
-                                                    </span>
-                                                ) : null}
-                                            </div>
-                                            <p className="mt-1 font-apple text-[14px] leading-5 text-gray-3">{candidate.evidenceSummary}</p>
-                                            {candidate.riskNote ? (
-                                                <p className="mt-1 font-apple text-[13px] leading-5 text-[#8A6A2A]">{candidate.riskNote}</p>
-                                            ) : null}
-                                        </div>
-                                        <div className="flex shrink-0 items-center gap-3">
-                                            <Select
-                                                value={candidate.severity}
-                                                options={SEVERITY_OPTIONS}
-                                                disabled={!candidate.selected}
-                                                aria-label={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 강도`}
-                                                className="h-9 w-[92px]"
-                                                selectClassName="rounded-[8px] px-3 pr-8 text-[14px] outline-gray-5 disabled:opacity-50"
-                                                onChange={(event) =>
-                                                    onConstraintSeverityChange(
-                                                        candidate.id,
-                                                        event.target.value as TOnboardingConstraintDraft['severity'],
-                                                    )
-                                                }
-                                            />
-                                            <Switch
-                                                checked={candidate.selected}
-                                                onCheckedChange={(checked) => onConstraintToggle(candidate.id, checked)}
-                                                aria-label={`${CONSTRAINT_TITLES[candidate.templateCode] ?? candidate.templateCode} 저장 여부`}
-                                                className="data-[state=checked]:bg-main-1"
-                                            />
-                                        </div>
-                                    </div>
-                                    <ConstraintCandidateControls
-                                        candidate={candidate}
-                                        onCountChange={onConstraintCountChange}
-                                        onStaffingCountChange={onConstraintStaffingCountChange}
-                                    />
-                                </div>
-                            );
-                        })}
-                    </div>
-                </Card>
-            ) : null}
-            {uploadWarnings.length > 0 ? (
-                <Card
-                    data-testid="upload-warning"
-                    padding="none"
-                    className="rounded-[10px] border border-[#FFE0A3] bg-[#FFF9EA] px-5 py-4 font-apple text-[16px] text-[#A56600]"
-                >
-                    <p className="text-[18px] font-semibold">일부 데이터만 반영했어요</p>
-                    <ul className="mt-2 list-disc space-y-1 pl-5">
-                        {uploadWarnings.map((warning) => (
-                            <li key={warning}>{warning}</li>
-                        ))}
-                    </ul>
-                </Card>
-            ) : null}
             {uploadError ? (
                 <Card
                     data-testid="upload-error"

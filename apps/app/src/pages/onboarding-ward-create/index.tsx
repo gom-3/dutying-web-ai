@@ -49,15 +49,10 @@ function OnboardingWardCreatePage() {
         deleteNurse,
         updateNurse,
         updateTeamName,
-        toggleConstraintCandidate,
-        updateConstraintCandidateSeverity,
-        updateConstraintCandidateCount,
-        updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
         applyUploadedFile,
         uploadStatus,
         uploadError,
-        uploadWarnings,
         draftCreationStatus,
         createdWard,
         saveSkillConfig,
@@ -255,15 +250,9 @@ function OnboardingWardCreatePage() {
             case 2:
                 return (
                     <UploadStep
-                        draft={draft}
                         onUpload={(file, options) => void applyUploadedFile(file, options)}
                         isUploading={uploadStatus === 'uploading'}
                         uploadError={uploadError}
-                        uploadWarnings={uploadWarnings}
-                        onConstraintToggle={toggleConstraintCandidate}
-                        onConstraintSeverityChange={updateConstraintCandidateSeverity}
-                        onConstraintCountChange={updateConstraintCandidateCount}
-                        onConstraintStaffingCountChange={updateConstraintCandidateStaffingCount}
                     />
                 );
             case 3:

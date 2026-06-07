@@ -120,6 +120,8 @@ describe('OnboardingWardCreatePage', () => {
         toastSuccess.mockReset();
         toastError.mockReset();
         mockParseOnboardingWardExcel.mockReset();
+        window.localStorage.clear();
+        window.sessionStorage.clear();
         mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
     });
 
@@ -172,14 +174,13 @@ describe('OnboardingWardCreatePage', () => {
         await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         await waitFor(() => {
-            expect(screen.getByText('업로드됨: march-duty.xlsx')).toBeInTheDocument();
+            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
         });
 
-        expect(screen.getByText('근무유형')).toBeInTheDocument();
-        expect(screen.getByText('간호사')).toBeInTheDocument();
-        expect(screen.getByText('불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.')).toBeInTheDocument();
+        expect(screen.queryByText('업로드됨: march-duty.xlsx')).not.toBeInTheDocument();
+        expect(screen.queryByText('불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('기존 근무표에서 발견한 제약 후보')).not.toBeInTheDocument();
         expect(mockParseOnboardingWardExcel).toHaveBeenCalledTimes(1);
-        expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
@@ -193,7 +194,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByDisplayValue('신규 간호사')).toBeInTheDocument();
     });
 
-    it('shows uploaded constraint candidates and lets users toggle them', async () => {
+    it('keeps uploaded constraint candidates hidden on the upload step while saving them in the completion payload', async () => {
         const user = userEvent.setup();
         const {container} = render(<OnboardingWardCreatePage />);
 
@@ -225,26 +226,38 @@ describe('OnboardingWardCreatePage', () => {
         await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         await waitFor(() => {
-            expect(screen.getByText('기존 근무표에서 발견한 제약 후보')).toBeInTheDocument();
+            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
         });
 
-        expect(screen.getByText('근무별 최소 인원')).toBeInTheDocument();
-        expect(screen.getByText('최대 연속 근무')).toBeInTheDocument();
-        expect(screen.getByText('기본 제약 보정')).toBeInTheDocument();
-        expect(screen.getByText('높은 확신')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('2')).toBeInTheDocument();
+        expect(screen.queryByText('기존 근무표에서 발견한 제약 후보')).not.toBeInTheDocument();
+        expect(screen.queryByText('근무별 최소 인원')).not.toBeInTheDocument();
+        expect(screen.queryByText('최대 연속 근무')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('constraint-candidate')).not.toBeInTheDocument();
 
-        const toggle = screen.getByRole('switch', {name: '근무별 최소 인원 저장 여부'});
-        const severitySelect = screen.getByRole('combobox', {name: '근무별 최소 인원 강도'});
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '다음'}));
+        await user.click(screen.getByRole('button', {name: '완료'}));
 
-        expect(toggle).toHaveAttribute('aria-checked', 'true');
-        expect(severitySelect).toHaveValue('SOFT');
-        await user.selectOptions(severitySelect, 'HARD');
-        expect(severitySelect).toHaveValue('HARD');
+        await waitFor(() => {
+            expect(mockCompleteOnboardingWardDraft).toHaveBeenCalled();
+        });
 
-        await user.click(toggle);
-        expect(toggle).toHaveAttribute('aria-checked', 'false');
-        expect(severitySelect).toBeDisabled();
+        const payload = mockCompleteOnboardingWardDraft.mock.calls[0]?.[1];
+
+        expect(payload.shiftTeams[0]?.constraintRules).toEqual([
+            {
+                templateCode: 'MIN_STAFF_BY_SHIFT',
+                severity: 'SOFT',
+                selected: true,
+                params: {staffing: [{shift: 'D', count: 2}]},
+            },
+            {
+                templateCode: 'MAX_CONSECUTIVE_WORK_DAYS',
+                severity: 'HARD',
+                selected: true,
+                params: {target: 'ALL', count: 5},
+            },
+        ]);
     });
 
     it('shows upload warnings when the parse api partially succeeds', async () => {
@@ -263,11 +276,12 @@ describe('OnboardingWardCreatePage', () => {
         await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
 
         await waitFor(() => {
-            expect(screen.getByTestId('upload-warning')).toBeInTheDocument();
+            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
         });
 
-        expect(screen.getByText('2행 데이터를 해석하지 못했어요.')).toBeInTheDocument();
-        expect(toastError).toHaveBeenCalledWith('일부 데이터만 반영했어요. 누락된 항목을 확인해 주세요.');
+        expect(screen.queryByTestId('upload-warning')).not.toBeInTheDocument();
+        expect(screen.queryByText('2행 데이터를 해석하지 못했어요.')).not.toBeInTheDocument();
+        expect(toastError).not.toHaveBeenCalled();
     });
 
     it('shows upload error guidance when the parse api fails', async () => {

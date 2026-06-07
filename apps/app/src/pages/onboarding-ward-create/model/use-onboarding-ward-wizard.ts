@@ -566,12 +566,7 @@ function useOnboardingWardWizard() {
             setDraft((prev) => applyParsedWardData(prev, parsedWardData));
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-
-            if (warnings.length > 0) {
-                toast.error('일부 데이터만 반영했어요. 누락된 항목을 확인해 주세요.');
-            } else {
-                toast.success('엑셀 데이터를 불러왔어요.');
-            }
+            toast.success('근무표 파일을 반영했어요.');
         } catch (error) {
             const message = getOnboardingUploadFailureMessage(error);
 

@@ -176,7 +176,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             severity: 'HARD',
             selected: true,
         });
-        expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
+        expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
         expect(toastError).not.toHaveBeenCalled();
     });
 
@@ -250,8 +250,8 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
-        expect(toastError).toHaveBeenCalledWith('일부 데이터만 반영했어요. 누락된 항목을 확인해 주세요.');
-        expect(toastSuccess).not.toHaveBeenCalled();
+        expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
+        expect(toastError).not.toHaveBeenCalled();
     });
 
     it('clears sample nurses when users skip the optional upload step', async () => {
