@@ -296,6 +296,7 @@ const collectWarnings = (response: TOnboardingWardParseApiResponse) =>
     [
         ...(response.warnings ?? []),
         ...(response.quality_report?.warnings ?? []),
+        ...(response.blocking_questions ?? []),
         ...(response.failedSheets ?? []).map((sheetName) => `시트 "${sheetName}" 데이터를 불러오지 못했어요.`),
         ...(response.failedRows ?? []).map((rowLabel) => `일부 행(${rowLabel})을 해석하지 못해 제외했어요.`),
     ].filter((warning): warning is string => Boolean(warning?.trim()));

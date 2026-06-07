@@ -1,5 +1,11 @@
 import axiosInstance from '../client';
-import {type IFileAPI, type IPresignedUrlResponse, type TOnboardingWardParseApiResponse, type TPresignedUrlRequest} from './type';
+import {
+    type IFileAPI,
+    type IPresignedUrlResponse,
+    type TOnboardingWardParseApiResponse,
+    type TOnboardingWardParseOptions,
+    type TPresignedUrlRequest,
+} from './type';
 
 class FileAPI implements IFileAPI {
     public async getPresignedUrl(fileType: TPresignedUrlRequest, fileExtension: string) {
@@ -11,7 +17,7 @@ class FileAPI implements IFileAPI {
         ).data;
     }
 
-    public async parseOnboardingWardExcel(file: File) {
+    public async parseOnboardingWardExcel(file: File, options?: TOnboardingWardParseOptions) {
         const formData = new FormData();
 
         formData.append('file', file);
@@ -21,6 +27,7 @@ class FileAPI implements IFileAPI {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
+                ...(options?.targetYear && options?.targetMonth ? {params: options} : {}),
             })
         ).data;
     }

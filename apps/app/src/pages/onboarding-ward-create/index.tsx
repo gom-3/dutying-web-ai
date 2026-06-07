@@ -256,7 +256,7 @@ function OnboardingWardCreatePage() {
                 return (
                     <UploadStep
                         draft={draft}
-                        onUpload={(file) => void applyUploadedFile(file)}
+                        onUpload={(file, options) => void applyUploadedFile(file, options)}
                         isUploading={uploadStatus === 'uploading'}
                         uploadError={uploadError}
                         uploadWarnings={uploadWarnings}

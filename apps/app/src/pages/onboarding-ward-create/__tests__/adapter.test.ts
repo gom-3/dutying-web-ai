@@ -366,6 +366,7 @@ describe('OnboardingWardCreatePage adapter', () => {
                 },
             ],
             warnings: ['기본 경고'],
+            blocking_questions: ['근무코드 C의 의미를 확인해 주세요.'],
             failedSheets: ['3월'],
             failedRows: ['12행'],
         };
@@ -385,7 +386,12 @@ describe('OnboardingWardCreatePage adapter', () => {
                 possibleShiftShortNames: ['D'],
             },
         ]);
-        expect(warnings).toEqual(['기본 경고', '시트 "3월" 데이터를 불러오지 못했어요.', '일부 행(12행)을 해석하지 못해 제외했어요.']);
+        expect(warnings).toEqual([
+            '기본 경고',
+            '근무코드 C의 의미를 확인해 주세요.',
+            '시트 "3월" 데이터를 불러오지 못했어요.',
+            '일부 행(12행)을 해석하지 못해 제외했어요.',
+        ]);
     });
 
     it('detects supported upload file extensions', () => {

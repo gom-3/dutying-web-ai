@@ -41,9 +41,13 @@ vi.mock('@/shared/api', async () => {
     };
 });
 
-const uploadFile = async (applyUploadedFile: (file: File) => Promise<void>, file: File) => {
+const uploadFile = async (
+    applyUploadedFile: (file: File, options?: {targetYear?: number; targetMonth?: number}) => Promise<void>,
+    file: File,
+    options?: {targetYear?: number; targetMonth?: number},
+) => {
     await act(async () => {
-        await applyUploadedFile(file);
+        await applyUploadedFile(file, options);
     });
 };
 
@@ -125,6 +129,21 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
         expect(toastSuccess).toHaveBeenCalledWith('엑셀 데이터를 불러왔어요.');
         expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('passes target month options to onboarding upload parsing', async () => {
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurse_candidates: [],
+            shift_type_candidates: [],
+            constraint_candidates: [],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const file = new File(['mock'], 'no-month-duty.xls', {type: 'application/vnd.ms-excel'});
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {targetYear: 2026, targetMonth: 6});
     });
 
     it('updates uploaded constraint candidate selection and staffing counts', async () => {

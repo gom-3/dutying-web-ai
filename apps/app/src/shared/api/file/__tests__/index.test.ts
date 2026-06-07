@@ -41,4 +41,29 @@ describe('FileAPI', () => {
             },
         });
     });
+
+    it('passes onboarding target month params when provided', async () => {
+        const file = new File(['excel'], 'schedule.xls', {
+            type: 'application/vnd.ms-excel',
+        });
+        const response = {
+            nurse_candidates: [],
+            shift_type_candidates: [],
+            constraint_candidates: [],
+        };
+        mockPost.mockResolvedValue({data: response});
+
+        await FileAPI.parseOnboardingWardExcel(file, {targetYear: 2026, targetMonth: 6});
+
+        const [, , config] = mockPost.mock.calls[0] ?? [];
+        expect(config).toEqual({
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            params: {
+                targetYear: 2026,
+                targetMonth: 6,
+            },
+        });
+    });
 });

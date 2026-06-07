@@ -86,10 +86,16 @@ export type TOnboardingWardParseApiResponse = {
     quality_report?: {
         warnings?: string[] | null;
     } | null;
+    blocking_questions?: string[] | null;
     warnings?: string[] | null;
     failedRows?: string[] | null;
     failedSheets?: string[] | null;
     message?: string | null;
+};
+
+export type TOnboardingWardParseOptions = {
+    targetYear?: number;
+    targetMonth?: number;
 };
 
 export interface IPresignedUrlResponse {
@@ -102,5 +108,5 @@ export interface IPresignedUrlResponse {
 export interface IFileAPI {
     // POST
     getPresignedUrl: (fileType: TPresignedUrlRequest, fileExtension: string) => Promise<IPresignedUrlResponse>;
-    parseOnboardingWardExcel: (file: File) => Promise<TOnboardingWardParseApiResponse>;
+    parseOnboardingWardExcel: (file: File, options?: TOnboardingWardParseOptions) => Promise<TOnboardingWardParseApiResponse>;
 }

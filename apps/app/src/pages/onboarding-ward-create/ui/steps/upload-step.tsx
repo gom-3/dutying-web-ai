@@ -1,5 +1,5 @@
 import {Upload} from 'lucide-react';
-import {useRef} from 'react';
+import {useRef, useState} from 'react';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
@@ -9,7 +9,7 @@ import type {TOnboardingConstraintDraft, TOnboardingWardDraft} from '../../model
 
 interface IUploadStepProps {
     draft: TOnboardingWardDraft;
-    onUpload: (file: File) => void;
+    onUpload: (file: File, options?: TUploadTargetMonth) => void;
     isUploading: boolean;
     uploadError: string | null;
     uploadWarnings: string[];
@@ -18,6 +18,11 @@ interface IUploadStepProps {
     onConstraintCountChange: (constraintId: string, count: number) => void;
     onConstraintStaffingCountChange: (constraintId: string, staffingIndex: number, count: number) => void;
 }
+
+type TUploadTargetMonth = {
+    targetYear: number;
+    targetMonth: number;
+};
 
 const CONSTRAINT_TITLES: Record<string, string> = {
     MIN_STAFF_BY_SHIFT: '근무별 최소 인원',
@@ -39,6 +44,21 @@ const SEVERITY_OPTIONS = [
     {value: 'SOFT', label: '권장'},
 ] satisfies Array<{value: TOnboardingConstraintDraft['severity']; label: string}>;
 
+const getCurrentMonthValue = () => {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+
+    return `${now.getFullYear()}-${month}`;
+};
+const parseTargetMonthValue = (value: string): TUploadTargetMonth | undefined => {
+    const [year, month] = value.split('-').map(Number);
+
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) {
+        return undefined;
+    }
+
+    return {targetYear: year, targetMonth: month};
+};
 const asRecord = (value: unknown): Record<string, unknown> | null =>
     value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 const asNumber = (value: unknown) => (typeof value === 'number' && Number.isFinite(value) ? value : null);
@@ -164,8 +184,10 @@ function UploadStep({
     onConstraintStaffingCountChange,
 }: IUploadStepProps) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const [targetMonthValue, setTargetMonthValue] = useState(getCurrentMonthValue);
     const selectedConstraintCount = draft.constraintCandidates.filter((candidate) => candidate.selected).length;
     const uploadSummaryItems = getUploadSummaryItems(draft);
+    const uploadFile = (file: File) => onUpload(file, parseTargetMonthValue(targetMonthValue));
 
     return (
         <div className="space-y-6">
@@ -180,10 +202,23 @@ function UploadStep({
                     const file = event.dataTransfer.files?.[0];
 
                     if (file) {
-                        onUpload(file);
+                        uploadFile(file);
                     }
                 }}
             >
+                <label className="mb-5 flex w-full max-w-[360px] flex-col gap-2 font-apple text-[14px] font-medium text-sub-1">
+                    근무표 기준 월
+                    <Input
+                        id="onboarding-upload-target-month"
+                        type="month"
+                        value={targetMonthValue}
+                        disabled={isUploading}
+                        variant="foundation"
+                        fieldSize="md"
+                        className="h-11 rounded-[10px] text-[16px]"
+                        onChange={(event) => setTargetMonthValue(event.target.value)}
+                    />
+                </label>
                 <p className="font-apple text-[20px] font-medium text-gray-3">근무표 파일을 여기에 놓아 주세요</p>
                 <input
                     ref={inputRef}
@@ -195,7 +230,7 @@ function UploadStep({
                         const file = event.target.files?.[0];
 
                         if (file) {
-                            onUpload(file);
+                            uploadFile(file);
                             event.target.value = '';
                         }
                     }}

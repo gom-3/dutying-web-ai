@@ -4,6 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
+import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {
     applyParsedWardData,
     buildOnboardingParseDraftInjection,
@@ -454,7 +455,7 @@ function useOnboardingWardWizard() {
             setSortModeState('manual');
         }
     };
-    const applyUploadedFile = async (file: File) => {
+    const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
         if (!isSupportedOnboardingUploadFile(file.name)) {
             const message = '엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.';
 
@@ -471,7 +472,7 @@ function useOnboardingWardWizard() {
         setUploadWarnings([]);
 
         try {
-            const response = await FileAPI.parseOnboardingWardExcel(file);
+            const response = await FileAPI.parseOnboardingWardExcel(file, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name);
 
             setDraft((prev) => applyParsedWardData(prev, parsedWardData));
