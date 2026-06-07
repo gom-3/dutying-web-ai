@@ -21,7 +21,9 @@ import type {
     TShiftTeamResponse,
     TSnapshotDetailRes,
     TSnapshotListRes,
+    TOnboardingWardDraftResponse,
     TSnapshotSaveRes,
+    TUpdateOnboardingWardDraftDTO,
     TUpdateShiftTeamDTO,
     TValidationRes,
     TWaitingNurseResponse,
@@ -151,6 +153,16 @@ const normalizeWardResponse = (ward: TWardResponse): TWardResponse => ({
     ...ward,
     shiftTeams: (ward.shiftTeams ?? []).map(normalizeShiftTeamResponse),
 });
+const normalizeOnboardingWardDraftResponse = (
+    response: TOnboardingWardDraftResponse | null | undefined,
+): TOnboardingWardDraftResponse | null => {
+    if (!response || typeof response !== 'object') return null;
+
+    return {
+        ...response,
+        ward: normalizeWardResponse(response.ward),
+    };
+};
 
 export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions = {}): IWardAPI => {
     const basePath = normalizeBasePath(options.basePath);
@@ -162,6 +174,14 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             normalizeWardResponse((await client.post<TWardResponse>(wardPath(), toCreateWardRequest(createWardDTO))).data),
         createOnboardingWardDraft: async (draftDTO: TCreateOnboardingWardDraftDTO) =>
             normalizeWardResponse((await client.post<TWardResponse>(wardPath('/onboarding/drafts'), draftDTO)).data),
+        getCurrentOnboardingWardDraft: async () =>
+            normalizeOnboardingWardDraftResponse(
+                (await client.get<TOnboardingWardDraftResponse | null | undefined>(wardPath('/onboarding/drafts/current'))).data,
+            ),
+        updateOnboardingWardDraft: async (wardId: number, draftDTO: TUpdateOnboardingWardDraftDTO) =>
+            normalizeOnboardingWardDraftResponse(
+                (await client.patch<TOnboardingWardDraftResponse>(wardPath(`/${wardId}/onboarding/draft`), draftDTO)).data,
+            ) as TOnboardingWardDraftResponse,
         completeOnboardingWardDraft: async (wardId: number, createWardDTO: TCreateWardDTO) =>
             normalizeWardResponse(
                 (await client.post<TWardResponse>(wardPath(`/${wardId}/onboarding/complete`), toCreateWardRequest(createWardDTO))).data,

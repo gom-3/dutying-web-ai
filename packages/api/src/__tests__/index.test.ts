@@ -115,6 +115,7 @@ describe('@dutying/api public entry', () => {
     it('posts onboarding draft and completion to split onboarding endpoints', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
         const wardApi = createWardApi(client);
 
         postMock
@@ -142,10 +143,39 @@ describe('@dutying/api public entry', () => {
                     shiftTeams: [],
                 },
             });
+        patchMock.mockResolvedValueOnce({
+            data: {
+                ward: {
+                    wardId: 10,
+                    name: 'ICU',
+                    hospitalName: 'Dutying Hospital',
+                    code: 'A7K29Q',
+                    nurseCnt: 0,
+                    setupStatus: 'SETUP_IN_PROGRESS',
+                    wardShiftTypes: [],
+                    shiftTeams: [],
+                },
+                draftPayload: {draft: {currentStep: 2}},
+            },
+        });
 
         await expect(wardApi.createOnboardingWardDraft({name: 'ICU', hospitalName: 'Dutying Hospital'})).resolves.toMatchObject({
             wardId: 10,
             setupStatus: 'SETUP_IN_PROGRESS',
+        });
+
+        await expect(
+            wardApi.updateOnboardingWardDraft(10, {
+                name: 'ICU',
+                hospitalName: 'Dutying Hospital',
+                draftPayload: {draft: {currentStep: 2}},
+            }),
+        ).resolves.toMatchObject({
+            ward: {
+                wardId: 10,
+                setupStatus: 'SETUP_IN_PROGRESS',
+            },
+            draftPayload: {draft: {currentStep: 2}},
         });
 
         await expect(
@@ -177,6 +207,11 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenNthCalledWith(1, '/wards/onboarding/drafts', {
             name: 'ICU',
             hospitalName: 'Dutying Hospital',
+        });
+        expect(patchMock).toHaveBeenCalledWith('/wards/10/onboarding/draft', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            draftPayload: {draft: {currentStep: 2}},
         });
         expect(postMock).toHaveBeenNthCalledWith(2, '/wards/10/onboarding/complete', {
             name: 'ICU',

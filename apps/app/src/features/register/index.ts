@@ -1,4 +1,10 @@
-import {type TCreateOnboardingWardDraftDTO, type TCreateWardDTO, type TWardResponse} from '@dutying/api/ward';
+import {
+    type TCreateOnboardingWardDraftDTO,
+    type TCreateWardDTO,
+    type TOnboardingWardDraftResponse,
+    type TUpdateOnboardingWardDraftDTO,
+    type TWardResponse,
+} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useCallback} from 'react';
 import {useNavigate} from 'react-router';
@@ -127,6 +133,23 @@ const useRegister = () => {
             }
         },
         [cacheCreatedWard, setLoading],
+    );
+    const getOnboardingWardDraft = useCallback(async (): Promise<TOnboardingWardDraftResponse | null> => {
+        const draft = await WardAPI.getCurrentOnboardingWardDraft();
+
+        cacheCreatedWard(draft?.ward);
+
+        return draft;
+    }, [cacheCreatedWard]);
+    const saveOnboardingWardDraft = useCallback(
+        async (wardId: number, draftDTO: TUpdateOnboardingWardDraftDTO): Promise<TOnboardingWardDraftResponse> => {
+            const draft = await WardAPI.updateOnboardingWardDraft(wardId, draftDTO);
+
+            cacheCreatedWard(draft.ward);
+
+            return draft;
+        },
+        [cacheCreatedWard],
     );
     const completeOnboardingWardDraft = useCallback(
         async (wardId: number, createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {
@@ -289,6 +312,8 @@ const useRegister = () => {
             registerAccountProfile,
             createWard,
             createOnboardingWardDraft,
+            getOnboardingWardDraft,
+            saveOnboardingWardDraft,
             completeOnboardingWardDraft,
             joinWardByCode,
             enterWard,

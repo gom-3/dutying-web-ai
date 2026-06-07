@@ -2,13 +2,16 @@ import type {DropResult} from '@hello-pangea/dnd';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
-import {renderHook} from '@/shared/util/test-utils';
+import {renderHook, waitFor} from '@/shared/util/test-utils';
+import {createInitialDraft} from '../draft';
 import useOnboardingWardWizard from '../use-onboarding-ward-wizard';
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockCreateOnboardingWardDraft = vi.fn();
+const mockGetOnboardingWardDraft = vi.fn();
+const mockSaveOnboardingWardDraft = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
 
@@ -24,6 +27,8 @@ vi.mock('@/features/register', () => ({
         actions: {
             createWard: mockCreateWard,
             createOnboardingWardDraft: mockCreateOnboardingWardDraft,
+            getOnboardingWardDraft: mockGetOnboardingWardDraft,
+            saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
             completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
@@ -50,17 +55,25 @@ const uploadFile = async (
         await applyUploadedFile(file, options);
     });
 };
-
-beforeEach(() => {
-    window.localStorage.clear();
-});
+const draftWardResponse = {
+    wardId: 10,
+    name: '중환자실',
+    hospitalName: '듀팅병원',
+    setupStatus: 'SETUP_IN_PROGRESS',
+    wardShiftTypes: [],
+    shiftTeams: [],
+};
 
 describe('useOnboardingWardWizard upload flow', () => {
     beforeEach(() => {
         mockCreateWard.mockReset();
         mockCreateOnboardingWardDraft.mockReset();
         mockCompleteOnboardingWardDraft.mockReset();
-        mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
+        mockGetOnboardingWardDraft.mockReset();
+        mockSaveOnboardingWardDraft.mockReset();
+        mockGetOnboardingWardDraft.mockResolvedValue(null);
+        mockCreateOnboardingWardDraft.mockResolvedValue(draftWardResponse);
+        mockSaveOnboardingWardDraft.mockResolvedValue({ward: draftWardResponse, draftPayload: null});
         mockParseOnboardingWardExcel.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
@@ -77,54 +90,90 @@ describe('useOnboardingWardWizard upload flow', () => {
             await result.current.goNextStep();
         });
 
-        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({hospitalName: '듀팅병원', name: '중환자실'});
+        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({
+            hospitalName: '듀팅병원',
+            name: '중환자실',
+            draftPayload: expect.objectContaining({
+                draft: expect.objectContaining({
+                    hospitalName: '듀팅병원',
+                    wardName: '중환자실',
+                }),
+            }),
+        });
         expect(result.current.draft.currentStep).toBe(2);
         expect(result.current.draftCreationStatus).toBe('created');
     });
 
-    it('restores typed ward identity after remounting the wizard', () => {
-        const {result, unmount} = renderHook(() => useOnboardingWardWizard());
+    it('restores the current ward draft from the server when mounting the wizard', async () => {
+        const savedDraft = {
+            ...createInitialDraft(),
+            currentStep: 2 as const,
+            hospitalName: '듀팅병원',
+            wardName: '중환자실',
+        };
 
-        act(() => {
-            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        mockGetOnboardingWardDraft.mockResolvedValueOnce({
+            ward: draftWardResponse,
+            draftPayload: {
+                draft: savedDraft,
+                draftWardId: 10,
+                isSkillLevelEnabled: false,
+                selectedTeamId: savedDraft.teams[0]?.id ?? '',
+                sortMode: 'manual',
+            },
         });
 
-        unmount();
+        const {result} = renderHook(() => useOnboardingWardWizard());
 
-        const {result: restored} = renderHook(() => useOnboardingWardWizard());
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(2));
 
-        expect(restored.current.draft.hospitalName).toBe('듀팅병원');
-        expect(restored.current.draft.wardName).toBe('중환자실');
-        expect(restored.current.draft.currentStep).toBe(1);
+        expect(result.current.draft.hospitalName).toBe('듀팅병원');
+        expect(result.current.draft.wardName).toBe('중환자실');
+        expect(result.current.draftCreationStatus).toBe('created');
     });
 
-    it('restores the created draft ward id after remounting the wizard', async () => {
+    it('saves changed draft payload to the existing server draft', async () => {
+        const savedDraft = {
+            ...createInitialDraft(),
+            hospitalName: '듀팅병원',
+            wardName: '중환자실',
+        };
+
+        mockGetOnboardingWardDraft.mockResolvedValueOnce({
+            ward: draftWardResponse,
+            draftPayload: {
+                draft: savedDraft,
+                draftWardId: 10,
+                isSkillLevelEnabled: false,
+                selectedTeamId: savedDraft.teams[0]?.id ?? '',
+                sortMode: 'manual',
+            },
+        });
+
         const {result, unmount} = renderHook(() => useOnboardingWardWizard());
 
+        await waitFor(() => expect(result.current.draftCreationStatus).toBe('created'));
+
         act(() => {
-            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+            result.current.updateWardIdentity({wardName: '응급실'});
         });
 
-        await act(async () => {
-            await result.current.goNextStep();
-        });
+        await waitFor(() =>
+            expect(mockSaveOnboardingWardDraft).toHaveBeenCalledWith(
+                10,
+                expect.objectContaining({
+                    name: '응급실',
+                    hospitalName: '듀팅병원',
+                    draftPayload: expect.objectContaining({
+                        draft: expect.objectContaining({
+                            wardName: '응급실',
+                        }),
+                    }),
+                }),
+            ),
+        );
 
         unmount();
-
-        const {result: restored} = renderHook(() => useOnboardingWardWizard());
-
-        expect(restored.current.draft.currentStep).toBe(2);
-        expect(restored.current.draftCreationStatus).toBe('created');
-
-        act(() => {
-            restored.current.goPreviousStep();
-        });
-
-        await act(async () => {
-            await restored.current.goNextStep();
-        });
-
-        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledTimes(1);
     });
 
     it('stores parsed draft data and success feedback when the upload succeeds without warnings', async () => {

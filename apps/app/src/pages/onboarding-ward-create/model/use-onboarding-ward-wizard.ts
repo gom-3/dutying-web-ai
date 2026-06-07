@@ -1,6 +1,6 @@
 ﻿import {type DropResult} from '@hello-pangea/dnd';
 import * as Sentry from '@sentry/react';
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/register';
 import {FileAPI} from '@/shared/api';
@@ -44,11 +44,12 @@ import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission
 import type {TSortMode} from './types';
 
 const MAX_STEP = 4;
-const ONBOARDING_WARD_DRAFT_STORAGE_KEY = 'dutying:onboardingWardCreateDraft:v1';
+const ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS = 600;
 
 type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
+type TDraftRestoreStatus = 'loading' | 'ready' | 'error';
 type TPersistedOnboardingWardDraft = {
     draft: TOnboardingWardDraft;
     draftWardId: number | null;
@@ -61,63 +62,50 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
     value === 1 || value === 2 || value === 3 || value === 4;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name' || value === 'skill';
-const readPersistedOnboardingWardDraft = (): TPersistedOnboardingWardDraft | null => {
-    try {
-        const rawValue = window.localStorage.getItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
-
-        if (!rawValue) {
-            return null;
-        }
-
-        const parsed = JSON.parse(rawValue);
-
-        if (!isRecord(parsed) || !isRecord(parsed.draft)) {
-            return null;
-        }
-
-        const draft = parsed.draft;
-
-        if (
-            !isOnboardingStep(draft.currentStep) ||
-            typeof draft.wardName !== 'string' ||
-            typeof draft.hospitalName !== 'string' ||
-            !Array.isArray(draft.shiftTypes) ||
-            !Array.isArray(draft.teams) ||
-            !Array.isArray(draft.nurses) ||
-            !Array.isArray(draft.constraintCandidates)
-        ) {
-            return null;
-        }
-
-        const draftWardId = typeof parsed.draftWardId === 'number' ? parsed.draftWardId : null;
-
-        return {
-            draft: draft as TOnboardingWardDraft,
-            draftWardId,
-            isSkillLevelEnabled: parsed.isSkillLevelEnabled === true,
-            selectedTeamId: typeof parsed.selectedTeamId === 'string' ? parsed.selectedTeamId : '',
-            sortMode: isSortMode(parsed.sortMode) ? parsed.sortMode : 'manual',
-        };
-    } catch {
-        window.localStorage.removeItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
-
+const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
+    if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
     }
-};
-const persistOnboardingWardDraft = (value: TPersistedOnboardingWardDraft) => {
-    try {
-        window.localStorage.setItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY, JSON.stringify(value));
-    } catch {
-        // Best-effort browser persistence only.
+
+    const draft = payload.draft;
+
+    if (
+        !isOnboardingStep(draft.currentStep) ||
+        typeof draft.wardName !== 'string' ||
+        typeof draft.hospitalName !== 'string' ||
+        !Array.isArray(draft.shiftTypes) ||
+        !Array.isArray(draft.teams) ||
+        !Array.isArray(draft.nurses) ||
+        !Array.isArray(draft.constraintCandidates)
+    ) {
+        return null;
     }
+
+    const draftWardId = typeof payload.draftWardId === 'number' ? payload.draftWardId : null;
+
+    return {
+        draft: draft as TOnboardingWardDraft,
+        draftWardId,
+        isSkillLevelEnabled: payload.isSkillLevelEnabled === true,
+        selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
+        sortMode: isSortMode(payload.sortMode) ? payload.sortMode : 'manual',
+    };
 };
-const clearPersistedOnboardingWardDraft = () => {
-    try {
-        window.localStorage.removeItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
-    } catch {
-        // Best-effort browser persistence only.
-    }
-};
+const buildServerOnboardingWardDraftPayload = (
+    draft: TOnboardingWardDraft,
+    draftWardId: number | null,
+    isSkillLevelEnabled: boolean,
+    selectedTeamId: string,
+    sortMode: TSortMode,
+): Record<string, unknown> => ({
+    draft,
+    draftWardId,
+    isSkillLevelEnabled,
+    selectedTeamId,
+    sortMode,
+});
+const hasServerSavableDraftSignal = (draft: TOnboardingWardDraft) =>
+    [draft.wardName.trim(), draft.hospitalName.trim(), draft.uploadedFileName].some(Boolean) || draft.currentStep > 1;
 const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
     const next = [...items];
     const [moved] = next.splice(sourceIndex, 1);
@@ -231,27 +219,80 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft) => {
 
 function useOnboardingWardWizard() {
     const {
-        actions: {createWard, createOnboardingWardDraft, completeOnboardingWardDraft},
+        actions: {createWard, createOnboardingWardDraft, getOnboardingWardDraft, saveOnboardingWardDraft, completeOnboardingWardDraft},
     } = useRegister();
-    const [persistedDraftState] = useState(() => readPersistedOnboardingWardDraft());
-    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => persistedDraftState?.draft ?? createInitialDraft());
-    const [selectedTeamId, setSelectedTeamId] = useState(() => persistedDraftState?.selectedTeamId ?? '');
-    const [sortMode, setSortModeState] = useState<TSortMode>(() => persistedDraftState?.sortMode ?? 'manual');
+    const draftTouchedRef = useRef(false);
+    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
+    const [selectedTeamId, setSelectedTeamId] = useState('');
+    const [sortMode, setSortModeState] = useState<TSortMode>('manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
-    const [isSkillLevelEnabled, setIsSkillLevelEnabled] = useState(() => persistedDraftState?.isSkillLevelEnabled ?? false);
+    const [isSkillLevelEnabled, setIsSkillLevelEnabled] = useState(false);
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
-    const [draftWardId, setDraftWardId] = useState<number | null>(() => persistedDraftState?.draftWardId ?? null);
-    const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>(() =>
-        persistedDraftState?.draftWardId ? 'created' : 'idle',
-    );
+    const [draftWardId, setDraftWardId] = useState<number | null>(null);
+    const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
+    const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
     const onboardingWardCreateExecutor = useMemo(
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
         [completeOnboardingWardDraft, createWard, draftWardId],
     );
+    const markDraftTouched = () => {
+        draftTouchedRef.current = true;
+    };
+
+    useEffect(() => {
+        let isActive = true;
+
+        const restoreDraft = async () => {
+            try {
+                const serverDraft = await getOnboardingWardDraft();
+
+                if (!isActive) {
+                    return;
+                }
+
+                if (serverDraft?.ward?.wardId) {
+                    const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload);
+
+                    setDraftWardId(serverDraft.ward.wardId);
+                    setDraftCreationStatus('created');
+
+                    if (restoredDraftState) {
+                        setDraft(restoredDraftState.draft);
+                        setSelectedTeamId(restoredDraftState.selectedTeamId);
+                        setSortModeState(restoredDraftState.sortMode);
+                        setIsSkillLevelEnabled(restoredDraftState.isSkillLevelEnabled);
+                    } else {
+                        setDraft((prev) => ({
+                            ...prev,
+                            hospitalName: serverDraft.ward.hospitalName ?? prev.hospitalName,
+                            wardName: serverDraft.ward.name ?? prev.wardName,
+                        }));
+                    }
+                }
+
+                setDraftRestoreStatus('ready');
+            } catch (error) {
+                Sentry.captureException(error, {
+                    tags: {feature: 'onboarding-ward-create'},
+                    extra: {phase: 'restore-draft'},
+                });
+
+                if (isActive) {
+                    setDraftRestoreStatus('error');
+                }
+            }
+        };
+
+        void restoreDraft();
+
+        return () => {
+            isActive = false;
+        };
+    }, [getOnboardingWardDraft]);
 
     useEffect(() => {
         if (!selectedTeamId && draft.teams[0]) {
@@ -265,21 +306,87 @@ function useOnboardingWardWizard() {
         }
     }, [isSkillLevelEnabled, sortMode]);
 
-    useEffect(() => {
-        if (submissionStatus === 'success') {
-            clearPersistedOnboardingWardDraft();
+    const saveDraftSnapshot = useCallback(
+        async ({showErrorToast = false}: {showErrorToast?: boolean} = {}) => {
+            if (submissionStatus === 'success' || draftCreationStatus === 'creating') {
+                return true;
+            }
 
+            const identityPayload = buildDraftWardIdentityPayload(draft);
+            const draftPayload = buildServerOnboardingWardDraftPayload(draft, draftWardId, isSkillLevelEnabled, selectedTeamId, sortMode);
+
+            try {
+                if (draftWardId) {
+                    await saveOnboardingWardDraft(draftWardId, {
+                        ...identityPayload,
+                        draftPayload,
+                    });
+                    setDraftCreationStatus('created');
+
+                    return true;
+                }
+
+                if (!draftTouchedRef.current || !hasServerSavableDraftSignal(draft)) {
+                    return true;
+                }
+
+                setDraftCreationStatus('creating');
+
+                const draftWard = await createOnboardingWardDraft({
+                    ...identityPayload,
+                    draftPayload,
+                });
+
+                if (!draftWard?.wardId) {
+                    throw new Error('Onboarding draft ward id missing.');
+                }
+
+                setDraftWardId(draftWard.wardId);
+                setDraftCreationStatus('created');
+
+                return true;
+            } catch (error) {
+                Sentry.captureException(error, {
+                    tags: {feature: 'onboarding-ward-create'},
+                    extra: {step: draft.currentStep, phase: draftWardId ? 'save-draft' : 'create-draft'},
+                });
+                setDraftCreationStatus('error');
+
+                if (showErrorToast) {
+                    toast.error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
+                }
+
+                return false;
+            }
+        },
+        [
+            createOnboardingWardDraft,
+            draft,
+            draftCreationStatus,
+            draftWardId,
+            isSkillLevelEnabled,
+            saveOnboardingWardDraft,
+            selectedTeamId,
+            sortMode,
+            submissionStatus,
+        ],
+    );
+
+    useEffect(() => {
+        if (draftRestoreStatus === 'loading' || submissionStatus === 'success' || submissionStatus === 'submitting') {
             return;
         }
 
-        persistOnboardingWardDraft({
-            draft,
-            draftWardId,
-            isSkillLevelEnabled,
-            selectedTeamId,
-            sortMode,
-        });
-    }, [draft, draftWardId, isSkillLevelEnabled, selectedTeamId, sortMode, submissionStatus]);
+        if (!draftWardId && (!draftTouchedRef.current || !hasServerSavableDraftSignal(draft))) {
+            return;
+        }
+
+        const autosaveTimer = window.setTimeout(() => {
+            void saveDraftSnapshot();
+        }, ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS);
+
+        return () => window.clearTimeout(autosaveTimer);
+    }, [draft, draftRestoreStatus, draftWardId, saveDraftSnapshot, submissionStatus]);
 
     const selectedTeamExists = draft.teams.some((team) => team.id === selectedTeamId);
     const activeTeamId = selectedTeamExists ? selectedTeamId : (draft.teams[0]?.id ?? '');
@@ -287,6 +394,8 @@ function useOnboardingWardWizard() {
     const currentStepValidation = getStepValidation(draft.currentStep === MAX_STEP ? draftForCompletion : draft);
     const completionValidationIssues = getCompletionValidationIssues(draftForCompletion);
     const setSortMode = (nextSortMode: TSortMode) => {
+        markDraftTouched();
+
         if (nextSortMode === 'skill' && !isSkillLevelEnabled) {
             setSortModeState('manual');
 
@@ -297,6 +406,8 @@ function useOnboardingWardWizard() {
     };
     const ensureDraftWard = async () => {
         if (draftWardId) {
+            await saveDraftSnapshot({showErrorToast: true});
+
             return true;
         }
 
@@ -304,29 +415,9 @@ function useOnboardingWardWizard() {
             return false;
         }
 
-        setDraftCreationStatus('creating');
+        markDraftTouched();
 
-        try {
-            const draftWard = await createOnboardingWardDraft(buildDraftWardIdentityPayload(draft));
-
-            if (!draftWard?.wardId) {
-                throw new Error('Onboarding draft ward id missing.');
-            }
-
-            setDraftWardId(draftWard.wardId);
-            setDraftCreationStatus('created');
-
-            return true;
-        } catch (error) {
-            Sentry.captureException(error, {
-                tags: {feature: 'onboarding-ward-create'},
-                extra: {step: draft.currentStep, phase: 'create-draft'},
-            });
-            setDraftCreationStatus('error');
-            toast.error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
-
-            return false;
-        }
+        return saveDraftSnapshot({showErrorToast: true});
     };
     const goNextStep = async () => {
         if (draft.currentStep === 1) {
@@ -337,24 +428,31 @@ function useOnboardingWardWizard() {
             }
         }
 
+        markDraftTouched();
         setDraft((prev) => goNextStepDraft(prev));
     };
     const goPreviousStep = () => {
+        markDraftTouched();
         setDraft((prev) => goPreviousStepDraft(prev));
     };
     const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName'>>) => {
+        markDraftTouched();
         setDraft((prev) => ({...prev, ...updater}));
     };
     const updateShiftType = (shiftTypeId: string, updater: Parameters<typeof updateShiftTypeDraft>[2]) => {
+        markDraftTouched();
         setDraft((prev) => updateShiftTypeDraft(prev, shiftTypeId, updater));
     };
     const addShiftType = () => {
+        markDraftTouched();
         setDraft((prev) => addShiftTypeDraft(prev));
     };
     const deleteShiftType = (shiftTypeId: string) => {
+        markDraftTouched();
         setDraft((prev) => deleteShiftTypeDraft(prev, shiftTypeId));
     };
     const updateNurse = (nurseId: string, updater: Parameters<typeof updateNurseDraft>[2]) => {
+        markDraftTouched();
         setDraft((prev) => {
             const targetNurse = prev.nurses.find((nurse) => nurse.id === nurseId);
 
@@ -378,6 +476,8 @@ function useOnboardingWardWizard() {
         });
     };
     const addTeam = () => {
+        markDraftTouched();
+
         if (draft.teams.length >= MAX_ONBOARDING_TEAMS) {
             toast.error('팀은 최대 8개까지 추가할 수 있어요.');
 
@@ -396,6 +496,8 @@ function useOnboardingWardWizard() {
         }
     };
     const addNurse = () => {
+        markDraftTouched();
+
         const targetTeamId = activeTeamId || draft.teams[0]?.id;
 
         if (targetTeamId) {
@@ -430,6 +532,8 @@ function useOnboardingWardWizard() {
         toast.success(`${addedTeamName}을 추가하고 간호사도 등록했어요.`, {position: 'bottom-center'});
     };
     const deleteActiveTeam = () => {
+        markDraftTouched();
+
         if (!activeTeamId) {
             return;
         }
@@ -445,6 +549,8 @@ function useOnboardingWardWizard() {
         }
     };
     const deleteNurse = (nurseId: string) => {
+        markDraftTouched();
+
         if (!draft.nurses.some((nurse) => nurse.id === nurseId)) {
             return;
         }
@@ -453,15 +559,19 @@ function useOnboardingWardWizard() {
         toast.success('간호사를 삭제했어요.');
     };
     const updateTeamName = (teamId: string, teamName: string) => {
+        markDraftTouched();
         setDraft((prev) => updateTeamNameDraft(prev, teamId, teamName));
     };
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
+        markDraftTouched();
         setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {selected}));
     };
     const updateConstraintCandidateSeverity = (constraintId: string, severity: TOnboardingConstraintDraft['severity']) => {
+        markDraftTouched();
         setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {severity}));
     };
     const updateConstraintCandidateCount = (constraintId: string, count: number) => {
+        markDraftTouched();
         setDraft((prev) => {
             const constraint = prev.constraintCandidates.find((candidate) => candidate.id === constraintId);
 
@@ -473,6 +583,7 @@ function useOnboardingWardWizard() {
         });
     };
     const updateConstraintCandidateStaffingCount = (constraintId: string, staffingIndex: number, count: number) => {
+        markDraftTouched();
         setDraft((prev) => {
             const constraint = prev.constraintCandidates.find((candidate) => candidate.id === constraintId);
 
@@ -486,6 +597,8 @@ function useOnboardingWardWizard() {
         });
     };
     const handleNurseDragEnd = ({destination, source}: DropResult) => {
+        markDraftTouched();
+
         if (!destination) {
             return;
         }
@@ -544,6 +657,8 @@ function useOnboardingWardWizard() {
         }
     };
     const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
+        markDraftTouched();
+
         if (!isSupportedOnboardingUploadFile(file.name)) {
             const message = '엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.';
 
@@ -577,11 +692,13 @@ function useOnboardingWardWizard() {
         }
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
+        markDraftTouched();
         setDraft((prev) => saveSkillLevelConfig(prev, config));
         setIsSkillLevelEnabled(true);
         toast.success('숙련도 설정이 간호사 목록에 반영됐어요.');
     };
     const disableSkillConfig = () => {
+        markDraftTouched();
         setIsSkillLevelEnabled(false);
 
         if (sortMode === 'skill') {
@@ -635,6 +752,7 @@ function useOnboardingWardWizard() {
         }
 
         if (draft.currentStep === 2 && !draft.uploadedFileName) {
+            markDraftTouched();
             setDraft((prev) => goNextStepDraft(prepareManualEntryDraft(prev)));
 
             return;

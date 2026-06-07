@@ -8,6 +8,8 @@ const toastSuccess = vi.fn();
 const toastError = vi.fn();
 const mockCreateWard = vi.fn();
 const mockCreateOnboardingWardDraft = vi.fn();
+const mockGetOnboardingWardDraft = vi.fn();
+const mockSaveOnboardingWardDraft = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
@@ -48,6 +50,8 @@ vi.mock('@/features/register', () => ({
         actions: {
             createWard: mockCreateWard,
             createOnboardingWardDraft: mockCreateOnboardingWardDraft,
+            getOnboardingWardDraft: mockGetOnboardingWardDraft,
+            saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
             completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
@@ -115,6 +119,8 @@ describe('OnboardingWardCreatePage', () => {
     beforeEach(() => {
         mockCreateWard.mockReset();
         mockCreateOnboardingWardDraft.mockReset();
+        mockGetOnboardingWardDraft.mockReset();
+        mockSaveOnboardingWardDraft.mockReset();
         mockCompleteOnboardingWardDraft.mockReset();
         mockNavigate.mockReset();
         toastSuccess.mockReset();
@@ -122,6 +128,8 @@ describe('OnboardingWardCreatePage', () => {
         mockParseOnboardingWardExcel.mockReset();
         window.localStorage.clear();
         window.sessionStorage.clear();
+        mockGetOnboardingWardDraft.mockResolvedValue(null);
+        mockSaveOnboardingWardDraft.mockResolvedValue({ward: {wardId: 10}, draftPayload: null});
         mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
     });
 
