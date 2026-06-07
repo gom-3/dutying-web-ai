@@ -10,6 +10,7 @@ vi.mock('@/features/auth', () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockHandleLogout = vi.fn();
 const setPhoneViewport = (matches: boolean) => {
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -25,17 +26,18 @@ const setPhoneViewport = (matches: boolean) => {
         })),
     });
 };
-const mockUseAuthState = (isAuth: boolean) => {
+const mockUseAuthState = (isAuth: boolean, accountMe: ReturnType<typeof useAuth>['state']['accountMe'] = null) => {
     mockedUseAuth.mockReturnValue({
-        state: {isAuth},
-        actions: {},
-    } as ReturnType<typeof useAuth>);
+        state: {accountMe, isAuth},
+        actions: {handleLogout: mockHandleLogout},
+    } as unknown as ReturnType<typeof useAuth>);
 };
 
 describe('LandingPage', () => {
     beforeEach(() => {
         document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1.0" />';
         window.localStorage.clear();
+        mockHandleLogout.mockReset();
         setPhoneViewport(false);
         mockUseAuthState(false);
     });
@@ -54,8 +56,20 @@ describe('LandingPage', () => {
         expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '#app');
     });
 
-    it('shows admin entry actions instead of login when already authenticated', () => {
-        mockUseAuthState(true);
+    it('shows profile menu actions instead of my page text when already authenticated', async () => {
+        mockUseAuthState(true, {
+            accountId: 1,
+            email: 'admin@example.com',
+            isManager: true,
+            name: '김관리',
+            nurseId: null,
+            profileImgUrl: 'https://cdn.example.com/profile.png',
+            shiftTeamId: null,
+            status: 'LINKED',
+            wardId: null,
+        });
+
+        const user = userEvent.setup();
 
         render(
             <MemoryRouter initialEntries={[ROUTE.ROOT]}>
@@ -64,7 +78,21 @@ describe('LandingPage', () => {
         );
 
         expect(screen.queryByRole('link', {name: '로그인'})).not.toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '마이페이지'})).toHaveAttribute('href', ROUTE.PROFILE);
+        expect(screen.queryByRole('link', {name: '마이페이지'})).not.toBeInTheDocument();
+        expect(screen.getByRole('img', {name: '김관리 프로필 이미지'})).toHaveAttribute('src', 'https://cdn.example.com/profile.png');
+
+        const profileMenuButton = screen.getByRole('button', {name: '프로필 메뉴'});
+
+        expect(profileMenuButton).toHaveAttribute('aria-expanded', 'false');
+
+        await user.click(profileMenuButton);
+
+        expect(profileMenuButton).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('menuitem', {name: '계정 설정'})).toHaveAttribute('href', ROUTE.PROFILE);
+
+        await user.click(screen.getByRole('menuitem', {name: '로그아웃'}));
+
+        expect(mockHandleLogout).toHaveBeenCalledWith(ROUTE.ROOT);
         expect(screen.getAllByRole('link', {name: '근무표 만들기'})[0]).toHaveAttribute('href', ROUTE.MAKE);
         expect(screen.queryByRole('link', {name: '웹에서 근무표 만들기'})).not.toBeInTheDocument();
     });
