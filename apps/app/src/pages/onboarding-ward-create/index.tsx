@@ -14,9 +14,9 @@ import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
 import NurseStep from './ui/steps/nurse-step';
+import ScheduleInputStep from './ui/steps/schedule-input-step';
 import ShiftTypeStep from './ui/steps/shift-type-step';
 import SkillLevelModal from './ui/steps/skill-level-modal';
-import UploadStep from './ui/steps/upload-step';
 import WardIdentityStep from './ui/steps/ward-identity-step';
 import WizardButton from './ui/wizard-button';
 
@@ -49,10 +49,8 @@ function OnboardingWardCreatePage() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        updateScheduleInput,
         handleNurseDragEnd,
-        applyUploadedFile,
-        uploadStatus,
-        uploadError,
         draftCreationStatus,
         createdWard,
         saveSkillConfig,
@@ -62,6 +60,7 @@ function OnboardingWardCreatePage() {
         canComplete,
         submissionStatus,
         canAddTeam,
+        hasScheduleInput,
         currentStepValidation,
         completionValidationIssues,
     } = useOnboardingWardWizard();
@@ -72,8 +71,7 @@ function OnboardingWardCreatePage() {
     const isSavingDraft = draftCreationStatus === 'creating';
     const actionsDisabled = isSavingDraft || isSubmitting || isSuccess;
     const isNurseRegistrationStep = draft.currentStep === 4;
-    const isUploadStep = draft.currentStep === 2;
-    const hasUploadedFile = Boolean(draft.uploadedFileName);
+    const isScheduleInputStep = draft.currentStep === 2;
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
     const activeTeamNurseCount = draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
     const openSkillModal = () => setShowSkillModal(true);
@@ -249,10 +247,14 @@ function OnboardingWardCreatePage() {
             }
             case 2:
                 return (
-                    <UploadStep
-                        onUpload={(file, options) => void applyUploadedFile(file, options)}
-                        isUploading={uploadStatus === 'uploading'}
-                        uploadError={uploadError}
+                    <ScheduleInputStep
+                        draft={draft}
+                        selectedTeamId={activeTeamId}
+                        onSelectTeam={setSelectedTeamId}
+                        onAddTeam={addTeam}
+                        canAddTeam={canAddTeam}
+                        onTeamNameChange={updateTeamName}
+                        onScheduleChange={updateScheduleInput}
                     />
                 );
             case 3:
@@ -359,7 +361,7 @@ function OnboardingWardCreatePage() {
                             setShowIdentityNameError(false);
                         }
 
-                        if (isUploadStep && !hasUploadedFile) {
+                        if (isScheduleInputStep && !hasScheduleInput) {
                             skipOrComplete();
 
                             return;
@@ -382,7 +384,7 @@ function OnboardingWardCreatePage() {
                         toast.error(getNextBlockedReasonMessage());
                     }}
                     leftAction={
-                        isUploadStep ? (
+                        isScheduleInputStep && !hasScheduleInput ? (
                             <WizardButton variant="link" className="text-[18px]" disabled={actionsDisabled} onClick={skipOrComplete}>
                                 건너뛰기
                             </WizardButton>
@@ -411,7 +413,17 @@ function OnboardingWardCreatePage() {
                             : !canComplete || isSavingDraft || isSubmitting || isSuccess
                     }
                     actionsDisabled={actionsDisabled}
-                    nextLabel={draft.currentStep === 1 && isSavingDraft ? '저장 중...' : draft.currentStep < 4 ? '다음' : isSubmitting ? '생성 중...' : isSuccess ? '생성 완료' : '완료'}
+                    nextLabel={
+                        draft.currentStep === 1 && isSavingDraft
+                            ? '저장 중...'
+                            : draft.currentStep < 4
+                              ? '다음'
+                              : isSubmitting
+                                ? '생성 중...'
+                                : isSuccess
+                                  ? '생성 완료'
+                                  : '완료'
+                    }
                 >
                     {stepContent}
                 </OnboardingStepLayout>

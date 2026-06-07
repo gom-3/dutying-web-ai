@@ -28,11 +28,14 @@ const mockedUseEditAccount = vi.mocked(useEditAccount);
 const mockedUseProfileImage = vi.mocked(useProfileImage);
 const mockHandleLogout = vi.fn();
 const mockDeleteAccount = vi.fn();
+const mockHandleEditAccountBasic = vi.fn();
 
 describe('ProfilePage account actions', () => {
     beforeEach(() => {
         mockHandleLogout.mockReset();
         mockDeleteAccount.mockReset();
+        mockHandleEditAccountBasic.mockReset();
+        mockHandleEditAccountBasic.mockResolvedValue(true);
         mockedUseAuth.mockReturnValue({
             state: {
                 accountMe: {
@@ -56,7 +59,7 @@ describe('ProfilePage account actions', () => {
         mockedUseEditAccount.mockReturnValue({
             quitWard: vi.fn(),
             handleEditProfile: vi.fn(),
-            handleEditAccountBasic: vi.fn(),
+            handleEditAccountBasic: mockHandleEditAccountBasic,
             deleteAccount: mockDeleteAccount,
         });
         mockedUseProfileImage.mockReturnValue({
@@ -76,6 +79,25 @@ describe('ProfilePage account actions', () => {
         );
 
         expect(container.querySelector('#phoneNum')).toHaveValue('01012345678');
+        expect(container.querySelector('#phoneNum')).toBeEnabled();
+    });
+
+    it('updates the account phone number when no nurse profile is loaded', async () => {
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        const phoneInput = screen.getByLabelText('전화번호');
+
+        await userEvent.clear(phoneInput);
+        await userEvent.type(phoneInput, '01098765432');
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        await waitFor(() => {
+            expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('홍길동', {}, '01098765432');
+        });
     });
 
     it('로그아웃 버튼을 누르면 확인 팝업을 먼저 띄운다', async () => {

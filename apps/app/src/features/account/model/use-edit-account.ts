@@ -60,7 +60,11 @@ const useEditAccount = () => {
             setLoading(false);
         }
     };
-    const handleEditAccountBasic = async (name: string, profileImg: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
+    const handleEditAccountBasic = async (
+        name: string,
+        profileImg: {profileImgUrl?: string; defaultProfileImgId?: number},
+        phoneNum?: string | null,
+    ) => {
         if (!accountMe) return false;
 
         try {
@@ -69,12 +73,14 @@ const useEditAccount = () => {
             if (isWardAdmin) {
                 await AdminAPI.updateMe({
                     name,
+                    phoneNum,
                     ...profileImg,
                 });
             } else {
                 await AccountAPI.editAccount({
                     accountId: accountMe.accountId,
                     name,
+                    phoneNum,
                     ...profileImg,
                 });
             }

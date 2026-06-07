@@ -8,8 +8,8 @@ const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}>
         description: '',
     },
     2: {
-        title: '이전 근무표 파일이 있다면 업로드해 주세요',
-        description: '근무표를 분석해서 간호사 정보와 근무 시간을 자동으로 채워 드릴게요',
+        title: '병동과 근무표 설정을 위해\n가장 최근에 사용한 근무표를 입력해 주세요',
+        description: '',
     },
     3: {
         title: '병동의 근무 유형을 설정해 주세요',

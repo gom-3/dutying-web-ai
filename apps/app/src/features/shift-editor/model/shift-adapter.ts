@@ -113,6 +113,20 @@ function cellToWardShiftTypeId(cell: TCellValue, maps: TWardShiftTypeMaps): numb
     return type?.wardShiftTypeId ?? null;
 }
 
+function buildSnapshotCellKey(shiftNurseId: number, date: string): string {
+    return `${shiftNurseId}:${date}`;
+}
+
+function resolveSnapshotCellSource(params: {fixed: boolean; requested: boolean; cell: TCellValue}): string {
+    const {fixed, requested, cell} = params;
+
+    if (fixed) return 'FIXED';
+    if (requested) return 'REQUEST';
+    if (cell === null || cell === '') return 'EMPTY';
+
+    return 'DRAFT';
+}
+
 export function docToShift(doc: TDutyDoc, originalShift: TShift): TShift {
     const maps = buildWardShiftTypeMaps(originalShift);
     const rowMap = new Map(doc.rows.map((row) => [row.workerId, row]));
@@ -163,13 +177,26 @@ export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSn
 
     for (const row of doc.rows) {
         const shiftNurseId = Number(row.workerId);
+        const nurseId = doc.workerMeta[row.workerId]?.nurseId;
 
         for (let colIdx = 0; colIdx < doc.columns.length; colIdx += 1) {
             const date = doc.columns[colIdx]!;
             const cell = row.cells[colIdx] ?? null;
             const wardShiftTypeId = cellToWardShiftTypeId(cell, maps);
+            const lockKey = `${row.workerId}|${date}`;
+            const fixed = doc.fixedCells[lockKey] === true;
+            const requested = doc.requestCells[lockKey] === true;
 
-            dto.push({shiftNurseId, date, wardShiftTypeId});
+            dto.push({
+                cellKey: buildSnapshotCellKey(shiftNurseId, date),
+                shiftNurseId,
+                nurseId,
+                date,
+                wardShiftTypeId,
+                shiftCode: cell ?? undefined,
+                source: resolveSnapshotCellSource({fixed, requested, cell}),
+                fixed,
+            });
         }
     }
 

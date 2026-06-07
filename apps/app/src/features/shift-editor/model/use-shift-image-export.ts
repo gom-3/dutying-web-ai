@@ -7,6 +7,8 @@ type TUseShiftImageExportOptions = {
     year: number;
     month: number;
     teamName?: string | null;
+    hospitalName?: string | null;
+    wardName?: string | null;
     disabled?: boolean;
 };
 
@@ -18,7 +20,15 @@ function waitForNextPaint() {
     });
 }
 
-export function useShiftImageExport({targetRef, year, month, teamName, disabled = false}: TUseShiftImageExportOptions) {
+export function useShiftImageExport({
+    targetRef,
+    year,
+    month,
+    teamName,
+    hospitalName,
+    wardName,
+    disabled = false,
+}: TUseShiftImageExportOptions) {
     const [isExporting, setIsExporting] = useState(false);
     const downloadImage = useCallback(async () => {
         if (disabled || isExporting) return;
@@ -35,7 +45,7 @@ export function useShiftImageExport({targetRef, year, month, teamName, disabled 
 
         try {
             await waitForNextPaint();
-            await shiftToImage({element: target, year, month, teamName});
+            await shiftToImage({element: target, year, month, teamName, hospitalName, wardName});
             toast.success('근무표 이미지를 저장했어요.');
         } catch (error) {
             console.error(error);
@@ -43,7 +53,7 @@ export function useShiftImageExport({targetRef, year, month, teamName, disabled 
         } finally {
             setIsExporting(false);
         }
-    }, [disabled, isExporting, month, targetRef, teamName, year]);
+    }, [disabled, hospitalName, isExporting, month, targetRef, teamName, wardName, year]);
 
     return {isExporting, downloadImage};
 }

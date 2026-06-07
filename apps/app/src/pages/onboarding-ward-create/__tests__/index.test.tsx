@@ -1,4 +1,4 @@
-import {screen, waitFor, within} from '@testing-library/react';
+import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import {render, userEvent} from '@/shared/util/test-utils';
@@ -15,6 +15,22 @@ const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
 const TEST_HOSPITAL_NAME = '테스트 병원';
 const TEST_WARD_NAME = '테스트 병동';
+const getRelativeScheduleMonth = (offset: number) => {
+    const date = new Date();
+
+    date.setDate(1);
+    date.setMonth(date.getMonth() + offset);
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+
+    return {
+        year,
+        month,
+        label: `${year}.${String(month).padStart(2, '0')}`,
+        dayCount: new Date(year, month, 0).getDate(),
+    };
+};
 const typedTranslations = {
     'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
     'page.onboardingWardCreate.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
@@ -153,94 +169,59 @@ describe('OnboardingWardCreatePage', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/register');
     });
 
-    it('uploads a file, injects parsed data, and moves through onboarding steps', async () => {
+    it('pastes schedule data, syncs nurse names, and moves through onboarding steps', async () => {
         const user = userEvent.setup();
-        const {container} = render(<OnboardingWardCreatePage />);
 
+        render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+        expect(screen.getByText('병동과 근무표 설정을 위해 가장 최근에 사용한 근무표를 입력해 주세요')).toBeInTheDocument();
 
-        mockParseOnboardingWardExcel.mockResolvedValue({
-            wardName: '중환자실',
-            hospitalName: '듀팅병원',
-            shiftTypes: [
-                {name: '데이', shortName: 'D'},
-                {name: '오프', shortName: 'O', isOff: true},
-            ],
-            teams: [{name: 'A팀'}],
-            nurses: [
-                {
-                    name: '신규 간호사',
-                    teamName: 'A팀',
-                    possibleShiftShortNames: ['D'],
-                    employmentDate: '2025-01-01',
-                },
-            ],
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '신규1\tD\tE\n두번째\tN\tOFF',
+            },
         });
 
-        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
-
-        await waitFor(() => {
-            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
-        });
-
-        expect(screen.queryByText('업로드됨: march-duty.xlsx')).not.toBeInTheDocument();
-        expect(screen.queryByText('불러온 값은 다음 단계에서 확인하고 수정할 수 있어요.')).not.toBeInTheDocument();
-        expect(screen.queryByText('기존 근무표에서 발견한 제약 후보')).not.toBeInTheDocument();
-        expect(mockParseOnboardingWardExcel).toHaveBeenCalledTimes(1);
+        expect(screen.getByDisplayValue('신규1')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('두번째')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('OFF')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         expect(screen.getByText('근무명')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('데이')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('오프')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
         expect(screen.getAllByText('간호사 추가하기')[0]).toBeInTheDocument();
-        expect(screen.getByDisplayValue('신규 간호사')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('신규1')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('두번째')).toBeInTheDocument();
     });
 
-    it('keeps uploaded constraint candidates hidden on the upload step while saving them in the completion payload', async () => {
+    it('keeps schedule data separated by team and saves named rows in the completion payload', async () => {
         const user = userEvent.setup();
-        const {container} = render(<OnboardingWardCreatePage />);
 
+        mockCompleteOnboardingWardDraft.mockResolvedValue(undefined);
+        render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
-
-        mockParseOnboardingWardExcel.mockResolvedValue({
-            constraint_candidates: [
-                {
-                    key: 'required_staff',
-                    template_code: 'MIN_STAFF_BY_SHIFT',
-                    params: {staffing: [{shift: 'D', count: 2}]},
-                    severity_recommendation: 'SOFT',
-                    confidence: 0.9,
-                    evidence_summary: 'D 근무 최소 2명을 관찰했어요.',
-                },
-                {
-                    key: 'max_work',
-                    template_code: 'MAX_CONSECUTIVE_WORK_DAYS',
-                    params: {target: 'ALL', count: 5},
-                    severity_recommendation: 'HARD_AFTER_CONFIRM',
-                    confidence_band: 'HIGH',
-                    evidence_summary: '관찰된 최대 연속 근무일은 5일',
-                },
-            ],
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD',
+            },
+        });
+        await user.click(screen.getByRole('button', {name: /간호사 2팀/}));
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '박연우\tN',
+            },
         });
 
-        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+        expect(screen.getByDisplayValue('박연우')).toBeInTheDocument();
 
-        await waitFor(() => {
-            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
-        });
-
-        expect(screen.queryByText('기존 근무표에서 발견한 제약 후보')).not.toBeInTheDocument();
-        expect(screen.queryByText('근무별 최소 인원')).not.toBeInTheDocument();
-        expect(screen.queryByText('최대 연속 근무')).not.toBeInTheDocument();
-        expect(screen.queryByTestId('constraint-candidate')).not.toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: /간호사 1팀/}));
+        expect(screen.getByDisplayValue('김하늘')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
         await user.click(screen.getByRole('button', {name: '다음'}));
@@ -252,64 +233,187 @@ describe('OnboardingWardCreatePage', () => {
 
         const payload = mockCompleteOnboardingWardDraft.mock.calls[0]?.[1];
 
-        expect(payload.shiftTeams[0]?.constraintRules).toEqual([
-            {
-                templateCode: 'MIN_STAFF_BY_SHIFT',
-                severity: 'SOFT',
-                selected: true,
-                params: {staffing: [{shift: 'D', count: 2}]},
-            },
-            {
-                templateCode: 'MAX_CONSECUTIVE_WORK_DAYS',
-                severity: 'HARD',
-                selected: true,
-                params: {target: 'ALL', count: 5},
-            },
+        expect(payload.shiftTeams).toEqual([
+            expect.objectContaining({name: '간호사 1팀', nurseNames: ['김하늘']}),
+            expect.objectContaining({name: '간호사 2팀', nurseNames: ['박연우']}),
         ]);
     });
 
-    it('shows upload warnings when the parse api partially succeeds', async () => {
+    it('keeps row count fixed after direct input and adds rows from the bottom button', async () => {
         const user = userEvent.setup();
-        const {container} = render(<OnboardingWardCreatePage />);
 
+        render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+        expect(screen.getByLabelText('10행 간호사 이름')).toBeInTheDocument();
+        expect(screen.queryByLabelText('11행 간호사 이름')).not.toBeInTheDocument();
 
-        mockParseOnboardingWardExcel.mockResolvedValue({
-            nurses: [{name: '신규 간호사', teamName: 'A팀'}],
-            warnings: ['2행 데이터를 해석하지 못했어요.'],
-        });
+        await user.type(screen.getByLabelText('9행 간호사 이름'), '김하늘');
 
-        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+        expect(screen.queryByLabelText('11행 간호사 이름')).not.toBeInTheDocument();
 
-        await waitFor(() => {
-            expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
-        });
+        await user.click(screen.getByRole('button', {name: '행 추가'}));
 
-        expect(screen.queryByTestId('upload-warning')).not.toBeInTheDocument();
-        expect(screen.queryByText('2행 데이터를 해석하지 못했어요.')).not.toBeInTheDocument();
-        expect(toastError).not.toHaveBeenCalled();
+        expect(screen.getByLabelText('11행 간호사 이름')).toBeInTheDocument();
     });
 
-    it('shows upload error guidance when the parse api fails', async () => {
+    it('shows delete controls for default empty rows and removes the selected row', async () => {
         const user = userEvent.setup();
-        const {container} = render(<OnboardingWardCreatePage />);
 
+        render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const uploadInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+        expect(screen.getByLabelText('10행 간호사 이름')).toBeInTheDocument();
 
-        mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
+        await user.click(screen.getByRole('button', {name: '10행 삭제'}));
 
-        await user.upload(uploadInput, new File(['mock'], 'march-duty.xlsx', {type: 'application/vnd.ms-excel'}));
+        expect(screen.queryByLabelText('10행 간호사 이름')).not.toBeInTheDocument();
+    });
 
-        await waitFor(() => {
-            expect(screen.getByTestId('upload-error')).toBeInTheDocument();
+    it('renders the previous month schedule with month controls', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        const previousMonth = getRelativeScheduleMonth(-1);
+        const currentMonth = getRelativeScheduleMonth(0);
+
+        expect(screen.getByText(`${previousMonth.year}년 ${previousMonth.month}월`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: String(previousMonth.dayCount)})).toBeInTheDocument();
+
+        if (previousMonth.dayCount < 31) {
+            expect(screen.queryByRole('button', {name: String(previousMonth.dayCount + 1)})).not.toBeInTheDocument();
+        }
+
+        await user.click(screen.getByRole('button', {name: '다음 달'}));
+
+        expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: String(currentMonth.dayCount)})).toBeInTheDocument();
+    });
+
+    it('limits schedule names and shift cells to five characters', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '가나다라마바\tABCDEFG',
+            },
         });
 
-        expect(screen.getByText('업로드한 파일 형식이 올바르지 않습니다.')).toBeInTheDocument();
-        expect(toastError).toHaveBeenCalledWith('업로드한 파일 형식이 올바르지 않습니다.');
+        expect(screen.getByDisplayValue('가나다라마')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('가나다라마바')).not.toBeInTheDocument();
+        expect(screen.getByDisplayValue('ABCDE')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('ABCDEFG')).not.toBeInTheDocument();
+    });
+
+    it('clears the dragged schedule cell range with Backspace', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD\tE\n박연우\tN\tOFF',
+            },
+        });
+
+        const firstShiftCell = screen.getByLabelText('1행 1일 근무');
+
+        fireEvent.mouseDown(firstShiftCell, {button: 0});
+        fireEvent.mouseEnter(screen.getByLabelText('2행 2일 근무'));
+        fireEvent.keyDown(firstShiftCell, {key: 'Backspace'});
+
+        expect(screen.getByDisplayValue('김하늘')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('박연우')).toBeInTheDocument();
+        expect(screen.queryByDisplayValue('D')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('E')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('N')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('OFF')).not.toBeInTheDocument();
+    });
+
+    it('undoes schedule input with Ctrl+Z and Meta+Z', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD',
+            },
+        });
+
+        expect(screen.getByDisplayValue('김하늘')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+
+        fireEvent.keyDown(screen.getByLabelText('1행 1일 근무'), {key: 'z', ctrlKey: true});
+
+        expect(screen.queryByDisplayValue('김하늘')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('D')).not.toBeInTheDocument();
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '박연우\tE',
+            },
+        });
+
+        expect(screen.getByDisplayValue('박연우')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('E')).toBeInTheDocument();
+
+        fireEvent.keyDown(screen.getByLabelText('1행 1일 근무'), {key: 'z', metaKey: true});
+
+        expect(screen.queryByDisplayValue('박연우')).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('E')).not.toBeInTheDocument();
+    });
+
+    it('uses fixed D/E/N/O colors, stable custom pastel colors, and fixed dark gray for slash', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD\tE\t/\t교육\n박연우\tN\tO\t/\t교육\n최서아\tOFF\t휴무',
+            },
+        });
+
+        const dayShift = screen.getByLabelText('1행 1일 근무') as HTMLInputElement;
+        const eveningShift = screen.getByLabelText('1행 2일 근무') as HTMLInputElement;
+        const nightShift = screen.getByLabelText('2행 1일 근무') as HTMLInputElement;
+        const offShift = screen.getByLabelText('2행 2일 근무') as HTMLInputElement;
+        const offAliasShift = screen.getByLabelText('3행 1일 근무') as HTMLInputElement;
+        const koreanOffAliasShift = screen.getByLabelText('3행 2일 근무') as HTMLInputElement;
+        const firstSlashDay = screen.getByLabelText('1행 3일 근무') as HTMLInputElement;
+        const secondSlashDay = screen.getByLabelText('2행 3일 근무') as HTMLInputElement;
+        const customTerm = screen.getByLabelText('1행 4일 근무') as HTMLInputElement;
+        const sameCustomTerm = screen.getByLabelText('2행 4일 근무') as HTMLInputElement;
+
+        expect(dayShift.style.backgroundColor).toBe('rgb(77, 194, 173)');
+        expect(eveningShift.style.backgroundColor).toBe('rgb(255, 139, 165)');
+        expect(nightShift.style.backgroundColor).toBe('rgb(53, 128, 255)');
+        expect(offShift.style.backgroundColor).toBe('rgb(70, 91, 122)');
+        expect(offAliasShift.style.backgroundColor).toBe('rgb(70, 91, 122)');
+        expect(koreanOffAliasShift.style.backgroundColor).toBe('rgb(70, 91, 122)');
+        expect(firstSlashDay.style.backgroundColor).toBe('rgb(85, 90, 100)');
+        expect(secondSlashDay.style.backgroundColor).toBe('rgb(85, 90, 100)');
+        expect(customTerm.style.backgroundColor).toBe(sameCustomTerm.style.backgroundColor);
+        expect(customTerm.style.backgroundColor).not.toBe(dayShift.style.backgroundColor);
+    });
+
+    it('deletes the selected schedule row with the row delete button', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD\n박연우\tN',
+            },
+        });
+
+        await user.click(screen.getByRole('button', {name: '김하늘 삭제'}));
+
+        expect(screen.queryByDisplayValue('김하늘')).not.toBeInTheDocument();
+        expect(screen.getByDisplayValue('박연우')).toBeInTheDocument();
     });
 
     it('blocks next in step 1 when identity name is empty and shows toast on click', async () => {

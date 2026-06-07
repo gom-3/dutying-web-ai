@@ -1,16 +1,14 @@
 import {cn} from '@dutying/utils/style';
-import {Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
-import {type FormEvent, useState} from 'react';
-import {Carousel} from 'react-responsive-carousel';
+import {ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
+import {type FormEvent, useEffect, useState} from 'react';
 import {Link, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
 import {AuthAPI} from '@/shared/api';
-import {AppleIcon, BackCircle, KakaoIcon, NextCircle} from '@/shared/assets/svg';
+import {AppleIcon, KakaoIcon} from '@/shared/assets/svg';
 import {buildAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
-import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import './index.css';
 
 type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm', string>>;
@@ -21,6 +19,7 @@ const FIELD_CLASS =
 const PASSWORD_MIN_LENGTH = 8;
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LOGIN_VISUAL_SLIDES = ['/img/login-slide-1.png', '/img/login-slide-2.png', '/img/login-slide-3.png'];
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
     <button
@@ -85,6 +84,7 @@ function LoginPage() {
     const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
     const [isConfirmingPasswordReset, setIsConfirmingPasswordReset] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [loginVisualSlideIndex, setLoginVisualSlideIndex] = useState(0);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
     const isPasswordResetEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
     const hasSignupVerificationCode = signupEmailVerificationToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
@@ -97,7 +97,24 @@ function LoginPage() {
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
+    const currentLoginVisualPage = loginVisualSlideIndex + 1;
+    const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
     const title = isSignupPage ? '회원가입' : isPasswordResetMode ? '비밀번호 찾기' : '로그인';
+    const showPreviousLoginVisualSlide = () => {
+        setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
+    };
+    const showNextLoginVisualSlide = () => {
+        setLoginVisualSlideIndex((current) => (current + 1) % totalLoginVisualPages);
+    };
+
+    useEffect(() => {
+        const timer = window.setInterval(() => {
+            setLoginVisualSlideIndex((current) => (current + 1) % LOGIN_VISUAL_SLIDES.length);
+        }, 4000);
+
+        return () => window.clearInterval(timer);
+    }, []);
+
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
         let nextVerificationError: string | null = null;
@@ -174,6 +191,21 @@ function LoginPage() {
 
         return Object.keys(nextErrors).length === 0;
     };
+    const clearSignupErrors = (...fields: Array<keyof TSignupErrors>) => {
+        setSignupErrors((errors) => {
+            if (fields.every((field) => !errors[field])) {
+                return errors;
+            }
+
+            const nextErrors = {...errors};
+
+            fields.forEach((field) => {
+                delete nextErrors[field];
+            });
+
+            return nextErrors;
+        });
+    };
     const handleSignupEmailChange = (value: string) => {
         setSignupEmail(value);
         setSignupEmailVerificationToken(null);
@@ -182,11 +214,40 @@ function LoginPage() {
         setIsSignupEmailVerified(false);
         setSignupVerificationMessage(null);
         setSignupVerificationError(null);
+
+        if (EMAIL_PATTERN.test(value.trim())) {
+            clearSignupErrors('email');
+        }
     };
     const handleSignupNameChange = (value: string) => {
         setSignupName(value);
+
         if (value.trim()) {
-            setSignupErrors((errors) => ({...errors, name: undefined}));
+            clearSignupErrors('name');
+        }
+    };
+    const handleSignupPasswordChange = (value: string) => {
+        const fieldsToClear: Array<keyof TSignupErrors> = [];
+
+        setSignupPassword(value);
+
+        if (value.length >= PASSWORD_MIN_LENGTH) {
+            fieldsToClear.push('password');
+        }
+
+        if (signupPasswordConfirm && value === signupPasswordConfirm) {
+            fieldsToClear.push('passwordConfirm');
+        }
+
+        if (fieldsToClear.length > 0) {
+            clearSignupErrors(...fieldsToClear);
+        }
+    };
+    const handleSignupPasswordConfirmChange = (value: string) => {
+        setSignupPasswordConfirm(value);
+
+        if (value && signupPassword === value) {
+            clearSignupErrors('passwordConfirm');
         }
     };
     const handleSignupVerificationCodeChange = (value: string) => {
@@ -440,35 +501,38 @@ function LoginPage() {
     };
     return (
         <div className="flex min-h-screen w-screen bg-white">
-            <div className="hidden h-screen w-[calc(100vh/1080*1140)] min-w-0 shrink xl:block">
-                <Carousel
-                    autoPlay
-                    infiniteLoop
-                    dynamicHeight
-                    stopOnHover
-                    showArrows
-                    interval={3000}
-                    showIndicators={false}
-                    showThumbs={false}
-                    statusFormatter={(current, total) => `${current} / ${total}`}
-                    renderArrowPrev={(click) => (
-                        <BackCircle
-                            className="absolute top-[50%] left-20 z-10 h-13 w-13 translate-y-[-50%] cursor-pointer"
-                            onClick={click}
-                        />
-                    )}
-                    renderArrowNext={(click) => (
-                        <NextCircle
-                            className="absolute top-[50%] right-20 z-10 h-13 w-13 translate-y-[-50%] cursor-pointer"
-                            onClick={click}
-                        />
-                    )}
+            <aside className="login-visual-panel" aria-label="로그인 이미지 슬라이드">
+                {LOGIN_VISUAL_SLIDES.map((src, index) => (
+                    <img
+                        key={src}
+                        src={src}
+                        alt=""
+                        aria-hidden="true"
+                        className={cn('login-visual-slide', index === loginVisualSlideIndex && 'login-visual-slide-active')}
+                    />
+                ))}
+                <button
+                    type="button"
+                    className="login-visual-arrow login-visual-arrow-prev"
+                    onClick={showPreviousLoginVisualSlide}
+                    aria-label="이전 이미지"
+                    title="이전 이미지"
                 >
-                    <div className='h-screen w-full min-w-px bg-[url("/img/login_1.webp")] bg-cover bg-center'></div>
-                    <div className='h-screen w-full min-w-px bg-[url("/img/login_2.webp")] bg-cover bg-center'></div>
-                    <div className='h-screen w-full min-w-px bg-[url("/img/login_3.webp")] bg-cover bg-center'></div>
-                </Carousel>
-            </div>
+                    <ChevronLeft className="h-6 w-6" aria-hidden="true" />
+                </button>
+                <button
+                    type="button"
+                    className="login-visual-arrow login-visual-arrow-next"
+                    onClick={showNextLoginVisualSlide}
+                    aria-label="다음 이미지"
+                    title="다음 이미지"
+                >
+                    <ChevronRight className="h-6 w-6" aria-hidden="true" />
+                </button>
+                <div className="login-visual-page" aria-live="polite">
+                    {currentLoginVisualPage}/{totalLoginVisualPages}
+                </div>
+            </aside>
 
             <div className="z-10 flex min-h-screen min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 py-10 md:px-16 xl:px-26.25">
                 <button type="button" className="flex cursor-pointer items-center" onClick={() => navigate(ROUTE.ROOT)}>
@@ -779,7 +843,7 @@ function LoginPage() {
                                     className={getInputClassName(Boolean(signupErrors.password))}
                                     placeholder="비밀번호를 입력해 주세요"
                                     autoComplete="new-password"
-                                    onChange={(event) => setSignupPassword(event.target.value)}
+                                    onChange={(event) => handleSignupPasswordChange(event.target.value)}
                                     aria-invalid={Boolean(signupErrors.password)}
                                     aria-describedby={signupErrors.password ? 'signup-password-error' : undefined}
                                 />
@@ -797,7 +861,7 @@ function LoginPage() {
                                     className={getInputClassName(Boolean(signupErrors.passwordConfirm))}
                                     placeholder="비밀번호를 다시 입력해 주세요"
                                     autoComplete="new-password"
-                                    onChange={(event) => setSignupPasswordConfirm(event.target.value)}
+                                    onChange={(event) => handleSignupPasswordConfirmChange(event.target.value)}
                                     aria-invalid={Boolean(signupErrors.passwordConfirm)}
                                     aria-describedby={signupErrors.passwordConfirm ? 'signup-password-confirm-error' : undefined}
                                 />

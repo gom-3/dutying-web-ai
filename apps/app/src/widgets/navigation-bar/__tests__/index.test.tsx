@@ -31,15 +31,15 @@ const translations = {
     'page.navigationBar.foldAria': '사이드바 접기',
     'page.navigationBar.home': '근무표',
     'page.navigationBar.sections.operations': '근무 운영',
-    'page.navigationBar.sections.settings': '근무 설정',
+    'page.navigationBar.sections.settings': '병동 설정',
     'page.navigationBar.items.make': '근무표',
     'page.navigationBar.items.request': '신청 근무',
     'page.navigationBar.items.board': '게시판',
-    'page.navigationBar.items.member': '근무자',
+    'page.navigationBar.items.member': '근무자 관리',
     'page.navigationBar.items.wardSettings': '근무 설정',
     'page.navigationBar.items.wardAdmins': '병동 관리자',
     'page.navigationBar.items.wardInfoSettings': '병동 설정',
-    'page.navigationBar.items.account': '계정',
+    'page.navigationBar.items.account': '마이페이지',
 } as const;
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
@@ -185,21 +185,21 @@ describe('NavigationBar', () => {
         expect(screen.queryByRole('button', {name: '듀팅 병동코드 복사하기'})).not.toBeInTheDocument();
     });
 
-    it('계정 메뉴를 내비게이션 하단에 고정하고 하단 프로필 영역은 렌더링하지 않는다', () => {
+    it('마이페이지 메뉴를 내비게이션 하단에 고정하고 하단 프로필 영역은 렌더링하지 않는다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
             </MemoryRouter>,
         );
 
-        const accountButton = screen.getByRole('button', {name: '계정'});
+        const accountButton = screen.getByRole('button', {name: '마이페이지'});
 
         expect(accountButton).toBeInTheDocument();
         expect(accountButton.parentElement?.parentElement).toHaveClass('mt-auto');
         expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
-    it('계정 메뉴를 클릭하면 프로필 페이지로 이동한다', async () => {
+    it('마이페이지 메뉴를 클릭하면 프로필 페이지로 이동한다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <Routes>
@@ -227,7 +227,7 @@ describe('NavigationBar', () => {
 
         expect(screen.getByText('make page')).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('button', {name: '계정'}));
+        await userEvent.click(screen.getByRole('button', {name: '마이페이지'}));
 
         expect(await screen.findByText('profile page')).toBeInTheDocument();
     });

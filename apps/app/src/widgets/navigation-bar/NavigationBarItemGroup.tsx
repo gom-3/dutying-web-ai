@@ -1,19 +1,18 @@
 import {cn} from '@dutying/utils/style';
-import {CircleUserRound, Hospital, MessageSquareText, SlidersHorizontal, UsersRound} from 'lucide-react';
-import {type ComponentType, type SVGProps, useState} from 'react';
+import {CircleUserRound} from 'lucide-react';
+import {useState} from 'react';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
 import ROUTE, {type TRoute} from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
-import NavigationBarItem from './NavigationBarItem';
+import NavigationBarItem, {type TNavigationBarItemIcon} from './NavigationBarItem';
 
 type TNavItem = {
     path?: TRoute;
     activePaths?: TRoute[];
-    icon: ComponentType<SVGProps<SVGSVGElement>>;
-    selectedIcon?: ComponentType<SVGProps<SVGSVGElement>>;
+    icon: TNavigationBarItemIcon;
     textKey: TI18nKey;
     disabled?: boolean;
 };
@@ -23,18 +22,22 @@ type TNavSection = {
     items: TNavItem[];
 };
 
-const ScheduleIconOff = ({className}: SVGProps<SVGSVGElement>) => (
-    <img src="/img/schedule-icon-off.png" alt="" aria-hidden="true" className={cn('!size-[23px] object-contain', className)} />
-);
-const ScheduleIconOn = ({className}: SVGProps<SVGSVGElement>) => (
-    <img src="/img/schedule-icon-on.png" alt="" aria-hidden="true" className={cn('!size-[23px] object-contain', className)} />
-);
-const RequestShiftIconOff = ({className}: SVGProps<SVGSVGElement>) => (
-    <img src="/img/request-icon-off.png" alt="" aria-hidden="true" className={cn('!size-[23px] object-contain', className)} />
-);
-const RequestShiftIconOn = ({className}: SVGProps<SVGSVGElement>) => (
-    <img src="/img/request-icon-on.png" alt="" aria-hidden="true" className={cn('!size-[23px] object-contain', className)} />
-);
+const navigationImageIcon = (name: string): TNavigationBarItemIcon => ({
+    kind: 'image',
+    defaultSrc: `/img/navigation/${name}-default.png`,
+    hoverSrc: `/img/navigation/${name}-hover.png`,
+    activeSrc: `/img/navigation/${name}-active.png`,
+});
+
+const navigationIcons = {
+    make: navigationImageIcon('make'),
+    request: navigationImageIcon('request'),
+    board: navigationImageIcon('board'),
+    member: navigationImageIcon('member'),
+    wardSettings: navigationImageIcon('ward-settings'),
+    wardInfo: navigationImageIcon('ward-info'),
+} as const;
+
 const sections: TNavSection[] = [
     {
         labelKey: 'page.navigationBar.sections.operations',
@@ -42,19 +45,17 @@ const sections: TNavSection[] = [
             {
                 path: ROUTE.MAKE,
                 activePaths: [ROUTE.MAKE, ROUTE.DUTY],
-                icon: ScheduleIconOff,
-                selectedIcon: ScheduleIconOn,
+                icon: navigationIcons.make,
                 textKey: 'page.navigationBar.items.make',
             },
             {
                 path: ROUTE.REQUEST,
-                icon: RequestShiftIconOff,
-                selectedIcon: RequestShiftIconOn,
+                icon: navigationIcons.request,
                 textKey: 'page.navigationBar.items.request',
             },
             {
                 path: ROUTE.BOARD,
-                icon: MessageSquareText,
+                icon: navigationIcons.board,
                 textKey: 'page.navigationBar.items.board',
             },
         ],
@@ -64,18 +65,18 @@ const sections: TNavSection[] = [
         items: [
             {
                 path: ROUTE.MEMBER,
-                icon: UsersRound,
+                icon: navigationIcons.member,
                 textKey: 'page.navigationBar.items.member',
             },
             {
                 path: ROUTE.WARD_SETTINGS,
-                icon: SlidersHorizontal,
+                icon: navigationIcons.wardSettings,
                 textKey: 'page.navigationBar.items.wardSettings',
             },
             {
                 path: ROUTE.WARD_INFO_SETTINGS,
                 activePaths: [ROUTE.WARD_INFO_SETTINGS, ROUTE.WARD_ADMINS],
-                icon: Hospital,
+                icon: navigationIcons.wardInfo,
                 textKey: 'page.navigationBar.items.wardInfoSettings',
             },
         ],
@@ -83,7 +84,10 @@ const sections: TNavSection[] = [
 ];
 const accountItem: TNavItem = {
     path: ROUTE.PROFILE,
-    icon: CircleUserRound,
+    icon: {
+        kind: 'component',
+        Icon: CircleUserRound,
+    },
     textKey: 'page.navigationBar.items.account',
 };
 
@@ -182,8 +186,7 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
                                     key={item.path ?? item.textKey}
                                     path={item.path}
                                     activePaths={item.activePaths}
-                                    Icon={item.icon}
-                                    SelectedIcon={item.selectedIcon}
+                                    icon={item.icon}
                                     text={t(item.textKey)}
                                     collapsed={collapsed}
                                     disabled={item.disabled}
@@ -202,8 +205,7 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
                     <NavigationBarItem
                         path={accountItem.path}
                         activePaths={accountItem.activePaths}
-                        Icon={accountItem.icon}
-                        SelectedIcon={accountItem.selectedIcon}
+                        icon={accountItem.icon}
                         text={t(accountItem.textKey)}
                         collapsed={collapsed}
                         disabled={accountItem.disabled}

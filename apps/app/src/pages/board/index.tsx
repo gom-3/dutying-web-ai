@@ -2690,8 +2690,6 @@ function BoardPage() {
                                 tone="empty"
                                 title="게시글을 선택해 주세요"
                                 className="py-0"
-                                titlePlacement="aboveIcon"
-                                titleClassName="mb-3"
                                 visual={
                                     <img
                                         src="/img/board-empty-nurse.png"

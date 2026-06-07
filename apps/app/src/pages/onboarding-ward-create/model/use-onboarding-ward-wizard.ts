@@ -15,6 +15,7 @@ import {
     addNurseDraft,
     addShiftTypeDraft,
     addTeamDraft,
+    applyScheduleInputDraft,
     canComplete,
     canGoNext,
     canGoPrev,
@@ -23,15 +24,18 @@ import {
     deleteShiftTypeDraft,
     deleteTeamDraft,
     getCompletionValidationIssues,
+    getScheduleMonthKey,
     getStepValidation,
     goNextStep as goNextStepDraft,
     goPreviousStep as goPreviousStepDraft,
+    hasScheduleInputDraft,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
     prepareManualEntryDraft,
     saveSkillLevelConfig,
     type TOnboardingNurseDraft,
     type TOnboardingConstraintDraft,
+    type TOnboardingTeamScheduleDraft,
     type TOnboardingWardDraft,
     type TSkillLevelConfig,
     updateConstraintCandidateDraft,
@@ -62,6 +66,32 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
     value === 1 || value === 2 || value === 3 || value === 4;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name' || value === 'skill';
+const isScheduleDraft = (value: unknown): value is TOnboardingTeamScheduleDraft =>
+    isRecord(value) && typeof value.year === 'number' && typeof value.month === 'number' && Array.isArray(value.rows);
+const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['scheduleInputs'] => {
+    if (!isRecord(value)) {
+        return {};
+    }
+
+    return Object.fromEntries(
+        Object.entries(value).map(([teamId, teamValue]) => {
+            if (isScheduleDraft(teamValue)) {
+                return [teamId, {[getScheduleMonthKey(teamValue.year, teamValue.month)]: teamValue}];
+            }
+
+            if (!isRecord(teamValue)) {
+                return [teamId, undefined];
+            }
+
+            return [
+                teamId,
+                Object.fromEntries(
+                    Object.entries(teamValue).filter(([, scheduleValue]) => isScheduleDraft(scheduleValue)),
+                ) as TOnboardingWardDraft['scheduleInputs'][string],
+            ];
+        }),
+    );
+};
 const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
@@ -82,9 +112,13 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     }
 
     const draftWardId = typeof payload.draftWardId === 'number' ? payload.draftWardId : null;
+    const restoredDraft = draft as TOnboardingWardDraft;
 
     return {
-        draft: draft as TOnboardingWardDraft,
+        draft: {
+            ...restoredDraft,
+            scheduleInputs: normalizeScheduleInputs(restoredDraft.scheduleInputs),
+        },
         draftWardId,
         isSkillLevelEnabled: payload.isSkillLevelEnabled === true,
         selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
@@ -562,6 +596,10 @@ function useOnboardingWardWizard() {
         markDraftTouched();
         setDraft((prev) => updateTeamNameDraft(prev, teamId, teamName));
     };
+    const updateScheduleInput = (teamId: string, schedule: TOnboardingTeamScheduleDraft) => {
+        markDraftTouched();
+        setDraft((prev) => applyScheduleInputDraft(prev, teamId, schedule));
+    };
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
         markDraftTouched();
         setDraft((prev) => updateConstraintCandidateDraft(prev, constraintId, {selected}));
@@ -751,7 +789,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        if (draft.currentStep === 2 && !draft.uploadedFileName) {
+        if (draft.currentStep === 2 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
             markDraftTouched();
             setDraft((prev) => goNextStepDraft(prepareManualEntryDraft(prev)));
 
@@ -783,6 +821,7 @@ function useOnboardingWardWizard() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        updateScheduleInput,
         toggleConstraintCandidate,
         updateConstraintCandidateSeverity,
         updateConstraintCandidateCount,
@@ -798,6 +837,7 @@ function useOnboardingWardWizard() {
         disableSkillConfig,
         complete,
         canAddTeam: draft.teams.length < MAX_ONBOARDING_TEAMS,
+        hasScheduleInput: hasScheduleInputDraft(draft),
         submissionStatus,
         currentStepValidation,
         completionValidationIssues,

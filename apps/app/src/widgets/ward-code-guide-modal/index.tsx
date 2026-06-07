@@ -56,7 +56,7 @@ const wardCodeShareBenefits = [
         icon: WardCodeAppApplyImage,
         iconClassName: 'size-10',
         title: '간호사가 앱에서 바로 신청해요',
-        description: '원티드와 휴일 신청을 듀팅 앱에서 보내면 수간호사는 한 화면에서 확인해요.',
+        description: '간호사가 듀팅 앱에서 휴무 신청과 신청근무 요청을 보내면 수간호사는 한 화면에서 확인해요.',
     },
     {
         icon: WardCodeScheduleShareImage,
