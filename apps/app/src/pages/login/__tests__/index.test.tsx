@@ -222,6 +222,56 @@ describe('LoginPage', () => {
         expect(screen.getByRole('button', {name: '계정 만들기'})).toBeEnabled();
     });
 
+    it('shows required password reset field errors only after submitting the reset form', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
+
+        expect(screen.queryByText('올바른 이메일 주소를 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('비밀번호는 8자 이상 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('비밀번호를 다시 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '비밀번호 재설정'})).toBeEnabled();
+
+        await user.click(screen.getByRole('button', {name: '비밀번호 재설정'}));
+
+        expect(screen.getByLabelText('이메일')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByLabelText('새 비밀번호')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByLabelText('새 비밀번호 확인')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('올바른 이메일 주소를 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('비밀번호는 8자 이상 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('비밀번호를 다시 입력해 주세요.')).toBeInTheDocument();
+        expect(mockPasswordReset).not.toHaveBeenCalled();
+    });
+
+    it('shows the missing password reset verification state before confirmation', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.type(screen.getByLabelText('새 비밀번호'), 'new-password123');
+        await user.type(screen.getByLabelText('새 비밀번호 확인'), 'new-password123');
+        await user.click(screen.getByRole('button', {name: '비밀번호 재설정'}));
+
+        expect(screen.getByText('이메일 인증을 완료해 주세요.')).toBeInTheDocument();
+        expect(mockPasswordReset).not.toHaveBeenCalled();
+    });
+
     it('resets a forgotten password with an emailed six digit token', async () => {
         const user = userEvent.setup();
 

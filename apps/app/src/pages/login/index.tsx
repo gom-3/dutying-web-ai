@@ -93,12 +93,7 @@ function LoginPage() {
     const isSignupBusy = isSubmitting || isSendingVerification || isConfirmingSignupVerification;
     const isSignupDisabled = isSignupBusy;
     const isPasswordResetBusy = isSendingPasswordReset || isConfirmingPasswordReset || isResettingPassword;
-    const isPasswordResetDisabled =
-        !isPasswordResetEmailValid ||
-        !isPasswordResetTokenVerified ||
-        !passwordResetNewPassword ||
-        !passwordResetNewPasswordConfirm ||
-        isPasswordResetBusy;
+    const isPasswordResetDisabled = isPasswordResetBusy;
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
@@ -146,26 +141,36 @@ function LoginPage() {
     };
     const validatePasswordReset = () => {
         const nextErrors: TPasswordResetErrors = {};
+        const isEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
 
-        if (!EMAIL_PATTERN.test(passwordResetEmail.trim())) {
+        if (!isEmailValid) {
             nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
         }
 
-        if (!hasPasswordResetCode) {
-            nextErrors.resetToken = '6자리 인증번호를 입력해 주세요.';
-        } else if (!isPasswordResetTokenVerified) {
-            nextErrors.resetToken = '인증번호 확인을 완료해 주세요.';
+        if (isEmailValid && !isPasswordResetTokenVerified) {
+            if (!hasRequestedPasswordReset) {
+                nextErrors.resetToken = '이메일 인증을 완료해 주세요.';
+            } else if (!hasPasswordResetCode) {
+                nextErrors.resetToken = '6자리 인증번호를 입력해 주세요.';
+            } else {
+                nextErrors.resetToken = '인증번호 확인을 완료해 주세요.';
+            }
         }
 
         if (passwordResetNewPassword.length < PASSWORD_MIN_LENGTH) {
             nextErrors.newPassword = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해 주세요.`;
         }
 
-        if (passwordResetNewPassword !== passwordResetNewPasswordConfirm) {
+        if (!passwordResetNewPasswordConfirm) {
+            nextErrors.newPasswordConfirm = '비밀번호를 다시 입력해 주세요.';
+        } else if (passwordResetNewPassword !== passwordResetNewPasswordConfirm) {
             nextErrors.newPasswordConfirm = '비밀번호가 서로 달라요.';
         }
 
         setPasswordResetErrors(nextErrors);
+        if (nextErrors.resetToken) {
+            setPasswordResetMessage(null);
+        }
 
         return Object.keys(nextErrors).length === 0;
     };
@@ -200,6 +205,7 @@ function LoginPage() {
         setIsPasswordResetTokenVerified(false);
         setPasswordResetMessage(null);
         setPasswordResetError(null);
+        setPasswordResetErrors((errors) => ({...errors, email: undefined, resetToken: undefined}));
     };
     const handlePasswordResetCodeChange = (value: string) => {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
@@ -208,6 +214,15 @@ function LoginPage() {
         setIsPasswordResetTokenVerified(false);
         setPasswordResetMessage(null);
         setPasswordResetError(null);
+        setPasswordResetErrors((errors) => ({...errors, resetToken: undefined}));
+    };
+    const handlePasswordResetNewPasswordChange = (value: string) => {
+        setPasswordResetNewPassword(value);
+        setPasswordResetErrors((errors) => ({...errors, newPassword: undefined}));
+    };
+    const handlePasswordResetNewPasswordConfirmChange = (value: string) => {
+        setPasswordResetNewPasswordConfirm(value);
+        setPasswordResetErrors((errors) => ({...errors, newPasswordConfirm: undefined}));
     };
     const handleOpenPasswordReset = () => {
         setIsPasswordResetMode(true);
@@ -331,6 +346,7 @@ function LoginPage() {
             });
             setIsPasswordResetTokenVerified(true);
             setPasswordResetMessage('인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.');
+            setPasswordResetErrors((errors) => ({...errors, resetToken: undefined}));
         } catch {
             setIsPasswordResetTokenVerified(false);
             setPasswordResetError('인증번호가 올바르지 않아요. 다시 확인해 주세요.');
@@ -608,6 +624,9 @@ function LoginPage() {
                                     </div>
                                 ) : null}
                                 {passwordResetMessage ? <p className="mt-1 text-xs text-main-1">{passwordResetMessage}</p> : null}
+                                {!hasRequestedPasswordReset ? (
+                                    <FieldError id="password-reset-code-error" message={passwordResetErrors.resetToken} />
+                                ) : null}
                             </div>
 
                             <div>
@@ -621,7 +640,7 @@ function LoginPage() {
                                     className={getInputClassName(Boolean(passwordResetErrors.newPassword))}
                                     placeholder="새 비밀번호를 입력해 주세요"
                                     autoComplete="new-password"
-                                    onChange={(event) => setPasswordResetNewPassword(event.target.value)}
+                                    onChange={(event) => handlePasswordResetNewPasswordChange(event.target.value)}
                                     aria-invalid={Boolean(passwordResetErrors.newPassword)}
                                     aria-describedby={passwordResetErrors.newPassword ? 'password-reset-new-password-error' : undefined}
                                 />
@@ -639,7 +658,7 @@ function LoginPage() {
                                     className={getInputClassName(Boolean(passwordResetErrors.newPasswordConfirm))}
                                     placeholder="새 비밀번호를 다시 입력해 주세요"
                                     autoComplete="new-password"
-                                    onChange={(event) => setPasswordResetNewPasswordConfirm(event.target.value)}
+                                    onChange={(event) => handlePasswordResetNewPasswordConfirmChange(event.target.value)}
                                     aria-invalid={Boolean(passwordResetErrors.newPasswordConfirm)}
                                     aria-describedby={passwordResetErrors.newPasswordConfirm ? 'password-reset-new-password-confirm-error' : undefined}
                                 />
