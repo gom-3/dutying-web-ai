@@ -104,7 +104,7 @@ describe('LoginPage', () => {
         await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
         await user.click(screen.getByRole('button', {name: '인증'}));
         expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();
-        await user.type(screen.getByLabelText('이메일 인증번호'), 'verify-token');
+        await user.type(screen.getByLabelText('이메일 인증번호'), 'abc1234567');
         await user.type(screen.getByLabelText('비밀번호'), 'password1234');
         await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
         await user.click(screen.getByRole('button', {name: '계정 만들기'}));
@@ -113,7 +113,7 @@ describe('LoginPage', () => {
         expect(mockPasswordSignup).toHaveBeenCalledWith({
             name: '김관리',
             email: 'admin@example.com',
-            emailVerificationToken: 'verify-token',
+            emailVerificationToken: '123456',
             password: 'password1234',
         });
         expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.REGISTER);

@@ -18,6 +18,7 @@ type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordCon
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const PASSWORD_MIN_LENGTH = 8;
+const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
@@ -67,7 +68,7 @@ function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
-    const hasSignupVerificationCode = Boolean(signupEmailVerificationToken);
+    const hasSignupVerificationCode = signupEmailVerificationToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
     const isSignupBusy = isSubmitting || isSendingVerification;
     const isSignupDisabled = !signupName.trim() || !hasSignupVerificationCode || !signupPassword || !signupPasswordConfirm || isSignupBusy;
@@ -107,8 +108,9 @@ function LoginPage() {
         setSignupVerificationError(null);
     };
     const handleSignupVerificationCodeChange = (value: string) => {
-        setSignupVerificationCode(value);
-        setSignupEmailVerificationToken(value.trim() ? value.trim() : null);
+        const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
+        setSignupVerificationCode(normalizedCode);
+        setSignupEmailVerificationToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
     };
     const handleSendSignupEmailVerification = async () => {
         setHasRequestedSignupVerification(true);
@@ -349,8 +351,12 @@ function LoginPage() {
                                             value={signupVerificationCode}
                                             type="text"
                                             className={getInputClassName(false)}
-                                            placeholder="인증번호를 입력해 주세요"
+                                            placeholder="6자리 인증번호"
                                             aria-label="이메일 인증번호"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
+                                            pattern="[0-9]{6}"
                                             onChange={(event) => handleSignupVerificationCodeChange(event.target.value)}
                                         />
                                     </div>

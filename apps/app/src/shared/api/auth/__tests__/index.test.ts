@@ -28,7 +28,7 @@ describe('AuthAPI', () => {
     });
 
     it('uses the ward admin password signup endpoint', async () => {
-        const payload = {name: '김관리', email: 'admin@example.com', password: 'password123', emailVerificationToken: 'verify-token'};
+        const payload = {name: '김관리', email: 'admin@example.com', password: 'password123', emailVerificationToken: '123456'};
         const response = {accessToken: 'admin-token'};
 
         mockPost.mockResolvedValue({data: response});
@@ -40,7 +40,7 @@ describe('AuthAPI', () => {
 
     it('uses the ward admin email verification send endpoint', async () => {
         const payload = {email: 'admin@example.com'};
-        const response = {email: 'admin@example.com', debugVerificationToken: 'verify-token'};
+        const response = {email: 'admin@example.com', debugVerificationToken: '123456'};
 
         mockPost.mockResolvedValue({data: response});
 
