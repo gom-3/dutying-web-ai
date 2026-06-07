@@ -44,11 +44,80 @@ import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission
 import type {TSortMode} from './types';
 
 const MAX_STEP = 4;
+const ONBOARDING_WARD_DRAFT_STORAGE_KEY = 'dutying:onboardingWardCreateDraft:v1';
 
 type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
+type TPersistedOnboardingWardDraft = {
+    draft: TOnboardingWardDraft;
+    draftWardId: number | null;
+    isSkillLevelEnabled: boolean;
+    selectedTeamId: string;
+    sortMode: TSortMode;
+};
 
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
+    value === 1 || value === 2 || value === 3 || value === 4;
+const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name' || value === 'skill';
+const readPersistedOnboardingWardDraft = (): TPersistedOnboardingWardDraft | null => {
+    try {
+        const rawValue = window.localStorage.getItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
+
+        if (!rawValue) {
+            return null;
+        }
+
+        const parsed = JSON.parse(rawValue);
+
+        if (!isRecord(parsed) || !isRecord(parsed.draft)) {
+            return null;
+        }
+
+        const draft = parsed.draft;
+
+        if (
+            !isOnboardingStep(draft.currentStep) ||
+            typeof draft.wardName !== 'string' ||
+            typeof draft.hospitalName !== 'string' ||
+            !Array.isArray(draft.shiftTypes) ||
+            !Array.isArray(draft.teams) ||
+            !Array.isArray(draft.nurses) ||
+            !Array.isArray(draft.constraintCandidates)
+        ) {
+            return null;
+        }
+
+        const draftWardId = typeof parsed.draftWardId === 'number' ? parsed.draftWardId : null;
+
+        return {
+            draft: draft as TOnboardingWardDraft,
+            draftWardId,
+            isSkillLevelEnabled: parsed.isSkillLevelEnabled === true,
+            selectedTeamId: typeof parsed.selectedTeamId === 'string' ? parsed.selectedTeamId : '',
+            sortMode: isSortMode(parsed.sortMode) ? parsed.sortMode : 'manual',
+        };
+    } catch {
+        window.localStorage.removeItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
+
+        return null;
+    }
+};
+const persistOnboardingWardDraft = (value: TPersistedOnboardingWardDraft) => {
+    try {
+        window.localStorage.setItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY, JSON.stringify(value));
+    } catch {
+        // Best-effort browser persistence only.
+    }
+};
+const clearPersistedOnboardingWardDraft = () => {
+    try {
+        window.localStorage.removeItem(ONBOARDING_WARD_DRAFT_STORAGE_KEY);
+    } catch {
+        // Best-effort browser persistence only.
+    }
+};
 const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
     const next = [...items];
     const [moved] = next.splice(sourceIndex, 1);
@@ -164,17 +233,20 @@ function useOnboardingWardWizard() {
     const {
         actions: {createWard, createOnboardingWardDraft, completeOnboardingWardDraft},
     } = useRegister();
-    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
-    const [selectedTeamId, setSelectedTeamId] = useState('');
-    const [sortMode, setSortModeState] = useState<TSortMode>('manual');
+    const [persistedDraftState] = useState(() => readPersistedOnboardingWardDraft());
+    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => persistedDraftState?.draft ?? createInitialDraft());
+    const [selectedTeamId, setSelectedTeamId] = useState(() => persistedDraftState?.selectedTeamId ?? '');
+    const [sortMode, setSortModeState] = useState<TSortMode>(() => persistedDraftState?.sortMode ?? 'manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
-    const [isSkillLevelEnabled, setIsSkillLevelEnabled] = useState(false);
+    const [isSkillLevelEnabled, setIsSkillLevelEnabled] = useState(() => persistedDraftState?.isSkillLevelEnabled ?? false);
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
-    const [draftWardId, setDraftWardId] = useState<number | null>(null);
-    const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
+    const [draftWardId, setDraftWardId] = useState<number | null>(() => persistedDraftState?.draftWardId ?? null);
+    const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>(() =>
+        persistedDraftState?.draftWardId ? 'created' : 'idle',
+    );
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
     const onboardingWardCreateExecutor = useMemo(
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
@@ -192,6 +264,22 @@ function useOnboardingWardWizard() {
             setSortModeState('manual');
         }
     }, [isSkillLevelEnabled, sortMode]);
+
+    useEffect(() => {
+        if (submissionStatus === 'success') {
+            clearPersistedOnboardingWardDraft();
+
+            return;
+        }
+
+        persistOnboardingWardDraft({
+            draft,
+            draftWardId,
+            isSkillLevelEnabled,
+            selectedTeamId,
+            sortMode,
+        });
+    }, [draft, draftWardId, isSkillLevelEnabled, selectedTeamId, sortMode, submissionStatus]);
 
     const selectedTeamExists = draft.teams.some((team) => team.id === selectedTeamId);
     const activeTeamId = selectedTeamExists ? selectedTeamId : (draft.teams[0]?.id ?? '');

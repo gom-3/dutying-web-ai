@@ -51,6 +51,10 @@ const uploadFile = async (
     });
 };
 
+beforeEach(() => {
+    window.localStorage.clear();
+});
+
 describe('useOnboardingWardWizard upload flow', () => {
     beforeEach(() => {
         mockCreateWard.mockReset();
@@ -76,6 +80,51 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockCreateOnboardingWardDraft).toHaveBeenCalledWith({hospitalName: '듀팅병원', name: '중환자실'});
         expect(result.current.draft.currentStep).toBe(2);
         expect(result.current.draftCreationStatus).toBe('created');
+    });
+
+    it('restores typed ward identity after remounting the wizard', () => {
+        const {result, unmount} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        unmount();
+
+        const {result: restored} = renderHook(() => useOnboardingWardWizard());
+
+        expect(restored.current.draft.hospitalName).toBe('듀팅병원');
+        expect(restored.current.draft.wardName).toBe('중환자실');
+        expect(restored.current.draft.currentStep).toBe(1);
+    });
+
+    it('restores the created draft ward id after remounting the wizard', async () => {
+        const {result, unmount} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        unmount();
+
+        const {result: restored} = renderHook(() => useOnboardingWardWizard());
+
+        expect(restored.current.draft.currentStep).toBe(2);
+        expect(restored.current.draftCreationStatus).toBe('created');
+
+        act(() => {
+            restored.current.goPreviousStep();
+        });
+
+        await act(async () => {
+            await restored.current.goNextStep();
+        });
+
+        expect(mockCreateOnboardingWardDraft).toHaveBeenCalledTimes(1);
     });
 
     it('stores parsed draft data and success feedback when the upload succeeds without warnings', async () => {
