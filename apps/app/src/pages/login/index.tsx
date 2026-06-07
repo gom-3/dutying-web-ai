@@ -91,10 +91,7 @@ function LoginPage() {
     const hasPasswordResetCode = passwordResetToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
     const isSignupBusy = isSubmitting || isSendingVerification || isConfirmingSignupVerification;
-    const isSignupDisabled = !signupName.trim() || !isSignupEmailVerified || !signupPassword || !signupPasswordConfirm || isSignupBusy;
-    const isSignupBlockedByName =
-        !signupName.trim() && isSignupEmailVerified && Boolean(signupPassword) && Boolean(signupPasswordConfirm) && !isSignupBusy;
-    const signupNameErrorMessage = signupErrors.name ?? (isSignupBlockedByName ? '이름을 입력해 주세요.' : undefined);
+    const isSignupDisabled = isSignupBusy;
     const isPasswordResetBusy = isSendingPasswordReset || isConfirmingPasswordReset || isResettingPassword;
     const isPasswordResetDisabled =
         !isPasswordResetEmailValid ||
@@ -108,26 +105,44 @@ function LoginPage() {
     const title = isSignupPage ? '회원가입' : isPasswordResetMode ? '비밀번호 찾기' : '로그인';
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
+        let nextVerificationError: string | null = null;
+        const isEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
 
         if (!signupName.trim()) {
             nextErrors.name = '이름을 입력해 주세요.';
         }
 
-        if (!EMAIL_PATTERN.test(signupEmail.trim())) {
+        if (!isEmailValid) {
             nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+        }
+
+        if (isEmailValid && !isSignupEmailVerified) {
+            if (!hasRequestedSignupVerification) {
+                nextVerificationError = '이메일 인증을 완료해 주세요.';
+            } else if (!hasSignupVerificationCode) {
+                nextVerificationError = '6자리 인증번호를 입력해 주세요.';
+            } else {
+                nextVerificationError = '인증번호 확인을 완료해 주세요.';
+            }
         }
 
         if (signupPassword.length < PASSWORD_MIN_LENGTH) {
             nextErrors.password = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해 주세요.`;
         }
 
-        if (signupPassword !== signupPasswordConfirm) {
+        if (!signupPasswordConfirm) {
+            nextErrors.passwordConfirm = '비밀번호를 다시 입력해 주세요.';
+        } else if (signupPassword !== signupPasswordConfirm) {
             nextErrors.passwordConfirm = '비밀번호가 서로 달라요.';
         }
 
         setSignupErrors(nextErrors);
+        setSignupVerificationError(nextVerificationError);
+        if (nextVerificationError) {
+            setSignupVerificationMessage(null);
+        }
 
-        return Object.keys(nextErrors).length === 0;
+        return Object.keys(nextErrors).length === 0 && !nextVerificationError;
     };
     const validatePasswordReset = () => {
         const nextErrors: TPasswordResetErrors = {};
@@ -387,12 +402,6 @@ function LoginPage() {
         setSignupError(null);
 
         if (!validateSignup()) {
-            return;
-        }
-
-        if (!isSignupEmailVerified) {
-            setSignupVerificationError('이메일 인증번호 확인을 완료해 주세요.');
-
             return;
         }
 
@@ -673,14 +682,14 @@ function LoginPage() {
                                     id="signup-name"
                                     value={signupName}
                                     type="text"
-                                    className={getInputClassName(Boolean(signupNameErrorMessage))}
+                                    className={getInputClassName(Boolean(signupErrors.name))}
                                     placeholder="이름을 입력해 주세요"
                                     autoComplete="name"
                                     onChange={(event) => handleSignupNameChange(event.target.value)}
-                                    aria-invalid={Boolean(signupNameErrorMessage)}
-                                    aria-describedby={signupNameErrorMessage ? 'signup-name-error' : undefined}
+                                    aria-invalid={Boolean(signupErrors.name)}
+                                    aria-describedby={signupErrors.name ? 'signup-name-error' : undefined}
                                 />
-                                <FieldError id="signup-name-error" message={signupNameErrorMessage} />
+                                <FieldError id="signup-name-error" message={signupErrors.name} />
                             </div>
 
                             <div>
@@ -715,7 +724,7 @@ function LoginPage() {
                                             id="signup-verification-code"
                                             value={signupVerificationCode}
                                             type="text"
-                                            className={cn(getInputClassName(false), 'min-w-0')}
+                                            className={cn(getInputClassName(Boolean(signupVerificationError)), 'min-w-0')}
                                             placeholder="6자리 인증번호"
                                             aria-label="이메일 인증번호"
                                             inputMode="numeric"
@@ -723,6 +732,8 @@ function LoginPage() {
                                             maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
                                             pattern="[0-9]{6}"
                                             onChange={(event) => handleSignupVerificationCodeChange(event.target.value)}
+                                            aria-invalid={Boolean(signupVerificationError)}
+                                            aria-describedby={signupVerificationError ? 'signup-verification-error' : undefined}
                                         />
                                         <button
                                             type="button"
@@ -735,11 +746,7 @@ function LoginPage() {
                                     </div>
                                 ) : null}
                                 {signupVerificationMessage ? <p className="mt-1 text-xs text-main-1">{signupVerificationMessage}</p> : null}
-                                {signupVerificationError ? (
-                                    <p className="mt-1 text-xs text-red">
-                                        {signupVerificationError}
-                                    </p>
-                                ) : null}
+                                <FieldError id="signup-verification-error" message={signupVerificationError ?? undefined} />
                             </div>
 
                             <div>

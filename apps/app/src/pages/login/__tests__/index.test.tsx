@@ -140,7 +140,52 @@ describe('LoginPage', () => {
         expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.REGISTER);
     });
 
-    it('highlights the required name field when it is the only reason signup is disabled', async () => {
+    it('shows required signup field errors when creating an account with empty fields', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
+
+        expect(screen.getByLabelText('이름')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByLabelText('이메일')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByLabelText('비밀번호')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByLabelText('비밀번호 확인')).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('이름을 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('올바른 이메일 주소를 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('비밀번호는 8자 이상 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('비밀번호를 다시 입력해 주세요.')).toBeInTheDocument();
+        expect(mockPasswordSignup).not.toHaveBeenCalled();
+    });
+
+    it('shows the missing email verification state when creating an account before confirmation', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await user.type(screen.getByLabelText('이름'), '김관리');
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.type(screen.getByLabelText('비밀번호'), 'password1234');
+        await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
+
+        expect(screen.getByText('이메일 인증을 완료해 주세요.')).toBeInTheDocument();
+        expect(mockPasswordSignup).not.toHaveBeenCalled();
+    });
+
+    it('highlights the required name field when creating an account without a name', async () => {
         const user = userEvent.setup();
 
         mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com'});
@@ -155,7 +200,6 @@ describe('LoginPage', () => {
         );
 
         const nameInput = screen.getByLabelText('이름');
-        expect(screen.queryByText('이름을 입력해 주세요.')).not.toBeInTheDocument();
 
         await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
         await user.click(screen.getByRole('button', {name: '인증'}));
@@ -165,10 +209,11 @@ describe('LoginPage', () => {
         expect(await screen.findByText('이메일 인증이 완료됐어요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('비밀번호'), 'password1234');
         await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
 
         expect(nameInput).toHaveAttribute('aria-invalid', 'true');
         expect(screen.getByText('이름을 입력해 주세요.')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '계정 만들기'})).toBeDisabled();
+        expect(mockPasswordSignup).not.toHaveBeenCalled();
 
         await user.type(nameInput, '김관리');
 
