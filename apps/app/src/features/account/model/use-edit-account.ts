@@ -97,18 +97,16 @@ const useEditAccount = () => {
     const quitWard = async () => {
         if (!accountMe?.wardId) return;
 
-        if (isWardAdmin) {
-            toast.error('관리자 계정은 병동 관리자 설정에서 권한을 관리해 주세요.');
-
-            return;
-        }
-
         if (!confirm('병동을 나갈까요?')) return;
 
         try {
             setLoading(true);
-            await WardAPI.quitWard(accountMe.wardId);
-            await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
+            if (isWardAdmin) {
+                await AdminAPI.quitWard(accountMe.wardId);
+            } else {
+                await WardAPI.quitWard(accountMe.wardId);
+                await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
+            }
             await handleGetAccountMe();
             navigate(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
         } catch (e) {

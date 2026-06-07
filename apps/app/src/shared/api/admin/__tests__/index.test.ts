@@ -76,6 +76,14 @@ describe('AdminAPI', () => {
         expect(mockDelete).toHaveBeenCalledWith('/admin/accounts/me');
     });
 
+    it('quits an admin ward through the ward admin endpoint', async () => {
+        mockDelete.mockResolvedValue({data: undefined});
+
+        await expect(AdminAPI.quitWard(10)).resolves.toBeUndefined();
+
+        expect(mockDelete).toHaveBeenCalledWith('/admin/wards/10/quit');
+    });
+
     it('joins an admin ward through the ward admin code endpoint', async () => {
         const payload = {code: 'A7K29Q'};
         const response = {ward: {wardId: 10}};

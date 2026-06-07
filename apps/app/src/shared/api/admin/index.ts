@@ -16,6 +16,8 @@ class AdminAPI {
 
     deleteMe = async () => (await adminAxiosInstance.delete<void>('/admin/accounts/me')).data;
 
+    quitWard = async (wardId: number) => (await adminAxiosInstance.delete<void>(`/admin/wards/${wardId}/quit`)).data;
+
     createWorkspace = async (workspace: TCreateAdminWorkspaceDTO) =>
         (await axiosInstance.post<TCreateAdminWorkspaceResponse>('/accounts/me/admin-workspace', workspace)).data;
 

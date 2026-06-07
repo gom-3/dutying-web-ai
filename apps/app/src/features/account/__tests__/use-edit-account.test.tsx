@@ -5,15 +5,32 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
 import useEditAccount from '../model/use-edit-account';
 
-const {mockAdminDeleteMe, mockCaptureException, mockDeleteAccount, mockHandleLogout, mockSetLoading, mockToastError, mockUseAuth} =
-    vi.hoisted(() => ({
+const {
+    mockAdminDeleteMe,
+    mockAdminQuitWard,
+    mockCaptureException,
+    mockDeleteAccount,
+    mockEditAccountStatus,
+    mockHandleGetAccountMe,
+    mockHandleLogout,
+    mockNavigate,
+    mockSetLoading,
+    mockToastError,
+    mockUseAuth,
+    mockWardQuitWard,
+} = vi.hoisted(() => ({
         mockAdminDeleteMe: vi.fn(),
+        mockAdminQuitWard: vi.fn(),
         mockCaptureException: vi.fn(),
         mockDeleteAccount: vi.fn(),
+        mockEditAccountStatus: vi.fn(),
+        mockHandleGetAccountMe: vi.fn(),
         mockHandleLogout: vi.fn(),
+        mockNavigate: vi.fn(),
         mockSetLoading: vi.fn(),
         mockToastError: vi.fn(),
         mockUseAuth: vi.fn(),
+        mockWardQuitWard: vi.fn(),
     }));
 
 vi.mock('@sentry/react', () => ({
@@ -27,7 +44,7 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 vi.mock('react-router', () => ({
-    useNavigate: () => vi.fn(),
+    useNavigate: () => mockNavigate,
 }));
 
 vi.mock('@/features/auth', () => ({
@@ -52,17 +69,18 @@ vi.mock('@/shared/api', () => ({
     AccountAPI: {
         deleteAccount: mockDeleteAccount,
         editAccount: vi.fn(),
-        editAccountStatus: vi.fn(),
+        editAccountStatus: mockEditAccountStatus,
     },
     AdminAPI: {
         deleteMe: mockAdminDeleteMe,
+        quitWard: mockAdminQuitWard,
         updateMe: vi.fn(),
     },
     NurseAPI: {
         updateNurse: vi.fn(),
     },
     WardAPI: {
-        quitWard: vi.fn(),
+        quitWard: mockWardQuitWard,
     },
 }));
 
@@ -78,8 +96,12 @@ describe('useEditAccount.deleteAccount', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockAdminDeleteMe.mockResolvedValue(undefined);
+        mockAdminQuitWard.mockResolvedValue(undefined);
         mockDeleteAccount.mockResolvedValue(undefined);
+        mockEditAccountStatus.mockResolvedValue(undefined);
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockHandleLogout.mockResolvedValue(undefined);
+        mockWardQuitWard.mockResolvedValue(undefined);
         mockUseAuth.mockReturnValue({
             state: {
                 accountMe: {
@@ -94,7 +116,7 @@ describe('useEditAccount.deleteAccount', () => {
                 accessToken: createJwt({principalType: 'WARD_ADMIN'}),
             },
             actions: {
-                handleGetAccountMe: vi.fn(),
+                handleGetAccountMe: mockHandleGetAccountMe,
                 handleLogout: mockHandleLogout,
             },
         });
@@ -136,7 +158,7 @@ describe('useEditAccount.deleteAccount', () => {
                 accessToken: createJwt({principalType: 'ACCOUNT'}),
             },
             actions: {
-                handleGetAccountMe: vi.fn(),
+                handleGetAccountMe: mockHandleGetAccountMe,
                 handleLogout: mockHandleLogout,
             },
         });
@@ -180,5 +202,92 @@ describe('useEditAccount.deleteAccount', () => {
         );
         expect(mockToastError).toHaveBeenCalled();
         expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+    });
+});
+
+describe('useEditAccount.quitWard', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockAdminQuitWard.mockResolvedValue(undefined);
+        mockEditAccountStatus.mockResolvedValue(undefined);
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
+        mockWardQuitWard.mockResolvedValue(undefined);
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    accountId: 7,
+                    wardId: 3,
+                    nurseId: 11,
+                    email: 'admin@example.com',
+                    name: 'Admin',
+                    profileImgUrl: '',
+                    status: 'LINKED',
+                },
+                accessToken: createJwt({principalType: 'WARD_ADMIN'}),
+            },
+            actions: {
+                handleGetAccountMe: mockHandleGetAccountMe,
+                handleLogout: mockHandleLogout,
+            },
+        });
+    });
+
+    it('lets a ward admin leave the ward without deleting the account or patching account status', async () => {
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const queryClient = new QueryClient();
+        const {result} = renderHook(() => useEditAccount(), {wrapper: createWrapper(queryClient)});
+
+        await act(async () => {
+            await result.current.quitWard();
+        });
+
+        expect(confirmSpy).toHaveBeenCalledWith('병동을 나갈까요?');
+        expect(mockAdminQuitWard).toHaveBeenCalledWith(3);
+        expect(mockWardQuitWard).not.toHaveBeenCalled();
+        expect(mockEditAccountStatus).not.toHaveBeenCalled();
+        expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
+        expect(mockNavigate).toHaveBeenCalledWith(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
+        expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+
+        confirmSpy.mockRestore();
+    });
+
+    it('keeps the regular account quit flow unchanged', async () => {
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const queryClient = new QueryClient();
+
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    accountId: 7,
+                    wardId: 3,
+                    nurseId: 11,
+                    email: 'user@example.com',
+                    name: 'User',
+                    profileImgUrl: '',
+                    status: 'LINKED',
+                },
+                accessToken: createJwt({principalType: 'ACCOUNT'}),
+            },
+            actions: {
+                handleGetAccountMe: mockHandleGetAccountMe,
+                handleLogout: mockHandleLogout,
+            },
+        });
+
+        const {result} = renderHook(() => useEditAccount(), {wrapper: createWrapper(queryClient)});
+
+        await act(async () => {
+            await result.current.quitWard();
+        });
+
+        expect(mockAdminQuitWard).not.toHaveBeenCalled();
+        expect(mockWardQuitWard).toHaveBeenCalledWith(3);
+        expect(mockEditAccountStatus).toHaveBeenCalledWith(7, 'WARD_SELECT_PENDING');
+        expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
+        expect(mockNavigate).toHaveBeenCalledWith(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
+
+        confirmSpy.mockRestore();
     });
 });
