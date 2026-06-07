@@ -30,17 +30,17 @@ export const ko = {
             sections: {
                 schedule: '근무표',
                 operations: '근무 운영',
-                settings: '근무 설정',
+                settings: '병동 설정',
             },
             items: {
                 make: '근무표',
                 request: '신청 근무',
                 board: '게시판',
-                member: '근무자',
+                member: '근무자 관리',
                 wardSettings: '근무 설정',
                 wardAdmins: '병동 관리자',
                 wardInfoSettings: '병동 설정',
-                account: '계정',
+                account: '마이페이지',
             },
         },
         board: {
@@ -87,7 +87,7 @@ export const ko = {
                 },
                 requests: {
                     label: '신청 근무 확정',
-                    caption: '원티드·휴일 신청을 수락하거나 거절해요',
+                    caption: '간호사가 보낸 신청근무 요청을 수락하거나 거절해요',
                 },
                 fixedShifts: {
                     label: '고정 근무',
@@ -446,7 +446,7 @@ export const ko = {
                 errorTitleEdit: '신청 내역을 불러오지 못했어요',
                 emptyTitleReadonly: '아직 반영된 신청 근무가 없어요',
                 emptyDescriptionReadonly: '반영된 신청이 생기면 이 패널에서 바로 확인할 수 있어요.',
-                emptyTitleEdit: '간호사가 요청한\n원티드 · 신청근무가 없어요',
+                emptyTitleEdit: '간호사가 보낸 신청근무 요청이 없어요',
                 emptyDescriptionEdit: '',
                 pendingEmptyTitle: '대기 중인 신청이 없어요',
                 pendingEmptyDescription: '반영하거나 제외하지 않은 신청만 여기에서 볼 수 있어요.',

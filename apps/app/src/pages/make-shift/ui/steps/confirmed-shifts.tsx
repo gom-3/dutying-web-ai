@@ -60,6 +60,8 @@ export function ConfirmedShifts() {
         year,
         month,
         teamName,
+        hospitalName: wardQuery.data?.hospitalName ?? null,
+        wardName: wardQuery.data?.name ?? null,
         disabled: !shift || !doc,
     });
     const calendarResetKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}:${shift ? 'ready' : 'empty'}`;

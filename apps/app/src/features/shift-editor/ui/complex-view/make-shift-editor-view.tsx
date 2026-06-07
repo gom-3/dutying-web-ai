@@ -1,5 +1,6 @@
 import {type ComponentProps, useRef} from 'react';
 import {type TShift} from '@/entities';
+import useEditWard from '@/features/edit-ward';
 import {type TDutyDoc, useShiftExcelExport, useShiftImageExport} from '@/features/shift-editor/model';
 import NurseEditModal from './nurse-edit-modal';
 import type ShiftCalendar from './shift-calendar';
@@ -34,11 +35,16 @@ export const MakeShiftEditorView = ({
     toolbarProps,
 }: IMakeShiftEditorViewProps) => {
     const exportRef = useRef<HTMLDivElement>(null);
+    const {
+        state: {ward},
+    } = useEditWard();
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: exportRef,
         year: toolbarProps?.year ?? new Date().getFullYear(),
         month: toolbarProps?.month ?? 1,
         teamName: toolbarProps?.currentShiftTeam?.name ?? null,
+        hospitalName: ward?.hospitalName ?? null,
+        wardName: ward?.name ?? null,
         disabled: !shift,
     });
     const {isExporting: isExportingExcel, exportExcel} = useShiftExcelExport({

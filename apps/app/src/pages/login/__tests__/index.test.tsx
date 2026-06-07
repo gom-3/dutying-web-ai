@@ -1,4 +1,3 @@
-import type {ReactNode} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
@@ -21,10 +20,6 @@ const {
     mockPasswordResetRequest: vi.fn(),
     mockPasswordSignup: vi.fn(),
     mockSendAdminEmailVerification: vi.fn(),
-}));
-
-vi.mock('react-responsive-carousel', () => ({
-    Carousel: ({children}: {children: ReactNode}) => <div>{children}</div>,
 }));
 
 vi.mock('@/features/auth', () => ({
@@ -69,6 +64,9 @@ describe('LoginPage', () => {
         );
 
         expect(screen.getByRole('heading', {name: '로그인'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '이전 이미지'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '다음 이미지'})).toBeInTheDocument();
+        expect(screen.getByText('1/3')).toBeInTheDocument();
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: '비밀번호 찾기'})).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
@@ -162,6 +160,69 @@ describe('LoginPage', () => {
         expect(screen.getByText('비밀번호는 8자 이상 입력해 주세요.')).toBeInTheDocument();
         expect(screen.getByText('비밀번호를 다시 입력해 주세요.')).toBeInTheDocument();
         expect(mockPasswordSignup).not.toHaveBeenCalled();
+    });
+
+    it('clears signup field errors as soon as the current input becomes valid', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const emailInput = screen.getByLabelText('이메일');
+        const passwordInput = screen.getByLabelText('비밀번호');
+        const passwordConfirmInput = screen.getByLabelText('비밀번호 확인');
+
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
+
+        expect(emailInput).toHaveAttribute('aria-invalid', 'true');
+        expect(passwordInput).toHaveAttribute('aria-invalid', 'true');
+        expect(passwordConfirmInput).toHaveAttribute('aria-invalid', 'true');
+
+        await user.type(emailInput, 'admin@example.com');
+        await user.type(passwordInput, 'password1234');
+        await user.type(passwordConfirmInput, 'password1234');
+
+        expect(emailInput).toHaveAttribute('aria-invalid', 'false');
+        expect(passwordInput).toHaveAttribute('aria-invalid', 'false');
+        expect(passwordConfirmInput).toHaveAttribute('aria-invalid', 'false');
+        expect(screen.queryByText('올바른 이메일 주소를 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('비밀번호는 8자 이상 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.queryByText('비밀번호를 다시 입력해 주세요.')).not.toBeInTheDocument();
+    });
+
+    it('clears the signup password confirmation error when either password field makes the values match', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const passwordInput = screen.getByLabelText('비밀번호');
+        const passwordConfirmInput = screen.getByLabelText('비밀번호 확인');
+
+        await user.type(screen.getByLabelText('이름'), '김관리');
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.type(passwordInput, 'password1234');
+        await user.type(passwordConfirmInput, 'different1234');
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
+
+        expect(screen.getByText('비밀번호가 서로 달라요.')).toBeInTheDocument();
+        expect(passwordConfirmInput).toHaveAttribute('aria-invalid', 'true');
+
+        await user.clear(passwordInput);
+        await user.type(passwordInput, 'different1234');
+
+        expect(passwordConfirmInput).toHaveAttribute('aria-invalid', 'false');
+        expect(screen.queryByText('비밀번호가 서로 달라요.')).not.toBeInTheDocument();
     });
 
     it('shows the missing email verification state when creating an account before confirmation', async () => {

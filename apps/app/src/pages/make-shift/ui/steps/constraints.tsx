@@ -1,5 +1,5 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {ChevronDown, Download, Plus, RotateCcw, X} from 'lucide-react';
+import {ChevronDown, Plus, RotateCcw, X} from 'lucide-react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -65,6 +65,7 @@ type TNurseLike = {nurseId?: number; name?: string; isPreceptor?: boolean};
 const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
+const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
 const RECOMMENDED_MODAL_CATEGORY = 'RECOMMENDED';
 const CATEGORY_LABEL: Record<string, string> = {
     STAFFING: '인원수',
@@ -1616,9 +1617,9 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                 title={title}
                 disabled={disabled}
                 onClick={() => setOpen(true)}
-                className="grid size-9 cursor-pointer place-items-center rounded-full bg-white text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:bg-[#F1F3F6] disabled:text-gray-5 disabled:hover:bg-[#F1F3F6] disabled:hover:text-gray-5"
+                className="grid size-9 cursor-pointer place-items-center rounded-full bg-white text-gray-4 transition-colors hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:bg-white disabled:opacity-40 disabled:hover:bg-white"
             >
-                <Download className="size-4" />
+                <img src={CONSTRAINT_IMPORT_ICON_SRC} alt="" aria-hidden="true" className="size-[15.2px] object-contain" />
             </button>
 
             {open ? (

@@ -44,16 +44,16 @@ export const MakeShiftPageView = () => {
 
     return (
         <div
-            className="min-h-screen w-full overflow-x-auto transition-[padding-right] duration-300 ease-out"
+            className="h-full min-h-0 w-full overflow-x-auto transition-[padding-right] duration-300 ease-out"
             style={{paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'}}
         >
             {/* /request와 같은 외곽 밀도. 근무표는 31일 폭이 필요해 최소 폭만 유지한다. */}
-            <div className="mx-auto flex min-h-screen w-full max-w-[1680px] min-w-[1510px] flex-col px-6 pt-4 pb-3 min-[1440px]:px-10">
+            <div className="mx-auto flex h-full min-h-0 w-full max-w-[1680px] min-w-[1510px] flex-col px-6 pt-4 pb-3 min-[1440px]:px-10">
                 <MakeShiftHeader />
 
-                <div className="mt-2 flex flex-1 flex-col rounded-[18px] bg-white">
+                <div className="mt-2 flex min-h-0 flex-1 flex-col overflow-hidden rounded-[18px] bg-white">
                     {!makeMonthAllowed ? (
-                        <div className="flex flex-1 items-center justify-center px-4 py-6 sm:px-6 sm:py-10 md:px-10 md:py-16">
+                        <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 py-[clamp(16px,5vh,64px)] sm:px-6 md:px-10 [@media(min-height:760px)]:items-center">
                             <DutyManagementStatusCard
                                 title={t('page.makeShift.monthRangeTitle')}
                                 description={t('page.makeShift.monthRangeDescription')}
@@ -61,13 +61,13 @@ export const MakeShiftPageView = () => {
                             />
                         </div>
                     ) : isOverview ? (
-                        <div className="flex flex-1 items-start justify-center overflow-y-auto px-4 py-6 sm:items-center sm:px-6 sm:py-10 md:px-10 md:py-16">
+                        <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-4 py-[clamp(12px,5vh,64px)] sm:px-6 md:px-10 [@media(min-height:760px)]:items-center">
                             {showNoTeamsState ? (
                                 <PageState
                                     tone="empty"
                                     title={t('page.makeShift.overview.noTeamsTitle')}
                                     description={t('page.makeShift.overview.noTeamsDescription')}
-                                    className="py-0"
+                                    className="min-h-0 py-0"
                                 />
                             ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
                                 <PageState
@@ -79,7 +79,7 @@ export const MakeShiftPageView = () => {
                                             : t('page.makeShift.overview.checking')
                                     }
                                     description={t('page.state.loadingDescription')}
-                                    className="py-0"
+                                    className="min-h-0 py-0"
                                 />
                             ) : shiftStatus === 'error' ? (
                                 <PageState
@@ -87,7 +87,7 @@ export const MakeShiftPageView = () => {
                                     title={t('page.makeShift.overview.error')}
                                     description={t('page.state.errorDescription')}
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
-                                    className="py-0"
+                                    className="min-h-0 py-0"
                                 />
                             ) : hasIncompleteDraft ? (
                                 <PageState
@@ -103,16 +103,14 @@ export const MakeShiftPageView = () => {
                                         />
                                     }
                                     description={t('page.makeShift.overview.shiftDraftDescription')}
-                                    className="py-0"
-                                    titlePlacement="aboveIcon"
-                                    titleClassName="mb-6"
+                                    className="min-h-0 py-0"
                                     visual={
                                         <img
                                             src="/img/continue-schedule-nurse.webp"
                                             alt=""
                                             aria-hidden="true"
                                             decoding="async"
-                                            className="h-[160px] w-auto object-contain select-none sm:h-[192px]"
+                                            className="h-[clamp(120px,20vh,160px)] w-auto object-contain select-none sm:h-[clamp(128px,24vh,192px)]"
                                         />
                                     }
                                 >
@@ -135,7 +133,7 @@ export const MakeShiftPageView = () => {
                                     loadingColor="purple"
                                     title={t('page.makeShift.overview.loading')}
                                     description={t('page.state.loadingDescription')}
-                                    className="py-0"
+                                    className="min-h-0 py-0"
                                 />
                             ) : (
                                 <PageState
@@ -150,16 +148,14 @@ export const MakeShiftPageView = () => {
                                             }}
                                         />
                                     }
-                                    className="py-0"
-                                    titlePlacement="aboveIcon"
-                                    titleClassName="mb-6"
+                                    className="min-h-0 py-0"
                                     visual={
                                         <img
                                             src="/img/empty-schedule-nurse.webp"
                                             alt=""
                                             aria-hidden="true"
                                             decoding="async"
-                                            className="h-[168px] w-auto object-contain select-none sm:h-[210px]"
+                                            className="h-[clamp(120px,21vh,168px)] w-auto object-contain select-none sm:h-[clamp(132px,25vh,210px)]"
                                         />
                                     }
                                 >

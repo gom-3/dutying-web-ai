@@ -1,6 +1,14 @@
 import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
-import {buildWorkKeyMap, docToShift, docToWardShiftsDTO, isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, shiftToDoc} from '../shift-adapter';
+import {
+    buildWorkKeyMap,
+    docToShift,
+    docToSnapshotCellsDTO,
+    docToWardShiftsDTO,
+    isDutyShiftFullyAssigned,
+    isDutyShiftWithoutAssignments,
+    shiftToDoc,
+} from '../shift-adapter';
 
 function createShift(): TShift {
     return {
@@ -158,6 +166,40 @@ describe('shift-adapter', () => {
         expect(docToWardShiftsDTO(doc, shift)).toEqual([
             {shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 20},
             {shiftNurseId: 1, date: '2026-03-02', wardShiftTypeId: 10},
+        ]);
+    });
+
+    it('builds rich snapshot cells for Spring schedule authoring', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-03-01', '2026-03-02'],
+            rows: [{workerId: '1', cells: ['O', null]}],
+            workerMeta: {1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+            fixedCells: {'1|2026-03-01': true as const},
+            requestCells: {'1|2026-03-02': true as const},
+        };
+
+        expect(docToSnapshotCellsDTO(doc, shift)).toEqual([
+            {
+                cellKey: '1:2026-03-01',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-01',
+                wardShiftTypeId: 20,
+                shiftCode: 'O',
+                source: 'FIXED',
+                fixed: true,
+            },
+            {
+                cellKey: '1:2026-03-02',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-02',
+                wardShiftTypeId: null,
+                shiftCode: undefined,
+                source: 'REQUEST',
+                fixed: false,
+            },
         ]);
     });
 

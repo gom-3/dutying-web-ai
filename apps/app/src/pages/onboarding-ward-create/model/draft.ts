@@ -23,6 +23,21 @@ export type TOnboardingNurseDraft = {
     level: number | null;
 };
 
+export type TOnboardingScheduleRowDraft = {
+    id: string;
+    nurseId: string | null;
+    name: string;
+    shifts: Record<string, string>;
+};
+
+export type TOnboardingTeamScheduleDraft = {
+    year: number;
+    month: number;
+    rows: TOnboardingScheduleRowDraft[];
+};
+
+export type TOnboardingTeamScheduleInputDraft = Record<string, TOnboardingTeamScheduleDraft | undefined>;
+
 export type TOnboardingConstraintDraft = {
     id: string;
     key: string;
@@ -59,6 +74,7 @@ export type TOnboardingWardDraft = {
     shiftTypes: TOnboardingWardShiftType[];
     teams: TOnboardingTeamDraft[];
     nurses: TOnboardingNurseDraft[];
+    scheduleInputs: Record<string, TOnboardingTeamScheduleInputDraft | undefined>;
     constraintCandidates: TOnboardingConstraintDraft[];
     skillLevelConfig: TSkillLevelConfig;
 };
@@ -148,6 +164,16 @@ const createNurse = (
     id: input.id ?? createId('nurse'),
     ...input,
 });
+const createScheduleRow = (
+    input: Partial<Omit<TOnboardingScheduleRowDraft, 'id'>> & {
+        id?: string;
+    } = {},
+): TOnboardingScheduleRowDraft => ({
+    id: input.id ?? createId('schedule-row'),
+    nurseId: input.nurseId ?? null,
+    name: input.name ?? '',
+    shifts: input.shifts ?? {},
+});
 const BASE_SHIFT_TYPES = [
     createShiftType({
         name: '데이',
@@ -207,6 +233,9 @@ export const getSkillPalette = (paletteId: string) => skillPalettes.find((palett
 
 const normalizeSkillPaletteId = (paletteId: string) =>
     skillPalettes.some((palette) => palette.id === paletteId) ? paletteId : skillPalettes[0].id;
+
+export const getScheduleMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
+
 const isValidNurseName = (name: string): boolean => {
     const requestName = normalizeNurseNameForRequest(name);
 
@@ -261,11 +290,7 @@ export const createEmptyShiftType = (): TOnboardingWardShiftType =>
         classification: 'OTHER_WORK',
     });
 
-export const createEmptyNurse = (
-    teamId: string,
-    shiftTypes: TOnboardingWardShiftType[],
-    nurseNumber: number,
-): TOnboardingNurseDraft =>
+export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShiftType[], nurseNumber: number): TOnboardingNurseDraft =>
     createNurse({
         teamId,
         name: `신규 간호사 ${nurseNumber}`,
@@ -304,6 +329,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
         shiftTypes,
         teams,
         nurses,
+        scheduleInputs: {},
         constraintCandidates: [],
         skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
@@ -356,8 +382,112 @@ export const prepareManualEntryDraft = (draft: TOnboardingWardDraft): TOnboardin
     ...draft,
     teams: draft.teams[0] ? [draft.teams[0]] : [{id: createId('team'), name: '간호사 1팀'}],
     nurses: [],
+    scheduleInputs: {},
     constraintCandidates: [],
 });
+
+const isScheduleRowUsed = (row: TOnboardingScheduleRowDraft) =>
+    Boolean(row.name.trim()) || Object.values(row.shifts).some((value) => value.trim());
+
+export const hasScheduleInputDraft = (draft: TOnboardingWardDraft): boolean =>
+    Object.values(draft.scheduleInputs ?? {}).some((teamScheduleInputs) =>
+        Object.values(teamScheduleInputs ?? {}).some((schedule) => schedule?.rows.some(isScheduleRowUsed)),
+    );
+
+const normalizeScheduleRow = (row: TOnboardingScheduleRowDraft): TOnboardingScheduleRowDraft => ({
+    ...createScheduleRow(row),
+    name: row.name,
+    shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, value.trim()])),
+});
+
+export const applyScheduleInputDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    schedule: TOnboardingTeamScheduleDraft,
+): TOnboardingWardDraft => {
+    if (!teamId) {
+        return draft;
+    }
+
+    const monthKey = getScheduleMonthKey(schedule.year, schedule.month);
+    const nextTeamScheduleInputs: TOnboardingTeamScheduleInputDraft = {
+        [monthKey]: {
+            year: schedule.year,
+            month: schedule.month,
+            rows: schedule.rows.map(normalizeScheduleRow),
+        },
+    };
+    const existingTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
+    const otherNurses = draft.nurses.filter((nurse) => nurse.teamId !== teamId);
+    const existingNurseById = new Map(existingTeamNurses.map((nurse) => [nurse.id, nurse]));
+    const nextNurseById = new Map<string, TOnboardingNurseDraft>();
+    const nextNurseIdByName = new Map<string, string>();
+    const possibleShiftTypeIds = draft.shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
+    const nurseIdByRowKey = new Map<string, string>();
+    const getRowKey = (scheduleMonthKey: string, rowId: string) => `${scheduleMonthKey}:${rowId}`;
+
+    Object.entries(nextTeamScheduleInputs).forEach(([scheduleMonthKey, teamSchedule]) => {
+        teamSchedule?.rows.forEach((row) => {
+            const trimmedName = row.name.trim();
+
+            if (!trimmedName) {
+                return;
+            }
+
+            const existingNextNurseId = nextNurseIdByName.get(trimmedName);
+            const existingNextNurse = existingNextNurseId ? nextNurseById.get(existingNextNurseId) : undefined;
+            const exactNurse = row.nurseId ? (nextNurseById.get(row.nurseId) ?? existingNurseById.get(row.nurseId)) : undefined;
+            const sameNameNurse =
+                existingNextNurse ?? existingTeamNurses.find((nurse) => !nextNurseById.has(nurse.id) && nurse.name.trim() === trimmedName);
+            const nextNurse =
+                exactNurse ??
+                sameNameNurse ??
+                createNurse({
+                    teamId,
+                    name: trimmedName,
+                    memo: '',
+                    isWorker: true,
+                    employmentDate: defaultEmploymentDate,
+                    possibleShiftTypeIds,
+                    level: null,
+                });
+            const normalizedNurse = {
+                ...nextNurse,
+                teamId,
+                name: trimmedName,
+            };
+
+            nextNurseById.set(normalizedNurse.id, normalizedNurse);
+            nextNurseIdByName.set(trimmedName, normalizedNurse.id);
+            nurseIdByRowKey.set(getRowKey(scheduleMonthKey, row.id), normalizedNurse.id);
+        });
+    });
+
+    const nextTeamScheduleInputsWithNurseIds = Object.fromEntries(
+        Object.entries(nextTeamScheduleInputs).map(([scheduleMonthKey, teamSchedule]) => [
+            scheduleMonthKey,
+            teamSchedule
+                ? {
+                      ...teamSchedule,
+                      rows: teamSchedule.rows.map((row) => ({
+                          ...row,
+                          nurseId: row.name.trim() ? (nurseIdByRowKey.get(getRowKey(scheduleMonthKey, row.id)) ?? row.nurseId) : null,
+                      })),
+                  }
+                : undefined,
+        ]),
+    );
+
+    return {
+        ...draft,
+        nurses: [...otherNurses, ...Array.from(nextNurseById.values())],
+        scheduleInputs: {
+            ...(draft.scheduleInputs ?? {}),
+            [teamId]: nextTeamScheduleInputsWithNurseIds,
+        },
+    };
+};
 
 export const updateShiftTypeDraft = (
     draft: TOnboardingWardDraft,
@@ -476,6 +606,9 @@ export const deleteTeamDraft = (draft: TOnboardingWardDraft, teamId: string): TO
     ...draft,
     teams: draft.teams.filter((team) => team.id !== teamId),
     nurses: draft.nurses.filter((nurse) => nurse.teamId !== teamId),
+    scheduleInputs: Object.fromEntries(
+        Object.entries(draft.scheduleInputs ?? {}).filter(([candidateTeamId]) => candidateTeamId !== teamId),
+    ),
 });
 
 export const deleteNurseDraft = (draft: TOnboardingWardDraft, nurseId: string): TOnboardingWardDraft => ({

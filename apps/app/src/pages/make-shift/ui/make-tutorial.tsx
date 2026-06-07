@@ -44,7 +44,7 @@ const makeTutorialConfigByStep: Partial<Record<TMakeShiftStep, ITutorialConfig>>
             {
                 highlightIds: ['nurse_request_pending_toggle'],
                 title: '신청 근무 확정하기',
-                info: '원티드·휴무 신청 중 남아 있는 요청을 확인해요.\n대기만 보기를 켜면 아직 처리하지 않은 요청만 볼 수 있어요.',
+                info: '남아 있는 신청근무 요청을 확인해요.\n대기만 보기를 켜면 아직 처리하지 않은 요청만 볼 수 있어요.',
                 infoBoxAlignment: 'right',
             },
         ],

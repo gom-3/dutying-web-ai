@@ -1,9 +1,11 @@
-import {CalendarDays, ChevronDown, MessageCircle, UsersRound} from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import {CalendarDays, ChevronDown, MessageCircle, UsersRound, X} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
+import {ProfileContent} from '@/pages/profile';
 import ROUTE from '@/shared/constant/path';
 import './landing-page.css';
 
@@ -440,6 +442,36 @@ function CtaIcon({src, className = 'size-5'}: {src: string; className?: string})
     return <img src={src} alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
 }
 
+function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => void}) {
+    const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
+
+    return (
+        <Dialog.Root open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+            <Dialog.Portal container={portalContainer}>
+                <Dialog.Overlay className="fixed inset-0 z-[1000] bg-[#121726]/45 backdrop-blur-[2px]" />
+                <Dialog.Content
+                    aria-describedby={undefined}
+                    className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[calc(100svh-32px)] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[20px] border border-white/70 bg-white shadow-[0_20px_64px_rgba(18,23,38,0.18)] focus-visible:outline-none"
+                >
+                    <Dialog.Title className="sr-only">마이페이지</Dialog.Title>
+                    <Dialog.Close asChild>
+                        <button
+                            type="button"
+                            className="absolute top-4 right-4 z-10 flex size-9 items-center justify-center rounded-full bg-[#F2F4F6] text-[#6B7684] transition-colors hover:bg-[#E5E8EB] hover:text-[#333D4B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+                            aria-label="마이페이지 닫기"
+                        >
+                            <X className="size-4" strokeWidth={2.2} />
+                        </button>
+                    </Dialog.Close>
+                    <div className="min-h-0 overflow-y-auto overscroll-contain">
+                        <ProfileContent layout="modal" />
+                    </div>
+                </Dialog.Content>
+            </Dialog.Portal>
+        </Dialog.Root>
+    );
+}
+
 function HeaderActions({
     accountMe,
     isAuth,
@@ -450,6 +482,7 @@ function HeaderActions({
     onLogout: (fallBackPath?: string) => Promise<void> | void;
 }) {
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
     const accountProfileImage = accountMe?.profileImgUrl ? {profileImgUrl: accountMe.profileImgUrl} : undefined;
 
@@ -494,6 +527,10 @@ function HeaderActions({
     }
 
     const closeProfileMenu = () => setIsProfileMenuOpen(false);
+    const openProfileSettings = () => {
+        closeProfileMenu();
+        setIsProfileSettingsOpen(true);
+    };
     const handleLogoutClick = () => {
         closeProfileMenu();
         void onLogout(ROUTE.ROOT);
@@ -527,14 +564,14 @@ function HeaderActions({
                         role="menu"
                         className="absolute top-[calc(100%+10px)] right-0 z-50 w-36 overflow-hidden rounded-[8px] border border-[#E5DEF8] bg-white py-1 shadow-[0_18px_44px_rgba(37,22,91,0.16)]"
                     >
-                        <Link
-                            to={ROUTE.PROFILE}
+                        <button
+                            type="button"
                             role="menuitem"
-                            onClick={closeProfileMenu}
+                            onClick={openProfileSettings}
                             className="flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold text-[#5F557F] transition-colors hover:bg-main-light hover:text-main-1"
                         >
-                            계정 설정
-                        </Link>
+                            마이페이지
+                        </button>
                         <button
                             type="button"
                             role="menuitem"
@@ -546,6 +583,7 @@ function HeaderActions({
                     </div>
                 )}
             </div>
+            <ProfileSettingsDialog open={isProfileSettingsOpen} onClose={() => setIsProfileSettingsOpen(false)} />
         </>
     );
 }

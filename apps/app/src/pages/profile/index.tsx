@@ -21,6 +21,9 @@ type TProfileField = 'name' | 'phoneNum';
 type TProfileErrors = Partial<Record<TProfileField, string>>;
 type TProfileTouched = Partial<Record<TProfileField, boolean>>;
 type TConfirmAction = 'logout' | 'deleteAccount';
+type TProfileContentProps = {
+    layout?: 'page' | 'modal';
+};
 
 const NURSE_NAME_MAX_LENGTH = 20;
 const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
@@ -52,7 +55,7 @@ const validatePhoneNum = (value: string) => {
     return undefined;
 };
 
-function ProfilePage() {
+export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe, handleLogout},
@@ -60,6 +63,7 @@ function ProfilePage() {
     const {quitWard, handleEditProfile, handleEditAccountBasic, deleteAccount} = useEditAccount();
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [draftName, setDraftName] = useState('');
+    const [draftPhoneNum, setDraftPhoneNum] = useState('');
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
@@ -75,7 +79,7 @@ function ProfilePage() {
         ? hasEditedPhoneNum
             ? (writeNurse.phoneNum ?? '')
             : getProfilePhoneNum(writeNurse, accountMe)
-        : (accountMe?.phoneNum ?? '');
+        : draftPhoneNum;
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
@@ -87,7 +91,12 @@ function ProfilePage() {
         draftNurse: writeNurse,
         profileImg,
     });
-    const isSaveDisabled = isProfileImageLoading || (hasNurseProfile ? !isDirty : !draftName.trim() && !profileImg);
+    const isAccountFormDirty =
+        Boolean(profileImg) ||
+        draftName.trim() !== (accountMe?.name ?? '').trim() ||
+        draftPhoneNum !== normalizePhone(accountMe?.phoneNum ?? '');
+    const hasUnsavedChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
+    const isSaveDisabled = isProfileImageLoading || !hasUnsavedChanges;
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') return validateName(value);
 
@@ -114,6 +123,18 @@ function ProfilePage() {
 
         return !nextErrors.name && !nextErrors.phoneNum;
     };
+    const validateAccountForm = () => {
+        const nextName = (draftName.trim() || accountMe?.name) ?? '';
+        const nextErrors: TProfileErrors = {
+            name: validateName(nextName),
+            phoneNum: validatePhoneNum(draftPhoneNum),
+        };
+
+        setFieldErrors(nextErrors);
+        setFieldTouched({name: true, phoneNum: true});
+
+        return {isValid: !nextErrors.name && !nextErrors.phoneNum, name: nextName, phoneNum: draftPhoneNum};
+    };
     const handleChange = <T extends keyof TNurse>(key: T, value: TNurse[T]) => {
         if (!writeNurse) return;
 
@@ -129,19 +150,11 @@ function ProfilePage() {
 
             isSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
         } else {
-            const nextName = (draftName.trim() || accountMe?.name) ?? '';
-            const nameError = validateName(nextName);
+            const {isValid, name, phoneNum} = validateAccountForm();
 
-            if (nameError) {
-                setFieldErrors({name: nameError});
-                setFieldTouched({name: true});
+            if (!isValid) return;
 
-                return;
-            }
-
-            if (!nextName) return;
-
-            isSaved = await handleEditAccountBasic(nextName, currentProfileImage);
+            isSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
         }
 
         if (isSaved) {
@@ -151,13 +164,18 @@ function ProfilePage() {
     };
 
     useEffect(() => {
-        if (!selectedNurse) {
-            setWriteNurse(null);
-            setDraftName(accountMe?.name ?? '');
-            setHasEditedPhoneNum(false);
+        if (selectedNurse) return;
 
-            return;
-        }
+        setWriteNurse(null);
+        setDraftName(accountMe?.name ?? '');
+        setDraftPhoneNum(normalizePhone(accountMe?.phoneNum ?? ''));
+        setHasEditedPhoneNum(false);
+        setFieldErrors({});
+        setFieldTouched({});
+    }, [accountMe?.accountId, accountMe?.name, accountMe?.phoneNum, selectedNurse]);
+
+    useEffect(() => {
+        if (!selectedNurse) return;
 
         setWriteNurse((prevWriteNurse) => {
             if (!prevWriteNurse) return selectedNurse;
@@ -174,7 +192,7 @@ function ProfilePage() {
         });
         setFieldErrors({});
         setFieldTouched({});
-    }, [accountMe?.name, profileImg, selectedNurse]);
+    }, [profileImg, selectedNurse]);
 
     useEffect(() => {
         setHasEditedPhoneNum(false);
@@ -242,10 +260,44 @@ function ProfilePage() {
                   confirmLabel: '로그아웃',
                   tone: 'default' as const,
               };
+    const isModalLayout = layout === 'modal';
+    const stateContainerClassName = cn(
+        'mx-auto flex w-full items-center justify-center px-8',
+        isModalLayout ? 'min-h-[360px] max-w-[560px] py-8' : 'h-full max-w-306',
+    );
+    const rootClassName = cn('mx-auto w-full', isModalLayout ? 'max-w-none px-6 pt-8 pb-5 sm:px-8' : 'max-w-[560px] px-4 py-8 md:px-0');
+    const headerClassName = cn('mx-auto flex items-start justify-between gap-4', isModalLayout ? 'max-w-none pr-10' : 'max-w-[480px]');
+    const titleClassName = cn(
+        'font-apple font-semibold text-sub-1',
+        isModalLayout ? 'text-[26px] leading-8 tracking-[-0.01em]' : 'text-[32px] tracking-[-0.02em]',
+    );
+    const title = '마이페이지';
+    const descriptionText = hasUnsavedChanges
+        ? '변경사항이 저장되지 않았어요.'
+        : isModalLayout
+          ? null
+          : '최신 정보가 저장되어 있어요.';
+    const contentClassName = cn('mx-auto', isModalLayout ? 'mt-6 max-w-none space-y-6' : 'mt-6 max-w-[480px] space-y-4');
+    const profileSectionClassName = isModalLayout ? 'rounded-none border-0 bg-white p-0' : 'rounded-[24px] border-transparent p-6';
+    const basicInfoSectionClassName = isModalLayout
+        ? 'rounded-none border-0 border-t border-[#F2F4F6] bg-white px-0 pt-6 pb-0'
+        : 'rounded-[24px] border-transparent p-6';
+    const profileImageFrameClassName = cn('shrink-0 rounded-full bg-[#F2F4F6]', isModalLayout ? 'h-16 w-16 p-0.5' : 'h-20 w-20 p-1');
+    const profileImageButtonClassName = cn(
+        'rounded-full text-[#6B7684] hover:bg-[#E5E8EB] hover:text-[#333D4B]',
+        isModalLayout ? 'h-9 w-9 bg-[#F2F4F6]' : 'h-9 w-9 bg-gray-7',
+    );
+    const fieldContainerClassName = isModalLayout ? 'w-full' : 'max-w-[440px]';
+    const accountActionsClassName = cn('flex flex-wrap items-center gap-x-4 gap-y-2 px-1', isModalLayout ? 'justify-start' : 'justify-end');
+    const saveButtonClassName = cn(
+        'h-11 rounded-[10px] px-5 text-sm shadow-none',
+        isModalLayout ? 'w-full bg-[#3182F6] font-semibold hover:bg-[#1B64DA] sm:w-auto' : '',
+    );
+    const modalFieldClassName = isModalLayout ? 'h-12 rounded-[10px] bg-[#F9FAFB] px-4 text-[15px]' : '';
 
     if (isAccountBootstrapPending || isWardProfilePending) {
         return (
-            <div className="mx-auto flex h-full w-full max-w-306 items-center justify-center px-8">
+            <div className={stateContainerClassName}>
                 <PageState
                     tone="loading"
                     title="프로필 정보를 준비하고 있어요"
@@ -258,7 +310,7 @@ function ProfilePage() {
 
     if (isAccountBootstrapError || isWardProfileError || !accountMe) {
         return (
-            <div className="mx-auto flex h-full w-full max-w-306 items-center justify-center px-8">
+            <div className={stateContainerClassName}>
                 <PageState
                     tone="error"
                     title="프로필 정보를 불러오지 못했어요"
@@ -270,34 +322,65 @@ function ProfilePage() {
         );
     }
 
+    const accountActionButtons = (
+        <div className={accountActionsClassName}>
+            <button
+                type="button"
+                className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
+                onClick={() => setConfirmAction('logout')}
+            >
+                로그아웃
+            </button>
+            {!isModalLayout && accountMe.wardId ? (
+                <button
+                    type="button"
+                    className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
+                    onClick={quitWard}
+                >
+                    병동 나가기
+                </button>
+            ) : null}
+            <button
+                type="button"
+                className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-red underline-offset-4 hover:underline"
+                onClick={() => setConfirmAction('deleteAccount')}
+            >
+                회원 탈퇴
+            </button>
+        </div>
+    );
+    const saveButton = (
+        <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className={saveButtonClassName}>
+            {isModalLayout ? '저장하기' : '변경사항 저장'}
+        </Button>
+    );
+
     return (
-        <div className="mx-auto w-full max-w-[560px] px-4 py-8 md:px-0">
-            <div className="mx-auto flex max-w-[480px] items-start justify-between gap-4">
+        <div className={rootClassName}>
+            <div className={headerClassName}>
                 <div>
-                    <h1 className="font-apple text-[32px] font-semibold tracking-[-0.02em] text-sub-1">계정 관리</h1>
-                    <p className="mt-1 font-apple text-sm text-gray-3">
-                        {isDirty ? '변경 사항이 있어요. 저장해 주세요.' : '최신 정보가 저장되어 있어요.'}
-                    </p>
+                    <h1 className={titleClassName}>{title}</h1>
+                    {descriptionText ? <p className="mt-1.5 font-apple text-sm text-gray-3">{descriptionText}</p> : null}
                 </div>
             </div>
 
-            <div className="mx-auto mt-6 max-w-[480px] space-y-4">
-                <Card className="rounded-[24px] border-transparent p-6">
-                    <p className="font-apple text-sm font-semibold text-sub-2.5">프로필</p>
-                    <div className="mt-4 flex items-center gap-4">
-                        <div className="h-20 w-20 shrink-0 rounded-full bg-main-4 p-1">
+            <div className={contentClassName}>
+                <Card className={profileSectionClassName}>
+                    {isModalLayout ? null : <p className="font-apple text-sm font-semibold text-sub-2.5">프로필</p>}
+                    <div className={cn('flex items-center gap-4', isModalLayout ? '' : 'mt-4')}>
+                        <div className={profileImageFrameClassName}>
                             <ProfileImage className="h-full w-full" name={displayName} profileImg={currentProfileImage} />
                         </div>
                         <div className="min-w-0 flex-1">
-                            <p className="font-apple text-lg font-semibold text-sub-1">{displayName}</p>
-                            <p className="mt-1 truncate font-apple text-xs text-gray-3">{accountMe.email}</p>
+                            <p className="font-apple text-[17px] leading-6 font-semibold text-[#191F28]">{displayName}</p>
+                            <p className="mt-0.5 truncate font-apple text-[13px] leading-5 text-[#8B95A1]">{accountMe.email}</p>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2">
                             <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="text-gray-2 h-9 w-9 rounded-full bg-gray-7 hover:bg-gray-6"
+                                className={profileImageButtonClassName}
                                 onClick={setRandomImage}
                                 disabled={isProfileImageLoading}
                                 aria-label="랜덤 아바타"
@@ -309,7 +392,7 @@ function ProfilePage() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="text-gray-2 h-9 w-9 rounded-full bg-gray-7 hover:bg-gray-6"
+                                className={profileImageButtonClassName}
                                 onClick={handleUploadImage}
                                 disabled={isProfileImageLoading}
                                 aria-label="사진 업로드"
@@ -322,17 +405,25 @@ function ProfilePage() {
                     </div>
                 </Card>
 
-                <Card className="rounded-[24px] border-transparent p-6">
-                    <h2 className="font-apple text-[20px] font-semibold text-sub-1">기본 정보</h2>
-                    <p className="mt-1 font-apple text-xs text-gray-3">계정에서 사용하는 정보를 관리해요.</p>
-                    <div className="mt-4 grid grid-cols-1 gap-3">
-                        <div className="max-w-[440px]">
-                            <label htmlFor="name" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
+                <Card className={basicInfoSectionClassName}>
+                    {isModalLayout ? null : (
+                        <>
+                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">기본 정보</h2>
+                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">계정에서 사용하는 정보를 관리해요.</p>
+                        </>
+                    )}
+                    <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
+                        <div className={fieldContainerClassName}>
+                            <label htmlFor="name" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
                                 이름
                             </label>
                             <input
                                 id="name"
-                                className={cn(FIELD_CLASS, fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
+                                className={cn(
+                                    FIELD_CLASS,
+                                    modalFieldClassName,
+                                    fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
+                                )}
                                 maxLength={NURSE_NAME_MAX_LENGTH}
                                 placeholder="이름을 입력하세요"
                                 value={writeNurse?.name ?? draftName}
@@ -360,8 +451,8 @@ function ProfilePage() {
                                 </p>
                             ) : null}
                         </div>
-                        <div className="max-w-[440px]">
-                            <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
+                        <div className={fieldContainerClassName}>
+                            <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
                                 전화번호
                             </label>
                             <input
@@ -369,18 +460,20 @@ function ProfilePage() {
                                 inputMode="numeric"
                                 className={cn(
                                     FIELD_CLASS,
+                                    modalFieldClassName,
                                     fieldErrors.phoneNum && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
-                                    !writeNurse && 'cursor-not-allowed text-gray-4',
                                 )}
                                 placeholder="전화번호를 입력하세요"
                                 value={phoneInputValue}
                                 onChange={(e) => {
                                     const nextValue = normalizePhone(e.target.value);
 
-                                    if (!writeNurse) return;
-
-                                    setHasEditedPhoneNum(true);
-                                    handleChange('phoneNum', nextValue);
+                                    if (writeNurse) {
+                                        setHasEditedPhoneNum(true);
+                                        handleChange('phoneNum', nextValue);
+                                    } else {
+                                        setDraftPhoneNum(nextValue);
+                                    }
 
                                     if (fieldTouched.phoneNum) setFieldError('phoneNum', nextValue);
                                 }}
@@ -390,7 +483,6 @@ function ProfilePage() {
                                 }}
                                 aria-invalid={Boolean(fieldErrors.phoneNum)}
                                 aria-describedby={fieldErrors.phoneNum ? 'profile-phone-error' : undefined}
-                                disabled={!writeNurse}
                             />
                             {fieldErrors.phoneNum ? (
                                 <p id="profile-phone-error" className="mt-1 font-apple text-xs text-red">
@@ -400,38 +492,17 @@ function ProfilePage() {
                         </div>
                     </div>
                 </Card>
-                <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2 px-1">
-                    <button
-                        type="button"
-                        className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                        onClick={() => setConfirmAction('logout')}
-                    >
-                        로그아웃
-                    </button>
-                    {accountMe.wardId ? (
-                        <button
-                            type="button"
-                            className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
-                            onClick={quitWard}
-                        >
-                            병동 나가기
-                        </button>
-                    ) : null}
-                    <button
-                        type="button"
-                        className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-red underline-offset-4 hover:underline"
-                        onClick={() => setConfirmAction('deleteAccount')}
-                    >
-                        회원 탈퇴
-                    </button>
-                </div>
+                {isModalLayout ? null : accountActionButtons}
             </div>
 
-            <div className="sticky bottom-3 mx-auto mt-4 flex max-w-[480px] items-center justify-end py-2">
-                <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className="h-11 rounded-[12px] px-5 text-sm">
-                    변경사항 저장
-                </Button>
-            </div>
+            {isModalLayout ? (
+                <div className="mt-6 flex flex-col gap-4 border-t border-[#F2F4F6] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    {accountActionButtons}
+                    {saveButton}
+                </div>
+            ) : (
+                <div className="sticky bottom-3 mx-auto mt-4 flex max-w-[480px] items-center justify-end py-2">{saveButton}</div>
+            )}
             <ConfirmActionDialog
                 open={confirmAction !== null}
                 title={confirmDialogContent.title}
@@ -443,6 +514,10 @@ function ProfilePage() {
             />
         </div>
     );
+}
+
+function ProfilePage() {
+    return <ProfileContent />;
 }
 
 export default ProfilePage;

@@ -552,22 +552,7 @@ export function AiAutofill() {
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
             commands.applyChangedCells(result.response.changedCells, dutyQuery.data, 'ai');
-
-            const stateAfterPatch = useShiftEditorStore.getState();
-
-            await fetchAndApplyScheduleValidation(
-                {
-                    wardId: requestContext.wardId,
-                    doc: stateAfterPatch.doc,
-                    originalShift: dutyQuery.data,
-                    shiftTeamId: currentShiftTeamId,
-                    year: requestContext.year,
-                    month: requestContext.month,
-                    draftRevision: stateAfterPatch.draftRevision,
-                    rulesHash,
-                },
-                commands.setScheduleValidationFromApi,
-            );
+            commands.setScheduleValidationFromApi(result.validation);
 
             setAiStatus('success');
             setHasCompletedAiFill(true);

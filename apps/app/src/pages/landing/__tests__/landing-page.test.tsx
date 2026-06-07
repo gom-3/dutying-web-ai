@@ -11,6 +11,7 @@ vi.mock('@/features/auth', () => ({
 
 const mockedUseAuth = vi.mocked(useAuth);
 const mockHandleLogout = vi.fn();
+const mockHandleGetAccountMe = vi.fn();
 const setPhoneViewport = (matches: boolean) => {
     Object.defineProperty(window, 'matchMedia', {
         writable: true,
@@ -28,8 +29,15 @@ const setPhoneViewport = (matches: boolean) => {
 };
 const mockUseAuthState = (isAuth: boolean, accountMe: ReturnType<typeof useAuth>['state']['accountMe'] = null) => {
     mockedUseAuth.mockReturnValue({
-        state: {accountMe, isAuth},
-        actions: {handleLogout: mockHandleLogout},
+        state: {
+            accountMe,
+            accountMeStatus: accountMe ? 'success' : 'idle',
+            accessToken: null,
+            isAuth,
+            wardId: accountMe?.wardId ?? null,
+            _loaded: true,
+        },
+        actions: {handleGetAccountMe: mockHandleGetAccountMe, handleLogout: mockHandleLogout},
     } as unknown as ReturnType<typeof useAuth>);
 };
 
@@ -37,6 +45,7 @@ describe('LandingPage', () => {
     beforeEach(() => {
         document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1.0" />';
         window.localStorage.clear();
+        mockHandleGetAccountMe.mockReset();
         mockHandleLogout.mockReset();
         setPhoneViewport(false);
         mockUseAuthState(false);
@@ -88,7 +97,21 @@ describe('LandingPage', () => {
         await user.click(profileMenuButton);
 
         expect(profileMenuButton).toHaveAttribute('aria-expanded', 'true');
-        expect(screen.getByRole('menuitem', {name: '계정 설정'})).toHaveAttribute('href', ROUTE.PROFILE);
+
+        const accountSettingsMenuItem = screen.getByRole('menuitem', {name: '마이페이지'});
+
+        expect(accountSettingsMenuItem).not.toHaveAttribute('href');
+
+        await user.click(accountSettingsMenuItem);
+
+        expect(screen.getByRole('dialog', {name: '마이페이지'})).toBeInTheDocument();
+        expect(screen.getByRole('heading', {name: '마이페이지', level: 1})).toBeInTheDocument();
+        expect(screen.queryByText('기본 정보')).not.toBeInTheDocument();
+        expect(screen.queryByText('이름과 연락처를 확인해요.')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '마이페이지 닫기'}));
+
+        await user.click(profileMenuButton);
 
         await user.click(screen.getByRole('menuitem', {name: '로그아웃'}));
 
