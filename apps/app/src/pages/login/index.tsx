@@ -92,6 +92,9 @@ function LoginPage() {
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
     const isSignupBusy = isSubmitting || isSendingVerification || isConfirmingSignupVerification;
     const isSignupDisabled = !signupName.trim() || !isSignupEmailVerified || !signupPassword || !signupPasswordConfirm || isSignupBusy;
+    const isSignupBlockedByName =
+        !signupName.trim() && isSignupEmailVerified && Boolean(signupPassword) && Boolean(signupPasswordConfirm) && !isSignupBusy;
+    const signupNameErrorMessage = signupErrors.name ?? (isSignupBlockedByName ? '이름을 입력해 주세요.' : undefined);
     const isPasswordResetBusy = isSendingPasswordReset || isConfirmingPasswordReset || isResettingPassword;
     const isPasswordResetDisabled =
         !isPasswordResetEmailValid ||
@@ -159,6 +162,12 @@ function LoginPage() {
         setIsSignupEmailVerified(false);
         setSignupVerificationMessage(null);
         setSignupVerificationError(null);
+    };
+    const handleSignupNameChange = (value: string) => {
+        setSignupName(value);
+        if (value.trim()) {
+            setSignupErrors((errors) => ({...errors, name: undefined}));
+        }
     };
     const handleSignupVerificationCodeChange = (value: string) => {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
@@ -664,14 +673,14 @@ function LoginPage() {
                                     id="signup-name"
                                     value={signupName}
                                     type="text"
-                                    className={getInputClassName(Boolean(signupErrors.name))}
+                                    className={getInputClassName(Boolean(signupNameErrorMessage))}
                                     placeholder="이름을 입력해 주세요"
                                     autoComplete="name"
-                                    onChange={(event) => setSignupName(event.target.value)}
-                                    aria-invalid={Boolean(signupErrors.name)}
-                                    aria-describedby={signupErrors.name ? 'signup-name-error' : undefined}
+                                    onChange={(event) => handleSignupNameChange(event.target.value)}
+                                    aria-invalid={Boolean(signupNameErrorMessage)}
+                                    aria-describedby={signupNameErrorMessage ? 'signup-name-error' : undefined}
                                 />
-                                <FieldError id="signup-name-error" message={signupErrors.name} />
+                                <FieldError id="signup-name-error" message={signupNameErrorMessage} />
                             </div>
 
                             <div>

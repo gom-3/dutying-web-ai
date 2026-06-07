@@ -140,6 +140,43 @@ describe('LoginPage', () => {
         expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.REGISTER);
     });
 
+    it('highlights the required name field when it is the only reason signup is disabled', async () => {
+        const user = userEvent.setup();
+
+        mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com'});
+        mockConfirmEmailVerification.mockResolvedValueOnce(undefined);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const nameInput = screen.getByLabelText('이름');
+        expect(screen.queryByText('이름을 입력해 주세요.')).not.toBeInTheDocument();
+
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.click(screen.getByRole('button', {name: '인증'}));
+        expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();
+        await user.type(screen.getByLabelText('이메일 인증번호'), '123456');
+        await user.click(screen.getByRole('button', {name: '확인'}));
+        expect(await screen.findByText('이메일 인증이 완료됐어요.')).toBeInTheDocument();
+        await user.type(screen.getByLabelText('비밀번호'), 'password1234');
+        await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
+
+        expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+        expect(screen.getByText('이름을 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '계정 만들기'})).toBeDisabled();
+
+        await user.type(nameInput, '김관리');
+
+        expect(nameInput).toHaveAttribute('aria-invalid', 'false');
+        expect(screen.queryByText('이름을 입력해 주세요.')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '계정 만들기'})).toBeEnabled();
+    });
+
     it('resets a forgotten password with an emailed six digit token', async () => {
         const user = userEvent.setup();
 
