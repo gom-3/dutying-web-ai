@@ -49,6 +49,16 @@ describe('AuthAPI', () => {
         expect(mockPost).toHaveBeenCalledWith('/auth/admin/email-verifications', payload);
     });
 
+    it('uses the ward admin email verification confirm endpoint', async () => {
+        const payload = {email: 'admin@example.com', emailVerificationToken: '123456'};
+
+        mockPost.mockResolvedValue({data: undefined});
+
+        await expect(AuthAPI.confirmAdminEmailVerification(payload)).resolves.toBeUndefined();
+
+        expect(mockPost).toHaveBeenCalledWith('/auth/admin/email-verifications/confirm', payload);
+    });
+
     it('uses the ward admin password reset request endpoint', async () => {
         const payload = {email: 'admin@example.com'};
         const response = {email: 'admin@example.com'};
@@ -58,6 +68,16 @@ describe('AuthAPI', () => {
         await expect(AuthAPI.requestAdminPasswordReset(payload)).resolves.toBe(response);
 
         expect(mockPost).toHaveBeenCalledWith('/auth/admin/password-reset-requests', payload);
+    });
+
+    it('uses the ward admin password reset token confirm endpoint', async () => {
+        const payload = {email: 'admin@example.com', resetToken: '123456'};
+
+        mockPost.mockResolvedValue({data: undefined});
+
+        await expect(AuthAPI.confirmAdminPasswordResetToken(payload)).resolves.toBeUndefined();
+
+        expect(mockPost).toHaveBeenCalledWith('/auth/admin/password-reset-requests/confirm', payload);
     });
 
     it('uses the ward admin password reset endpoint', async () => {

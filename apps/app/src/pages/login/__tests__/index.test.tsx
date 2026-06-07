@@ -5,7 +5,17 @@ import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import LoginPage from '../index';
 
-const {mockHandleLogin, mockPasswordReset, mockPasswordResetRequest, mockPasswordSignup, mockSendAdminEmailVerification} = vi.hoisted(() => ({
+const {
+    mockConfirmEmailVerification,
+    mockConfirmPasswordResetToken,
+    mockHandleLogin,
+    mockPasswordReset,
+    mockPasswordResetRequest,
+    mockPasswordSignup,
+    mockSendAdminEmailVerification,
+} = vi.hoisted(() => ({
+    mockConfirmEmailVerification: vi.fn(),
+    mockConfirmPasswordResetToken: vi.fn(),
     mockHandleLogin: vi.fn(),
     mockPasswordReset: vi.fn(),
     mockPasswordResetRequest: vi.fn(),
@@ -30,7 +40,9 @@ vi.mock('@/shared/api', () => ({
     AuthAPI: {
         passwordLogin: vi.fn(),
         passwordSignup: mockPasswordSignup,
+        confirmAdminEmailVerification: mockConfirmEmailVerification,
         requestAdminPasswordReset: mockPasswordResetRequest,
+        confirmAdminPasswordResetToken: mockConfirmPasswordResetToken,
         resetAdminPassword: mockPasswordReset,
         sendAdminEmailVerification: mockSendAdminEmailVerification,
     },
@@ -95,6 +107,7 @@ describe('LoginPage', () => {
         const user = userEvent.setup();
 
         mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com'});
+        mockConfirmEmailVerification.mockResolvedValueOnce(undefined);
         mockPasswordSignup.mockResolvedValueOnce({accessToken: 'admin-token'});
 
         render(
@@ -110,11 +123,14 @@ describe('LoginPage', () => {
         await user.click(screen.getByRole('button', {name: '인증'}));
         expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('이메일 인증번호'), 'abc1234567');
+        await user.click(screen.getByRole('button', {name: '확인'}));
+        expect(await screen.findByText('이메일 인증이 완료됐어요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('비밀번호'), 'password1234');
         await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
         await user.click(screen.getByRole('button', {name: '계정 만들기'}));
 
         expect(mockSendAdminEmailVerification).toHaveBeenCalledWith({email: 'admin@example.com'});
+        expect(mockConfirmEmailVerification).toHaveBeenCalledWith({email: 'admin@example.com', emailVerificationToken: '123456'});
         expect(mockPasswordSignup).toHaveBeenCalledWith({
             name: '김관리',
             email: 'admin@example.com',
@@ -128,6 +144,7 @@ describe('LoginPage', () => {
         const user = userEvent.setup();
 
         mockPasswordResetRequest.mockResolvedValueOnce({email: 'admin@example.com'});
+        mockConfirmPasswordResetToken.mockResolvedValueOnce(undefined);
         mockPasswordReset.mockResolvedValueOnce(undefined);
 
         render(
@@ -144,11 +161,14 @@ describe('LoginPage', () => {
         await user.click(screen.getByRole('button', {name: '인증'}));
         expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('비밀번호 재설정 인증번호'), 'abc6543210');
+        await user.click(screen.getByRole('button', {name: '확인'}));
+        expect(await screen.findByText('인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('새 비밀번호'), 'new-password123');
         await user.type(screen.getByLabelText('새 비밀번호 확인'), 'new-password123');
         await user.click(screen.getByRole('button', {name: '비밀번호 재설정'}));
 
         expect(mockPasswordResetRequest).toHaveBeenCalledWith({email: 'admin@example.com'});
+        expect(mockConfirmPasswordResetToken).toHaveBeenCalledWith({email: 'admin@example.com', resetToken: '654321'});
         expect(mockPasswordReset).toHaveBeenCalledWith({
             email: 'admin@example.com',
             resetToken: '654321',

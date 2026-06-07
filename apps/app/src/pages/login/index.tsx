@@ -66,6 +66,7 @@ function LoginPage() {
     const [signupVerificationError, setSignupVerificationError] = useState<string | null>(null);
     const [signupVerificationCode, setSignupVerificationCode] = useState('');
     const [hasRequestedSignupVerification, setHasRequestedSignupVerification] = useState(false);
+    const [isSignupEmailVerified, setIsSignupEmailVerified] = useState(false);
     const [isPasswordResetMode, setIsPasswordResetMode] = useState(false);
     const [passwordResetEmail, setPasswordResetEmail] = useState('');
     const [passwordResetToken, setPasswordResetToken] = useState<string | null>(null);
@@ -76,22 +77,25 @@ function LoginPage() {
     const [passwordResetMessage, setPasswordResetMessage] = useState<string | null>(null);
     const [passwordResetError, setPasswordResetError] = useState<string | null>(null);
     const [hasRequestedPasswordReset, setHasRequestedPasswordReset] = useState(false);
+    const [isPasswordResetTokenVerified, setIsPasswordResetTokenVerified] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
+    const [isConfirmingSignupVerification, setIsConfirmingSignupVerification] = useState(false);
     const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+    const [isConfirmingPasswordReset, setIsConfirmingPasswordReset] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
     const isPasswordResetEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
     const hasSignupVerificationCode = signupEmailVerificationToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
     const hasPasswordResetCode = passwordResetToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
-    const isSignupBusy = isSubmitting || isSendingVerification;
-    const isSignupDisabled = !signupName.trim() || !hasSignupVerificationCode || !signupPassword || !signupPasswordConfirm || isSignupBusy;
-    const isPasswordResetBusy = isSendingPasswordReset || isResettingPassword;
+    const isSignupBusy = isSubmitting || isSendingVerification || isConfirmingSignupVerification;
+    const isSignupDisabled = !signupName.trim() || !isSignupEmailVerified || !signupPassword || !signupPasswordConfirm || isSignupBusy;
+    const isPasswordResetBusy = isSendingPasswordReset || isConfirmingPasswordReset || isResettingPassword;
     const isPasswordResetDisabled =
         !isPasswordResetEmailValid ||
-        !hasPasswordResetCode ||
+        !isPasswordResetTokenVerified ||
         !passwordResetNewPassword ||
         !passwordResetNewPasswordConfirm ||
         isPasswordResetBusy;
@@ -131,6 +135,8 @@ function LoginPage() {
 
         if (!hasPasswordResetCode) {
             nextErrors.resetToken = '6자리 인증번호를 입력해 주세요.';
+        } else if (!isPasswordResetTokenVerified) {
+            nextErrors.resetToken = '인증번호 확인을 완료해 주세요.';
         }
 
         if (passwordResetNewPassword.length < PASSWORD_MIN_LENGTH) {
@@ -150,6 +156,7 @@ function LoginPage() {
         setSignupEmailVerificationToken(null);
         setSignupVerificationCode('');
         setHasRequestedSignupVerification(false);
+        setIsSignupEmailVerified(false);
         setSignupVerificationMessage(null);
         setSignupVerificationError(null);
     };
@@ -157,12 +164,16 @@ function LoginPage() {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
         setSignupVerificationCode(normalizedCode);
         setSignupEmailVerificationToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
+        setIsSignupEmailVerified(false);
+        setSignupVerificationMessage(null);
+        setSignupVerificationError(null);
     };
     const handlePasswordResetEmailChange = (value: string) => {
         setPasswordResetEmail(value);
         setPasswordResetToken(null);
         setPasswordResetCode('');
         setHasRequestedPasswordReset(false);
+        setIsPasswordResetTokenVerified(false);
         setPasswordResetMessage(null);
         setPasswordResetError(null);
     };
@@ -170,6 +181,9 @@ function LoginPage() {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
         setPasswordResetCode(normalizedCode);
         setPasswordResetToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
+        setIsPasswordResetTokenVerified(false);
+        setPasswordResetMessage(null);
+        setPasswordResetError(null);
     };
     const handleOpenPasswordReset = () => {
         setIsPasswordResetMode(true);
@@ -189,6 +203,7 @@ function LoginPage() {
         setSignupVerificationError(null);
         setSignupEmailVerificationToken(null);
         setSignupVerificationCode('');
+        setIsSignupEmailVerified(false);
 
         if (!isSignupEmailValid) {
             setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
@@ -208,12 +223,45 @@ function LoginPage() {
             setIsSendingVerification(false);
         }
     };
+    const handleConfirmSignupEmailVerification = async () => {
+        setSignupVerificationMessage(null);
+        setSignupVerificationError(null);
+
+        if (!isSignupEmailValid) {
+            setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+
+            return;
+        }
+
+        if (!hasSignupVerificationCode) {
+            setSignupVerificationError('6자리 인증번호를 입력해 주세요.');
+
+            return;
+        }
+
+        setIsConfirmingSignupVerification(true);
+
+        try {
+            await AuthAPI.confirmAdminEmailVerification({
+                email: signupEmail.trim(),
+                emailVerificationToken: signupEmailVerificationToken ?? '',
+            });
+            setIsSignupEmailVerified(true);
+            setSignupVerificationMessage('이메일 인증이 완료됐어요.');
+        } catch {
+            setIsSignupEmailVerified(false);
+            setSignupVerificationError('인증번호가 올바르지 않아요. 다시 확인해 주세요.');
+        } finally {
+            setIsConfirmingSignupVerification(false);
+        }
+    };
     const handleSendPasswordReset = async () => {
         setHasRequestedPasswordReset(true);
         setPasswordResetMessage(null);
         setPasswordResetError(null);
         setPasswordResetToken(null);
         setPasswordResetCode('');
+        setIsPasswordResetTokenVerified(false);
 
         if (!isPasswordResetEmailValid) {
             setPasswordResetErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
@@ -231,6 +279,39 @@ function LoginPage() {
             setPasswordResetError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
         } finally {
             setIsSendingPasswordReset(false);
+        }
+    };
+    const handleConfirmPasswordResetToken = async () => {
+        setPasswordResetMessage(null);
+        setPasswordResetError(null);
+
+        if (!isPasswordResetEmailValid) {
+            setPasswordResetErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+
+            return;
+        }
+
+        if (!hasPasswordResetCode) {
+            setPasswordResetErrors((errors) => ({...errors, resetToken: '6자리 인증번호를 입력해 주세요.'}));
+
+            return;
+        }
+
+        setPasswordResetErrors((errors) => ({...errors, resetToken: undefined}));
+        setIsConfirmingPasswordReset(true);
+
+        try {
+            await AuthAPI.confirmAdminPasswordResetToken({
+                email: passwordResetEmail.trim(),
+                resetToken: passwordResetToken ?? '',
+            });
+            setIsPasswordResetTokenVerified(true);
+            setPasswordResetMessage('인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.');
+        } catch {
+            setIsPasswordResetTokenVerified(false);
+            setPasswordResetError('인증번호가 올바르지 않아요. 다시 확인해 주세요.');
+        } finally {
+            setIsConfirmingPasswordReset(false);
         }
     };
     const handlePasswordLogin = async (event: FormEvent<HTMLFormElement>) => {
@@ -281,6 +362,7 @@ function LoginPage() {
             setIsPasswordResetMode(false);
             setPasswordResetToken(null);
             setPasswordResetCode('');
+            setIsPasswordResetTokenVerified(false);
             setPasswordResetNewPassword('');
             setPasswordResetNewPasswordConfirm('');
             setPasswordResetMessage(null);
@@ -296,6 +378,12 @@ function LoginPage() {
         setSignupError(null);
 
         if (!validateSignup()) {
+            return;
+        }
+
+        if (!isSignupEmailVerified) {
+            setSignupVerificationError('이메일 인증번호 확인을 완료해 주세요.');
+
             return;
         }
 
@@ -473,11 +561,12 @@ function LoginPage() {
                                 <FieldError id="password-reset-email-error" message={passwordResetErrors.email} />
                                 {hasRequestedPasswordReset ? (
                                     <div className="mt-2">
+                                        <div className="flex gap-2">
                                         <input
                                             id="password-reset-code"
                                             value={passwordResetCode}
                                             type="text"
-                                            className={getInputClassName(Boolean(passwordResetErrors.resetToken))}
+                                            className={cn(getInputClassName(Boolean(passwordResetErrors.resetToken)), 'min-w-0')}
                                             placeholder="6자리 인증번호"
                                             aria-label="비밀번호 재설정 인증번호"
                                             inputMode="numeric"
@@ -488,6 +577,15 @@ function LoginPage() {
                                             aria-invalid={Boolean(passwordResetErrors.resetToken)}
                                             aria-describedby={passwordResetErrors.resetToken ? 'password-reset-code-error' : undefined}
                                         />
+                                            <button
+                                                type="button"
+                                                disabled={!hasPasswordResetCode || isConfirmingPasswordReset || isPasswordResetTokenVerified}
+                                                className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                                onClick={handleConfirmPasswordResetToken}
+                                            >
+                                                {isConfirmingPasswordReset ? <Loader2 className="h-4 w-4 animate-spin" /> : isPasswordResetTokenVerified ? '완료' : '확인'}
+                                            </button>
+                                        </div>
                                         <FieldError id="password-reset-code-error" message={passwordResetErrors.resetToken} />
                                     </div>
                                 ) : null}
@@ -603,12 +701,12 @@ function LoginPage() {
                                 </div>
                                 <FieldError id="signup-email-error" message={signupErrors.email} />
                                 {hasRequestedSignupVerification ? (
-                                    <div className="mt-2">
+                                    <div className="mt-2 flex gap-2">
                                         <input
                                             id="signup-verification-code"
                                             value={signupVerificationCode}
                                             type="text"
-                                            className={getInputClassName(false)}
+                                            className={cn(getInputClassName(false), 'min-w-0')}
                                             placeholder="6자리 인증번호"
                                             aria-label="이메일 인증번호"
                                             inputMode="numeric"
@@ -617,6 +715,14 @@ function LoginPage() {
                                             pattern="[0-9]{6}"
                                             onChange={(event) => handleSignupVerificationCodeChange(event.target.value)}
                                         />
+                                        <button
+                                            type="button"
+                                            disabled={!hasSignupVerificationCode || isConfirmingSignupVerification || isSignupEmailVerified}
+                                            className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                            onClick={handleConfirmSignupEmailVerification}
+                                        >
+                                            {isConfirmingSignupVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignupEmailVerified ? '완료' : '확인'}
+                                        </button>
                                     </div>
                                 ) : null}
                                 {signupVerificationMessage ? <p className="mt-1 text-xs text-main-1">{signupVerificationMessage}</p> : null}

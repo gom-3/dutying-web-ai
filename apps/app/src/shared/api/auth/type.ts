@@ -37,6 +37,11 @@ export type TAdminPasswordResetConfirmRequest = {
     newPassword: string;
 };
 
+export type TAdminPasswordResetTokenConfirmRequest = {
+    email: string;
+    resetToken: string;
+};
+
 export type TAdminEmailVerificationSendRequest = {
     email: string;
 };
@@ -45,6 +50,11 @@ export type TAdminEmailVerificationSendResponse = {
     email: string;
     expiresAt?: string;
     debugVerificationToken?: string;
+};
+
+export type TAdminEmailVerificationConfirmRequest = {
+    email: string;
+    emailVerificationToken: string;
 };
 
 export type TAdminSocialProvider = 'KAKAO' | 'APPLE';
@@ -82,8 +92,10 @@ export interface IAuthAPI {
     passwordLogin: (request: TAdminPasswordLoginRequest) => Promise<TAuthTokenResponse>;
     passwordSignup: (request: TAdminPasswordSignupRequest) => Promise<TAuthTokenResponse>;
     requestAdminPasswordReset: (request: TAdminPasswordResetRequest) => Promise<TAdminPasswordResetRequestResponse>;
+    confirmAdminPasswordResetToken: (request: TAdminPasswordResetTokenConfirmRequest) => Promise<void>;
     resetAdminPassword: (request: TAdminPasswordResetConfirmRequest) => Promise<void>;
     sendAdminEmailVerification: (request: TAdminEmailVerificationSendRequest) => Promise<TAdminEmailVerificationSendResponse>;
+    confirmAdminEmailVerification: (request: TAdminEmailVerificationConfirmRequest) => Promise<void>;
     adminSocialProfile: (request: TAdminSocialProfileRequest) => Promise<TAdminSocialProfileResponse>;
     adminSocialSignup: (request: TAdminSocialSignupRequest) => Promise<TAuthTokenResponse>;
     logout: (accessToken: string | null) => Promise<void>;

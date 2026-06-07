@@ -1,12 +1,14 @@
 import axiosInstance from '../client';
 import {
     type IAuthAPI,
+    type TAdminEmailVerificationConfirmRequest,
     type TAdminEmailVerificationSendRequest,
     type TAdminEmailVerificationSendResponse,
     type TAdminPasswordLoginRequest,
     type TAdminPasswordResetConfirmRequest,
     type TAdminPasswordResetRequest,
     type TAdminPasswordResetRequestResponse,
+    type TAdminPasswordResetTokenConfirmRequest,
     type TAdminPasswordSignupRequest,
     type TAdminSocialProfileRequest,
     type TAdminSocialProfileResponse,
@@ -23,10 +25,14 @@ class AuthAPI implements IAuthAPI {
         (await axiosInstance.post<TAuthTokenResponse>('/auth/admin/password/signup', request)).data;
     requestAdminPasswordReset = async (request: TAdminPasswordResetRequest) =>
         (await axiosInstance.post<TAdminPasswordResetRequestResponse>('/auth/admin/password-reset-requests', request)).data;
+    confirmAdminPasswordResetToken = async (request: TAdminPasswordResetTokenConfirmRequest) =>
+        (await axiosInstance.post<void>('/auth/admin/password-reset-requests/confirm', request)).data;
     resetAdminPassword = async (request: TAdminPasswordResetConfirmRequest) =>
         (await axiosInstance.post<void>('/auth/admin/password-reset', request)).data;
     sendAdminEmailVerification = async (request: TAdminEmailVerificationSendRequest) =>
         (await axiosInstance.post<TAdminEmailVerificationSendResponse>('/auth/admin/email-verifications', request)).data;
+    confirmAdminEmailVerification = async (request: TAdminEmailVerificationConfirmRequest) =>
+        (await axiosInstance.post<void>('/auth/admin/email-verifications/confirm', request)).data;
     adminSocialProfile = async (request: TAdminSocialProfileRequest) =>
         (await axiosInstance.post<TAdminSocialProfileResponse>('/auth/admin/social/profile', request)).data;
     adminSocialSignup = async (request: TAdminSocialSignupRequest) =>
