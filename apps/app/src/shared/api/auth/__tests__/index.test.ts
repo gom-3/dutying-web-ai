@@ -49,6 +49,27 @@ describe('AuthAPI', () => {
         expect(mockPost).toHaveBeenCalledWith('/auth/admin/email-verifications', payload);
     });
 
+    it('uses the ward admin password reset request endpoint', async () => {
+        const payload = {email: 'admin@example.com'};
+        const response = {email: 'admin@example.com'};
+
+        mockPost.mockResolvedValue({data: response});
+
+        await expect(AuthAPI.requestAdminPasswordReset(payload)).resolves.toBe(response);
+
+        expect(mockPost).toHaveBeenCalledWith('/auth/admin/password-reset-requests', payload);
+    });
+
+    it('uses the ward admin password reset endpoint', async () => {
+        const payload = {email: 'admin@example.com', resetToken: '123456', newPassword: 'new-password123'};
+
+        mockPost.mockResolvedValue({data: undefined});
+
+        await expect(AuthAPI.resetAdminPassword(payload)).resolves.toBeUndefined();
+
+        expect(mockPost).toHaveBeenCalledWith('/auth/admin/password-reset', payload);
+    });
+
     it('uses the ward admin social profile endpoint', async () => {
         const payload = {provider: 'KAKAO' as const, idToken: 'id-token'};
         const response = {provider: 'KAKAO' as const, email: 'admin@example.com'};

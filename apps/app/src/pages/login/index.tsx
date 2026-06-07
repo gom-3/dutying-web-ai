@@ -14,6 +14,7 @@ import 'react-responsive-carousel/lib/styles/carousel.min.css';
 import './index.css';
 
 type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm', string>>;
+type TPasswordResetErrors = Partial<Record<'email' | 'resetToken' | 'newPassword' | 'newPasswordConfirm', string>>;
 
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
@@ -58,24 +59,46 @@ function LoginPage() {
     const [signupPassword, setSignupPassword] = useState('');
     const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
     const [loginError, setLoginError] = useState<string | null>(null);
+    const [loginNotice, setLoginNotice] = useState<string | null>(null);
     const [signupErrors, setSignupErrors] = useState<TSignupErrors>({});
     const [signupError, setSignupError] = useState<string | null>(null);
     const [signupVerificationMessage, setSignupVerificationMessage] = useState<string | null>(null);
     const [signupVerificationError, setSignupVerificationError] = useState<string | null>(null);
     const [signupVerificationCode, setSignupVerificationCode] = useState('');
     const [hasRequestedSignupVerification, setHasRequestedSignupVerification] = useState(false);
+    const [isPasswordResetMode, setIsPasswordResetMode] = useState(false);
+    const [passwordResetEmail, setPasswordResetEmail] = useState('');
+    const [passwordResetToken, setPasswordResetToken] = useState<string | null>(null);
+    const [passwordResetCode, setPasswordResetCode] = useState('');
+    const [passwordResetNewPassword, setPasswordResetNewPassword] = useState('');
+    const [passwordResetNewPasswordConfirm, setPasswordResetNewPasswordConfirm] = useState('');
+    const [passwordResetErrors, setPasswordResetErrors] = useState<TPasswordResetErrors>({});
+    const [passwordResetMessage, setPasswordResetMessage] = useState<string | null>(null);
+    const [passwordResetError, setPasswordResetError] = useState<string | null>(null);
+    const [hasRequestedPasswordReset, setHasRequestedPasswordReset] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
+    const [isSendingPasswordReset, setIsSendingPasswordReset] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
+    const isPasswordResetEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
     const hasSignupVerificationCode = signupEmailVerificationToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
+    const hasPasswordResetCode = passwordResetToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
     const isSignupBusy = isSubmitting || isSendingVerification;
     const isSignupDisabled = !signupName.trim() || !hasSignupVerificationCode || !signupPassword || !signupPasswordConfirm || isSignupBusy;
+    const isPasswordResetBusy = isSendingPasswordReset || isResettingPassword;
+    const isPasswordResetDisabled =
+        !isPasswordResetEmailValid ||
+        !hasPasswordResetCode ||
+        !passwordResetNewPassword ||
+        !passwordResetNewPasswordConfirm ||
+        isPasswordResetBusy;
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
-    const title = isSignupPage ? '\ud68c\uc6d0\uac00\uc785' : '\ub85c\uadf8\uc778';
+    const title = isSignupPage ? '회원가입' : isPasswordResetMode ? '비밀번호 찾기' : '로그인';
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
 
@@ -99,6 +122,29 @@ function LoginPage() {
 
         return Object.keys(nextErrors).length === 0;
     };
+    const validatePasswordReset = () => {
+        const nextErrors: TPasswordResetErrors = {};
+
+        if (!EMAIL_PATTERN.test(passwordResetEmail.trim())) {
+            nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+        }
+
+        if (!hasPasswordResetCode) {
+            nextErrors.resetToken = '6자리 인증번호를 입력해 주세요.';
+        }
+
+        if (passwordResetNewPassword.length < PASSWORD_MIN_LENGTH) {
+            nextErrors.newPassword = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해 주세요.`;
+        }
+
+        if (passwordResetNewPassword !== passwordResetNewPasswordConfirm) {
+            nextErrors.newPasswordConfirm = '비밀번호가 서로 달라요.';
+        }
+
+        setPasswordResetErrors(nextErrors);
+
+        return Object.keys(nextErrors).length === 0;
+    };
     const handleSignupEmailChange = (value: string) => {
         setSignupEmail(value);
         setSignupEmailVerificationToken(null);
@@ -111,6 +157,31 @@ function LoginPage() {
         const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
         setSignupVerificationCode(normalizedCode);
         setSignupEmailVerificationToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
+    };
+    const handlePasswordResetEmailChange = (value: string) => {
+        setPasswordResetEmail(value);
+        setPasswordResetToken(null);
+        setPasswordResetCode('');
+        setHasRequestedPasswordReset(false);
+        setPasswordResetMessage(null);
+        setPasswordResetError(null);
+    };
+    const handlePasswordResetCodeChange = (value: string) => {
+        const normalizedCode = value.replace(/\D/g, '').slice(0, EMAIL_VERIFICATION_CODE_LENGTH);
+        setPasswordResetCode(normalizedCode);
+        setPasswordResetToken(normalizedCode.length === EMAIL_VERIFICATION_CODE_LENGTH ? normalizedCode : null);
+    };
+    const handleOpenPasswordReset = () => {
+        setIsPasswordResetMode(true);
+        setLoginError(null);
+        setLoginNotice(null);
+        setPasswordResetEmail(loginEmail.trim());
+    };
+    const handleClosePasswordReset = () => {
+        setIsPasswordResetMode(false);
+        setPasswordResetError(null);
+        setPasswordResetMessage(null);
+        setPasswordResetErrors({});
     };
     const handleSendSignupEmailVerification = async () => {
         setHasRequestedSignupVerification(true);
@@ -137,9 +208,35 @@ function LoginPage() {
             setIsSendingVerification(false);
         }
     };
+    const handleSendPasswordReset = async () => {
+        setHasRequestedPasswordReset(true);
+        setPasswordResetMessage(null);
+        setPasswordResetError(null);
+        setPasswordResetToken(null);
+        setPasswordResetCode('');
+
+        if (!isPasswordResetEmailValid) {
+            setPasswordResetErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+
+            return;
+        }
+
+        setPasswordResetErrors((errors) => ({...errors, email: undefined}));
+        setIsSendingPasswordReset(true);
+
+        try {
+            await AuthAPI.requestAdminPasswordReset({email: passwordResetEmail.trim()});
+            setPasswordResetMessage('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.');
+        } catch (error) {
+            setPasswordResetError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
+        } finally {
+            setIsSendingPasswordReset(false);
+        }
+    };
     const handlePasswordLogin = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setLoginError(null);
+        setLoginNotice(null);
 
         if (!loginEmail.trim() || !loginPassword) {
             setLoginError('이메일과 비밀번호를 입력해 주세요.');
@@ -160,6 +257,38 @@ function LoginPage() {
             setLoginError(error instanceof Error ? error.message : '로그인하지 못했어요. 다시 시도해 주세요.');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+    const handlePasswordReset = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setPasswordResetError(null);
+
+        if (!validatePasswordReset()) {
+            return;
+        }
+
+        setIsResettingPassword(true);
+
+        try {
+            await AuthAPI.resetAdminPassword({
+                email: passwordResetEmail.trim(),
+                resetToken: passwordResetToken ?? '',
+                newPassword: passwordResetNewPassword,
+            });
+            setLoginEmail(passwordResetEmail.trim());
+            setLoginPassword('');
+            setLoginNotice('비밀번호가 변경됐어요. 새 비밀번호로 로그인해 주세요.');
+            setIsPasswordResetMode(false);
+            setPasswordResetToken(null);
+            setPasswordResetCode('');
+            setPasswordResetNewPassword('');
+            setPasswordResetNewPasswordConfirm('');
+            setPasswordResetMessage(null);
+            setPasswordResetErrors({});
+        } catch (error) {
+            setPasswordResetError(error instanceof Error ? error.message : '비밀번호를 변경하지 못했어요. 다시 시도해 주세요.');
+        } finally {
+            setIsResettingPassword(false);
         }
     };
     const handlePasswordSignup = async (event: FormEvent<HTMLFormElement>) => {
@@ -238,7 +367,7 @@ function LoginPage() {
                         <h1 className="font-apple text-[32px] font-semibold text-text-1">{title}</h1>
                     </div>
 
-                    {!isSignupPage ? (
+                    {!isSignupPage && !isPasswordResetMode ? (
                         <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
@@ -278,6 +407,20 @@ function LoginPage() {
                                     />
                                 </div>
                             </div>
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    className="cursor-pointer text-sm font-semibold text-main-1 underline underline-offset-[3px]"
+                                    onClick={handleOpenPasswordReset}
+                                >
+                                    비밀번호 찾기
+                                </button>
+                            </div>
+                            {loginNotice ? (
+                                <p role="status" className="rounded-[12px] bg-main-light px-3 py-2 text-sm text-main-1">
+                                    {loginNotice}
+                                </p>
+                            ) : null}
                             {loginError ? (
                                 <p role="alert" className="rounded-[12px] bg-[#FFF7F8] px-3 py-2 text-sm text-red">
                                     {loginError}
@@ -298,7 +441,122 @@ function LoginPage() {
                                 </Link>
                             </p>
                         </form>
-                    ) : (
+                    ) : null}
+
+                    {!isSignupPage && isPasswordResetMode ? (
+                        <form onSubmit={handlePasswordReset} className="mx-auto mt-7 w-[334px] space-y-4">
+                            <div>
+                                <label htmlFor="password-reset-email" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    이메일
+                                </label>
+                                <div className="flex gap-2">
+                                    <input
+                                        id="password-reset-email"
+                                        value={passwordResetEmail}
+                                        type="email"
+                                        className={cn(getInputClassName(Boolean(passwordResetErrors.email)), 'min-w-0')}
+                                        placeholder="이메일을 입력해 주세요"
+                                        autoComplete="email"
+                                        onChange={(event) => handlePasswordResetEmailChange(event.target.value)}
+                                        aria-invalid={Boolean(passwordResetErrors.email)}
+                                        aria-describedby={passwordResetErrors.email ? 'password-reset-email-error' : undefined}
+                                    />
+                                    <button
+                                        type="button"
+                                        disabled={!isPasswordResetEmailValid || isSendingPasswordReset}
+                                        className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                        onClick={handleSendPasswordReset}
+                                    >
+                                        {isSendingPasswordReset ? <Loader2 className="h-4 w-4 animate-spin" /> : hasRequestedPasswordReset ? '재전송' : '인증'}
+                                    </button>
+                                </div>
+                                <FieldError id="password-reset-email-error" message={passwordResetErrors.email} />
+                                {hasRequestedPasswordReset ? (
+                                    <div className="mt-2">
+                                        <input
+                                            id="password-reset-code"
+                                            value={passwordResetCode}
+                                            type="text"
+                                            className={getInputClassName(Boolean(passwordResetErrors.resetToken))}
+                                            placeholder="6자리 인증번호"
+                                            aria-label="비밀번호 재설정 인증번호"
+                                            inputMode="numeric"
+                                            autoComplete="one-time-code"
+                                            maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
+                                            pattern="[0-9]{6}"
+                                            onChange={(event) => handlePasswordResetCodeChange(event.target.value)}
+                                            aria-invalid={Boolean(passwordResetErrors.resetToken)}
+                                            aria-describedby={passwordResetErrors.resetToken ? 'password-reset-code-error' : undefined}
+                                        />
+                                        <FieldError id="password-reset-code-error" message={passwordResetErrors.resetToken} />
+                                    </div>
+                                ) : null}
+                                {passwordResetMessage ? <p className="mt-1 text-xs text-main-1">{passwordResetMessage}</p> : null}
+                            </div>
+
+                            <div>
+                                <label htmlFor="password-reset-new-password" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    새 비밀번호
+                                </label>
+                                <input
+                                    id="password-reset-new-password"
+                                    value={passwordResetNewPassword}
+                                    type="password"
+                                    className={getInputClassName(Boolean(passwordResetErrors.newPassword))}
+                                    placeholder="새 비밀번호를 입력해 주세요"
+                                    autoComplete="new-password"
+                                    onChange={(event) => setPasswordResetNewPassword(event.target.value)}
+                                    aria-invalid={Boolean(passwordResetErrors.newPassword)}
+                                    aria-describedby={passwordResetErrors.newPassword ? 'password-reset-new-password-error' : undefined}
+                                />
+                                <FieldError id="password-reset-new-password-error" message={passwordResetErrors.newPassword} />
+                            </div>
+
+                            <div>
+                                <label htmlFor="password-reset-new-password-confirm" className="mb-1.5 block text-sm font-medium text-sub-2">
+                                    새 비밀번호 확인
+                                </label>
+                                <input
+                                    id="password-reset-new-password-confirm"
+                                    value={passwordResetNewPasswordConfirm}
+                                    type="password"
+                                    className={getInputClassName(Boolean(passwordResetErrors.newPasswordConfirm))}
+                                    placeholder="새 비밀번호를 다시 입력해 주세요"
+                                    autoComplete="new-password"
+                                    onChange={(event) => setPasswordResetNewPasswordConfirm(event.target.value)}
+                                    aria-invalid={Boolean(passwordResetErrors.newPasswordConfirm)}
+                                    aria-describedby={passwordResetErrors.newPasswordConfirm ? 'password-reset-new-password-confirm-error' : undefined}
+                                />
+                                <FieldError id="password-reset-new-password-confirm-error" message={passwordResetErrors.newPasswordConfirm} />
+                            </div>
+
+                            {passwordResetError ? (
+                                <p role="alert" className="rounded-[12px] bg-[#FFF7F8] px-3 py-2 text-sm text-red">
+                                    {passwordResetError}
+                                </p>
+                            ) : null}
+
+                            <button
+                                type="submit"
+                                disabled={isPasswordResetDisabled}
+                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                            >
+                                {isResettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                                비밀번호 재설정
+                            </button>
+                            <p className="text-center text-sm text-gray-3">
+                                <button
+                                    type="button"
+                                    className="cursor-pointer font-semibold text-main-1 underline underline-offset-[3px]"
+                                    onClick={handleClosePasswordReset}
+                                >
+                                    로그인으로 돌아가기
+                                </button>
+                            </p>
+                        </form>
+                    ) : null}
+
+                    {isSignupPage ? (
                         <form onSubmit={handlePasswordSignup} className="mx-auto mt-7 w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-sub-2">
@@ -426,36 +684,38 @@ function LoginPage() {
                                 </Link>
                             </p>
                         </form>
-                    )}
+                    ) : null}
 
-                    <div className="mx-auto mt-7 w-[334px] border-t border-gray-6 pt-6">
-                        <div className="grid grid-cols-1 gap-3">
-                            <a
-                                href={kakaoAuthorizeUrl}
-                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
-                            >
-                                <KakaoIcon className="mr-3 h-5 w-5" />
-                                {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
-                            </a>
-                            {canUseDevSignupBypass ? (
-                                <button
-                                    type="button"
-                                    disabled={isSubmitting}
-                                    onClick={handleDevSignupBypass}
-                                    className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-gray-6 bg-white px-[12px] text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:text-gray-4"
+                    {!isPasswordResetMode ? (
+                        <div className="mx-auto mt-7 w-[334px] border-t border-gray-6 pt-6">
+                            <div className="grid grid-cols-1 gap-3">
+                                <a
+                                    href={kakaoAuthorizeUrl}
+                                    className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
                                 >
-                                    DEV: skip Kakao signup
-                                </button>
-                            ) : null}
-                            <a
-                                href={appleAuthorizeUrl}
-                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
-                            >
-                                <AppleIcon className="mr-3 h-5 w-5" />
-                                {isSignupPage ? 'Apple로 시작하기' : 'Apple로 계속하기'}
-                            </a>
+                                    <KakaoIcon className="mr-3 h-5 w-5" />
+                                    {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
+                                </a>
+                                {canUseDevSignupBypass ? (
+                                    <button
+                                        type="button"
+                                        disabled={isSubmitting}
+                                        onClick={handleDevSignupBypass}
+                                        className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-gray-6 bg-white px-[12px] text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:text-gray-4"
+                                    >
+                                        DEV: skip Kakao signup
+                                    </button>
+                                ) : null}
+                                <a
+                                    href={appleAuthorizeUrl}
+                                    className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
+                                >
+                                    <AppleIcon className="mr-3 h-5 w-5" />
+                                    {isSignupPage ? 'Apple로 시작하기' : 'Apple로 계속하기'}
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    ) : null}
                 </div>
 
                 <div className="mt-auto flex flex-wrap justify-center gap-x-2 gap-y-1 pt-8 font-apple text-sm text-sub-3">

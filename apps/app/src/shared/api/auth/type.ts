@@ -21,6 +21,22 @@ export type TAdminPasswordSignupRequest = {
     profileImgUrl?: string | null;
 };
 
+export type TAdminPasswordResetRequest = {
+    email: string;
+};
+
+export type TAdminPasswordResetRequestResponse = {
+    email: string;
+    expiresAt?: string;
+    debugResetToken?: string;
+};
+
+export type TAdminPasswordResetConfirmRequest = {
+    email: string;
+    resetToken: string;
+    newPassword: string;
+};
+
 export type TAdminEmailVerificationSendRequest = {
     email: string;
 };
@@ -65,6 +81,8 @@ export interface IAuthAPI {
     demoStart: () => Promise<TDemoStartResponse>;
     passwordLogin: (request: TAdminPasswordLoginRequest) => Promise<TAuthTokenResponse>;
     passwordSignup: (request: TAdminPasswordSignupRequest) => Promise<TAuthTokenResponse>;
+    requestAdminPasswordReset: (request: TAdminPasswordResetRequest) => Promise<TAdminPasswordResetRequestResponse>;
+    resetAdminPassword: (request: TAdminPasswordResetConfirmRequest) => Promise<void>;
     sendAdminEmailVerification: (request: TAdminEmailVerificationSendRequest) => Promise<TAdminEmailVerificationSendResponse>;
     adminSocialProfile: (request: TAdminSocialProfileRequest) => Promise<TAdminSocialProfileResponse>;
     adminSocialSignup: (request: TAdminSocialSignupRequest) => Promise<TAuthTokenResponse>;

@@ -4,6 +4,9 @@ import {
     type TAdminEmailVerificationSendRequest,
     type TAdminEmailVerificationSendResponse,
     type TAdminPasswordLoginRequest,
+    type TAdminPasswordResetConfirmRequest,
+    type TAdminPasswordResetRequest,
+    type TAdminPasswordResetRequestResponse,
     type TAdminPasswordSignupRequest,
     type TAdminSocialProfileRequest,
     type TAdminSocialProfileResponse,
@@ -18,6 +21,10 @@ class AuthAPI implements IAuthAPI {
         (await axiosInstance.post<TAuthTokenResponse>('/auth/admin/password/login', request)).data;
     passwordSignup = async (request: TAdminPasswordSignupRequest) =>
         (await axiosInstance.post<TAuthTokenResponse>('/auth/admin/password/signup', request)).data;
+    requestAdminPasswordReset = async (request: TAdminPasswordResetRequest) =>
+        (await axiosInstance.post<TAdminPasswordResetRequestResponse>('/auth/admin/password-reset-requests', request)).data;
+    resetAdminPassword = async (request: TAdminPasswordResetConfirmRequest) =>
+        (await axiosInstance.post<void>('/auth/admin/password-reset', request)).data;
     sendAdminEmailVerification = async (request: TAdminEmailVerificationSendRequest) =>
         (await axiosInstance.post<TAdminEmailVerificationSendResponse>('/auth/admin/email-verifications', request)).data;
     adminSocialProfile = async (request: TAdminSocialProfileRequest) =>
