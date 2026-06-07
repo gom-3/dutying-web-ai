@@ -86,10 +86,10 @@ describe('LoginPage', () => {
         );
     });
 
-    it('requests email verification and sends the returned token when signing up', async () => {
+    it('requests email verification and sends the entered token when signing up', async () => {
         const user = userEvent.setup();
 
-        mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com', debugVerificationToken: 'verify-token'});
+        mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com'});
         mockPasswordSignup.mockResolvedValueOnce({accessToken: 'admin-token'});
 
         render(
@@ -103,6 +103,8 @@ describe('LoginPage', () => {
         await user.type(screen.getByLabelText('이름'), '김관리');
         await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
         await user.click(screen.getByRole('button', {name: '인증'}));
+        expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();
+        await user.type(screen.getByLabelText('이메일 인증번호'), 'verify-token');
         await user.type(screen.getByLabelText('비밀번호'), 'password1234');
         await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
         await user.click(screen.getByRole('button', {name: '계정 만들기'}));

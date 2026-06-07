@@ -67,10 +67,10 @@ function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSendingVerification, setIsSendingVerification] = useState(false);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
-    const isSignupEmailVerified = Boolean(signupEmailVerificationToken);
+    const hasSignupVerificationCode = Boolean(signupEmailVerificationToken);
     const isLoginDisabled = !loginEmail.trim() || !loginPassword || isSubmitting;
     const isSignupBusy = isSubmitting || isSendingVerification;
-    const isSignupDisabled = !signupName.trim() || !isSignupEmailVerified || !signupPassword || !signupPasswordConfirm || isSignupBusy;
+    const isSignupDisabled = !signupName.trim() || !hasSignupVerificationCode || !signupPassword || !signupPasswordConfirm || isSignupBusy;
     const socialAuthorizeNextPath = isSignupPage ? buildSocialSignupRegisterPath() : nextPath;
     const kakaoAuthorizeUrl = buildAuthAuthorizeUrl('kakao', socialAuthorizeNextPath);
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
@@ -127,17 +127,8 @@ function LoginPage() {
         setIsSendingVerification(true);
 
         try {
-            const response = await AuthAPI.sendAdminEmailVerification({email: signupEmail.trim()});
-
-            if (response.debugVerificationToken) {
-                setSignupEmailVerificationToken(response.debugVerificationToken);
-                setSignupVerificationCode(response.debugVerificationToken);
-                setSignupVerificationMessage('이메일 인증이 완료됐어요.');
-
-                return;
-            }
-
-            setSignupVerificationMessage('인증 메일을 보냈어요. 메일함에서 인증을 완료해 주세요.');
+            await AuthAPI.sendAdminEmailVerification({email: signupEmail.trim()});
+            setSignupVerificationMessage('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.');
         } catch (error) {
             setSignupVerificationError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
         } finally {
@@ -343,11 +334,11 @@ function LoginPage() {
                                     />
                                     <button
                                         type="button"
-                                        disabled={!isSignupEmailValid || isSendingVerification || isSignupEmailVerified}
+                                        disabled={!isSignupEmailValid || isSendingVerification}
                                         className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                         onClick={handleSendSignupEmailVerification}
                                     >
-                                        {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignupEmailVerified ? '완료' : '인증'}
+                                        {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : hasRequestedSignupVerification ? '재전송' : '인증'}
                                     </button>
                                 </div>
                                 <FieldError id="signup-email-error" message={signupErrors.email} />
@@ -358,7 +349,8 @@ function LoginPage() {
                                             value={signupVerificationCode}
                                             type="text"
                                             className={getInputClassName(false)}
-                                            placeholder="?몄쬆踰덊샇瑜??낅젰??二쇱꽭??"
+                                            placeholder="인증번호를 입력해 주세요"
+                                            aria-label="이메일 인증번호"
                                             onChange={(event) => handleSignupVerificationCodeChange(event.target.value)}
                                         />
                                     </div>
