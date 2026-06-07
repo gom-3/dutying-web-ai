@@ -1,6 +1,8 @@
-﻿import {CalendarDays, ChevronDown, MessageCircle, UserRound, UsersRound} from 'lucide-react';
-import {useEffect, useState} from 'react';
+import {CalendarDays, ChevronDown, MessageCircle, UsersRound} from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
+import type {TAccount} from '@/entities/account';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import './landing-page.css';
@@ -438,7 +440,48 @@ function CtaIcon({src, className = 'size-5'}: {src: string; className?: string})
     return <img src={src} alt="" aria-hidden="true" className={`${className} shrink-0 object-contain`} />;
 }
 
-function HeaderActions({isAuth}: {isAuth: boolean}) {
+function HeaderActions({
+    accountMe,
+    isAuth,
+    onLogout,
+}: {
+    accountMe: TAccount | null;
+    isAuth: boolean;
+    onLogout: (fallBackPath?: string) => Promise<void> | void;
+}) {
+    const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+    const profileMenuRef = useRef<HTMLDivElement>(null);
+    const accountProfileImage = accountMe?.profileImgUrl ? {profileImgUrl: accountMe.profileImgUrl} : undefined;
+
+    useEffect(() => {
+        if (!isProfileMenuOpen) {
+            return undefined;
+        }
+
+        const closeOnOutsideClick = (event: MouseEvent | TouchEvent) => {
+            if (!(event.target instanceof Node) || profileMenuRef.current?.contains(event.target)) {
+                return;
+            }
+
+            setIsProfileMenuOpen(false);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsProfileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', closeOnOutsideClick);
+        document.addEventListener('touchstart', closeOnOutsideClick);
+        document.addEventListener('keydown', closeOnEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', closeOnOutsideClick);
+            document.removeEventListener('touchstart', closeOnOutsideClick);
+            document.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [isProfileMenuOpen]);
+
     if (!isAuth) {
         return (
             <Link
@@ -449,6 +492,12 @@ function HeaderActions({isAuth}: {isAuth: boolean}) {
             </Link>
         );
     }
+
+    const closeProfileMenu = () => setIsProfileMenuOpen(false);
+    const handleLogoutClick = () => {
+        closeProfileMenu();
+        void onLogout(ROUTE.ROOT);
+    };
 
     return (
         <>
@@ -461,14 +510,42 @@ function HeaderActions({isAuth}: {isAuth: boolean}) {
                 <span className="hidden sm:inline">근무표 만들기</span>
                 <span className="sm:hidden">근무표</span>
             </Link>
-            <Link
-                to={ROUTE.PROFILE}
-                aria-label="마이페이지"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] border border-[#E5DEF8] bg-white px-3 text-sm font-bold text-[#5F557F] transition-colors hover:border-main-3 hover:text-main-1 sm:px-4"
-            >
-                <UserRound className="size-4" aria-hidden="true" />
-                <span className="hidden sm:inline">마이페이지</span>
-            </Link>
+            <div ref={profileMenuRef} className="relative">
+                <button
+                    type="button"
+                    aria-label="프로필 메뉴"
+                    aria-haspopup="menu"
+                    aria-expanded={isProfileMenuOpen}
+                    onClick={() => setIsProfileMenuOpen((prev) => !prev)}
+                    className="flex size-10 items-center justify-center rounded-full border border-[#E5DEF8] bg-white p-0.5 transition-colors hover:border-main-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+                >
+                    <ProfileImage className="size-full" name={accountMe?.name} profileImg={accountProfileImage} />
+                </button>
+
+                {isProfileMenuOpen && (
+                    <div
+                        role="menu"
+                        className="absolute top-[calc(100%+10px)] right-0 z-50 w-36 overflow-hidden rounded-[8px] border border-[#E5DEF8] bg-white py-1 shadow-[0_18px_44px_rgba(37,22,91,0.16)]"
+                    >
+                        <Link
+                            to={ROUTE.PROFILE}
+                            role="menuitem"
+                            onClick={closeProfileMenu}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold text-[#5F557F] transition-colors hover:bg-main-light hover:text-main-1"
+                        >
+                            계정 설정
+                        </Link>
+                        <button
+                            type="button"
+                            role="menuitem"
+                            onClick={handleLogoutClick}
+                            className="flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold text-[#5F557F] transition-colors hover:bg-main-light hover:text-main-1"
+                        >
+                            로그아웃
+                        </button>
+                    </div>
+                )}
+            </div>
         </>
     );
 }
@@ -737,7 +814,8 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
 
 function LandingPage() {
     const {
-        state: {isAuth},
+        state: {accountMe, isAuth},
+        actions: {handleLogout},
     } = useAuth();
     const webMakeLink = getWebMakeLink(isAuth);
     const {isDesktopVersionForced, selectAutomaticVersion, selectDesktopVersion, showMobileAppLanding} = useLandingViewportMode();
@@ -773,7 +851,7 @@ function LandingPage() {
                     </nav>
 
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <HeaderActions isAuth={isAuth} />
+                        <HeaderActions accountMe={accountMe} isAuth={isAuth} onLogout={handleLogout} />
                     </div>
                 </div>
             </header>
