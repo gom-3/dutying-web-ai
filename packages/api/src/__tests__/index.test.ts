@@ -235,39 +235,39 @@ describe('@dutying/api public entry', () => {
         });
     });
 
-    it('posts onboarding schedule input preview payload', async () => {
+    it('posts onboarding manual schedule input preview to the ward onboarding endpoint', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
         const wardApi = createWardApi(client);
+        const request = {
+            targetYear: 2026,
+            targetMonth: 5,
+            nurseNameBlock: '간호사A\n간호사B',
+            dutyBlock: 'D\t/\n-\tN',
+        };
 
         postMock.mockResolvedValueOnce({
             data: {
                 targetYear: 2026,
                 targetMonth: 5,
-                nurses: [{name: '김하늘', displayOrder: 1, initialShifts: [{date: '2026-05-01', shiftShortName: 'R'}]}],
+                nurses: [
+                    {name: '간호사A', displayOrder: 1, initialShifts: [{date: '2026-05-01', shiftShortName: 'D'}]},
+                    {name: '간호사B', displayOrder: 2, initialShifts: [{date: '2026-05-01', shiftShortName: 'O'}]},
+                ],
                 wardShiftTypes: [{name: 'R', shortName: 'R', color: '#94A3B8', isOff: false, isDefault: false}],
                 warnings: [],
                 unresolvedCodes: [],
             },
         });
 
-        await expect(
-            wardApi.previewOnboardingScheduleInput({
-                targetYear: 2026,
-                targetMonth: 5,
-                nurseNameBlock: '김하늘',
-                dutyBlock: 'R',
-            }),
-        ).resolves.toMatchObject({
-            nurses: [{name: '김하늘'}],
-        });
-
-        expect(postMock).toHaveBeenCalledWith('/wards/onboarding/schedule-input/preview', {
+        await expect(wardApi.previewOnboardingScheduleInput(request)).resolves.toMatchObject({
             targetYear: 2026,
             targetMonth: 5,
-            nurseNameBlock: '김하늘',
-            dutyBlock: 'R',
+            nurses: [{name: '간호사A'}, {name: '간호사B'}],
+            wardShiftTypes: [{shortName: 'R', color: '#94A3B8'}],
         });
+
+        expect(postMock).toHaveBeenCalledWith('/wards/onboarding/schedule-input/preview', request);
     });
 
     it('builds the account deletion endpoint', async () => {

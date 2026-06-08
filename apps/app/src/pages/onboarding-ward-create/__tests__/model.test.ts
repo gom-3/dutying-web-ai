@@ -10,6 +10,7 @@ import {
     DEFAULT_SHIFT_TYPE_COLORS,
     deleteTeamDraft,
     deleteShiftTypeDraft,
+    getOnboardingInitialScheduleTarget,
     getStepValidation,
     MAX_ONBOARDING_SHIFT_TYPES,
     prepareManualEntryDraft,
@@ -400,6 +401,82 @@ describe('OnboardingWardCreatePage model', () => {
         const invalidDraft = updateNurseDraft(validNurseDraft, validNurseDraft.nurses[0]!.id, {name: ''});
 
         expect(canComplete(invalidDraft)).toBe(false);
+    });
+
+    it('converts manual schedule input rows into initial shifts for save payload', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]!.id;
+
+        const nextDraft = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {
+                    id: 'row-1',
+                    nurseId: null,
+                    name: '김하늘',
+                    shifts: {
+                        '1': 'D',
+                        '2': '/',
+                        '3': '-',
+                        '4': 'OFF',
+                        '5': '휴무',
+                        '6': '교육',
+                    },
+                },
+            ],
+        });
+        const nurse = nextDraft.nurses.find((candidate) => candidate.name === '김하늘');
+        const customShiftType = nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === '교육');
+
+        expect(nurse?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'D'},
+            {date: '2026-05-02', shiftShortName: 'O'},
+            {date: '2026-05-03', shiftShortName: 'O'},
+            {date: '2026-05-04', shiftShortName: 'O'},
+            {date: '2026-05-05', shiftShortName: 'O'},
+            {date: '2026-05-06', shiftShortName: '교육'},
+        ]);
+        expect(customShiftType).toEqual(
+            expect.objectContaining({
+                name: '교육',
+                shortName: '교육',
+                color: expect.stringMatching(/^#[0-9A-F]{6}$/),
+                isOff: false,
+                classification: 'OTHER_WORK',
+            }),
+        );
+        expect(customShiftType?.color).not.toBe('#BFC7D4');
+        expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.nurseId).toBe(nurse?.id);
+    });
+
+    it('resolves the onboarding initial schedule target from the entered schedule month and created ward team', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]!.id;
+        const nextDraft = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 6,
+            rows: [
+                {
+                    id: 'row-1',
+                    nurseId: null,
+                    name: '김하늘',
+                    shifts: {'1': 'D'},
+                },
+            ],
+        });
+
+        expect(
+            getOnboardingInitialScheduleTarget(nextDraft, {
+                preferredTeamId: teamId,
+                createdWard: {shiftTeams: [{shiftTeamId: 77, name: nextDraft.teams[0]?.name}]},
+            }),
+        ).toEqual({
+            teamId,
+            year: 2026,
+            month: 6,
+            shiftTeamId: 77,
+        });
     });
 
     it('blocks completion when an earlier required step is invalid', () => {

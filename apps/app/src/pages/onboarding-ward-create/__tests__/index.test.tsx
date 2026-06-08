@@ -879,7 +879,10 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByTestId('ward-create-success')).not.toBeInTheDocument();
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/make', {replace: true, state: {onboardingWardCreated: true}});
+                expect(mockNavigate).toHaveBeenCalledWith('/make', {
+                    replace: true,
+                    state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
+                });
             },
             {timeout: 2_000},
         );
@@ -905,7 +908,10 @@ describe('OnboardingWardCreatePage', () => {
 
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/make', {replace: true, state: {onboardingWardCreated: true}});
+                expect(mockNavigate).toHaveBeenCalledWith('/make', {
+                    replace: true,
+                    state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
+                });
             },
             {timeout: 2_000},
         );

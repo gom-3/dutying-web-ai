@@ -80,4 +80,31 @@ describe('MakeShiftPage', () => {
             expect(screen.getByText(ROUTE.MAKE)).toBeInTheDocument();
         });
     });
+
+    it('온보딩 초기 근무표 플래그는 bootstrap에 전달하고 주소에서는 flag만 제거한다', async () => {
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.MAKE}?onboardingWardCreated=1&onboardingSchedule=1&year=2026&month=6&shiftTeamId=77`]}>
+                <Routes>
+                    <Route
+                        path={ROUTE.MAKE}
+                        element={
+                            <>
+                                <MakeShiftPage />
+                                <LocationProbe />
+                            </>
+                        }
+                    />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(mockUseMakeShiftBootstrap).toHaveBeenCalledWith(1, {
+            preferNextMonth: false,
+            confirmExistingShift: true,
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(`${ROUTE.MAKE}?year=2026&month=6&shiftTeamId=77`)).toBeInTheDocument();
+        });
+    });
 });

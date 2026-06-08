@@ -258,9 +258,9 @@ const mergeSchedulePreviewShiftTypes = (
 const createPreviewNurseId = (index: number) => `nurse-preview-${Date.now()}-${index}`;
 const normalizeNurseMergeKey = (name: string) => name.trim();
 const mergeInitialShifts = (
-    existingShifts: TOnboardingNurseDraft['initialShifts'],
-    nextShifts: TOnboardingNurseDraft['initialShifts'],
-): NonNullable<TOnboardingNurseDraft['initialShifts']> => {
+    existingShifts: TOnboardingNurseDraft['initialShifts'] | undefined,
+    nextShifts: TOnboardingNurseDraft['initialShifts'] | undefined,
+): TOnboardingNurseDraft['initialShifts'] => {
     const shiftByDate = new Map<string, string>();
 
     [...(existingShifts ?? []), ...(nextShifts ?? [])].forEach((shift) => {
@@ -1012,7 +1012,7 @@ function useOnboardingWardWizard() {
                 FileAPI.parseOnboardingWardExcel(file, options),
                 parseScheduleTemplateSafely(file, options),
             ]);
-            const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name);
+            const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options);
             let nextActiveTeamId: string | null = null;
 
             setDraft((prev) => {

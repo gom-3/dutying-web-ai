@@ -16,11 +16,12 @@ function parsePositiveInt(raw: string | null): number | null {
 
 type TUseMakeShiftBootstrapOptions = {
     preferNextMonth?: boolean;
+    confirmExistingShift?: boolean;
 };
 
 export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeShiftBootstrapOptions = {}) {
     const [searchParams] = useSearchParams();
-    const {preferNextMonth = false} = options;
+    const {preferNextMonth = false, confirmExistingShift = false} = options;
     const editor = useShiftEditorCommands();
     const editorRef = useRef(editor);
     const initializedWardIdRef = useRef<number | null>(null);
@@ -220,7 +221,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 ? (loadDraftStep(wardId, currentShiftTeamId, year, month) ?? loadPersistedStep())
                 : loadPersistedStep();
 
-        if (shiftFullyAssigned) {
+        if (shiftFullyAssigned || (confirmExistingShift && shiftExists)) {
             if (phase !== 'stepping' || currentStep !== 6) {
                 confirmSchedule();
             }
@@ -249,6 +250,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         confirmSchedule,
         currentShiftTeamId,
         currentStep,
+        confirmExistingShift,
         month,
         phase,
         shiftExists,

@@ -29,6 +29,7 @@ export type TOnboardingWardParseApiNurse = {
     level?: number | null;
     teamName?: string | null;
     possibleShiftShortNames?: Array<string | null> | null;
+    assignments?: Record<string, string | null> | null;
 };
 
 export type TOnboardingWardAnalyzeApiNurseCandidate = {

@@ -398,6 +398,7 @@ describe('useOnboardingWardWizard upload flow', () => {
                     teamName: 'A팀',
                     possibleShiftShortNames: ['D'],
                     employmentDate: '2025-01-01',
+                    assignments: {'2025-03-01': 'D'},
                 },
             ],
             constraint_candidates: [
@@ -427,6 +428,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
+        expect(result.current.draft.nurses[0]?.initialShifts).toEqual([{date: '2025-03-01', shiftShortName: 'D'}]);
         expect(result.current.draft.constraintCandidates).toHaveLength(1);
         expect(result.current.draft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',

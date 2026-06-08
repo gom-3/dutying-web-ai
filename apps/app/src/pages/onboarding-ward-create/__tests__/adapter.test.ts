@@ -19,6 +19,7 @@ const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDra
     employmentDate: overrides.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: overrides.possibleShiftTypeIds ?? [],
     level: overrides.level ?? null,
+    initialShifts: overrides.initialShifts ?? [],
 });
 
 describe('OnboardingWardCreatePage adapter', () => {
@@ -283,12 +284,13 @@ describe('OnboardingWardCreatePage adapter', () => {
                 {code: 'D', classification: 'DAY'},
                 {code: 'N', classification: 'NIGHT'},
                 {code: 'O', classification: 'OFF'},
+                {code: '교육', classification: 'OTHER_WORK'},
             ],
             nurse_candidates: [
                 {
                     raw_name: '신규 간호사',
-                    assignments: {'2025-03-01': 'D', '2025-03-02': 'N', '2025-03-03': 'O'},
-                    monthly_counts: {D: 1, N: 1, O: 1},
+                    assignments: {'2025-03-01': 'D', '2025-03-02': 'N', '2025-03-03': 'O', '2025-03-04': '교육'},
+                    monthly_counts: {D: 1, N: 1, O: 1, 교육: 1},
                 },
             ],
             constraint_candidates: [
@@ -319,10 +321,18 @@ describe('OnboardingWardCreatePage adapter', () => {
         const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
         const payload = buildCreateWardPayload(nextDraft);
 
-        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O']);
-        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
-        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
-        expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N']);
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'N', 'O', '교육']);
+        expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).toMatch(/^#[0-9A-F]{6}$/);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).not.toBe('#BFC7D4');
+        expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N', '교육']);
+        expect(parsedWardData.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2025-03-01', shiftShortName: 'D'},
+            {date: '2025-03-02', shiftShortName: 'N'},
+            {date: '2025-03-03', shiftShortName: 'O'},
+            {date: '2025-03-04', shiftShortName: '교육'},
+        ]);
         expect(nextDraft.constraintCandidates).toHaveLength(1);
         expect(nextDraft.constraintCandidates[0]).toMatchObject({
             templateCode: 'MIN_STAFF_BY_SHIFT',
@@ -338,7 +348,38 @@ describe('OnboardingWardCreatePage adapter', () => {
                 params: {staffing: [{shift: 'D', count: 2}]},
             },
         ]);
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2025-03-01', shiftShortName: 'D'},
+            {date: '2025-03-02', shiftShortName: 'N'},
+            {date: '2025-03-03', shiftShortName: 'O'},
+            {date: '2025-03-04', shiftShortName: '교육'},
+        ]);
         expect(warnings).toEqual(['확정표가 없어 신뢰도를 낮췄어요.']);
+    });
+
+    it('uses the selected upload month to preserve day-number assignments', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            nurse_candidates: [
+                {
+                    raw_name: '신규 간호사',
+                    assignments: {'1': 'D', '2': 'E'},
+                },
+            ],
+        };
+
+        const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx', {targetYear: 2026, targetMonth: 5});
+        const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
+        const payload = buildCreateWardPayload(nextDraft);
+
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E']);
+        expect(parsedWardData.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'D'},
+            {date: '2026-05-02', shiftShortName: 'E'},
+        ]);
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'D'},
+            {date: '2026-05-02', shiftShortName: 'E'},
+        ]);
     });
 
     it('collects warnings from failed sheets and rows while trimming parsed upload fields', () => {

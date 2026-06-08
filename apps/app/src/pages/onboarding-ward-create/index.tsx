@@ -9,7 +9,7 @@ import useAuth from '@/features/auth';
 import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
-import {useOnboardingWardWizard} from './model';
+import {getOnboardingInitialScheduleTarget, useOnboardingWardWizard} from './model';
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
@@ -21,6 +21,22 @@ import WardIdentityStep from './ui/steps/ward-identity-step';
 import WizardButton from './ui/wizard-button';
 
 const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
+const ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM = 'onboardingSchedule';
+
+function buildMakeRouteWithOnboardingSchedule(params: {year: number; month: number; shiftTeamId?: number}) {
+    const searchParams = new URLSearchParams({
+        onboardingWardCreated: '1',
+        [ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM]: '1',
+        year: String(params.year),
+        month: String(params.month),
+    });
+
+    if (typeof params.shiftTeamId === 'number') {
+        searchParams.set('shiftTeamId', String(params.shiftTeamId));
+    }
+
+    return `${ROUTE.MAKE}?${searchParams.toString()}`;
+}
 
 function OnboardingWardCreatePage() {
     const navigate = useNavigate();
@@ -207,10 +223,22 @@ function OnboardingWardCreatePage() {
             : true;
 
         window.sessionStorage.setItem(WARD_CREATED_GUIDE_STORAGE_KEY, JSON.stringify(guidePayload));
-        navigate(ROUTE.MAKE, {replace: true, state: {onboardingWardCreated: guidePayload}});
+        const initialScheduleTarget = getOnboardingInitialScheduleTarget(draft, {
+            preferredTeamId: activeTeamId,
+            createdWard,
+        });
+        const makeRoute = initialScheduleTarget ? buildMakeRouteWithOnboardingSchedule(initialScheduleTarget) : ROUTE.MAKE;
+
+        navigate(makeRoute, {
+            replace: true,
+            state: {
+                onboardingWardCreated: guidePayload,
+                onboardingInitialSchedule: initialScheduleTarget,
+            },
+        });
 
         return undefined;
-    }, [createdWard, isSuccess, navigate]);
+    }, [activeTeamId, createdWard, draft, isSuccess, navigate]);
 
     const stepContent = (() => {
         switch (draft.currentStep) {

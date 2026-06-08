@@ -11,6 +11,7 @@ const createNurse = (params: Partial<TOnboardingNurseDraft>): TOnboardingNurseDr
     employmentDate: params.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: params.possibleShiftTypeIds ?? [],
     level: params.level ?? null,
+    initialShifts: params.initialShifts ?? [],
 });
 
 describe('sortNursesByMode', () => {

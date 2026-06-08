@@ -470,7 +470,9 @@ export interface IWardAPI {
     createOnboardingWardDraft: (draftDTO: TCreateOnboardingWardDraftDTO) => Promise<TWardResponse>;
     getCurrentOnboardingWardDraft: () => Promise<TOnboardingWardDraftResponse | null>;
     updateOnboardingWardDraft: (wardId: number, draftDTO: TUpdateOnboardingWardDraftDTO) => Promise<TOnboardingWardDraftResponse>;
-    previewOnboardingScheduleInput: (previewDTO: TOnboardingScheduleInputPreviewDTO) => Promise<TOnboardingScheduleInputPreviewResponse>;
+    previewOnboardingScheduleInput: (
+        previewDTO: TOnboardingScheduleInputPreviewDTO,
+    ) => Promise<TOnboardingScheduleInputPreviewResponse>;
     completeOnboardingWardDraft: (wardId: number, createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
     addMeToWaitingNurses: (wardId: number) => Promise<void>;
     connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;

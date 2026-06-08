@@ -14,6 +14,8 @@ import {
 } from 'react';
 import {PersonIcon} from '@/shared/assets/svg';
 import {
+    getOnboardingShiftCodeColor,
+    normalizeOnboardingShiftCode,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
     type TOnboardingTeamScheduleDraft,
@@ -96,8 +98,8 @@ const SHIFT_INPUT_CLASS =
 const FALLBACK_SHIFT_COLOR = '#D6D6DE';
 const EMPTY_SHIFT_TEXT_COLOR = '#FFFFFF';
 const SHIFT_TERM_TEXT_COLOR = '#384255';
-const SLASH_SHIFT_COLOR = '#555A64';
-const SLASH_SHIFT_TEXT_COLOR = '#FFFFFF';
+const SYMBOL_OFF_SHIFT_COLOR = '#555A64';
+const SYMBOL_OFF_SHIFT_TEXT_COLOR = '#FFFFFF';
 const FIXED_SHIFT_TEXT_COLOR = '#FFFFFF';
 const FIXED_SHIFT_COLOR_BY_TERM = new Map([
     ['D', '#4DC2AD'],
@@ -105,7 +107,8 @@ const FIXED_SHIFT_COLOR_BY_TERM = new Map([
     ['N', '#3580FF'],
     ['O', '#465B7A'],
 ]);
-const OFF_SHIFT_TERMS = new Set(['OFF', '휴무']);
+const SYMBOL_OFF_SHIFT_TERMS = new Set(['/', '-']);
+const OFF_SHIFT_TERMS = new Set(['OFF', '오프', '휴', '휴무']);
 const getMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
 const getCurrentMonthOption = (): TMonthOption => {
@@ -143,6 +146,7 @@ const createTabNurse = (teamId: string, id: string, name: string): TOnboardingNu
     employmentDate: '',
     possibleShiftTypeIds: [],
     level: null,
+    initialShifts: [],
 });
 const normalizeRange = ({start, end}: TCellRange): TNormalizedRange => ({
     minRow: Math.min(start.row, end.row),
@@ -155,7 +159,7 @@ const isCellInRange = (cell: TCellPosition, range: TNormalizedRange) =>
     cell.row >= range.minRow && cell.row <= range.maxRow && cell.col >= range.minCol && cell.col <= range.maxCol;
 const positiveModulo = (value: number, divisor: number) => ((value % divisor) + divisor) % divisor;
 const getCellDayKey = (col: number) => String(col);
-const normalizeShiftCode = (value: string) => value.trim().toUpperCase();
+const normalizeShiftCode = normalizeOnboardingShiftCode;
 const cloneSelection = (selection: TCellRange): TCellRange => ({
     start: {...selection.start},
     end: {...selection.end},
@@ -201,13 +205,12 @@ const getLatestSchedule = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'
     Object.values(scheduleInputs ?? {})
         .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
         .sort((left, right) => right.year * 12 + right.month - (left.year * 12 + left.month))[0];
-const isSlashShiftCode = (value: string) => value.trim() === '/';
+const isSymbolOffShiftCode = (value: string) => SYMBOL_OFF_SHIFT_TERMS.has(value.trim());
 const getFixedShiftColor = (value: string) => {
     const term = normalizeShiftCode(value);
 
-    return FIXED_SHIFT_COLOR_BY_TERM.get(OFF_SHIFT_TERMS.has(term) ? 'O' : term) ?? null;
+    return FIXED_SHIFT_COLOR_BY_TERM.get(OFF_SHIFT_TERMS.has(term) || SYMBOL_OFF_SHIFT_TERMS.has(term) ? 'O' : term) ?? null;
 };
-const getPastelShiftColor = (index: number) => `hsl(${positiveModulo(12 + index * 137.508, 360).toFixed(1)} 74% 86%)`;
 const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
     const terms: string[] = [];
     const termSet = new Set<string>();
@@ -218,7 +221,7 @@ const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
             .forEach(([, value]) => {
                 const term = normalizeShiftCode(value);
 
-                if (!term || termSet.has(term) || isSlashShiftCode(term) || getFixedShiftColor(term)) {
+                if (!term || termSet.has(term) || isSymbolOffShiftCode(term) || getFixedShiftColor(term)) {
                     return;
                 }
 
@@ -244,7 +247,7 @@ const appendNewShiftTerms = (currentOrder: string[], rows: TOnboardingScheduleRo
 
     return nextOrder.length === currentOrder.length ? currentOrder : nextOrder;
 };
-const buildShiftTermColorMap = (termOrder: string[]) => new Map(termOrder.map((term, index) => [term, getPastelShiftColor(index)]));
+const buildShiftTermColorMap = (termOrder: string[]) => new Map(termOrder.map((term) => [term, getOnboardingShiftCodeColor(term)]));
 
 function ScheduleInputStep({
     draft,
@@ -1201,13 +1204,13 @@ function ShiftCell({
     const isFillHandleCell = isSelectionVisible && selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
     const normalizedValue = normalizeShiftCode(value);
     const hasValue = Boolean(normalizedValue);
-    const isSlashValue = isSlashShiftCode(value);
+    const isSymbolOffValue = isSymbolOffShiftCode(value);
     const fixedShiftColor = getFixedShiftColor(value);
-    const backgroundColor = isSlashValue
-        ? SLASH_SHIFT_COLOR
+    const backgroundColor = isSymbolOffValue
+        ? SYMBOL_OFF_SHIFT_COLOR
         : (fixedShiftColor ?? (hasValue ? (termColorMap.get(normalizedValue) ?? FALLBACK_SHIFT_COLOR) : FALLBACK_SHIFT_COLOR));
-    const textColor = isSlashValue
-        ? SLASH_SHIFT_TEXT_COLOR
+    const textColor = isSymbolOffValue
+        ? SYMBOL_OFF_SHIFT_TEXT_COLOR
         : fixedShiftColor !== null
           ? FIXED_SHIFT_TEXT_COLOR
           : hasValue

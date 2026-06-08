@@ -21,7 +21,7 @@ export type TOnboardingNurseDraft = {
     employmentDate: string;
     possibleShiftTypeIds: string[];
     level: number | null;
-    initialShifts?: {
+    initialShifts: {
         date: string;
         shiftShortName: string;
     }[];
@@ -78,6 +78,22 @@ export type TSkillLevelConfig = {
     paletteId: string;
     autoAssign: boolean;
     levelLabels?: Record<number, string>;
+};
+
+export type TOnboardingInitialScheduleTarget = {
+    teamId: string;
+    year: number;
+    month: number;
+    shiftTeamId?: number;
+};
+
+type TOnboardingCreatedWardShiftTeamLike = {
+    shiftTeamId?: number;
+    name?: string | null;
+};
+
+type TOnboardingCreatedWardLike = {
+    shiftTeams?: TOnboardingCreatedWardShiftTeamLike[] | null;
 };
 
 export type TOnboardingWardDraft = {
@@ -168,8 +184,22 @@ const KOREAN_SYLLABLE_REGEX = /[\uAC00-\uD7A3]/g;
 const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
 const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A30-9A-Za-z ]+$/u;
+const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 
 export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
+
+export const normalizeOnboardingShiftCode = (value: string) => value.trim().toLocaleUpperCase();
+
+export const getOnboardingShiftCodeColor = (shortName: string): string => {
+    const normalized = normalizeOnboardingShiftCode(shortName);
+    let hash = 0;
+
+    Array.from(normalized).forEach((char) => {
+        hash = (hash * 31 + char.codePointAt(0)!) >>> 0;
+    });
+
+    return DEFAULT_SHIFT_TYPE_COLORS[hash % DEFAULT_SHIFT_TYPE_COLORS.length];
+};
 
 let nextId = 0;
 
@@ -182,10 +212,22 @@ const createShiftType = (
     id: input.id ?? createId('shift'),
     ...input,
 });
+const createScheduleInputShiftType = (shortName: string): TOnboardingWardShiftType =>
+    createShiftType({
+        name: shortName,
+        shortName,
+        startTime: '',
+        endTime: '',
+        color: getOnboardingShiftCodeColor(shortName),
+        isDefault: false,
+        isOff: false,
+        isCounted: true,
+        classification: 'OTHER_WORK',
+    });
 const createNurse = (
     input: Omit<TOnboardingNurseDraft, 'id' | 'initialShifts'> & {
         id?: string;
-        initialShifts?: NonNullable<TOnboardingNurseDraft['initialShifts']>;
+        initialShifts?: TOnboardingNurseDraft['initialShifts'];
     },
 ): TOnboardingNurseDraft => ({
     id: input.id ?? createId('nurse'),
@@ -342,6 +384,7 @@ export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShif
         employmentDate: '2024-01-01',
         possibleShiftTypeIds: shiftTypes.map((shiftType) => shiftType.id),
         level: null,
+        initialShifts: [],
     });
 
 export const createInitialDraft = (): TOnboardingWardDraft => {
@@ -360,6 +403,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
             employmentDate: '2024-01-01',
             possibleShiftTypeIds,
             level: name === '이서윤' ? 1 : name === '박연우' ? 2 : null,
+            initialShifts: [],
             id: `nurse-${index + 1}`,
         });
     });
@@ -437,11 +481,115 @@ export const hasScheduleInputDraft = (draft: TOnboardingWardDraft): boolean =>
         Object.values(teamScheduleInputs ?? {}).some((schedule) => schedule?.rows.some(isScheduleRowUsed)),
     );
 
+export const getOnboardingInitialScheduleTarget = (
+    draft: TOnboardingWardDraft,
+    options: {preferredTeamId?: string; createdWard?: TOnboardingCreatedWardLike | null} = {},
+): TOnboardingInitialScheduleTarget | null => {
+    const preferredTeam = options.preferredTeamId ? draft.teams.find((team) => team.id === options.preferredTeamId) : undefined;
+    const orderedTeams = preferredTeam ? [preferredTeam, ...draft.teams.filter((team) => team.id !== preferredTeam.id)] : draft.teams;
+
+    for (const team of orderedTeams) {
+        const latestSchedule = Object.values(draft.scheduleInputs?.[team.id] ?? {})
+            .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule?.rows.some(isScheduleRowUsed)))
+            .sort((left, right) => right.year * 12 + right.month - (left.year * 12 + left.month))[0];
+
+        if (!latestSchedule) {
+            continue;
+        }
+
+        const teamIndex = draft.teams.findIndex((candidate) => candidate.id === team.id);
+        const createdShiftTeams = options.createdWard?.shiftTeams ?? [];
+        const shiftTeamByName = createdShiftTeams.find((candidate) => candidate.name === team.name);
+        const shiftTeamByIndex = teamIndex >= 0 ? createdShiftTeams[teamIndex] : undefined;
+        const shiftTeamId = shiftTeamByName?.shiftTeamId ?? shiftTeamByIndex?.shiftTeamId;
+
+        return {
+            teamId: team.id,
+            year: latestSchedule.year,
+            month: latestSchedule.month,
+            ...(typeof shiftTeamId === 'number' ? {shiftTeamId} : {}),
+        };
+    }
+
+    return null;
+};
+
 const normalizeScheduleRow = (row: TOnboardingScheduleRowDraft): TOnboardingScheduleRowDraft => ({
     ...createScheduleRow(row),
     name: row.name,
     shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, value.trim()])),
 });
+const SCHEDULE_OFF_SHIFT_ALIASES = new Set(['O', '/', '-', 'OFF', '오프', '휴', '휴무']);
+const normalizeScheduleShiftShortName = (value: string): string | null => {
+    const normalized = normalizeOnboardingShiftCode(value);
+
+    if (!normalized) {
+        return null;
+    }
+
+    return SCHEDULE_OFF_SHIFT_ALIASES.has(normalized) ? 'O' : normalized;
+};
+const collectScheduleShiftShortNames = (schedule: TOnboardingTeamScheduleDraft): string[] => {
+    const shiftShortNames = new Set<string>();
+
+    schedule.rows.forEach((row) => {
+        Object.values(row.shifts).forEach((value) => {
+            const shiftShortName = normalizeScheduleShiftShortName(value);
+
+            if (!shiftShortName || CORE_SHIFT_SHORT_NAMES.has(shiftShortName)) {
+                return;
+            }
+
+            shiftShortNames.add(shiftShortName);
+        });
+    });
+
+    return Array.from(shiftShortNames).sort((left, right) => left.localeCompare(right, 'ko-KR'));
+};
+const ensureScheduleInputShiftTypes = (
+    shiftTypes: TOnboardingWardShiftType[],
+    schedule: TOnboardingTeamScheduleDraft,
+): TOnboardingWardShiftType[] => {
+    const existingShortNames = new Set(shiftTypes.map((shiftType) => normalizeOnboardingShiftCode(shiftType.shortName)));
+    const nextShiftTypes = [...shiftTypes];
+
+    collectScheduleShiftShortNames(schedule).forEach((shortName) => {
+        if (existingShortNames.has(shortName)) {
+            return;
+        }
+
+        existingShortNames.add(shortName);
+        nextShiftTypes.push(createScheduleInputShiftType(shortName));
+    });
+
+    return nextShiftTypes;
+};
+const toScheduleInitialShiftDate = (year: number, month: number, day: number) =>
+    `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+const buildScheduleInitialShifts = (
+    schedule: TOnboardingTeamScheduleDraft,
+    row: TOnboardingScheduleRowDraft,
+): TOnboardingNurseDraft['initialShifts'] => {
+    const daysInMonth = new Date(schedule.year, schedule.month, 0).getDate();
+
+    return Object.entries(row.shifts)
+        .flatMap(([dayKey, value]) => {
+            const day = Number(dayKey);
+            const shiftShortName = normalizeScheduleShiftShortName(value);
+
+            if (!Number.isInteger(day) || day < 1 || day > daysInMonth || !shiftShortName) {
+                return [];
+            }
+
+            return [
+                {
+                    date: toScheduleInitialShiftDate(schedule.year, schedule.month, day),
+                    shiftShortName,
+                },
+            ];
+        })
+        .sort((left, right) => left.date.localeCompare(right.date));
+};
 
 export const applyScheduleInputDraft = (
     draft: TOnboardingWardDraft,
@@ -465,7 +613,8 @@ export const applyScheduleInputDraft = (
     const existingNurseById = new Map(existingTeamNurses.map((nurse) => [nurse.id, nurse]));
     const nextNurseById = new Map<string, TOnboardingNurseDraft>();
     const nextNurseIdByName = new Map<string, string>();
-    const possibleShiftTypeIds = draft.shiftTypes.map((shiftType) => shiftType.id);
+    const nextShiftTypes = ensureScheduleInputShiftTypes(draft.shiftTypes, schedule);
+    const possibleShiftTypeIds = nextShiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const nurseIdByRowKey = new Map<string, string>();
     const getRowKey = (scheduleMonthKey: string, rowId: string) => `${scheduleMonthKey}:${rowId}`;
@@ -521,12 +670,31 @@ export const applyScheduleInputDraft = (
                 : undefined,
         ]),
     );
+    const initialShiftsByNurseId = new Map<string, TOnboardingNurseDraft['initialShifts']>();
+
+    Object.values(nextTeamScheduleInputsWithNurseIds).forEach((teamSchedule) => {
+        teamSchedule?.rows.forEach((row) => {
+            if (!row.nurseId) {
+                return;
+            }
+
+            initialShiftsByNurseId.set(row.nurseId, [
+                ...(initialShiftsByNurseId.get(row.nurseId) ?? []),
+                ...buildScheduleInitialShifts(teamSchedule, row),
+            ]);
+        });
+    });
     const hasExistingTeamScheduleInputs = Object.values(draft.scheduleInputs?.[teamId] ?? {}).some((schedule) => Boolean(schedule));
     const preservedTeamNurses = hasExistingTeamScheduleInputs ? existingTeamNurses.filter((nurse) => !nextNurseById.has(nurse.id)) : [];
+    const nextTeamNurses = Array.from(nextNurseById.values()).map((nurse) => ({
+        ...nurse,
+        initialShifts: (initialShiftsByNurseId.get(nurse.id) ?? []).sort((left, right) => left.date.localeCompare(right.date)),
+    }));
 
     return {
         ...draft,
-        nurses: [...otherNurses, ...preservedTeamNurses, ...Array.from(nextNurseById.values())],
+        shiftTypes: nextShiftTypes,
+        nurses: [...otherNurses, ...preservedTeamNurses, ...nextTeamNurses],
         scheduleInputs: {
             ...(draft.scheduleInputs ?? {}),
             [teamId]: {

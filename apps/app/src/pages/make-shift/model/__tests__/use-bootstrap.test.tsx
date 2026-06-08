@@ -49,6 +49,32 @@ function makeEmptyShift(): TShift {
     };
 }
 
+function makePartiallyAssignedShift(): TShift {
+    const shift = makeEmptyShift();
+
+    shift.days = [
+        {day: 1, dayType: 'workday'},
+        {day: 2, dayType: 'workday'},
+    ];
+    shift.wardShiftTypes = [
+        {
+            wardShiftTypeId: 1,
+            name: '데이',
+            shortName: 'D',
+            startTime: '07:00',
+            endTime: '15:00',
+            color: '#4DC2AD',
+            isDefault: true,
+            isOff: false,
+            isCounted: true,
+            classification: 'DAY',
+        },
+    ];
+    shift.divisionShiftNurses[0]![0]!.wardShiftList = [1, null];
+
+    return shift;
+}
+
 function wrapper({children}: {children: ReactNode}) {
     return <MemoryRouter>{children}</MemoryRouter>;
 }
@@ -120,6 +146,39 @@ describe('useMakeShiftBootstrap', () => {
 
         await waitFor(() => {
             expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
+        });
+    });
+
+    it('enters the confirmed step for an onboarding initial schedule even when only some cells are assigned', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(() => useMakeShiftBootstrap(1, {confirmExistingShift: true}), {wrapper});
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 6,
+                shiftExists: true,
+                shiftFullyAssigned: true,
+                restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('keeps ordinary partially assigned schedules in the authoring flow without onboarding intent', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {wrapper});
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+            });
         });
     });
 });

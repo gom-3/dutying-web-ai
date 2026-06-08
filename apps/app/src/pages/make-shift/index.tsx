@@ -9,9 +9,11 @@ import {MakeShiftPageView} from './ui';
 import MakeTutorial from './ui/make-tutorial';
 
 const ONBOARDING_WARD_CREATED_SEARCH_PARAM = 'onboardingWardCreated';
+const ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM = 'onboardingSchedule';
 
 type TMakeShiftLocationState = {
     onboardingWardCreated?: unknown;
+    onboardingInitialSchedule?: unknown;
 } | null;
 
 const MakeShiftPage = () => {
@@ -22,26 +24,39 @@ const MakeShiftPage = () => {
     const locationState = location.state as TMakeShiftLocationState;
     const [searchParams, setSearchParams] = useSearchParams();
     const [showOnboardingWardCodeGuide, setShowOnboardingWardCodeGuide] = useState(false);
-    const enteredFromOnboardingWardCreated =
-        searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) === '1' || Boolean(locationState?.onboardingWardCreated);
+    const [enteredFromOnboardingWardCreated] = useState(
+        () => searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) === '1' || Boolean(locationState?.onboardingWardCreated),
+    );
+    const [enteredFromOnboardingInitialSchedule] = useState(
+        () => searchParams.get(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM) === '1' || Boolean(locationState?.onboardingInitialSchedule),
+    );
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
         staleTime: 1000 * 60 * 5,
     });
 
-    useMakeShiftBootstrap(wardId, {preferNextMonth: enteredFromOnboardingWardCreated});
+    useMakeShiftBootstrap(wardId, {
+        preferNextMonth: enteredFromOnboardingWardCreated && !enteredFromOnboardingInitialSchedule,
+        confirmExistingShift: enteredFromOnboardingInitialSchedule,
+    });
 
     useEffect(() => {
-        if (searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) !== '1') {
+        const shouldOpenGuide = searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) === '1';
+        const shouldClearInitialSchedule = searchParams.get(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM) === '1';
+
+        if (!shouldOpenGuide && !shouldClearInitialSchedule) {
             return;
         }
 
-        setShowOnboardingWardCodeGuide(true);
+        if (shouldOpenGuide) {
+            setShowOnboardingWardCodeGuide(true);
+        }
 
         const nextSearchParams = new URLSearchParams(searchParams);
 
         nextSearchParams.delete(ONBOARDING_WARD_CREATED_SEARCH_PARAM);
+        nextSearchParams.delete(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM);
         setSearchParams(nextSearchParams, {replace: true});
     }, [searchParams, setSearchParams]);
 
