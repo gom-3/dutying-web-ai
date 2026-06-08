@@ -31,6 +31,21 @@ const getRelativeScheduleMonth = (offset: number) => {
         dayCount: new Date(year, month, 0).getDate(),
     };
 };
+const createScheduleTemplateFile = async () => {
+    const Excel = await import('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('schedule');
+
+    worksheet.addRow(['간호사', '팀명', '1', '2', '3']);
+    worksheet.addRow(['홍길동', 'A팀', 'D', 'E', 'N']);
+    worksheet.addRow(['김철수', 'B팀', 'O', 'D', 'E']);
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return new File([buffer as BlobPart], 'schedule-template.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+};
 const typedTranslations = {
     'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
     'page.onboardingWardCreate.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
@@ -175,7 +190,8 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        expect(screen.getByText('병동과 근무표 설정을 위해 가장 최근에 사용한 근무표를 입력해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('병동 및 근무표 설정을 위해 최근에 사용한 근무표를 입력해 주세요')).toBeInTheDocument();
+        expect(screen.getByText('기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.')).toBeInTheDocument();
 
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
             clipboardData: {
@@ -270,26 +286,80 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByLabelText('10행 간호사 이름')).not.toBeInTheDocument();
     });
 
-    it('renders the previous month schedule with month controls', async () => {
+    it('renders the current month schedule with month controls', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const previousMonth = getRelativeScheduleMonth(-1);
         const currentMonth = getRelativeScheduleMonth(0);
+        const nextMonth = getRelativeScheduleMonth(1);
 
-        expect(screen.getByText(`${previousMonth.year}년 ${previousMonth.month}월`)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: String(previousMonth.dayCount)})).toBeInTheDocument();
+        expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: String(currentMonth.dayCount)})).toBeInTheDocument();
 
-        if (previousMonth.dayCount < 31) {
-            expect(screen.queryByRole('button', {name: String(previousMonth.dayCount + 1)})).not.toBeInTheDocument();
+        if (currentMonth.dayCount < 31) {
+            expect(screen.queryByRole('button', {name: String(currentMonth.dayCount + 1)})).not.toBeInTheDocument();
         }
 
         await user.click(screen.getByRole('button', {name: '다음 달'}));
 
-        expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: String(currentMonth.dayCount)})).toBeInTheDocument();
+        expect(screen.getByText(`${nextMonth.year}년 ${nextMonth.month}월`)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: String(nextMonth.dayCount)})).toBeInTheDocument();
+    });
+
+    it('opens the schedule file upload modal and uploads a file for the visible month', async () => {
+        const user = userEvent.setup();
+
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurse_candidates: [],
+            constraint_candidates: [],
+        });
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        const currentMonth = getRelativeScheduleMonth(0);
+
+        await user.click(screen.getByRole('button', {name: '근무표 파일 등록'}));
+
+        const dialog = screen.getByRole('dialog');
+
+        expect(within(dialog).getByText('근무표 파일 등록')).toBeInTheDocument();
+        expect(within(dialog).getByText('"근무표 파일 템플릿" 양식을 다운로드하여 작성하신 후 "등록"을 클릭해주세요')).toBeInTheDocument();
+        expect(within(dialog).getByRole('button', {name: /근무표 파일 템플릿 다운로드/})).toBeInTheDocument();
+
+        const file = await createScheduleTemplateFile();
+
+        fireEvent.change(within(dialog).getByTestId('schedule-file-upload-input'), {
+            target: {files: [file]},
+        });
+        await user.click(within(dialog).getByRole('button', {name: '등록'}));
+
+        await waitFor(() => {
+            expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {
+                targetYear: currentMonth.year,
+                targetMonth: currentMonth.month,
+            });
+        });
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+
+        await waitFor(() => {
+            expect(screen.getByRole('button', {name: /A팀/})).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        expect(screen.getByRole('button', {name: /B팀/})).toBeInTheDocument();
+        expect(screen.getByDisplayValue('홍길동')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('E')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('N')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /B팀/}));
+
+        expect(screen.getByDisplayValue('김철수')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('O')).toBeInTheDocument();
     });
 
     it('limits schedule names and shift cells to five characters', async () => {
@@ -396,6 +466,31 @@ describe('OnboardingWardCreatePage', () => {
         expect(secondSlashDay.style.backgroundColor).toBe('rgb(85, 90, 100)');
         expect(customTerm.style.backgroundColor).toBe(sameCustomTerm.style.backgroundColor);
         expect(customTerm.style.backgroundColor).not.toBe(dayShift.style.backgroundColor);
+    });
+
+    it('keeps existing custom shift colors when a new custom term is added', async () => {
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(userEvent.setup());
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tCCC\tAAA',
+            },
+        });
+
+        const firstCustomTerm = screen.getByLabelText('1행 1일 근무') as HTMLInputElement;
+        const secondCustomTerm = screen.getByLabelText('1행 2일 근무') as HTMLInputElement;
+        const firstColorBefore = firstCustomTerm.style.backgroundColor;
+        const secondColorBefore = secondCustomTerm.style.backgroundColor;
+
+        fireEvent.change(screen.getByLabelText('1행 3일 근무'), {target: {value: 'BBB'}});
+
+        await waitFor(() => {
+            expect((screen.getByLabelText('1행 1일 근무') as HTMLInputElement).style.backgroundColor).toBe(firstColorBefore);
+            expect((screen.getByLabelText('1행 2일 근무') as HTMLInputElement).style.backgroundColor).toBe(secondColorBefore);
+        });
+        expect((screen.getByLabelText('1행 3일 근무') as HTMLInputElement).style.backgroundColor).not.toBe(firstColorBefore);
+        expect((screen.getByLabelText('1행 3일 근무') as HTMLInputElement).style.backgroundColor).not.toBe(secondColorBefore);
     });
 
     it('deletes the selected schedule row with the row delete button', async () => {

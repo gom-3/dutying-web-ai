@@ -51,6 +51,9 @@ function OnboardingWardCreatePage() {
         updateTeamName,
         updateScheduleInput,
         handleNurseDragEnd,
+        applyUploadedFile,
+        uploadStatus,
+        uploadError,
         draftCreationStatus,
         createdWard,
         saveSkillConfig,
@@ -255,6 +258,9 @@ function OnboardingWardCreatePage() {
                         canAddTeam={canAddTeam}
                         onTeamNameChange={updateTeamName}
                         onScheduleChange={updateScheduleInput}
+                        onUploadFile={applyUploadedFile}
+                        uploadStatus={uploadStatus}
+                        uploadError={uploadError}
                     />
                 );
             case 3:
@@ -339,7 +345,7 @@ function OnboardingWardCreatePage() {
             <div
                 className={cn(
                     'mx-auto w-full px-4 pt-[100px] pb-20 sm:px-6 lg:px-0',
-                    draft.currentStep === 1 ? 'max-w-[480px]' : 'max-w-[1120px]',
+                    draft.currentStep === 1 ? 'max-w-[480px]' : isScheduleInputStep ? 'max-w-[1200px]' : 'max-w-[1120px]',
                 )}
             >
                 {draft.currentStep === 1 ? (

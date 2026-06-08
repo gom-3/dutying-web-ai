@@ -38,6 +38,16 @@ export type TOnboardingTeamScheduleDraft = {
 
 export type TOnboardingTeamScheduleInputDraft = Record<string, TOnboardingTeamScheduleDraft | undefined>;
 
+export type TOnboardingUploadedScheduleRow = {
+    name: string;
+    shifts: Record<string, string>;
+};
+
+export type TOnboardingUploadedTeamSchedule = {
+    teamName: string;
+    rows: TOnboardingUploadedScheduleRow[];
+};
+
 export type TOnboardingConstraintDraft = {
     id: string;
     key: string;
@@ -133,6 +143,18 @@ export const MAX_ONBOARDING_TEAMS = 8;
 export const MAX_ONBOARDING_SHIFT_TYPES = 10;
 export const MAX_ONBOARDING_NURSES = 40;
 export const MAX_ONBOARDING_NURSE_NAME_LENGTH = 20;
+export const DEFAULT_SHIFT_TYPE_COLORS = [
+    '#4DC2AD',
+    '#FF8BA5',
+    '#3580FF',
+    '#465B7A',
+    '#F5A978',
+    '#EFCB55',
+    '#9AC760',
+    '#62CAD8',
+    '#AD87F1',
+    '#EC84BB',
+] as const;
 
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 3, 4];
 const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
@@ -277,13 +299,28 @@ const parseShiftTimeToMinutes = (value: string): number | null => {
     return hour * 60 + minute;
 };
 
-export const createEmptyShiftType = (): TOnboardingWardShiftType =>
+export const getDefaultShiftTypeColor = (shortName?: string | null, fallbackIndex = 0) => {
+    switch (shortName?.trim().toUpperCase()) {
+        case 'D':
+            return '#4DC2AD';
+        case 'E':
+            return '#FF8BA5';
+        case 'N':
+            return '#3580FF';
+        case 'O':
+            return '#465B7A';
+        default:
+            return DEFAULT_SHIFT_TYPE_COLORS[fallbackIndex % DEFAULT_SHIFT_TYPE_COLORS.length] ?? DEFAULT_SHIFT_TYPE_COLORS[0];
+    }
+};
+
+export const createEmptyShiftType = (colorIndex = 4): TOnboardingWardShiftType =>
     createShiftType({
         name: '',
         shortName: '',
         startTime: '09:00',
         endTime: '18:00',
-        color: '#BFC7D4',
+        color: getDefaultShiftTypeColor('', colorIndex),
         isDefault: false,
         isOff: false,
         isCounted: true,
@@ -489,6 +526,118 @@ export const applyScheduleInputDraft = (
     };
 };
 
+const createUniqueUploadedTeamName = (rawTeamName: string, teamIndex: number, usedTeamNames: Set<string>) => {
+    const baseName = rawTeamName.trim() || `간호사 ${teamIndex + 1}팀`;
+    let nextName = baseName;
+    let suffix = 2;
+
+    while (usedTeamNames.has(nextName)) {
+        nextName = `${baseName} ${suffix}`;
+        suffix += 1;
+    }
+
+    usedTeamNames.add(nextName);
+
+    return nextName;
+};
+
+export const applyUploadedScheduleTemplateDraft = (
+    draft: TOnboardingWardDraft,
+    {
+        fileName,
+        year,
+        month,
+        teamSchedules,
+    }: {
+        fileName: string;
+        year: number;
+        month: number;
+        teamSchedules: TOnboardingUploadedTeamSchedule[];
+    },
+): {draft: TOnboardingWardDraft; activeTeamId: string | null} => {
+    const normalizedTeamSchedules = teamSchedules
+        .map((teamSchedule) => ({
+            ...teamSchedule,
+            rows: teamSchedule.rows.filter((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim())),
+        }))
+        .filter((teamSchedule) => teamSchedule.rows.length > 0);
+
+    if (normalizedTeamSchedules.length === 0) {
+        return {draft, activeTeamId: null};
+    }
+
+    const monthKey = getScheduleMonthKey(year, month);
+    const usedTeamNames = new Set<string>();
+    const possibleShiftTypeIds = draft.shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
+    const teams: TOnboardingTeamDraft[] = [];
+    const nurses: TOnboardingNurseDraft[] = [];
+    const scheduleInputs: TOnboardingWardDraft['scheduleInputs'] = {};
+
+    normalizedTeamSchedules.forEach((teamSchedule, teamIndex) => {
+        const team = {
+            id: createId('team'),
+            name: createUniqueUploadedTeamName(teamSchedule.teamName, teamIndex, usedTeamNames),
+        };
+        const nurseIdByName = new Map<string, string>();
+
+        teams.push(team);
+
+        scheduleInputs[team.id] = {
+            [monthKey]: {
+                year,
+                month,
+                rows: teamSchedule.rows.map((row) => {
+                    const trimmedName = row.name.trim();
+                    const shifts = Object.fromEntries(
+                        Object.entries(row.shifts)
+                            .map(([day, shift]) => [day, shift.trim()])
+                            .filter(([, shift]) => shift),
+                    );
+                    let nurseId: string | null = null;
+
+                    if (trimmedName) {
+                        nurseId = nurseIdByName.get(trimmedName) ?? null;
+
+                        if (!nurseId) {
+                            const nurse = createNurse({
+                                teamId: team.id,
+                                name: trimmedName,
+                                memo: '',
+                                isWorker: true,
+                                employmentDate: defaultEmploymentDate,
+                                possibleShiftTypeIds,
+                                level: null,
+                            });
+
+                            nurseId = nurse.id;
+                            nurseIdByName.set(trimmedName, nurse.id);
+                            nurses.push(nurse);
+                        }
+                    }
+
+                    return createScheduleRow({
+                        nurseId,
+                        name: trimmedName,
+                        shifts,
+                    });
+                }),
+            },
+        };
+    });
+
+    return {
+        draft: {
+            ...draft,
+            uploadedFileName: fileName,
+            teams,
+            nurses,
+            scheduleInputs,
+        },
+        activeTeamId: teams[0]?.id ?? null,
+    };
+};
+
 export const updateShiftTypeDraft = (
     draft: TOnboardingWardDraft,
     shiftTypeId: string,
@@ -505,7 +654,7 @@ export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardD
 
     return {
         ...draft,
-        shiftTypes: [...draft.shiftTypes, createEmptyShiftType()],
+        shiftTypes: [...draft.shiftTypes, createEmptyShiftType(draft.shiftTypes.length)],
     };
 };
 

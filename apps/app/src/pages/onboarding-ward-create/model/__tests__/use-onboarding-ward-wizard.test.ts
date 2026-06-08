@@ -3,7 +3,7 @@ import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
-import {createInitialDraft} from '../draft';
+import {createInitialDraft, DEFAULT_SHIFT_TYPE_COLORS, getScheduleMonthKey} from '../draft';
 import useOnboardingWardWizard from '../use-onboarding-ward-wizard';
 
 const toastSuccess = vi.fn();
@@ -53,6 +53,25 @@ const uploadFile = async (
 ) => {
     await act(async () => {
         await applyUploadedFile(file, options);
+    });
+};
+const createScheduleTemplateFile = async (
+    rows: string[][] = [
+        ['홍길동', 'A팀', 'D', 'E', 'N'],
+        ['김철수', 'B팀', 'O', 'D', 'E'],
+    ],
+) => {
+    const Excel = await import('exceljs');
+    const workbook = new Excel.Workbook();
+    const worksheet = workbook.addWorksheet('근무표');
+
+    worksheet.addRow(['간호사', '팀명', '1', '2', '3']);
+    rows.forEach((row) => worksheet.addRow(row));
+
+    const buffer = await workbook.xlsx.writeBuffer();
+
+    return new File([buffer as BlobPart], 'schedule-template.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 };
 const draftWardResponse = {
@@ -217,6 +236,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '이브닝', '나이트', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
         expect(result.current.draft.constraintCandidates).toHaveLength(1);
@@ -242,6 +262,85 @@ describe('useOnboardingWardWizard upload flow', () => {
         await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
 
         expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {targetYear: 2026, targetMonth: 6});
+    });
+
+    it('fills teams, nurses, and schedule cells from the uploaded schedule template', async () => {
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurse_candidates: [],
+            shift_type_candidates: [],
+            constraint_candidates: [],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const file = await createScheduleTemplateFile();
+        const monthKey = getScheduleMonthKey(2026, 6);
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        expect(result.current.draft.uploadedFileName).toBe('schedule-template.xlsx');
+        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀', 'B팀']);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['홍길동', '김철수']);
+
+        const [firstTeam, secondTeam] = result.current.draft.teams;
+
+        expect(result.current.activeTeamId).toBe(firstTeam?.id);
+        expect(firstTeam ? result.current.draft.scheduleInputs[firstTeam.id]?.[monthKey]?.rows[0] : undefined).toMatchObject({
+            name: '홍길동',
+            shifts: {
+                '1': 'D',
+                '2': 'E',
+                '3': 'N',
+            },
+        });
+        expect(secondTeam ? result.current.draft.scheduleInputs[secondTeam.id]?.[monthKey]?.rows[0] : undefined).toMatchObject({
+            name: '김철수',
+            shifts: {
+                '1': 'O',
+                '2': 'D',
+                '3': 'E',
+            },
+        });
+    });
+
+    it('uses the default nurse team when every uploaded team name is empty', async () => {
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurse_candidates: [],
+            shift_type_candidates: [],
+            constraint_candidates: [],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const file = await createScheduleTemplateFile([
+            ['홍길동', '', 'D', 'E', 'N'],
+            ['김철수', '', 'O', 'D', 'E'],
+        ]);
+        const monthKey = getScheduleMonthKey(2026, 6);
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['간호사 1팀']);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['홍길동', '김철수']);
+
+        const [team] = result.current.draft.teams;
+
+        expect(team ? result.current.draft.scheduleInputs[team.id]?.[monthKey]?.rows : undefined).toEqual([
+            expect.objectContaining({
+                name: '홍길동',
+                shifts: {
+                    '1': 'D',
+                    '2': 'E',
+                    '3': 'N',
+                },
+            }),
+            expect.objectContaining({
+                name: '김철수',
+                shifts: {
+                    '1': 'O',
+                    '2': 'D',
+                    '3': 'E',
+                },
+            }),
+        ]);
     });
 
     it('updates uploaded constraint candidate selection and staffing counts', async () => {

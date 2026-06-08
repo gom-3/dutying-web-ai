@@ -5,34 +5,27 @@ import {type TMakeShiftStep} from '../model/make-shift-store';
 type TStepState = 'done' | 'current' | 'available' | 'locked';
 type TStepMeta = {
     labelKey: TI18nKey;
-    captionKey: TI18nKey;
 };
 
 const MAKE_SHIFT_STEPS: TMakeShiftStep[] = [1, 2, 3, 4, 5, 6];
 const MAKE_SHIFT_STEP_META: Record<TMakeShiftStep, TStepMeta> = {
     1: {
         labelKey: 'page.makeShift.steps.workers.label',
-        captionKey: 'page.makeShift.steps.workers.caption',
     },
     2: {
         labelKey: 'page.makeShift.steps.constraints.label',
-        captionKey: 'page.makeShift.steps.constraints.caption',
     },
     3: {
         labelKey: 'page.makeShift.steps.requests.label',
-        captionKey: 'page.makeShift.steps.requests.caption',
     },
     4: {
         labelKey: 'page.makeShift.steps.fixedShifts.label',
-        captionKey: 'page.makeShift.steps.fixedShifts.caption',
     },
     5: {
         labelKey: 'page.makeShift.steps.aiAutofill.label',
-        captionKey: 'page.makeShift.steps.aiAutofill.caption',
     },
     6: {
         labelKey: 'page.makeShift.steps.confirmedShifts.label',
-        captionKey: 'page.makeShift.steps.confirmedShifts.caption',
     },
 };
 
@@ -163,7 +156,7 @@ export function MakeShiftStepper({
                                             {state === 'done' || isFinalConfirmedStep ? <StepCheckIcon /> : step}
                                         </span>
                                     </span>
-                                    <span className="flex max-w-full min-w-0 flex-col items-center gap-1">
+                                    <span className="max-w-full min-w-0">
                                         <span
                                             className={cn(
                                                 'max-w-full min-w-0 truncate font-apple text-[12px] leading-none font-semibold transition-[color,transform] duration-200 ease-out motion-reduce:transition-none',
@@ -173,17 +166,6 @@ export function MakeShiftStepper({
                                             )}
                                         >
                                             {t(stepMeta.labelKey)}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                'max-w-full min-w-0 translate-y-1 truncate font-apple text-[11px] leading-none font-medium text-gray-4 opacity-0 transition-[color,opacity,transform] duration-200',
-                                                'group-hover:translate-y-0 group-hover:opacity-100 group-focus:translate-y-0 group-focus:opacity-100 group-focus-visible:translate-y-0 group-focus-visible:opacity-100',
-                                                state === 'current' &&
-                                                    `translate-y-0 opacity-100 ${isFinalConfirmedStep ? 'text-[#167A52]/70' : 'text-main-1/70'}`,
-                                                state === 'locked' && 'text-gray-4',
-                                            )}
-                                        >
-                                            {t(stepMeta.captionKey)}
                                         </span>
                                     </span>
                                 </button>

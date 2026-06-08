@@ -1,13 +1,13 @@
 import {cn} from '@dutying/utils/style';
 import {ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
-import {type FormEvent, useEffect, useState} from 'react';
+import {type FormEvent, useCallback, useEffect, useRef, useState} from 'react';
 import {Link, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon} from '@/shared/assets/svg';
-import {buildAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
+import {buildAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import './index.css';
 
@@ -20,6 +20,8 @@ const PASSWORD_MIN_LENGTH = 8;
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGIN_VISUAL_SLIDES = ['/img/login-slide-1.png', '/img/login-slide-2.png', '/img/login-slide-3.png'];
+const LOGIN_VISUAL_AUTO_ROTATE_MS = 4000;
+const LOGIN_VISUAL_MANUAL_RESUME_MS = 3000;
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
     <button
@@ -85,6 +87,8 @@ function LoginPage() {
     const [isConfirmingPasswordReset, setIsConfirmingPasswordReset] = useState(false);
     const [isResettingPassword, setIsResettingPassword] = useState(false);
     const [loginVisualSlideIndex, setLoginVisualSlideIndex] = useState(0);
+    const loginVisualAutoRotateTimerRef = useRef<number | null>(null);
+    const scheduleLoginVisualAutoRotateRef = useRef<(delay: number) => void>(() => undefined);
     const isSignupEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
     const isPasswordResetEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
     const hasSignupVerificationCode = signupEmailVerificationToken?.length === EMAIL_VERIFICATION_CODE_LENGTH;
@@ -100,20 +104,37 @@ function LoginPage() {
     const currentLoginVisualPage = loginVisualSlideIndex + 1;
     const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
     const title = isSignupPage ? '회원가입' : isPasswordResetMode ? '비밀번호 찾기' : '로그인';
+    const clearLoginVisualAutoRotateTimer = useCallback(() => {
+        if (loginVisualAutoRotateTimerRef.current === null) {
+            return;
+        }
+
+        window.clearTimeout(loginVisualAutoRotateTimerRef.current);
+        loginVisualAutoRotateTimerRef.current = null;
+    }, []);
+
+    scheduleLoginVisualAutoRotateRef.current = (delay: number) => {
+        clearLoginVisualAutoRotateTimer();
+        loginVisualAutoRotateTimerRef.current = window.setTimeout(() => {
+            setLoginVisualSlideIndex((current) => (current + 1) % LOGIN_VISUAL_SLIDES.length);
+            scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_AUTO_ROTATE_MS);
+        }, delay);
+    };
+
     const showPreviousLoginVisualSlide = () => {
         setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
+        scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
     };
     const showNextLoginVisualSlide = () => {
         setLoginVisualSlideIndex((current) => (current + 1) % totalLoginVisualPages);
+        scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
     };
 
     useEffect(() => {
-        const timer = window.setInterval(() => {
-            setLoginVisualSlideIndex((current) => (current + 1) % LOGIN_VISUAL_SLIDES.length);
-        }, 4000);
+        scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_AUTO_ROTATE_MS);
 
-        return () => window.clearInterval(timer);
-    }, []);
+        return clearLoginVisualAutoRotateTimer;
+    }, [clearLoginVisualAutoRotateTimer]);
 
     const validateSignup = () => {
         const nextErrors: TSignupErrors = {};
@@ -593,15 +614,6 @@ function LoginPage() {
                                     />
                                 </div>
                             </div>
-                            <div className="flex justify-end">
-                                <button
-                                    type="button"
-                                    className="cursor-pointer text-sm font-semibold text-main-1 underline underline-offset-[3px]"
-                                    onClick={handleOpenPasswordReset}
-                                >
-                                    비밀번호 찾기
-                                </button>
-                            </div>
                             {loginNotice ? (
                                 <p role="status" className="rounded-[12px] bg-main-light px-3 py-2 text-sm text-main-1">
                                     {loginNotice}
@@ -620,12 +632,18 @@ function LoginPage() {
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 로그인
                             </button>
-                            <p className="text-center text-sm text-gray-3">
-                                아직 계정이 없나요?{' '}
-                                <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
+                            <div className="flex items-center justify-between text-sm font-medium text-gray-3">
+                                <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-sub-2">
                                     회원가입
                                 </Link>
-                            </p>
+                                <button
+                                    type="button"
+                                    className="cursor-pointer text-sm font-medium text-gray-3 transition-colors hover:text-sub-2"
+                                    onClick={handleOpenPasswordReset}
+                                >
+                                    비밀번호 찾기
+                                </button>
+                            </div>
                         </form>
                     ) : null}
 
@@ -921,18 +939,6 @@ function LoginPage() {
                             </div>
                         </div>
                     ) : null}
-                </div>
-
-                <div className="mt-auto flex flex-wrap justify-center gap-x-2 gap-y-1 pt-8 font-apple text-sm text-sub-3">
-                    <span>계속하면</span>
-                    <a href={RUNTIME_CONFIG.docs.termsOfService} className="underline underline-offset-[3px]">
-                        서비스 약관
-                    </a>
-                    <span>및</span>
-                    <a href={RUNTIME_CONFIG.docs.privacyPolicy} className="underline underline-offset-[3px]">
-                        개인정보 처리방침
-                    </a>
-                    <span>에 동의한 것으로 간주합니다.</span>
                 </div>
             </div>
         </div>

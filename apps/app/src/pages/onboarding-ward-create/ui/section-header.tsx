@@ -8,8 +8,8 @@ const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}>
         description: '',
     },
     2: {
-        title: '병동과 근무표 설정을 위해\n가장 최근에 사용한 근무표를 입력해 주세요',
-        description: '',
+        title: '병동 및 근무표 설정을 위해\n최근에 사용한 근무표를 입력해 주세요',
+        description: '기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.',
     },
     3: {
         title: '병동의 근무 유형을 설정해 주세요',

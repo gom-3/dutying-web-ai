@@ -16,6 +16,7 @@ import {
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
+    applyUploadedScheduleTemplateDraft,
     canComplete,
     canGoNext,
     canGoPrev,
@@ -43,6 +44,7 @@ import {
     updateShiftTypeDraft,
     updateTeamNameDraft,
 } from './draft';
+import {parseOnboardingScheduleTemplate} from './schedule-template-parser';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
 import type {TSortMode} from './types';
@@ -54,6 +56,26 @@ type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
 type TDraftRestoreStatus = 'loading' | 'ready' | 'error';
+
+const parseScheduleTemplateSafely = async (file: File, options?: TOnboardingWardParseOptions) => {
+    if (!options?.targetYear || !options.targetMonth) {
+        return [];
+    }
+
+    if (!file.name.toLowerCase().endsWith('.xlsx')) {
+        return [];
+    }
+
+    try {
+        return await parseOnboardingScheduleTemplate(file, {
+            targetYear: options.targetYear,
+            targetMonth: options.targetMonth,
+        });
+    } catch {
+        return [];
+    }
+};
+
 type TPersistedOnboardingWardDraft = {
     draft: TOnboardingWardDraft;
     draftWardId: number | null;
@@ -713,10 +735,36 @@ function useOnboardingWardWizard() {
         setUploadWarnings([]);
 
         try {
-            const response = await FileAPI.parseOnboardingWardExcel(file, options);
+            const [response, scheduleTemplate] = await Promise.all([
+                FileAPI.parseOnboardingWardExcel(file, options),
+                parseScheduleTemplateSafely(file, options),
+            ]);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name);
+            let nextActiveTeamId: string | null = null;
 
-            setDraft((prev) => applyParsedWardData(prev, parsedWardData));
+            setDraft((prev) => {
+                const parsedDraft = applyParsedWardData(prev, parsedWardData);
+
+                if (!options?.targetYear || !options.targetMonth || scheduleTemplate.length === 0) {
+                    return parsedDraft;
+                }
+
+                const result = applyUploadedScheduleTemplateDraft(parsedDraft, {
+                    fileName: file.name,
+                    year: options.targetYear,
+                    month: options.targetMonth,
+                    teamSchedules: scheduleTemplate,
+                });
+
+                nextActiveTeamId = result.activeTeamId;
+
+                return result.draft;
+            });
+
+            if (nextActiveTeamId) {
+                setSelectedTeamId(nextActiveTeamId);
+            }
+
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
             toast.success('근무표 파일을 반영했어요.');

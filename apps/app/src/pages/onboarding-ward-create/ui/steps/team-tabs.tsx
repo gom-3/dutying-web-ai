@@ -1,7 +1,6 @@
 ﻿import {cn} from '@dutying/utils/style';
-import {Plus} from 'lucide-react';
+import {Pencil, Plus} from 'lucide-react';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
-import {PersonIcon} from '@/shared/assets/svg';
 import type {TOnboardingNurseDraft, TOnboardingTeamDraft} from '../../model';
 
 interface ITeamTabsProps {
@@ -69,7 +68,6 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
                     />
                 ) : null}
                 {teams.map((team) => {
-                    const count = nurses.filter((nurse) => nurse.teamId === team.id).length;
                     const isActive = team.id === currentTeamId;
                     const isEditing = editingTeamId === team.id;
 
@@ -145,10 +143,7 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
                                 <span>{team.name}</span>
                             )}
                             {isActive && !isEditing ? (
-                                <span className="flex items-center gap-1 font-poppins text-[14px] font-semibold">
-                                    <PersonIcon className="h-[18px] w-[18px] text-[#37404F]" />
-                                    {count}
-                                </span>
+                                <Pencil className="ml-1 h-3 w-3 text-[#9CA3AF]" strokeWidth={2.2} aria-hidden="true" />
                             ) : null}
                         </button>
                     );
@@ -174,6 +169,3 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
 }
 
 export default TeamTabs;
-
-
-

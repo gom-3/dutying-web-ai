@@ -82,7 +82,6 @@ export function ShiftCalendarRow({
 
             return Boolean(shiftType?.isOff) && day?.dayType !== 'workday';
         }).length ?? 0;
-
     const violationLayersSorted = useMemo(() => {
         if (!violations) return [];
 
@@ -113,11 +112,12 @@ export function ShiftCalendarRow({
             key={row.shiftNurse.shiftNurseId}
             isDragDisabled={readonly || !enableDragAndDrop}
         >
-            {(provided) => (
+            {(provided, dragSnapshot) => (
                 <div
                     data-shift-calendar-row
                     data-row-index={rowIndex}
-                    className={`relative grid h-8 w-full min-w-0 items-center gap-x-2 ${
+                    data-dragging={dragSnapshot.isDragging ? 'true' : undefined}
+                    className={`relative grid h-8 w-full min-w-0 items-center gap-x-2 outline-none focus:outline-none focus-visible:outline-none ${
                         rowIndex === 0
                             ? rowIndex === rowsLength - 1
                                 ? 'rounded-[1.25rem]'
@@ -125,7 +125,11 @@ export function ShiftCalendarRow({
                             : rowIndex === rowsLength - 1
                               ? 'rounded-b-[1.25rem]'
                               : ''
-                    } ${isRowFocused ? 'bg-main-4' : 'bg-white'}`}
+                    } ${isRowFocused ? 'bg-main-4' : 'bg-white'} ${
+                        dragSnapshot.isDragging
+                            ? 'z-50 cursor-grabbing overflow-hidden rounded-[.875rem] bg-white shadow-[0_10px_26px_rgba(65,72,90,0.16)] ring-2 ring-main-1/25'
+                            : ''
+                    }`}
                     ref={provided.innerRef}
                     {...(() => {
                         // DnD가 주입하는 style(transform/transition 등)이 있고,
@@ -133,11 +137,13 @@ export function ShiftCalendarRow({
                         // row가 단일 컬럼으로 풀려 "세로로 겹쳐 보이는" 문제가 생깁니다.
                         // => style 병합으로 해결합니다.
                         const {style: draggableStyle, ...draggableProps} = provided.draggableProps;
+
                         return {
                             ...draggableProps,
                             ...provided.dragHandleProps,
                             style: {
                                 ...(draggableStyle ?? {}),
+                                boxSizing: 'border-box',
                                 gridTemplateColumns,
                                 gridAutoFlow: 'column',
                                 maxWidth: '100%',
@@ -262,12 +268,12 @@ export function ShiftCalendarRow({
                             .map((wardShiftType) => (
                                 <div
                                     key={wardShiftType.wardShiftTypeId}
-                                    className="flex h-5 w-5 shrink-0 items-center justify-center font-poppins text-[clamp(10px,0.72vw,15px)] tabular-nums leading-none text-sub-2"
+                                    className="flex h-5 w-5 shrink-0 items-center justify-center font-poppins text-[clamp(10px,0.72vw,15px)] leading-none text-sub-2 tabular-nums"
                                 >
                                     {getCountByNurse(wardShiftType.wardShiftTypeId)}
                                 </div>
                             ))}
-                        <div className="flex h-5 w-5 shrink-0 items-center justify-center font-poppins text-[clamp(10px,0.72vw,15px)] tabular-nums leading-none text-sub-2">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center font-poppins text-[clamp(10px,0.72vw,15px)] leading-none text-sub-2 tabular-nums">
                             {getOffCount()}
                         </div>
                     </div>

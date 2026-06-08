@@ -2,7 +2,7 @@
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import Card from '@/shared/ui/Card';
 import {Input} from '@/shared/ui/primitives/input';
-import type {TOnboardingWardShiftType} from '../../model';
+import {DEFAULT_SHIFT_TYPE_COLORS, type TOnboardingWardShiftType} from '../../model';
 
 interface IShiftTypeStepProps {
     shiftTypes: TOnboardingWardShiftType[];
@@ -11,18 +11,7 @@ interface IShiftTypeStepProps {
     onDelete: (shiftTypeId: string) => void;
 }
 
-const SHIFT_COLOR_OPTIONS = [
-    '#63C8B8',
-    '#F790A4',
-    '#5A95F8',
-    '#7688B2',
-    '#F5A978',
-    '#EFCB55',
-    '#9AC760',
-    '#62CAD8',
-    '#AD87F1',
-    '#EC84BB',
-] as const;
+const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
 const SHIFT_NAME_MAX_LENGTH = 12;
 const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
 const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_72px_112px_minmax(230px,1.45fr)_48px_40px]';

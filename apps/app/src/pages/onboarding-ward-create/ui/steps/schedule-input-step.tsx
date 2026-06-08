@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {ChevronLeft, ChevronRight, Plus, X} from 'lucide-react';
+import {ChevronLeft, ChevronRight, FileSpreadsheet, Plus, X} from 'lucide-react';
 import {
     type Dispatch,
     type KeyboardEvent,
@@ -12,13 +12,22 @@ import {
     useRef,
     useState,
 } from 'react';
+import {PersonIcon} from '@/shared/assets/svg';
 import {
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
     type TOnboardingTeamScheduleDraft,
     type TOnboardingWardDraft,
 } from '../../model';
+import ScheduleFileUploadModal from './schedule-file-upload-modal';
 import TeamTabs from './team-tabs';
+
+type TScheduleFileUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
+
+type TScheduleFileUploadTargetMonth = {
+    targetYear: number;
+    targetMonth: number;
+};
 
 interface IScheduleInputStepProps {
     draft: TOnboardingWardDraft;
@@ -28,6 +37,9 @@ interface IScheduleInputStepProps {
     canAddTeam: boolean;
     onTeamNameChange: (teamId: string, teamName: string) => void;
     onScheduleChange: (teamId: string, schedule: TOnboardingTeamScheduleDraft) => void;
+    onUploadFile: (file: File, options: TScheduleFileUploadTargetMonth) => Promise<void>;
+    uploadStatus: TScheduleFileUploadStatus;
+    uploadError: string | null;
 }
 
 type TCellPosition = {
@@ -70,15 +82,15 @@ const MIN_VISIBLE_ROWS = 10;
 const MAX_UNDO_HISTORY = 10;
 const MAX_CELL_LENGTH = 5;
 const NAME_COLUMN_INDEX = 0;
-const NAME_COL = 'clamp(78px,6.2cqw,106px)';
-const ROW_ACTION_COL = 'clamp(30px,2.7cqw,42px)';
+const NAME_COL = 'clamp(86px,6.8cqw,116px)';
+const ROW_ACTION_COL = 'clamp(34px,3cqw,46px)';
 const LEFT_GRID_TEMPLATE_COLUMNS = `${NAME_COL} minmax(0,1fr) ${ROW_ACTION_COL}`;
-const ROW_GAP_X = 'clamp(4px,0.5cqw,10px)';
-const DIVISION_PADDING_X = 'clamp(8px,0.85cqw,14px)';
-const DAY_CELL_PADDING_X = 'clamp(2px,0.28cqw,5px)';
+const ROW_GAP_X = 'clamp(8px,0.78cqw,14px)';
+const DIVISION_PADDING_X = 'clamp(12px,1.15cqw,20px)';
+const DAY_CELL_PADDING_X = 'clamp(3px,0.38cqw,7px)';
 const NAME_TEXT_CLASS = 'text-[clamp(14px,1.08cqw,18px)]';
 const SHIFT_BADGE_CELL_WRAP =
-    'make-shift-calendar__shift-badge-wrap relative z-[20] flex size-[clamp(16px,1.45vw,26px)] min-w-0 shrink-0 items-center justify-center';
+    'make-shift-calendar__shift-badge-wrap relative z-[20] flex size-[clamp(16px,1.4vw,25px)] min-w-0 shrink-0 items-center justify-center';
 const SHIFT_INPUT_CLASS =
     'make-shift-calendar__shift-badge relative z-[20] h-full w-full min-h-0 min-w-0 rounded-[.375rem] border-0 px-0 text-center font-poppins text-[clamp(9px,0.82vw,18px)] leading-none outline-none';
 const FALLBACK_SHIFT_COLOR = '#D6D6DE';
@@ -96,9 +108,9 @@ const FIXED_SHIFT_COLOR_BY_TERM = new Map([
 const OFF_SHIFT_TERMS = new Set(['OFF', '휴무']);
 const getMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
-const getPreviousMonthOption = (): TMonthOption => {
+const getCurrentMonthOption = (): TMonthOption => {
     const today = new Date();
-    const date = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const date = new Date(today.getFullYear(), today.getMonth(), 1);
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
 
@@ -196,27 +208,43 @@ const getFixedShiftColor = (value: string) => {
     return FIXED_SHIFT_COLOR_BY_TERM.get(OFF_SHIFT_TERMS.has(term) ? 'O' : term) ?? null;
 };
 const getPastelShiftColor = (index: number) => `hsl(${positiveModulo(12 + index * 137.508, 360).toFixed(1)} 74% 86%)`;
-const buildShiftTermColorMap = (rows: TOnboardingScheduleRowDraft[]) => {
+const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
+    const terms: string[] = [];
     const termSet = new Set<string>();
 
     rows.forEach((row) => {
-        Object.values(row.shifts).forEach((value) => {
-            const term = normalizeShiftCode(value);
+        Object.entries(row.shifts)
+            .sort(([leftDay], [rightDay]) => Number(leftDay) - Number(rightDay))
+            .forEach(([, value]) => {
+                const term = normalizeShiftCode(value);
 
-            if (!term || isSlashShiftCode(term) || getFixedShiftColor(term)) {
-                return;
-            }
+                if (!term || termSet.has(term) || isSlashShiftCode(term) || getFixedShiftColor(term)) {
+                    return;
+                }
 
-            termSet.add(term);
-        });
+                termSet.add(term);
+                terms.push(term);
+            });
     });
 
-    return new Map(
-        Array.from(termSet)
-            .sort((left, right) => left.localeCompare(right, 'ko-KR'))
-            .map((term, index) => [term, getPastelShiftColor(index)]),
-    );
+    return terms;
 };
+const appendNewShiftTerms = (currentOrder: string[], rows: TOnboardingScheduleRowDraft[]) => {
+    const seenTerms = new Set(currentOrder);
+    const nextOrder = [...currentOrder];
+
+    collectCustomShiftTerms(rows).forEach((term) => {
+        if (seenTerms.has(term)) {
+            return;
+        }
+
+        seenTerms.add(term);
+        nextOrder.push(term);
+    });
+
+    return nextOrder.length === currentOrder.length ? currentOrder : nextOrder;
+};
+const buildShiftTermColorMap = (termOrder: string[]) => new Map(termOrder.map((term, index) => [term, getPastelShiftColor(index)]));
 
 function ScheduleInputStep({
     draft,
@@ -226,17 +254,25 @@ function ScheduleInputStep({
     canAddTeam,
     onTeamNameChange,
     onScheduleChange,
+    onUploadFile,
+    uploadStatus,
+    uploadError,
 }: IScheduleInputStepProps) {
     const rowIdRef = useRef(0);
+    const calendarWrapRef = useRef<HTMLDivElement | null>(null);
     const inputRefByCell = useRef<Record<string, HTMLInputElement | null>>({});
     const pendingCompositionMoveRef = useRef<{rowDelta: number; colDelta: number} | null>(null);
     const undoHistoryRef = useRef<Record<string, TUndoSnapshot[]>>({});
     const [selection, setSelection] = useState<TCellRange>({start: {row: 0, col: 0}, end: {row: 0, col: 0}});
+    const [isSelectionVisible, setIsSelectionVisible] = useState(false);
     const [isSelecting, setIsSelecting] = useState(false);
     const [fillDrag, setFillDrag] = useState<{source: TCellRange; target: TCellPosition} | null>(null);
-    const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getPreviousMonthOption());
+    const [shiftTermOrderBySchedule, setShiftTermOrderBySchedule] = useState<Record<string, string[]>>({});
+    const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
+    const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
     const currentSchedule = draft.scheduleInputs?.[selectedTeamId]?.[selectedMonthOption.key];
     const activeMonthOption = selectedMonthOption;
+    const activeScheduleKey = `${selectedTeamId}:${activeMonthOption.key}`;
     const dayCount = getDaysInMonth(activeMonthOption.year, activeMonthOption.month);
     const days = useMemo(() => Array.from({length: dayCount}, (_, index) => index + 1), [dayCount]);
     const goPreviousMonth = () => setSelectedMonthOption((prev) => moveMonthOption(prev, -1));
@@ -282,9 +318,27 @@ function ScheduleInputStep({
 
         return ensureMinimumRows([], MIN_VISIBLE_ROWS, true);
     }, [currentSchedule, draft.nurses, ensureMinimumRows]);
-    const shiftTermColorMap = useMemo(() => buildShiftTermColorMap(rows), [rows]);
+    const ensureShiftTermOrder = useCallback((scheduleKey: string, sourceRows: TOnboardingScheduleRowDraft[]) => {
+        setShiftTermOrderBySchedule((prev) => {
+            const currentOrder = prev[scheduleKey] ?? [];
+            const nextOrder = appendNewShiftTerms(currentOrder, sourceRows);
+
+            if (nextOrder === currentOrder) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [scheduleKey]: nextOrder,
+            };
+        });
+    }, []);
+    const shiftTermColorMap = useMemo(
+        () => buildShiftTermColorMap(shiftTermOrderBySchedule[activeScheduleKey] ?? []),
+        [activeScheduleKey, shiftTermOrderBySchedule],
+    );
     const selectedRange = normalizeRange(selection);
-    const fillRange = fillDrag ? normalizeRange({start: selection.start, end: fillDrag.target}) : null;
+    const fillRange = isSelectionVisible && fillDrag ? normalizeRange({start: selection.start, end: fillDrag.target}) : null;
     const tabNurses = useMemo(() => {
         const nurseByKey = new Map<string, TOnboardingNurseDraft>();
 
@@ -308,6 +362,12 @@ function ScheduleInputStep({
 
         return Array.from(nurseByKey.values());
     }, [draft.scheduleInputs, draft.teams]);
+    const activeTeamNurseCount = tabNurses.filter((nurse) => nurse.teamId === selectedTeamId).length;
+
+    useEffect(() => {
+        ensureShiftTermOrder(activeScheduleKey, rows);
+    }, [activeScheduleKey, ensureShiftTermOrder, rows]);
+
     const pushUndoSnapshot = useCallback(
         (previousRows: TOnboardingScheduleRowDraft[], previousSelection: TCellRange, month: TMonthOption) => {
             const historyKey = `${selectedTeamId}:${month.key}`;
@@ -343,13 +403,14 @@ function ScheduleInputStep({
                 pushUndoSnapshot(previousRows, previousSelection, month);
             }
 
+            ensureShiftTermOrder(`${selectedTeamId}:${month.key}`, normalizedRows);
             onScheduleChange(selectedTeamId, {
                 year: month.year,
                 month: month.month,
                 rows: normalizedRows,
             });
         },
-        [activeMonthOption, ensureMinimumRows, onScheduleChange, pushUndoSnapshot, rows, selectedTeamId, selection],
+        [activeMonthOption, ensureMinimumRows, ensureShiftTermOrder, onScheduleChange, pushUndoSnapshot, rows, selectedTeamId, selection],
     );
     const focusCell = useCallback((rowIndex: number, colIndex: number, selectText = false) => {
         const input = inputRefByCell.current[`${rowIndex}:${colIndex}`];
@@ -662,35 +723,75 @@ function ScheduleInputStep({
         });
     }, [dayCount]);
 
+    useEffect(() => {
+        const clearSelectionOnOutsideMouseDown = (event: MouseEvent) => {
+            const target = event.target instanceof Element ? event.target : null;
+
+            if (!target || calendarWrapRef.current?.contains(target)) {
+                return;
+            }
+
+            setIsSelectionVisible(false);
+            setIsSelecting(false);
+            setFillDrag(null);
+        };
+
+        document.addEventListener('mousedown', clearSelectionOnOutsideMouseDown);
+
+        return () => document.removeEventListener('mousedown', clearSelectionOnOutsideMouseDown);
+    }, []);
+
     return (
-        <div className="space-y-4">
-            <ScheduleMonthSelector
-                year={activeMonthOption.year}
-                month={activeMonthOption.month}
-                onPreviousMonth={goPreviousMonth}
-                onNextMonth={goNextMonth}
-            />
-            <TeamTabs
-                teams={draft.teams}
-                nurses={tabNurses}
-                currentTeamId={selectedTeamId}
-                onSelect={onSelectTeam}
-                onAdd={onAddTeam}
-                canAdd={canAddTeam}
-                onRename={onTeamNameChange}
-            />
-            <div
-                className="fixed-shifts-calendar-wrap w-full min-w-0 rounded-[16px] bg-white p-[clamp(16px,2cqw,28px)] shadow-[0_12px_32px_rgba(49,55,74,0.06)]"
-                onCopy={(event) => {
-                    event.clipboardData.setData('text/plain', buildSelectionText());
-                    event.preventDefault();
-                }}
-                onPaste={(event) => {
-                    pasteText(event.clipboardData.getData('text/plain'));
-                    event.preventDefault();
-                }}
-            >
-                <div className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-2">
+        <div
+            ref={calendarWrapRef}
+            className="fixed-shifts-calendar-wrap w-full min-w-0 rounded-[16px] bg-white p-[clamp(20px,2.2cqw,32px)] shadow-[0_12px_32px_rgba(49,55,74,0.06)]"
+            onMouseDownCapture={(event) => {
+                const target = event.target instanceof Element ? event.target : null;
+
+                if (target?.closest('[data-schedule-cell],[data-fill-handle]')) {
+                    return;
+                }
+
+                setIsSelectionVisible(false);
+                setIsSelecting(false);
+                setFillDrag(null);
+            }}
+            onCopy={(event) => {
+                event.clipboardData.setData('text/plain', buildSelectionText());
+                event.preventDefault();
+            }}
+            onPaste={(event) => {
+                pasteText(event.clipboardData.getData('text/plain'));
+                event.preventDefault();
+            }}
+        >
+            <div className="space-y-5">
+                <ScheduleMonthSelector
+                    year={activeMonthOption.year}
+                    month={activeMonthOption.month}
+                    onPreviousMonth={goPreviousMonth}
+                    onNextMonth={goNextMonth}
+                />
+                <div className="flex w-full justify-end">
+                    <button
+                        type="button"
+                        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-[#107C41] px-4 font-apple text-[14px] font-semibold text-white shadow-[0_8px_18px_rgba(16,124,65,0.18)] transition-colors hover:bg-[#0E6F3A] focus-visible:outline-2 focus-visible:outline-[#107C41]/35 active:bg-[#0B5F31]"
+                        onClick={() => setIsScheduleFileUploadModalOpen(true)}
+                    >
+                        <FileSpreadsheet className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+                        근무표 파일 등록
+                    </button>
+                </div>
+                <TeamTabs
+                    teams={draft.teams}
+                    nurses={tabNurses}
+                    currentTeamId={selectedTeamId}
+                    onSelect={onSelectTeam}
+                    onAdd={onAddTeam}
+                    canAdd={canAddTeam}
+                    onRename={onTeamNameChange}
+                />
+                <div className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-3">
                     <div className="make-shift-calendar__header flex w-full min-w-0 items-center py-1" style={{gap: 0}}>
                         <div
                             className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
@@ -704,7 +805,13 @@ function ScheduleInputStep({
                             <HeaderLabel
                                 className={cn('make-shift-calendar__header-label--name font-semibold text-sub-2', NAME_TEXT_CLASS)}
                             >
-                                이름
+                                <span className="flex min-w-0 items-center justify-center gap-1.5">
+                                    <span>간호사</span>
+                                    <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
+                                        <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
+                                        <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
+                                    </span>
+                                </span>
                             </HeaderLabel>
                             <div
                                 className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
@@ -739,7 +846,7 @@ function ScheduleInputStep({
                                     <div key={row.id} style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
                                         <div
                                             data-row-index={rowIndex}
-                                            className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(28px,2.4cqw,40px)] w-full min-w-0 items-stretch"
+                                            className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
                                             style={{
                                                 gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
                                                 columnGap: ROW_GAP_X,
@@ -749,12 +856,14 @@ function ScheduleInputStep({
                                                 row={row}
                                                 rowIndex={rowIndex}
                                                 selection={selection}
+                                                isSelectionVisible={isSelectionVisible}
                                                 selectedRange={selectedRange}
                                                 fillRange={fillRange}
                                                 inputRefByCell={inputRefByCell}
                                                 isSelecting={isSelecting}
                                                 fillDrag={fillDrag}
                                                 onFocusCell={focusCell}
+                                                onShowSelection={() => setIsSelectionVisible(true)}
                                                 onSetSelection={setSelection}
                                                 onSetIsSelecting={setIsSelecting}
                                                 onSetFillDrag={setFillDrag}
@@ -781,12 +890,14 @@ function ScheduleInputStep({
                                                         value={getCellValue(rows, rowIndex, dayIndex + 1)}
                                                         termColorMap={shiftTermColorMap}
                                                         selection={selection}
+                                                        isSelectionVisible={isSelectionVisible}
                                                         selectedRange={selectedRange}
                                                         fillRange={fillRange}
                                                         inputRefByCell={inputRefByCell}
                                                         isSelecting={isSelecting}
                                                         fillDrag={fillDrag}
                                                         onFocusCell={focusCell}
+                                                        onShowSelection={() => setIsSelectionVisible(true)}
                                                         onSetSelection={setSelection}
                                                         onSetIsSelecting={setIsSelecting}
                                                         onSetFillDrag={setFillDrag}
@@ -804,14 +915,14 @@ function ScheduleInputStep({
                                         </div>
                                     </div>
                                 ))}
-                                <div className="pt-2" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
+                                <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
                                     <button
                                         type="button"
                                         aria-label="행 추가"
-                                        className="flex h-[clamp(32px,2.6cqw,42px)] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#CAD3DF] bg-[#F8FAFC] font-apple text-[14px] font-semibold text-[#556070] transition-colors hover:border-main-1 hover:bg-main-light hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                                        className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
                                         onClick={addRow}
                                     >
-                                        <Plus className="h-4 w-4" />행 추가
+                                        <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />행 추가
                                     </button>
                                 </div>
                             </div>
@@ -819,6 +930,15 @@ function ScheduleInputStep({
                     </div>
                 </div>
             </div>
+            <ScheduleFileUploadModal
+                open={isScheduleFileUploadModalOpen}
+                targetYear={activeMonthOption.year}
+                targetMonth={activeMonthOption.month}
+                uploadStatus={uploadStatus}
+                uploadError={uploadError}
+                onClose={() => setIsScheduleFileUploadModalOpen(false)}
+                onUpload={onUploadFile}
+            />
         </div>
     );
 }
@@ -878,12 +998,14 @@ type TEditableCellProps = {
     rowIndex: number;
     colIndex: number;
     selection: TCellRange;
+    isSelectionVisible: boolean;
     selectedRange: TNormalizedRange;
     fillRange: TNormalizedRange | null;
     inputRefByCell: MutableRefObject<Record<string, HTMLInputElement | null>>;
     isSelecting: boolean;
     fillDrag: {source: TCellRange; target: TCellPosition} | null;
     onFocusCell: (rowIndex: number, colIndex: number, selectText?: boolean) => void;
+    onShowSelection: () => void;
     onSetSelection: Dispatch<SetStateAction<TCellRange>>;
     onSetIsSelecting: Dispatch<SetStateAction<boolean>>;
     onSetFillDrag: Dispatch<SetStateAction<{source: TCellRange; target: TCellPosition} | null>>;
@@ -904,12 +1026,14 @@ function NameCell({
     row,
     rowIndex,
     selection,
+    isSelectionVisible,
     selectedRange,
     fillRange,
     inputRefByCell,
     isSelecting,
     fillDrag,
     onFocusCell,
+    onShowSelection,
     onSetSelection,
     onSetIsSelecting,
     onSetFillDrag,
@@ -923,13 +1047,14 @@ function NameCell({
 }: TNameCellProps) {
     const colIndex = NAME_COLUMN_INDEX;
     const cell = {row: rowIndex, col: colIndex};
-    const isActive = selection.end.row === rowIndex && selection.end.col === colIndex;
-    const isSelected = isCellInRange(cell, selectedRange);
+    const isActive = isSelectionVisible && selection.end.row === rowIndex && selection.end.col === colIndex;
+    const isSelected = isSelectionVisible && isCellInRange(cell, selectedRange);
     const isFillHighlighted = fillRange ? isCellInRange(cell, fillRange) : false;
-    const isFillHandleCell = selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
+    const isFillHandleCell = isSelectionVisible && selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
 
     return (
         <div
+            data-schedule-cell
             className={cn(
                 'make-shift-calendar__row-name relative flex min-h-0 min-w-0 items-center justify-center truncate text-center font-apple leading-none whitespace-nowrap text-sub-1',
                 NAME_TEXT_CLASS,
@@ -944,6 +1069,7 @@ function NameCell({
                 if ((event.target as HTMLElement).closest('button,[data-fill-handle]')) return;
 
                 event.preventDefault();
+                onShowSelection();
                 onSetIsSelecting(true);
                 onSetSelection({start: cell, end: cell});
                 onFocusCell(rowIndex, colIndex);
@@ -973,7 +1099,10 @@ function NameCell({
                     'h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-center font-apple text-sub-1 outline-none placeholder:text-gray-4',
                     NAME_TEXT_CLASS,
                 )}
-                onFocus={() => onSetSelection({start: cell, end: cell})}
+                onFocus={() => {
+                    onShowSelection();
+                    onSetSelection({start: cell, end: cell});
+                }}
                 onChange={(event) => onUpdate(rowIndex, colIndex, event.target.value)}
                 onKeyDown={(event) =>
                     handleCellKeyDown(event, selection, onMove, onClearSelection, onCopySelection, onUndo, onQueueCompositionMove)
@@ -1032,12 +1161,14 @@ function ShiftCell({
     value,
     termColorMap,
     selection,
+    isSelectionVisible,
     selectedRange,
     fillRange,
     inputRefByCell,
     isSelecting,
     fillDrag,
     onFocusCell,
+    onShowSelection,
     onSetSelection,
     onSetIsSelecting,
     onSetFillDrag,
@@ -1050,10 +1181,10 @@ function ShiftCell({
     onFlushCompositionMove,
 }: TShiftCellProps) {
     const cell = {row: rowIndex, col: colIndex};
-    const isActive = selection.end.row === rowIndex && selection.end.col === colIndex;
-    const isSelected = isCellInRange(cell, selectedRange);
+    const isActive = isSelectionVisible && selection.end.row === rowIndex && selection.end.col === colIndex;
+    const isSelected = isSelectionVisible && isCellInRange(cell, selectedRange);
     const isFillHighlighted = fillRange ? isCellInRange(cell, fillRange) : false;
-    const isFillHandleCell = selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
+    const isFillHandleCell = isSelectionVisible && selectedRange.maxRow === rowIndex && selectedRange.maxCol === colIndex && !fillDrag;
     const normalizedValue = normalizeShiftCode(value);
     const hasValue = Boolean(normalizedValue);
     const isSlashValue = isSlashShiftCode(value);
@@ -1072,6 +1203,7 @@ function ShiftCell({
 
     return (
         <div
+            data-schedule-cell
             data-day-index={day - 1}
             className={cn(
                 'make-shift-calendar__day-cell group relative z-[10] flex h-full min-w-0 cursor-pointer items-center justify-center',
@@ -1087,6 +1219,7 @@ function ShiftCell({
                 if ((event.target as HTMLElement).closest('[data-fill-handle]')) return;
 
                 event.preventDefault();
+                onShowSelection();
                 onSetIsSelecting(true);
                 onSetSelection({start: cell, end: cell});
                 onFocusCell(rowIndex, colIndex);
@@ -1115,7 +1248,10 @@ function ShiftCell({
                     maxLength={MAX_CELL_LENGTH}
                     className={cn(SHIFT_INPUT_CLASS, isActive && 'outline outline-2 outline-main-1')}
                     style={{backgroundColor, color: textColor}}
-                    onFocus={() => onSetSelection({start: cell, end: cell})}
+                    onFocus={() => {
+                        onShowSelection();
+                        onSetSelection({start: cell, end: cell});
+                    }}
                     onChange={(event) => onUpdate(rowIndex, colIndex, event.target.value)}
                     onKeyDown={(event) =>
                         handleCellKeyDown(event, selection, onMove, onClearSelection, onCopySelection, onUndo, onQueueCompositionMove)
