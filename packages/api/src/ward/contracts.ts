@@ -347,12 +347,19 @@ export type TAffectedCellDto = {
     shiftCode?: string;
 };
 
+export type TScheduleViolationPeriodDto = {
+    startDate: string;
+    endDate: string;
+    dates: string[];
+};
+
 export type TScheduleViolationDto = {
     violationId: string;
     ruleId: number;
     templateCode: string;
     severity: TShiftConstraintSeverity;
     message: string;
+    period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
     fixable: boolean;
 };
