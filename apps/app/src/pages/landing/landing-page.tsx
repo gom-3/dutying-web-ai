@@ -1041,7 +1041,7 @@ function LandingPage() {
 
                     <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
                         <img
-                            src="/img/temp222.png"
+                            src="/img/temp24222.png"
                             alt="듀팅 앱 로고 이미지"
                             className="w-[min(765px,127.5vw)] max-w-none rounded-[12px] object-contain md:w-[646px] lg:w-[765px] xl:translate-x-12"
                         />

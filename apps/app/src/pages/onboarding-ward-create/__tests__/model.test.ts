@@ -6,6 +6,7 @@ import {
     canComplete,
     canGoNext,
     createInitialDraft,
+    DEFAULT_SHIFT_TYPE_COLORS,
     deleteTeamDraft,
     deleteShiftTypeDraft,
     getStepValidation,
@@ -130,6 +131,14 @@ describe('OnboardingWardCreatePage model', () => {
         const afterExceeded = addShiftTypeDraft(maxShiftDraft);
 
         expect(afterExceeded.shiftTypes).toHaveLength(MAX_ONBOARDING_SHIFT_TYPES);
+    });
+
+    it('uses dedicated default colors for core and newly added shift types', () => {
+        const draft = createInitialDraft();
+        const withAdditionalShift = addShiftTypeDraft(draft);
+
+        expect(draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
+        expect(withAdditionalShift.shiftTypes[4]?.color).toBe(DEFAULT_SHIFT_TYPE_COLORS[4]);
     });
 
     it('deletes a team and all nurses in that team', () => {

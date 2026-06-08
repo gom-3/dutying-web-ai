@@ -85,7 +85,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     };
 
     return (
-        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] flex-1 gap-4 pt-7 pb-3">
+        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] flex-1 gap-4 pt-4 pb-3">
             <aside className="make-shift-step-content__intro flex w-[400px] shrink-0 flex-col px-1 py-2 min-[1440px]:w-[clamp(400px,25vw,440px)]">
                 <div className="min-h-[159px] pl-8 min-[1440px]:min-h-[140px] min-[1440px]:pl-10">
                     <p className="make-shift-step-content__intro-title font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">

@@ -113,6 +113,8 @@ const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] l
  */
 const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const LAST_SHIFTS_GAP = 'clamp(1px,0.15cqw,3px)';
+const SELECTION_INSET_Y = 'clamp(1px,0.16cqw,2px)';
+const SELECTION_RADIUS = 'clamp(5px,0.55cqw,8px)';
 /** 위반 박스 — 네 면 동일 여백 (좌우와 같은 규칙으로 상하도 맞춤) */
 const VIOLATION_INSET = 'clamp(1px,0.1cqw,2px)';
 /**
@@ -1128,6 +1130,16 @@ function CalendarRowLeft({
                                     weekendBg,
                                 )}
                             >
+                                {isSelected && (
+                                    <span
+                                        aria-hidden
+                                        className="pointer-events-none absolute z-[18] border-2 border-main-1 shadow-[0_0_0_1px_rgba(255,255,255,0.7)]"
+                                        style={{
+                                            inset: `${SELECTION_INSET_Y} ${DAY_CELL_PADDING_X}`,
+                                            borderRadius: SELECTION_RADIUS,
+                                        }}
+                                    />
+                                )}
                                 {reqType && shiftType && reqType.wardShiftTypeId !== shiftType.wardShiftTypeId && (
                                     <span
                                         className="make-shift-calendar__request-outline pointer-events-none absolute inset-[clamp(1px,0.18cqw,3px)] rounded-[clamp(4px,0.5cqw,7px)] border-[1.5px] opacity-70"
@@ -1140,7 +1152,7 @@ function CalendarRowLeft({
                                     <ShiftBadge
                                         shiftType={shiftType}
                                         isOnlyRequest={shiftType === null && reqType !== null}
-                                        className={cn(SHIFT_BADGE_CELL_BADGE, isSelected && 'outline outline-2 outline-main-1')}
+                                        className={SHIFT_BADGE_CELL_BADGE}
                                     />
                                 </span>
                             </button>

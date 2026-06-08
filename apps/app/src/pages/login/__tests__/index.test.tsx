@@ -1,7 +1,7 @@
 import {MemoryRouter, Route, Routes} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {act, fireEvent, render, screen, userEvent} from '@/shared/util/test-utils';
 import LoginPage from '../index';
 
 const {
@@ -45,6 +45,7 @@ vi.mock('@/shared/api', () => ({
 
 describe('LoginPage', () => {
     afterEach(() => {
+        vi.useRealTimers();
         vi.unstubAllEnvs();
     });
 
@@ -78,6 +79,37 @@ describe('LoginPage', () => {
             'href',
             'https://api.dutying.net/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fmake',
         );
+    });
+
+    it('resumes visual auto rotation 3 seconds after manual navigation', () => {
+        vi.useFakeTimers();
+
+        try {
+            render(
+                <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                    <Routes>
+                        <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                    </Routes>
+                </MemoryRouter>,
+            );
+
+            expect(screen.getByText('1/3')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByRole('button', {name: '다음 이미지'}));
+            expect(screen.getByText('2/3')).toBeInTheDocument();
+
+            act(() => {
+                vi.advanceTimersByTime(2999);
+            });
+            expect(screen.getByText('2/3')).toBeInTheDocument();
+
+            act(() => {
+                vi.advanceTimersByTime(1);
+            });
+            expect(screen.getByText('3/3')).toBeInTheDocument();
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('renders sign-up as a separate account page with social buttons', () => {

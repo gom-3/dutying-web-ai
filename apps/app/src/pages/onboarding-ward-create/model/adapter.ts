@@ -3,6 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse} from '@/shared/api/file/type';
 import {
     createEmptyShiftType,
+    getDefaultShiftTypeColor,
     normalizeNurseNameForRequest,
     type TOnboardingConstraintDraft,
     type TOnboardingNurseDraft,
@@ -114,7 +115,10 @@ const normalizeShiftClassification = (
 ): TOnboardingWardShiftType['classification'] => {
     const normalizedClassification = classification?.trim().toUpperCase();
 
-    if (normalizedClassification && VALID_SHIFT_CLASSIFICATIONS.has(normalizedClassification as TOnboardingWardShiftType['classification'])) {
+    if (
+        normalizedClassification &&
+        VALID_SHIFT_CLASSIFICATIONS.has(normalizedClassification as TOnboardingWardShiftType['classification'])
+    ) {
         return normalizedClassification as TOnboardingWardShiftType['classification'];
     }
 
@@ -122,7 +126,10 @@ const normalizeShiftClassification = (
 };
 const getShiftTypeNameFromShortName = (shortName: string) => SHIFT_CODE_LABELS[shortName.toUpperCase()] ?? shortName;
 const normalizeShiftShortName = (value?: string | null) => trimToUndefined(value)?.toUpperCase();
-const collectObservedWorkShiftCodes = (assignments?: Record<string, string | null> | null, monthlyCounts?: Record<string, number | null> | null) => {
+const collectObservedWorkShiftCodes = (
+    assignments?: Record<string, string | null> | null,
+    monthlyCounts?: Record<string, number | null> | null,
+) => {
     const shiftCodes = new Set<string>();
 
     Object.values(assignments ?? {}).forEach((code) => {
@@ -156,8 +163,8 @@ const createCoreParsedShiftType = (shortName: (typeof CORE_SHIFT_SHORT_NAMES)[nu
     isOff: shortName === 'O',
     classification: inferClassificationFromShortName(shortName, shortName === 'O'),
 });
-const toDraftShiftType = (parsed: TOnboardingParsedShiftType): TOnboardingWardShiftType => {
-    const base = createEmptyShiftType();
+const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): TOnboardingWardShiftType => {
+    const base = createEmptyShiftType(colorIndex);
     const shortName = parsed.shortName ?? base.shortName;
     const isOff = parsed.isOff ?? false;
 
@@ -168,7 +175,7 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType): TOnboardingWardSh
         shortName,
         startTime: parsed.startTime ?? base.startTime,
         endTime: parsed.endTime ?? base.endTime,
-        color: parsed.color ?? base.color,
+        color: parsed.color ?? getDefaultShiftTypeColor(shortName, colorIndex),
         isDefault: parsed.isDefault ?? false,
         isOff,
         isCounted: parsed.isOff ? false : base.isCounted,
@@ -187,11 +194,11 @@ const ensureCoreShiftTypes = (
     );
 
     const usedShortNames = new Set<string>();
-    const nextShiftTypes = CORE_SHIFT_SHORT_NAMES.map((shortName) => {
+    const nextShiftTypes = CORE_SHIFT_SHORT_NAMES.map((shortName, index) => {
         usedShortNames.add(shortName);
         return parsedByShortName.has(shortName)
-            ? toDraftShiftType(parsedByShortName.get(shortName)!)
-            : {...(draftByShortName.get(shortName) ?? toDraftShiftType(createCoreParsedShiftType(shortName)))};
+            ? toDraftShiftType(parsedByShortName.get(shortName)!, index)
+            : {...(draftByShortName.get(shortName) ?? toDraftShiftType(createCoreParsedShiftType(shortName), index))};
     });
 
     parsedShiftTypes.forEach((shiftType) => {
@@ -202,7 +209,7 @@ const ensureCoreShiftTypes = (
         }
 
         usedShortNames.add(shortName);
-        nextShiftTypes.push(toDraftShiftType(shiftType));
+        nextShiftTypes.push(toDraftShiftType(shiftType, nextShiftTypes.length));
     });
 
     return normalizeUploadedShiftTypes(nextShiftTypes);
@@ -385,7 +392,9 @@ const normalizeConstraintSeverity = (severityRecommendation: string | null | und
 
     return undefined;
 };
-const normalizeParsedConstraintCandidates = (response: TOnboardingWardParseApiResponse): TOnboardingParsedConstraintCandidate[] | undefined => {
+const normalizeParsedConstraintCandidates = (
+    response: TOnboardingWardParseApiResponse,
+): TOnboardingParsedConstraintCandidate[] | undefined => {
     const rawCandidates = response.constraintCandidates ?? response.constraint_candidates;
 
     if (!rawCandidates) {
