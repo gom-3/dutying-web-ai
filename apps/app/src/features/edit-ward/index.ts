@@ -110,12 +110,22 @@ const useEditWard = () => {
         [queryClient, shiftTeamsQueryKey, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const cancelWaiting = useCallback(
-        async (nurseId: number) => {
+        async (waitingNurseId: number) => {
             if (!wardId) return;
 
-            await WardAPI.deleteWaitingNurses(wardId, nurseId);
-            await queryClient.invalidateQueries({queryKey: wardQueryKey});
-            await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+            try {
+                await WardAPI.deleteWaitingNurseRequest(wardId, waitingNurseId);
+                await queryClient.invalidateQueries({queryKey: wardQueryKey});
+                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+
+                toast.success('연동 요청을 거절했어요.');
+
+                return true;
+            } catch (error) {
+                showActionErrorFeedback(error, '연동 요청을 거절하지 못했어요.');
+
+                return false;
+            }
         },
         [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );

@@ -72,6 +72,21 @@ describe('useShiftEditorCommands', () => {
         expect(afterRedo.selection).toEqual(selection);
     });
 
+    it('selects a range through the command API', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+
+        act(() => {
+            result.current.init(createDoc());
+            result.current.selectRange({row: 0, col: 1}, {row: 1, col: 2});
+        });
+
+        expect(useShiftEditorStore.getState().selection).toEqual({
+            type: 'range',
+            from: {row: 0, col: 1},
+            to: {row: 1, col: 2},
+        });
+    });
+
     it('pastes payload from the selection anchor and trims cells outside document bounds', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const payload: TClipboardPayload = {

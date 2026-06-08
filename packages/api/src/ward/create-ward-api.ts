@@ -210,6 +210,8 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/connect?targetNurseId=${targetNurseId}`))).data,
         approveWaitingNurses: async (wardId: number, waitingNurseId: number, shiftTeamId: number) =>
             (await client.post<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/approve?shiftTeamId=${shiftTeamId}`))).data,
+        deleteWaitingNurseRequest: async (wardId: number, waitingNurseId: number) =>
+            (await client.delete<void>(wardPath(`/${wardId}/waiting-nurses/${waitingNurseId}/v1`))).data,
         deleteWaitingNurses: async (wardId: number, nurseId: number) =>
             (await client.delete<void>(wardPath(`/${wardId}/waiting-nurses?nurseId=${nurseId}`))).data,
         quitWard: async (wardId: number) => (await client.delete<void>(wardPath(`/${wardId}/quit`))).data,

@@ -7,6 +7,12 @@ type TWardShiftTypeMaps = {
     shortNameToType: Map<string, TWardShiftType>;
 };
 
+export const LAST_SHIFT_CONTEXT_COUNT = 4;
+
+type TShiftToDocOptions = {
+    previousConfirmedShift?: TShift | null;
+};
+
 function formatDateKey(year: number, month: number, day: number): string {
     const yyyy = String(year);
     const mm = String(month).padStart(2, '0');
@@ -25,6 +31,38 @@ export function buildWardShiftTypeMaps(shift: TShift): TWardShiftTypeMaps {
     }
 
     return {idToType, shortNameToType};
+}
+
+function normalizeLastShiftIds(list: (number | null)[] | undefined): (number | null)[] {
+    const sliced = (list ?? []).slice(-LAST_SHIFT_CONTEXT_COUNT);
+
+    if (sliced.length >= LAST_SHIFT_CONTEXT_COUNT) return sliced;
+
+    const padding: (number | null)[] = Array.from({length: LAST_SHIFT_CONTEXT_COUNT - sliced.length}, () => null);
+
+    return padding.concat(sliced);
+}
+
+function findShiftRowByShiftNurseId(shift: TShift | null | undefined, shiftNurseId: number) {
+    if (!shift) return null;
+
+    for (const division of shift.divisionShiftNurses) {
+        for (const row of division) {
+            if (row.shiftNurse.shiftNurseId === shiftNurseId) return row;
+        }
+    }
+
+    return null;
+}
+
+function resolveLastShiftIds(row: TShift['divisionShiftNurses'][number][number], previousConfirmedShift?: TShift | null): (number | null)[] {
+    const previousRow = findShiftRowByShiftNurseId(previousConfirmedShift, row.shiftNurse.shiftNurseId);
+
+    if (previousRow?.wardShiftList) {
+        return normalizeLastShiftIds(previousRow.wardShiftList);
+    }
+
+    return normalizeLastShiftIds(row.lastWardShiftList);
 }
 
 /**
@@ -73,7 +111,7 @@ export function isDutyShiftFullyAssigned(shift: TShift): boolean {
     return seenWorker;
 }
 
-export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc {
+export function shiftToDoc(shift: TShift, year: number, month: number, options: TShiftToDocOptions = {}): TDutyDoc {
     const {idToType} = buildWardShiftTypeMaps(shift);
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));
     const workerMeta: TDutyDoc['workerMeta'] = {};
@@ -90,6 +128,13 @@ export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc
 
                         return type?.shortName ?? null;
                     });
+                    const lastCells = resolveLastShiftIds(row, options.previousConfirmedShift).map((value) => {
+                        if (value === null) return null;
+
+                        const type = idToType.get(value);
+
+                        return type?.shortName ?? null;
+                    });
 
                     workerMeta[workerId] = {
                         name: row.shiftNurse.name,
@@ -98,7 +143,7 @@ export function shiftToDoc(shift: TShift, year: number, month: number): TDutyDoc
                         divisionNum: divisionIdx + 1,
                     };
 
-                    return {workerId, cells};
+                    return {workerId, lastCells, cells};
                 }),
         );
 
@@ -144,8 +189,11 @@ export function docToShift(doc: TDutyDoc, originalShift: TShift): TShift {
 
                 return nextId ?? null;
             });
+            const nextLastWardShiftList = docRow.lastCells
+                ? docRow.lastCells.map((cell) => cellToWardShiftTypeId(cell, maps) ?? null)
+                : row.lastWardShiftList;
 
-            return {...row, wardShiftList: nextWardShiftList};
+            return {...row, lastWardShiftList: nextLastWardShiftList, wardShiftList: nextWardShiftList};
         }),
     );
 

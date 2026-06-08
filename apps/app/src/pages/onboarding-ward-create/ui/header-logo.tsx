@@ -3,9 +3,11 @@ import ROUTE from '@/shared/constant/path';
 
 function HeaderLogo() {
     return (
-        <a href={ROUTE.ROOT} className="fixed top-7 left-4 z-50 flex h-11 items-center px-2 md:left-10">
-            <img src={logoWordmarkPurple} alt="dutying" className="h-[32.4px] w-[118.8px] object-contain" />
-        </a>
+        <div className="px-4 pt-7 md:px-10">
+            <a href={ROUTE.ROOT} className="flex h-11 w-fit items-center px-2">
+                <img src={logoWordmarkPurple} alt="dutying" className="h-[32.4px] w-[118.8px] object-contain" />
+            </a>
+        </div>
     );
 }
 

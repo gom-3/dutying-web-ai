@@ -12,6 +12,13 @@ import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {
+    MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
+    MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS,
+    MAKE_SHIFT_STEP_SUBTITLE_CLASS,
+    MAKE_SHIFT_STEP_TITLE_CLASS,
+    MAKE_SHIFT_STEP_TOOLBAR_CLASS,
+} from '../make-shift-step-layout';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
@@ -109,17 +116,15 @@ export function FixedShifts() {
             onPasteCapture={onPasteCapture}
             tabIndex={0}
         >
-            <div className="fixed-shifts-toolbar flex w-full min-w-0 flex-nowrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
-                    <h1 className="fixed-shifts-toolbar__title truncate font-apple text-[26px] leading-tight font-bold whitespace-nowrap text-sub-1 min-[1440px]:text-[28px]">
+            <div className={`fixed-shifts-toolbar ${MAKE_SHIFT_STEP_TOOLBAR_CLASS}`}>
+                <div className={MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS}>
+                    <h1 className={`fixed-shifts-toolbar__title ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>
                         {t('page.makeShift.fixedShifts.title')}
                     </h1>
-                    <p className="fixed-shifts-toolbar__hint mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
-                        {t('page.makeShift.fixedShifts.hint')}
-                    </p>
+                    <p className={`fixed-shifts-toolbar__hint ${MAKE_SHIFT_STEP_SUBTITLE_CLASS}`}>{t('page.makeShift.fixedShifts.hint')}</p>
                 </div>
 
-                <div className="fixed-shifts-toolbar__actions flex shrink-0 flex-nowrap items-center gap-2 pt-0.5">
+                <div className={`fixed-shifts-toolbar__actions ${MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS}`}>
                     <Button
                         variant="secondary"
                         size="md"

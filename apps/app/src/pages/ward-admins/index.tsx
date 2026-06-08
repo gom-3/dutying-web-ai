@@ -17,6 +17,9 @@ const compareAdminRolePriority = (a: TWardAdminMembershipResponse, b: TWardAdmin
 const isEmail = (value: string) => EMAIL_PATTERN.test(value);
 const getAdminCount = (members: TWardAdminMembershipResponse[], reservedEmails: TWardReservedAdminEmailResponse[]) =>
     members.length + reservedEmails.length;
+const getWardAdminMembershipId = (admin: TWardAdminMembershipResponse) => admin.membershipId ?? admin.wardAdminMembershipId;
+const canRemoveActiveAdmin = (admin: TWardAdminMembershipResponse, canRemoveAdmins: boolean) =>
+    canRemoveAdmins && admin.role !== 'OWNER' && typeof getWardAdminMembershipId(admin) === 'number';
 
 type TAccountRoleSource = {
     role?: string | null;
@@ -46,12 +49,30 @@ const getAccountRole = (account: unknown, currentWardId?: number | null) => {
 };
 const getApiErrorCode = (error: unknown) =>
     typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
+const isActiveWardMembershipStatus = (status?: string | null) => status === undefined || status === null || status === 'ACTIVE';
+const hasAccountWardMembership = (account: unknown, currentWardId?: number | null) => {
+    if (typeof account !== 'object' || account === null || currentWardId === undefined || currentWardId === null) return false;
 
-function showAdminActionError(error: unknown, fallbackMessage: string) {
+    const roleSource = account as TAccountRoleSource;
+    const memberships = Array.isArray(roleSource.memberships) ? roleSource.memberships : [];
+    const accountWardId = roleSource.wardId ?? roleSource.currentWardId;
+
+    if (accountWardId === currentWardId) return true;
+
+    if (memberships.length > 0) {
+        return memberships.some((membership) => membership.wardId === currentWardId && isActiveWardMembershipStatus(membership.status));
+    }
+
+    if (accountWardId !== undefined && accountWardId !== null) return false;
+
+    return Boolean(roleSource.role);
+};
+
+function showAdminActionError(error: unknown, fallbackMessage: string, forbiddenMessage = '최고 관리자만 변경할 수 있어요.') {
     const code = getApiErrorCode(error);
 
     if (code === 403) {
-        toast.error('최고 관리자만 변경할 수 있어요.');
+        toast.error(forbiddenMessage);
 
         return;
     }
@@ -85,7 +106,7 @@ function ActiveAdminRow({
             </div>
             <div className="flex shrink-0 items-center gap-2">
                 <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{getRoleLabel(admin.role)}</span>
-                {canRemove && admin.role !== 'OWNER' ? (
+                {canRemove ? (
                     <button
                         type="button"
                         aria-label={`${adminEmail} 관리자 삭제`}
@@ -162,11 +183,17 @@ function WardAdminsPage() {
             await invalidateAdmins();
         },
         onError: (mutationError) => {
-            showAdminActionError(mutationError, '관리자를 등록하지 못했어요.');
+            showAdminActionError(mutationError, '관리자를 등록하지 못했어요.', '관리자 추가 권한을 확인해 주세요.');
         },
     });
     const removeMemberMutation = useMutation({
-        mutationFn: (admin: TWardAdminMembershipResponse) => WardAPI.removeWardAdmin(wardId ?? 0, admin.membershipId),
+        mutationFn: (admin: TWardAdminMembershipResponse) => {
+            const membershipId = getWardAdminMembershipId(admin);
+
+            if (typeof membershipId !== 'number') throw new Error('관리자 삭제 식별자를 찾지 못했어요.');
+
+            return WardAPI.removeWardAdmin(wardId ?? 0, membershipId);
+        },
         onSuccess: async () => {
             toast.success('관리자를 삭제했어요.');
             await invalidateAdmins();
@@ -185,7 +212,8 @@ function WardAdminsPage() {
             showAdminActionError(mutationError, '예약된 관리자 이메일을 삭제하지 못했어요.');
         },
     });
-    const isOwner = getAccountRole(accountMe, wardId) === 'OWNER';
+    const canAddAdmins = hasAccountWardMembership(accountMe, wardId);
+    const canRemoveAdmins = getAccountRole(accountMe, wardId) === 'OWNER';
     const isSubmitting = createAdminEmailMutation.isPending;
     const members = [...(adminsQuery.data?.members ?? [])].sort(compareAdminRolePriority);
     const reservedEmails = adminsQuery.data?.reservedEmails ?? [];
@@ -261,7 +289,7 @@ function WardAdminsPage() {
                     </div>
                 </div>
 
-                {isOwner ? (
+                {canAddAdmins ? (
                     <form onSubmit={handleSubmit} className="mt-4">
                         <div className="flex gap-2">
                             <input
@@ -289,7 +317,7 @@ function WardAdminsPage() {
                     </form>
                 ) : (
                     <p className="mt-4 rounded-[12px] bg-gray-7 px-4 py-3 text-sm text-gray-3">
-                        최고 관리자만 관리자 권한을 변경할 수 있어요.
+                        현재 병동 소속 계정만 관리자를 추가할 수 있어요.
                     </p>
                 )}
 
@@ -301,9 +329,9 @@ function WardAdminsPage() {
                         <>
                             {members.map((admin) => (
                                 <ActiveAdminRow
-                                    key={`member-${admin.membershipId}`}
+                                    key={`member-${getWardAdminMembershipId(admin) ?? admin.accountId}`}
                                     admin={admin}
-                                    canRemove={isOwner}
+                                    canRemove={canRemoveActiveAdmin(admin, canRemoveAdmins)}
                                     isRemoving={removeMemberMutation.isPending}
                                     onRemove={removeMemberMutation.mutate}
                                 />
@@ -312,7 +340,7 @@ function WardAdminsPage() {
                                 <ReservedAdminEmailRow
                                     key={`reserved-${admin.emailRegistrationId}`}
                                     admin={admin}
-                                    canRemove={isOwner}
+                                    canRemove={canRemoveAdmins}
                                     isRemoving={removeReservedEmailMutation.isPending}
                                     onRemove={removeReservedEmailMutation.mutate}
                                 />

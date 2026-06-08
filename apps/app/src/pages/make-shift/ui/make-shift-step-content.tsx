@@ -5,6 +5,11 @@ import PageState from '@/shared/ui/PageState';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../model/make-shift-events';
 import {type TMakeShiftStep} from '../model/make-shift-store';
 import {MAKE_SHIFT_STEP_CONFIG} from './make-shift-step-config';
+import {
+    MAKE_SHIFT_STEP_HEADING_PADDING_CLASS,
+    MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS,
+    MAKE_SHIFT_STEP_TITLE_CLASS,
+} from './make-shift-step-layout';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from './make-shift-step-nav';
 import {useFlowTransitionFeedback} from './use-flow-transition-feedback';
 
@@ -27,7 +32,7 @@ function ImportantIntroBadge() {
 function StepIntroDescription({currentStep, description}: {currentStep: TMakeShiftStep; description: string}) {
     if (currentStep === 2) {
         return (
-            <div className="mt-4 min-h-[78px] font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:min-h-[56px] min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
+            <div className={MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS}>
                 <p>
                     꼭 지켜야 할 조건은 <ImportantIntroBadge /> 버튼을 켜 주세요.
                 </p>
@@ -35,11 +40,7 @@ function StepIntroDescription({currentStep, description}: {currentStep: TMakeShi
         );
     }
 
-    return (
-        <p className="mt-4 min-h-[78px] font-apple text-[15px] leading-[26px] font-medium whitespace-pre-line text-gray-3 min-[1440px]:min-h-[56px] min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
-            {description}
-        </p>
-    );
+    return <p className={`${MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS} whitespace-pre-line`}>{description}</p>;
 }
 
 export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onNext}: TMakeShiftStepContentProps) {
@@ -67,7 +68,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
 
         return (
             <div
-                className={`make-shift-step-content make-shift-step-content--wide flex min-h-0 w-full min-w-[1360px] flex-1 flex-col pb-3 ${widePtClass}`}
+                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-[1360px] flex-col pb-3 ${widePtClass}`}
             >
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
@@ -85,10 +86,10 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     };
 
     return (
-        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] flex-1 gap-4 pt-4 pb-3">
-            <aside className="make-shift-step-content__intro flex w-[400px] shrink-0 flex-col px-1 py-2 min-[1440px]:w-[clamp(400px,25vw,440px)]">
-                <div className="min-h-[159px] pl-8 min-[1440px]:min-h-[140px] min-[1440px]:pl-10">
-                    <p className="make-shift-step-content__intro-title font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">
+        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] gap-4 pt-3 pb-3">
+            <aside className="make-shift-step-content__intro flex w-[400px] shrink-0 flex-col min-[1440px]:w-[clamp(400px,25vw,440px)]">
+                <div className={`${MAKE_SHIFT_STEP_HEADING_PADDING_CLASS} min-h-[159px] min-[1440px]:min-h-[140px]`}>
+                    <p className={`make-shift-step-content__intro-title ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>
                         {intro ? t(intro.titleKey) : ''}
                     </p>
                     {intro && <StepIntroDescription currentStep={currentStep} description={t(intro.descriptionKey)} />}

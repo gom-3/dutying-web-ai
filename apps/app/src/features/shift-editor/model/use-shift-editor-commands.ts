@@ -1,11 +1,12 @@
 import type {TSnapshotCellDTO, TValidationRes} from '@dutying/api/ward';
-import type {TShift} from '@/entities';
 import toast from 'react-hot-toast';
+import type {TShift} from '@/entities';
 import {type TWardConstraint} from '@/entities';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {copySelection, pastePayload} from './clipboard';
 import {useShiftEditorDraftStatusStore} from './draft-status-store';
 import {applyBoardToWardConstraint, buildInitialDutyRuleBoard, buildRuleLevelByKeyFromBoard} from './duty-constraints';
+import {getDutyCellLockKey, getDutyDocMinColumn, isDutyCellPositionInBounds, readDutyCell} from './duty-doc-cells';
 import {applyOperation, invertOperation} from './operation';
 import {createShiftEditorPersistence} from './persistence';
 import {
@@ -14,8 +15,8 @@ import {
     toScheduleViolationPersisted,
     type TScheduleViolationPersisted,
 } from './schedule-violations';
-import {buildWardShiftTypeMaps} from './shift-adapter';
 import {getCellsInSelection, makeSelectAllSelection, moveSelection as moveSelectionModel, moveSelectionToEdge} from './selection';
+import {buildWardShiftTypeMaps} from './shift-adapter';
 import {useShiftEditorStore} from './store';
 import type {
     TCellPos,
@@ -33,6 +34,7 @@ import type {
     TTxSource,
     TViolation,
 } from './types';
+
 const DEFAULT_STORAGE_KEY = 'shift-editor:draft';
 const DRAFT_SAVE_DEBOUNCE_MS = 1500;
 const persistence = createShiftEditorPersistence({
@@ -82,11 +84,9 @@ function filterOpAgainstLocks(op: TOperation, doc: TDutyDoc): TOperation {
     if (op.kind !== 'setCells') return op;
 
     const filteredCells = op.cells.filter(({row, col}) => {
-        const r = doc.rows[row];
+        const key = getDutyCellLockKey(doc, row, col);
 
-        if (!r) return false;
-
-        const key = `${r.workerId}|${doc.columns[col]}`;
+        if (key === null) return isDutyCellPositionInBounds(doc, row, col);
 
         return !(doc.fixedCells[key] === true || doc.requestCells[key] === true);
     });
@@ -123,16 +123,18 @@ export function useShiftEditorCommands() {
         let skippedByRequest = 0;
 
         for (const {row, col} of cells) {
-            if (row < 0 || row >= doc.rows.length || col < 0 || col >= doc.columns.length) continue;
+            if (!isDutyCellPositionInBounds(doc, row, col)) continue;
+
+            if (editorMode === 'fixed' && col < 0) continue;
 
             const r = doc.rows[row];
 
             if (!r) continue;
 
-            const key = `${r.workerId}|${doc.columns[col]}`;
-            const prev = r.cells[col] ?? null;
-            const prevFixed = doc.fixedCells[key] === true;
-            const prevRequest = doc.requestCells[key] === true;
+            const key = getDutyCellLockKey(doc, row, col);
+            const prev = readDutyCell(r, col);
+            const prevFixed = key !== null && doc.fixedCells[key] === true;
+            const prevRequest = key !== null && doc.requestCells[key] === true;
 
             if (prevRequest) {
                 skippedByRequest += 1;
@@ -145,13 +147,14 @@ export function useShiftEditorCommands() {
             }
 
             const cellChanged = prev !== value;
-            const nextFixed = editorMode === 'fixed' ? value !== null : prevFixed;
+            const nextFixed = key !== null && editorMode === 'fixed' ? value !== null : prevFixed;
             const fixedChanged = prevFixed !== nextFixed;
 
             if (!cellChanged && !fixedChanged) continue;
 
             if (cellChanged) changed.push({row, col, prev, next: value});
-            if (fixedChanged) fixedDelta.push({key, prev: prevFixed, next: nextFixed});
+
+            if (fixedChanged && key !== null) fixedDelta.push({key, prev: prevFixed, next: nextFixed});
         }
 
         if (source === 'user') {
@@ -227,8 +230,8 @@ export function useShiftEditorCommands() {
             setDoc(persisted.doc);
             setSelection(null);
             setHistory(appliedHistory);
-            const scheduleViolations =
-                persisted.scheduleViolations ?? migratePersistedViolations(persisted);
+
+            const scheduleViolations = persisted.scheduleViolations ?? migratePersistedViolations(persisted);
 
             setScheduleValidationSnapshot(scheduleViolations.validationSnapshot);
             setLegacyDisplayViolations(scheduleViolations.legacyDisplayViolations ?? []);
@@ -277,6 +280,7 @@ export function useShiftEditorCommands() {
                 wardConstraint: nextWardConstraint,
                 ruleLevelByKey: nextRuleLevelByKey,
             };
+
             // validation도 즉시 재계산 (규칙 활성/레벨 변경 반영)
             setDutyValidationInput(nextInput);
         },
@@ -293,17 +297,18 @@ export function useShiftEditorCommands() {
             setDutyValidationInput(nextInput);
         },
         select: (cell: TCellPos) => setSelection({type: 'single', anchor: cell}),
+        selectRange: (from: TCellPos, to: TCellPos) => setSelection({type: 'range', from, to}),
         clearSelection: () => setSelection(null),
         moveSelection: (dir: 'up' | 'down' | 'left' | 'right', extend: boolean, moveEnd?: boolean) => {
             const {doc, selection} = getState();
-            const bounds = {rowCount: doc.rows.length, colCount: doc.columns.length};
+            const bounds = {rowCount: doc.rows.length, colCount: doc.columns.length, minCol: getDutyDocMinColumn(doc)};
             const next = moveEnd ? moveSelectionToEdge(selection, dir, extend, bounds) : moveSelectionModel(selection, dir, extend, bounds);
 
             setSelection(next);
         },
         selectAll: () => {
             const {doc} = getState();
-            const sel = makeSelectAllSelection({rowCount: doc.rows.length, colCount: doc.columns.length});
+            const sel = makeSelectAllSelection({rowCount: doc.rows.length, colCount: doc.columns.length, minCol: getDutyDocMinColumn(doc)});
 
             setSelection(sel);
         },
@@ -323,6 +328,7 @@ export function useShiftEditorCommands() {
                     const key = `${row.workerId}|${doc.columns[col]}`;
 
                     if (doc.fixedCells[key] === true) continue;
+
                     if (doc.requestCells[key] === true) continue;
 
                     const prev = row.cells[col] ?? null;
@@ -371,8 +377,7 @@ export function useShiftEditorCommands() {
 
                 const resolvedNext =
                     (cell.shiftCode && cell.shiftCode.length > 0 ? cell.shiftCode : null) ??
-                    (cell.wardShiftTypeId != null ? idToType.get(cell.wardShiftTypeId)?.shortName ?? null : null);
-
+                    (cell.wardShiftTypeId != null ? (idToType.get(cell.wardShiftTypeId)?.shortName ?? null) : null);
                 const row = doc.rows[rowIdx]!;
                 const prev = row.cells[colIdx] ?? null;
 
@@ -414,6 +419,7 @@ export function useShiftEditorCommands() {
                     const key = `${row.workerId}|${doc.columns[col]}`;
 
                     if (doc.fixedCells[key] === true) continue;
+
                     if (doc.requestCells[key] === true) continue;
 
                     const prev = row.cells[col] ?? null;
@@ -497,9 +503,9 @@ export function useShiftEditorCommands() {
 
                     if (!r) continue;
 
-                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+                    const key = getDutyCellLockKey(doc, cell.row, cell.col);
 
-                    if (doc.requestCells[key] === true) {
+                    if (key !== null && doc.requestCells[key] === true) {
                         skippedByRequest += 1;
                         continue;
                     }
@@ -520,9 +526,9 @@ export function useShiftEditorCommands() {
 
                     if (!r) continue;
 
-                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+                    const key = getDutyCellLockKey(doc, cell.row, cell.col);
 
-                    if (doc.fixedCells[key] === true) {
+                    if (key !== null && doc.fixedCells[key] === true) {
                         skippedByFixed += 1;
                         continue;
                     }
@@ -536,8 +542,12 @@ export function useShiftEditorCommands() {
                     if (skippedByRequest > 0) notifyRequestLocked();
                     else if (skippedByFixed > 0) notifyFixedLocked();
                 }
-            } else if (source === 'user' && skippedByRequest > 0) {
-                notifyRequestLocked();
+            } else {
+                filteredCells = filteredCells.filter((cell) => cell.col >= 0);
+
+                if (source === 'user' && skippedByRequest > 0) {
+                    notifyRequestLocked();
+                }
             }
 
             const fixedDelta: Array<{key: string; prev: boolean; next: boolean}> = [];
@@ -548,7 +558,10 @@ export function useShiftEditorCommands() {
 
                     if (!r) continue;
 
-                    const key = `${r.workerId}|${doc.columns[cell.col]}`;
+                    const key = getDutyCellLockKey(doc, cell.row, cell.col);
+
+                    if (key === null) continue;
+
                     const prevFixed = doc.fixedCells[key] === true;
                     const nextFixed = cell.next !== null;
 

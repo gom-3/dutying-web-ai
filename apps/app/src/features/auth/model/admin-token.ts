@@ -1,5 +1,3 @@
-import {DEV_AUTH_BYPASS_TOKEN} from './dev-auth-bypass';
-
 type TJwtPayload = {
     principalType?: string;
 };
@@ -26,4 +24,4 @@ export const getAccessTokenPrincipalType = (accessToken: string | null | undefin
 };
 
 export const isWardAdminAccessToken = (accessToken: string | null | undefined) =>
-    accessToken === DEV_AUTH_BYPASS_TOKEN || getAccessTokenPrincipalType(accessToken) === 'WARD_ADMIN';
+    getAccessTokenPrincipalType(accessToken) === 'WARD_ADMIN';

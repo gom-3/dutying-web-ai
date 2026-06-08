@@ -247,6 +247,43 @@ describe('request-calendar utils', () => {
             isFocused: true,
             shiftType: dayShiftType,
             isOnlyRequest: true,
+            isRejectedOnlyRequest: false,
+        });
+    });
+
+    it('거절된 요청만 있는 셀은 더 흐린 상태로 표시한다', () => {
+        const dayShiftType = {
+            wardShiftTypeId: 9,
+            name: '데이',
+            shortName: 'D',
+            color: '#000000',
+        } as TWardShiftType;
+
+        expect(
+            getRequestCalendarCellState({
+                currentShiftTypeId: null,
+                requestDutyRequest: {
+                    wardReqShiftId: 1,
+                    nurseId: 101,
+                    nurseName: '김간호',
+                    date: 3,
+                    requestDate: '2026-03-01',
+                    wardShiftTypeId: 9,
+                    wardShiftTypeShortName: 'D',
+                    wardShiftTypeColor: '#000000',
+                    isRead: false,
+                    isAccepted: false,
+                },
+                focus: null,
+                shiftNurseId: 11,
+                day: 2,
+                wardShiftTypeMap: new Map([[9, dayShiftType]]),
+            }),
+        ).toEqual({
+            isFocused: false,
+            shiftType: dayShiftType,
+            isOnlyRequest: true,
+            isRejectedOnlyRequest: true,
         });
     });
 

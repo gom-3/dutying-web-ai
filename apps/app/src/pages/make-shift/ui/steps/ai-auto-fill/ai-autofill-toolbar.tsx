@@ -5,6 +5,11 @@ import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getAiAutofillActionLabel, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
+import {
+    MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
+    MAKE_SHIFT_STEP_SUBTITLE_CLASS,
+    MAKE_SHIFT_STEP_TITLE_CLASS,
+} from '../../make-shift-step-layout';
 
 type TAiAutofillToolbarProps = {
     autoFillEnabled: boolean;
@@ -59,11 +64,9 @@ export function AiAutofillToolbar({
 
     return (
         <div className="ai-autofill-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3">
-            <div className="ai-autofill-toolbar__titles min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
-                <h1 className="ai-autofill-toolbar__title truncate font-apple text-[26px] leading-tight font-bold whitespace-nowrap text-sub-1 min-[1440px]:text-[28px]">
-                    {t('page.makeShift.aiRefill.toolbarTitle')}
-                </h1>
-                <p className="ai-autofill-toolbar__subtitle mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
+            <div className={`ai-autofill-toolbar__titles ${MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS}`}>
+                <h1 className={`ai-autofill-toolbar__title ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>{t('page.makeShift.aiRefill.toolbarTitle')}</h1>
+                <p className={`ai-autofill-toolbar__subtitle ${MAKE_SHIFT_STEP_SUBTITLE_CLASS}`}>
                     {t('page.makeShift.aiRefill.toolbarSubTitle')}
                 </p>
             </div>

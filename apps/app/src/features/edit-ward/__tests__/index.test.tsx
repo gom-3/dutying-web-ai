@@ -4,10 +4,18 @@ import {wardQueryKeys} from '@/entities/ward/model/queries';
 import {renderHook} from '@/shared/util/test-utils';
 import useEditWard from '..';
 
-const {mockInvalidateQueries, mockApproveWaitingNurses, mockConnectWaitingNurses, mockToastSuccess, mockToastError} = vi.hoisted(() => ({
+const {
+    mockInvalidateQueries,
+    mockApproveWaitingNurses,
+    mockConnectWaitingNurses,
+    mockDeleteWaitingNurseRequest,
+    mockToastSuccess,
+    mockToastError,
+} = vi.hoisted(() => ({
     mockInvalidateQueries: vi.fn(),
     mockApproveWaitingNurses: vi.fn(),
     mockConnectWaitingNurses: vi.fn(),
+    mockDeleteWaitingNurseRequest: vi.fn(),
     mockToastSuccess: vi.fn(),
     mockToastError: vi.fn(),
 }));
@@ -36,6 +44,7 @@ vi.mock('@/shared/api', () => ({
     WardAPI: {
         approveWaitingNurses: mockApproveWaitingNurses,
         connectWaitingNurses: mockConnectWaitingNurses,
+        deleteWaitingNurseRequest: mockDeleteWaitingNurseRequest,
     },
 }));
 
@@ -51,6 +60,7 @@ describe('useEditWard', () => {
         mockInvalidateQueries.mockReset();
         mockApproveWaitingNurses.mockReset();
         mockConnectWaitingNurses.mockReset();
+        mockDeleteWaitingNurseRequest.mockReset();
         mockToastSuccess.mockReset();
         mockToastError.mockReset();
     });
@@ -128,5 +138,42 @@ describe('useEditWard', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
         expect(mockToastSuccess).not.toHaveBeenCalled();
         expect(mockToastError).toHaveBeenCalledWith('기존 간호사 계정에 연결하지 못했어요.');
+    });
+
+    it('deletes a waiting nurse request by waitingNurseId and refreshes the waiting list', async () => {
+        mockDeleteWaitingNurseRequest.mockResolvedValue(undefined);
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.cancelWaiting(7);
+        });
+
+        expect(isSuccess).toBe(true);
+        expect(mockDeleteWaitingNurseRequest).toHaveBeenCalledWith(1, 7);
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockToastSuccess).toHaveBeenCalledWith('연동 요청을 거절했어요.');
+        expect(mockToastError).not.toHaveBeenCalled();
+    });
+
+    it('returns false and shows feedback when waiting nurse request deletion fails', async () => {
+        mockDeleteWaitingNurseRequest.mockRejectedValue({response: {status: 500}});
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.cancelWaiting(7);
+        });
+
+        expect(isSuccess).toBe(false);
+        expect(mockDeleteWaitingNurseRequest).toHaveBeenCalledWith(1, 7);
+        expect(mockInvalidateQueries).not.toHaveBeenCalled();
+        expect(mockToastSuccess).not.toHaveBeenCalled();
+        expect(mockToastError).toHaveBeenCalledWith('연동 요청을 거절하지 못했어요.');
     });
 });

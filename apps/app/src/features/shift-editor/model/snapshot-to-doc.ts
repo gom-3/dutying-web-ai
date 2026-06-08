@@ -1,7 +1,7 @@
 import type {TSnapshotCellDTO, TSnapshotDetailRes, TSnapshotRowOrderDTO} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
 import {buildWardShiftTypeMaps, shiftToDoc} from './shift-adapter';
-import type {TDutyDoc} from './types';
+import type {TCellValue, TDutyDoc} from './types';
 
 function cellValueFromSnapshotCell(
     cell: TSnapshotCellDTO | undefined,
@@ -23,7 +23,7 @@ export function snapshotDetailToDoc(
     shift: TShift,
     year: number,
     month: number,
-    locks: Pick<TDutyDoc, 'fixedCells' | 'requestCells'>,
+    locks: Pick<TDutyDoc, 'fixedCells' | 'requestCells'> & {lastCellsByWorkerId?: Record<string, TCellValue[]>},
 ): TDutyDoc {
     const base = shiftToDoc(shift, year, month);
     const {idToType} = buildWardShiftTypeMaps(shift);
@@ -73,8 +73,9 @@ export function snapshotDetailToDoc(
 
             return baseRow?.cells[base.columns.indexOf(date)] ?? null;
         });
+        const lastCells = locks.lastCellsByWorkerId?.[workerId] ?? baseRow?.lastCells;
 
-        return {workerId, cells};
+        return {workerId, lastCells: lastCells?.slice(), cells};
     });
 
     return {

@@ -309,6 +309,19 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenCalledWith('/accounts/me/tutorials/make-step-1/seen');
     });
 
+    it('builds the waiting nurse request deletion endpoint', async () => {
+        const client = createClient();
+        const deleteMock = client.delete as ReturnType<typeof vi.fn>;
+
+        deleteMock.mockResolvedValueOnce({data: undefined});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.deleteWaitingNurseRequest(7, 42)).resolves.toBeUndefined();
+
+        expect(deleteMock).toHaveBeenCalledWith('/wards/7/waiting-nurses/42/v1');
+    });
+
     it('builds ward chat endpoints', async () => {
         const client = createClient();
         const getMock = client.get as ReturnType<typeof vi.fn>;

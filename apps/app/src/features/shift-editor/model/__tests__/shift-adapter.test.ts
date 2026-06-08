@@ -147,10 +147,34 @@ describe('shift-adapter', () => {
         const doc = shiftToDoc(createShift(), 2026, 3);
 
         expect(doc.columns).toEqual(['2026-03-01', '2026-03-02']);
-        expect(doc.rows).toEqual([{workerId: '1', cells: ['D', null]}]);
+        expect(doc.rows).toEqual([{workerId: '1', lastCells: [null, null, null, null], cells: ['D', null]}]);
         expect(doc.workerMeta).toEqual({
             1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1},
         });
+    });
+
+    it('uses the previous confirmed schedule as the last-shift context', () => {
+        const previousShift: TShift = {
+            ...createShift(),
+            days: [
+                {day: 1, dayType: 'workday'},
+                {day: 2, dayType: 'workday'},
+                {day: 3, dayType: 'workday'},
+                {day: 4, dayType: 'workday'},
+                {day: 5, dayType: 'workday'},
+            ],
+            divisionShiftNurses: [
+                [
+                    {
+                        ...createShift().divisionShiftNurses[0]![0]!,
+                        wardShiftList: [10, 20, 30, 10, 20],
+                    },
+                ],
+            ],
+        };
+        const doc = shiftToDoc(createShift(), 2026, 4, {previousConfirmedShift: previousShift});
+
+        expect(doc.rows[0]?.lastCells).toEqual(['O', 'TR', 'D', 'O']);
     });
 
     it('converts editor doc back to ward shifts dto', () => {

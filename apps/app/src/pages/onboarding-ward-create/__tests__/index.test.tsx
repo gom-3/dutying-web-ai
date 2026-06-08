@@ -14,7 +14,9 @@ const mockPreviewOnboardingScheduleInput = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+
 let latestSavedDraftPayload: unknown = null;
+
 const TEST_HOSPITAL_NAME = '테스트 병원';
 const TEST_WARD_NAME = '테스트 병동';
 const getRelativeScheduleMonth = (offset: number) => {
@@ -402,6 +404,81 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '다음 달'}));
 
         expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
+    });
+
+    it('shows team delete action on the schedule input step and deletes the selected team', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD',
+            },
+        });
+
+        await waitFor(() => {
+            expect(screen.getByDisplayValue('김하늘')).toBeInTheDocument();
+        });
+
+        const deleteTeamButton = screen.getByRole('button', {name: '팀 삭제하기'});
+
+        expect(deleteTeamButton.closest('.fixed-shifts-calendar-wrap')).toBeInTheDocument();
+
+        await user.click(deleteTeamButton);
+
+        const confirmDialog = screen.getByRole('dialog');
+
+        expect(within(confirmDialog).getByText('팀을 삭제할까요?')).toBeInTheDocument();
+        expect(within(confirmDialog).getByText(/소속 간호사 1명과 입력한 근무표도 함께 삭제돼요/)).toBeInTheDocument();
+
+        await user.click(within(confirmDialog).getByRole('button', {name: '삭제하기'}));
+
+        expect(screen.queryByRole('button', {name: /간호사 1팀/})).not.toBeInTheDocument();
+        expect(screen.queryByDisplayValue('김하늘')).not.toBeInTheDocument();
+    });
+
+    it('shows an empty team prompt after deleting every team on the schedule input step', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        expect(screen.getByLabelText('1행 간호사 이름')).toBeInTheDocument();
+
+        const deleteVisibleTeam = async () => {
+            await user.click(screen.getByRole('button', {name: '팀 삭제하기'}));
+
+            const confirmDialog = screen.queryByRole('dialog');
+
+            if (!confirmDialog) {
+                return;
+            }
+
+            await user.click(within(confirmDialog).getByRole('button', {name: '삭제하기'}));
+            await waitFor(() => {
+                expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            });
+        };
+
+        await deleteVisibleTeam();
+        await deleteVisibleTeam();
+        await deleteVisibleTeam();
+
+        await waitFor(() => {
+            expect(screen.queryByLabelText('1행 간호사 이름')).not.toBeInTheDocument();
+        });
+        expect(screen.queryByRole('button', {name: '팀 삭제하기'})).not.toBeInTheDocument();
+        expect(screen.getByText('팀을 먼저 만들어 주세요')).toBeInTheDocument();
+        expect(screen.getByText('팀을 추가하면 간호사 이름과 근무표를 입력할 수 있어요.')).toBeInTheDocument();
+
+        const teamAddButtons = screen.getAllByRole('button', {name: /팀 추가하기/});
+
+        await user.click(teamAddButtons[teamAddButtons.length - 1]!);
+
+        expect(screen.getByRole('button', {name: /간호사 1팀/})).toBeInTheDocument();
+        expect(screen.getByLabelText('1행 간호사 이름')).toBeInTheDocument();
     });
 
     it('opens the schedule file upload modal and uploads a file for the visible month', async () => {

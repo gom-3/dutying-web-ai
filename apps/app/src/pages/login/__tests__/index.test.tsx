@@ -8,6 +8,7 @@ const {
     mockConfirmEmailVerification,
     mockConfirmPasswordResetToken,
     mockHandleLogin,
+    mockPasswordLogin,
     mockPasswordReset,
     mockPasswordResetRequest,
     mockPasswordSignup,
@@ -16,6 +17,7 @@ const {
     mockConfirmEmailVerification: vi.fn(),
     mockConfirmPasswordResetToken: vi.fn(),
     mockHandleLogin: vi.fn(),
+    mockPasswordLogin: vi.fn(),
     mockPasswordReset: vi.fn(),
     mockPasswordResetRequest: vi.fn(),
     mockPasswordSignup: vi.fn(),
@@ -25,7 +27,6 @@ const {
 vi.mock('@/features/auth', () => ({
     default: () => ({
         actions: {
-            handleDevSignupBypass: vi.fn(),
             handleLogin: mockHandleLogin,
         },
     }),
@@ -33,7 +34,7 @@ vi.mock('@/features/auth', () => ({
 
 vi.mock('@/shared/api', () => ({
     AuthAPI: {
-        passwordLogin: vi.fn(),
+        passwordLogin: mockPasswordLogin,
         passwordSignup: mockPasswordSignup,
         confirmAdminEmailVerification: mockConfirmEmailVerification,
         requestAdminPasswordReset: mockPasswordResetRequest,
@@ -42,6 +43,18 @@ vi.mock('@/shared/api', () => ({
         sendAdminEmailVerification: mockSendAdminEmailVerification,
     },
 }));
+
+const INVALID_LOGIN_CREDENTIALS_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
+
+const openPasswordResetAfterInvalidLogin = async (user: ReturnType<typeof userEvent.setup>) => {
+    mockPasswordLogin.mockRejectedValueOnce(new Error(INVALID_LOGIN_CREDENTIALS_MESSAGE));
+
+    await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+    await user.type(screen.getByLabelText('비밀번호'), 'wrong-password');
+    await user.click(screen.getByRole('button', {name: '로그인'}));
+    await screen.findByText(INVALID_LOGIN_CREDENTIALS_MESSAGE);
+    await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
+};
 
 describe('LoginPage', () => {
     afterEach(() => {
@@ -69,7 +82,8 @@ describe('LoginPage', () => {
         expect(screen.getByRole('button', {name: '다음 이미지'})).toBeInTheDocument();
         expect(screen.getByText('1/3')).toBeInTheDocument();
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '비밀번호 찾기'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
+        expect(screen.queryByText('아직 계정이 없나요?')).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
         expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toHaveAttribute(
             'href',
@@ -110,6 +124,30 @@ describe('LoginPage', () => {
         } finally {
             vi.useRealTimers();
         }
+    });
+
+    it('shows password reset under the invalid login message only after credential failure', async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_IN} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        mockPasswordLogin.mockRejectedValueOnce(new Error(INVALID_LOGIN_CREDENTIALS_MESSAGE));
+
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.type(screen.getByLabelText('비밀번호'), 'wrong-password');
+        await user.click(screen.getByRole('button', {name: '로그인'}));
+
+        const loginError = await screen.findByRole('alert');
+        const passwordResetButton = screen.getByRole('button', {name: '비밀번호 찾기'});
+
+        expect(loginError).toHaveTextContent(INVALID_LOGIN_CREDENTIALS_MESSAGE);
+        expect(loginError.nextElementSibling).toContainElement(passwordResetButton);
     });
 
     it('renders sign-up as a separate account page with social buttons', () => {
@@ -326,7 +364,8 @@ describe('LoginPage', () => {
             </MemoryRouter>,
         );
 
-        await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
+        await openPasswordResetAfterInvalidLogin(user);
+        await user.clear(screen.getByLabelText('이메일'));
 
         expect(screen.queryByText('올바른 이메일 주소를 입력해 주세요.')).not.toBeInTheDocument();
         expect(screen.queryByText('비밀번호는 8자 이상 입력해 주세요.')).not.toBeInTheDocument();
@@ -355,8 +394,7 @@ describe('LoginPage', () => {
             </MemoryRouter>,
         );
 
-        await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
-        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await openPasswordResetAfterInvalidLogin(user);
         await user.type(screen.getByLabelText('새 비밀번호'), 'new-password123');
         await user.type(screen.getByLabelText('새 비밀번호 확인'), 'new-password123');
         await user.click(screen.getByRole('button', {name: '비밀번호 재설정'}));
@@ -380,8 +418,7 @@ describe('LoginPage', () => {
             </MemoryRouter>,
         );
 
-        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
-        await user.click(screen.getByRole('button', {name: '비밀번호 찾기'}));
+        await openPasswordResetAfterInvalidLogin(user);
         expect(screen.getByRole('heading', {name: '비밀번호 찾기'})).toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '인증'}));
         expect(await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.')).toBeInTheDocument();

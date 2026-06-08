@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
 import type {TValidationRes} from '@dutying/api/ward';
+import {describe, expect, it} from 'vitest';
 import type {TDutyDoc} from '../../types';
 import {violationsFromSpringValidation} from '../convert-spring-validation';
 
@@ -30,24 +30,58 @@ describe('violationsFromSpringValidation', () => {
                     templateCode: 'MIN_OFF_AFTER_N',
                     severity: 'SOFT',
                     message: '야간 후 휴무가 부족해요.',
+                    period: {startDate: '2026-05-02', endDate: '2026-05-03', dates: ['2026-05-02', '2026-05-03']},
                     affectedCells: [
-                        {cellKey: '8753:2026-05-02', shiftNurseId: 8753, date: '2026-05-02', wardShiftTypeId: 101},
-                        {cellKey: '8753:2026-05-03', shiftNurseId: 8753, date: '2026-05-03', wardShiftTypeId: 102},
+                        {
+                            cellKey: '8753:2026-05-02',
+                            shiftNurseId: 8753,
+                            nurseName: '김민정',
+                            date: '2026-05-02',
+                            wardShiftTypeId: 101,
+                            shiftCode: 'N',
+                        },
+                        {
+                            cellKey: '8753:2026-05-03',
+                            shiftNurseId: 8753,
+                            nurseName: '김민정',
+                            date: '2026-05-03',
+                            wardShiftTypeId: 102,
+                            shiftCode: 'O',
+                        },
                     ],
                     fixable: true,
                 },
             ],
         };
-
         const violations = violationsFromSpringValidation(validation, doc);
 
         expect(violations).toEqual([
             {
                 ruleId: '9001',
                 violationId: 'v-1',
+                templateCode: 'MIN_OFF_AFTER_N',
                 message: '야간 후 휴무가 부족해요.',
                 level: 'warning',
                 scope: 'nurse',
+                period: {startDate: '2026-05-02', endDate: '2026-05-03', dates: ['2026-05-02', '2026-05-03']},
+                affectedCells: [
+                    {
+                        cellKey: '8753:2026-05-02',
+                        shiftNurseId: 8753,
+                        nurseName: '김민정',
+                        date: '2026-05-02',
+                        wardShiftTypeId: 101,
+                        shiftCode: 'N',
+                    },
+                    {
+                        cellKey: '8753:2026-05-03',
+                        shiftNurseId: 8753,
+                        nurseName: '김민정',
+                        date: '2026-05-03',
+                        wardShiftTypeId: 102,
+                        shiftCode: 'O',
+                    },
+                ],
                 fixable: true,
                 cells: [
                     {row: 0, col: 1},
@@ -77,7 +111,6 @@ describe('violationsFromSpringValidation', () => {
                 },
             ],
         };
-
         const violations = violationsFromSpringValidation(validation, doc);
 
         expect(violations[0]).toMatchObject({

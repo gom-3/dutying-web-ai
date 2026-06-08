@@ -46,16 +46,23 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
     const level: TViolation['level'] = item.severity === 'HARD' ? 'error' : 'warning';
     const uniqueNurses = new Set(item.affectedCells.map((c) => c.shiftNurseId));
     const scope: TViolation['scope'] = uniqueNurses.size > 1 ? 'team' : 'nurse';
-
-    return {
+    const violation: TViolation = {
         ruleId: String(item.ruleId),
         violationId: item.violationId,
+        templateCode: item.templateCode,
         message: item.message,
         level,
         cells,
         scope,
+        affectedCells: item.affectedCells,
         fixable: item.fixable,
     };
+
+    if (item.period) {
+        violation.period = item.period;
+    }
+
+    return violation;
 }
 
 /** Spring ValidationRes → 캘린더 표시용 TViolation[] */

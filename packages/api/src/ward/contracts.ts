@@ -55,7 +55,8 @@ export type TWardAdminStatus = 'ACTIVE' | 'RESERVED';
 export const WARD_ADMIN_MAX_COUNT = 10;
 
 export type TWardAdminMembershipResponse = {
-    membershipId: number;
+    membershipId?: number;
+    wardAdminMembershipId?: number;
     accountId: number;
     wardId?: number;
     loginId?: string | null;
@@ -344,13 +345,13 @@ export type TAffectedCellDto = {
     nurseName?: string;
     date: string;
     wardShiftTypeId: number | null;
-    shiftCode?: string;
+    shiftCode?: string | null;
 };
 
 export type TScheduleViolationPeriodDto = {
-    startDate: string;
-    endDate: string;
-    dates: string[];
+    startDate?: string;
+    endDate?: string;
+    dates?: string[];
 };
 
 export type TScheduleViolationDto = {
@@ -477,6 +478,7 @@ export interface IWardAPI {
     addMeToWaitingNurses: (wardId: number) => Promise<void>;
     connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
     approveWaitingNurses: (wardId: number, waitingNurseId: number, shiftTeamId: number) => Promise<void>;
+    deleteWaitingNurseRequest: (wardId: number, waitingNurseId: number) => Promise<void>;
     editWard: (wardId: number, ward: TEditWardDTO) => Promise<TWardResponse>;
     updateWardConstraint: (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) => Promise<TWardConstraintResponse>;
     deleteWaitingNurses: (wardId: number, nurseId: number) => Promise<void>;

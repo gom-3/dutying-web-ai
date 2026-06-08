@@ -161,7 +161,8 @@ export function AiAutofill() {
         violationMap,
         teamViolations,
         focusEditor,
-    } = useDutyEditorStep({onContextChanged: resetAiStatus});
+        isHydratingLastShifts,
+    } = useDutyEditorStep({onContextChanged: resetAiStatus, hydratePreviousLastShifts: true});
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
@@ -208,6 +209,7 @@ export function AiAutofill() {
         !isSavingSnapshot &&
         !isAiGenerating &&
         !dutyQuery.isLoading &&
+        !isHydratingLastShifts &&
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
         canConfirmAiAutofill(aiStatus);
@@ -326,6 +328,7 @@ export function AiAutofill() {
             const nextDoc = snapshotDetailToDoc(detail, dutyQuery.data, year, month, {
                 fixedCells: editorDoc.fixedCells,
                 requestCells: editorDoc.requestCells,
+                lastCellsByWorkerId: Object.fromEntries(editorDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
             });
 
             commands.init(nextDoc);
@@ -578,9 +581,9 @@ export function AiAutofill() {
     const limitOldestSnapshotTitle = resolveHistoryTitle(snapshotLimitContext?.oldestSnapshot.title, fallbackHistoryTitle);
 
     return (
-        <div id="make_ai_autofill_step" className="ai-autofill-root flex min-h-0 w-full min-w-0 flex-1">
+        <div id="make_ai_autofill_step" className="ai-autofill-root flex w-full min-w-0">
             <div
-                className="ai-autofill-root__main flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden pt-3 outline-none"
+                className="ai-autofill-root__main flex min-w-0 flex-1 flex-col gap-3 pt-3 outline-none"
                 ref={editorRef}
                 onKeyDown={onKeyDown}
                 onPasteCapture={onPasteCapture}
@@ -607,7 +610,7 @@ export function AiAutofill() {
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
-                {dutyQuery.isLoading && (
+                {(dutyQuery.isLoading || isHydratingLastShifts) && (
                     <PageState
                         tone="loading"
                         loadingColor="purple"
@@ -623,7 +626,7 @@ export function AiAutofill() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && dutyQuery.data && (
                     <MakeShiftCalendar
                         shift={dutyQuery.data}
                         doc={calendarDoc}
@@ -631,9 +634,10 @@ export function AiAutofill() {
                         teamViolations={teamViolations}
                         showFaults={showFaults}
                         onCellClick={focusEditor}
+                        editableLastShifts
                     />
                 )}
-                {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && !dutyQuery.data && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
                 )}
             </div>

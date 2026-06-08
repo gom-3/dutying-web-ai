@@ -8,6 +8,13 @@ import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {
+    MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
+    MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS,
+    MAKE_SHIFT_STEP_SUBTITLE_CLASS,
+    MAKE_SHIFT_STEP_TITLE_CLASS,
+    MAKE_SHIFT_STEP_TOOLBAR_CLASS,
+} from '../make-shift-step-layout';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
 
@@ -92,19 +99,15 @@ export function RequestsShifts() {
                           : null;
 
     return (
-        <div id="make_requests_step" className="make-shift-requests flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex flex-nowrap items-start justify-between gap-3 pb-3">
-                    <div className="min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
-                        <h1 className="truncate font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">
-                            {t('page.makeShift.requests.title')}
-                        </h1>
-                        <p className="mt-3 truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:mt-4 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
-                            {t('page.makeShift.requests.descriptionLine')}
-                        </p>
+        <div id="make_requests_step" className="make-shift-requests flex w-full min-w-0 flex-col">
+            <div className="flex w-full min-w-0 flex-col">
+                <div className={`${MAKE_SHIFT_STEP_TOOLBAR_CLASS} pb-3`}>
+                    <div className={MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS}>
+                        <h1 className={MAKE_SHIFT_STEP_TITLE_CLASS}>{t('page.makeShift.requests.title')}</h1>
+                        <p className={MAKE_SHIFT_STEP_SUBTITLE_CLASS}>{t('page.makeShift.requests.descriptionLine')}</p>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-2">
+                    <div className={MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS}>
                         <Button
                             variant="secondary"
                             size="md"
