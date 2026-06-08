@@ -22,6 +22,7 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGIN_VISUAL_SLIDES = ['/img/login-slide-1.png', '/img/login-slide-2.png', '/img/login-slide-3.png'];
 const LOGIN_VISUAL_AUTO_ROTATE_MS = 4000;
 const LOGIN_VISUAL_MANUAL_RESUME_MS = 3000;
+const INVALID_LOGIN_CREDENTIALS_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
 const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
     <button
@@ -45,13 +46,12 @@ function LoginPage() {
     const navigate = useNavigate();
     const {pathname, search} = useLocation();
     const {
-        actions: {handleDevSignupBypass, handleLogin},
+        actions: {handleLogin},
     } = useAuth();
     const params = new URLSearchParams(search);
     const nextPath = sanitizeInternalPath(params.get('next'), ROUTE.MAKE);
     const isDemoSignupFlow = getIsDemoSignupLoginReason(search);
     const isSignupPage = pathname === ROUTE.SIGN_UP;
-    const canUseDevSignupBypass = import.meta.env.DEV && isSignupPage;
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
     const [signupName, setSignupName] = useState('');
@@ -121,6 +121,7 @@ function LoginPage() {
         }, delay);
     };
 
+    const shouldShowPasswordResetFromLoginError = loginError === INVALID_LOGIN_CREDENTIALS_MESSAGE;
     const showPreviousLoginVisualSlide = () => {
         setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
@@ -620,9 +621,22 @@ function LoginPage() {
                                 </p>
                             ) : null}
                             {loginError ? (
-                                <p role="alert" className="rounded-[12px] bg-[#FFF7F8] px-3 py-2 text-sm text-red">
-                                    {loginError}
-                                </p>
+                                <div>
+                                    <p role="alert" className="rounded-[12px] bg-[#FFF7F8] px-3 py-2 text-sm text-red">
+                                        {loginError}
+                                    </p>
+                                    {shouldShowPasswordResetFromLoginError ? (
+                                        <div className="mt-2 flex justify-end">
+                                            <button
+                                                type="button"
+                                                className="cursor-pointer text-sm font-semibold text-main-1 underline underline-offset-[3px]"
+                                                onClick={handleOpenPasswordReset}
+                                            >
+                                                비밀번호 찾기
+                                            </button>
+                                        </div>
+                                    ) : null}
+                                </div>
                             ) : null}
                             <button
                                 type="submit"
@@ -632,17 +646,10 @@ function LoginPage() {
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 로그인
                             </button>
-                            <div className="flex items-center justify-between text-sm font-medium text-gray-3">
-                                <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-sub-2">
+                            <div className="flex items-center justify-start text-sm">
+                                <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
                                     회원가입
                                 </Link>
-                                <button
-                                    type="button"
-                                    className="cursor-pointer text-sm font-medium text-gray-3 transition-colors hover:text-sub-2"
-                                    onClick={handleOpenPasswordReset}
-                                >
-                                    비밀번호 찾기
-                                </button>
                             </div>
                         </form>
                     ) : null}
@@ -919,16 +926,6 @@ function LoginPage() {
                                     <KakaoIcon className="mr-3 h-5 w-5" />
                                     {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
                                 </a>
-                                {canUseDevSignupBypass ? (
-                                    <button
-                                        type="button"
-                                        disabled={isSubmitting}
-                                        onClick={handleDevSignupBypass}
-                                        className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-gray-6 bg-white px-[12px] text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:text-gray-4"
-                                    >
-                                        DEV: skip Kakao signup
-                                    </button>
-                                ) : null}
                                 <a
                                     href={appleAuthorizeUrl}
                                     className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"

@@ -7,6 +7,7 @@ import {type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {DragIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import RequestCalendarGridCell from './request-calendar-grid-cell';
+import {REQUEST_CALENDAR_NAME_COLUMN_CLASS, REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS} from './request-calendar-layout';
 import {getDutyRequestLookupKey, getRequestCalendarRowClassName} from './utils';
 
 type TRequestShiftRow = TRequestShift['divisionShiftNurses'][number][number];
@@ -63,9 +64,7 @@ export default function RequestCalendarGridRow({
                     <DragIcon className="h-5 w-5 cursor-grab active:cursor-grabbing" />
                 </div>
             ) : null}
-            <div className="w-[72px] shrink-0 truncate pl-2 text-center font-apple text-[13px] font-semibold text-sub-1">
-                {row.shiftNurse.name}
-            </div>
+            <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS}`}>{row.shiftNurse.name}</div>
             <div className="flex w-11 shrink-0 justify-center">
                 <SkillBadge level={skillLevel} config={skillConfig} className="min-h-[18px] min-w-10 px-1.5 text-[10px]" />
             </div>

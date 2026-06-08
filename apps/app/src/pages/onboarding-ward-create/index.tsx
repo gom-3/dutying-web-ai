@@ -93,7 +93,51 @@ function OnboardingWardCreatePage() {
     const isScheduleInputStep = draft.currentStep === 2;
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
     const activeTeamNurseCount = draft.nurses.filter((nurse) => nurse.teamId === activeTeamId).length;
+    const activeTeamScheduleRowCount = Object.values(draft.scheduleInputs[activeTeamId] ?? {}).reduce(
+        (count, schedule) =>
+            count +
+            (schedule?.rows.filter((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim())).length ?? 0),
+        0,
+    );
     const openSkillModal = () => setShowSkillModal(true);
+    const getDeleteTeamModalDescription = () => {
+        if (activeTeamNurseCount > 0 && activeTeamScheduleRowCount > 0) {
+            return ` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명과 입력한 근무표도 함께 삭제돼요.`;
+        }
+
+        if (activeTeamNurseCount > 0) {
+            return ` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`;
+        }
+
+        if (activeTeamScheduleRowCount > 0) {
+            return ' 팀을 삭제하면 입력한 근무표도 함께 삭제돼요.';
+        }
+
+        return ' 팀을 삭제할게요.';
+    };
+    const handleDeleteTeamClick = () => {
+        if (!activeTeam) {
+            return;
+        }
+
+        if (activeTeamNurseCount === 0 && activeTeamScheduleRowCount === 0) {
+            deleteActiveTeam();
+
+            return;
+        }
+
+        setShowDeleteTeamModal(true);
+    };
+    const deleteTeamButton = (
+        <WizardButton
+            variant="link"
+            className="flex items-center gap-2 px-0 text-[18px] text-[#C55252] no-underline hover:bg-transparent hover:text-[#A53F3F]"
+            disabled={actionsDisabled || !activeTeam}
+            onClick={handleDeleteTeamClick}
+        >
+            <Trash2 className="h-4 w-4" />팀 삭제하기
+        </WizardButton>
+    );
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
             return '병동을 생성하고 있어요. 잠시만 기다려 주세요.';
@@ -289,6 +333,8 @@ function OnboardingWardCreatePage() {
                         onUploadFile={applyUploadedFile}
                         uploadStatus={uploadStatus}
                         uploadError={uploadError}
+                        onDeleteTeam={handleDeleteTeamClick}
+                        isDeleteTeamDisabled={actionsDisabled || !activeTeam}
                     />
                 );
             case 3:
@@ -344,7 +390,7 @@ function OnboardingWardCreatePage() {
                               <p className="font-apple text-[20px] font-semibold text-sub-1">팀을 삭제할까요?</p>
                               <p className="mt-2 font-apple text-[15px] text-gray-3">
                                   <span className="font-semibold text-sub-1">{activeTeam.name}</span>
-                                  {` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`}
+                                  {getDeleteTeamModalDescription()}
                               </p>
                               <div className="mt-5 flex justify-end gap-2">
                                   <button
@@ -372,7 +418,7 @@ function OnboardingWardCreatePage() {
                 : null}
             <div
                 className={cn(
-                    'mx-auto w-full px-4 pt-[100px] pb-20 sm:px-6 lg:px-0',
+                    'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',
                     draft.currentStep === 1 ? 'max-w-[480px]' : isScheduleInputStep ? 'max-w-[1200px]' : 'max-w-[1120px]',
                 )}
             >
@@ -423,22 +469,7 @@ function OnboardingWardCreatePage() {
                                 건너뛰기
                             </WizardButton>
                         ) : isNurseRegistrationStep ? (
-                            <WizardButton
-                                variant="link"
-                                className="flex items-center gap-2 px-0 text-[18px] text-[#C55252] no-underline hover:bg-transparent hover:text-[#A53F3F]"
-                                disabled={actionsDisabled || !activeTeam}
-                                onClick={() => {
-                                    if (activeTeamNurseCount === 0) {
-                                        deleteActiveTeam();
-
-                                        return;
-                                    }
-
-                                    setShowDeleteTeamModal(true);
-                                }}
-                            >
-                                <Trash2 className="h-4 w-4" />팀 삭제하기
-                            </WizardButton>
+                            deleteTeamButton
                         ) : undefined
                     }
                     nextDisabled={

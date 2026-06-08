@@ -6,8 +6,10 @@ import useAuth from '@/features/auth';
 import {
     buildWorkKeyMap,
     getShiftEditorDraftStorageKey,
+    isDutyShiftFullyAssigned,
     shiftToDoc,
     workspaceCellsToFixedCells,
+    type TCellValue,
     type TDutyDoc,
     useShiftEditorCommands,
     useShiftEditorKeyBindings,
@@ -29,6 +31,17 @@ function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     }
 
     return true;
+}
+
+function getPreviousYearMonth(year: number, month: number): {year: number; month: number} {
+    return month === 1 ? {year: year - 1, month: 12} : {year, month: month - 1};
+}
+
+function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] | undefined): TCellValue[] | undefined {
+    if (!persisted) return base?.slice();
+    if (!base || base.length === 0) return persisted.slice();
+
+    return base.map((_cell, index) => persisted[index] ?? null);
 }
 
 function deriveRequestCells(
@@ -71,9 +84,10 @@ function deriveRequestCells(
 
 type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
+    hydratePreviousLastShifts?: boolean;
 };
 
-export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions = {}) {
+export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts = false}: TUseDutyEditorStepOptions = {}) {
     const {
         state: {wardId},
     } = useAuth();
@@ -92,6 +106,16 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         queryFn: () => WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
     });
+    const previousYearMonth = useMemo(() => getPreviousYearMonth(year, month), [year, month]);
+    const previousDutyQuery = useQuery({
+        ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, previousYearMonth.year, previousYearMonth.month),
+        enabled: enabled && hydratePreviousLastShifts,
+    });
+    const previousConfirmedShift =
+        hydratePreviousLastShifts && previousDutyQuery.data && isDutyShiftFullyAssigned(previousDutyQuery.data)
+            ? previousDutyQuery.data
+            : null;
+    const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
 
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
 
@@ -113,7 +137,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
     }, [workspaceQuery.data?.rulesHash, setRulesHash]);
 
     useEffect(() => {
-        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null) return;
+        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isHydratingLastShifts) return;
 
         const nextPersistenceKey = getShiftEditorDraftStorageKey({wardId, shiftTeamId: currentShiftTeamId, year, month});
         const currentPersistenceKey = commands.getCurrentPersistenceKey();
@@ -128,7 +152,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
 
         if (!hasContextChanged && !hasDutyDataChanged && !isStoreEmpty && initialHydrationDoneRef.current) return;
 
-        const baseDoc = shiftToDoc(dutyQuery.data, year, month);
+        const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
         const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
         const requestValueMap = deriveRequestCells(dutyQuery.data, year, month);
         const requestCells: Record<string, true> = {};
@@ -154,6 +178,7 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
 
                 return {
                     ...row,
+                    lastCells: mergeLastCells(row.lastCells, baseRow?.lastCells),
                     cells: row.cells.map((cell, colIdx) => {
                         const date = persisted.doc.columns[colIdx];
                         if (!date) return cell;
@@ -198,8 +223,10 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         currentShiftTeamId,
         dutyQuery.data,
         workspaceQuery.data,
+        isHydratingLastShifts,
         month,
         onContextChanged,
+        previousConfirmedShift,
         wardId,
         year,
         editorDoc.columns.length,
@@ -218,5 +245,6 @@ export function useDutyEditorStep({onContextChanged}: TUseDutyEditorStepOptions 
         violationMap,
         teamViolations,
         focusEditor,
+        isHydratingLastShifts,
     };
 }

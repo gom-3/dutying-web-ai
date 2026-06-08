@@ -98,16 +98,21 @@ export const getRequestCalendarCellState = ({
     shiftNurseId: number;
     day: number;
     wardShiftTypeMap: Map<number, TWardShiftType>;
-}) => ({
-    isFocused: focus?.shiftNurseId === shiftNurseId && focus?.day === day,
-    shiftType:
-        currentShiftTypeId === null
-            ? requestDutyRequest === null
-                ? null
-                : wardShiftTypeMap.get(requestDutyRequest.wardShiftTypeId)
-            : wardShiftTypeMap.get(currentShiftTypeId),
-    isOnlyRequest: currentShiftTypeId === null && requestDutyRequest !== null,
-});
+}) => {
+    const isOnlyRequest = currentShiftTypeId === null && requestDutyRequest !== null;
+
+    return {
+        isFocused: focus?.shiftNurseId === shiftNurseId && focus?.day === day,
+        shiftType:
+            currentShiftTypeId === null
+                ? requestDutyRequest === null
+                    ? null
+                    : wardShiftTypeMap.get(requestDutyRequest.wardShiftTypeId)
+                : wardShiftTypeMap.get(currentShiftTypeId),
+        isOnlyRequest,
+        isRejectedOnlyRequest: isOnlyRequest && requestDutyRequest.isAccepted === false,
+    };
+};
 
 export const getRequestCalendarDivisionAction = ({
     readonly,

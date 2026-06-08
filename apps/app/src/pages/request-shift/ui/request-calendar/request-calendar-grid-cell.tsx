@@ -64,7 +64,7 @@ export default function RequestCalendarGridCell({
                 isOnlyRequest={cellState.isOnlyRequest}
                 className={`z-10 transition-[box-shadow,transform] duration-150 ${
                     readonly ? 'cursor-default' : 'cursor-pointer'
-                } ${cellState.isFocused ? 'ring-2 ring-main-1/70' : ''}`}
+                } ${cellState.isFocused ? 'ring-2 ring-main-1/70' : ''} ${cellState.isRejectedOnlyRequest ? 'opacity-30' : ''}`}
                 forwardRef={cellState.isFocused ? focusedCellRef : null}
             />
         </div>

@@ -1,4 +1,5 @@
 export * from './types';
+export * from './duty-doc-cells';
 export * from './store';
 export * from './shift-adapter';
 export * from './schedule-authoring';

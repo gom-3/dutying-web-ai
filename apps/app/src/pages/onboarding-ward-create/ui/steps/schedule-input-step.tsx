@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {ChevronLeft, ChevronRight, FileSpreadsheet, Plus, X} from 'lucide-react';
+import {ChevronLeft, ChevronRight, FileSpreadsheet, Plus, Trash2, UsersRound, X} from 'lucide-react';
 import {
     type Dispatch,
     type KeyboardEvent,
@@ -42,6 +42,8 @@ interface IScheduleInputStepProps {
     onUploadFile: (file: File, options: TScheduleFileUploadTargetMonth) => Promise<void>;
     uploadStatus: TScheduleFileUploadStatus;
     uploadError: string | null;
+    onDeleteTeam: () => void;
+    isDeleteTeamDisabled: boolean;
 }
 
 type TCellPosition = {
@@ -260,6 +262,8 @@ function ScheduleInputStep({
     onUploadFile,
     uploadStatus,
     uploadError,
+    onDeleteTeam,
+    isDeleteTeamDisabled,
 }: IScheduleInputStepProps) {
     const rowIdRef = useRef(0);
     const calendarWrapRef = useRef<HTMLDivElement | null>(null);
@@ -274,6 +278,7 @@ function ScheduleInputStep({
     const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
     const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
     const maxMonthOption = useMemo(() => getCurrentMonthOption(), []);
+    const hasActiveTeam = draft.teams.some((team) => team.id === selectedTeamId);
     const currentSchedule = draft.scheduleInputs?.[selectedTeamId]?.[selectedMonthOption.key];
     const activeMonthOption = selectedMonthOption;
     const maxMonthIndex = maxMonthOption.year * 12 + maxMonthOption.month;
@@ -313,6 +318,10 @@ function ScheduleInputStep({
         [createRow],
     );
     const rows = useMemo(() => {
+        if (!hasActiveTeam) {
+            return [];
+        }
+
         if (currentSchedule) {
             const nurseById = new Map(draft.nurses.map((nurse) => [nurse.id, nurse]));
             const scheduleRows = currentSchedule.rows.map((row) => {
@@ -329,7 +338,7 @@ function ScheduleInputStep({
         }
 
         return ensureMinimumRows([], MIN_VISIBLE_ROWS, true);
-    }, [currentSchedule, draft.nurses, ensureMinimumRows]);
+    }, [currentSchedule, draft.nurses, ensureMinimumRows, hasActiveTeam]);
     const ensureShiftTermOrder = useCallback((scheduleKey: string, sourceRows: TOnboardingScheduleRowDraft[]) => {
         setShiftTermOrderBySchedule((prev) => {
             const currentOrder = prev[scheduleKey] ?? [];
@@ -778,17 +787,17 @@ function ScheduleInputStep({
             }}
         >
             <div className="space-y-5">
-                <ScheduleMonthSelector
-                    year={activeMonthOption.year}
-                    month={activeMonthOption.month}
-                    onPreviousMonth={goPreviousMonth}
-                    onNextMonth={goNextMonth}
-                    isNextMonthDisabled={isNextMonthDisabled}
-                />
-                <div className="flex w-full justify-end">
+                <div className="flex w-full items-center justify-between gap-3">
+                    <ScheduleMonthSelector
+                        year={activeMonthOption.year}
+                        month={activeMonthOption.month}
+                        onPreviousMonth={goPreviousMonth}
+                        onNextMonth={goNextMonth}
+                        isNextMonthDisabled={isNextMonthDisabled}
+                    />
                     <button
                         type="button"
-                        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-[#107C41] px-4 font-apple text-[14px] font-semibold text-white shadow-[0_8px_18px_rgba(16,124,65,0.18)] transition-colors hover:bg-[#0E6F3A] focus-visible:outline-2 focus-visible:outline-[#107C41]/35 active:bg-[#0B5F31]"
+                        className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-[#107C41] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#0E6F3A] focus-visible:outline-2 focus-visible:outline-[#107C41]/35 active:bg-[#0B5F31]"
                         onClick={() => setIsScheduleFileUploadModalOpen(true)}
                     >
                         <FileSpreadsheet className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
@@ -804,104 +813,76 @@ function ScheduleInputStep({
                     canAdd={canAddTeam}
                     onRename={onTeamNameChange}
                 />
-                <div className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-3">
-                    <div className="make-shift-calendar__header flex w-full min-w-0 items-center py-1" style={{gap: 0}}>
-                        <div
-                            className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
-                            style={{
-                                gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
-                                columnGap: ROW_GAP_X,
-                                paddingLeft: DIVISION_PADDING_X,
-                                paddingRight: DIVISION_PADDING_X,
-                            }}
-                        >
-                            <HeaderLabel
-                                className={cn('make-shift-calendar__header-label--name font-semibold text-sub-2', NAME_TEXT_CLASS)}
-                            >
-                                <span className="flex min-w-0 items-center justify-center gap-1.5">
-                                    <span>간호사</span>
-                                    <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
-                                        <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
-                                        <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
-                                    </span>
-                                </span>
-                            </HeaderLabel>
-                            <div
-                                className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
-                                style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
-                            >
-                                {days.map((day) => {
-                                    const dayType = getDayType(activeMonthOption.year, activeMonthOption.month, day);
+                {hasActiveTeam ? (
+                    <>
+                        <div className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-3">
+                            <div className="make-shift-calendar__header flex w-full min-w-0 items-center py-1" style={{gap: 0}}>
+                                <div
+                                    className="make-shift-calendar__header-left grid min-w-0 flex-1 items-center"
+                                    style={{
+                                        gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
+                                        columnGap: ROW_GAP_X,
+                                        paddingLeft: DIVISION_PADDING_X,
+                                        paddingRight: DIVISION_PADDING_X,
+                                    }}
+                                >
+                                    <HeaderLabel
+                                        className={cn('make-shift-calendar__header-label--name font-semibold text-sub-2', NAME_TEXT_CLASS)}
+                                    >
+                                        <span className="flex min-w-0 items-center justify-center gap-1.5">
+                                            <span>간호사</span>
+                                            <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
+                                                <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
+                                                <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
+                                            </span>
+                                        </span>
+                                    </HeaderLabel>
+                                    <div
+                                        className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
+                                        style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
+                                    >
+                                        {days.map((day) => {
+                                            const dayType = getDayType(activeMonthOption.year, activeMonthOption.month, day);
 
-                                    return (
-                                        <button
-                                            key={day}
-                                            type="button"
-                                            tabIndex={-1}
-                                            className={cn(
-                                                'make-shift-calendar__day-header-cell relative min-w-0 rounded-full text-center font-poppins text-[12px] leading-5 font-semibold tabular-nums',
-                                                'cursor-default',
-                                                dayType === 'saturday' ? 'text-blue' : dayType === 'sunday' ? 'text-red' : 'text-sub-2.5',
-                                            )}
-                                        >
-                                            {day}
-                                        </button>
-                                    );
-                                })}
+                                            return (
+                                                <button
+                                                    key={day}
+                                                    type="button"
+                                                    tabIndex={-1}
+                                                    className={cn(
+                                                        'make-shift-calendar__day-header-cell relative min-w-0 rounded-full text-center font-poppins text-[12px] leading-5 font-semibold tabular-nums',
+                                                        'cursor-default',
+                                                        dayType === 'saturday'
+                                                            ? 'text-blue'
+                                                            : dayType === 'sunday'
+                                                              ? 'text-red'
+                                                              : 'text-sub-2.5',
+                                                    )}
+                                                >
+                                                    {day}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div aria-hidden="true" />
+                                </div>
                             </div>
-                            <div aria-hidden="true" />
-                        </div>
-                    </div>
-                    <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
-                        <div className="make-shift-calendar__division flex w-full min-w-0 items-stretch" style={{gap: 0}}>
-                            <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
-                                {rows.map((row, rowIndex) => (
-                                    <div key={row.id} style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
-                                        <div
-                                            data-row-index={rowIndex}
-                                            className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
-                                            style={{
-                                                gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
-                                                columnGap: ROW_GAP_X,
-                                            }}
-                                        >
-                                            <NameCell
-                                                row={row}
-                                                rowIndex={rowIndex}
-                                                selection={selection}
-                                                isSelectionVisible={isSelectionVisible}
-                                                selectedRange={selectedRange}
-                                                fillRange={fillRange}
-                                                inputRefByCell={inputRefByCell}
-                                                isSelecting={isSelecting}
-                                                fillDrag={fillDrag}
-                                                onFocusCell={focusCell}
-                                                onShowSelection={() => setIsSelectionVisible(true)}
-                                                onSetSelection={setSelection}
-                                                onSetIsSelecting={setIsSelecting}
-                                                onSetFillDrag={setFillDrag}
-                                                onUpdate={updateCellValue}
-                                                onMove={moveSelection}
-                                                onClearSelection={clearSelectedCells}
-                                                onCopySelection={buildSelectionText}
-                                                onUndo={undoLastScheduleEdit}
-                                                onQueueCompositionMove={queueCompositionMove}
-                                                onFlushCompositionMove={flushCompositionMove}
-                                            />
-                                            <div
-                                                className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
-                                                style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
-                                            >
-                                                {days.map((day, dayIndex) => (
-                                                    <ShiftCell
-                                                        key={day}
+                            <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
+                                <div className="make-shift-calendar__division flex w-full min-w-0 items-stretch" style={{gap: 0}}>
+                                    <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
+                                        {rows.map((row, rowIndex) => (
+                                            <div key={row.id} style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
+                                                <div
+                                                    data-row-index={rowIndex}
+                                                    className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
+                                                    style={{
+                                                        gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
+                                                        columnGap: ROW_GAP_X,
+                                                    }}
+                                                >
+                                                    <NameCell
                                                         row={row}
                                                         rowIndex={rowIndex}
-                                                        colIndex={dayIndex + 1}
-                                                        day={day}
-                                                        dayType={getDayType(activeMonthOption.year, activeMonthOption.month, day)}
-                                                        value={getCellValue(rows, rowIndex, dayIndex + 1)}
-                                                        termColorMap={shiftTermColorMap}
                                                         selection={selection}
                                                         isSelectionVisible={isSelectionVisible}
                                                         selectedRange={selectedRange}
@@ -922,26 +903,89 @@ function ScheduleInputStep({
                                                         onQueueCompositionMove={queueCompositionMove}
                                                         onFlushCompositionMove={flushCompositionMove}
                                                     />
-                                                ))}
+                                                    <div
+                                                        className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                                                        style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
+                                                    >
+                                                        {days.map((day, dayIndex) => (
+                                                            <ShiftCell
+                                                                key={day}
+                                                                row={row}
+                                                                rowIndex={rowIndex}
+                                                                colIndex={dayIndex + 1}
+                                                                day={day}
+                                                                dayType={getDayType(activeMonthOption.year, activeMonthOption.month, day)}
+                                                                value={getCellValue(rows, rowIndex, dayIndex + 1)}
+                                                                termColorMap={shiftTermColorMap}
+                                                                selection={selection}
+                                                                isSelectionVisible={isSelectionVisible}
+                                                                selectedRange={selectedRange}
+                                                                fillRange={fillRange}
+                                                                inputRefByCell={inputRefByCell}
+                                                                isSelecting={isSelecting}
+                                                                fillDrag={fillDrag}
+                                                                onFocusCell={focusCell}
+                                                                onShowSelection={() => setIsSelectionVisible(true)}
+                                                                onSetSelection={setSelection}
+                                                                onSetIsSelecting={setIsSelecting}
+                                                                onSetFillDrag={setFillDrag}
+                                                                onUpdate={updateCellValue}
+                                                                onMove={moveSelection}
+                                                                onClearSelection={clearSelectedCells}
+                                                                onCopySelection={buildSelectionText}
+                                                                onUndo={undoLastScheduleEdit}
+                                                                onQueueCompositionMove={queueCompositionMove}
+                                                                onFlushCompositionMove={flushCompositionMove}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                    <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
+                                                </div>
                                             </div>
-                                            <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
+                                        ))}
+                                        <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
+                                            <button
+                                                type="button"
+                                                aria-label="행 추가"
+                                                className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
+                                                onClick={addRow}
+                                            >
+                                                <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />행 추가
+                                            </button>
                                         </div>
                                     </div>
-                                ))}
-                                <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
-                                    <button
-                                        type="button"
-                                        aria-label="행 추가"
-                                        className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
-                                        onClick={addRow}
-                                    >
-                                        <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />행 추가
-                                    </button>
                                 </div>
                             </div>
                         </div>
+                        <div className="flex justify-start pt-1">
+                            <button
+                                type="button"
+                                className="inline-flex h-9 items-center justify-center gap-2 rounded-[8px] px-0 font-apple text-[16px] font-semibold text-[#C55252] transition-colors hover:text-[#A53F3F] focus-visible:outline-2 focus-visible:outline-[#C55252]/30 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-[#C55252]"
+                                disabled={isDeleteTeamDisabled}
+                                onClick={onDeleteTeam}
+                            >
+                                <Trash2 className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />팀 삭제하기
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex min-h-[300px] w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-[#D3D8E2] bg-[#F8FAFC] px-6 py-12 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#7B8494] shadow-[0_6px_18px_rgba(49,55,74,0.06)]">
+                            <UsersRound className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
+                        </div>
+                        <p className="mt-4 font-apple text-[18px] font-semibold text-sub-1">팀을 먼저 만들어 주세요</p>
+                        <p className="mt-1 font-apple text-[14px] leading-5 text-gray-3">
+                            팀을 추가하면 간호사 이름과 근무표를 입력할 수 있어요.
+                        </p>
+                        <button
+                            type="button"
+                            className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#3D4658] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#303848] focus-visible:outline-2 focus-visible:outline-main-1"
+                            onClick={onAddTeam}
+                        >
+                            <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />팀 추가하기
+                        </button>
                     </div>
-                </div>
+                )}
             </div>
             <ScheduleFileUploadModal
                 open={isScheduleFileUploadModalOpen}

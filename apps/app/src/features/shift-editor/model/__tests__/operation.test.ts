@@ -51,6 +51,21 @@ describe('operation', () => {
         expect(restoredDoc).toEqual(doc);
     });
 
+    it('applies setCells to previous-shift context cells', () => {
+        const doc: TDutyDoc = {
+            ...createDoc(),
+            rows: [{...createDoc().rows[0]!, lastCells: [null, 'D', null, 'O']}],
+        };
+        const op: TOperation = {
+            kind: 'setCells',
+            cells: [{row: 0, col: -4, prev: null, next: 'N'}],
+        };
+        const nextDoc = applyOperation(doc, op);
+
+        expect(nextDoc.rows[0]?.lastCells).toEqual(['N', 'D', null, 'O']);
+        expect(applyOperation(nextDoc, invertOperation(op))).toEqual(doc);
+    });
+
     it('reorders rows only when nextOrder covers every row', () => {
         const doc = createDoc();
         const reordered = applyOperation(doc, {

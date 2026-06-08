@@ -1,4 +1,5 @@
 import type {TDutyDoc, TOperation, TReorderRowsOp, TSetCellsOp} from './types';
+import {writeDutyCell} from './duty-doc-cells';
 
 export function invertSetCellsOp(op: TSetCellsOp): TSetCellsOp {
     return {
@@ -36,28 +37,14 @@ function applySetCellsOp(doc: TDutyDoc, op: TSetCellsOp): TDutyDoc {
 
     if (!hasCellChanges && !hasFixedDelta) return doc;
 
-    // 필요한 row만 얕은 복사 (cells는 row마다 복사)
     const nextRows = doc.rows.slice();
-    const touchedRows = new Set<number>();
-
-    for (const {row} of op.cells) touchedRows.add(row);
-
-    for (const rowIdx of touchedRows) {
-        const row = nextRows[rowIdx];
-
-        if (!row) continue;
-
-        nextRows[rowIdx] = {...row, cells: row.cells.slice()};
-    }
 
     for (const {row, col, next} of op.cells) {
         const r = nextRows[row];
 
         if (!r) continue;
 
-        if (col < 0 || col >= r.cells.length) continue;
-
-        r.cells[col] = next;
+        nextRows[row] = writeDutyCell(r, col, next);
     }
 
     let nextFixedCells = doc.fixedCells;

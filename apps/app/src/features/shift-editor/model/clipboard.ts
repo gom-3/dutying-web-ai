@@ -1,4 +1,5 @@
 import {normalizeSelection} from './selection';
+import {isDutyCellPositionInBounds, readDutyCell} from './duty-doc-cells';
 import type {TClipboardPayload, TDutyDoc, TSelection, TSetCellsOp} from './types';
 
 export function copySelection(doc: TDutyDoc, selection: TSelection | null): TClipboardPayload | null {
@@ -13,7 +14,9 @@ export function copySelection(doc: TDutyDoc, selection: TSelection | null): TCli
         const row: TClipboardPayload['cells'][number] = [];
 
         for (let c = 0; c < width; c++) {
-            row.push(doc.rows[top + r]?.cells[left + c] ?? null);
+            const docRow = doc.rows[top + r];
+
+            row.push(docRow ? readDutyCell(docRow, left + c) : null);
         }
 
         cells.push(row);
@@ -33,9 +36,13 @@ export function pastePayload(payload: TClipboardPayload, selection: TSelection, 
             const row = startRow + r;
             const col = startCol + c;
 
-            if (row >= doc.rows.length || col >= doc.columns.length) continue; // 자동 자르기
+            if (!isDutyCellPositionInBounds(doc, row, col)) continue; // 자동 자르기
 
-            const prev = doc.rows[row]?.cells[col] ?? null;
+            const docRow = doc.rows[row];
+
+            if (!docRow) continue;
+
+            const prev = readDutyCell(docRow, col);
             const next = payload.cells[r]?.[c] ?? null;
 
             if (prev !== next) {

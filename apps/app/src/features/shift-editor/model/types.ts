@@ -17,6 +17,8 @@ export type TDutyRuleKey =
 
 export type TDutyRow = {
     workerId: string;
+    /** Current-month context from the previous schedule, shown as the "전달 근무" cells. */
+    lastCells?: TCellValue[];
     cells: TCellValue[];
 };
 
@@ -77,15 +79,34 @@ export type TTransaction<Op> = {
 
 export type TViolationScope = 'nurse' | 'team';
 
+export type TViolationAffectedCell = {
+    cellKey?: string;
+    shiftNurseId?: number;
+    nurseId?: number;
+    nurseName?: string;
+    date: string;
+    wardShiftTypeId?: number | null;
+    shiftCode?: string | null;
+};
+
+export type TViolationPeriod = {
+    startDate?: string;
+    endDate?: string;
+    dates?: string[];
+};
+
 export type TViolation = {
     ruleId: string;
     /** Spring violationId — 특정 위반 수정(repair) 요청에 사용 */
     violationId?: string;
+    templateCode?: string;
     message: string;
     cells: TCellPos[];
     level: 'warning' | 'error';
     /** team: division 일자 열 전체. nurse(기본): 해당 간호사 행만 */
     scope?: TViolationScope;
+    period?: TViolationPeriod;
+    affectedCells?: TViolationAffectedCell[];
     fixable?: boolean;
 };
 

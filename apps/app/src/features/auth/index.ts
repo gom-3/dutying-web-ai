@@ -11,7 +11,6 @@ import ROUTE from '@/shared/constant/path';
 import {toAccountCompatibleAdminMe} from './model/admin-account';
 import {isWardAdminAccessToken} from './model/admin-token';
 import {buildDemoSignupLoginPath, isDemoSessionExpired} from './model/demo-session';
-import {createDevAuthBypassAccount, DEV_AUTH_BYPASS_TOKEN, isDevAuthBypassAvailable} from './model/dev-auth-bypass';
 import {executeLoginRedirect, getLoginRedirectDecision} from './model/login-redirect';
 import useAuthStore from './model/store';
 
@@ -69,14 +68,6 @@ const useAuth = (activeEffect = false) => {
         executeLoginRedirect(redirectDecision);
 
         sendEvent(events.auth.login);
-    };
-    const handleDevSignupBypass = () => {
-        if (!isDevAuthBypassAvailable()) return;
-
-        beginLogin(DEV_AUTH_BYPASS_TOKEN);
-        syncAccessTokenHeaders(DEV_AUTH_BYPASS_TOKEN);
-        setAccountMeSuccess(createDevAuthBypassAccount());
-        navigate(ROUTE.REGISTER);
     };
     const setDemoExpired = (expired: boolean) => {
         setAuthDemoExpired(expired);
@@ -155,7 +146,6 @@ const useAuth = (activeEffect = false) => {
         actions: {
             handleGetAccountMe,
             applyAccountMe: setAccountMeSuccess,
-            handleDevSignupBypass,
             handleLogin,
             handleLogout,
             setDemoExpired,

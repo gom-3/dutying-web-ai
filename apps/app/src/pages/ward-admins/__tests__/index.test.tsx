@@ -155,7 +155,7 @@ describe('WardAdminsPage', () => {
         });
     });
 
-    it('registers an admin when owner role comes from the current ward membership', async () => {
+    it('registers an admin when editor role comes from the current ward membership', async () => {
         const user = userEvent.setup();
 
         mockUseAuth.mockReturnValue({
@@ -163,8 +163,8 @@ describe('WardAdminsPage', () => {
                 accountMe: {
                     wardId: 10,
                     memberships: [
-                        {wardId: 10, role: 'OWNER', status: 'ACTIVE'},
-                        {wardId: 11, role: 'EDITOR', status: 'ACTIVE'},
+                        {wardId: 10, role: 'EDITOR', status: 'ACTIVE'},
+                        {wardId: 11, role: 'OWNER', status: 'ACTIVE'},
                     ],
                 },
                 wardId: 10,
@@ -173,12 +173,12 @@ describe('WardAdminsPage', () => {
 
         renderPage(<WardAdminsPage />);
 
-        await user.type(await screen.findByPlaceholderText('이메일'), ' Owner.Path@Example.COM ');
+        await user.type(await screen.findByPlaceholderText('이메일'), ' Editor.Membership@Example.COM ');
         await user.click(screen.getByRole('button', {name: '관리자 추가'}));
 
         await waitFor(() => {
             expect(mockCreateWardAdminEmail).toHaveBeenCalledWith(10, {
-                email: 'owner.path@example.com',
+                email: 'editor.membership@example.com',
                 role: 'EDITOR',
             });
         });
@@ -215,7 +215,55 @@ describe('WardAdminsPage', () => {
         expect(mockRemoveWardAdminEmail).toHaveBeenCalledWith(10, 301);
     });
 
-    it('hides mutation controls for non-owner admins', async () => {
+    it('deletes regular admins when owner role comes from the current ward membership', async () => {
+        const user = userEvent.setup();
+
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    wardId: 10,
+                    memberships: [
+                        {wardId: 10, role: 'OWNER', status: 'ACTIVE'},
+                        {wardId: 11, role: 'EDITOR', status: 'ACTIVE'},
+                    ],
+                },
+                wardId: 10,
+            },
+        });
+        mockGetWardAdmins.mockResolvedValue({
+            members: [
+                {
+                    wardAdminMembershipId: 401,
+                    accountId: 4,
+                    wardId: 10,
+                    email: 'legacy-editor@example.com',
+                    role: 'EDITOR' as const,
+                    status: 'ACTIVE' as const,
+                },
+                {
+                    membershipId: 101,
+                    accountId: 1,
+                    wardId: 10,
+                    email: 'owner@example.com',
+                    role: 'OWNER' as const,
+                    status: 'ACTIVE' as const,
+                },
+            ],
+            reservedEmails: [],
+            invitations: [],
+        });
+
+        renderPage(<WardAdminsPage />);
+
+        await user.click(await screen.findByRole('button', {name: 'legacy-editor@example.com 관리자 삭제'}));
+
+        expect(mockRemoveWardAdmin).toHaveBeenCalledWith(10, 401);
+        expect(screen.queryByRole('button', {name: 'owner@example.com 관리자 삭제'})).not.toBeInTheDocument();
+    });
+
+    it('lets non-owner ward members add admins while hiding removal controls', async () => {
+        const user = userEvent.setup();
+
         mockUseAuth.mockReturnValue({
             state: {
                 accountMe: {role: 'EDITOR'},
@@ -225,7 +273,29 @@ describe('WardAdminsPage', () => {
 
         renderPage(<WardAdminsPage />);
 
-        expect(await screen.findByText('최고 관리자만 관리자 권한을 변경할 수 있어요.')).toBeInTheDocument();
+        await user.type(await screen.findByPlaceholderText('이메일'), ' Editor.Path@Example.COM ');
+        await user.click(screen.getByRole('button', {name: '관리자 추가'}));
+
+        await waitFor(() => {
+            expect(mockCreateWardAdminEmail).toHaveBeenCalledWith(10, {
+                email: 'editor.path@example.com',
+                role: 'EDITOR',
+            });
+        });
+        expect(screen.queryByRole('button', {name: /삭제/})).not.toBeInTheDocument();
+    });
+
+    it('hides admin mutation controls when the account is not in the current ward', async () => {
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {wardId: 11, role: 'EDITOR'},
+                wardId: 10,
+            },
+        });
+
+        renderPage(<WardAdminsPage />);
+
+        expect(await screen.findByText('현재 병동 소속 계정만 관리자를 추가할 수 있어요.')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '관리자 추가'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /삭제/})).not.toBeInTheDocument();
     });

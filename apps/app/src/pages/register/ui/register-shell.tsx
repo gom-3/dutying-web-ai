@@ -12,16 +12,16 @@ function RegisterShell({children, maxWidth = 'max-w-[480px]'}: TRegisterShellPro
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-full bg-main-bg px-4 font-apple md:px-10">
+        <div className="min-h-full bg-main-bg px-4 pt-7 font-apple md:px-10">
             <button
                 type="button"
-                className="fixed top-7 left-4 z-50 flex h-11 cursor-pointer items-center rounded-[12px] bg-transparent px-2 md:left-10"
+                className="flex h-11 cursor-pointer items-center rounded-[12px] bg-transparent px-2"
                 onClick={() => navigate(ROUTE.ROOT)}
                 aria-label="듀팅 홈으로 이동"
             >
                 <img src={logoWordmarkPurple} alt="dutying" className="h-[32.4px] w-[118.8px] object-contain" />
             </button>
-            <main className={`mx-auto flex w-full ${maxWidth} flex-col pt-[112px] pb-10 md:pt-[136px] md:pb-16`}>{children}</main>
+            <main className={`mx-auto flex w-full ${maxWidth} flex-col pt-10 pb-10 md:pt-16 md:pb-16`}>{children}</main>
         </div>
     );
 }

@@ -1,4 +1,5 @@
 ﻿import {type TRequestShift} from '@/entities/shift';
+import {REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS, REQUEST_CALENDAR_NAME_COLUMN_CLASS} from './request-calendar-layout';
 import {getDayBadgeClass} from './utils';
 
 interface IRequestCalendarHeaderProps {
@@ -11,7 +12,7 @@ export default function RequestCalendarHeader({days, focusDay, separateWeekendCo
     return (
         <div className="sticky top-0 z-20 mb-1 flex h-8 w-full items-center rounded-t-[18px] bg-white pt-1">
             <div className="flex w-full items-center gap-2">
-                <div className="w-[72px] shrink-0 pl-2 text-center font-apple text-[12px] font-semibold text-gray-4">이름</div>
+                <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>이름</div>
                 <div className="w-11 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">숙련도</div>
                 <div className="w-6 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">연동</div>
                 <div className="flex flex-1 rounded-[12px] bg-gray-7 px-1 py-0.5">
