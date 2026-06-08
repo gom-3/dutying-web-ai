@@ -463,6 +463,7 @@ export interface IWardAPI {
     createOnboardingWardDraft: (draftDTO: TCreateOnboardingWardDraftDTO) => Promise<TWardResponse>;
     getCurrentOnboardingWardDraft: () => Promise<TOnboardingWardDraftResponse | null>;
     updateOnboardingWardDraft: (wardId: number, draftDTO: TUpdateOnboardingWardDraftDTO) => Promise<TOnboardingWardDraftResponse>;
+    previewOnboardingScheduleInput: (previewDTO: TOnboardingScheduleInputPreviewDTO) => Promise<TOnboardingScheduleInputPreviewResponse>;
     completeOnboardingWardDraft: (wardId: number, createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
     addMeToWaitingNurses: (wardId: number) => Promise<void>;
     connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
@@ -567,6 +568,7 @@ export type TCreateWardSeedNurseDTO = {
     isPreceptor?: boolean;
     isPreceptee?: boolean;
     possibleShiftShortNames?: string[];
+    initialShifts?: TOnboardingInitialShiftDTO[];
 };
 
 export type TCreateWardConstraintRuleDTO = {
@@ -605,6 +607,36 @@ export type TUpdateOnboardingWardDraftDTO = {
 export type TOnboardingWardDraftResponse = {
     ward: TWardResponse;
     draftPayload: Record<string, unknown> | null;
+};
+
+export type TOnboardingScheduleInputPreviewDTO = {
+    targetYear: number;
+    targetMonth: number;
+    nurseNameBlock: string;
+    dutyBlock: string;
+};
+
+export type TOnboardingInitialShiftDTO = {
+    date: string;
+    shiftShortName: string;
+};
+
+export type TOnboardingScheduleInputPreviewShiftTypeDTO = Omit<TCreateWardShiftTypeDTO, 'startTime' | 'endTime'> & {
+    startTime?: string | null;
+    endTime?: string | null;
+};
+
+export type TOnboardingScheduleInputPreviewResponse = {
+    targetYear: number;
+    targetMonth: number;
+    nurses: {
+        name: string;
+        displayOrder: number;
+        initialShifts: TOnboardingInitialShiftDTO[];
+    }[];
+    wardShiftTypes: TOnboardingScheduleInputPreviewShiftTypeDTO[];
+    warnings: string[];
+    unresolvedCodes: string[];
 };
 
 export type TEditWardDTO = {

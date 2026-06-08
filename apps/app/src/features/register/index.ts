@@ -1,6 +1,8 @@
 import {
     type TCreateOnboardingWardDraftDTO,
     type TCreateWardDTO,
+    type TOnboardingScheduleInputPreviewDTO,
+    type TOnboardingScheduleInputPreviewResponse,
     type TOnboardingWardDraftResponse,
     type TUpdateOnboardingWardDraftDTO,
     type TWardResponse,
@@ -150,6 +152,11 @@ const useRegister = () => {
             return draft;
         },
         [cacheCreatedWard],
+    );
+    const previewOnboardingScheduleInput = useCallback(
+        async (previewDTO: TOnboardingScheduleInputPreviewDTO): Promise<TOnboardingScheduleInputPreviewResponse> =>
+            WardAPI.previewOnboardingScheduleInput(previewDTO),
+        [],
     );
     const completeOnboardingWardDraft = useCallback(
         async (wardId: number, createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {
@@ -314,6 +321,7 @@ const useRegister = () => {
             createOnboardingWardDraft,
             getOnboardingWardDraft,
             saveOnboardingWardDraft,
+            previewOnboardingScheduleInput,
             completeOnboardingWardDraft,
             joinWardByCode,
             enterWard,

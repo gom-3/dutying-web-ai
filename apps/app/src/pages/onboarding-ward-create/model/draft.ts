@@ -21,6 +21,10 @@ export type TOnboardingNurseDraft = {
     employmentDate: string;
     possibleShiftTypeIds: string[];
     level: number | null;
+    initialShifts?: {
+        date: string;
+        shiftShortName: string;
+    }[];
 };
 
 export type TOnboardingScheduleRowDraft = {
@@ -179,12 +183,14 @@ const createShiftType = (
     ...input,
 });
 const createNurse = (
-    input: Omit<TOnboardingNurseDraft, 'id'> & {
+    input: Omit<TOnboardingNurseDraft, 'id' | 'initialShifts'> & {
         id?: string;
+        initialShifts?: NonNullable<TOnboardingNurseDraft['initialShifts']>;
     },
 ): TOnboardingNurseDraft => ({
     id: input.id ?? createId('nurse'),
     ...input,
+    initialShifts: input.initialShifts ?? [],
 });
 const createScheduleRow = (
     input: Partial<Omit<TOnboardingScheduleRowDraft, 'id'>> & {
@@ -342,7 +348,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
     const shiftTypes = BASE_SHIFT_TYPES.map((shiftType) => ({...shiftType}));
     const teams = BASE_TEAMS.map((team) => ({...team}));
     const firstTeamId = teams[0]?.id ?? 'team-0';
-    const possibleShiftTypeIds = shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const possibleShiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
     const nurses = BASE_NURSE_NAMES.map((name, index) => {
         const isOffNurse = name === '박연우';
 
@@ -459,7 +465,7 @@ export const applyScheduleInputDraft = (
     const existingNurseById = new Map(existingTeamNurses.map((nurse) => [nurse.id, nurse]));
     const nextNurseById = new Map<string, TOnboardingNurseDraft>();
     const nextNurseIdByName = new Map<string, string>();
-    const possibleShiftTypeIds = draft.shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const possibleShiftTypeIds = draft.shiftTypes.map((shiftType) => shiftType.id);
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const nurseIdByRowKey = new Map<string, string>();
     const getRowKey = (scheduleMonthKey: string, rowId: string) => `${scheduleMonthKey}:${rowId}`;
@@ -515,13 +521,18 @@ export const applyScheduleInputDraft = (
                 : undefined,
         ]),
     );
+    const hasExistingTeamScheduleInputs = Object.values(draft.scheduleInputs?.[teamId] ?? {}).some((schedule) => Boolean(schedule));
+    const preservedTeamNurses = hasExistingTeamScheduleInputs ? existingTeamNurses.filter((nurse) => !nextNurseById.has(nurse.id)) : [];
 
     return {
         ...draft,
-        nurses: [...otherNurses, ...Array.from(nextNurseById.values())],
+        nurses: [...otherNurses, ...preservedTeamNurses, ...Array.from(nextNurseById.values())],
         scheduleInputs: {
             ...(draft.scheduleInputs ?? {}),
-            [teamId]: nextTeamScheduleInputsWithNurseIds,
+            [teamId]: {
+                ...(draft.scheduleInputs?.[teamId] ?? {}),
+                ...nextTeamScheduleInputsWithNurseIds,
+            },
         },
     };
 };
@@ -568,7 +579,7 @@ export const applyUploadedScheduleTemplateDraft = (
 
     const monthKey = getScheduleMonthKey(year, month);
     const usedTeamNames = new Set<string>();
-    const possibleShiftTypeIds = draft.shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const possibleShiftTypeIds = draft.shiftTypes.map((shiftType) => shiftType.id);
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const teams: TOnboardingTeamDraft[] = [];
     const nurses: TOnboardingNurseDraft[] = [];
@@ -652,9 +663,17 @@ export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardD
         return draft;
     }
 
+    const shiftType = createEmptyShiftType(draft.shiftTypes.length);
+
     return {
         ...draft,
-        shiftTypes: [...draft.shiftTypes, createEmptyShiftType(draft.shiftTypes.length)],
+        shiftTypes: [...draft.shiftTypes, shiftType],
+        nurses: draft.nurses.map((nurse) => ({
+            ...nurse,
+            possibleShiftTypeIds: nurse.possibleShiftTypeIds.includes(shiftType.id)
+                ? nurse.possibleShiftTypeIds
+                : [...nurse.possibleShiftTypeIds, shiftType.id],
+        })),
     };
 };
 

@@ -10,9 +10,11 @@ const mockCreateWard = vi.fn();
 const mockCreateOnboardingWardDraft = vi.fn();
 const mockGetOnboardingWardDraft = vi.fn();
 const mockSaveOnboardingWardDraft = vi.fn();
+const mockPreviewOnboardingScheduleInput = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockNavigate = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
+let latestSavedDraftPayload: unknown = null;
 const TEST_HOSPITAL_NAME = '테스트 병원';
 const TEST_WARD_NAME = '테스트 병동';
 const getRelativeScheduleMonth = (offset: number) => {
@@ -83,6 +85,7 @@ vi.mock('@/features/register', () => ({
             createOnboardingWardDraft: mockCreateOnboardingWardDraft,
             getOnboardingWardDraft: mockGetOnboardingWardDraft,
             saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
+            previewOnboardingScheduleInput: mockPreviewOnboardingScheduleInput,
             completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
@@ -145,6 +148,70 @@ const prepareValidCreationState = async (user: ReturnType<typeof userEvent.setup
     await moveToNurseStep(user);
     await user.click(screen.getAllByRole('button', {name: '간호사 추가하기'})[0]);
 };
+const buildScheduleInputPreviewResponse = (request: {
+    targetYear: number;
+    targetMonth: number;
+    nurseNameBlock: string;
+    dutyBlock: string;
+}) => {
+    const names = request.nurseNameBlock.split('\n').map((name) => name.trim());
+    const dutyRows = request.dutyBlock.split('\n').map((row) => row.split('\t'));
+    const observedCodes = new Set<string>();
+    const normalizeCode = (code: string) => {
+        const normalized = code.trim().toUpperCase();
+
+        if (normalized === '/' || normalized === '-' || normalized === 'OFF') {
+            return 'O';
+        }
+
+        return normalized;
+    };
+    const nurses = names.map((name, rowIndex) => ({
+        name,
+        displayOrder: rowIndex + 1,
+        initialShifts: (dutyRows[rowIndex] ?? [])
+            .map((code, dayIndex) => {
+                const shiftShortName = normalizeCode(code);
+
+                if (!shiftShortName) {
+                    return null;
+                }
+
+                observedCodes.add(shiftShortName);
+
+                return {
+                    date: `${request.targetYear}-${String(request.targetMonth).padStart(2, '0')}-${String(dayIndex + 1).padStart(2, '0')}`,
+                    shiftShortName,
+                };
+            })
+            .filter((shift): shift is {date: string; shiftShortName: string} => Boolean(shift)),
+    }));
+    const baseShiftTypes = [
+        {name: '데이', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
+        {name: '이브닝', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
+        {name: '나이트', shortName: 'N', color: '#3580FF', isOff: false, isDefault: true, classification: 'NIGHT'},
+        {name: '오프', shortName: 'O', color: '#465B7A', isOff: true, isDefault: true, classification: 'OFF'},
+    ];
+    const customShiftTypes = Array.from(observedCodes)
+        .filter((code) => !['D', 'E', 'N', 'O'].includes(code))
+        .map((code) => ({
+            name: code,
+            shortName: code,
+            color: '#94A3B8',
+            isOff: false,
+            isDefault: false,
+            classification: 'OTHER_WORK',
+        }));
+
+    return {
+        targetYear: request.targetYear,
+        targetMonth: request.targetMonth,
+        nurses,
+        wardShiftTypes: [...baseShiftTypes, ...customShiftTypes],
+        warnings: [],
+        unresolvedCodes: [],
+    };
+};
 
 describe('OnboardingWardCreatePage', () => {
     beforeEach(() => {
@@ -152,15 +219,24 @@ describe('OnboardingWardCreatePage', () => {
         mockCreateOnboardingWardDraft.mockReset();
         mockGetOnboardingWardDraft.mockReset();
         mockSaveOnboardingWardDraft.mockReset();
+        mockPreviewOnboardingScheduleInput.mockReset();
         mockCompleteOnboardingWardDraft.mockReset();
         mockNavigate.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
         mockParseOnboardingWardExcel.mockReset();
+        latestSavedDraftPayload = null;
         window.localStorage.clear();
         window.sessionStorage.clear();
-        mockGetOnboardingWardDraft.mockResolvedValue(null);
-        mockSaveOnboardingWardDraft.mockResolvedValue({ward: {wardId: 10}, draftPayload: null});
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(latestSavedDraftPayload ? {ward: {wardId: 10}, draftPayload: latestSavedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            latestSavedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: {wardId: 10}, draftPayload: latestSavedDraftPayload});
+        });
+        mockPreviewOnboardingScheduleInput.mockImplementation(buildScheduleInputPreviewResponse);
         mockCreateOnboardingWardDraft.mockResolvedValue({wardId: 10, setupStatus: 'SETUP_IN_PROGRESS', wardShiftTypes: [], shiftTeams: []});
     });
 
@@ -248,11 +324,24 @@ describe('OnboardingWardCreatePage', () => {
         });
 
         const payload = mockCompleteOnboardingWardDraft.mock.calls[0]?.[1];
+        const currentMonth = getRelativeScheduleMonth(0);
 
         expect(payload.shiftTeams).toEqual([
             expect.objectContaining({name: '간호사 1팀', nurseNames: ['김하늘']}),
             expect.objectContaining({name: '간호사 2팀', nurseNames: ['박연우']}),
         ]);
+        expect(payload.shiftTeams[0]?.nurses?.[0]).toEqual(
+            expect.objectContaining({
+                name: '김하늘',
+                possibleShiftShortNames: expect.arrayContaining(['D', 'E', 'N', 'O']),
+                initialShifts: [
+                    {
+                        date: `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`,
+                        shiftShortName: 'D',
+                    },
+                ],
+            }),
+        );
     });
 
     it('keeps row count fixed after direct input and adds rows from the bottom button', async () => {
@@ -293,7 +382,7 @@ describe('OnboardingWardCreatePage', () => {
         await prepareValidFinalStep(user);
 
         const currentMonth = getRelativeScheduleMonth(0);
-        const nextMonth = getRelativeScheduleMonth(1);
+        const previousMonth = getRelativeScheduleMonth(-1);
 
         expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
         expect(screen.getByRole('button', {name: String(currentMonth.dayCount)})).toBeInTheDocument();
@@ -302,10 +391,17 @@ describe('OnboardingWardCreatePage', () => {
             expect(screen.queryByRole('button', {name: String(currentMonth.dayCount + 1)})).not.toBeInTheDocument();
         }
 
+        const nextMonthButton = screen.getByRole('button', {name: '다음 달'});
+
+        expect(nextMonthButton).toBeDisabled();
+
+        await user.click(screen.getByRole('button', {name: '이전 달'}));
+
+        expect(screen.getByText(`${previousMonth.year}년 ${previousMonth.month}월`)).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', {name: '다음 달'}));
 
-        expect(screen.getByText(`${nextMonth.year}년 ${nextMonth.month}월`)).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: String(nextMonth.dayCount)})).toBeInTheDocument();
+        expect(screen.getByText(`${currentMonth.year}년 ${currentMonth.month}월`)).toBeInTheDocument();
     });
 
     it('opens the schedule file upload modal and uploads a file for the visible month', async () => {

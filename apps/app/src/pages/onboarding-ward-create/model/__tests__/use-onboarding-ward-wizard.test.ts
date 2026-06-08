@@ -12,6 +12,7 @@ const mockCreateWard = vi.fn();
 const mockCreateOnboardingWardDraft = vi.fn();
 const mockGetOnboardingWardDraft = vi.fn();
 const mockSaveOnboardingWardDraft = vi.fn();
+const mockPreviewOnboardingScheduleInput = vi.fn();
 const mockCompleteOnboardingWardDraft = vi.fn();
 const mockParseOnboardingWardExcel = vi.fn();
 
@@ -29,6 +30,7 @@ vi.mock('@/features/register', () => ({
             createOnboardingWardDraft: mockCreateOnboardingWardDraft,
             getOnboardingWardDraft: mockGetOnboardingWardDraft,
             saveOnboardingWardDraft: mockSaveOnboardingWardDraft,
+            previewOnboardingScheduleInput: mockPreviewOnboardingScheduleInput,
             completeOnboardingWardDraft: mockCompleteOnboardingWardDraft,
         },
     }),
@@ -90,6 +92,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         mockCompleteOnboardingWardDraft.mockReset();
         mockGetOnboardingWardDraft.mockReset();
         mockSaveOnboardingWardDraft.mockReset();
+        mockPreviewOnboardingScheduleInput.mockReset();
         mockGetOnboardingWardDraft.mockResolvedValue(null);
         mockCreateOnboardingWardDraft.mockResolvedValue(draftWardResponse);
         mockSaveOnboardingWardDraft.mockResolvedValue({ward: draftWardResponse, draftPayload: null});
@@ -121,6 +124,191 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
         expect(result.current.draft.currentStep).toBe(2);
         expect(result.current.draftCreationStatus).toBe('created');
+    });
+
+    it('previews manual schedule input on the server, saves it, and reloads before moving to shift types', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+        mockPreviewOnboardingScheduleInput.mockResolvedValue({
+            targetYear: 2026,
+            targetMonth: 5,
+            nurses: [
+                {
+                    name: '김하늘',
+                    displayOrder: 1,
+                    initialShifts: [
+                        {date: '2026-05-01', shiftShortName: 'R'},
+                        {date: '2026-05-02', shiftShortName: 'Z'},
+                        {date: '2026-05-03', shiftShortName: 'A'},
+                        {date: '2026-05-04', shiftShortName: 'Y'},
+                        {date: '2026-05-05', shiftShortName: 'O'},
+                    ],
+                },
+            ],
+            wardShiftTypes: [
+                {name: '데이', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
+                {name: '이브닝', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
+                {name: '나이트', shortName: 'N', color: '#3580FF', isOff: false, isDefault: true, classification: 'NIGHT'},
+                {name: '오프', shortName: 'O', color: '#465B7A', isOff: true, isDefault: true, classification: 'OFF'},
+                {name: 'R', shortName: 'R', color: '#94A3B8', isOff: false, isDefault: false, classification: 'OTHER_WORK'},
+                {name: 'Z', shortName: 'Z', color: '#94A3B8', isOff: false, isDefault: false, classification: 'OTHER_WORK'},
+                {name: 'A', shortName: 'A', color: '#94A3B8', isOff: false, isDefault: false, classification: 'OTHER_WORK'},
+                {name: 'Y', shortName: 'Y', color: '#94A3B8', isOff: false, isDefault: false, classification: 'OTHER_WORK'},
+            ],
+            warnings: [],
+            unresolvedCodes: [],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const teamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 5,
+                rows: [
+                    {
+                        id: 'row-1',
+                        nurseId: null,
+                        name: '김하늘',
+                        shifts: {
+                            '1': 'R',
+                            '2': 'Z',
+                            '3': 'A',
+                            '4': 'Y',
+                            '5': '/',
+                        },
+                    },
+                ],
+            });
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const previewRequest = mockPreviewOnboardingScheduleInput.mock.calls[0]?.[0];
+        const savedDraft =
+            mockSaveOnboardingWardDraft.mock.calls[mockSaveOnboardingWardDraft.mock.calls.length - 1]?.[1]?.draftPayload?.draft;
+
+        expect(mockPreviewOnboardingScheduleInput).toHaveBeenCalledTimes(1);
+        expect(previewRequest).toEqual(
+            expect.objectContaining({
+                targetYear: 2026,
+                targetMonth: 5,
+                nurseNameBlock: '김하늘',
+            }),
+        );
+        expect(previewRequest.dutyBlock.split('\t').slice(0, 5)).toEqual(['R', 'Z', 'A', 'Y', '/']);
+        expect(mockSaveOnboardingWardDraft).toHaveBeenCalled();
+        expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(2);
+        expect(savedDraft.currentStep).toBe(3);
+        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'R', 'Z', 'A', 'Y']);
+        const previewedNurse = result.current.draft.nurses.find((nurse) => nurse.name === '김하늘');
+
+        expect(previewedNurse?.possibleShiftTypeIds).toEqual(result.current.draft.shiftTypes.map((shiftType) => shiftType.id));
+        expect(previewedNurse?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'R'},
+            {date: '2026-05-02', shiftShortName: 'Z'},
+            {date: '2026-05-03', shiftShortName: 'A'},
+            {date: '2026-05-04', shiftShortName: 'Y'},
+            {date: '2026-05-05', shiftShortName: 'O'},
+        ]);
+    });
+
+    it('previews and persists every schedule month for a team', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+        mockPreviewOnboardingScheduleInput.mockImplementation((request) =>
+            Promise.resolve({
+                targetYear: request.targetYear,
+                targetMonth: request.targetMonth,
+                nurses: [
+                    {
+                        name: '김하늘',
+                        displayOrder: 1,
+                        initialShifts: [
+                            {
+                                date: `${request.targetYear}-${String(request.targetMonth).padStart(2, '0')}-01`,
+                                shiftShortName: request.targetMonth === 5 ? 'D' : 'E',
+                            },
+                        ],
+                    },
+                ],
+                wardShiftTypes: [
+                    {name: '데이', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
+                    {name: '이브닝', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
+                    {name: '나이트', shortName: 'N', color: '#3580FF', isOff: false, isDefault: true, classification: 'NIGHT'},
+                    {name: '오프', shortName: 'O', color: '#465B7A', isOff: true, isDefault: true, classification: 'OFF'},
+                ],
+                warnings: [],
+                unresolvedCodes: [],
+            }),
+        );
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const teamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 5,
+                rows: [{id: 'may-row', nurseId: null, name: '김하늘', shifts: {'1': 'D'}}],
+            });
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 6,
+                rows: [{id: 'june-row', nurseId: null, name: '김하늘', shifts: {'1': 'E'}}],
+            });
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(mockPreviewOnboardingScheduleInput).toHaveBeenCalledTimes(2);
+        expect(mockPreviewOnboardingScheduleInput.mock.calls.map(([request]) => request.targetMonth)).toEqual([5, 6]);
+        expect(result.current.draft.scheduleInputs[teamId]?.['2026-05']).toBeDefined();
+        expect(result.current.draft.scheduleInputs[teamId]?.['2026-06']).toBeDefined();
+        expect(result.current.draft.nurses.find((nurse) => nurse.name === '김하늘')?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'D'},
+            {date: '2026-06-01', shiftShortName: 'E'},
+        ]);
     });
 
     it('restores the current ward draft from the server when mounting the wizard', async () => {
@@ -403,6 +591,17 @@ describe('useOnboardingWardWizard upload flow', () => {
     });
 
     it('clears sample nurses when users skip the optional upload step', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+
         const {result} = renderHook(() => useOnboardingWardWizard());
 
         act(() => {
@@ -417,7 +616,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             result.current.skipOrComplete();
         });
 
-        expect(result.current.draft.currentStep).toBe(3);
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(3));
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['간호사 1팀']);
         expect(result.current.draft.nurses).toEqual([]);
 

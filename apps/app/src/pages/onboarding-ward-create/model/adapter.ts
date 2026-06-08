@@ -221,24 +221,15 @@ const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
     }));
 const remapPossibleShiftTypeIds = (
     nurses: TOnboardingNurseDraft[],
-    prevShiftTypes: TOnboardingWardShiftType[],
+    _prevShiftTypes: TOnboardingWardShiftType[],
     nextShiftTypes: TOnboardingWardShiftType[],
 ): TOnboardingNurseDraft[] => {
-    const prevShortNameById = new Map(prevShiftTypes.map((shiftType) => [shiftType.id, shiftType.shortName]));
-    const nextIdByShortName = new Map(nextShiftTypes.map((shiftType) => [shiftType.shortName, shiftType.id]));
-    const defaultShiftTypeIds = nextShiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const defaultShiftTypeIds = nextShiftTypes.map((shiftType) => shiftType.id);
 
-    return nurses.map((nurse) => {
-        const nextPossibleShiftTypeIds = nurse.possibleShiftTypeIds
-            .map((shiftTypeId) => prevShortNameById.get(shiftTypeId))
-            .map((shortName) => (shortName ? nextIdByShortName.get(shortName) : undefined))
-            .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
-
-        return {
-            ...nurse,
-            possibleShiftTypeIds: nextPossibleShiftTypeIds.length > 0 ? nextPossibleShiftTypeIds : defaultShiftTypeIds,
-        };
-    });
+    return nurses.map((nurse) => ({
+        ...nurse,
+        possibleShiftTypeIds: defaultShiftTypeIds,
+    }));
 };
 const remapTeamIds = (
     nurses: TOnboardingNurseDraft[],
@@ -277,16 +268,10 @@ const buildParsedNurses = (
     shiftTypes: TOnboardingWardShiftType[],
 ): TOnboardingNurseDraft[] => {
     const teamIdByName = new Map(teams.map((team) => [team.name, team.id]));
-    const shiftIdByShortName = new Map(shiftTypes.map((shiftType) => [shiftType.shortName, shiftType.id]));
-    const defaultShiftTypeIds = shiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
+    const defaultShiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
     const fallbackTeamId = requireFirstTeamId(teams);
 
     return parsedNurses.map((nurse, index) => {
-        const possibleShiftTypeIds =
-            nurse.possibleShiftShortNames
-                ?.map((shortName) => shiftIdByShortName.get(shortName))
-                .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId)) ?? defaultShiftTypeIds;
-
         return {
             id: createLocalId(`nurse-${index + 1}`),
             teamId: teamIdByName.get(nurse.teamName?.trim() ?? '') ?? fallbackTeamId,
@@ -294,8 +279,9 @@ const buildParsedNurses = (
             memo: nurse.memo ?? '',
             isWorker: nurse.isWorker ?? true,
             employmentDate: nurse.employmentDate ?? getTodayDate(),
-            possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : defaultShiftTypeIds,
+            possibleShiftTypeIds: defaultShiftTypeIds,
             level: nurse.level ?? null,
+            initialShifts: [],
         };
     });
 };
@@ -538,6 +524,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     possibleShiftShortNames: nurse.possibleShiftTypeIds
                         .map((shiftTypeId) => shiftTypeById.get(shiftTypeId)?.shortName)
                         .filter((shortName): shortName is string => Boolean(shortName)),
+                    initialShifts: (nurse.initialShifts ?? []).length > 0 ? nurse.initialShifts : undefined,
                 })),
             };
         }),

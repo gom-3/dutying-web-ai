@@ -3,6 +3,7 @@ import {
     addNurseDraft,
     addShiftTypeDraft,
     addTeamDraft,
+    applyScheduleInputDraft,
     canComplete,
     canGoNext,
     createInitialDraft,
@@ -139,6 +140,9 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
         expect(withAdditionalShift.shiftTypes[4]?.color).toBe(DEFAULT_SHIFT_TYPE_COLORS[4]);
+        expect(
+            withAdditionalShift.nurses.every((nurse) => nurse.possibleShiftTypeIds.includes(withAdditionalShift.shiftTypes[4]?.id ?? '')),
+        ).toBe(true);
     });
 
     it('deletes a team and all nurses in that team', () => {
@@ -159,6 +163,27 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(addedNurse).toBeDefined();
         expect(addedNurse?.possibleShiftTypeIds).toEqual(nextDraft.shiftTypes.map((shiftType) => shiftType.id));
+    });
+
+    it('preserves existing team month schedules when another month is edited', () => {
+        const draft = createInitialDraft();
+        const teamId = draft.teams[0]?.id ?? '';
+        const mayDraft = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [{id: 'may-row', nurseId: null, name: '김하늘', shifts: {'1': 'D'}}],
+        });
+        const juneDraft = applyScheduleInputDraft(mayDraft, teamId, {
+            year: 2026,
+            month: 6,
+            rows: [{id: 'june-row', nurseId: null, name: '김하늘', shifts: {'1': 'E'}}],
+        });
+
+        expect(juneDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'D'});
+        expect(juneDraft.scheduleInputs[teamId]?.['2026-06']?.rows[0]?.shifts).toEqual({'1': 'E'});
+        expect(juneDraft.nurses.find((nurse) => nurse.name === '김하늘')?.possibleShiftTypeIds).toEqual(
+            juneDraft.shiftTypes.map((shiftType) => shiftType.id),
+        );
     });
 
     it('clears sample nurses when starting manual entry without an upload', () => {

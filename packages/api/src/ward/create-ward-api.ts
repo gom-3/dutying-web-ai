@@ -22,6 +22,8 @@ import type {
     TSnapshotDetailRes,
     TSnapshotListRes,
     TOnboardingWardDraftResponse,
+    TOnboardingScheduleInputPreviewDTO,
+    TOnboardingScheduleInputPreviewResponse,
     TSnapshotSaveRes,
     TUpdateOnboardingWardDraftDTO,
     TUpdateShiftTeamDTO,
@@ -182,6 +184,8 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             normalizeOnboardingWardDraftResponse(
                 (await client.patch<TOnboardingWardDraftResponse>(wardPath(`/${wardId}/onboarding/draft`), draftDTO)).data,
             ) as TOnboardingWardDraftResponse,
+        previewOnboardingScheduleInput: async (previewDTO: TOnboardingScheduleInputPreviewDTO) =>
+            (await client.post<TOnboardingScheduleInputPreviewResponse>(wardPath('/onboarding/schedule-input/preview'), previewDTO)).data,
         completeOnboardingWardDraft: async (wardId: number, createWardDTO: TCreateWardDTO) =>
             normalizeWardResponse(
                 (await client.post<TWardResponse>(wardPath(`/${wardId}/onboarding/complete`), toCreateWardRequest(createWardDTO))).data,

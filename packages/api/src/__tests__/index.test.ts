@@ -187,7 +187,7 @@ describe('@dutying/api public entry', () => {
                     {
                         name: 'Team 1',
                         nurseNames: ['Kim Nurse'],
-                        nurses: [{name: 'Kim Nurse'}],
+                        nurses: [{name: 'Kim Nurse', initialShifts: [{date: '2026-05-01', shiftShortName: 'D'}]}],
                         constraintRules: [
                             {
                                 templateCode: 'MIN_STAFF_BY_SHIFT',
@@ -221,7 +221,7 @@ describe('@dutying/api public entry', () => {
                 {
                     name: 'Team 1',
                     nurseNames: ['Kim Nurse'],
-                    nurses: [{name: 'Kim Nurse'}],
+                    nurses: [{name: 'Kim Nurse', initialShifts: [{date: '2026-05-01', shiftShortName: 'D'}]}],
                     constraintRules: [
                         {
                             templateCode: 'MIN_STAFF_BY_SHIFT',
@@ -232,6 +232,41 @@ describe('@dutying/api public entry', () => {
                     ],
                 },
             ],
+        });
+    });
+
+    it('posts onboarding schedule input preview payload', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+        const wardApi = createWardApi(client);
+
+        postMock.mockResolvedValueOnce({
+            data: {
+                targetYear: 2026,
+                targetMonth: 5,
+                nurses: [{name: '김하늘', displayOrder: 1, initialShifts: [{date: '2026-05-01', shiftShortName: 'R'}]}],
+                wardShiftTypes: [{name: 'R', shortName: 'R', color: '#94A3B8', isOff: false, isDefault: false}],
+                warnings: [],
+                unresolvedCodes: [],
+            },
+        });
+
+        await expect(
+            wardApi.previewOnboardingScheduleInput({
+                targetYear: 2026,
+                targetMonth: 5,
+                nurseNameBlock: '김하늘',
+                dutyBlock: 'R',
+            }),
+        ).resolves.toMatchObject({
+            nurses: [{name: '김하늘'}],
+        });
+
+        expect(postMock).toHaveBeenCalledWith('/wards/onboarding/schedule-input/preview', {
+            targetYear: 2026,
+            targetMonth: 5,
+            nurseNameBlock: '김하늘',
+            dutyBlock: 'R',
         });
     });
 

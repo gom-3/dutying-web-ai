@@ -1,4 +1,9 @@
-﻿import {type DropResult} from '@hello-pangea/dnd';
+﻿import type {
+    TOnboardingScheduleInputPreviewDTO,
+    TOnboardingScheduleInputPreviewResponse,
+    TOnboardingWardDraftResponse,
+} from '@dutying/api/ward';
+import {type DropResult} from '@hello-pangea/dnd';
 import * as Sentry from '@sentry/react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
@@ -10,6 +15,7 @@ import {
     buildOnboardingParseDraftInjection,
     getOnboardingUploadFailureMessage,
     isSupportedOnboardingUploadFile,
+    type TOnboardingParsedShiftType,
 } from './adapter';
 import {
     addNurseDraft,
@@ -160,6 +166,172 @@ const buildServerOnboardingWardDraftPayload = (
     selectedTeamId,
     sortMode,
 });
+const getTeamSchedules = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'][string]) =>
+    Object.values(scheduleInputs ?? {})
+        .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
+        .sort((left, right) => left.year * 12 + left.month - (right.year * 12 + right.month));
+const isUsedScheduleRow = (row: TOnboardingTeamScheduleDraft['rows'][number]) =>
+    Boolean(row.name.trim()) || Object.values(row.shifts).some((value) => value.trim());
+const toScheduleInputPreviewRequest = (
+    schedule: TOnboardingTeamScheduleDraft,
+): {request: TOnboardingScheduleInputPreviewDTO; schedule: TOnboardingTeamScheduleDraft} | null => {
+    const rows = schedule.rows.filter(isUsedScheduleRow);
+    const namedRows = rows.filter((row) => row.name.trim());
+    const hasDutyValue = namedRows.some((row) => Object.values(row.shifts).some((value) => value.trim()));
+
+    if (namedRows.length === 0 || !hasDutyValue) {
+        return null;
+    }
+
+    const daysInMonth = new Date(schedule.year, schedule.month, 0).getDate();
+    const normalizedSchedule: TOnboardingTeamScheduleDraft = {
+        ...schedule,
+        rows: namedRows,
+    };
+
+    return {
+        schedule: normalizedSchedule,
+        request: {
+            targetYear: schedule.year,
+            targetMonth: schedule.month,
+            nurseNameBlock: namedRows.map((row) => row.name.trim()).join('\n'),
+            dutyBlock: namedRows
+                .map((row) => Array.from({length: daysInMonth}, (_, index) => row.shifts[String(index + 1)]?.trim() ?? '').join('\t'))
+                .join('\n'),
+        },
+    };
+};
+const toParsedShiftType = (shiftType: TOnboardingWardDraft['shiftTypes'][number]): TOnboardingParsedShiftType => ({
+    name: shiftType.name,
+    shortName: shiftType.shortName,
+    startTime: shiftType.startTime,
+    endTime: shiftType.endTime,
+    color: shiftType.color,
+    isDefault: shiftType.isDefault,
+    isOff: shiftType.isOff,
+    classification: shiftType.classification,
+});
+const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewResponse): TOnboardingParsedShiftType[] =>
+    response.wardShiftTypes.map((shiftType) => ({
+        name: shiftType.name,
+        shortName: shiftType.shortName,
+        startTime: shiftType.startTime ?? undefined,
+        endTime: shiftType.endTime ?? undefined,
+        color: shiftType.color,
+        isDefault: shiftType.isDefault,
+        isOff: shiftType.isOff,
+        classification: shiftType.classification ?? undefined,
+    }));
+const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
+const mergeSchedulePreviewShiftTypes = (
+    draft: TOnboardingWardDraft,
+    response: TOnboardingScheduleInputPreviewResponse,
+): TOnboardingParsedShiftType[] => {
+    const draftShiftTypes = draft.shiftTypes.map(toParsedShiftType);
+    const previewShiftTypes = toSchedulePreviewShiftTypes(response);
+    const draftByShortName = new Map(
+        draftShiftTypes
+            .map((shiftType) => [normalizeShiftTypeMergeKey(shiftType.shortName), shiftType] as const)
+            .filter((entry): entry is [string, TOnboardingParsedShiftType] => Boolean(entry[0])),
+    );
+    const previewByShortName = new Map(
+        previewShiftTypes
+            .map((shiftType) => [normalizeShiftTypeMergeKey(shiftType.shortName), shiftType] as const)
+            .filter((entry): entry is [string, TOnboardingParsedShiftType] => Boolean(entry[0])),
+    );
+    const orderedShortNames: string[] = [];
+    const appendShortName = (shiftType: TOnboardingParsedShiftType) => {
+        const shortName = normalizeShiftTypeMergeKey(shiftType.shortName);
+
+        if (shortName && !orderedShortNames.includes(shortName)) {
+            orderedShortNames.push(shortName);
+        }
+    };
+
+    draftShiftTypes.forEach(appendShortName);
+    previewShiftTypes.forEach(appendShortName);
+
+    return orderedShortNames
+        .map((shortName) => previewByShortName.get(shortName) ?? draftByShortName.get(shortName))
+        .filter((shiftType): shiftType is TOnboardingParsedShiftType => Boolean(shiftType));
+};
+const createPreviewNurseId = (index: number) => `nurse-preview-${Date.now()}-${index}`;
+const normalizeNurseMergeKey = (name: string) => name.trim();
+const mergeInitialShifts = (
+    existingShifts: TOnboardingNurseDraft['initialShifts'],
+    nextShifts: TOnboardingNurseDraft['initialShifts'],
+): NonNullable<TOnboardingNurseDraft['initialShifts']> => {
+    const shiftByDate = new Map<string, string>();
+
+    [...(existingShifts ?? []), ...(nextShifts ?? [])].forEach((shift) => {
+        shiftByDate.set(shift.date, shift.shiftShortName);
+    });
+
+    return Array.from(shiftByDate.entries())
+        .map(([date, shiftShortName]) => ({date, shiftShortName}))
+        .sort((left, right) => left.date.localeCompare(right.date));
+};
+const applySchedulePreviewToDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    schedule: TOnboardingTeamScheduleDraft,
+    response: TOnboardingScheduleInputPreviewResponse,
+): TOnboardingWardDraft => {
+    const draftWithShiftTypes = applyParsedWardData(draft, {
+        shiftTypes: mergeSchedulePreviewShiftTypes(draft, response),
+    });
+    const shiftIdByShortName = new Map(draftWithShiftTypes.shiftTypes.map((shiftType) => [shiftType.shortName, shiftType.id]));
+    const possibleShiftTypeIds = response.wardShiftTypes
+        .map((shiftType) => shiftIdByShortName.get(shiftType.shortName))
+        .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
+    const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes.map((shiftType) => shiftType.id);
+    const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
+    const existingTeamNurses = draftWithShiftTypes.nurses.filter((nurse) => nurse.teamId === teamId);
+    const existingNurseByName = new Map(existingTeamNurses.map((nurse) => [normalizeNurseMergeKey(nurse.name), nurse]));
+    const touchedNurseIds = new Set<string>();
+    const nurseIdByDisplayOrder = new Map<number, string>();
+    const nextTeamNurses = response.nurses.map((nurse, index) => {
+        const existingNurse = existingNurseByName.get(normalizeNurseMergeKey(nurse.name));
+        const id = existingNurse?.id ?? createPreviewNurseId(index + 1);
+
+        nurseIdByDisplayOrder.set(nurse.displayOrder, id);
+        touchedNurseIds.add(id);
+
+        return {
+            ...existingNurse,
+            id,
+            teamId,
+            name: nurse.name,
+            memo: existingNurse?.memo ?? '',
+            isWorker: existingNurse?.isWorker ?? true,
+            employmentDate: existingNurse?.employmentDate ?? defaultEmploymentDate,
+            possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : fallbackPossibleShiftTypeIds,
+            level: existingNurse?.level ?? null,
+            initialShifts: mergeInitialShifts(existingNurse?.initialShifts, nurse.initialShifts),
+        };
+    });
+    const preservedTeamNurses = existingTeamNurses.filter((nurse) => !touchedNurseIds.has(nurse.id));
+    const monthKey = getScheduleMonthKey(schedule.year, schedule.month);
+    const nextSchedule: TOnboardingTeamScheduleDraft = {
+        ...schedule,
+        rows: schedule.rows.map((row, index) => ({
+            ...row,
+            nurseId: nurseIdByDisplayOrder.get(index + 1) ?? null,
+        })),
+    };
+
+    return {
+        ...draftWithShiftTypes,
+        nurses: [...draftWithShiftTypes.nurses.filter((nurse) => nurse.teamId !== teamId), ...preservedTeamNurses, ...nextTeamNurses],
+        scheduleInputs: {
+            ...(draftWithShiftTypes.scheduleInputs ?? {}),
+            [teamId]: {
+                ...(draftWithShiftTypes.scheduleInputs?.[teamId] ?? {}),
+                [monthKey]: nextSchedule,
+            },
+        },
+    };
+};
 const hasServerSavableDraftSignal = (draft: TOnboardingWardDraft) =>
     [draft.wardName.trim(), draft.hospitalName.trim(), draft.uploadedFileName].some(Boolean) || draft.currentStep > 1;
 const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
@@ -275,7 +447,14 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft) => {
 
 function useOnboardingWardWizard() {
     const {
-        actions: {createWard, createOnboardingWardDraft, getOnboardingWardDraft, saveOnboardingWardDraft, completeOnboardingWardDraft},
+        actions: {
+            createWard,
+            createOnboardingWardDraft,
+            getOnboardingWardDraft,
+            saveOnboardingWardDraft,
+            previewOnboardingScheduleInput,
+            completeOnboardingWardDraft,
+        },
     } = useRegister();
     const draftTouchedRef = useRef(false);
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
@@ -363,13 +542,20 @@ function useOnboardingWardWizard() {
     }, [isSkillLevelEnabled, sortMode]);
 
     const saveDraftSnapshot = useCallback(
-        async ({showErrorToast = false}: {showErrorToast?: boolean} = {}) => {
+        async ({showErrorToast = false, draftOverride}: {showErrorToast?: boolean; draftOverride?: TOnboardingWardDraft} = {}) => {
             if (submissionStatus === 'success' || draftCreationStatus === 'creating') {
                 return true;
             }
 
-            const identityPayload = buildDraftWardIdentityPayload(draft);
-            const draftPayload = buildServerOnboardingWardDraftPayload(draft, draftWardId, isSkillLevelEnabled, selectedTeamId, sortMode);
+            const targetDraft = draftOverride ?? draft;
+            const identityPayload = buildDraftWardIdentityPayload(targetDraft);
+            const draftPayload = buildServerOnboardingWardDraftPayload(
+                targetDraft,
+                draftWardId,
+                isSkillLevelEnabled,
+                selectedTeamId,
+                sortMode,
+            );
 
             try {
                 if (draftWardId) {
@@ -382,7 +568,7 @@ function useOnboardingWardWizard() {
                     return true;
                 }
 
-                if (!draftTouchedRef.current || !hasServerSavableDraftSignal(draft)) {
+                if (!draftTouchedRef.current || !hasServerSavableDraftSignal(targetDraft)) {
                     return true;
                 }
 
@@ -404,7 +590,7 @@ function useOnboardingWardWizard() {
             } catch (error) {
                 Sentry.captureException(error, {
                     tags: {feature: 'onboarding-ward-create'},
-                    extra: {step: draft.currentStep, phase: draftWardId ? 'save-draft' : 'create-draft'},
+                    extra: {step: targetDraft.currentStep, phase: draftWardId ? 'save-draft' : 'create-draft'},
                 });
                 setDraftCreationStatus('error');
 
@@ -475,6 +661,86 @@ function useOnboardingWardWizard() {
 
         return saveDraftSnapshot({showErrorToast: true});
     };
+    const applyRestoredServerDraft = (serverDraft: TOnboardingWardDraftResponse, fallbackDraft: TOnboardingWardDraft) => {
+        setDraftWardId(serverDraft.ward.wardId);
+        setDraftCreationStatus('created');
+
+        const restoredDraftState = readServerOnboardingWardDraftPayload(serverDraft.draftPayload);
+
+        if (!restoredDraftState) {
+            setDraft(fallbackDraft);
+
+            return;
+        }
+
+        setDraft(restoredDraftState.draft);
+        setSelectedTeamId(restoredDraftState.selectedTeamId);
+        setSortModeState(restoredDraftState.sortMode);
+        setIsSkillLevelEnabled(restoredDraftState.isSkillLevelEnabled);
+    };
+    const saveAndReloadDraft = async (nextDraft: TOnboardingWardDraft) => {
+        const isSaved = await saveDraftSnapshot({showErrorToast: true, draftOverride: nextDraft});
+
+        if (!isSaved) {
+            return false;
+        }
+
+        try {
+            const serverDraft = await getOnboardingWardDraft();
+
+            if (!serverDraft?.ward?.wardId) {
+                throw new Error('Onboarding draft reload returned empty response.');
+            }
+
+            applyRestoredServerDraft(serverDraft, nextDraft);
+
+            return true;
+        } catch (error) {
+            Sentry.captureException(error, {
+                tags: {feature: 'onboarding-ward-create'},
+                extra: {phase: 'reload-draft-after-save', step: nextDraft.currentStep},
+            });
+            toast.error('저장한 온보딩 정보를 다시 불러오지 못했어요. 다시 시도해 주세요.');
+
+            return false;
+        }
+    };
+    const saveScheduleInputAndGoNext = async () => {
+        const schedulePreviewTargets = draft.teams.flatMap((team) => {
+            const schedules = getTeamSchedules(draft.scheduleInputs?.[team.id]);
+
+            return schedules.flatMap((schedule) => {
+                const previewInput = toScheduleInputPreviewRequest(schedule);
+
+                return previewInput ? [{teamId: team.id, previewInput}] : [];
+            });
+        });
+
+        try {
+            let previewDraft = draft;
+
+            for (const {teamId, previewInput} of schedulePreviewTargets) {
+                previewDraft = applySchedulePreviewToDraft(
+                    previewDraft,
+                    teamId,
+                    previewInput.schedule,
+                    await previewOnboardingScheduleInput(previewInput.request),
+                );
+            }
+
+            const nextDraft = goNextStepDraft(previewDraft);
+
+            return saveAndReloadDraft(nextDraft);
+        } catch (error) {
+            Sentry.captureException(error, {
+                tags: {feature: 'onboarding-ward-create'},
+                extra: {phase: 'preview-and-save-schedule-input', step: draft.currentStep},
+            });
+            toast.error('근무표를 서버에 저장하지 못했어요. 다시 시도해 주세요.');
+
+            return false;
+        }
+    };
     const goNextStep = async () => {
         if (draft.currentStep === 1) {
             const isDraftReady = await ensureDraftWard();
@@ -482,6 +748,13 @@ function useOnboardingWardWizard() {
             if (!isDraftReady) {
                 return;
             }
+        }
+
+        if (draft.currentStep === 2) {
+            markDraftTouched();
+            await saveScheduleInputAndGoNext();
+
+            return;
         }
 
         markDraftTouched();
@@ -839,7 +1112,7 @@ function useOnboardingWardWizard() {
 
         if (draft.currentStep === 2 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
             markDraftTouched();
-            setDraft((prev) => goNextStepDraft(prepareManualEntryDraft(prev)));
+            void saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft)));
 
             return;
         }

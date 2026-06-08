@@ -270,13 +270,22 @@ function ScheduleInputStep({
     const [shiftTermOrderBySchedule, setShiftTermOrderBySchedule] = useState<Record<string, string[]>>({});
     const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
     const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
+    const maxMonthOption = useMemo(() => getCurrentMonthOption(), []);
     const currentSchedule = draft.scheduleInputs?.[selectedTeamId]?.[selectedMonthOption.key];
     const activeMonthOption = selectedMonthOption;
+    const maxMonthIndex = maxMonthOption.year * 12 + maxMonthOption.month;
+    const isNextMonthDisabled = activeMonthOption.year * 12 + activeMonthOption.month >= maxMonthIndex;
     const activeScheduleKey = `${selectedTeamId}:${activeMonthOption.key}`;
     const dayCount = getDaysInMonth(activeMonthOption.year, activeMonthOption.month);
     const days = useMemo(() => Array.from({length: dayCount}, (_, index) => index + 1), [dayCount]);
     const goPreviousMonth = () => setSelectedMonthOption((prev) => moveMonthOption(prev, -1));
-    const goNextMonth = () => setSelectedMonthOption((prev) => moveMonthOption(prev, 1));
+    const goNextMonth = () =>
+        setSelectedMonthOption((prev) => {
+            const nextMonthOption = moveMonthOption(prev, 1);
+            const nextMonthIndex = nextMonthOption.year * 12 + nextMonthOption.month;
+
+            return nextMonthIndex > maxMonthIndex ? prev : nextMonthOption;
+        });
     const createRow = useCallback((input: Partial<TOnboardingScheduleRowDraft> = {}): TOnboardingScheduleRowDraft => {
         rowIdRef.current += 1;
 
@@ -771,6 +780,7 @@ function ScheduleInputStep({
                     month={activeMonthOption.month}
                     onPreviousMonth={goPreviousMonth}
                     onNextMonth={goNextMonth}
+                    isNextMonthDisabled={isNextMonthDisabled}
                 />
                 <div className="flex w-full justify-end">
                     <button
@@ -961,11 +971,13 @@ function ScheduleMonthSelector({
     month,
     onPreviousMonth,
     onNextMonth,
+    isNextMonthDisabled,
 }: {
     year: number;
     month: number;
     onPreviousMonth: () => void;
     onNextMonth: () => void;
+    isNextMonthDisabled: boolean;
 }) {
     return (
         <div className="flex items-center">
@@ -983,8 +995,10 @@ function ScheduleMonthSelector({
                 </div>
                 <button
                     type="button"
-                    className="grid size-9 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                    className="grid size-9 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent disabled:hover:text-gray-4"
                     onClick={onNextMonth}
+                    disabled={isNextMonthDisabled}
+                    aria-disabled={isNextMonthDisabled}
                     aria-label="다음 달"
                 >
                     <ChevronRight className="h-5 w-5" />
