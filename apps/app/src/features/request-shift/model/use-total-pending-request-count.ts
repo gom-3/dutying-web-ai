@@ -1,30 +1,19 @@
-import {useQueries} from '@tanstack/react-query';
-import {useMemo} from 'react';
-import {type TDutyRequest} from '@/entities/shift';
-import {type TShiftTeam} from '@/entities/ward';
+import {useQuery} from '@tanstack/react-query';
 import {wardQueryKeys} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
-import {countPendingDutyRequests} from './pending-request-count';
-import {useRequestShiftStore} from './store';
 
-export const useTotalPendingRequestCount = (shiftTeams: TShiftTeam[] | undefined) => {
+export const useTotalPendingRequestCount = () => {
     const {
         state: {wardId},
     } = useAuth();
-    const year = useRequestShiftStore((state) => state.year);
-    const month = useRequestShiftStore((state) => state.month);
-    const teamPendingRequestCountQueries = useQueries({
-        queries: (shiftTeams ?? []).map((shiftTeam) => ({
-            queryKey: wardQueryKeys.requestList(wardId ?? 0, shiftTeam.shiftTeamId, year, month),
-            queryFn: async (): Promise<TDutyRequest[]> => WardAPI.getRequestList(wardId!, shiftTeam.shiftTeamId, year, month),
-            enabled: !!wardId,
-            select: countPendingDutyRequests,
-        })),
+
+    const {data} = useQuery({
+        queryKey: wardQueryKeys.requestPendingCount(wardId ?? 0),
+        queryFn: async () => WardAPI.getReqShiftPendingCount(wardId!),
+        enabled: typeof wardId === 'number',
+        select: (response) => response.totalPendingCount,
     });
 
-    return useMemo(
-        () => teamPendingRequestCountQueries.reduce((total, query) => total + (query.data ?? 0), 0),
-        [teamPendingRequestCountQueries],
-    );
+    return data ?? 0;
 };

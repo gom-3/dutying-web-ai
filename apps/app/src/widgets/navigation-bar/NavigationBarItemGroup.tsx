@@ -164,7 +164,7 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
         state: {ward, watingNurses},
     } = useEditWard();
     const waitingCount = watingNurses?.length ?? 0;
-    const pendingRequestCount = useTotalPendingRequestCount(ward?.shiftTeams);
+    const pendingRequestCount = useTotalPendingRequestCount();
 
     return (
         <nav

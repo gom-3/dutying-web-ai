@@ -155,6 +155,7 @@ const useRequestShift = (activeEffect = false) => {
 
                 await queryClient.invalidateQueries({queryKey: requestShiftQueryKey});
                 await queryClient.invalidateQueries({queryKey: dutyRequestQueryKey});
+                await queryClient.invalidateQueries({queryKey: wardQueryKeys.requestPendingCount(wardId)});
                 await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
 
                 if (rejectedResults.length > 0) {

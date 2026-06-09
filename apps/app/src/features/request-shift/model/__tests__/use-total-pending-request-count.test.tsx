@@ -1,11 +1,10 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {wardQueryKeys} from '@/entities/ward/model/queries';
 import {renderHook} from '@/shared/util/test-utils';
-import {useRequestShiftStore} from '../store';
 import {useTotalPendingRequestCount} from '../use-total-pending-request-count';
 
-const {mockUseQueries, mockWardId} = vi.hoisted(() => ({
-    mockUseQueries: vi.fn(),
+const {mockUseQuery, mockWardId} = vi.hoisted(() => ({
+    mockUseQuery: vi.fn(),
     mockWardId: {value: 1 as number | null},
 }));
 
@@ -14,7 +13,7 @@ vi.mock('@tanstack/react-query', async () => {
 
     return {
         ...actual,
-        useQueries: mockUseQueries,
+        useQuery: mockUseQuery,
     };
 });
 
@@ -26,48 +25,38 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
-const createShiftTeam = (shiftTeamId: number) => ({
-    shiftTeamId,
-    name: `${shiftTeamId}-team`,
-    nurseCnt: 0,
-    nurses: [],
-});
-
 describe('useTotalPendingRequestCount', () => {
     beforeEach(() => {
         mockWardId.value = 1;
-        mockUseQueries.mockReset();
-        useRequestShiftStore.getState().resetState();
-        useRequestShiftStore.setState({year: 2026, month: 6, currentShiftTeamId: null});
+        mockUseQuery.mockReset();
     });
 
-    it('sums pending request counts across provided shift teams for the navigation badge', () => {
-        mockUseQueries.mockReturnValue([{data: 2}, {data: 1}]);
+    it('returns the ward pending request count for the navigation badge', () => {
+        mockUseQuery.mockReturnValue({data: 12});
 
-        const {result} = renderHook(() => useTotalPendingRequestCount([createShiftTeam(10), createShiftTeam(20)]));
+        const {result} = renderHook(() => useTotalPendingRequestCount());
 
-        expect(result.current).toBe(3);
-        expect(mockUseQueries).toHaveBeenCalledWith({
-            queries: [
-                expect.objectContaining({
-                    queryKey: wardQueryKeys.requestList(1, 10, 2026, 6),
-                    enabled: true,
-                }),
-                expect.objectContaining({
-                    queryKey: wardQueryKeys.requestList(1, 20, 2026, 6),
-                    enabled: true,
-                }),
-            ],
+        expect(result.current).toBe(12);
+        expect(mockUseQuery).toHaveBeenCalledWith({
+            queryKey: wardQueryKeys.requestPendingCount(1),
+            queryFn: expect.any(Function),
+            enabled: true,
+            select: expect.any(Function),
         });
     });
 
-    it('returns zero when ward id is missing or shift teams are empty', () => {
+    it('returns zero and disables the query when ward id is missing', () => {
         mockWardId.value = null;
-        mockUseQueries.mockReturnValue([]);
+        mockUseQuery.mockReturnValue({});
 
-        const {result} = renderHook(() => useTotalPendingRequestCount(undefined));
+        const {result} = renderHook(() => useTotalPendingRequestCount());
 
         expect(result.current).toBe(0);
-        expect(mockUseQueries).toHaveBeenCalledWith({queries: []});
+        expect(mockUseQuery).toHaveBeenCalledWith({
+            queryKey: wardQueryKeys.requestPendingCount(0),
+            queryFn: expect.any(Function),
+            enabled: false,
+            select: expect.any(Function),
+        });
     });
 });

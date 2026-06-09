@@ -38,6 +38,7 @@ import type {
     TWardChatUnreadCountResponse,
     TWardConstraintDTO,
     TWardConstraintResponse,
+    TWardReqShiftPendingCountResponse,
     TWorkspaceScheduleResponse,
     TWardResponse,
     TWardShiftTypeResponse,
@@ -230,6 +231,8 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/req-duty/req-list?${toYearMonthQuery(year, month)}`),
                 )
             ).data,
+        getReqShiftPendingCount: async (wardId: number) =>
+            (await client.get<TWardReqShiftPendingCountResponse>(wardPath(`/${wardId}/req-shifts/pending-count`))).data,
         updateShift: async (
             wardId: number,
             year: number,

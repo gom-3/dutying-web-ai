@@ -35,6 +35,7 @@ export const wardQueryKeys = {
         year,
         month,
     ],
+    requestPendingCount: (wardId: number) => [...wardQueryKeys.all(), 'requestPendingCount', wardId],
     shift: () => [...wardQueryKeys.all(), 'shift'],
     // ShiftTeam
     shiftTeams: (wardId: number) => [...wardQueryKeys.all(), 'shiftTeams', wardId],
@@ -84,6 +85,11 @@ export const wardQueryOptions = {
         queryOptions({
             queryKey: wardQueryKeys.requestList(wardId, shiftTeamId, year, month),
             queryFn: () => WardAPI.getRequestList(wardId, shiftTeamId, year, month),
+        }),
+    requestPendingCount: (wardId: number) =>
+        queryOptions({
+            queryKey: wardQueryKeys.requestPendingCount(wardId),
+            queryFn: () => WardAPI.getReqShiftPendingCount(wardId),
         }),
     // ShiftTeam
     shiftTeams: (wardId: number) =>

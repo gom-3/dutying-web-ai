@@ -24,6 +24,10 @@ export type TShiftResponse = TShift;
 export type TRequestShiftResponse = TRequestShift;
 export type TDutyRequestResponse = TDutyRequest;
 
+export type TWardReqShiftPendingCountResponse = {
+    totalPendingCount: number;
+};
+
 export type TWardChatMessageResponse = {
     messageId: number;
     moimId: number;
@@ -499,6 +503,7 @@ export interface IWardAPI {
     getReqShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TRequestShiftResponse>;
     getShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftResponse>;
     getRequestList: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TDutyRequestResponse[]>;
+    getReqShiftPendingCount: (wardId: number) => Promise<TWardReqShiftPendingCountResponse>;
     updateShift: (
         wardId: number,
         year: number,
