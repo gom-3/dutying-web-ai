@@ -68,22 +68,20 @@ export function ShiftBadge({shiftType, selected}: {shiftType: TOnboardingWardShi
         <div
             className={cn(
                 'flex h-[20px] min-w-[20px] items-center justify-center rounded-[5px] transition-[max-width,padding,gap] duration-150',
-                isSelected
-                    ? 'max-w-[56px] gap-0.5 px-1'
-                    : 'max-w-[20px] gap-0 overflow-hidden px-[2px] group-hover:max-w-[56px] group-hover:gap-0.5 group-hover:px-1',
+                'max-w-[56px] gap-0.5 px-1',
             )}
             style={{backgroundColor: badgeBackgroundColor}}
         >
             <span
                 className={cn(
                     'flex h-[9px] items-center justify-center overflow-hidden transition-[width,opacity] duration-150',
-                    isSelected ? 'w-[9px] opacity-100' : 'w-0 opacity-0 group-hover:w-[9px] group-hover:opacity-75',
+                    isSelected ? 'w-[9px] opacity-100' : 'w-[9px] opacity-75',
                 )}
             >
                 <Check
                     className={cn(
                         'h-[9px] w-[9px] shrink-0 text-white transition-all duration-150',
-                        isSelected ? 'scale-100 opacity-100' : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-75',
+                        isSelected ? 'scale-100 opacity-100' : 'scale-100 opacity-75',
                     )}
                     strokeWidth={3}
                 />

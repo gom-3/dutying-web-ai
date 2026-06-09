@@ -125,8 +125,6 @@ export function useShiftEditorCommands() {
         for (const {row, col} of cells) {
             if (!isDutyCellPositionInBounds(doc, row, col)) continue;
 
-            if (editorMode === 'fixed' && col < 0) continue;
-
             const r = doc.rows[row];
 
             if (!r) continue;
@@ -543,8 +541,6 @@ export function useShiftEditorCommands() {
                     else if (skippedByFixed > 0) notifyFixedLocked();
                 }
             } else {
-                filteredCells = filteredCells.filter((cell) => cell.col >= 0);
-
                 if (source === 'user' && skippedByRequest > 0) {
                     notifyRequestLocked();
                 }

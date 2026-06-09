@@ -2,7 +2,7 @@
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {Check, ChevronDown, Info, Plus, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
-import {SixDotsIcon} from '@/shared/assets/svg';
+import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {
@@ -326,7 +326,16 @@ function NurseStep({
                 >
                     <div />
                     <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">이름</span>
+                        <span
+                            className="flex min-w-0 items-center justify-center gap-1.5"
+                            aria-label={`선택한 팀 간호사 ${currentNurses.length}명`}
+                        >
+                            <span>이름</span>
+                            <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[13px] leading-none font-semibold text-[#6B7280]">
+                                <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
+                                <span className="block leading-none tabular-nums">{currentNurses.length}</span>
+                            </span>
+                        </span>
                     </div>
                     {showSkillColumn ? (
                         <div className="flex h-8 w-full items-center justify-center">

@@ -1,4 +1,4 @@
-import {fireEvent, render, screen, within} from '@testing-library/react';
+import {createEvent, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {act} from 'react';
 import {afterEach, describe, expect, it} from 'vitest';
@@ -277,6 +277,34 @@ describe('MakeShiftCalendar', () => {
         expect(screen.queryByRole('listbox', {name: '근무유형 선택'})).not.toBeInTheDocument();
     });
 
+    it('opens the shift type dropdown on editable previous-shift cells in fixed mode', async () => {
+        const user = userEvent.setup();
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+            useShiftEditorStore.getState().setEditorMode('fixed');
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults editableLastShifts />);
+        await act(async () => undefined);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-last-shift-index="0"]');
+
+        expect(trigger).not.toBeNull();
+        await act(async () => {
+            await user.dblClick(trigger!);
+        });
+
+        expect(await screen.findByRole('listbox')).toBeInTheDocument();
+
+        act(() => {
+            fireEvent.click(screen.getByRole('option', {name: /Day/}));
+        });
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells?.[0]).toBe('D');
+        expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    });
+
     it('highlights selected day cells with a background instead of a stroke', async () => {
         const user = userEvent.setup();
 
@@ -303,6 +331,24 @@ describe('MakeShiftCalendar', () => {
         );
         expect(trigger!.querySelector('.make-shift-calendar__shift-badge')).not.toHaveClass('outline-[1px]', 'outline-main-1');
         expect(trigger!.querySelector('span[aria-hidden]')).not.toBeInTheDocument();
+    });
+
+    it('prevents editable day cells from taking native mouse focus', () => {
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} />);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+
+        expect(trigger).not.toBeNull();
+
+        const mouseDown = createEvent.mouseDown(trigger!, {button: 0});
+
+        fireEvent(trigger!, mouseDown);
+
+        expect(mouseDown.defaultPrevented).toBe(true);
     });
 
     it.each([

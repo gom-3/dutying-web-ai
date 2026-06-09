@@ -99,8 +99,18 @@ describe('MakeShiftPage', () => {
         );
 
         expect(mockUseMakeShiftBootstrap).toHaveBeenCalledWith(1, {
-            preferNextMonth: false,
-            confirmExistingShift: true,
+            confirmInitialSchedule: {
+                year: 2026,
+                month: 6,
+                shiftTeamId: 77,
+            },
+            confirmInitialSchedules: [
+                {
+                    year: 2026,
+                    month: 6,
+                    shiftTeamId: 77,
+                },
+            ],
         });
 
         await waitFor(() => {

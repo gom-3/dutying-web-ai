@@ -57,7 +57,9 @@ export function FixedShifts() {
 
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor} = useDutyEditorStep();
+    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingLastShifts} = useDutyEditorStep({
+        hydratePreviousLastShifts: true,
+    });
     const handleNext = useCallback(async () => {
         if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
 
@@ -83,7 +85,13 @@ export function FixedShifts() {
         }
     }, [wardId, dutyQuery.data, canNext, isSaving, editorDoc, queryClient, currentShiftTeamId, year, month, useCase, t]);
     const nextDisabled =
-        wardId === null || !canNext || isSaving || dutyQuery.isLoading || dutyQuery.isError || dutyQuery.data === undefined;
+        wardId === null ||
+        !canNext ||
+        isSaving ||
+        dutyQuery.isLoading ||
+        isHydratingLastShifts ||
+        dutyQuery.isError ||
+        dutyQuery.data === undefined;
     /**
      * 고정 근무 화면에서는 fixedCells / requestCells 로 마킹된 셀만 보여준다.
      * (그 외 셀은 비워서 사용자가 "고정해야 할 부분"에만 집중하도록.)
@@ -149,7 +157,7 @@ export function FixedShifts() {
                 </div>
             </div>
 
-            {dutyQuery.isLoading && (
+            {(dutyQuery.isLoading || isHydratingLastShifts) && (
                 <PageState
                     tone="loading"
                     loadingColor="purple"
@@ -165,7 +173,7 @@ export function FixedShifts() {
                     action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                 />
             )}
-            {!dutyQuery.isLoading && !dutyQuery.isError && dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && dutyQuery.data && (
                 <div className="fixed-shifts-calendar-wrap w-full min-w-0">
                     <MakeShiftCalendar
                         shift={dutyQuery.data}
@@ -175,10 +183,11 @@ export function FixedShifts() {
                         showFaults={false}
                         tutorialCellId="make_fixed_shift_sample_cell"
                         onCellClick={focusEditor}
+                        editableLastShifts
                     />
                 </div>
             )}
-            {!dutyQuery.isLoading && !dutyQuery.isError && !dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && !dutyQuery.data && (
                 <PageState tone="empty" title={t('page.makeShift.fixedShifts.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>

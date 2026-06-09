@@ -1,7 +1,8 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
-import {Download, FileSpreadsheet, Loader2, UploadCloud, X} from 'lucide-react';
+import {Download, Loader2, UploadCloud, X} from 'lucide-react';
 import {type DragEvent, useEffect, useRef, useState} from 'react';
+import excelIcon from '@/shared/assets/images/excel.png';
 import {Button} from '@/shared/ui/primitives/button';
 
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
@@ -22,9 +23,7 @@ interface IScheduleFileUploadModalProps {
 }
 
 const EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
-
 const downloadExcelBuffer = (data: BlobPart, fileName: string) => {
     const blob = new Blob([data], {type: EXCEL_MIME_TYPE});
     const url = window.URL.createObjectURL(blob);
@@ -35,7 +34,6 @@ const downloadExcelBuffer = (data: BlobPart, fileName: string) => {
     anchor.click();
     window.URL.revokeObjectURL(url);
 };
-
 const downloadScheduleTemplate = async (year: number, month: number) => {
     const Excel = await import('exceljs');
     const workbook = new Excel.Workbook();
@@ -154,8 +152,16 @@ function ScheduleFileUploadModal({
                 <Dialog.Overlay className="fixed inset-0 z-[1100] bg-[#121726]/55 backdrop-blur-[2px]" />
                 <Dialog.Content className="fixed top-1/2 left-1/2 z-[1101] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-[24px] bg-white p-6 shadow-[0_24px_80px_rgba(18,23,38,0.2)]">
                     <div className="flex items-start justify-between gap-4">
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E6F4EA] text-[#107C41]">
-                            <FileSpreadsheet className="h-5 w-5" strokeWidth={2.3} aria-hidden="true" />
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E6F4EA]">
+                            <img
+                                src={excelIcon}
+                                alt=""
+                                aria-hidden="true"
+                                width={32}
+                                height={32}
+                                decoding="async"
+                                className="h-8 w-8 object-contain"
+                            />
                         </div>
                         <Dialog.Close asChild>
                             <button
@@ -169,9 +175,11 @@ function ScheduleFileUploadModal({
                         </Dialog.Close>
                     </div>
 
-                    <Dialog.Title className="mt-4 font-apple text-[22px] leading-7 font-semibold text-sub-1">근무표 파일 등록</Dialog.Title>
+                    <Dialog.Title className="mt-4 font-apple text-[22px] leading-7 font-semibold text-sub-1">
+                        {targetMonth}월 근무표 파일 등록
+                    </Dialog.Title>
                     <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 text-gray-3">
-                        "근무표 파일 템플릿" 양식을 다운로드하여 작성하신 후 "등록"을 클릭해주세요
+                        &quot;근무표 파일 템플릿&quot; 양식을 다운로드하여 작성하신 후 &quot;등록&quot;을 클릭해주세요
                     </Dialog.Description>
 
                     <button
@@ -203,6 +211,7 @@ function ScheduleFileUploadModal({
                         )}
                         onDragOver={(event) => {
                             event.preventDefault();
+
                             if (!isUploading) {
                                 setIsDragging(true);
                             }

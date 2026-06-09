@@ -76,7 +76,6 @@ describe('OnboardingWardCreatePage adapter', () => {
                 }),
             ],
         };
-
         const payload = buildCreateWardPayload(draft);
 
         expect(payload.shiftTeams[0]?.nurseNames).toEqual(['신규 간호사 1', 'Nurse 1']);
@@ -316,7 +315,6 @@ describe('OnboardingWardCreatePage adapter', () => {
                 warnings: ['확정표가 없어 신뢰도를 낮췄어요.'],
             },
         };
-
         const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
         const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
         const payload = buildCreateWardPayload(nextDraft);
@@ -325,6 +323,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(nextDraft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
         expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', '교육']);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).toMatch(/^#[0-9A-F]{6}$/);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).not.toBe('#94A3B8');
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '교육')?.color).not.toBe('#BFC7D4');
         expect(parsedWardData.nurses?.[0]?.possibleShiftShortNames).toEqual(['D', 'N', '교육']);
         expect(parsedWardData.nurses?.[0]?.initialShifts).toEqual([
@@ -366,7 +365,6 @@ describe('OnboardingWardCreatePage adapter', () => {
                 },
             ],
         };
-
         const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx', {targetYear: 2026, targetMonth: 5});
         const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
         const payload = buildCreateWardPayload(nextDraft);

@@ -7,4 +7,6 @@ export {
     isDutyViewingThisCalendarMonth,
     isDutyPastStrictlyBeforeLastMonth,
     isMakeShiftMonthAllowed,
+    isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth,
+    isMakeShiftPreviousMonthDisabled,
 } from '@/shared/lib/shift-calendar-month-policy';

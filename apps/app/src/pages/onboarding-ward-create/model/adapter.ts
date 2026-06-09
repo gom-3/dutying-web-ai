@@ -3,8 +3,8 @@ import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse, type TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {
     createEmptyShiftType,
+    getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
-    getOnboardingShiftCodeColor,
     normalizeOnboardingShiftCode,
     normalizeNurseNameForRequest,
     type TOnboardingConstraintDraft,
@@ -18,6 +18,7 @@ import {
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
     name?: string;
     shortName?: string;
+    source?: TOnboardingWardShiftType['source'];
 };
 
 export type TOnboardingParsedTeam = {
@@ -70,6 +71,7 @@ const SUPPORTED_CONSTRAINT_TEMPLATE_CODES = new Set([
 ]);
 const DEFAULT_CONSTRAINT_SEVERITY: TShiftConstraintSeverity = 'SOFT';
 const CORE_SHIFT_SHORT_NAMES = ['D', 'E', 'N', 'O'] as const;
+const PLACEHOLDER_CUSTOM_SHIFT_COLORS = new Set(['#94A3B8', '#BFC7D4']);
 const SHIFT_CODE_LABELS: Record<string, string> = {
     D: '데이',
     E: '이브닝',
@@ -199,6 +201,15 @@ const normalizeShiftShortName = (value?: string | null) => {
 
     return trimmed ? normalizeOnboardingShiftCode(trimmed) : undefined;
 };
+const normalizeColorKey = (color?: string | null) => color?.trim().toUpperCase();
+const isCoreShiftShortName = (shortName?: string) => CORE_SHIFT_SHORT_NAMES.includes(shortName as (typeof CORE_SHIFT_SHORT_NAMES)[number]);
+const shouldReassignCustomShiftColor = (color: string | undefined, usedColors: Set<string>) => {
+    if (!color) {
+        return true;
+    }
+
+    return PLACEHOLDER_CUSTOM_SHIFT_COLORS.has(color) || usedColors.has(color);
+};
 const collectObservedWorkShiftCodes = (
     assignments?: Record<string, string | null> | null,
     monthlyCounts?: Record<string, number | null> | null,
@@ -253,6 +264,7 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): T
         isOff,
         isCounted: parsed.isOff ? false : base.isCounted,
         classification: parsed.classification ?? inferClassificationFromShortName(shortName, isOff),
+        source: parsed.source,
     };
 };
 const ensureCoreShiftTypes = (
@@ -265,10 +277,10 @@ const ensureCoreShiftTypes = (
             .map((shiftType) => [normalizeShiftShortName(shiftType.shortName), shiftType] as const)
             .filter((entry): entry is [string, TOnboardingParsedShiftType] => Boolean(entry[0])),
     );
-
     const usedShortNames = new Set<string>();
     const nextShiftTypes = CORE_SHIFT_SHORT_NAMES.map((shortName, index) => {
         usedShortNames.add(shortName);
+
         return parsedByShortName.has(shortName)
             ? toDraftShiftType(parsedByShortName.get(shortName)!, index)
             : {...(draftByShortName.get(shortName) ?? toDraftShiftType(createCoreParsedShiftType(shortName), index))};
@@ -285,7 +297,48 @@ const ensureCoreShiftTypes = (
         nextShiftTypes.push(toDraftShiftType(shiftType, nextShiftTypes.length));
     });
 
-    return normalizeUploadedShiftTypes(nextShiftTypes);
+    const usedColors = new Set<string>();
+
+    let customColorIndex = 0;
+
+    const distinctShiftTypes = nextShiftTypes.map((shiftType) => {
+        const shortName = normalizeShiftShortName(shiftType.shortName);
+        const color = normalizeColorKey(shiftType.color);
+
+        if (isCoreShiftShortName(shortName)) {
+            if (color) {
+                usedColors.add(color);
+            }
+
+            return shiftType;
+        }
+
+        if (shouldReassignCustomShiftColor(color, usedColors)) {
+            const nextColor = getAvailableOnboardingShiftColor(usedColors, customColorIndex);
+            const nextColorKey = normalizeColorKey(nextColor);
+
+            customColorIndex += 1;
+
+            if (nextColorKey) {
+                usedColors.add(nextColorKey);
+            }
+
+            return {
+                ...shiftType,
+                color: nextColor,
+            };
+        }
+
+        customColorIndex += 1;
+
+        if (color) {
+            usedColors.add(color);
+        }
+
+        return shiftType;
+    });
+
+    return normalizeUploadedShiftTypes(distinctShiftTypes);
 };
 const buildDraftTeams = (names: string[]): TOnboardingTeamDraft[] =>
     names.map((name, index) => ({
@@ -404,7 +457,6 @@ const appendObservedShiftTypes = (shiftTypes: TOnboardingParsedShiftType[], obse
                 : {
                       name: getShiftTypeNameFromShortName(shortName),
                       shortName,
-                      color: getOnboardingShiftCodeColor(shortName),
                       isDefault: false,
                       isOff: false,
                       classification: inferClassificationFromShortName(shortName, false),
@@ -449,7 +501,6 @@ const normalizeParsedShiftTypes = (response: TOnboardingWardParseApiResponse): T
                 return {
                     name: shortName ? getShiftTypeNameFromShortName(shortName) : undefined,
                     shortName,
-                    color: shortName && !['D', 'E', 'N', 'O'].includes(shortName) ? getOnboardingShiftCodeColor(shortName) : undefined,
                     isDefault: ['D', 'E', 'N', 'O'].includes(shortName ?? ''),
                     isOff: classification === 'OFF' || shortName === 'O',
                     classification,
@@ -512,6 +563,7 @@ const normalizeConstraintSeverity = (severityRecommendation: string | null | und
     if (!normalized) return undefined;
 
     if (normalized.includes('HARD')) return 'HARD';
+
     if (normalized.includes('SOFT')) return 'SOFT';
 
     return undefined;
@@ -638,7 +690,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
         hospitalName: normalizedHospitalName || normalizedWardName || fallbackName,
-        wardShiftTypes: draft.shiftTypes.map(({id: _id, ...shiftType}) => shiftType),
+        wardShiftTypes: draft.shiftTypes.map(({id: _id, source: _source, ...shiftType}) => shiftType),
         shiftTeams: draft.teams.map((team) => {
             const nurses = draft.nurses
                 .filter((nurse) => nurse.teamId === team.id)

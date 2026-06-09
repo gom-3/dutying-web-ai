@@ -1753,26 +1753,20 @@ function MemberNurseRow({
                                     <span
                                         className={cn(
                                             'flex h-[19px] min-w-[19px] items-center justify-center rounded-[4px] transition-[max-width,padding,gap] duration-150',
-                                            selected
-                                                ? 'max-w-[53px] gap-0.5 px-1'
-                                                : 'max-w-[19px] gap-0 overflow-hidden px-[2px] group-hover:max-w-[53px] group-hover:gap-0.5 group-hover:px-1',
+                                            'max-w-[53px] gap-0.5 px-1',
                                         )}
                                         style={{backgroundColor: badgeBackgroundColor}}
                                     >
                                         <span
                                             className={cn(
                                                 'flex h-[9px] items-center justify-center overflow-hidden transition-[width,opacity] duration-150',
-                                                selected
-                                                    ? 'w-[9px] opacity-100'
-                                                    : 'w-0 opacity-0 group-hover:w-[9px] group-hover:opacity-75',
+                                                selected ? 'w-[9px] opacity-100' : 'w-[9px] opacity-75',
                                             )}
                                         >
                                             <Check
                                                 className={cn(
                                                     'h-[9px] w-[9px] shrink-0 text-white transition-all duration-150',
-                                                    selected
-                                                        ? 'scale-100 opacity-100'
-                                                        : 'scale-75 opacity-0 group-hover:scale-100 group-hover:opacity-75',
+                                                    selected ? 'scale-100 opacity-100' : 'scale-100 opacity-75',
                                                 )}
                                                 strokeWidth={3}
                                             />

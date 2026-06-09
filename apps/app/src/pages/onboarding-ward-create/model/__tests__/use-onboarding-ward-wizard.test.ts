@@ -221,10 +221,20 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(2);
         expect(savedDraft.currentStep).toBe(3);
         expect(result.current.draft.currentStep).toBe(3);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'R', 'Z', 'A', 'Y']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'A', 'R', 'Y', 'Z']);
+        expect(result.current.draft.shiftTypes.slice(4).every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
+
+        const customShiftColors = result.current.draft.shiftTypes.slice(4).map((shiftType) => shiftType.color);
+
+        expect(customShiftColors).not.toContain('#94A3B8');
+        expect(new Set(customShiftColors).size).toBe(customShiftColors.length);
+
         const previewedNurse = result.current.draft.nurses.find((nurse) => nurse.name === '김하늘');
 
-        expect(previewedNurse?.possibleShiftTypeIds).toEqual(result.current.draft.shiftTypes.map((shiftType) => shiftType.id));
+        expect(previewedNurse?.possibleShiftTypeIds).toEqual(
+            expect.arrayContaining(result.current.draft.shiftTypes.map((shiftType) => shiftType.id)),
+        );
+        expect(previewedNurse?.possibleShiftTypeIds).toHaveLength(result.current.draft.shiftTypes.length);
         expect(previewedNurse?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: 'R'},
             {date: '2026-05-02', shiftShortName: 'Z'},

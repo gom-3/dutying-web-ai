@@ -14,7 +14,83 @@ const ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM = 'onboardingSchedule';
 type TMakeShiftLocationState = {
     onboardingWardCreated?: unknown;
     onboardingInitialSchedule?: unknown;
+    onboardingInitialSchedules?: unknown;
 } | null;
+
+type TOnboardingInitialScheduleTarget = {
+    year: number;
+    month: number;
+    shiftTeamId?: number;
+};
+
+function parsePositiveInt(value: unknown): number | null {
+    if (typeof value !== 'string' && typeof value !== 'number') return null;
+
+    const n = Number(value);
+
+    return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function readScheduleTargetFromState(value: unknown): TOnboardingInitialScheduleTarget | null {
+    if (!value || typeof value !== 'object') return null;
+
+    const source = value as Record<string, unknown>;
+    const year = parsePositiveInt(source.year);
+    const month = parsePositiveInt(source.month);
+
+    if (year === null || month === null || month > 12) return null;
+
+    const shiftTeamId = parsePositiveInt(source.shiftTeamId);
+
+    return {
+        year,
+        month,
+        ...(shiftTeamId !== null ? {shiftTeamId} : {}),
+    };
+}
+
+function readScheduleTargetsFromState(value: unknown): TOnboardingInitialScheduleTarget[] {
+    if (!Array.isArray(value)) return [];
+
+    return value.map(readScheduleTargetFromState).filter((target): target is TOnboardingInitialScheduleTarget => target !== null);
+}
+
+function readOnboardingInitialScheduleTarget(
+    searchParams: URLSearchParams,
+    locationState: TMakeShiftLocationState,
+): TOnboardingInitialScheduleTarget | null {
+    if (searchParams.get(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM) === '1') {
+        const year = parsePositiveInt(searchParams.get('year'));
+        const month = parsePositiveInt(searchParams.get('month'));
+
+        if (year === null || month === null || month > 12) return null;
+
+        const shiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
+
+        return {
+            year,
+            month,
+            ...(shiftTeamId !== null ? {shiftTeamId} : {}),
+        };
+    }
+
+    return readScheduleTargetFromState(locationState?.onboardingInitialSchedule);
+}
+
+function readOnboardingInitialScheduleTargets(
+    searchParams: URLSearchParams,
+    locationState: TMakeShiftLocationState,
+): TOnboardingInitialScheduleTarget[] {
+    const stateTargets = readScheduleTargetsFromState(locationState?.onboardingInitialSchedules);
+
+    if (stateTargets.length > 0) {
+        return stateTargets;
+    }
+
+    const singleTarget = readOnboardingInitialScheduleTarget(searchParams, locationState);
+
+    return singleTarget ? [singleTarget] : [];
+}
 
 const MakeShiftPage = () => {
     const {
@@ -24,12 +100,8 @@ const MakeShiftPage = () => {
     const locationState = location.state as TMakeShiftLocationState;
     const [searchParams, setSearchParams] = useSearchParams();
     const [showOnboardingWardCodeGuide, setShowOnboardingWardCodeGuide] = useState(false);
-    const [enteredFromOnboardingWardCreated] = useState(
-        () => searchParams.get(ONBOARDING_WARD_CREATED_SEARCH_PARAM) === '1' || Boolean(locationState?.onboardingWardCreated),
-    );
-    const [enteredFromOnboardingInitialSchedule] = useState(
-        () => searchParams.get(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM) === '1' || Boolean(locationState?.onboardingInitialSchedule),
-    );
+    const [onboardingInitialScheduleTargets] = useState(() => readOnboardingInitialScheduleTargets(searchParams, locationState));
+    const onboardingInitialScheduleTarget = onboardingInitialScheduleTargets[0] ?? null;
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
@@ -37,8 +109,8 @@ const MakeShiftPage = () => {
     });
 
     useMakeShiftBootstrap(wardId, {
-        preferNextMonth: enteredFromOnboardingWardCreated && !enteredFromOnboardingInitialSchedule,
-        confirmExistingShift: enteredFromOnboardingInitialSchedule,
+        confirmInitialSchedule: onboardingInitialScheduleTarget,
+        confirmInitialSchedules: onboardingInitialScheduleTargets,
     });
 
     useEffect(() => {

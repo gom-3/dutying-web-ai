@@ -5,6 +5,7 @@ export type TOnboardingStep = 1 | 2 | 3 | 4;
 
 export type TOnboardingWardShiftType = TCreateWardDTO['wardShiftTypes'][number] & {
     id: string;
+    source?: 'schedule-input';
 };
 
 export type TOnboardingTeamDraft = {
@@ -168,13 +169,14 @@ export const DEFAULT_SHIFT_TYPE_COLORS = [
     '#FF8BA5',
     '#3580FF',
     '#465B7A',
-    '#F5A978',
-    '#EFCB55',
-    '#9AC760',
-    '#62CAD8',
-    '#AD87F1',
-    '#EC84BB',
+    '#F7B8A8',
+    '#F8D878',
+    '#B8DC8F',
+    '#8ADDE3',
+    '#BFA7F3',
+    '#F3A6CC',
 ] as const;
+export const CUSTOM_SHIFT_TYPE_COLORS = DEFAULT_SHIFT_TYPE_COLORS.slice(4);
 
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 3, 4];
 const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
@@ -185,20 +187,29 @@ const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
 const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A30-9A-Za-z ]+$/u;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
+const normalizeColor = (color: string) => color.trim().toUpperCase();
 
 export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
 
 export const normalizeOnboardingShiftCode = (value: string) => value.trim().toLocaleUpperCase();
 
+export const getAvailableOnboardingShiftColor = (usedColors: Iterable<string>, fallbackIndex = 0): string => {
+    const normalizedUsedColors = new Set(Array.from(usedColors).map(normalizeColor));
+    const availableColor = CUSTOM_SHIFT_TYPE_COLORS.find((color) => !normalizedUsedColors.has(normalizeColor(color)));
+
+    return availableColor ?? CUSTOM_SHIFT_TYPE_COLORS[fallbackIndex % CUSTOM_SHIFT_TYPE_COLORS.length] ?? DEFAULT_SHIFT_TYPE_COLORS[4];
+};
+
 export const getOnboardingShiftCodeColor = (shortName: string): string => {
     const normalized = normalizeOnboardingShiftCode(shortName);
+
     let hash = 0;
 
     Array.from(normalized).forEach((char) => {
         hash = (hash * 31 + char.codePointAt(0)!) >>> 0;
     });
 
-    return DEFAULT_SHIFT_TYPE_COLORS[hash % DEFAULT_SHIFT_TYPE_COLORS.length];
+    return CUSTOM_SHIFT_TYPE_COLORS[hash % CUSTOM_SHIFT_TYPE_COLORS.length] ?? DEFAULT_SHIFT_TYPE_COLORS[4];
 };
 
 let nextId = 0;
@@ -212,17 +223,18 @@ const createShiftType = (
     id: input.id ?? createId('shift'),
     ...input,
 });
-const createScheduleInputShiftType = (shortName: string): TOnboardingWardShiftType =>
+const createScheduleInputShiftType = (shortName: string, color: string): TOnboardingWardShiftType =>
     createShiftType({
         name: shortName,
         shortName,
         startTime: '',
         endTime: '',
-        color: getOnboardingShiftCodeColor(shortName),
+        color,
         isDefault: false,
         isOff: false,
         isCounted: true,
         classification: 'OTHER_WORK',
+        source: 'schedule-input',
     });
 const createNurse = (
     input: Omit<TOnboardingNurseDraft, 'id' | 'initialShifts'> & {
@@ -485,33 +497,40 @@ export const getOnboardingInitialScheduleTarget = (
     draft: TOnboardingWardDraft,
     options: {preferredTeamId?: string; createdWard?: TOnboardingCreatedWardLike | null} = {},
 ): TOnboardingInitialScheduleTarget | null => {
+    return getOnboardingInitialScheduleTargets(draft, options)[0] ?? null;
+};
+
+export const getOnboardingInitialScheduleTargets = (
+    draft: TOnboardingWardDraft,
+    options: {preferredTeamId?: string; createdWard?: TOnboardingCreatedWardLike | null} = {},
+): TOnboardingInitialScheduleTarget[] => {
     const preferredTeam = options.preferredTeamId ? draft.teams.find((team) => team.id === options.preferredTeamId) : undefined;
     const orderedTeams = preferredTeam ? [preferredTeam, ...draft.teams.filter((team) => team.id !== preferredTeam.id)] : draft.teams;
+    const createdShiftTeams = options.createdWard?.shiftTeams ?? [];
 
-    for (const team of orderedTeams) {
+    return orderedTeams.flatMap((team) => {
         const latestSchedule = Object.values(draft.scheduleInputs?.[team.id] ?? {})
             .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule?.rows.some(isScheduleRowUsed)))
             .sort((left, right) => right.year * 12 + right.month - (left.year * 12 + left.month))[0];
 
         if (!latestSchedule) {
-            continue;
+            return [];
         }
 
         const teamIndex = draft.teams.findIndex((candidate) => candidate.id === team.id);
-        const createdShiftTeams = options.createdWard?.shiftTeams ?? [];
         const shiftTeamByName = createdShiftTeams.find((candidate) => candidate.name === team.name);
         const shiftTeamByIndex = teamIndex >= 0 ? createdShiftTeams[teamIndex] : undefined;
         const shiftTeamId = shiftTeamByName?.shiftTeamId ?? shiftTeamByIndex?.shiftTeamId;
 
-        return {
-            teamId: team.id,
-            year: latestSchedule.year,
-            month: latestSchedule.month,
-            ...(typeof shiftTeamId === 'number' ? {shiftTeamId} : {}),
-        };
-    }
-
-    return null;
+        return [
+            {
+                teamId: team.id,
+                year: latestSchedule.year,
+                month: latestSchedule.month,
+                ...(typeof shiftTeamId === 'number' ? {shiftTeamId} : {}),
+            },
+        ];
+    });
 };
 
 const normalizeScheduleRow = (row: TOnboardingScheduleRowDraft): TOnboardingScheduleRowDraft => ({
@@ -546,23 +565,90 @@ const collectScheduleShiftShortNames = (schedule: TOnboardingTeamScheduleDraft):
 
     return Array.from(shiftShortNames).sort((left, right) => left.localeCompare(right, 'ko-KR'));
 };
-const ensureScheduleInputShiftTypes = (
-    shiftTypes: TOnboardingWardShiftType[],
-    schedule: TOnboardingTeamScheduleDraft,
-): TOnboardingWardShiftType[] => {
-    const existingShortNames = new Set(shiftTypes.map((shiftType) => normalizeOnboardingShiftCode(shiftType.shortName)));
-    const nextShiftTypes = [...shiftTypes];
+const collectScheduleInputShiftShortNames = (scheduleInputs: TOnboardingWardDraft['scheduleInputs']): Set<string> => {
+    const shiftShortNames = new Set<string>();
 
-    collectScheduleShiftShortNames(schedule).forEach((shortName) => {
-        if (existingShortNames.has(shortName)) {
-            return;
-        }
+    Object.values(scheduleInputs ?? {}).forEach((teamScheduleInputs) => {
+        Object.values(teamScheduleInputs ?? {}).forEach((schedule) => {
+            if (!schedule) {
+                return;
+            }
 
-        existingShortNames.add(shortName);
-        nextShiftTypes.push(createScheduleInputShiftType(shortName));
+            collectScheduleShiftShortNames(schedule).forEach((shortName) => {
+                shiftShortNames.add(shortName);
+            });
+        });
     });
 
+    return shiftShortNames;
+};
+const isScheduleInputGeneratedShiftType = (shiftType: TOnboardingWardShiftType) => {
+    if (shiftType.source === 'schedule-input') {
+        return true;
+    }
+
+    const shortName = normalizeScheduleShiftShortName(shiftType.shortName);
+
+    if (!shortName || CORE_SHIFT_SHORT_NAMES.has(shortName)) {
+        return false;
+    }
+
+    return (
+        !shiftType.isDefault &&
+        !shiftType.isOff &&
+        shiftType.classification === 'OTHER_WORK' &&
+        shiftType.startTime.trim() === '' &&
+        shiftType.endTime.trim() === '' &&
+        normalizeOnboardingShiftCode(shiftType.name) === shortName
+    );
+};
+const syncScheduleInputShiftTypes = (
+    shiftTypes: TOnboardingWardShiftType[],
+    scheduleInputs: TOnboardingWardDraft['scheduleInputs'],
+): TOnboardingWardShiftType[] => {
+    const scheduleShortNames = collectScheduleInputShiftShortNames(scheduleInputs);
+    const existingShortNames = new Set<string>();
+    const usedColors = new Set<string>();
+    const nextShiftTypes = shiftTypes.filter((shiftType) => {
+        const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
+        const shouldRemove = isScheduleInputGeneratedShiftType(shiftType) && !scheduleShortNames.has(shortName);
+
+        if (shouldRemove) {
+            return false;
+        }
+
+        if (shortName) {
+            existingShortNames.add(shortName);
+        }
+
+        usedColors.add(shiftType.color);
+
+        return true;
+    });
+
+    Array.from(scheduleShortNames)
+        .sort((left, right) => left.localeCompare(right, 'ko-KR'))
+        .forEach((shortName) => {
+            if (existingShortNames.has(shortName)) {
+                return;
+            }
+
+            const color = getAvailableOnboardingShiftColor(usedColors, nextShiftTypes.length - CORE_SHIFT_SHORT_NAMES.size);
+
+            existingShortNames.add(shortName);
+            usedColors.add(color);
+            nextShiftTypes.push(createScheduleInputShiftType(shortName, color));
+        });
+
     return nextShiftTypes;
+};
+const pruneUnavailableShiftTypeIds = (nurses: TOnboardingNurseDraft[], shiftTypes: TOnboardingWardShiftType[]): TOnboardingNurseDraft[] => {
+    const availableShiftTypeIds = new Set(shiftTypes.map((shiftType) => shiftType.id));
+
+    return nurses.map((nurse) => ({
+        ...nurse,
+        possibleShiftTypeIds: nurse.possibleShiftTypeIds.filter((shiftTypeId) => availableShiftTypeIds.has(shiftTypeId)),
+    }));
 };
 const toScheduleInitialShiftDate = (year: number, month: number, day: number) =>
     `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -608,12 +694,19 @@ export const applyScheduleInputDraft = (
             rows: schedule.rows.map(normalizeScheduleRow),
         },
     };
+    const nextScheduleInputs = {
+        ...(draft.scheduleInputs ?? {}),
+        [teamId]: {
+            ...(draft.scheduleInputs?.[teamId] ?? {}),
+            ...nextTeamScheduleInputs,
+        },
+    };
     const existingTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
     const otherNurses = draft.nurses.filter((nurse) => nurse.teamId !== teamId);
     const existingNurseById = new Map(existingTeamNurses.map((nurse) => [nurse.id, nurse]));
     const nextNurseById = new Map<string, TOnboardingNurseDraft>();
     const nextNurseIdByName = new Map<string, string>();
-    const nextShiftTypes = ensureScheduleInputShiftTypes(draft.shiftTypes, schedule);
+    const nextShiftTypes = syncScheduleInputShiftTypes(draft.shiftTypes, nextScheduleInputs);
     const possibleShiftTypeIds = nextShiftTypes.filter((shiftType) => !shiftType.isOff).map((shiftType) => shiftType.id);
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const nurseIdByRowKey = new Map<string, string>();
@@ -684,6 +777,7 @@ export const applyScheduleInputDraft = (
             ]);
         });
     });
+
     const hasExistingTeamScheduleInputs = Object.values(draft.scheduleInputs?.[teamId] ?? {}).some((schedule) => Boolean(schedule));
     const preservedTeamNurses = hasExistingTeamScheduleInputs ? existingTeamNurses.filter((nurse) => !nextNurseById.has(nurse.id)) : [];
     const nextTeamNurses = Array.from(nextNurseById.values()).map((nurse) => ({
@@ -694,7 +788,7 @@ export const applyScheduleInputDraft = (
     return {
         ...draft,
         shiftTypes: nextShiftTypes,
-        nurses: [...otherNurses, ...preservedTeamNurses, ...nextTeamNurses],
+        nurses: pruneUnavailableShiftTypeIds([...otherNurses, ...preservedTeamNurses, ...nextTeamNurses], nextShiftTypes),
         scheduleInputs: {
             ...(draft.scheduleInputs ?? {}),
             [teamId]: {
@@ -707,6 +801,7 @@ export const applyScheduleInputDraft = (
 
 const createUniqueUploadedTeamName = (rawTeamName: string, teamIndex: number, usedTeamNames: Set<string>) => {
     const baseName = rawTeamName.trim() || `간호사 ${teamIndex + 1}팀`;
+
     let nextName = baseName;
     let suffix = 2;
 
@@ -773,6 +868,7 @@ export const applyUploadedScheduleTemplateDraft = (
                             .map(([day, shift]) => [day, shift.trim()])
                             .filter(([, shift]) => shift),
                     );
+
                     let nurseId: string | null = null;
 
                     if (trimmedName) {
@@ -823,7 +919,15 @@ export const updateShiftTypeDraft = (
     updater: Partial<TOnboardingWardShiftType>,
 ): TOnboardingWardDraft => ({
     ...draft,
-    shiftTypes: draft.shiftTypes.map((shiftType) => (shiftType.id === shiftTypeId ? {...shiftType, ...updater} : shiftType)),
+    shiftTypes: draft.shiftTypes.map((shiftType) => {
+        if (shiftType.id !== shiftTypeId) {
+            return shiftType;
+        }
+
+        const {source: _source, ...nextShiftType} = {...shiftType, ...updater};
+
+        return nextShiftType;
+    }),
 });
 
 export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => {

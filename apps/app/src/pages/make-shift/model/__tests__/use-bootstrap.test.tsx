@@ -2,7 +2,7 @@ import {type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
-import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
+import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {useMakeShiftStore} from '../make-shift-store';
@@ -79,6 +79,12 @@ function wrapper({children}: {children: ReactNode}) {
     return <MemoryRouter>{children}</MemoryRouter>;
 }
 
+function createWrapper(initialEntry: string) {
+    return function TestWrapper({children}: {children: ReactNode}) {
+        return <MemoryRouter initialEntries={[initialEntry]}>{children}</MemoryRouter>;
+    };
+}
+
 describe('useMakeShiftBootstrap', () => {
     beforeEach(() => {
         window.localStorage.clear();
@@ -110,16 +116,19 @@ describe('useMakeShiftBootstrap', () => {
         });
     });
 
-    it('enters the confirmed step when saved progress is already confirmed', async () => {
+    it('keeps the overview when saved progress is already confirmed', async () => {
         useMakeShiftStore.getState().setYearMonth({year: 2026, month: 6});
         saveDraftStep(1, 10, 2026, 6, 6);
         saveMaxReachedStep(1, 10, 2026, 6, 6);
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
 
-        renderHook(() => useMakeShiftBootstrap(1), {wrapper});
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
 
         await waitFor(() => {
             expect(useMakeShiftStore.getState()).toMatchObject({
-                phase: 'stepping',
+                phase: 'overview',
                 currentShiftTeamId: 10,
                 currentStep: 6,
                 restoreDraftModalOpen: false,
@@ -127,53 +136,202 @@ describe('useMakeShiftBootstrap', () => {
         });
     });
 
-    it('starts on next month when there is no saved month', async () => {
-        const nextYearMonth = getNextCalendarYearMonth();
+    it('starts on the current month when there is no saved month', async () => {
+        const currentYearMonth = getCalendarYearMonthNow();
 
         renderHook(() => useMakeShiftBootstrap(1), {wrapper});
 
         await waitFor(() => {
-            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
+            expect(useMakeShiftStore.getState()).toMatchObject(currentYearMonth);
         });
     });
 
-    it('prefers next month for onboarding entry even when a saved month exists', async () => {
-        useMakeShiftStore.getState().setYearMonth({year: 2026, month: 6});
+    it('starts on the current month even when a saved month exists', async () => {
+        const currentYearMonth = getCalendarYearMonthNow();
+        const savedYearMonth =
+            currentYearMonth.month === 1
+                ? {year: currentYearMonth.year - 1, month: 12}
+                : {year: currentYearMonth.year, month: currentYearMonth.month - 1};
 
-        const nextYearMonth = getNextCalendarYearMonth();
+        useMakeShiftStore.getState().setYearMonth(savedYearMonth);
 
-        renderHook(() => useMakeShiftBootstrap(1, {preferNextMonth: true}), {wrapper});
+        renderHook(() => useMakeShiftBootstrap(1), {wrapper});
 
         await waitFor(() => {
-            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
+            expect(useMakeShiftStore.getState()).toMatchObject(currentYearMonth);
         });
     });
 
-    it('enters the confirmed step for an onboarding initial schedule even when only some cells are assigned', async () => {
+    it('keeps the overview for an onboarding initial schedule even when some cells are assigned', async () => {
         wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
 
-        renderHook(() => useMakeShiftBootstrap(1, {confirmExistingShift: true}), {wrapper});
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'overview',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+                restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('opens an onboarding initial schedule as the confirmed step when the target has assignments', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(
+            () =>
+                useMakeShiftBootstrap(1, {
+                    confirmInitialSchedule: {year: 2026, month: 6, shiftTeamId: 10},
+                }),
+            {
+                wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+            },
+        );
 
         await waitFor(() => {
             expect(useMakeShiftStore.getState()).toMatchObject({
                 phase: 'stepping',
                 currentShiftTeamId: 10,
                 currentStep: 6,
+                maxReachedStep: 6,
                 shiftExists: true,
                 shiftFullyAssigned: true,
                 restoreDraftModalOpen: false,
             });
         });
+        expect(window.localStorage.getItem('make-shift:draft-step:1:10:2026:6')).toBe('6');
+        expect(window.localStorage.getItem('make-shift:max-step:1:10:2026:6')).toBe('6');
     });
 
-    it('keeps ordinary partially assigned schedules in the authoring flow without onboarding intent', async () => {
+    it('stores every onboarding initial schedule target as confirmed progress', async () => {
+        wardApiMocks.getShiftTeams.mockResolvedValue([
+            {shiftTeamId: 10, name: 'A?', nurseCnt: 0, nurses: []},
+            {shiftTeamId: 20, name: 'B?', nurseCnt: 0, nurses: []},
+            {shiftTeamId: 30, name: 'C?', nurseCnt: 0, nurses: []},
+        ] satisfies TShiftTeam[]);
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(
+            () =>
+                useMakeShiftBootstrap(1, {
+                    confirmInitialSchedules: [
+                        {year: 2026, month: 6, shiftTeamId: 10},
+                        {year: 2026, month: 6, shiftTeamId: 20},
+                        {year: 2026, month: 6, shiftTeamId: 30},
+                    ],
+                }),
+            {
+                wrapper,
+            },
+        );
+
+        await waitFor(() => {
+            expect(window.localStorage.getItem('make-shift:draft-step:1:10:2026:6')).toBe('6');
+            expect(window.localStorage.getItem('make-shift:draft-step:1:20:2026:6')).toBe('6');
+            expect(window.localStorage.getItem('make-shift:draft-step:1:30:2026:6')).toBe('6');
+        });
+    });
+
+    it('does not confirm an onboarding initial schedule target when the selected month has no assignments', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeEmptyShift());
+
+        renderHook(
+            () =>
+                useMakeShiftBootstrap(1, {
+                    confirmInitialSchedule: {year: 2026, month: 6, shiftTeamId: 10},
+                }),
+            {
+                wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+            },
+        );
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'overview',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: false,
+                shiftFullyAssigned: false,
+            });
+        });
+    });
+
+    it('keeps the overview after moving from an onboarding initial schedule target to another month', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=7&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'overview',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+            });
+        });
+    });
+
+    it('does not migrate the legacy draft step into a different month', async () => {
+        window.localStorage.setItem('make-shift:draft-step', '6');
+        window.localStorage.setItem('make-shift:draft-year', '2026');
+        window.localStorage.setItem('make-shift:draft-month', '6');
+        wardApiMocks.getShift.mockResolvedValue(makeEmptyShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=7&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: false,
+                shiftFullyAssigned: false,
+            });
+        });
+        expect(window.localStorage.getItem('make-shift:draft-step:1:10:2026:7')).toBeNull();
+        expect(window.localStorage.getItem('make-shift:draft-step')).toBeNull();
+    });
+
+    it('clears a stale confirmed draft step when the selected month has no assignments', async () => {
+        saveDraftStep(1, 10, 2026, 7, 6);
+        saveMaxReachedStep(1, 10, 2026, 7, 6);
+        wardApiMocks.getShift.mockResolvedValue(makeEmptyShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=7&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                maxReachedStep: 1,
+                shiftExists: false,
+                shiftFullyAssigned: false,
+            });
+        });
+        expect(window.localStorage.getItem('make-shift:draft-step:1:10:2026:7')).toBeNull();
+        expect(window.localStorage.getItem('make-shift:max-step:1:10:2026:7')).toBeNull();
+    });
+
+    it('keeps ordinary partially assigned schedules on the overview without onboarding intent', async () => {
         wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
 
         renderHook(() => useMakeShiftBootstrap(1), {wrapper});
 
         await waitFor(() => {
             expect(useMakeShiftStore.getState()).toMatchObject({
-                phase: 'stepping',
+                phase: 'overview',
                 currentShiftTeamId: 10,
                 currentStep: 1,
                 shiftExists: true,
