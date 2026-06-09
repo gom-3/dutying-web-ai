@@ -9,7 +9,7 @@ import useAuth from '@/features/auth';
 import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
-import {getOnboardingInitialScheduleTarget, useOnboardingWardWizard} from './model';
+import {getOnboardingInitialScheduleTargets, useOnboardingWardWizard} from './model';
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
@@ -267,18 +267,28 @@ function OnboardingWardCreatePage() {
             : true;
 
         window.sessionStorage.setItem(WARD_CREATED_GUIDE_STORAGE_KEY, JSON.stringify(guidePayload));
-        const initialScheduleTarget = getOnboardingInitialScheduleTarget(draft, {
+
+        const initialScheduleTargets = getOnboardingInitialScheduleTargets(draft, {
             preferredTeamId: activeTeamId,
             createdWard,
         });
+        const initialScheduleTarget = initialScheduleTargets[0] ?? null;
         const makeRoute = initialScheduleTarget ? buildMakeRouteWithOnboardingSchedule(initialScheduleTarget) : ROUTE.MAKE;
+        const navigationState =
+            initialScheduleTargets.length > 0
+                ? {
+                      onboardingWardCreated: guidePayload,
+                      onboardingInitialSchedule: initialScheduleTarget,
+                      onboardingInitialSchedules: initialScheduleTargets,
+                  }
+                : {
+                      onboardingWardCreated: guidePayload,
+                      onboardingInitialSchedule: null,
+                  };
 
         navigate(makeRoute, {
             replace: true,
-            state: {
-                onboardingWardCreated: guidePayload,
-                onboardingInitialSchedule: initialScheduleTarget,
-            },
+            state: navigationState,
         });
 
         return undefined;

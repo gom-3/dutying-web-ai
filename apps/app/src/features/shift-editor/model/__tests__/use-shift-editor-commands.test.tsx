@@ -111,6 +111,51 @@ describe('useShiftEditorCommands', () => {
         expect(useShiftEditorStore.getState().history.past).toHaveLength(1);
     });
 
+    it('writes previous-shift cells in fixed mode', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const doc: TDutyDoc = {
+            ...createDoc(),
+            rows: [{...createDoc().rows[0]!, lastCells: [null, 'D']}, {...createDoc().rows[1]!, lastCells: ['E', null]}],
+        };
+
+        act(() => {
+            result.current.init(doc);
+            useShiftEditorStore.getState().setEditorMode('fixed');
+            useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: -2}});
+            result.current.setSelectionValue('N');
+        });
+
+        const state = useShiftEditorStore.getState();
+
+        expect(state.doc.rows[0]?.lastCells).toEqual(['N', 'D']);
+        expect(state.history.past).toHaveLength(0);
+    });
+
+    it('pastes previous-shift cells in fixed mode', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const doc: TDutyDoc = {
+            ...createDoc(),
+            rows: [{...createDoc().rows[0]!, lastCells: [null, 'D']}, {...createDoc().rows[1]!, lastCells: ['E', null]}],
+        };
+        const payload: TClipboardPayload = {
+            width: 2,
+            height: 1,
+            cells: [['O', 'N']],
+        };
+
+        act(() => {
+            result.current.init(doc);
+            useShiftEditorStore.getState().setEditorMode('fixed');
+            useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 1, col: -2}});
+            result.current.paste(payload);
+        });
+
+        const state = useShiftEditorStore.getState();
+
+        expect(state.doc.rows[1]?.lastCells).toEqual(['O', 'N']);
+        expect(state.history.past).toHaveLength(0);
+    });
+
     it('reorders rows by worker name, clears selection, and supports undo', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
 

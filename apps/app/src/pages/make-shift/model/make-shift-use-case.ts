@@ -9,7 +9,6 @@ import {
     canGoPrev,
     clearPersistedStep,
     hasRequiredWorkerForSchedule,
-    loadPersistedStep,
     useMakeShiftStore,
     type TMakeShiftStep,
 } from './make-shift-store';
@@ -54,10 +53,7 @@ export function useMakeShiftUseCase() {
     const start = useCallback(() => {
         const s = syncEditorPersistenceKey();
         const persisted = editor.getPersisted();
-        const saved =
-            s.wardId && s.currentShiftTeamId
-                ? (loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) ?? loadPersistedStep())
-                : loadPersistedStep();
+        const saved = s.wardId && s.currentShiftTeamId ? loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) : null;
         const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : (saved ?? 1);
 
         startFromStep({step, openRestoreDraftModal: step === 6 ? false : persisted !== null});

@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@/shared/util/test-utils';
+import {loadDraftStep} from '../../model/make-shift-progress-storage';
 import {MakeShiftPageView} from '../index';
 
 type TMockMakeShiftState = {
@@ -59,8 +60,17 @@ vi.mock('../make-shift-step-content', () => ({
     MakeShiftStepContent: () => <div data-testid="make-shift-step-content" />,
 }));
 
+const mockLoadDraftStep = vi.mocked(loadDraftStep);
+
 describe('MakeShiftPageView layout', () => {
     beforeEach(() => {
+        mockLoadDraftStep.mockReturnValue(null);
+        mockUseCase.start.mockClear();
+        mockUseCase.retryOverview.mockClear();
+        mockUseCase.goToStep.mockClear();
+        mockUseCase.prev.mockClear();
+        mockUseCase.next.mockClear();
+
         makeShiftState = {
             phase: 'stepping',
             currentStep: 1,
@@ -110,5 +120,50 @@ describe('MakeShiftPageView layout', () => {
 
         expect(contentCard).toHaveClass('overflow-hidden');
         expect(contentCard).toHaveClass('min-h-0');
+    });
+
+    it('shows the first create action when the selected month has no progress', () => {
+        makeShiftState = {
+            ...makeShiftState,
+            phase: 'overview',
+            shiftStatus: 'success',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+        };
+
+        render(<MakeShiftPageView />);
+
+        expect(screen.getByRole('button', {name: /page\.makeShift\.overview\.createShift/})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'page.makeShift.overview.continueShift'})).not.toBeInTheDocument();
+    });
+
+    it('shows the continue action when the server already has assigned shifts', () => {
+        makeShiftState = {
+            ...makeShiftState,
+            phase: 'overview',
+            shiftStatus: 'success',
+            shiftExists: true,
+            shiftFullyAssigned: false,
+        };
+
+        render(<MakeShiftPageView />);
+
+        expect(screen.getByRole('button', {name: 'page.makeShift.overview.continueShift'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /page\.makeShift\.overview\.createShift/})).not.toBeInTheDocument();
+    });
+
+    it('shows the continue action when local progress exists even if the server has no assigned shifts', () => {
+        makeShiftState = {
+            ...makeShiftState,
+            phase: 'overview',
+            shiftStatus: 'success',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+        };
+        mockLoadDraftStep.mockReturnValue(2);
+
+        render(<MakeShiftPageView />);
+
+        expect(screen.getByRole('button', {name: 'page.makeShift.overview.continueShift'})).toBeInTheDocument();
     });
 });

@@ -11,6 +11,7 @@ import {
     deleteTeamDraft,
     deleteShiftTypeDraft,
     getOnboardingInitialScheduleTarget,
+    getOnboardingInitialScheduleTargets,
     getStepValidation,
     MAX_ONBOARDING_SHIFT_TYPES,
     prepareManualEntryDraft,
@@ -450,6 +451,86 @@ describe('OnboardingWardCreatePage model', () => {
         expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.nurseId).toBe(nurse?.id);
     });
 
+    it('removes schedule-generated shift types when the entered code is cleared', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]!.id;
+        const withCustomShift = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {
+                    id: 'row-1',
+                    nurseId: null,
+                    name: 'Nurse A',
+                    shifts: {'1': 'X'},
+                },
+            ],
+        });
+        const customShiftTypeId = withCustomShift.shiftTypes.find((shiftType) => shiftType.shortName === 'X')?.id;
+        const storedRow = withCustomShift.scheduleInputs[teamId]?.['2026-05']?.rows[0];
+        const clearedDraft = applyScheduleInputDraft(withCustomShift, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {
+                    id: storedRow?.id ?? 'row-1',
+                    nurseId: storedRow?.nurseId ?? null,
+                    name: 'Nurse A',
+                    shifts: {},
+                },
+            ],
+        });
+
+        expect(customShiftTypeId).toBeTruthy();
+        expect(clearedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'X')).toBe(false);
+        expect(clearedDraft.nurses.every((nurse) => !nurse.possibleShiftTypeIds.includes(customShiftTypeId ?? ''))).toBe(true);
+    });
+
+    it('keeps user-configured shift types even if their schedule code is cleared', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]!.id;
+        const withCustomShift = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {
+                    id: 'row-1',
+                    nurseId: null,
+                    name: 'Nurse A',
+                    shifts: {'1': 'X'},
+                },
+            ],
+        });
+        const customShiftTypeId = withCustomShift.shiftTypes.find((shiftType) => shiftType.shortName === 'X')?.id ?? '';
+        const userConfiguredDraft = updateShiftTypeDraft(withCustomShift, customShiftTypeId, {
+            name: 'Training',
+            startTime: '09:00',
+            endTime: '18:00',
+        });
+        const storedRow = userConfiguredDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0];
+        const clearedDraft = applyScheduleInputDraft(userConfiguredDraft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {
+                    id: storedRow?.id ?? 'row-1',
+                    nurseId: storedRow?.nurseId ?? null,
+                    name: 'Nurse A',
+                    shifts: {},
+                },
+            ],
+        });
+
+        expect(clearedDraft.shiftTypes.find((shiftType) => shiftType.id === customShiftTypeId)).toEqual(
+            expect.objectContaining({
+                name: 'Training',
+                shortName: 'X',
+                startTime: '09:00',
+                endTime: '18:00',
+            }),
+        );
+    });
+
     it('resolves the onboarding initial schedule target from the entered schedule month and created ward team', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
@@ -477,6 +558,51 @@ describe('OnboardingWardCreatePage model', () => {
             month: 6,
             shiftTeamId: 77,
         });
+    });
+
+    it('resolves onboarding initial schedule targets for every team with an entered schedule', () => {
+        const baseDraft = {
+            ...createInitialDraft(),
+            teams: [
+                {id: 'team-a', name: 'A Team'},
+                {id: 'team-b', name: 'B Team'},
+                {id: 'team-c', name: 'C Team'},
+            ],
+            nurses: [],
+            scheduleInputs: {},
+        };
+        const withATeam = applyScheduleInputDraft(baseDraft, 'team-a', {
+            year: 2026,
+            month: 6,
+            rows: [{id: 'row-a', nurseId: null, name: 'A Nurse', shifts: {'1': 'D'}}],
+        });
+        const withBTeam = applyScheduleInputDraft(withATeam, 'team-b', {
+            year: 2026,
+            month: 6,
+            rows: [{id: 'row-b', nurseId: null, name: 'B Nurse', shifts: {'1': 'E'}}],
+        });
+        const withCTeam = applyScheduleInputDraft(withBTeam, 'team-c', {
+            year: 2026,
+            month: 6,
+            rows: [{id: 'row-c', nurseId: null, name: 'C Nurse', shifts: {'1': 'N'}}],
+        });
+
+        expect(
+            getOnboardingInitialScheduleTargets(withCTeam, {
+                preferredTeamId: 'team-c',
+                createdWard: {
+                    shiftTeams: [
+                        {shiftTeamId: 101, name: 'A Team'},
+                        {shiftTeamId: 102, name: 'B Team'},
+                        {shiftTeamId: 103, name: 'C Team'},
+                    ],
+                },
+            }),
+        ).toEqual([
+            {teamId: 'team-c', year: 2026, month: 6, shiftTeamId: 103},
+            {teamId: 'team-a', year: 2026, month: 6, shiftTeamId: 101},
+            {teamId: 'team-b', year: 2026, month: 6, shiftTeamId: 102},
+        ]);
     });
 
     it('blocks completion when an earlier required step is invalid', () => {

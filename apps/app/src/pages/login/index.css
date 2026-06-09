@@ -78,3 +78,9 @@
     text-align: center;
     text-shadow: 0 1px 2px rgb(0 0 0 / 24%);
 }
+
+@media (max-width: 1023px) {
+    .login-visual-panel {
+        display: none;
+    }
+}

@@ -87,6 +87,10 @@ type TUseDutyEditorStepOptions = {
     hydratePreviousLastShifts?: boolean;
 };
 
+export function focusEditorWithoutScrolling(editor: HTMLDivElement | null) {
+    editor?.focus({preventScroll: true});
+}
+
 export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts = false}: TUseDutyEditorStepOptions = {}) {
     const {
         state: {wardId},
@@ -233,7 +237,7 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
     ]);
 
     const focusEditor = () => {
-        editorRef.current?.focus();
+        focusEditorWithoutScrolling(editorRef.current);
     };
 
     return {

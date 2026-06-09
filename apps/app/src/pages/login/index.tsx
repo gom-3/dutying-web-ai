@@ -522,7 +522,7 @@ function LoginPage() {
         }
     };
     return (
-        <div className="flex min-h-screen w-screen bg-white">
+        <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
             <aside className="login-visual-panel" aria-label="로그인 이미지 슬라이드">
                 {LOGIN_VISUAL_SLIDES.map((src, index) => (
                     <img
@@ -556,7 +556,7 @@ function LoginPage() {
                 </div>
             </aside>
 
-            <div className="z-10 flex min-h-screen min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 py-10 md:px-16 xl:px-26.25">
+            <div className="z-10 flex min-h-screen w-full min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 py-10 md:px-16 xl:px-26.25">
                 <button type="button" className="flex cursor-pointer items-center" onClick={() => navigate(ROUTE.ROOT)}>
                     <img src="/img/group-19.png" alt="" aria-hidden="true" className="mt-8 h-[34px] w-auto max-w-[166px] object-contain" />
                 </button>
@@ -571,12 +571,12 @@ function LoginPage() {
                         </div>
                     ) : null}
 
-                    <div className="mx-auto mt-7 w-[334px] text-center">
+                    <div className="mx-auto mt-7 w-full max-w-[334px] text-center">
                         <h1 className="font-apple text-[32px] font-semibold text-text-1">{title}</h1>
                     </div>
 
                     {!isSignupPage && !isPasswordResetMode ? (
-                        <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-[334px] space-y-4">
+                        <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
                                     이메일
@@ -641,7 +641,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isLoginDisabled}
-                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 로그인
@@ -655,7 +655,7 @@ function LoginPage() {
                     ) : null}
 
                     {!isSignupPage && isPasswordResetMode ? (
-                        <form onSubmit={handlePasswordReset} className="mx-auto mt-7 w-[334px] space-y-4">
+                        <form onSubmit={handlePasswordReset} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="password-reset-email" className="mb-1.5 block text-sm font-medium text-sub-2">
                                     이메일
@@ -763,7 +763,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isPasswordResetDisabled}
-                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isResettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 비밀번호 재설정
@@ -781,7 +781,7 @@ function LoginPage() {
                     ) : null}
 
                     {isSignupPage ? (
-                        <form onSubmit={handlePasswordSignup} className="mx-auto mt-7 w-[334px] space-y-4">
+                        <form onSubmit={handlePasswordSignup} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-sub-2">
                                     이름
@@ -902,7 +902,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isSignupDisabled}
-                                className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 계정 만들기
@@ -917,18 +917,18 @@ function LoginPage() {
                     ) : null}
 
                     {!isPasswordResetMode ? (
-                        <div className="mx-auto mt-7 w-[334px] border-t border-gray-6 pt-6">
+                        <div className="mx-auto mt-7 w-full max-w-[334px] border-t border-gray-6 pt-6">
                             <div className="grid grid-cols-1 gap-3">
                                 <a
                                     href={kakaoAuthorizeUrl}
-                                    className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
+                                    className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
                                 >
                                     <KakaoIcon className="mr-3 h-5 w-5" />
                                     {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
                                 </a>
                                 <a
                                     href={appleAuthorizeUrl}
-                                    className="mx-auto flex h-[44px] w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
+                                    className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
                                 >
                                     <AppleIcon className="mr-3 h-5 w-5" />
                                     {isSignupPage ? 'Apple로 시작하기' : 'Apple로 계속하기'}

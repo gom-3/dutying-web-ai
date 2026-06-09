@@ -268,7 +268,9 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        expect(screen.getByText('병동 및 근무표 설정을 위해 최근에 사용한 근무표를 입력해 주세요')).toBeInTheDocument();
+        expect(
+            screen.getByRole('heading', {name: /병동 및 근무표 설정을 위해\s+최근에 사용한 근무표를 입력해 주세요/}),
+        ).toBeInTheDocument();
         expect(screen.getByText('기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.')).toBeInTheDocument();
 
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
@@ -498,7 +500,7 @@ describe('OnboardingWardCreatePage', () => {
 
         const dialog = screen.getByRole('dialog');
 
-        expect(within(dialog).getByText('근무표 파일 등록')).toBeInTheDocument();
+        expect(within(dialog).getByText(`${currentMonth.month}월 근무표 파일 등록`)).toBeInTheDocument();
         expect(within(dialog).getByText('"근무표 파일 템플릿" 양식을 다운로드하여 작성하신 후 "등록"을 클릭해주세요')).toBeInTheDocument();
         expect(within(dialog).getByRole('button', {name: /근무표 파일 템플릿 다운로드/})).toBeInTheDocument();
 
@@ -655,6 +657,10 @@ describe('OnboardingWardCreatePage', () => {
         const secondCustomTerm = screen.getByLabelText('1행 2일 근무') as HTMLInputElement;
         const firstColorBefore = firstCustomTerm.style.backgroundColor;
         const secondColorBefore = secondCustomTerm.style.backgroundColor;
+
+        expect(firstColorBefore).not.toBe('rgb(148, 163, 184)');
+        expect(secondColorBefore).not.toBe('rgb(148, 163, 184)');
+        expect(firstColorBefore).not.toBe(secondColorBefore);
 
         fireEvent.change(screen.getByLabelText('1행 3일 근무'), {target: {value: 'BBB'}});
 

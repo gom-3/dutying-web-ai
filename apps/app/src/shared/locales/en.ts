@@ -143,7 +143,7 @@ export const en: TLocale = {
                 noTeamsDescription: 'Create a shift team first or check ward settings.',
             },
             monthRangeTitle: 'You can’t create a schedule for this period',
-            monthRangeDescription: 'On Dutying, you can only create schedules for this month and the next month.',
+            monthRangeDescription: 'On Dutying, you can create schedules through next month.',
             stepLoadFailed: 'Failed to load this step',
             requests: {
                 title: 'Confirm requested shifts',
@@ -275,6 +275,13 @@ export const en: TLocale = {
                     description: 'To save a new history item, delete the oldest one, "{{title}}". Delete it and save?',
                     confirm: 'Delete and save',
                     cancel: 'Cancel',
+                },
+                lastShiftBlankDialog: {
+                    title: 'Review previous shifts?',
+                    description:
+                        'Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.\nIf this is the first schedule, you can confirm as-is.',
+                    confirm: 'Confirm as-is',
+                    cancel: 'Review input',
                 },
                 snapshotSidebar: {
                     title: 'History',

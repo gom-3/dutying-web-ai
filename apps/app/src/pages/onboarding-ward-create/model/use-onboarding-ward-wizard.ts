@@ -210,6 +210,7 @@ const toParsedShiftType = (shiftType: TOnboardingWardDraft['shiftTypes'][number]
     isDefault: shiftType.isDefault,
     isOff: shiftType.isOff,
     classification: shiftType.classification,
+    source: shiftType.source,
 });
 const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewResponse): TOnboardingParsedShiftType[] =>
     response.wardShiftTypes.map((shiftType) => ({
@@ -252,7 +253,12 @@ const mergeSchedulePreviewShiftTypes = (
     previewShiftTypes.forEach(appendShortName);
 
     return orderedShortNames
-        .map((shortName) => previewByShortName.get(shortName) ?? draftByShortName.get(shortName))
+        .map((shortName) => {
+            const draftShiftType = draftByShortName.get(shortName);
+            const previewShiftType = previewByShortName.get(shortName);
+
+            return previewShiftType ? {...previewShiftType, source: draftShiftType?.source} : draftShiftType;
+        })
         .filter((shiftType): shiftType is TOnboardingParsedShiftType => Boolean(shiftType));
 };
 const createPreviewNurseId = (index: number) => `nurse-preview-${Date.now()}-${index}`;

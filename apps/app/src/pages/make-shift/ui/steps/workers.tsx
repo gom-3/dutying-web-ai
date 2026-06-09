@@ -561,6 +561,7 @@ export function Workers() {
                             shiftTeamId={currentShiftTeamId}
                             levelsByNurseId={levelsByNurseId}
                             skillConfig={skillConfig}
+                            wardShiftTypes={ward?.wardShiftTypes}
                             isBusy={isWorkerToggleBusy}
                             getWorkerState={getWorkerState}
                             onToggleWorker={(nurse, checked) => void handleToggleWorker(nurse, checked)}

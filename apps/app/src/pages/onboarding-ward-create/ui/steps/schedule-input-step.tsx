@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {ChevronLeft, ChevronRight, FileSpreadsheet, Plus, Trash2, UsersRound, X} from 'lucide-react';
+import {ChevronLeft, ChevronRight, Plus, Trash2, UsersRound, X} from 'lucide-react';
 import {
     type Dispatch,
     type KeyboardEvent,
@@ -12,9 +12,10 @@ import {
     useRef,
     useState,
 } from 'react';
+import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
 import {
-    getOnboardingShiftCodeColor,
+    getAvailableOnboardingShiftColor,
     normalizeOnboardingShiftCode,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
@@ -249,7 +250,19 @@ const appendNewShiftTerms = (currentOrder: string[], rows: TOnboardingScheduleRo
 
     return nextOrder.length === currentOrder.length ? currentOrder : nextOrder;
 };
-const buildShiftTermColorMap = (termOrder: string[]) => new Map(termOrder.map((term) => [term, getOnboardingShiftCodeColor(term)]));
+const buildShiftTermColorMap = (termOrder: string[]) => {
+    const usedColors = new Set(FIXED_SHIFT_COLOR_BY_TERM.values());
+
+    return new Map(
+        termOrder.map((term, index) => {
+            const color = getAvailableOnboardingShiftColor(usedColors, index);
+
+            usedColors.add(color);
+
+            return [term, color];
+        }),
+    );
+};
 
 function ScheduleInputStep({
     draft,
@@ -800,7 +813,15 @@ function ScheduleInputStep({
                         className="inline-flex h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-[#107C41] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#0E6F3A] focus-visible:outline-2 focus-visible:outline-[#107C41]/35 active:bg-[#0B5F31]"
                         onClick={() => setIsScheduleFileUploadModalOpen(true)}
                     >
-                        <FileSpreadsheet className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
+                        <img
+                            src={whiteExcelIcon}
+                            alt=""
+                            aria-hidden="true"
+                            width={18}
+                            height={18}
+                            decoding="async"
+                            className="h-[17.6px] w-[17.6px] object-contain"
+                        />
                         근무표 파일 등록
                     </button>
                 </div>

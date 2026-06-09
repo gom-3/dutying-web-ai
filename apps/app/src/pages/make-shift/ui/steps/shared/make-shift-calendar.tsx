@@ -585,7 +585,7 @@ function isEditableDutyCell(rowIndex: number, colIndex: number, readonly: boolea
 
     if (!isDutyCellPositionInBounds(doc, rowIndex, colIndex)) return false;
 
-    if (colIndex < 0) return editorMode !== 'fixed';
+    if (colIndex < 0) return true;
 
     const key = getDutyCellLockKey(doc, rowIndex, colIndex);
 
@@ -1394,6 +1394,9 @@ function CalendarRowLeft({
                                         onPointerDown={(event) => {
                                             onCellPointerDown(event, rowIndex, colIndex);
                                         }}
+                                        onMouseDown={(event) => {
+                                            if (!readonly) event.preventDefault();
+                                        }}
                                         onPointerEnter={(event) => {
                                             onCellPointerEnter(event, rowIndex, colIndex);
                                         }}
@@ -1484,6 +1487,9 @@ function CalendarRowLeft({
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);
+                                }}
+                                onMouseDown={(event) => {
+                                    if (!readonly) event.preventDefault();
                                 }}
                                 onPointerEnter={(event) => {
                                     onCellPointerEnter(event, rowIndex, j);

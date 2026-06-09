@@ -2,13 +2,18 @@
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
 
-const STEP_LABELS: Record<TOnboardingStep, {title: string; description: string}> = {
+const STEP_LABELS: Record<TOnboardingStep, {title: ReactNode; description: string}> = {
     1: {
         title: '병원명과 병동명을 입력해 주세요',
         description: '',
     },
     2: {
-        title: '병동 및 근무표 설정을 위해\n최근에 사용한 근무표를 입력해 주세요',
+        title: (
+            <>
+                병동 및 근무표 설정을 위해{'\n'}
+                <span className="text-main-1">최근에 사용한 근무표</span>를 입력해 주세요
+            </>
+        ),
         description: '기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.',
     },
     3: {

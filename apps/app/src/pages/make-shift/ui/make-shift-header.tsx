@@ -1,8 +1,5 @@
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {
-    isMakeShiftMonthAtOrAfterNextCalendarMonth,
-    isMakeShiftMonthAtOrBeforeThisCalendarMonth,
-} from '@/shared/lib/shift-calendar-month-policy';
+import {isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth, isMakeShiftPreviousMonthDisabled} from '@/shared/lib/shift-calendar-month-policy';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../model/make-shift-store';
 
@@ -15,8 +12,8 @@ export function MakeShiftHeader() {
     const goPrevMonth = useMakeShiftStore((s) => s.goPrevMonth);
     const goNextMonth = useMakeShiftStore((s) => s.goNextMonth);
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
-    const prevMonthDisabled = isMakeShiftMonthAtOrBeforeThisCalendarMonth(year, month);
-    const nextMonthDisabled = isMakeShiftMonthAtOrAfterNextCalendarMonth(year, month);
+    const prevMonthDisabled = isMakeShiftPreviousMonthDisabled();
+    const nextMonthDisabled = isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth(year, month);
 
     return (
         <DutyManagementMonthTeamHeader

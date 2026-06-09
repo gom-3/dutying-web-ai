@@ -35,10 +35,7 @@ export const MakeShiftPageView = () => {
     const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
     const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
     const draftStep = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
-    const hasConfirmedDraft = draftStep === 6;
-    const hasIncompleteDraft = shiftStatus === 'success' && !shiftExists && !shiftFullyAssigned && draftStep !== null && draftStep < 6;
-    /** 배정 1칸 이상 (`isDutyShiftWithoutAssignments` 역). 전부 채움은 `shiftFullyAssigned`. */
-    const shouldEnterExistingShiftFlow = shiftStatus === 'success' && (shiftExists || shiftFullyAssigned || hasConfirmedDraft);
+    const hasProgress = shiftStatus === 'success' && (draftStep !== null || shiftExists || shiftFullyAssigned);
     const isStepping = phase === 'stepping';
     const handleCreateCurrentMonth = () => {
         useCase.start();
@@ -96,7 +93,7 @@ export const MakeShiftPageView = () => {
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
                                     className="min-h-0 py-0"
                                 />
-                            ) : hasIncompleteDraft ? (
+                            ) : hasProgress ? (
                                 <PageState
                                     tone="empty"
                                     title={
@@ -134,14 +131,6 @@ export const MakeShiftPageView = () => {
                                         </ManagementActionButton>
                                     </div>
                                 </PageState>
-                            ) : shouldEnterExistingShiftFlow ? (
-                                <PageState
-                                    tone="loading"
-                                    loadingColor="purple"
-                                    title={t('page.makeShift.overview.loading')}
-                                    description={t('page.state.loadingDescription')}
-                                    className="min-h-0 py-0"
-                                />
                             ) : (
                                 <PageState
                                     tone="empty"

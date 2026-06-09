@@ -140,7 +140,7 @@ export const ko = {
                 noTeamsDescription: '근무팀을 먼저 만들거나 병동 설정을 확인해 주세요.',
             },
             monthRangeTitle: '이 기간에는 근무표를 만들 수 없어요',
-            monthRangeDescription: '듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.',
+            monthRangeDescription: '듀팅에서는 이번 달 기준 다음 달까지만 근무표를 생성할 수 있어요.',
             stepLoadFailed: '진행 단계를 불러오지 못했어요',
             requests: {
                 title: '신청 근무를 확정해 주세요',
@@ -272,6 +272,13 @@ export const ko = {
                     description: '새 히스토리를 저장하려면 가장 오래된 히스토리 "{{title}}"를 삭제해야 해요. 삭제하고 저장할까요?',
                     confirm: '삭제 후 저장',
                     cancel: '취소',
+                },
+                lastShiftBlankDialog: {
+                    title: '전달근무를 확인했나요?',
+                    description:
+                        '전달근무에 빈칸이 있어요. 이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.\n이번이 첫 근무표라면 그대로 확정해도 괜찮아요.',
+                    confirm: '그대로 확정',
+                    cancel: '입력 확인',
                 },
                 snapshotSidebar: {
                     title: '히스토리',
