@@ -68,7 +68,7 @@ describe('LoginPage', () => {
         vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
     });
 
-    it('renders sign-in as the default admin login page with a signup link', () => {
+    it('renders sign-in as the default admin login page without a signup entry', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.SIGN_IN]}>
                 <Routes>
@@ -84,7 +84,7 @@ describe('LoginPage', () => {
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
         expect(screen.queryByText('아직 계정이 없나요?')).not.toBeInTheDocument();
-        expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
+        expect(screen.queryByRole('link', {name: '회원가입'})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toHaveAttribute(
             'href',
             'https://api.dutying.net/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fmake',

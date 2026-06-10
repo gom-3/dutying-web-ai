@@ -23,7 +23,6 @@ type TShiftCalendarRowProps = {
     enableDivisionManagement: boolean;
     onEditDivision?: (opts: {shiftNurseId: number; level: number; direction: 1 | -1}) => void;
     onSelectNurse?: (nurseId: number | null) => void;
-    onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
     doc: TDutyDoc;
     docRowIndex: number;
     docRow: TDutyDoc['rows'][number] | undefined;
@@ -52,7 +51,6 @@ export function ShiftCalendarRow({
     enableDivisionManagement,
     onEditDivision,
     onSelectNurse,
-    onUpdateCarry,
     docRowIndex,
     docRow,
     doc,
@@ -161,26 +159,6 @@ export function ShiftCalendarRow({
                         }}
                     >
                         {row.shiftNurse.name}
-                    </div>
-                    <div className="text-center font-apple text-[clamp(11px,0.75vw,14px)] text-sub-1">
-                        {readonly || !onUpdateCarry ? (
-                            <div className="h-7 w-7 cursor-default rounded-[.3125rem] border-[.0313rem] bg-main-bg font-poppins text-[clamp(11px,0.78vw,15px)] text-sub-2 outline-none focus:bg-main-4">
-                                {row.shiftNurse.carried}
-                            </div>
-                        ) : (
-                            <button
-                                className="h-7 w-7 rounded-[.3125rem] border-[.0313rem] bg-main-bg font-poppins text-[clamp(11px,0.78vw,15px)] text-sub-2 outline-none focus:bg-main-4"
-                                onKeyDown={(e) => {
-                                    e.preventDefault();
-
-                                    if (e.key === 'ArrowUp') onUpdateCarry(row.shiftNurse.shiftNurseId, row.shiftNurse.carried + 1);
-
-                                    if (e.key === 'ArrowDown') onUpdateCarry(row.shiftNurse.shiftNurseId, row.shiftNurse.carried - 1);
-                                }}
-                            >
-                                {row.shiftNurse.carried}
-                            </button>
-                        )}
                     </div>
                     {/* 전달 근무 배지: 줄바꿈되면 세로로 쌓여 보이므로 nowrap 유지 */}
                     <div className="flex min-w-0 flex-nowrap justify-center gap-[.125rem] overflow-hidden">

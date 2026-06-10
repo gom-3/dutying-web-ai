@@ -75,6 +75,14 @@ function makePartiallyAssignedShift(): TShift {
     return shift;
 }
 
+function makeFullyAssignedShift(): TShift {
+    const shift = makePartiallyAssignedShift();
+
+    shift.divisionShiftNurses[0]![0]!.wardShiftList = [1, 1];
+
+    return shift;
+}
+
 function wrapper({children}: {children: ReactNode}) {
     return <MemoryRouter>{children}</MemoryRouter>;
 }
@@ -116,7 +124,7 @@ describe('useMakeShiftBootstrap', () => {
         });
     });
 
-    it('keeps the overview when saved progress is already confirmed', async () => {
+    it('opens the confirmed step when saved progress is already confirmed and the schedule has assignments', async () => {
         useMakeShiftStore.getState().setYearMonth({year: 2026, month: 6});
         saveDraftStep(1, 10, 2026, 6, 6);
         saveMaxReachedStep(1, 10, 2026, 6, 6);
@@ -128,9 +136,30 @@ describe('useMakeShiftBootstrap', () => {
 
         await waitFor(() => {
             expect(useMakeShiftStore.getState()).toMatchObject({
-                phase: 'overview',
+                phase: 'stepping',
                 currentShiftTeamId: 10,
                 currentStep: 6,
+                maxReachedStep: 6,
+                restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('opens the confirmed step when the selected schedule is fully assigned', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeFullyAssignedShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 6,
+                maxReachedStep: 6,
+                shiftExists: true,
+                shiftFullyAssigned: true,
                 restoreDraftModalOpen: false,
             });
         });

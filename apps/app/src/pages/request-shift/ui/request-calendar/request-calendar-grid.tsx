@@ -3,7 +3,7 @@ import {type RefObject} from 'react';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
-import {type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
+import {type TSkillLevelConfig, type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
 import RequestCalendarGridRow from './request-calendar-grid-row';
 
 interface IRequestCalendarGridProps {
@@ -16,7 +16,8 @@ interface IRequestCalendarGridProps {
     dutyRequestLookup: Map<string, TDutyRequest>;
     connectedNurseIds: Set<number>;
     skillConfig: TSkillLevelConfig;
-    levelsByNurseId: Record<number, number>;
+    levelsByNurseId: Record<number, TSkillLevelValue>;
+    showSkillColumn: boolean;
     focusedCellRef: RefObject<HTMLDivElement | null>;
     onDragEnd?: (result: DropResult) => void;
     onSelectCell: (focus: TFocus) => void;
@@ -33,6 +34,7 @@ export default function RequestCalendarGrid({
     connectedNurseIds,
     skillConfig,
     levelsByNurseId,
+    showSkillColumn,
     focusedCellRef,
     onDragEnd,
     onSelectCell,
@@ -70,6 +72,7 @@ export default function RequestCalendarGrid({
                                                         connectedNurseIds={connectedNurseIds}
                                                         skillConfig={skillConfig}
                                                         skillLevel={levelsByNurseId[row.shiftNurse.nurseId]}
+                                                        showSkillColumn={showSkillColumn}
                                                         focusedCellRef={focusedCellRef}
                                                         draggableProvided={draggableProvided}
                                                         onSelectCell={onSelectCell}

@@ -188,6 +188,54 @@ describe('OnboardingWardCreatePage model', () => {
         );
     });
 
+    it('removes a schedule-derived nurse when their name cell is cleared', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]?.id ?? '';
+        const withNurses = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {id: 'row-a', nurseId: null, name: 'Nurse A', shifts: {'1': 'D'}},
+                {id: 'row-b', nurseId: null, name: 'Nurse B', shifts: {'1': 'E'}},
+            ],
+        });
+        const [nurseARow, nurseBRow] = withNurses.scheduleInputs[teamId]?.['2026-05']?.rows ?? [];
+        const clearedDraft = applyScheduleInputDraft(withNurses, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [
+                {...nurseARow!, name: ''},
+                nurseBRow!,
+            ],
+        });
+
+        expect(clearedDraft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
+        expect(clearedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.nurseId).toBeNull();
+    });
+
+    it('keeps nurses that still appear in another schedule month', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]?.id ?? '';
+        const mayDraft = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [{id: 'may-row', nurseId: null, name: 'Nurse A', shifts: {'1': 'D'}}],
+        });
+        const juneDraft = applyScheduleInputDraft(mayDraft, teamId, {
+            year: 2026,
+            month: 6,
+            rows: [{id: 'june-row', nurseId: null, name: 'Nurse B', shifts: {'1': 'E'}}],
+        });
+        const clearedMayDraft = applyScheduleInputDraft(juneDraft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [],
+        });
+
+        expect(clearedMayDraft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
+        expect(clearedMayDraft.scheduleInputs[teamId]?.['2026-06']?.rows[0]?.name).toBe('Nurse B');
+    });
+
     it('clears sample nurses when starting manual entry without an upload', () => {
         const draft = createInitialDraft();
         const manualDraft = prepareManualEntryDraft(draft);
@@ -643,6 +691,6 @@ describe('OnboardingWardCreatePage model', () => {
             paletteId: 'cool',
             autoAssign: false,
         });
-        expect(nextDraft.nurses.map((nurse) => nurse.level)).toEqual([3, 3, 3, 3]);
+        expect(nextDraft.nurses.map((nurse) => nurse.level)).toEqual([null, 3, 3, 3]);
     });
 });

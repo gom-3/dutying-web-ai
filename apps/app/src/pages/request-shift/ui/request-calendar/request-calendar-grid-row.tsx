@@ -24,7 +24,8 @@ type TRequestCalendarGridRowProps = {
     dutyRequestLookup: Map<string, TDutyRequest>;
     connectedNurseIds: Set<number>;
     skillConfig: TSkillLevelConfig;
-    skillLevel: number | undefined;
+    skillLevel: number | null | undefined;
+    showSkillColumn: boolean;
     focusedCellRef: RefObject<HTMLDivElement | null>;
     draggableProvided: DraggableProvided;
     onSelectCell: (focus: TFocus) => void;
@@ -43,6 +44,7 @@ export default function RequestCalendarGridRow({
     connectedNurseIds,
     skillConfig,
     skillLevel,
+    showSkillColumn,
     focusedCellRef,
     draggableProvided,
     onSelectCell,
@@ -65,9 +67,11 @@ export default function RequestCalendarGridRow({
                 </div>
             ) : null}
             <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS}`}>{row.shiftNurse.name}</div>
-            <div className="flex w-11 shrink-0 justify-center">
-                <SkillBadge level={skillLevel} config={skillConfig} className="min-h-[18px] min-w-10 px-1.5 text-[10px]" />
-            </div>
+            {showSkillColumn ? (
+                <div className="flex w-11 shrink-0 justify-center">
+                    <SkillBadge level={skillLevel} config={skillConfig} className="min-h-[18px] min-w-10 px-1.5 text-[10px]" />
+                </div>
+            ) : null}
             <div className="flex w-6 shrink-0 items-center justify-center text-center font-apple text-[13px] text-sub-1">
                 {connectedNurseIds.has(row.shiftNurse.nurseId) ? (
                     <LinkedIcon className="h-[17px] w-[17px]" />

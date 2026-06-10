@@ -36,8 +36,8 @@ const SORT_OPTIONS: {value: TSortMode; label: string}[] = [
     {value: 'name', label: '가나다순'},
     {value: 'skill', label: '숙련도순'},
 ];
-const SKILL_UNSELECTED_LABEL = '숙련도 미선택';
-const SKILL_UNSELECTED_OPTION_LABEL = '미선택';
+const SKILL_UNSELECTED_LABEL = '-';
+const SKILL_UNSELECTED_OPTION_LABEL = '-';
 const SKILL_UNSELECTED_BACKGROUND = '#E5E7EB';
 const SKILL_UNSELECTED_TEXT = '#6B7280';
 const NURSE_GRID_PADDING_X = 'px-6';

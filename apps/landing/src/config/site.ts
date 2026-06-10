@@ -40,6 +40,7 @@ export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
         appLinks: {
             home: appOrigin,
             login: `${appOrigin}/login`,
+            signup: `${appOrigin}/signup`,
             makeEntry: `${appOrigin}/login?next=%2Fmake`,
             make: `${appOrigin}/make`,
             register: `${appOrigin}/register`,

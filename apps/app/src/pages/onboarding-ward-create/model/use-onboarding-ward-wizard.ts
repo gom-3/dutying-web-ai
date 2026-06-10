@@ -263,6 +263,28 @@ const mergeSchedulePreviewShiftTypes = (
 };
 const createPreviewNurseId = (index: number) => `nurse-preview-${Date.now()}-${index}`;
 const normalizeNurseMergeKey = (name: string) => name.trim();
+const getScheduleReferencedNurseKeys = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'][string]) => {
+    const ids = new Set<string>();
+    const names = new Set<string>();
+
+    Object.values(scheduleInputs ?? {}).forEach((teamSchedule) => {
+        teamSchedule?.rows.forEach((row) => {
+            const name = normalizeNurseMergeKey(row.name);
+
+            if (!name) {
+                return;
+            }
+
+            names.add(name);
+
+            if (row.nurseId) {
+                ids.add(row.nurseId);
+            }
+        });
+    });
+
+    return {ids, names};
+};
 const mergeInitialShifts = (
     existingShifts: TOnboardingNurseDraft['initialShifts'] | undefined,
     nextShifts: TOnboardingNurseDraft['initialShifts'] | undefined,
@@ -294,6 +316,7 @@ const applySchedulePreviewToDraft = (
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const existingTeamNurses = draftWithShiftTypes.nurses.filter((nurse) => nurse.teamId === teamId);
     const existingNurseByName = new Map(existingTeamNurses.map((nurse) => [normalizeNurseMergeKey(nurse.name), nurse]));
+    const scheduleReferencedNurseKeys = getScheduleReferencedNurseKeys(draftWithShiftTypes.scheduleInputs?.[teamId]);
     const touchedNurseIds = new Set<string>();
     const nurseIdByDisplayOrder = new Map<number, string>();
     const nextTeamNurses = response.nurses.map((nurse, index) => {
@@ -316,7 +339,11 @@ const applySchedulePreviewToDraft = (
             initialShifts: mergeInitialShifts(existingNurse?.initialShifts, nurse.initialShifts),
         };
     });
-    const preservedTeamNurses = existingTeamNurses.filter((nurse) => !touchedNurseIds.has(nurse.id));
+    const preservedTeamNurses = existingTeamNurses.filter(
+        (nurse) =>
+            !touchedNurseIds.has(nurse.id) &&
+            (scheduleReferencedNurseKeys.ids.has(nurse.id) || scheduleReferencedNurseKeys.names.has(normalizeNurseMergeKey(nurse.name))),
+    );
     const monthKey = getScheduleMonthKey(schedule.year, schedule.month);
     const nextSchedule: TOnboardingTeamScheduleDraft = {
         ...schedule,

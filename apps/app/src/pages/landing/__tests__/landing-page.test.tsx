@@ -60,6 +60,7 @@ describe('LandingPage', () => {
 
         expect(screen.getByRole('heading', {name: /교대 근무표,.*듀팅으로 더 간편하게/})).toBeInTheDocument();
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.LOGIN);
+        expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
         expect(screen.getByRole('link', {name: '웹에서 근무표 만들기'})).toHaveAttribute('href', `${ROUTE.LOGIN}?next=%2Fmake`);
         expect(screen.getByRole('link', {name: '근무표 관리자 웹'})).toHaveAttribute('href', '#web');
         expect(screen.getByRole('link', {name: '간호사 앱'})).toHaveAttribute('href', '#app');
@@ -87,6 +88,7 @@ describe('LandingPage', () => {
         );
 
         expect(screen.queryByRole('link', {name: '로그인'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '회원가입'})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '마이페이지'})).not.toBeInTheDocument();
         expect(screen.getByRole('img', {name: '김관리 프로필 이미지'})).toHaveAttribute('src', 'https://cdn.example.com/profile.png');
 

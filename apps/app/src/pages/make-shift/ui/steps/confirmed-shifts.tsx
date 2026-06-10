@@ -15,6 +15,7 @@ import {useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
+import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
@@ -54,6 +55,7 @@ export function ConfirmedShifts() {
     const teamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.confirmedShifts.fallbackTeamName');
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
+    const skillColumn = useMakeShiftSkillColumn(shift);
     const doc = useMemo(() => toConfirmedDoc(shift, year, month), [month, shift, year]);
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,
@@ -200,6 +202,7 @@ export function ConfirmedShifts() {
                                 showFaults={false}
                                 readonly
                                 disableInitialSelection
+                                skillColumn={skillColumn}
                             />
                         </ConfirmedCalendarBoundary>
                     </div>

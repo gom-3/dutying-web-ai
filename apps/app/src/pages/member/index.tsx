@@ -22,6 +22,7 @@ import {
     getWardSkillSettings,
     resolveWardSkillLevels,
     saveWardSkillSettings,
+    type TSkillLevelValue,
     type TWardSkillSettings,
 } from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
@@ -76,9 +77,9 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; label: string}[] = [
     {value: 'manual', label: '임의순'},
     {value: 'name', label: '가나다순'},
@@ -93,7 +94,7 @@ const compareMemberNurseName = (left: TNurse, right: TNurse) => {
 
     return left.nurseId - right.nurseId;
 };
-const compareMemberNurseSkill = (left: TNurse, right: TNurse, levelsByNurseId: Record<number, number>) => {
+const compareMemberNurseSkill = (left: TNurse, right: TNurse, levelsByNurseId: Record<number, TSkillLevelValue>) => {
     const leftLevel = levelsByNurseId[left.nurseId] ?? Number.NEGATIVE_INFINITY;
     const rightLevel = levelsByNurseId[right.nurseId] ?? Number.NEGATIVE_INFINITY;
 
@@ -304,7 +305,7 @@ function MemberPage() {
         const comparator =
             nurseSortMode === 'name'
                 ? compareMemberNurseName
-                : (left: TNurse, right: TNurse) => compareMemberNurseSkill(left, right, levelsByNurseId as Record<number, number>);
+                : (left: TNurse, right: TNurse) => compareMemberNurseSkill(left, right, levelsByNurseId);
 
         return [...onNurses].sort(comparator).concat([...offNurses].sort(comparator));
     }, [
@@ -640,6 +641,32 @@ function MemberPage() {
         setSkillSettings(nextSettings);
         setNurseSortMode('manual');
     };
+    const saveNurseSkillLevel = useCallback(
+        (nurseId: number, nextLevel: number | null) => {
+            setUnselectedSkillNurseIds((prev) => {
+                const next = new Set(prev);
+
+                if (nextLevel === null) {
+                    next.add(nurseId);
+                } else {
+                    next.delete(nurseId);
+                }
+
+                return next;
+            });
+
+            if (!wardId) return;
+
+            const normalized = nextLevel === null ? null : Math.max(1, Math.min(skillConfig.levelCount, nextLevel));
+            const nextConfig = {...skillConfig, autoAssign: false};
+            const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
+
+            nextSettings.frozenLevelsByNurseId[nurseId] = normalized;
+            saveWardSkillSettings(wardId, nextSettings);
+            setSkillSettings(nextSettings);
+        },
+        [allNurses, skillConfig, skillSettings, wardId],
+    );
     const handleDeleteActiveTeam = async () => {
         if (
             shouldBlockForUnsavedChanges(async () => {
@@ -1311,7 +1338,10 @@ function MemberPage() {
                                                                 nurse={nurse}
                                                                 isWorker={pendingWorkerByNurseId[nurse.nurseId] ?? nurse.isWorker}
                                                                 isSelected={selectedNurse?.nurseId === nurse.nurseId}
-                                                                isSkillUnselected={unselectedSkillNurseIds.has(nurse.nurseId)}
+                                                                isSkillUnselected={
+                                                                    unselectedSkillNurseIds.has(nurse.nurseId) ||
+                                                                    levelsByNurseId[nurse.nurseId] == null
+                                                                }
                                                                 isSkillFeatureEnabled={isSkillFeatureEnabled}
                                                                 skillLevel={levelsByNurseId[nurse.nurseId]}
                                                                 skillConfig={skillConfig}
@@ -1335,38 +1365,7 @@ function MemberPage() {
                                                                 }}
                                                                 onUpdateNurseShift={updateNurseShift}
                                                                 onSaveSkillLevel={(nextLevel) => {
-                                                                    if (nextLevel === null) {
-                                                                        setUnselectedSkillNurseIds((prev) =>
-                                                                            new Set(prev).add(nurse.nurseId),
-                                                                        );
-
-                                                                        return;
-                                                                    }
-
-                                                                    setUnselectedSkillNurseIds((prev) => {
-                                                                        const next = new Set(prev);
-
-                                                                        next.delete(nurse.nurseId);
-
-                                                                        return next;
-                                                                    });
-
-                                                                    if (!wardId) return;
-
-                                                                    const normalized = Math.max(
-                                                                        1,
-                                                                        Math.min(skillConfig.levelCount, nextLevel),
-                                                                    );
-                                                                    const nextConfig = {...skillConfig, autoAssign: false};
-                                                                    const nextSettings = createWardSkillSettings(
-                                                                        allNurses,
-                                                                        nextConfig,
-                                                                        skillSettings,
-                                                                    );
-
-                                                                    nextSettings.frozenLevelsByNurseId[nurse.nurseId] = normalized;
-                                                                    saveWardSkillSettings(wardId, nextSettings);
-                                                                    setSkillSettings(nextSettings);
+                                                                    saveNurseSkillLevel(nurse.nurseId, nextLevel);
                                                                 }}
                                                                 onSelect={() => {
                                                                     if (
@@ -1452,33 +1451,14 @@ function MemberPage() {
                                 onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
                                 onRegisterDraftActions={handleRegisterNurseDraftActions}
                                 isSkillFeatureEnabled={isSkillFeatureEnabled}
-                                isSkillUnselected={unselectedSkillNurseIds.has(selectedNurse.nurseId)}
+                                isSkillUnselected={
+                                    unselectedSkillNurseIds.has(selectedNurse.nurseId) ||
+                                    levelsByNurseId[selectedNurse.nurseId] == null
+                                }
                                 onSaveSkillLevel={(nextLevel) => {
                                     if (!isSkillFeatureEnabled) return;
 
-                                    if (nextLevel === null) {
-                                        setUnselectedSkillNurseIds((prev) => new Set(prev).add(selectedNurse.nurseId));
-
-                                        return;
-                                    }
-
-                                    setUnselectedSkillNurseIds((prev) => {
-                                        const next = new Set(prev);
-
-                                        next.delete(selectedNurse.nurseId);
-
-                                        return next;
-                                    });
-
-                                    if (!wardId) return;
-
-                                    const normalized = Math.max(1, Math.min(skillConfig.levelCount, nextLevel));
-                                    const nextConfig = {...skillConfig, autoAssign: false};
-                                    const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
-
-                                    nextSettings.frozenLevelsByNurseId[selectedNurse.nurseId] = normalized;
-                                    saveWardSkillSettings(wardId, nextSettings);
-                                    setSkillSettings(nextSettings);
+                                    saveNurseSkillLevel(selectedNurse.nurseId, nextLevel);
                                 }}
                                 skillConfig={skillConfig}
                                 skillLevel={levelsByNurseId[selectedNurse.nurseId]}
@@ -1666,7 +1646,7 @@ function MemberNurseRow({
                                 <SkillBadge
                                     level={isSkillUnselected ? null : skillLevel}
                                     config={skillConfig}
-                                    label={isSkillUnselected ? '선택안함' : undefined}
+                                    label={isSkillUnselected ? '-' : undefined}
                                     backgroundColor={isSkillUnselected ? '#E5E7EB' : undefined}
                                     textColor={isSkillUnselected ? '#6B7280' : undefined}
                                 />
@@ -1687,7 +1667,7 @@ function MemberNurseRow({
                                             <SkillBadge
                                                 level={null}
                                                 config={skillConfig}
-                                                label="선택안함"
+                                                label="-"
                                                 backgroundColor="#E5E7EB"
                                                 textColor="#6B7280"
                                             />
@@ -1714,7 +1694,7 @@ function MemberNurseRow({
                         </div>
                     </div>
                 ) : null}
-                <div className={cn('flex min-w-0 flex-nowrap items-center justify-center gap-1 whitespace-nowrap', fadedClass)}>
+                <div className={cn('flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-0.5 overflow-hidden', fadedClass)}>
                     {shiftTypeOptions.length > 0 ? (
                         shiftTypeOptions.map((shiftType) => {
                             const selected = shiftType.isPossible;
@@ -1752,7 +1732,7 @@ function MemberNurseRow({
                                 >
                                     <span
                                         className={cn(
-                                            'flex h-[19px] min-w-[19px] items-center justify-center rounded-[4px] transition-[max-width,padding,gap] duration-150',
+                                            'flex h-[19px] min-w-[19px] items-center justify-center overflow-hidden rounded-[4px] transition-[max-width,padding,gap] duration-150',
                                             'max-w-[53px] gap-0.5 px-1',
                                         )}
                                         style={{backgroundColor: badgeBackgroundColor}}
@@ -1771,7 +1751,7 @@ function MemberNurseRow({
                                                 strokeWidth={3}
                                             />
                                         </span>
-                                        <span className="font-poppins text-[12px] leading-none font-medium whitespace-nowrap text-white transition-transform duration-150">
+                                        <span className="min-w-0 truncate font-poppins text-[12px] leading-none font-medium whitespace-nowrap text-white transition-transform duration-150">
                                             {shiftType.shortName || '-'}
                                         </span>
                                     </span>

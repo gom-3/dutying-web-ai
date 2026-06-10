@@ -502,6 +502,88 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
     });
 
+    it('keeps a cleared uploaded schedule nurse out of the next registration step', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+        mockParseOnboardingWardExcel.mockResolvedValue({
+            nurse_candidates: [],
+            shift_type_candidates: [],
+            constraint_candidates: [],
+        });
+        mockPreviewOnboardingScheduleInput.mockImplementation((request) =>
+            Promise.resolve({
+                targetYear: request.targetYear,
+                targetMonth: request.targetMonth,
+                nurses: request.nurseNameBlock
+                    .split('\n')
+                    .map((name: string, index: number) => ({
+                        name,
+                        displayOrder: index + 1,
+                        initialShifts: [{date: `${request.targetYear}-${String(request.targetMonth).padStart(2, '0')}-01`, shiftShortName: 'D'}],
+                    })),
+                wardShiftTypes: [
+                    {name: 'Day', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
+                    {name: 'Evening', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
+                    {name: 'Night', shortName: 'N', color: '#3580FF', isOff: false, isDefault: true, classification: 'NIGHT'},
+                    {name: 'Off', shortName: 'O', color: '#465B7A', isOff: true, isDefault: true, classification: 'OFF'},
+                ],
+                warnings: [],
+                unresolvedCodes: [],
+            }),
+        );
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: 'Test Hospital', wardName: 'Test Ward'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const file = await createScheduleTemplateFile([
+            ['Nurse A', 'A Team', 'D', 'E', 'N'],
+            ['Nurse B', 'A Team', 'E', 'N', 'O'],
+        ]);
+        const monthKey = getScheduleMonthKey(2026, 6);
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        const teamId = result.current.activeTeamId;
+        const [nurseARow, nurseBRow] = result.current.draft.scheduleInputs[teamId]?.[monthKey]?.rows ?? [];
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 6,
+                rows: [
+                    {...nurseARow!, name: ''},
+                    nurseBRow!,
+                ],
+            });
+        });
+
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(mockPreviewOnboardingScheduleInput).toHaveBeenCalledTimes(1);
+        expect(mockPreviewOnboardingScheduleInput.mock.calls[0]?.[0].nurseNameBlock).toBe('Nurse B');
+        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
+    });
+
     it('uses the default nurse team when every uploaded team name is empty', async () => {
         mockParseOnboardingWardExcel.mockResolvedValue({
             nurse_candidates: [],
@@ -843,7 +925,7 @@ describe('useOnboardingWardWizard skill config behavior', () => {
             paletteId: 'cool',
             autoAssign: false,
         });
-        expect(result.current.draft.nurses.map((nurse) => nurse.level)).toEqual([3, 3, 1, 2]);
+        expect(result.current.draft.nurses.map((nurse) => nurse.level)).toEqual([null, null, null, null]);
         expect(toastSuccess).toHaveBeenCalledWith('숙련도 설정이 간호사 목록에 반영됐어요.');
         expect(toastError).not.toHaveBeenCalled();
     });
