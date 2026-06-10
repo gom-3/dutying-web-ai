@@ -7,6 +7,7 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
 import ROUTE from '@/shared/constant/path';
+import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import './landing-page.css';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
@@ -17,119 +18,136 @@ const webMakeLoginLink = `${ROUTE.LOGIN}?next=%2Fmake`;
 const getWebMakeLink = (isAuth: boolean) => (isAuth ? ROUTE.MAKE : webMakeLoginLink);
 const webCtaIconSrc = '/img/web.png';
 const appCtaIconSrc = '/img/app.png';
-const heroTitlePhrases = ['교대 근무표,', '병동 관리,'] as const;
-const mobileHeroPhrases = [
-    {
-        ariaLabel: '내 근무 일정, 듀팅에서 바로 확인해요',
-        lines: ['내 근무 일정,', '듀팅에서 바로 확인해요'],
-    },
-    {
-        ariaLabel: '신청근무와 휴일 요청을 더 쉽게 보내요',
-        lines: ['신청근무와 휴일 요청을', '더 쉽게 보내요'],
-    },
-    {
-        ariaLabel: '병동 소식도 듀팅으로 바로 받아요',
-        lines: ['병동 소식도', '듀팅으로 바로 받아요'],
-    },
-    {
-        ariaLabel: '커리어, 임상, 고민까지 듀팅에서 나눠요',
-        lines: ['커리어, 임상, 고민까지', '듀팅에서 나눠요'],
-    },
-] as const;
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const landingViewPreferenceKey = 'dutying:landing-view-preference';
 const phoneViewportQuery = '(max-width: 767px)';
 const desktopViewportMetaContent = 'width=1180';
-const featureSections = [
+const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
+const mobileHeroPhraseSpecs = [
+    {
+        ariaLabelKey: 'page.landing.mobileHero.scheduleAria',
+        lineKeys: ['page.landing.mobileHero.scheduleLine1', 'page.landing.mobileHero.scheduleLine2'],
+    },
+    {
+        ariaLabelKey: 'page.landing.mobileHero.requestAria',
+        lineKeys: ['page.landing.mobileHero.requestLine1', 'page.landing.mobileHero.requestLine2'],
+    },
+    {
+        ariaLabelKey: 'page.landing.mobileHero.wardAria',
+        lineKeys: ['page.landing.mobileHero.wardLine1', 'page.landing.mobileHero.wardLine2'],
+    },
+    {
+        ariaLabelKey: 'page.landing.mobileHero.communityAria',
+        lineKeys: ['page.landing.mobileHero.communityLine1', 'page.landing.mobileHero.communityLine2'],
+    },
+] as const satisfies readonly {ariaLabelKey: TI18nKey; lineKeys: readonly TI18nKey[]}[];
+const featureSectionSpecs = [
     {
         id: 'ai',
-        label: 'AI 자동채우기',
-        title: '빈 근무표를\n처음부터 채우지 않아도 돼요',
-        description: '놓치기 쉬운 조건을\n단계별로 확인하고 반영할 수 있어요',
+        labelKey: 'page.landing.feature.ai.label',
+        titleKey: 'page.landing.feature.ai.title',
+        descriptionKey: 'page.landing.feature.ai.description',
         image: '/img/124.png',
         align: 'right',
         background: 'bg-white',
     },
     {
         id: 'review',
-        label: 'AI 자동채우기',
-        title: '잘못된 근무를\n바로 확인하고, 수정까지',
-        description: '수정이 필요한 부분을\n바로 보고, 수정안까지 볼 수 있어요.',
+        labelKey: 'page.landing.feature.review.label',
+        titleKey: 'page.landing.feature.review.title',
+        descriptionKey: 'page.landing.feature.review.description',
         image: '/img/landing_3.webp',
         align: 'left',
         background: softPurpleBackground,
     },
     {
         id: 'integration',
-        label: '연동',
-        title: '간호사와 병동을\n연동할 수 있어요',
-        titleHighlights: ['연동'],
-        description: '신청근무를 앱에서 보낼 수 있어요.\n근무표가 확정되면 앱으로 즉시 전달돼요.',
+        labelKey: 'page.landing.feature.integration.label',
+        titleKey: 'page.landing.feature.integration.title',
+        titleHighlightKeys: ['page.landing.feature.integration.highlight'],
+        descriptionKey: 'page.landing.feature.integration.description',
         image: '/img/landing-work-schedule-2.png',
         align: 'left',
         background: 'bg-white',
     },
     {
         id: 'ward',
-        label: '게시판',
-        title: '병동 간호사에게\n필요한 내용을 쉽게 공유해요',
-        titleHighlights: ['간호사', '공유'],
-        description: '꼭 봐야 할 공지부터 가벼운 안내까지\n놓치지 않고 한 곳에서',
+        labelKey: 'page.landing.feature.ward.label',
+        titleKey: 'page.landing.feature.ward.title',
+        titleHighlightKeys: ['page.landing.feature.ward.highlightNurse', 'page.landing.feature.ward.highlightShare'],
+        descriptionKey: 'page.landing.feature.ward.description',
         image: '/img/image-1002.png',
         align: 'left',
         background: 'bg-white',
     },
-] as const;
-const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
-const appFeatureSections = [
+] as const satisfies readonly {
+    id: string;
+    labelKey: TI18nKey;
+    titleKey: TI18nKey;
+    titleHighlightKeys?: readonly TI18nKey[];
+    descriptionKey: TI18nKey;
+    image: string;
+    align: 'left' | 'right';
+    background: string;
+}[];
+const appFeatureSectionSpecs = [
     {
         id: 'app-home',
-        label: '홈',
-        title: '근무 일정부터\n개인 일정까지 한 번에',
-        titleHighlights: ['근무 일정', '개인 일정'],
-        description: '앱을 열지 않아도 위젯으로 바로 확인해요',
+        labelKey: 'page.landing.appFeature.home.label',
+        titleKey: 'page.landing.appFeature.home.title',
+        titleHighlightKeys: ['page.landing.appFeature.home.highlightSchedule', 'page.landing.appFeature.home.highlightPersonal'],
+        descriptionKey: 'page.landing.appFeature.home.description',
         image: '/img/213213123123.png',
         reverse: false,
         background: 'bg-white',
     },
     {
         id: 'app-ward',
-        label: '병동',
-        title: '병동과 연동하고\n동료 일정을 함께 확인해요',
-        titleHighlights: ['병동과 연동'],
-        description: '교대 근무에 필요한 일정 확인과 조율을 더 간편하게',
+        labelKey: 'page.landing.appFeature.ward.label',
+        titleKey: 'page.landing.appFeature.ward.title',
+        titleHighlightKeys: ['page.landing.appFeature.ward.highlight'],
+        descriptionKey: 'page.landing.appFeature.ward.description',
         image: '/img/ward-schedule.png',
         reverse: true,
         background: softPurpleBackground,
     },
     {
         id: 'app-community',
-        label: '널톡',
-        title: '간호사들의 진짜 이야기가\n모이는 곳',
-        titleHighlights: ['진짜 이야기'],
-        description: '궁금했던 정보부터\n말하기 어려웠던 고민까지 익명으로 나눠요.',
+        labelKey: 'page.landing.appFeature.community.label',
+        titleKey: 'page.landing.appFeature.community.title',
+        titleHighlightKeys: ['page.landing.appFeature.community.highlight'],
+        descriptionKey: 'page.landing.appFeature.community.description',
         image: '/img/12223.png',
         reverse: false,
         background: 'bg-white',
     },
-] as const;
-const mobileAppBenefits = [
+] as const satisfies readonly {
+    id: string;
+    labelKey: TI18nKey;
+    titleKey: TI18nKey;
+    titleHighlightKeys?: readonly TI18nKey[];
+    descriptionKey: TI18nKey;
+    image: string;
+    reverse: boolean;
+    background: string;
+}[];
+const mobileAppBenefitSpecs = [
     {
-        title: '근무 일정 확인',
-        description: '내 근무표와 개인 일정을 앱에서 바로 확인해요.',
+        titleKey: 'page.landing.mobileBenefits.schedule.title',
+        descriptionKey: 'page.landing.mobileBenefits.schedule.description',
         icon: CalendarDays,
     },
     {
-        title: '병동 연동',
-        description: '병동과 연결해 신청근무와 휴일 요청을 간편하게 보내요.',
+        titleKey: 'page.landing.mobileBenefits.ward.title',
+        descriptionKey: 'page.landing.mobileBenefits.ward.description',
         icon: UsersRound,
     },
     {
-        title: '널톡 커뮤니티',
-        description: '간호사끼리 필요한 정보와 이야기를 가볍게 나눠요.',
+        titleKey: 'page.landing.mobileBenefits.community.title',
+        descriptionKey: 'page.landing.mobileBenefits.community.description',
         icon: MessageCircle,
     },
-] as const;
+] as const satisfies readonly {titleKey: TI18nKey; descriptionKey: TI18nKey; icon: typeof CalendarDays}[];
 
 type TLandingViewPreference = 'auto' | 'desktop';
 
@@ -335,11 +353,61 @@ function TextLines({children, highlights}: {children: string; highlights?: reado
     );
 }
 
+type TLandingTranslator = ReturnType<typeof useTypedTranslation>['t'];
+type TMobileHeroPhrase = {ariaLabel: string; lines: readonly string[]};
+type TFeatureSection = {
+    id: string;
+    label: string;
+    title: string;
+    titleHighlights?: readonly string[];
+    description: string;
+    image: string;
+    align: 'left' | 'right';
+    background: string;
+};
+type TAppFeatureSection = {
+    id: string;
+    label: string;
+    title: string;
+    titleHighlights?: readonly string[];
+    description: string;
+    image: string;
+    reverse: boolean;
+    background: string;
+};
+
+function buildFeatureSections(t: TLandingTranslator): TFeatureSection[] {
+    return featureSectionSpecs.map((section) => ({
+        ...section,
+        label: t(section.labelKey),
+        title: t(section.titleKey),
+        titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
+        description: t(section.descriptionKey),
+    }));
+}
+
+function buildAppFeatureSections(t: TLandingTranslator): TAppFeatureSection[] {
+    return appFeatureSectionSpecs.map((section) => ({
+        ...section,
+        label: t(section.labelKey),
+        title: t(section.titleKey),
+        titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
+        description: t(section.descriptionKey),
+    }));
+}
+
+function buildMobileHeroPhrases(t: TLandingTranslator): TMobileHeroPhrase[] {
+    return mobileHeroPhraseSpecs.map((phrase) => ({
+        ariaLabel: t(phrase.ariaLabelKey),
+        lines: phrase.lineKeys.map((key) => t(key)),
+    }));
+}
+
 function Pill({children}: {children: string}) {
     return <span className="inline-flex rounded-[6px] bg-main-light px-3 py-1 text-sm font-bold text-main-1">{children}</span>;
 }
 
-function RotatingHeroPhrase() {
+function RotatingHeroPhrase({phrases}: {phrases: readonly string[]}) {
     const [rotationState, setRotationState] = useState<{activeIndex: number; previousIndex: number | null}>({
         activeIndex: 0,
         previousIndex: null,
@@ -352,19 +420,19 @@ function RotatingHeroPhrase() {
 
         const intervalId = window.setInterval(() => {
             setRotationState(({activeIndex}) => ({
-                activeIndex: (activeIndex + 1) % heroTitlePhrases.length,
+                activeIndex: (activeIndex + 1) % phrases.length,
                 previousIndex: activeIndex,
             }));
         }, 2600);
 
         return () => window.clearInterval(intervalId);
-    }, []);
+    }, [phrases.length]);
 
     return (
         <span className="hero-title-rotator" aria-hidden="true">
-            {heroTitlePhrases.map((phrase, index) => (
+            {phrases.map((phrase, index) => (
                 <span
-                    key={phrase}
+                    key={`${phrase}-${index}`}
                     className={`hero-gradient-text hero-title-rotator__item ${
                         rotationState.activeIndex === index ? 'is-active' : ''
                     } ${rotationState.previousIndex === index && rotationState.activeIndex !== index ? 'is-exiting' : ''}`}
@@ -376,12 +444,12 @@ function RotatingHeroPhrase() {
     );
 }
 
-function RotatingMobileHeroPhrase() {
+function RotatingMobileHeroPhrase({phrases}: {phrases: readonly TMobileHeroPhrase[]}) {
     const [rotationState, setRotationState] = useState<{activeIndex: number; previousIndex: number | null}>({
         activeIndex: 0,
         previousIndex: null,
     });
-    const activePhrase = mobileHeroPhrases[rotationState.activeIndex] ?? mobileHeroPhrases[0];
+    const activePhrase = phrases[rotationState.activeIndex] ?? phrases[0];
 
     useEffect(() => {
         if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -390,27 +458,27 @@ function RotatingMobileHeroPhrase() {
 
         const intervalId = window.setInterval(() => {
             setRotationState(({activeIndex}) => ({
-                activeIndex: (activeIndex + 1) % mobileHeroPhrases.length,
+                activeIndex: (activeIndex + 1) % phrases.length,
                 previousIndex: activeIndex,
             }));
         }, 3000);
 
         return () => window.clearInterval(intervalId);
-    }, []);
+    }, [phrases.length]);
 
     return (
         <>
-            <span className="sr-only">{activePhrase.ariaLabel}</span>
+            <span className="sr-only">{activePhrase?.ariaLabel}</span>
             <span className="hero-title-rotator mobile-hero-title-rotator" aria-hidden="true">
-                {mobileHeroPhrases.map((phrase, index) => (
+                {phrases.map((phrase, index) => (
                     <span
-                        key={phrase.ariaLabel}
+                        key={`${phrase.ariaLabel}-${index}`}
                         className={`hero-gradient-text hero-title-rotator__item mobile-hero-title-rotator__item ${
                             rotationState.activeIndex === index ? 'is-active' : ''
                         } ${rotationState.previousIndex === index && rotationState.activeIndex !== index ? 'is-exiting' : ''}`}
                     >
-                        {phrase.lines.map((line) => (
-                            <span key={line} className="block">
+                        {phrase.lines.map((line, lineIndex) => (
+                            <span key={`${line}-${lineIndex}`} className="block">
                                 {line}
                             </span>
                         ))}
@@ -443,6 +511,7 @@ function CtaIcon({src, className = 'size-5'}: {src: string; className?: string})
 }
 
 function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => void}) {
+    const {t} = useTypedTranslation();
     const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
 
     return (
@@ -453,12 +522,12 @@ function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => v
                     aria-describedby={undefined}
                     className="fixed top-1/2 left-1/2 z-[1001] flex max-h-[calc(100svh-32px)] w-[calc(100vw-32px)] max-w-[520px] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[20px] border border-white/70 bg-white shadow-[0_20px_64px_rgba(18,23,38,0.18)] focus-visible:outline-none"
                 >
-                    <Dialog.Title className="sr-only">마이페이지</Dialog.Title>
+                    <Dialog.Title className="sr-only">{t('page.landing.common.profile')}</Dialog.Title>
                     <Dialog.Close asChild>
                         <button
                             type="button"
                             className="absolute top-4 right-4 z-10 flex size-9 items-center justify-center rounded-full bg-[#F2F4F6] text-[#6B7684] transition-colors hover:bg-[#E5E8EB] hover:text-[#333D4B] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
-                            aria-label="마이페이지 닫기"
+                            aria-label={t('page.landing.common.profileClose')}
                         >
                             <X className="size-4" strokeWidth={2.2} />
                         </button>
@@ -481,6 +550,7 @@ function HeaderActions({
     isAuth: boolean;
     onLogout: (fallBackPath?: string) => Promise<void> | void;
 }) {
+    const {t} = useTypedTranslation();
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
     const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false);
     const profileMenuRef = useRef<HTMLDivElement>(null);
@@ -521,7 +591,7 @@ function HeaderActions({
                 to={ROUTE.LOGIN}
                 className="flex h-10 items-center rounded-[10px] bg-main-1 px-4 text-sm font-bold text-white transition-colors hover:bg-[#5832E7]"
             >
-                로그인
+                {t('page.landing.common.login')}
             </Link>
         );
     }
@@ -540,17 +610,17 @@ function HeaderActions({
         <>
             <Link
                 to={ROUTE.MAKE}
-                aria-label="근무표 만들기"
+                aria-label={t('page.landing.common.makeSchedule')}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-[#5832E7] sm:px-4"
             >
                 <CtaIcon src={webCtaIconSrc} className="size-4" />
-                <span className="hidden sm:inline">근무표 만들기</span>
-                <span className="sm:hidden">근무표</span>
+                <span className="hidden sm:inline">{t('page.landing.common.makeSchedule')}</span>
+                <span className="sm:hidden">{t('page.landing.common.schedule')}</span>
             </Link>
             <div ref={profileMenuRef} className="relative">
                 <button
                     type="button"
-                    aria-label="프로필 메뉴"
+                    aria-label={t('page.landing.common.profileMenu')}
                     aria-haspopup="menu"
                     aria-expanded={isProfileMenuOpen}
                     onClick={() => setIsProfileMenuOpen((prev) => !prev)}
@@ -570,7 +640,7 @@ function HeaderActions({
                             onClick={openProfileSettings}
                             className="flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold text-[#5F557F] transition-colors hover:bg-main-light hover:text-main-1"
                         >
-                            마이페이지
+                            {t('page.landing.common.profile')}
                         </button>
                         <button
                             type="button"
@@ -578,7 +648,7 @@ function HeaderActions({
                             onClick={handleLogoutClick}
                             className="flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold text-[#5F557F] transition-colors hover:bg-main-light hover:text-main-1"
                         >
-                            로그아웃
+                            {t('page.landing.common.logout')}
                         </button>
                     </div>
                 )}
@@ -589,9 +659,14 @@ function HeaderActions({
 }
 
 function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean}) {
+    const {t} = useTypedTranslation();
     const isWeb = type === 'web';
     const iconSrc = isWeb ? webCtaIconSrc : appCtaIconSrc;
-    const label = isWeb ? (isAuth ? '근무표 만들기' : '웹에서 근무표 만들기') : '앱에서 근무표 확인하기';
+    const label = isWeb
+        ? isAuth
+            ? t('page.landing.common.makeSchedule')
+            : t('page.landing.common.webMakeSchedule')
+        : t('page.landing.common.appSchedule');
     const href = isWeb ? getWebMakeLink(Boolean(isAuth)) : appStoreLink;
     const className =
         'inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5';
@@ -613,7 +688,8 @@ function DarkActionButton({type, isAuth}: {type: 'web' | 'app'; isAuth?: boolean
     );
 }
 
-function BackgroundFeatureSection({section}: {section: (typeof featureSections)[number]}) {
+function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
+    const {t} = useTypedTranslation();
     const isAiSection = section.id === 'ai';
     const isIntegrationSection = section.id === 'integration';
     const isWardSection = section.id === 'ward';
@@ -650,7 +726,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
                         <img
                             src={section.image}
-                            alt="간호사가 앱으로 근무 신청을 확인하는 모습"
+                            alt={t('page.landing.imageAlt.integration')}
                             className="w-[93%] object-contain object-center"
                         />
                     </picture>
@@ -668,7 +744,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
                         <img
                             src={section.image}
-                            alt="병동 게시판 화면"
+                            alt={t('page.landing.imageAlt.wardBoard')}
                             className="w-full object-contain object-center md:w-[120%] md:max-w-[984px] md:translate-x-20 lg:translate-x-24"
                         />
                     </picture>
@@ -686,7 +762,7 @@ function BackgroundFeatureSection({section}: {section: (typeof featureSections)[
     );
 }
 
-function AppFeatureSection({section}: {section: (typeof appFeatureSections)[number]}) {
+function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     const isHomeSection = section.id === 'app-home';
     const isWardSection = section.id === 'app-ward';
     const isCommunitySection = section.id === 'app-community';
@@ -733,11 +809,19 @@ function AppFeatureSection({section}: {section: (typeof appFeatureSections)[numb
 }
 
 function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () => void}) {
+    const {t} = useTypedTranslation();
+    const mobileHeroPhrases = buildMobileHeroPhrases(t);
+    const mobileAppBenefits = mobileAppBenefitSpecs.map((benefit) => ({
+        ...benefit,
+        title: t(benefit.titleKey),
+        description: t(benefit.descriptionKey),
+    }));
+
     return (
         <main className="landing-main landing-main--mobile-app min-h-screen bg-white font-apple text-[#150B3C]">
             <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/96 backdrop-blur">
                 <div className="mx-auto flex h-15 max-w-[520px] items-center justify-between px-5">
-                    <Link to={ROUTE.ROOT} aria-label="듀팅 랜딩 홈" className="flex shrink-0 items-center">
+                    <Link to={ROUTE.ROOT} aria-label={t('page.landing.header.homeAria')} className="flex shrink-0 items-center">
                         <img src="/img/group-19.png" alt="dutying" className="h-[27px] w-auto" />
                     </Link>
 
@@ -747,7 +831,7 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                         rel="noreferrer"
                         className="inline-flex h-9 items-center justify-center rounded-[8px] bg-main-1 px-4 text-sm font-bold text-white"
                     >
-                        앱 다운로드
+                        {t('page.landing.common.appDownload')}
                     </a>
                 </div>
             </header>
@@ -756,10 +840,10 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                 <div className="mx-auto flex min-h-[calc(100svh-60px)] max-w-[520px] flex-col px-5 pt-8 pb-7">
                     <div className="relative z-10">
                         <h1 className="reveal-on-scroll text-[36px] leading-[1.18] font-extrabold">
-                            <RotatingMobileHeroPhrase />
+                            <RotatingMobileHeroPhrase phrases={mobileHeroPhrases} />
                         </h1>
                         <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-4 text-base leading-7 font-medium text-[#6F6B7A]">
-                            근무 확인부터 신청근무/휴일 요청, 병동 소식까지 앱에서 바로 챙겨요.
+                            {t('page.landing.mobileHero.description')}
                         </p>
 
                         <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-7 grid grid-cols-2 gap-3">
@@ -771,7 +855,7 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                     <picture className="reveal-on-scroll reveal-on-scroll--hero pointer-events-none mt-auto flex min-h-[310px] items-end justify-center pt-8">
                         <img
                             src="/img/iPhone 15_1.png"
-                            alt="듀팅 앱 근무 일정 화면"
+                            alt={t('page.landing.imageAlt.mobileHero')}
                             className="w-[118%] max-w-[500px] -translate-x-3 object-contain"
                         />
                     </picture>
@@ -780,11 +864,11 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
 
             <section className="bg-white px-5 py-14">
                 <div className="mx-auto max-w-[520px]">
-                    <Pill>앱 주요 기능</Pill>
+                    <Pill>{t('page.landing.mobileHero.benefitsLabel')}</Pill>
                     <h2 className="reveal-on-scroll mt-5 text-[26px] leading-[1.36] font-extrabold text-[#11131A]">
-                        간호사에게 꼭 필요한 기능을
+                        {t('page.landing.mobileHero.benefitsTitleLine1')}
                         <br />
-                        듀팅에 담았어요
+                        {t('page.landing.mobileHero.benefitsTitleLine2')}
                     </h2>
 
                     <div className="mt-8 grid gap-3">
@@ -812,11 +896,11 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
 
             <section className="bg-[#070D18] px-5 py-14 text-white">
                 <div className="mx-auto max-w-[520px]">
-                    <p className="text-sm font-extrabold text-[#D9CCFF]">듀팅 앱 다운로드</p>
+                    <p className="text-sm font-extrabold text-[#D9CCFF]">{t('page.landing.mobileHero.downloadEyebrow')}</p>
                     <h2 className="mt-3 text-[26px] leading-[1.36] font-extrabold">
-                        내 근무와 병동 소식을
+                        {t('page.landing.mobileHero.downloadTitleLine1')}
                         <br />
-                        앱으로 놓치지 마세요
+                        {t('page.landing.mobileHero.downloadTitleLine2')}
                     </h2>
                     <div className="mt-8 grid grid-cols-2 gap-3">
                         <StoreButton store="google" />
@@ -832,18 +916,18 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                         onClick={onSelectDesktopVersion}
                         className="h-11 w-full rounded-[8px] border border-[#DED6F5] bg-white text-sm font-bold text-[#5F557F] transition-colors hover:border-main-3 hover:text-main-1"
                     >
-                        PC 버전으로 보기
+                        {t('page.landing.common.viewDesktop')}
                     </button>
 
                     <div className="flex flex-wrap gap-5">
                         <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
-                            이용약관
+                            {t('page.login.termsOfService')}
                         </a>
                         <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
-                            개인정보 처리방침
+                            {t('page.login.privacyPolicy')}
                         </a>
                     </div>
-                    <p>ⓒ 2026 듀팅. All Rights Reserved</p>
+                    <p>{t('page.landing.common.copyright')}</p>
                 </div>
             </footer>
         </main>
@@ -851,12 +935,17 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
 }
 
 function LandingPage() {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe, isAuth},
         actions: {handleLogout},
     } = useAuth();
     const webMakeLink = getWebMakeLink(isAuth);
     const {isDesktopVersionForced, selectAutomaticVersion, selectDesktopVersion, showMobileAppLanding} = useLandingViewportMode();
+    const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
+    const featureSections = buildFeatureSections(t);
+    const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
+    const appFeatureSections = buildAppFeatureSections(t);
 
     useRevealOnScroll(showMobileAppLanding ? 'mobile-app' : 'full-landing');
 
@@ -872,19 +961,22 @@ function LandingPage() {
         >
             <header className="sticky top-0 z-50 border-b border-[#EEEAF8] bg-white/95 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-5 md:h-18 md:px-8">
-                    <Link to={ROUTE.ROOT} aria-label="듀팅 랜딩 홈" className="flex shrink-0 items-center">
+                    <Link to={ROUTE.ROOT} aria-label={t('page.landing.header.homeAria')} className="flex shrink-0 items-center">
                         <img src="/img/group-19.png" alt="dutying" className="h-[28px] w-auto md:h-[32px]" />
                     </Link>
 
-                    <nav className="hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex" aria-label="랜딩 섹션">
+                    <nav
+                        className="hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex"
+                        aria-label={t('page.landing.header.sectionAria')}
+                    >
                         <a href="#web" className="transition-colors hover:text-main-1">
-                            근무표 관리자 웹
+                            {t('page.landing.header.web')}
                         </a>
                         <a href="#app" className="transition-colors hover:text-main-1">
-                            간호사 앱
+                            {t('page.landing.header.app')}
                         </a>
                         <a href={inquiryLink} target="_blank" rel="noreferrer" className="transition-colors hover:text-main-1">
-                            문의하기
+                            {t('page.landing.header.inquiry')}
                         </a>
                     </nav>
 
@@ -898,18 +990,15 @@ function LandingPage() {
                 <div className="landing-hero-grid relative mx-auto grid max-w-[1440px] grid-cols-1 items-start gap-8 px-5 pt-12 pb-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-10 md:px-8 md:pt-32 md:pb-6 lg:gap-20">
                     <div className="relative z-10 min-w-0">
                         <h1
-                            aria-label="교대 근무표, 듀팅으로 더 간편하게"
+                            aria-label={t('page.landing.hero.ariaLabel')}
                             className="reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold md:text-[51px]"
                         >
-                            <RotatingHeroPhrase />
+                            <RotatingHeroPhrase phrases={heroTitlePhrases} />
                             <br />
-                            <span className="hero-gradient-text">듀팅으로 더 간편하게</span>
+                            <span className="hero-gradient-text">{t('page.landing.hero.suffix')}</span>
                         </h1>
                         <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-5 max-w-[620px] text-base leading-7 font-medium text-[#6F6B7A] md:text-lg md:leading-8 2xl:whitespace-nowrap">
-                            AI로 근무표를 쉽고 빠르게 만들고,
-                            <br className="hidden md:block 2xl:hidden" />
-                            <span className="md:hidden 2xl:inline"> </span>
-                            간호사와 연동해 병동 관리를 더 간편하게
+                            <TextLines>{t('page.landing.hero.description')}</TextLines>
                         </p>
 
                         <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[560px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
@@ -942,17 +1031,19 @@ function LandingPage() {
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
                             src="/img/image-987.png"
-                            alt="듀팅 웹 근무표 작성 화면"
+                            alt={t('page.landing.imageAlt.webSchedule')}
                             className="absolute right-0 bottom-0 left-0 z-10 mx-auto w-[94%] object-contain"
                         />
                     </div>
 
                     <article className="reveal-on-scroll reveal-on-scroll--delay-1 text-left lg:translate-x-3">
-                        <Pill>Web</Pill>
+                        <Pill>{t('page.landing.webSection.pill')}</Pill>
                         <h2 className="mt-6 text-[34px] leading-[1.35] font-extrabold text-[#11131A] md:text-[42px]">
-                            복잡한 근무표,
+                            {t('page.landing.webSection.titleLine1')}
                             <br />
-                            이제 <span className="text-highlight-soft">AI로 1분</span> 만에 만들기
+                            {t('page.landing.webSection.titleLine2Prefix')}{' '}
+                            <span className="text-highlight-soft">{t('page.landing.webSection.titleHighlight')}</span>{' '}
+                            {t('page.landing.webSection.titleLine2Suffix')}
                         </h2>
                         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                             {isAuth ? (
@@ -961,7 +1052,7 @@ function LandingPage() {
                                     className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
                                 >
                                     <CtaIcon src={webCtaIconSrc} />
-                                    근무표 만들기
+                                    {t('page.landing.common.makeSchedule')}
                                 </Link>
                             ) : (
                                 <>
@@ -969,14 +1060,14 @@ function LandingPage() {
                                         to={webMakeLink}
                                         className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#060A12] px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
                                     >
-                                        체험하기
+                                        {t('page.landing.common.tryDemo')}
                                     </Link>
                                     <Link
                                         to={ROUTE.LOGIN}
                                         className="inline-flex h-12 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-6 text-base font-bold text-white transition-transform hover:-translate-y-0.5"
                                     >
                                         <CtaIcon src={webCtaIconSrc} />
-                                        근무표 만들기
+                                        {t('page.landing.common.makeSchedule')}
                                     </Link>
                                 </>
                             )}
@@ -994,11 +1085,11 @@ function LandingPage() {
 
                 <div className="relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
                     <article className="reveal-on-scroll max-w-[500px] text-white">
-                        <Pill>APP</Pill>
+                        <Pill>{t('page.landing.appSection.pill')}</Pill>
                         <h2 className="mt-6 text-[34px] leading-[1.36] font-extrabold md:text-[42px]">
-                            근무 일정 관리부터
+                            {t('page.landing.appSection.titleLine1')}
                             <br />
-                            병동까지 한 번에
+                            {t('page.landing.appSection.titleLine2')}
                         </h2>
                         <div className="mt-12 flex flex-col gap-4 sm:flex-row">
                             <StoreButton store="google" />
@@ -1008,7 +1099,7 @@ function LandingPage() {
 
                     <img
                         src="/img/temp.png"
-                        alt="앱 화면"
+                        alt={t('page.landing.imageAlt.appScreen')}
                         className="reveal-on-scroll reveal-on-scroll--image mx-auto w-[120%] max-w-none rounded-[12px] object-contain md:-translate-x-10 lg:-translate-x-14"
                     />
                 </div>
@@ -1026,13 +1117,13 @@ function LandingPage() {
             <section className="relative overflow-hidden bg-black">
                 <div className="mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:pt-[95px] md:pb-[32px]">
                     <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
-                        <p className="text-lg font-extrabold text-[#F4EDFF]">1분이면 충분해요</p>
+                        <p className="text-lg font-extrabold text-[#F4EDFF]">{t('page.landing.finalCta.eyebrow')}</p>
                         <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-white md:text-[42px]">
-                            웹과 앱을 연동해서
+                            {t('page.landing.finalCta.titleLine1')}
                             <br />
-                            관리해 보세요
+                            {t('page.landing.finalCta.titleLine2')}
                         </h2>
-                        <p className="mt-12 text-xl font-extrabold text-white/85">앱 다운로드</p>
+                        <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
                         <div className="mt-5 flex flex-col gap-4 sm:flex-row">
                             <StoreButton store="google" />
                             <StoreButton store="apple" />
@@ -1042,7 +1133,7 @@ function LandingPage() {
                     <div className="reveal-on-scroll reveal-on-scroll--image relative -mx-5 flex justify-center md:mx-0 md:justify-end">
                         <img
                             src="/img/temp24222.png"
-                            alt="듀팅 앱 로고 이미지"
+                            alt={t('page.landing.imageAlt.appLogo')}
                             className="w-[min(765px,127.5vw)] max-w-none rounded-[12px] object-contain md:w-[646px] lg:w-[765px] xl:translate-x-12"
                         />
                     </div>
@@ -1057,19 +1148,19 @@ function LandingPage() {
                             onClick={selectAutomaticVersion}
                             className="h-11 w-full max-w-[220px] rounded-[8px] border border-[#DED6F5] bg-white text-sm font-bold text-[#5F557F] transition-colors hover:border-main-3 hover:text-main-1"
                         >
-                            모바일 버전으로 보기
+                            {t('page.landing.common.viewMobile')}
                         </button>
                     )}
 
                     <div className="flex flex-wrap gap-5">
                         <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
-                            이용약관
+                            {t('page.login.termsOfService')}
                         </a>
                         <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
-                            개인정보 처리방침
+                            {t('page.login.privacyPolicy')}
                         </a>
                     </div>
-                    <p>ⓒ 2026 듀팅. All Rights Reserved</p>
+                    <p>{t('page.landing.common.copyright')}</p>
                 </div>
             </footer>
         </main>

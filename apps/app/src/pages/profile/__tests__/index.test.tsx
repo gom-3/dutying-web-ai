@@ -1,5 +1,7 @@
+import i18n from 'i18next';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import '@/i18n';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
@@ -29,13 +31,17 @@ const mockedUseProfileImage = vi.mocked(useProfileImage);
 const mockHandleLogout = vi.fn();
 const mockDeleteAccount = vi.fn();
 const mockHandleEditAccountBasic = vi.fn();
+const mockUpdateAccountPreferences = vi.fn();
 
 describe('ProfilePage account actions', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         mockHandleLogout.mockReset();
         mockDeleteAccount.mockReset();
         mockHandleEditAccountBasic.mockReset();
+        mockUpdateAccountPreferences.mockReset();
         mockHandleEditAccountBasic.mockResolvedValue(true);
+        mockUpdateAccountPreferences.mockResolvedValue(true);
         mockedUseAuth.mockReturnValue({
             state: {
                 accountMe: {
@@ -47,6 +53,8 @@ describe('ProfilePage account actions', () => {
                     phoneNum: '01012345678',
                     profileImgUrl: '',
                     status: 'WARD_SELECT_PENDING',
+                    preferredLanguage: 'ko',
+                    serviceRegion: 'KR',
                 },
                 accountMeStatus: 'success',
                 _loaded: true,
@@ -60,6 +68,7 @@ describe('ProfilePage account actions', () => {
             quitWard: vi.fn(),
             handleEditProfile: vi.fn(),
             handleEditAccountBasic: mockHandleEditAccountBasic,
+            updateAccountPreferences: mockUpdateAccountPreferences,
             deleteAccount: mockDeleteAccount,
         });
         mockedUseProfileImage.mockReturnValue({
@@ -97,6 +106,25 @@ describe('ProfilePage account actions', () => {
 
         await waitFor(() => {
             expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('홍길동', {}, '01098765432');
+        });
+    });
+
+    it('saves preferred language and service region independently', async () => {
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        await userEvent.selectOptions(screen.getByLabelText('화면 언어'), 'ja');
+        await userEvent.selectOptions(screen.getByLabelText('서비스 지역'), 'JP');
+        await userEvent.click(screen.getByRole('button', {name: '언어 설정 저장'}));
+
+        await waitFor(() => {
+            expect(mockUpdateAccountPreferences).toHaveBeenCalledWith({
+                preferredLanguage: 'ja',
+                serviceRegion: 'JP',
+            });
         });
     });
 

@@ -9,6 +9,7 @@ import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon} from '@/shared/assets/svg';
 import {buildAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import './index.css';
 
 type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm', string>>;
@@ -22,15 +23,24 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LOGIN_VISUAL_SLIDES = ['/img/login-slide-1.png', '/img/login-slide-2.png', '/img/login-slide-3.png'];
 const LOGIN_VISUAL_AUTO_ROTATE_MS = 4000;
 const LOGIN_VISUAL_MANUAL_RESUME_MS = 3000;
-const INVALID_LOGIN_CREDENTIALS_MESSAGE = '아이디 또는 비밀번호가 올바르지 않습니다.';
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
-const PasswordVisibilityButton = ({visible, onClick}: {visible: boolean; onClick: () => void}) => (
+const PasswordVisibilityButton = ({
+    visible,
+    onClick,
+    showLabel,
+    hideLabel,
+}: {
+    visible: boolean;
+    onClick: () => void;
+    showLabel: string;
+    hideLabel: string;
+}) => (
     <button
         type="button"
         className="absolute top-1/2 right-3 flex h-7 w-7 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-1"
         onClick={onClick}
-        aria-label={visible ? '비밀번호 숨기기' : '비밀번호 보기'}
-        title={visible ? '비밀번호 숨기기' : '비밀번호 보기'}
+        aria-label={visible ? hideLabel : showLabel}
+        title={visible ? hideLabel : showLabel}
     >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
     </button>
@@ -43,6 +53,7 @@ const FieldError = ({id, message}: {id: string; message?: string}) =>
     ) : null;
 
 function LoginPage() {
+    const {t} = useTypedTranslation();
     const navigate = useNavigate();
     const {pathname, search} = useLocation();
     const {
@@ -103,7 +114,12 @@ function LoginPage() {
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
     const currentLoginVisualPage = loginVisualSlideIndex + 1;
     const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
-    const title = isSignupPage ? '회원가입' : isPasswordResetMode ? '비밀번호 찾기' : '로그인';
+    const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
+    const title = isSignupPage
+        ? t('page.login.signupTitle')
+        : isPasswordResetMode
+          ? t('page.login.passwordResetTitle')
+          : t('page.login.title');
     const clearLoginVisualAutoRotateTimer = useCallback(() => {
         if (loginVisualAutoRotateTimerRef.current === null) {
             return;
@@ -121,7 +137,7 @@ function LoginPage() {
         }, delay);
     };
 
-    const shouldShowPasswordResetFromLoginError = loginError === INVALID_LOGIN_CREDENTIALS_MESSAGE;
+    const shouldShowPasswordResetFromLoginError = loginError === invalidLoginCredentialsMessage;
     const showPreviousLoginVisualSlide = () => {
         setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
@@ -143,31 +159,31 @@ function LoginPage() {
         const isEmailValid = EMAIL_PATTERN.test(signupEmail.trim());
 
         if (!signupName.trim()) {
-            nextErrors.name = '이름을 입력해 주세요.';
+            nextErrors.name = t('page.login.validation.nameRequired');
         }
 
         if (!isEmailValid) {
-            nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+            nextErrors.email = t('page.login.validation.emailInvalid');
         }
 
         if (isEmailValid && !isSignupEmailVerified) {
             if (!hasRequestedSignupVerification) {
-                nextVerificationError = '이메일 인증을 완료해 주세요.';
+                nextVerificationError = t('page.login.validation.emailVerificationRequired');
             } else if (!hasSignupVerificationCode) {
-                nextVerificationError = '6자리 인증번호를 입력해 주세요.';
+                nextVerificationError = t('page.login.validation.verificationCodeRequired');
             } else {
-                nextVerificationError = '인증번호 확인을 완료해 주세요.';
+                nextVerificationError = t('page.login.validation.verificationConfirmRequired');
             }
         }
 
         if (signupPassword.length < PASSWORD_MIN_LENGTH) {
-            nextErrors.password = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해 주세요.`;
+            nextErrors.password = t('page.login.validation.passwordMinLength', {count: PASSWORD_MIN_LENGTH});
         }
 
         if (!signupPasswordConfirm) {
-            nextErrors.passwordConfirm = '비밀번호를 다시 입력해 주세요.';
+            nextErrors.passwordConfirm = t('page.login.validation.passwordConfirmRequired');
         } else if (signupPassword !== signupPasswordConfirm) {
-            nextErrors.passwordConfirm = '비밀번호가 서로 달라요.';
+            nextErrors.passwordConfirm = t('page.login.validation.passwordMismatch');
         }
 
         setSignupErrors(nextErrors);
@@ -183,27 +199,27 @@ function LoginPage() {
         const isEmailValid = EMAIL_PATTERN.test(passwordResetEmail.trim());
 
         if (!isEmailValid) {
-            nextErrors.email = '올바른 이메일 주소를 입력해 주세요.';
+            nextErrors.email = t('page.login.validation.emailInvalid');
         }
 
         if (isEmailValid && !isPasswordResetTokenVerified) {
             if (!hasRequestedPasswordReset) {
-                nextErrors.resetToken = '이메일 인증을 완료해 주세요.';
+                nextErrors.resetToken = t('page.login.validation.emailVerificationRequired');
             } else if (!hasPasswordResetCode) {
-                nextErrors.resetToken = '6자리 인증번호를 입력해 주세요.';
+                nextErrors.resetToken = t('page.login.validation.verificationCodeRequired');
             } else {
-                nextErrors.resetToken = '인증번호 확인을 완료해 주세요.';
+                nextErrors.resetToken = t('page.login.validation.verificationConfirmRequired');
             }
         }
 
         if (passwordResetNewPassword.length < PASSWORD_MIN_LENGTH) {
-            nextErrors.newPassword = `비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상 입력해 주세요.`;
+            nextErrors.newPassword = t('page.login.validation.passwordMinLength', {count: PASSWORD_MIN_LENGTH});
         }
 
         if (!passwordResetNewPasswordConfirm) {
-            nextErrors.newPasswordConfirm = '비밀번호를 다시 입력해 주세요.';
+            nextErrors.newPasswordConfirm = t('page.login.validation.passwordConfirmRequired');
         } else if (passwordResetNewPassword !== passwordResetNewPasswordConfirm) {
-            nextErrors.newPasswordConfirm = '비밀번호가 서로 달라요.';
+            nextErrors.newPasswordConfirm = t('page.login.validation.passwordMismatch');
         }
 
         setPasswordResetErrors(nextErrors);
@@ -328,7 +344,7 @@ function LoginPage() {
         setIsSignupEmailVerified(false);
 
         if (!isSignupEmailValid) {
-            setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+            setSignupErrors((errors) => ({...errors, email: t('page.login.validation.emailInvalid')}));
 
             return;
         }
@@ -338,9 +354,9 @@ function LoginPage() {
 
         try {
             await AuthAPI.sendAdminEmailVerification({email: signupEmail.trim()});
-            setSignupVerificationMessage('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.');
+            setSignupVerificationMessage(t('page.login.feedback.verificationSent'));
         } catch (error) {
-            setSignupVerificationError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
+            setSignupVerificationError(error instanceof Error ? error.message : t('page.login.feedback.verificationFailed'));
         } finally {
             setIsSendingVerification(false);
         }
@@ -350,13 +366,13 @@ function LoginPage() {
         setSignupVerificationError(null);
 
         if (!isSignupEmailValid) {
-            setSignupErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+            setSignupErrors((errors) => ({...errors, email: t('page.login.validation.emailInvalid')}));
 
             return;
         }
 
         if (!hasSignupVerificationCode) {
-            setSignupVerificationError('6자리 인증번호를 입력해 주세요.');
+            setSignupVerificationError(t('page.login.validation.verificationCodeRequired'));
 
             return;
         }
@@ -369,10 +385,10 @@ function LoginPage() {
                 emailVerificationToken: signupEmailVerificationToken ?? '',
             });
             setIsSignupEmailVerified(true);
-            setSignupVerificationMessage('이메일 인증이 완료됐어요.');
+            setSignupVerificationMessage(t('page.login.feedback.emailVerified'));
         } catch {
             setIsSignupEmailVerified(false);
-            setSignupVerificationError('인증번호가 올바르지 않아요. 다시 확인해 주세요.');
+            setSignupVerificationError(t('page.login.feedback.verificationInvalid'));
         } finally {
             setIsConfirmingSignupVerification(false);
         }
@@ -386,7 +402,7 @@ function LoginPage() {
         setIsPasswordResetTokenVerified(false);
 
         if (!isPasswordResetEmailValid) {
-            setPasswordResetErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+            setPasswordResetErrors((errors) => ({...errors, email: t('page.login.validation.emailInvalid')}));
 
             return;
         }
@@ -396,9 +412,9 @@ function LoginPage() {
 
         try {
             await AuthAPI.requestAdminPasswordReset({email: passwordResetEmail.trim()});
-            setPasswordResetMessage('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.');
+            setPasswordResetMessage(t('page.login.feedback.verificationSent'));
         } catch (error) {
-            setPasswordResetError(error instanceof Error ? error.message : '인증 메일을 보내지 못했어요. 다시 시도해 주세요.');
+            setPasswordResetError(error instanceof Error ? error.message : t('page.login.feedback.verificationFailed'));
         } finally {
             setIsSendingPasswordReset(false);
         }
@@ -408,13 +424,13 @@ function LoginPage() {
         setPasswordResetError(null);
 
         if (!isPasswordResetEmailValid) {
-            setPasswordResetErrors((errors) => ({...errors, email: '올바른 이메일 주소를 입력해 주세요.'}));
+            setPasswordResetErrors((errors) => ({...errors, email: t('page.login.validation.emailInvalid')}));
 
             return;
         }
 
         if (!hasPasswordResetCode) {
-            setPasswordResetErrors((errors) => ({...errors, resetToken: '6자리 인증번호를 입력해 주세요.'}));
+            setPasswordResetErrors((errors) => ({...errors, resetToken: t('page.login.validation.verificationCodeRequired')}));
 
             return;
         }
@@ -428,11 +444,11 @@ function LoginPage() {
                 resetToken: passwordResetToken ?? '',
             });
             setIsPasswordResetTokenVerified(true);
-            setPasswordResetMessage('인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.');
+            setPasswordResetMessage(t('page.login.feedback.passwordResetTokenVerified'));
             setPasswordResetErrors((errors) => ({...errors, resetToken: undefined}));
         } catch {
             setIsPasswordResetTokenVerified(false);
-            setPasswordResetError('인증번호가 올바르지 않아요. 다시 확인해 주세요.');
+            setPasswordResetError(t('page.login.feedback.verificationInvalid'));
         } finally {
             setIsConfirmingPasswordReset(false);
         }
@@ -443,7 +459,7 @@ function LoginPage() {
         setLoginNotice(null);
 
         if (!loginEmail.trim() || !loginPassword) {
-            setLoginError('이메일과 비밀번호를 입력해 주세요.');
+            setLoginError(t('page.login.validation.loginRequired'));
 
             return;
         }
@@ -458,7 +474,7 @@ function LoginPage() {
 
             handleLogin(response.accessToken, nextPath);
         } catch (error) {
-            setLoginError(error instanceof Error ? error.message : '로그인하지 못했어요. 다시 시도해 주세요.');
+            setLoginError(error instanceof Error ? error.message : t('page.login.feedback.loginFailed'));
         } finally {
             setIsSubmitting(false);
         }
@@ -481,7 +497,7 @@ function LoginPage() {
             });
             setLoginEmail(passwordResetEmail.trim());
             setLoginPassword('');
-            setLoginNotice('비밀번호가 변경됐어요. 새 비밀번호로 로그인해 주세요.');
+            setLoginNotice(t('page.login.feedback.passwordResetSuccess'));
             setIsPasswordResetMode(false);
             setPasswordResetToken(null);
             setPasswordResetCode('');
@@ -491,7 +507,7 @@ function LoginPage() {
             setPasswordResetMessage(null);
             setPasswordResetErrors({});
         } catch (error) {
-            setPasswordResetError(error instanceof Error ? error.message : '비밀번호를 변경하지 못했어요. 다시 시도해 주세요.');
+            setPasswordResetError(error instanceof Error ? error.message : t('page.login.feedback.passwordResetFailed'));
         } finally {
             setIsResettingPassword(false);
         }
@@ -516,14 +532,14 @@ function LoginPage() {
 
             handleLogin(response.accessToken, ROUTE.REGISTER);
         } catch (error) {
-            setSignupError(error instanceof Error ? error.message : '가입을 완료하지 못했어요. 다시 시도해 주세요.');
+            setSignupError(error instanceof Error ? error.message : t('page.login.feedback.signupFailed'));
         } finally {
             setIsSubmitting(false);
         }
     };
     return (
         <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
-            <aside className="login-visual-panel" aria-label="로그인 이미지 슬라이드">
+            <aside className="login-visual-panel" aria-label={t('page.login.loginVisualAria')}>
                 {LOGIN_VISUAL_SLIDES.map((src, index) => (
                     <img
                         key={src}
@@ -537,8 +553,8 @@ function LoginPage() {
                     type="button"
                     className="login-visual-arrow login-visual-arrow-prev"
                     onClick={showPreviousLoginVisualSlide}
-                    aria-label="이전 이미지"
-                    title="이전 이미지"
+                    aria-label={t('page.login.previousImage')}
+                    title={t('page.login.previousImage')}
                 >
                     <ChevronLeft className="h-6 w-6" aria-hidden="true" />
                 </button>
@@ -546,8 +562,8 @@ function LoginPage() {
                     type="button"
                     className="login-visual-arrow login-visual-arrow-next"
                     onClick={showNextLoginVisualSlide}
-                    aria-label="다음 이미지"
-                    title="다음 이미지"
+                    aria-label={t('page.login.nextImage')}
+                    title={t('page.login.nextImage')}
                 >
                     <ChevronRight className="h-6 w-6" aria-hidden="true" />
                 </button>
@@ -564,9 +580,9 @@ function LoginPage() {
                 <div className={`mt-6 w-full ${isSignupPage ? 'max-w-[560px]' : 'max-w-[480px]'} md:mt-10`}>
                     {isDemoSignupFlow ? (
                         <div className="mb-6 rounded-[16px] border border-main-3/40 bg-main-light px-5 py-4">
-                            <p className="font-apple text-sm font-semibold text-main-1">체험 계정을 정식 계정으로 전환해요</p>
+                            <p className="font-apple text-sm font-semibold text-main-1">{t('page.login.demoSignupTitle')}</p>
                             <p className="mt-1 font-apple text-sm leading-6 text-sub-2.5">
-                                계정을 만든 뒤 새 병동을 만들면 이후에도 데이터를 이어서 관리할 수 있어요.
+                                {t('page.login.demoSignupDescription')}
                             </p>
                         </div>
                     ) : null}
@@ -579,7 +595,7 @@ function LoginPage() {
                         <form onSubmit={handlePasswordLogin} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    이메일
+                                    {t('page.login.email')}
                                 </label>
                                 <div className="relative">
                                     <Mail className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
@@ -588,7 +604,7 @@ function LoginPage() {
                                         value={loginEmail}
                                         type="email"
                                         className={`${FIELD_CLASS} pl-9`}
-                                        placeholder="이메일을 입력하세요"
+                                        placeholder={t('page.login.emailPlaceholder')}
                                         autoComplete="email"
                                         onChange={(event) => setLoginEmail(event.target.value)}
                                     />
@@ -596,7 +612,7 @@ function LoginPage() {
                             </div>
                             <div>
                                 <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    비밀번호
+                                    {t('page.login.password')}
                                 </label>
                                 <div className="relative">
                                     <Lock className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-4" />
@@ -605,13 +621,15 @@ function LoginPage() {
                                         value={loginPassword}
                                         type={isPasswordVisible ? 'text' : 'password'}
                                         className={`${FIELD_CLASS} px-9`}
-                                        placeholder="비밀번호를 입력하세요"
+                                        placeholder={t('page.login.passwordPlaceholder')}
                                         autoComplete="current-password"
                                         onChange={(event) => setLoginPassword(event.target.value)}
                                     />
                                     <PasswordVisibilityButton
                                         visible={isPasswordVisible}
                                         onClick={() => setIsPasswordVisible((visible) => !visible)}
+                                        showLabel={t('page.login.showPassword')}
+                                        hideLabel={t('page.login.hidePassword')}
                                     />
                                 </div>
                             </div>
@@ -632,7 +650,7 @@ function LoginPage() {
                                                 className="cursor-pointer text-sm font-semibold text-main-1 underline underline-offset-[3px]"
                                                 onClick={handleOpenPasswordReset}
                                             >
-                                                비밀번호 찾기
+                                                {t('page.login.forgotPassword')}
                                             </button>
                                         </div>
                                     ) : null}
@@ -644,11 +662,11 @@ function LoginPage() {
                                 className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                                로그인
+                                {t('page.login.submitLogin')}
                             </button>
                             <div className="flex items-center justify-start text-sm">
                                 <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
-                                    회원가입
+                                    {t('page.login.signupLink')}
                                 </Link>
                             </div>
                         </form>
@@ -658,7 +676,7 @@ function LoginPage() {
                         <form onSubmit={handlePasswordReset} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="password-reset-email" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    이메일
+                                    {t('page.login.email')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -666,7 +684,7 @@ function LoginPage() {
                                         value={passwordResetEmail}
                                         type="email"
                                         className={cn(getInputClassName(Boolean(passwordResetErrors.email)), 'min-w-0')}
-                                        placeholder="이메일을 입력해 주세요"
+                                        placeholder={t('page.login.emailSignupPlaceholder')}
                                         autoComplete="email"
                                         onChange={(event) => handlePasswordResetEmailChange(event.target.value)}
                                         aria-invalid={Boolean(passwordResetErrors.email)}
@@ -678,7 +696,13 @@ function LoginPage() {
                                         className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                         onClick={handleSendPasswordReset}
                                     >
-                                        {isSendingPasswordReset ? <Loader2 className="h-4 w-4 animate-spin" /> : hasRequestedPasswordReset ? '재전송' : '인증'}
+                                        {isSendingPasswordReset ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : hasRequestedPasswordReset ? (
+                                            t('page.login.verificationResend')
+                                        ) : (
+                                            t('page.login.verificationSend')
+                                        )}
                                     </button>
                                 </div>
                                 <FieldError id="password-reset-email-error" message={passwordResetErrors.email} />
@@ -690,8 +714,8 @@ function LoginPage() {
                                             value={passwordResetCode}
                                             type="text"
                                             className={cn(getInputClassName(Boolean(passwordResetErrors.resetToken)), 'min-w-0')}
-                                            placeholder="6자리 인증번호"
-                                            aria-label="비밀번호 재설정 인증번호"
+                                            placeholder={t('page.login.sixDigitVerificationCodePlaceholder')}
+                                            aria-label={t('page.login.passwordResetVerificationCodeAria')}
                                             inputMode="numeric"
                                             autoComplete="one-time-code"
                                             maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
@@ -706,7 +730,13 @@ function LoginPage() {
                                                 className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                                 onClick={handleConfirmPasswordResetToken}
                                             >
-                                                {isConfirmingPasswordReset ? <Loader2 className="h-4 w-4 animate-spin" /> : isPasswordResetTokenVerified ? '완료' : '확인'}
+                                                {isConfirmingPasswordReset ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : isPasswordResetTokenVerified ? (
+                                                    t('page.login.verificationComplete')
+                                                ) : (
+                                                    t('page.login.verificationConfirm')
+                                                )}
                                             </button>
                                         </div>
                                         <FieldError id="password-reset-code-error" message={passwordResetErrors.resetToken} />
@@ -720,14 +750,14 @@ function LoginPage() {
 
                             <div>
                                 <label htmlFor="password-reset-new-password" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    새 비밀번호
+                                    {t('page.login.newPassword')}
                                 </label>
                                 <input
                                     id="password-reset-new-password"
                                     value={passwordResetNewPassword}
                                     type="password"
                                     className={getInputClassName(Boolean(passwordResetErrors.newPassword))}
-                                    placeholder="새 비밀번호를 입력해 주세요"
+                                    placeholder={t('page.login.newPasswordPlaceholder')}
                                     autoComplete="new-password"
                                     onChange={(event) => handlePasswordResetNewPasswordChange(event.target.value)}
                                     aria-invalid={Boolean(passwordResetErrors.newPassword)}
@@ -738,14 +768,14 @@ function LoginPage() {
 
                             <div>
                                 <label htmlFor="password-reset-new-password-confirm" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    새 비밀번호 확인
+                                    {t('page.login.newPasswordConfirm')}
                                 </label>
                                 <input
                                     id="password-reset-new-password-confirm"
                                     value={passwordResetNewPasswordConfirm}
                                     type="password"
                                     className={getInputClassName(Boolean(passwordResetErrors.newPasswordConfirm))}
-                                    placeholder="새 비밀번호를 다시 입력해 주세요"
+                                    placeholder={t('page.login.newPasswordConfirmPlaceholder')}
                                     autoComplete="new-password"
                                     onChange={(event) => handlePasswordResetNewPasswordConfirmChange(event.target.value)}
                                     aria-invalid={Boolean(passwordResetErrors.newPasswordConfirm)}
@@ -766,7 +796,7 @@ function LoginPage() {
                                 className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isResettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                                비밀번호 재설정
+                                {t('page.login.passwordResetSubmit')}
                             </button>
                             <p className="text-center text-sm text-gray-3">
                                 <button
@@ -774,7 +804,7 @@ function LoginPage() {
                                     className="cursor-pointer font-semibold text-main-1 underline underline-offset-[3px]"
                                     onClick={handleClosePasswordReset}
                                 >
-                                    로그인으로 돌아가기
+                                    {t('page.login.backToLogin')}
                                 </button>
                             </p>
                         </form>
@@ -784,14 +814,14 @@ function LoginPage() {
                         <form onSubmit={handlePasswordSignup} className="mx-auto mt-7 w-full max-w-[334px] space-y-4">
                             <div>
                                 <label htmlFor="signup-name" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    이름
+                                    {t('page.login.name')}
                                 </label>
                                 <input
                                     id="signup-name"
                                     value={signupName}
                                     type="text"
                                     className={getInputClassName(Boolean(signupErrors.name))}
-                                    placeholder="이름을 입력해 주세요"
+                                    placeholder={t('page.login.namePlaceholder')}
                                     autoComplete="name"
                                     onChange={(event) => handleSignupNameChange(event.target.value)}
                                     aria-invalid={Boolean(signupErrors.name)}
@@ -802,7 +832,7 @@ function LoginPage() {
 
                             <div>
                                 <label htmlFor="signup-email" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    이메일
+                                    {t('page.login.email')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -810,7 +840,7 @@ function LoginPage() {
                                         value={signupEmail}
                                         type="email"
                                         className={cn(getInputClassName(Boolean(signupErrors.email)), 'min-w-0')}
-                                        placeholder="이메일을 입력해 주세요"
+                                        placeholder={t('page.login.emailSignupPlaceholder')}
                                         autoComplete="email"
                                         onChange={(event) => handleSignupEmailChange(event.target.value)}
                                         aria-invalid={Boolean(signupErrors.email)}
@@ -822,7 +852,13 @@ function LoginPage() {
                                         className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-sub-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                         onClick={handleSendSignupEmailVerification}
                                     >
-                                        {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : hasRequestedSignupVerification ? '재전송' : '인증'}
+                                        {isSendingVerification ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : hasRequestedSignupVerification ? (
+                                            t('page.login.verificationResend')
+                                        ) : (
+                                            t('page.login.verificationSend')
+                                        )}
                                     </button>
                                 </div>
                                 <FieldError id="signup-email-error" message={signupErrors.email} />
@@ -833,8 +869,8 @@ function LoginPage() {
                                             value={signupVerificationCode}
                                             type="text"
                                             className={cn(getInputClassName(Boolean(signupVerificationError)), 'min-w-0')}
-                                            placeholder="6자리 인증번호"
-                                            aria-label="이메일 인증번호"
+                                            placeholder={t('page.login.sixDigitVerificationCodePlaceholder')}
+                                            aria-label={t('page.login.verificationCodeAria')}
                                             inputMode="numeric"
                                             autoComplete="one-time-code"
                                             maxLength={EMAIL_VERIFICATION_CODE_LENGTH}
@@ -849,7 +885,13 @@ function LoginPage() {
                                             className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                             onClick={handleConfirmSignupEmailVerification}
                                         >
-                                            {isConfirmingSignupVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : isSignupEmailVerified ? '완료' : '확인'}
+                                            {isConfirmingSignupVerification ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : isSignupEmailVerified ? (
+                                                t('page.login.verificationComplete')
+                                            ) : (
+                                                t('page.login.verificationConfirm')
+                                            )}
                                         </button>
                                     </div>
                                 ) : null}
@@ -859,14 +901,14 @@ function LoginPage() {
 
                             <div>
                                 <label htmlFor="signup-password" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    비밀번호
+                                    {t('page.login.password')}
                                 </label>
                                 <input
                                     id="signup-password"
                                     value={signupPassword}
                                     type="password"
                                     className={getInputClassName(Boolean(signupErrors.password))}
-                                    placeholder="비밀번호를 입력해 주세요"
+                                    placeholder={t('page.login.passwordSignupPlaceholder')}
                                     autoComplete="new-password"
                                     onChange={(event) => handleSignupPasswordChange(event.target.value)}
                                     aria-invalid={Boolean(signupErrors.password)}
@@ -877,14 +919,14 @@ function LoginPage() {
 
                             <div>
                                 <label htmlFor="signup-password-confirm" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                    비밀번호 확인
+                                    {t('page.login.passwordConfirm')}
                                 </label>
                                 <input
                                     id="signup-password-confirm"
                                     value={signupPasswordConfirm}
                                     type="password"
                                     className={getInputClassName(Boolean(signupErrors.passwordConfirm))}
-                                    placeholder="비밀번호를 다시 입력해 주세요"
+                                    placeholder={t('page.login.passwordConfirmPlaceholder')}
                                     autoComplete="new-password"
                                     onChange={(event) => handleSignupPasswordConfirmChange(event.target.value)}
                                     aria-invalid={Boolean(signupErrors.passwordConfirm)}
@@ -905,12 +947,12 @@ function LoginPage() {
                                 className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                                계정 만들기
+                                {t('page.login.submitSignup')}
                             </button>
                             <p className="text-center text-sm text-gray-3">
-                                이미 계정이 있나요?{' '}
+                                {t('page.login.hasAccountPrompt')}{' '}
                                 <Link to={ROUTE.SIGN_IN} className="font-semibold text-main-1 underline underline-offset-[3px]">
-                                    로그인
+                                    {t('page.login.loginLink')}
                                 </Link>
                             </p>
                         </form>
@@ -924,14 +966,14 @@ function LoginPage() {
                                     className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#F2D600] bg-[#FEE500] px-[12px] text-sm font-semibold text-sub-1 shadow-banner"
                                 >
                                     <KakaoIcon className="mr-3 h-5 w-5" />
-                                    {isSignupPage ? '카카오로 시작하기' : '카카오로 계속하기'}
+                                    {isSignupPage ? t('page.login.kakaoStart') : t('page.login.kakaoContinue')}
                                 </a>
                                 <a
                                     href={appleAuthorizeUrl}
                                     className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center rounded-[12px] border border-[1px] border-[#231F20] bg-[#231F20] px-[12px] text-sm font-semibold text-white shadow-banner"
                                 >
                                     <AppleIcon className="mr-3 h-5 w-5" />
-                                    {isSignupPage ? 'Apple로 시작하기' : 'Apple로 계속하기'}
+                                    {isSignupPage ? t('page.login.appleStart') : t('page.login.appleContinue')}
                                 </a>
                             </div>
                         </div>

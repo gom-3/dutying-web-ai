@@ -306,9 +306,9 @@ function ShiftTypeTable({
     const getShiftNameError = (name: string) => {
         const normalizedName = name.trim().toLocaleLowerCase();
 
-        if (!normalizedName) return '근무명을 입력해 주세요.';
+        if (!normalizedName) return t('page.wardSettings.shiftTypes.validation.nameRequired');
 
-        if (duplicatedShiftNames.has(normalizedName)) return '다른 근무명을 입력해 주세요.';
+        if (duplicatedShiftNames.has(normalizedName)) return t('page.wardSettings.shiftTypes.validation.nameDuplicate');
 
         return null;
     };
@@ -317,9 +317,11 @@ function ShiftTypeTable({
 
         const normalizedShortName = shortName.trim().toLocaleUpperCase();
 
-        if (!normalizedShortName) return '약자를 입력해 주세요.';
+        if (!normalizedShortName) return t('page.wardSettings.shiftTypes.validation.shortNameRequired');
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) return '다른 약자를 입력해 주세요.';
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) {
+            return t('page.wardSettings.shiftTypes.validation.shortNameDuplicate');
+        }
 
         return null;
     };
@@ -329,14 +331,14 @@ function ShiftTypeTable({
         const normalizedStartTime = shiftType.startTime.trim();
         const normalizedEndTime = shiftType.endTime.trim();
 
-        if (!normalizedStartTime || !normalizedEndTime) return '시간을 입력해 주세요.';
+        if (!normalizedStartTime || !normalizedEndTime) return t('page.wardSettings.shiftTypes.validation.timeRequired');
 
         const startMinutes = parseShiftTimeToMinutes(normalizedStartTime);
         const endMinutes = parseShiftTimeToMinutes(normalizedEndTime);
 
-        if (startMinutes == null || endMinutes == null) return '시간은 00:00 형식으로 입력해 주세요.';
+        if (startMinutes == null || endMinutes == null) return t('page.wardSettings.shiftTypes.validation.timeFormat');
 
-        if (endMinutes === startMinutes) return '시작/종료 시간을 다르게 입력해 주세요.';
+        if (endMinutes === startMinutes) return t('page.wardSettings.shiftTypes.validation.timeSame');
 
         return null;
     };
@@ -354,7 +356,7 @@ function ShiftTypeTable({
             ...prev,
             {
                 wardShiftTypeId: nextTempId,
-                name: '새 근무',
+                name: t('page.wardSettings.shiftTypes.newShiftName'),
                 shortName: 'W',
                 startTime: '09:00',
                 endTime: '18:00',
@@ -496,7 +498,7 @@ function ShiftTypeTable({
                                                 ? SHIFT_TYPE_INPUT_ERROR_CLASS
                                                 : '',
                                         )}
-                                        placeholder="근무명"
+                                        placeholder={t('page.wardSettings.shiftTypes.column.name')}
                                     />
                                     {showValidationHighlight && getShiftNameError(shiftType.name) ? (
                                         <InlineFieldError id={`shift-name-error-${shiftType.wardShiftTypeId}`}>
@@ -515,7 +517,9 @@ function ShiftTypeTable({
                                             if (hasInvalidShiftShortNameInput(event.target.value)) {
                                                 setShortNameErrorById((prev) => ({
                                                     ...prev,
-                                                    [shiftType.wardShiftTypeId]: '공백 없이 2글자까지 입력해 주세요.',
+                                                    [shiftType.wardShiftTypeId]: t(
+                                                        'page.wardSettings.shiftTypes.validation.shortNameLength',
+                                                    ),
                                                 }));
                                             } else {
                                                 setShortNameErrorById((prev) => ({...prev, [shiftType.wardShiftTypeId]: ''}));
@@ -571,7 +575,7 @@ function ShiftTypeTable({
                                             patchDraft(shiftType.wardShiftTypeId, next);
                                         }}
                                     >
-                                        근무
+                                        {t('page.wardSettings.type.work')}
                                     </button>
                                     <button
                                         type="button"
@@ -593,7 +597,7 @@ function ShiftTypeTable({
                                             patchDraft(shiftType.wardShiftTypeId, next);
                                         }}
                                     >
-                                        휴무
+                                        {t('page.wardSettings.type.leave')}
                                     </button>
                                 </div>
                                 <div className="ml-[12px] flex justify-center self-center">
@@ -679,7 +683,9 @@ function ShiftTypeTable({
                                 >
                                     <button
                                         type="button"
-                                        aria-label={`${shiftType.name || '근무'} 색상 선택`}
+                                        aria-label={t('page.wardSettings.shiftTypes.colorSelectAria', {
+                                            name: shiftType.name || t('page.wardSettings.type.work'),
+                                        })}
                                         className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
                                         onClick={(event) => handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)}
                                     >
@@ -704,7 +710,7 @@ function ShiftTypeTable({
                                                           <button
                                                               key={color}
                                                               type="button"
-                                                              aria-label={`${color} 선택`}
+                                                              aria-label={t('page.wardSettings.shiftTypes.colorOptionAria', {color})}
                                                               className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
                                                               style={{backgroundColor: color}}
                                                               onClick={() => {
@@ -726,7 +732,9 @@ function ShiftTypeTable({
                                 ) : (
                                     <button
                                         type="button"
-                                        aria-label={`${shiftType.name || '근무'} 삭제`}
+                                        aria-label={t('page.wardSettings.shiftTypes.deleteAria', {
+                                            name: shiftType.name || t('page.wardSettings.type.work'),
+                                        })}
                                         onClick={() => removeDraftShiftType(shiftType.wardShiftTypeId)}
                                         className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"
                                     >
@@ -747,7 +755,7 @@ function ShiftTypeTable({
                     <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-gray-3 transition-colors group-hover:bg-sub-2.5">
                         <Plus className="h-[11px] w-[11px] text-white" />
                     </span>
-                    근무 유형 추가하기
+                    {t('page.wardSettings.shiftTypes.add')}
                 </button>
                 <button
                     type="button"
@@ -759,7 +767,7 @@ function ShiftTypeTable({
                             : 'bg-main-1 text-white hover:bg-main-2',
                     )}
                 >
-                    저장하기
+                    {t('page.wardSettings.shiftTypes.save')}
                 </button>
             </div>
         </div>
@@ -865,7 +873,9 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                 <div>
                     <h1 className="font-apple text-[30px] font-semibold text-sub-1">{t('page.wardSettings.title')}</h1>
                     <p className="mt-1 font-apple text-sm text-gray-3">
-                        {state.currentTab === 'shiftTypes' ? '근무 유형을 관리해요.' : '근무 규칙을 관리해요.'}
+                        {state.currentTab === 'shiftTypes'
+                            ? t('page.wardSettings.description.shiftTypes')
+                            : t('page.wardSettings.description.constraints')}
                     </p>
                 </div>
 

@@ -2,6 +2,7 @@ import {useMemo} from 'react';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
 import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import {TutorialPortal} from '@/widgets/tutorial/TutorialPortal';
 
@@ -14,6 +15,7 @@ type TBoardTutorialProps = {
 };
 
 export function BoardTutorial({accountId, canStart, mode}: TBoardTutorialProps) {
+    const {t} = useTypedTranslation();
     const showBoardListTutorial = useTutorialStore((state) => state.showBoardListTutorial);
     const showBoardComposerTutorial = useTutorialStore((state) => state.showBoardComposerTutorial);
     const showBoardDetailTutorial = useTutorialStore((state) => state.showBoardDetailTutorial);
@@ -30,14 +32,14 @@ export function BoardTutorial({accountId, canStart, mode}: TBoardTutorialProps) 
                     steps: [
                         {
                             highlightIds: ['board_post_list'],
-                            title: '게시글 목록을 볼 수 있어요',
-                            info: '글을 누르면 자세한 내용을 볼 수 있어요.',
+                            title: t('page.board.tutorial.list.postsTitle'),
+                            info: t('page.board.tutorial.list.postsInfo'),
                             infoBoxAlignment: 'right',
                         },
                         {
                             highlightIds: ['board_create_button'],
-                            title: '새 글은 여기서 작성해요',
-                            info: '작성한 글은 병동 구성원 모두가 볼 수 있어요.\n병동 인원과 공유할 내용을 적어 보세요.',
+                            title: t('page.board.tutorial.list.createTitle'),
+                            info: t('page.board.tutorial.list.createInfo'),
                             infoBoxAlignment: 'right',
                         },
                     ],
@@ -53,8 +55,8 @@ export function BoardTutorial({accountId, canStart, mode}: TBoardTutorialProps) 
                     steps: [
                         {
                             highlightIds: ['board_composer_deadline_picker'],
-                            title: '마감일을 지정할 수 있어요',
-                            info: '마감일을 정하면 듀팅 앱과 병동 캘린더에 표시돼요.\n병동 인원과 공유할 일정에 사용해 보세요.',
+                            title: t('page.board.tutorial.composer.deadlineTitle'),
+                            info: t('page.board.tutorial.composer.deadlineInfo'),
                             infoBoxAlignment: 'left',
                         },
                     ],
@@ -70,8 +72,8 @@ export function BoardTutorial({accountId, canStart, mode}: TBoardTutorialProps) 
                     steps: [
                         {
                             highlightIds: ['board_detail_panel'],
-                            title: '체크와 댓글로 확인을 관리해요',
-                            info: '간호사들이 확인하면 체크로 바로 남아요.\n요청이나 변경 내용은 댓글로 받으면 돼요.',
+                            title: t('page.board.tutorial.detail.checkTitle'),
+                            info: t('page.board.tutorial.detail.checkInfo'),
                             infoBoxAlignment: 'left',
                         },
                     ],
@@ -88,6 +90,7 @@ export function BoardTutorial({accountId, canStart, mode}: TBoardTutorialProps) 
             showBoardComposerTutorial,
             showBoardDetailTutorial,
             showBoardListTutorial,
+            t,
         ],
     );
     const currentTutorial = tutorialByMode[mode];

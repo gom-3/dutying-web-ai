@@ -11,10 +11,12 @@ import {
 } from '@/features/auth/model/social-signup';
 import {resolveSafeRedirectTarget} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
 const RedirectPage = () => {
+    const {t} = useTypedTranslation();
     const [redirectError, setRedirectError] = useState<string | null>(null);
     const {
         actions: {handleLogin},
@@ -35,7 +37,7 @@ const RedirectPage = () => {
 
         if (accessToken) {
             if (!isWardAdminAccessToken(accessToken)) {
-                setRedirectError('관리자 로그인 토큰을 받지 못했어요. 소셜 로그인 설정을 확인해 주세요.');
+                setRedirectError(t('page.login.redirect.adminTokenMissing'));
 
                 return;
             }
@@ -45,12 +47,12 @@ const RedirectPage = () => {
     }, []);
 
     if (redirectError) {
-        return <PageState tone="error" layout="screen" title="소셜 로그인에 실패했어요" description={redirectError} />;
+        return <PageState tone="error" layout="screen" title={t('page.login.redirect.errorTitle')} description={redirectError} />;
     }
 
     return (
         <div className="flex h-screen w-screen flex-col items-center justify-center">
-            로그인중입니다.
+            {t('page.login.redirect.loading')}
             <LoadingSpinner size={56} />
         </div>
     );

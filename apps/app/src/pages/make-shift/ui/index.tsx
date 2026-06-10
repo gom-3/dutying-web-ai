@@ -32,7 +32,7 @@ export const MakeShiftPageView = () => {
     const isOverview = phase === 'overview';
     const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
-    const currentShiftTeamName = shiftTeams.find((t) => t.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
     const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
     const draftStep = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
     const hasProgress = shiftStatus === 'success' && (draftStep !== null || shiftExists || shiftFullyAssigned);

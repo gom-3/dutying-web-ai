@@ -100,9 +100,9 @@
 
 .mobile-hero-title-rotator {
     display: grid;
-    width: min(calc(100vw - 16px), 420px);
-    min-height: 3.54em;
-    margin-left: -8px;
+    width: 100%;
+    min-height: 5.9em;
+    overflow: hidden;
     -webkit-mask-image: none;
     mask-image: none;
 }
@@ -110,7 +110,7 @@
 .mobile-hero-title-rotator__item {
     line-height: 1.18;
     word-break: keep-all;
-    overflow-wrap: normal;
+    overflow-wrap: anywhere;
 }
 
 .landing-hero-grid {

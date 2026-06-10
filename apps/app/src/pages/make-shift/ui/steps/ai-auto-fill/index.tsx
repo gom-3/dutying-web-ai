@@ -573,6 +573,7 @@ export function AiAutofill() {
 
             if (!result.ok) {
                 setAiStatus('error');
+                toast.error(result.message || t('page.makeShift.aiRefill.requestFailed'));
 
                 return;
             }

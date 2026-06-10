@@ -1,5 +1,6 @@
 import {toBlob} from 'html-to-image';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {buildShiftImageFileName, buildShiftImageTitle, downloadBlobAsFile, shiftToImage} from '../shift-to-image';
 
 vi.mock('html-to-image', () => ({
@@ -7,7 +8,8 @@ vi.mock('html-to-image', () => ({
 }));
 
 describe('shift-to-image', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         vi.clearAllMocks();
     });
 
@@ -26,6 +28,22 @@ describe('shift-to-image', () => {
             '2027년 1월 듀팅병원 7A 근무표',
         );
         expect(buildShiftImageTitle({year: 2027, month: 1, hospitalName: null, wardName: null})).toBe('2027년 1월 근무표');
+    });
+
+    it('활성 언어 기준으로 이미지 파일명과 제목을 만든다', async () => {
+        await i18n.changeLanguage('en');
+
+        expect(buildShiftImageFileName({year: 2026, month: 3, teamName: 'ICU/1'})).toBe('ICU 1 2026 M3 schedule.png');
+        expect(buildShiftImageTitle({year: 2027, month: 1, hospitalName: 'Dutying Hospital', wardName: '7A'})).toBe(
+            'Dutying Hospital 7A 2027 M1 schedule',
+        );
+
+        await i18n.changeLanguage('ja');
+
+        expect(buildShiftImageFileName({year: 2026, month: 3, teamName: 'ICU/1'})).toBe('ICU 1 2026年3月勤務表.png');
+        expect(buildShiftImageTitle({year: 2027, month: 1, hospitalName: 'デューティング病院', wardName: '7A'})).toBe(
+            '2027年1月 デューティング病院 7A 勤務表',
+        );
     });
 
     it('blob을 object url로 내려받는다', () => {

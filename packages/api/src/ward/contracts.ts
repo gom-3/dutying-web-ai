@@ -198,10 +198,18 @@ export type TAiConstraintViolation = {
     constraint?: string;
     title?: string;
     message: string;
+    message_key?: string | null;
+    messageKey?: string | null;
+    message_args?: Record<string, string | number | boolean | null | undefined> | null;
+    messageArgs?: Record<string, string | number | boolean | null | undefined> | null;
     rule?: string;
     nurse_id?: string | null;
+    nurseId?: string | number | null;
     nurse_name?: string | null;
+    nurseName?: string | null;
     shift?: string;
+    expected?: string | number | null;
+    actual?: string | number | null;
     period?: TAiConstraintViolationPeriod;
     affected_days?: number[];
     detected_day?: number;

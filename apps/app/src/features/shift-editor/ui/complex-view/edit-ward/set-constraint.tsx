@@ -81,9 +81,9 @@ const SetConstraint = ({wardConstraint, onUpdateConstraint}: ISetConstraintProps
                                 }}
                             />
                             {isActive ? (
-                                <p className="flex-1 text-center text-[.75rem] text-sub-3">근무표 적용</p>
+                                <p className="flex-1 text-center text-[.75rem] text-sub-3">{t('feature.shiftEditor.editWard.applied')}</p>
                             ) : (
-                                <p className="flex-1 text-center text-[.75rem] text-sub-3">근무표 미적용</p>
+                                <p className="flex-1 text-center text-[.75rem] text-sub-3">{t('feature.shiftEditor.editWard.notApplied')}</p>
                             )}
                         </div>
                     </div>

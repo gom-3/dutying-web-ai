@@ -339,4 +339,41 @@ describe('useMakeShiftBootstrap', () => {
             });
         });
     });
+
+    it('enters the confirmed step for an onboarding initial schedule even when only some cells are assigned', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(
+            () => useMakeShiftBootstrap(1, {confirmInitialSchedule: {year: 2026, month: 6, shiftTeamId: 10}}),
+            {wrapper},
+        );
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 6,
+                shiftExists: true,
+                shiftFullyAssigned: true,
+                restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('resets an in-progress authoring flow to the overview without onboarding intent', async () => {
+        useMakeShiftStore.setState({phase: 'stepping', currentShiftTeamId: 10});
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
+
+        renderHook(() => useMakeShiftBootstrap(1), {wrapper});
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'overview',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+            });
+        });
+    });
 });

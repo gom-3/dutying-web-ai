@@ -26,8 +26,10 @@ import {
 } from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
+import i18n from '@/i18n';
 import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -79,13 +81,13 @@ const MEMBER_GRID_COLS_WITH_SKILL =
     'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
     'grid-cols-[24px_minmax(72px,0.9fr)_minmax(176px,1.75fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
-const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; label: string}[] = [
-    {value: 'manual', label: '임의순'},
-    {value: 'name', label: '가나다순'},
-    {value: 'skill', label: '숙련도 순'},
+const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; labelKey: Parameters<ReturnType<typeof useTypedTranslation>['t']>[0]}[] = [
+    {value: 'manual', labelKey: 'page.member.sort.manual'},
+    {value: 'name', labelKey: 'page.member.sort.name'},
+    {value: 'skill', labelKey: 'page.member.sort.skill'},
 ];
-const compareMemberNurseName = (left: TNurse, right: TNurse) => {
-    const byName = left.name.localeCompare(right.name, 'ko-KR', {sensitivity: 'base'});
+const compareMemberNurseName = (left: TNurse, right: TNurse, collator: Intl.Collator) => {
+    const byName = collator.compare(left.name, right.name);
 
     if (byName !== 0) {
         return byName;
@@ -93,7 +95,12 @@ const compareMemberNurseName = (left: TNurse, right: TNurse) => {
 
     return left.nurseId - right.nurseId;
 };
-const compareMemberNurseSkill = (left: TNurse, right: TNurse, levelsByNurseId: Record<number, number>) => {
+const compareMemberNurseSkill = (
+    left: TNurse,
+    right: TNurse,
+    levelsByNurseId: Record<number, number>,
+    collator: Intl.Collator,
+) => {
     const leftLevel = levelsByNurseId[left.nurseId] ?? Number.NEGATIVE_INFINITY;
     const rightLevel = levelsByNurseId[right.nurseId] ?? Number.NEGATIVE_INFINITY;
 
@@ -101,7 +108,7 @@ const compareMemberNurseSkill = (left: TNurse, right: TNurse, levelsByNurseId: R
         return rightLevel - leftLevel;
     }
 
-    return compareMemberNurseName(left, right);
+    return compareMemberNurseName(left, right, collator);
 };
 const rgbToHex = ({red, green, blue}: {red: number; green: number; blue: number}) =>
     `#${[red, green, blue]
@@ -152,15 +159,17 @@ function MemberRoleHeaderHelp({
     openedType: TNurseRoleHelpType | null;
     onToggle: (type: TNurseRoleHelpType) => void;
 }) {
+    const {t} = useTypedTranslation();
     const help = NURSE_ROLE_HELP[type];
+    const label = t(help.labelKey);
     const isOpen = openedType === type;
 
     return (
         <span className="group relative inline-flex items-center justify-center gap-1">
-            <span>{help.label}</span>
+            <span>{label}</span>
             <button
                 type="button"
-                aria-label={`${help.label} 설명`}
+                aria-label={t('page.member.roleHelp.aria', {label})}
                 aria-expanded={isOpen}
                 className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
                 onClick={() => onToggle(type)}
@@ -174,7 +183,7 @@ function MemberRoleHeaderHelp({
                     isOpen && 'opacity-100',
                 )}
             >
-                {help.description}
+                {t(help.descriptionKey)}
             </span>
         </span>
     );
@@ -242,6 +251,14 @@ function MemberPage() {
     const allNurses = useMemo(() => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? [], [shiftTeams]);
     const wardId = ward?.wardId ?? null;
     const requestedShiftTeamId = useMemo(() => parsePositiveInt(searchParams.get('shiftTeamId')), [searchParams]);
+    const memberNameCollator = useMemo(
+        () =>
+            new Intl.Collator(getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language), {
+                sensitivity: 'base',
+                numeric: true,
+            }),
+        [t],
+    );
 
     useEffect(() => {
         setSkillSettings(getWardSkillSettings(wardId));
@@ -275,8 +292,14 @@ function MemberPage() {
     );
     const isSkillFeatureEnabled = skillConfig.enabled;
     const availableSortOptions = useMemo(
-        () => (isSkillFeatureEnabled ? MEMBER_SORT_OPTIONS : MEMBER_SORT_OPTIONS.filter((option) => option.value !== 'skill')),
-        [isSkillFeatureEnabled],
+        () =>
+            (isSkillFeatureEnabled ? MEMBER_SORT_OPTIONS : MEMBER_SORT_OPTIONS.filter((option) => option.value !== 'skill')).map(
+                (option) => ({
+                    value: option.value,
+                    label: t(option.labelKey),
+                }),
+            ),
+        [isSkillFeatureEnabled, t],
     );
     const activeShiftTeam = useMemo(
         () => shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === activeShiftTeamId) ?? shiftTeams?.[0],
@@ -303,8 +326,9 @@ function MemberPage() {
 
         const comparator =
             nurseSortMode === 'name'
-                ? compareMemberNurseName
-                : (left: TNurse, right: TNurse) => compareMemberNurseSkill(left, right, levelsByNurseId as Record<number, number>);
+                ? (left: TNurse, right: TNurse) => compareMemberNurseName(left, right, memberNameCollator)
+                : (left: TNurse, right: TNurse) =>
+                      compareMemberNurseSkill(left, right, levelsByNurseId as Record<number, number>, memberNameCollator);
 
         return [...onNurses].sort(comparator).concat([...offNurses].sort(comparator));
     }, [
@@ -312,6 +336,7 @@ function MemberPage() {
         activeShiftTeam?.shiftTeamId,
         levelsByNurseId,
         manualOrderByTeamId,
+        memberNameCollator,
         nurseSortMode,
         pendingWorkerByNurseId,
     ]);
@@ -660,7 +685,7 @@ function MemberPage() {
             }
 
             await deleteShiftTeam(activeShiftTeam.shiftTeamId);
-            toast.success(`${deletingTeamName} 팀을 삭제했어요.`);
+            toast.success(t('page.member.toast.deleteTeam', {teamName: deletingTeamName}));
 
             return;
         }
@@ -787,7 +812,7 @@ function MemberPage() {
         const teamCount = shiftTeams?.length ?? 0;
 
         if (teamCount >= MAX_ONBOARDING_TEAMS) {
-            toast.error('팀은 최대 8개까지 추가할 수 있어요.');
+            toast.error(t('page.member.toast.maxTeams', {count: MAX_ONBOARDING_TEAMS}));
 
             return;
         }
@@ -803,7 +828,7 @@ function MemberPage() {
             setSearchParams(nextSearchParams, {replace: true});
         }
         sendEvent(events.memberPage.createShiftTeam);
-        toast.success(`간호사 ${teamCount + 1}팀을 추가했어요.`, {position: 'bottom-center'});
+        toast.success(t('page.member.toast.createTeam', {teamNumber: teamCount + 1}), {position: 'bottom-center'});
     };
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
@@ -819,7 +844,7 @@ function MemberPage() {
         const activeTeamNurseCount = activeShiftTeam.nurses.length;
 
         if (activeTeamNurseCount >= MAX_ONBOARDING_NURSES) {
-            toast.error('한 팀에는 간호사를 최대 40명까지 추가할 수 있어요.');
+            toast.error(t('page.member.toast.maxNursesPerTeam', {count: MAX_ONBOARDING_NURSES}));
 
             return;
         }
@@ -875,7 +900,10 @@ function MemberPage() {
 
         sendEvent(events.memberPage.moveNurse);
         toast.success(
-            `${selectedNurse.name.trim() ? selectedNurse.name : '선택한 간호사'}를 ${destinationShiftTeam.name} 팀으로 이동했어요.`,
+            t('page.member.toast.moveNurse', {
+                nurseName: selectedNurse.name.trim() ? selectedNurse.name : t('page.member.common.selectedNurse'),
+                teamName: destinationShiftTeam.name,
+            }),
         );
 
         return true;
@@ -900,18 +928,18 @@ function MemberPage() {
                 ? createPortal(
                       <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]">
                           <div role="dialog" aria-modal="true" className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5">
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">팀을 삭제할까요?</p>
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.deleteTeamTitle')}</p>
                               <p className="mt-2 font-apple text-[15px] text-gray-3">
                                   <span className="font-semibold text-sub-1">{activeShiftTeam.name}</span>
-                                  {` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`}
+                                  {t('page.member.modal.deleteTeamDescriptionSuffix', {count: activeTeamNurseCount})}
                               </p>
                               <div className="mt-6 flex items-center gap-3">
                                   <button
                                       type="button"
                                       className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                      onClick={() => setShowDeleteTeamModal(false)}
-                                  >
-                                      닫기
+                                  onClick={() => setShowDeleteTeamModal(false)}
+                              >
+                                      {t('page.member.common.close')}
                                   </button>
                                   <button
                                       type="button"
@@ -928,10 +956,10 @@ function MemberPage() {
                                           }
 
                                           await deleteShiftTeam(activeShiftTeam.shiftTeamId);
-                                          toast.success(`${activeShiftTeam.name} 팀을 삭제했어요.`);
+                                          toast.success(t('page.member.toast.deleteTeam', {teamName: activeShiftTeam.name}));
                                       }}
                                   >
-                                      삭제하기
+                                      {t('page.member.common.deleteAction')}
                                   </button>
                               </div>
                           </div>
@@ -951,29 +979,29 @@ function MemberPage() {
                               className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                               onClick={(event) => event.stopPropagation()}
                           >
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">저장하지 않고 나갈까요?</p>
-                              <p className="mt-2 font-apple text-[15px] text-gray-3">변경사항이 저장되지 않을 수 있어요.</p>
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.unsavedExitTitle')}</p>
+                              <p className="mt-2 font-apple text-[15px] text-gray-3">{t('page.member.modal.unsavedExitDescription')}</p>
                               <div className="mt-6 grid grid-cols-3 gap-2">
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                      onClick={cancelPendingUnsavedAction}
-                                  >
-                                      취소
+                                  onClick={cancelPendingUnsavedAction}
+                              >
+                                      {t('page.member.common.cancel')}
                                   </button>
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
-                                      onClick={() => void discardDraftAndRunPendingAction()}
-                                  >
-                                      저장 안 함
+                                  onClick={() => void discardDraftAndRunPendingAction()}
+                              >
+                                      {t('page.member.common.discard')}
                                   </button>
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
-                                      onClick={() => void saveDraftAndRunPendingAction()}
-                                  >
-                                      저장 후 나가기
+                                  onClick={() => void saveDraftAndRunPendingAction()}
+                              >
+                                      {t('page.member.common.saveAndLeave')}
                                   </button>
                               </div>
                           </div>
@@ -1003,7 +1031,7 @@ function MemberPage() {
                                 <div className="flex shrink-0 items-center justify-center gap-2 pl-3 min-[1440px]:gap-3 min-[1440px]:pl-4">
                                     <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
                                         <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
-                                            전체 인원
+                                            {t('page.member.summary.totalNurses')}
                                         </span>
                                         <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {totalNurseCount}
@@ -1012,7 +1040,7 @@ function MemberPage() {
                                     <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
                                     <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
                                         <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
-                                            연동됨
+                                            {t('page.member.summary.connected')}
                                         </span>
                                         <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {connectedNurseCount}
@@ -1020,7 +1048,7 @@ function MemberPage() {
                                     </div>
                                     <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
                                         <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
-                                            미연동
+                                            {t('page.member.summary.unconnected')}
                                         </span>
                                         <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
                                             {unconnectedNurseCount}
@@ -1031,7 +1059,7 @@ function MemberPage() {
                             <div
                                 role="button"
                                 tabIndex={0}
-                                aria-label={`병동코드 ${wardGuideCode} 안내 보기`}
+                                aria-label={t('page.member.summary.wardCodeGuideAria', {wardCode: wardGuideCode})}
                                 className="flex h-11 shrink-0 cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-3 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[46px] min-[1440px]:px-4"
                                 onClick={() => setWardCodeGuideOpen(true)}
                                 onKeyDown={(event) => {
@@ -1043,21 +1071,23 @@ function MemberPage() {
                                     setWardCodeGuideOpen(true);
                                 }}
                             >
-                                <span className="font-apple text-[13px] text-[#8A94A8] min-[1440px]:text-[14px]">병동 코드</span>
+                                <span className="font-apple text-[13px] text-[#8A94A8] min-[1440px]:text-[14px]">
+                                    {t('page.member.summary.wardCode')}
+                                </span>
                                 <span className="ml-2 font-poppins text-[15px] font-bold text-main-1 min-[1440px]:text-[16px]">
                                     {wardGuideCode}
                                 </span>
                                 <button
                                     type="button"
                                     className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded text-[#8A94A8] transition-colors hover:bg-[#F2F4F8] hover:text-[#657084] focus-visible:outline-2 focus-visible:outline-main-1"
-                                    aria-label="병동 코드 복사"
+                                    aria-label={t('page.member.summary.copyWardCodeAria')}
                                     onClick={async (event) => {
                                         event.stopPropagation();
 
                                         if (!ward?.code) return;
 
                                         await navigator.clipboard.writeText(ward.code);
-                                        toast.success('병동 코드를 복사했어요.');
+                                        toast.success(t('page.member.toast.copyWardCode'));
                                     }}
                                 >
                                     <Copy className="h-3.5 w-3.5" strokeWidth={2.2} />
@@ -1073,7 +1103,7 @@ function MemberPage() {
                                         {watingNurses?.length}
                                     </span>
                                 ) : null}
-                                연동관리
+                                {t('page.member.summary.connectionManage')}
                                 <Link2 className="h-[18px] w-[18px] text-main-1 min-[1440px]:h-5 min-[1440px]:w-5" strokeWidth={2.8} />
                             </button>
                         </div>
@@ -1220,7 +1250,7 @@ function MemberPage() {
                                                 <span>
                                                     {selectedSortOption?.label ??
                                                         availableSortOptions[0]?.label ??
-                                                        MEMBER_SORT_OPTIONS[0].label}
+                                                        t(MEMBER_SORT_OPTIONS[0].labelKey)}
                                                 </span>
                                                 <ChevronDown
                                                     aria-hidden="true"
@@ -1550,6 +1580,7 @@ function MemberNurseRow({
     onSaveSkillLevel: (nextLevel: number | null) => void;
     onSelect: () => void;
 }) {
+    const {t} = useTypedTranslation();
     const [nameDraft, setNameDraft] = useState(nurse.name);
     const [skillMenuOpen, setSkillMenuOpen] = useState(false);
     const [disconnectConfirmModalOpen, setDisconnectConfirmModalOpen] = useState(false);
@@ -1570,6 +1601,8 @@ function MemberNurseRow({
     const isPreceptor = Boolean(nurse.isWardManager);
     const isPreceptee = hasPrecepteeMemo(nurse.memo);
     const fadedClass = isWorker ? '' : 'opacity-55';
+    const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
+    const unselectedSkillLabel = t('page.member.row.unselectedSkill');
 
     useEffect(() => {
         if (!skillMenuOpen) {
@@ -1618,7 +1651,7 @@ function MemberNurseRow({
                         onSelect();
                     }}
                     className={cn('flex h-5 w-5 items-center justify-center text-gray-4 transition-colors hover:text-gray-3', fadedClass)}
-                    aria-label="드래그해서 순서 변경"
+                    aria-label={t('page.member.row.dragAria')}
                 >
                     <SixDotsIcon className="h-3.5 w-3.5" />
                 </button>
@@ -1666,7 +1699,7 @@ function MemberNurseRow({
                                 <SkillBadge
                                     level={isSkillUnselected ? null : skillLevel}
                                     config={skillConfig}
-                                    label={isSkillUnselected ? '선택안함' : undefined}
+                                    label={isSkillUnselected ? unselectedSkillLabel : undefined}
                                     backgroundColor={isSkillUnselected ? '#E5E7EB' : undefined}
                                     textColor={isSkillUnselected ? '#6B7280' : undefined}
                                 />
@@ -1687,7 +1720,7 @@ function MemberNurseRow({
                                             <SkillBadge
                                                 level={null}
                                                 config={skillConfig}
-                                                label="선택안함"
+                                                label={unselectedSkillLabel}
                                                 backgroundColor="#E5E7EB"
                                                 textColor="#6B7280"
                                             />
@@ -1787,7 +1820,7 @@ function MemberNurseRow({
                         type="button"
                         role="checkbox"
                         aria-checked={isPreceptor}
-                        aria-label={`${nurse.name || '간호사'} 프리셉터`}
+                        aria-label={t('page.member.row.preceptorAria', {nurseName: nurseNameForAria})}
                         className={cn(
                             'group flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                             isPreceptor
@@ -1814,7 +1847,7 @@ function MemberNurseRow({
                         type="button"
                         role="checkbox"
                         aria-checked={isPreceptee}
-                        aria-label={`${nurse.name || '간호사'} 프리셉티`}
+                        aria-label={t('page.member.row.precepteeAria', {nurseName: nurseNameForAria})}
                         className={cn(
                             'group flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                             isPreceptee
@@ -1853,7 +1886,7 @@ function MemberNurseRow({
                         }}
                         className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
                         thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
-                        aria-label={`${nurse.name} worker`}
+                        aria-label={t('page.member.row.workerAria', {nurseName: nurseNameForAria})}
                     />
                 </div>
                 <div className={cn('flex justify-center', fadedClass)}>
@@ -1872,7 +1905,7 @@ function MemberNurseRow({
 
                             onOpenWardCodeGuide();
                         }}
-                        aria-label={`${nurse.name} 연동 상태 안내`}
+                        aria-label={t('page.member.row.connectionStatusAria', {nurseName: nurseNameForAria})}
                     >
                         {nurse.isConnected ? <LinkedIcon className="h-5 w-5" /> : <UnlinkedIcon className="h-5 w-5" />}
                     </button>
@@ -1902,10 +1935,10 @@ function MemberNurseRow({
                               className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                               onClick={(event) => event.stopPropagation()}
                           >
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">간호사를 삭제할까요?</p>
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.deleteNurseTitle')}</p>
                               <p className="mt-2 font-apple text-[15px] text-gray-3">
-                                  <span className="font-semibold text-sub-1">{nurse.name || '선택한 간호사'}</span>
-                                  {' 삭제 후에는 되돌릴 수 없어요.'}
+                                  <span className="font-semibold text-sub-1">{nurse.name || t('page.member.common.selectedNurse')}</span>
+                                  {t('page.member.modal.deleteNurseDescriptionSuffix')}
                               </p>
                               <div className="mt-6 flex items-center gap-3">
                                   <button
@@ -1913,7 +1946,7 @@ function MemberNurseRow({
                                       className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                       onClick={() => setDeleteConfirmModalOpen(false)}
                                   >
-                                      닫기
+                                      {t('page.member.common.close')}
                                   </button>
                                   <button
                                       type="button"
@@ -1926,7 +1959,7 @@ function MemberNurseRow({
                                           await onDeleteNurse(nurse.shiftTeamId, nurse.nurseId);
                                       }}
                                   >
-                                      삭제하기
+                                      {t('page.member.common.deleteAction')}
                                   </button>
                               </div>
                           </div>
@@ -1946,10 +1979,10 @@ function MemberNurseRow({
                               className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                               onClick={(event) => event.stopPropagation()}
                           >
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">연동을 끊을까요?</p>
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.disconnectTitle')}</p>
                               <p className="mt-2 font-apple text-[15px] text-gray-3">
-                                  <span className="font-semibold text-sub-1">{nurse.name || '선택한 간호사'}</span>
-                                  {' 의 앱 연동을 끊어요.'}
+                                  <span className="font-semibold text-sub-1">{nurse.name || t('page.member.common.selectedNurse')}</span>
+                                  {t('page.member.modal.disconnectDescriptionSuffix')}
                               </p>
                               <div className="mt-6 flex items-center gap-3">
                                   <button
@@ -1957,7 +1990,7 @@ function MemberNurseRow({
                                       className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                       onClick={() => setDisconnectConfirmModalOpen(false)}
                                   >
-                                      닫기
+                                      {t('page.member.common.close')}
                                   </button>
                                   <button
                                       type="button"
@@ -1970,7 +2003,7 @@ function MemberNurseRow({
                                           }
                                       }}
                                   >
-                                      연동 끊기
+                                      {t('page.member.common.disconnectAction')}
                                   </button>
                               </div>
                           </div>

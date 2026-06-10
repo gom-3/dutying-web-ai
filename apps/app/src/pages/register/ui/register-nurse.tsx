@@ -11,14 +11,15 @@ import {type TCreateAccountProfileDTO, useCreateAccount} from '@/features/accoun
 import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
 import {RandomIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const NURSE_NAME_MAX_LENGTH = 20;
 const PHONE_NUM_LENGTH = 11;
-const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
-const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
+const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]+$/u;
+const NURSE_NAME_INPUT_SANITIZE_REGEXP =
+    /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]/gu;
 const PHONE_NUM_INPUT_SANITIZE_REGEXP = /[^0-9]/g;
 const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
-const DUPLICATE_PHONE_NUM_ERROR_MESSAGE = '이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.';
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
@@ -47,8 +48,8 @@ const isDuplicatePhoneNumError = (error: unknown) => {
     if (code !== 400 && code !== 409) return false;
 
     const errorText = getErrorTextValues(error).join(' ').toLowerCase();
-    const hasPhoneHint = /phone|phone_num|phonenum|전화|연락처|휴대/.test(errorText);
-    const hasAlreadyUsedHint = /already used|이미 사용|사용 중/.test(errorText);
+    const hasPhoneHint = /phone|phone_num|phonenum|\uC804\uD654|\uC5F0\uB77D\uCC98|\uD734\uB300/.test(errorText);
+    const hasAlreadyUsedHint = /already used|\uC774\uBBF8 \uC0AC\uC6A9|\uC0AC\uC6A9 \uC911/.test(errorText);
 
     return code === 409 ? hasPhoneHint || hasAlreadyUsedHint : hasPhoneHint && hasAlreadyUsedHint;
 };
@@ -82,6 +83,7 @@ interface IRegisterNurseProps {
 }
 
 function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
+    const {t} = useTypedTranslation();
     const {
         formState: {errors},
         watch,
@@ -119,7 +121,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             'phoneNum',
                             {
                                 type: DUPLICATE_PHONE_NUM_ERROR_TYPE,
-                                message: DUPLICATE_PHONE_NUM_ERROR_MESSAGE,
+                                message: t('page.register.nurse.validation.phoneDuplicate'),
                             },
                             {shouldFocus: true},
                         );
@@ -151,24 +153,24 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
 
             setPhotoImage(compressedFile);
         } catch {
-            toast.error('프로필 이미지를 처리하지 못했어요.');
+            toast.error(t('page.register.nurse.imageFailed'));
         } finally {
             e.target.value = '';
         }
     };
     const nameError =
         errors.name?.type === 'required'
-            ? '이름을 입력해 주세요.'
+            ? t('page.register.nurse.validation.nameRequired')
             : errors.name
-              ? "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요."
+              ? t('page.register.nurse.validation.nameInvalid')
               : undefined;
     const phoneNumError =
         errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE && errors.phoneNum.message
             ? errors.phoneNum.message
             : errors.phoneNum?.type === 'required'
-              ? '연락처를 입력해 주세요.'
+              ? t('page.register.nurse.validation.phoneRequired')
               : errors.phoneNum
-                ? '연락처는 숫자 11자리로 입력해 주세요.'
+                ? t('page.register.nurse.validation.phoneInvalid')
                 : undefined;
 
     useEffect(() => {
@@ -198,7 +200,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     return (
         <form onSubmit={handleSubmit(handleCreateAccount, handleCreateAccountValidationFailure)} className="flex w-full flex-col">
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">계정 정보를 입력해 주세요</h1>
+                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.nurse.title')}</h1>
             </div>
 
             <section className="mt-6 rounded-[24px] bg-white p-6">
@@ -211,8 +213,8 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             type="button"
                             className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
                             onClick={setRandomImage}
-                            aria-label="랜덤 아바타"
-                            title="랜덤 아바타"
+                            aria-label={t('page.register.nurse.randomAvatar')}
+                            title={t('page.register.nurse.randomAvatar')}
                         >
                             <RandomIcon className="h-4 w-4" />
                         </button>
@@ -220,8 +222,8 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             type="button"
                             className="h-9 w-9 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
                             onClick={handleUploadImage}
-                            aria-label="사진 업로드"
-                            title="사진 업로드"
+                            aria-label={t('page.register.nurse.uploadPhoto')}
+                            title={t('page.register.nurse.uploadPhoto')}
                         >
                             <Camera className="h-4 w-4" />
                         </button>
@@ -232,7 +234,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                 <div className="mt-6 space-y-4">
                     <div>
                         <label htmlFor="name" className="mb-1.5 block text-sm font-medium text-sub-2">
-                            이름
+                            {t('page.register.nurse.name')}
                         </label>
                         <input
                             id="name"
@@ -240,7 +242,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             aria-invalid={Boolean(nameError)}
                             aria-describedby={nameError ? 'register-name-error' : undefined}
                             maxLength={NURSE_NAME_MAX_LENGTH}
-                            placeholder="이름을 입력해주세요"
+                            placeholder={t('page.register.nurse.namePlaceholder')}
                             {...nameField}
                             onChange={(event) => {
                                 event.target.value = sanitizeNurseNameInput(event.target.value);
@@ -256,7 +258,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
 
                     <div>
                         <label htmlFor="phone-num" className="mb-1.5 block text-sm font-medium text-sub-2">
-                            연락처
+                            {t('page.register.nurse.phoneNum')}
                         </label>
                         <input
                             id="phone-num"
@@ -266,7 +268,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                             aria-invalid={Boolean(phoneNumError)}
                             aria-describedby={phoneNumError ? 'register-phone-num-error' : undefined}
                             maxLength={PHONE_NUM_LENGTH}
-                            placeholder="연락처를 입력해주세요"
+                            placeholder={t('page.register.nurse.phoneNumPlaceholder')}
                             {...phoneNumField}
                             onChange={(event) => {
                                 if (errors.phoneNum?.type === DUPLICATE_PHONE_NUM_ERROR_TYPE) {
@@ -302,7 +304,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                     disabled={isSubmitting}
                     className="h-11 min-w-24 cursor-pointer rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-main-3"
                 >
-                    {isSubmitting ? '저장 중...' : '다음'}
+                    {isSubmitting ? t('page.register.nurse.saving') : t('page.register.nurse.next')}
                 </button>
             </div>
         </form>

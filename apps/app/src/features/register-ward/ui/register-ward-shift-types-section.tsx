@@ -21,7 +21,7 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className="text-[20px] font-semibold text-sub-1">{t('feature.registerWard.shiftTypes.title')}</h2>
-                    <p className="mt-1 text-xs leading-5 text-gray-3">기본 근무는 먼저 채워뒀어요. 병동 기준에 맞게 수정해 주세요.</p>
+                    <p className="mt-1 text-xs leading-5 text-gray-3">{t('feature.registerWard.shiftTypes.description')}</p>
                 </div>
                 <button
                     type="button"
@@ -31,7 +31,7 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                     }}
                 >
                     <Plus className="h-4 w-4" />
-                    추가
+                    {t('feature.registerWard.shiftTypes.add')}
                 </button>
             </div>
 
@@ -48,7 +48,7 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                                 </div>
                                 <p className="mt-1 text-xs text-gray-3">
                                     {shiftType.isOff
-                                        ? '근무 시간이 없는 휴가 유형이에요.'
+                                        ? t('feature.registerWard.shiftTypes.noTimeLeave')
                                         : `${shiftType.startTime} - ${shiftType.endTime}`}
                                 </p>
                             </div>
@@ -59,8 +59,8 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                                     setTempShiftType({...shiftType, wardShiftTypeId: index, isCounted: true});
                                     setOpenModal(true);
                                 }}
-                                aria-label={`${shiftType.name} 수정`}
-                                title={`${shiftType.name} 수정`}
+                                aria-label={t('feature.registerWard.shiftTypes.editAria', {name: shiftType.name})}
+                                title={t('feature.registerWard.shiftTypes.editAria', {name: shiftType.name})}
                             >
                                 <Pencil className="h-4 w-4" />
                             </button>
@@ -68,7 +68,7 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
 
                         <div className="mt-3 grid grid-cols-3 gap-2">
                             <div className="rounded-[12px] bg-white px-3 py-2">
-                                <p className="text-xs text-gray-4">유형</p>
+                                <p className="text-xs text-gray-4">{t('feature.registerWard.shiftTypes.typeLabel')}</p>
                                 <p className="mt-1 text-sm font-semibold text-sub-2">
                                     {shiftType.isOff
                                         ? t('feature.registerWard.shiftTypes.leave')
@@ -76,11 +76,11 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                                 </p>
                             </div>
                             <div className="rounded-[12px] bg-white px-3 py-2">
-                                <p className="text-xs text-gray-4">색상</p>
+                                <p className="text-xs text-gray-4">{t('feature.registerWard.shiftTypes.colorLabel')}</p>
                                 <div className="mt-1 h-5 w-8 rounded-[8px]" style={{backgroundColor: shiftType.color}} />
                             </div>
                             <div className="rounded-[12px] bg-white px-3 py-2">
-                                <p className="text-xs text-gray-4">약자</p>
+                                <p className="text-xs text-gray-4">{t('feature.registerWard.shiftTypes.shortNameLabel')}</p>
                                 <p className="mt-1 font-poppins text-sm font-semibold text-sub-2">{shiftType.shortName}</p>
                             </div>
                         </div>

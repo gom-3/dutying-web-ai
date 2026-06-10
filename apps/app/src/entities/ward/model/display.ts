@@ -1,3 +1,5 @@
+import i18n from '@/i18n';
+
 export type TWardDisplaySource = {
     hospitalName?: string | null;
     name?: string | null;
@@ -18,7 +20,7 @@ export const getWardDisplayIdentity = (ward?: TWardDisplaySource | null) => {
 
     return {
         supportingName: hospitalName && wardName ? hospitalName : undefined,
-        primaryName: wardName ?? hospitalName ?? '병동 정보',
+        primaryName: wardName ?? hospitalName ?? i18n.t('entity.ward.displayInfo'),
     };
 };
 
@@ -28,6 +30,6 @@ export const getWardDisplayTitle = (ward?: TWardDisplaySource | null) => {
     return supportingName ? `${supportingName} ${primaryName}` : primaryName;
 };
 
-export const getWardDisplayCode = (ward?: TWardDisplaySource | null, fallback = '병동코드') => {
+export const getWardDisplayCode = (ward?: TWardDisplaySource | null, fallback = i18n.t('entity.ward.codeFallback')) => {
     return getNonEmptyWardText(ward?.code) ?? fallback;
 };

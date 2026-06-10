@@ -1,6 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities/shift';
-import {buildShiftExcelFileName, shiftToExcel} from '../shift-to-excel';
+import i18n from '@/i18n';
+import {buildShiftExcelFileName, buildShiftExcelSheetName, buildShiftExcelTitle, shiftToExcel} from '../shift-to-excel';
 
 const shift = {
     lastDays: [],
@@ -89,7 +90,8 @@ describe('shift-to-excel', () => {
     const revokeObjectURL = vi.fn();
     const anchor = {click, href: '', download: ''} as unknown as HTMLAnchorElement;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         vi.clearAllMocks();
         anchor.href = '';
         anchor.download = '';
@@ -107,6 +109,20 @@ describe('shift-to-excel', () => {
 
     it('월 기준 파일명을 만든다', () => {
         expect(buildShiftExcelFileName(3)).toBe('3월 근무표.xlsx');
+    });
+
+    it('활성 언어 기준으로 엑셀 파일명과 시트명을 만든다', async () => {
+        await i18n.changeLanguage('en');
+
+        expect(buildShiftExcelFileName(3)).toBe('Month 3 schedule.xlsx');
+        expect(buildShiftExcelSheetName(3)).toBe('M3 schedule');
+        expect(buildShiftExcelTitle(3)).toBe('Month 3 schedule');
+
+        await i18n.changeLanguage('ja');
+
+        expect(buildShiftExcelFileName(3)).toBe('3月勤務表.xlsx');
+        expect(buildShiftExcelSheetName(3)).toBe('3月勤務表');
+        expect(buildShiftExcelTitle(3)).toBe('3月勤務表');
     });
 
     it('근무표 workbook을 만들고 같은 이름으로 다운로드한다', async () => {

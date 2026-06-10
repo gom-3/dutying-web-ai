@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Dutying Web i18n Implementation Sync - 2026-06-10</title>
+        <style>
+            :root {
+                color: #172033;
+                background: #f7f8fb;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", "Noto Sans JP", Arial, sans-serif;
+            }
+
+            body {
+                margin: 0;
+                padding: 32px;
+            }
+
+            main {
+                box-sizing: border-box;
+                width: min(1040px, 100%);
+                margin: 0 auto;
+                background: #ffffff;
+                border: 1px solid #e6e9f0;
+                border-radius: 10px;
+                padding: 34px;
+                box-shadow: 0 16px 44px rgb(23 32 51 / 7%);
+            }
+
+            h1,
+            h2 {
+                margin: 0;
+                letter-spacing: 0;
+            }
+
+            h1 {
+                font-size: 28px;
+                line-height: 1.3;
+            }
+
+            h2 {
+                margin-top: 30px;
+                padding-top: 22px;
+                border-top: 1px solid #edf0f5;
+                font-size: 18px;
+            }
+
+            p,
+            li {
+                font-size: 14px;
+                line-height: 1.75;
+            }
+
+            .meta {
+                margin-top: 10px;
+                color: #667085;
+            }
+
+            .grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+                gap: 12px;
+                margin-top: 16px;
+            }
+
+            .box {
+                border: 1px solid #e8ebf2;
+                border-radius: 8px;
+                padding: 14px 16px;
+                background: #fbfcfe;
+            }
+
+            .box strong {
+                display: block;
+                margin-bottom: 6px;
+                font-size: 13px;
+                color: #4b32c3;
+            }
+
+            code {
+                border-radius: 5px;
+                background: #f1f3f8;
+                padding: 2px 5px;
+                font-size: 12px;
+            }
+
+            ul {
+                padding-left: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <h1>일본어/영어 국제화 구현 싱크</h1>
+            <p class="meta">
+                작성일: 2026-06-10 · 범위: <code>apps/app</code> 웹 프론트엔드 · 기준 브랜치:
+                <code>origin/develop</code>
+            </p>
+
+            <h2>완료 범위</h2>
+            <div class="grid">
+                <section class="box">
+                    <strong>언어 리소스</strong>
+                    <p><code>ko</code>, <code>en</code>, <code>ja</code> locale 구조를 확장하고 타입 기반 번역 키를 적용했다.</p>
+                </section>
+                <section class="box">
+                    <strong>화면 전환</strong>
+                    <p>로그인, 회원가입, 온보딩, 듀티, 근무표 생성, 신청근무, 병동 설정, 프로필, 네비게이션 문구를 국제화했다.</p>
+                </section>
+                <section class="box">
+                    <strong>모델/공유 레이어</strong>
+                    <p>toast, confirm, API fallback, export 파일명, 분석 이벤트 라벨, 프로필 alt, 병동 표시 fallback을 locale 기반으로 변경했다.</p>
+                </section>
+                <section class="box">
+                    <strong>한국어 보존</strong>
+                    <p>기존 한국어 문구는 카탈로그의 <code>ko</code> locale 기준으로 유지하고, 관련 테스트는 한국어로 명시 고정했다.</p>
+                </section>
+            </div>
+
+            <h2>2026-06-10 origin/develop 동기화</h2>
+            <ul>
+                <li><code>codex/i18n-origin-develop-sync</code> worktree를 <code>origin/develop</code> 최신 기준으로 생성해 원본 <code>dutying-web</code> 작업 트리와 분리했다.</li>
+                <li>최신 develop의 로그인 비밀번호 재설정, 온보딩 근무표 업로드, 병동 관리자 권한, 초기 근무표 확정 흐름을 보존한 상태에서 i18n 변경을 재적용했다.</li>
+                <li>수동 locale 객체와 generated resource의 이중 타입 기준을 끊고, <code>resources.generated.ts</code>가 typed translation key의 기준이 되도록 변경했다.</li>
+                <li>서버/LLM 검증 응답에서 내려오는 <code>message_key</code>, <code>message_args</code>를 <code>@dutying/api</code> 타입과 웹 표시 포맷터에 반영했다.</li>
+                <li>충돌 파일은 모두 해소했으며 <code>git diff --name-only --diff-filter=U</code> 결과는 비어 있다.</li>
+            </ul>
+
+            <h2>2026-06-10 카탈로그 운영 전환</h2>
+            <ul>
+                <li><code>apps/app/i18n/catalog/messages.csv</code>를 웹 번역 원본 카탈로그로 생성했다. 현재 웹 런타임 기준 <code>1,688</code>개 메시지를 보존한다.</li>
+                <li><code>apps/app/i18n/catalog/terms.csv</code>를 추가해 병동, 근무표, 신청 근무, 확정 근무표처럼 반복되는 핵심 용어를 관리한다.</li>
+                <li><code>apps/app/src/shared/i18n/resources.generated.ts</code>를 생성물로 두고, <code>src/i18n.tsx</code>는 이 generated resource만 읽도록 전환했다.</li>
+                <li><code>pnpm i18n:catalog:check</code>는 중복 키, 필수 메타데이터, interpolation mismatch, 서버 메시지 표시 정책 누락을 검사한다.</li>
+                <li><code>pnpm i18n:export:web</code>는 카탈로그에서 웹 런타임 리소스를 재생성한다. generated 파일을 직접 수정하지 않는다.</li>
+                <li><code>pnpm i18n:review</code>는 번역 전문가가 한국어·영어·일본어를 대조할 수 있는 <code>apps/app/i18n/review/i18n-review-board.html</code>을 생성한다.</li>
+                <li><code>pnpm i18n:sync-server-errors</code>는 Spring 서버의 <code>messages_ko/en/ja.properties</code>를 <code>platform=server</code> 행으로 카탈로그에 동기화한다.</li>
+                <li>빈 문자열은 일부 UI 문장 조립에서 의도적으로 필요할 수 있어 <code>emptyLocales</code>에 명시한다. 명시되지 않은 빈 값은 검수 경고로 남긴다.</li>
+            </ul>
+
+            <h2>웹-서버 에러 계약 반영</h2>
+            <ul>
+                <li>서버 에러 응답은 <code>code</code>, <code>message</code>, <code>messageKey</code>, <code>displayPolicy</code>, <code>messageArgs</code>, <code>locale</code>, <code>requestId</code>, <code>traceId</code> 구조를 기준으로 한다.</li>
+                <li>웹 axios interceptor는 <code>displayPolicy</code>를 해석해 클라이언트 번역, 서버 localized text, debug-only fallback을 구분한다.</li>
+                <li>웹·앱 공용 타입 계약을 위해 <code>@dutying/api</code>와 <code>@dutying/api/error</code>에서 에러 응답 타입을 공개한다.</li>
+                <li>JWT/security filter 레벨 에러도 서버의 공통 에러 응답 writer를 사용하도록 정리했다.</li>
+                <li>서버 raw custom message는 한국어 locale에서는 보존하고, 영어/일본어 locale에서는 표준 message source 번역으로 fallback하도록 했다.</li>
+            </ul>
+
+            <h2>핵심 구현 결정</h2>
+            <ul>
+                <li>UI 컴포넌트는 <code>useTypedTranslation</code>으로 타입 안전한 키만 사용한다.</li>
+                <li>훅/순수 모델처럼 React 훅을 쓸 수 없는 곳은 초기화된 <code>i18n.t</code>를 사용한다.</li>
+                <li>일본어 기본 근무명 변경에 대비해 <code>name === "오프"</code> 비교를 <code>isOff</code> 플래그로 교체했다.</li>
+                <li>날짜/시간/이름 정렬은 현재 언어의 locale을 사용해 일본어/영어 표시와 정렬 품질을 높였다.</li>
+                <li>긴 영어/일본어 문구가 버튼, 카드, 모바일 랜딩 히어로에서 깨지지 않도록 줄바꿈과 overflow 안전 장치를 보강했다.</li>
+                <li><code>i18n</code> 초기화는 <code>document</code>/<code>localStorage</code>가 없는 테스트·SSR 유사 환경에서도 안전하게 동작하도록 가드했다.</li>
+            </ul>
+
+            <h2>비즈니스/운영 고려</h2>
+            <ul>
+                <li>한국어 사용자는 기존 화면과 플로우를 유지한다.</li>
+                <li>일본어 사용자는 병동/근무/신청/설정 주요 업무 화면에서 영어 fallback 노출을 최소화했다.</li>
+                <li>API 요청에는 locale/service-region 헤더가 실려 서버 로그, 정책, 향후 국가별 기능 분리에 활용할 수 있다.</li>
+                <li>문구는 기능 단위 namespace로 묶어 번역 검수, A/B copy 변경, 국가별 문구 정책 반영이 쉽도록 했다.</li>
+            </ul>
+
+            <h2>검증 결과</h2>
+            <ul>
+                <li><code>pnpm --dir apps/app i18n:export:web</code> 통과: <code>ko</code>/<code>en</code>/<code>ja</code> <code>1,688</code>개 메시지 생성</li>
+                <li><code>pnpm --dir apps/app type-check</code> 통과</li>
+                <li><code>pnpm --dir apps/app build</code> 통과</li>
+                <li><code>pnpm --dir apps/app check:i18n</code> 통과: 하드코딩 스캔 <code>0</code>건, 카탈로그 <code>1,688</code>개 메시지 오류/경고 <code>0</code>건</li>
+                <li><code>pnpm --dir apps/app check:i18n-ui</code> 통과: <code>/</code>, <code>/login</code>의 <code>ko/ja/en</code> 모바일·데스크톱 overflow <code>0</code>건</li>
+                <li><code>pnpm --dir apps/app check:i18n-literals</code> 결과: <code>totalFindings: 0</code></li>
+                <li>
+                    <code>pnpm --dir apps/app exec vitest run src/shared/api/__tests__/error.test.ts src/features/shift-editor/model/schedule-violations/__tests__/convert-api-validation.test.ts src/pages/make-shift/model/__tests__/use-bootstrap.test.tsx</code>
+                    통과: <code>3</code>개 테스트 파일, <code>21</code>개 테스트
+                </li>
+                <li>in-app 브라우저 플러그인 검증은 로컬 HTTPS 주소가 클라이언트 정책으로 차단되어 수행하지 못했다. 동일 서버 대상 Puppeteer UI 점검은 통과했다.</li>
+            </ul>
+
+            <h2>잔여 리스크</h2>
+            <ul>
+                <li>스캐너 기준 한글 하드코딩은 0개지만, 실제 고객 데이터의 매우 긴 병동명/간호사명 조합은 출시 전 샘플 데이터로 추가 시각 QA가 필요하다.</li>
+                <li>외부 API가 한국어 에러 메시지를 내려주는 경우에는 서버 국제화가 별도로 필요하다.</li>
+                <li>일본 병원 현장 용어는 운영 검수 후 <code>ja.ts</code> 문구를 더 자연스럽게 다듬을 수 있다.</li>
+            </ul>
+        </main>
+    </body>
+</html>

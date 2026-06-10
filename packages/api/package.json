@@ -12,6 +12,10 @@
             "types": "./src/client.ts",
             "import": "./src/client.ts"
         },
+        "./error": {
+            "types": "./src/error.ts",
+            "import": "./src/error.ts"
+        },
         "./account": {
             "types": "./src/account/index.ts",
             "import": "./src/account/index.ts"

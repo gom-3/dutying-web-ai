@@ -9,6 +9,7 @@ import {type TWard} from '@/entities/ward';
 import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import RegisterShell from './register-shell';
 
 const CODE_LENGTH = 6;
@@ -25,6 +26,7 @@ const toCodeList = (rawCode: string) => {
 };
 
 function EnterWard() {
+    const {t} = useTypedTranslation();
     const [codeList, setCodeList] = useState<(string | null)[]>(createEmptyCode);
     const [focusedIndex, setFocusedIndex] = useState<number>(0);
     const [open, setOpen] = useState(false);
@@ -136,22 +138,22 @@ function EnterWard() {
                 onClick={() => navigate(ROUTE.REGISTER)}
             >
                 <ArrowLeft className="h-4 w-4" />
-                병동 선택으로
+                {t('page.register.enterWard.back')}
             </button>
 
             <div>
-                <h1 className="text-[32px] font-semibold text-sub-1">병동 코드를 입력해요</h1>
-                <p className="mt-2 text-sm text-gray-3">관리자가 공유한 6자리 코드를 입력하면 병동을 확인할 수 있어요.</p>
+                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.enterWard.title')}</h1>
+                <p className="mt-2 text-sm text-gray-3">{t('page.register.enterWard.description')}</p>
             </div>
 
             <section className="mt-6 rounded-[24px] bg-white p-6">
-                <div ref={clickAwayRef} className="grid grid-cols-6 gap-2" aria-label="병동 코드 입력">
+                <div ref={clickAwayRef} className="grid grid-cols-6 gap-2" aria-label={t('page.register.enterWard.codeInputAria')}>
                     {codeList.map((code, index) => (
                         <button
                             type="button"
                             onClick={() => setFocusedIndex(index)}
                             key={index}
-                            aria-label={`병동 코드 ${index + 1}번째 자리`}
+                            aria-label={t('page.register.enterWard.codeCellAria', {index: index + 1})}
                             className={cn(
                                 'flex aspect-square min-h-12 cursor-text items-center justify-center rounded-[14px] bg-gray-7 font-poppins text-[28px] font-semibold text-sub-1 transition-colors',
                                 focusedIndex === index && 'bg-main-light text-main-1',
@@ -166,7 +168,7 @@ function EnterWard() {
 
             {error ? (
                 <p role="alert" className="mt-4 rounded-[16px] bg-[#FFF1F6] px-4 py-3 text-center text-sm font-medium text-red">
-                    병동 코드를 다시 확인해 주세요.
+                    {t('page.register.enterWard.error')}
                 </p>
             ) : null}
 
@@ -185,7 +187,7 @@ function EnterWard() {
                           >
                               <div className="flex items-start justify-between gap-4">
                                   <div>
-                                      <p className="text-sm font-semibold text-sub-2.5">병동 확인</p>
+                                      <p className="text-sm font-semibold text-sub-2.5">{t('page.register.enterWard.confirmEyebrow')}</p>
                                       <h2 id="enter-ward-confirm-title" className="mt-2 text-[24px] font-semibold text-sub-1">
                                           {ward?.hospitalName} {ward?.name}
                                       </h2>
@@ -194,12 +196,12 @@ function EnterWard() {
                                       type="button"
                                       onClick={() => setOpen(false)}
                                       className="h-9 w-9 shrink-0 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                                      aria-label="닫기"
+                                      aria-label={t('page.register.enterWard.close')}
                                   >
                                       <X className="h-4 w-4" />
                                   </button>
                               </div>
-                              <p className="mt-3 text-sm leading-6 text-gray-3">맞는 병동이면 입장 요청을 보낼게요.</p>
+                              <p className="mt-3 text-sm leading-6 text-gray-3">{t('page.register.enterWard.confirmDescription')}</p>
                               <div className="mt-8 grid grid-cols-2 gap-2">
                                   <button
                                       type="button"
@@ -207,7 +209,7 @@ function EnterWard() {
                                       className="h-11 cursor-pointer gap-2 rounded-[12px] bg-gray-7 px-4 text-sm font-semibold text-gray-3 transition-colors hover:bg-gray-6"
                                   >
                                       <RotateCcw className="h-4 w-4" />
-                                      다시 입력
+                                      {t('page.register.enterWard.retry')}
                                   </button>
                                   <button
                                       type="button"
@@ -215,7 +217,7 @@ function EnterWard() {
                                       className="h-11 cursor-pointer gap-2 rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7]"
                                   >
                                       <Check className="h-4 w-4" />
-                                      입장 요청
+                                      {t('page.register.enterWard.submit')}
                                   </button>
                               </div>
                           </section>

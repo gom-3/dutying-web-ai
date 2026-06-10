@@ -4,10 +4,12 @@ import useAuth from '@/features/auth';
 import RegisterAdminWorkspace from '@/pages/register/ui/register-admin-workspace';
 import RegisterShell from '@/pages/register/ui/register-shell';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
 function OnboardingCreateWardPage() {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe},
@@ -25,9 +27,9 @@ function OnboardingCreateWardPage() {
                 <div className="flex min-h-[420px] items-center justify-center">
                     <PageState
                         tone="error"
-                        title="계정 정보를 불러오지 못했어요"
-                        description="잠시 후 다시 시도해 주세요. 문제가 계속되면 다시 로그인해 주세요."
-                        action={{label: '다시 시도', onClick: () => void handleGetAccountMe().catch(() => undefined)}}
+                        title={t('page.register.state.accountErrorTitle')}
+                        description={t('page.register.state.accountErrorDescription')}
+                        action={{label: t('page.state.retry'), onClick: () => void handleGetAccountMe().catch(() => undefined)}}
                         className="py-0"
                     />
                 </div>

@@ -1,6 +1,8 @@
 import type {DropResult} from '@hello-pangea/dnd';
+import i18n from 'i18next';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import '@/i18n';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {createInitialDraft, DEFAULT_SHIFT_TYPE_COLORS, getScheduleMonthKey} from '../draft';
@@ -99,6 +101,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         mockParseOnboardingWardExcel.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
+        i18n.changeLanguage('ko');
     });
 
     it('creates a draft ward before moving from identity to upload step', async () => {

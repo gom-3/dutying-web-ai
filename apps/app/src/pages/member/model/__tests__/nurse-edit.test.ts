@@ -189,8 +189,8 @@ describe('getNurseDrawerFeedback', () => {
                 mode: 'create',
                 saveStatus: 'idle',
                 isDirty: false,
-            }).title,
-        ).toBe('새 간호사를 추가했어요');
+            }).titleKey,
+        ).toBe('page.member.nurseDrawerFeedback.create.title');
     });
 
     it('prioritizes error feedback over draft state', () => {
@@ -199,8 +199,8 @@ describe('getNurseDrawerFeedback', () => {
                 mode: 'edit',
                 saveStatus: 'error',
                 isDirty: true,
-            }).title,
-        ).toBe('저장하지 못했어요');
+            }).titleKey,
+        ).toBe('page.member.nurseDrawerFeedback.error.title');
     });
 
     it('describes that the draft is preserved on save failure', () => {
@@ -209,8 +209,8 @@ describe('getNurseDrawerFeedback', () => {
                 mode: 'edit',
                 saveStatus: 'error',
                 isDirty: false,
-            }).description,
-        ).toContain('입력한 내용은 그대로 남아 있어요');
+            }).descriptionKey,
+        ).toBe('page.member.nurseDrawerFeedback.error.description');
     });
 
     it('returns success feedback after a clean save in edit mode', () => {
@@ -219,8 +219,8 @@ describe('getNurseDrawerFeedback', () => {
                 mode: 'edit',
                 saveStatus: 'success',
                 isDirty: false,
-            }).title,
-        ).toBe('저장을 마쳤어요');
+            }).titleKey,
+        ).toBe('page.member.nurseDrawerFeedback.success.title');
     });
 
     it('warns about losing edits when the drawer is closed with unsaved changes', () => {
@@ -229,7 +229,7 @@ describe('getNurseDrawerFeedback', () => {
                 mode: 'edit',
                 saveStatus: 'idle',
                 isDirty: true,
-            }).description,
-        ).toContain('저장하지 않고 닫으면');
+            }).descriptionKey,
+        ).toBe('page.member.nurseDrawerFeedback.dirty.description');
     });
 });

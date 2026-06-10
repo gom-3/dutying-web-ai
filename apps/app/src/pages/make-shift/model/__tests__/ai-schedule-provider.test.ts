@@ -90,4 +90,20 @@ describe('requestAiSchedule', () => {
 
         expect(result).toEqual({ok: false, message: 'AI 생성 실패'});
     });
+
+    it('returns the first unmet instruction when the server applies no AI changes', async () => {
+        apiGenerate.mockResolvedValue({
+            ...response,
+            changedCells: [],
+            unmetInstructions: ['AI 근무표 엔진 호출에 실패했습니다. 잠시 후 다시 시도해주세요.'],
+            sameAsPrevious: true,
+        });
+
+        const result = await requestAiSchedule(request);
+
+        expect(result).toEqual({
+            ok: false,
+            message: 'AI 근무표 엔진 호출에 실패했습니다. 잠시 후 다시 시도해주세요.',
+        });
+    });
 });

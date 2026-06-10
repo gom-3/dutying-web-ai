@@ -1,4 +1,6 @@
 export type TAccountStatus = 'INITIAL' | 'NURSE_INFO_PENDING' | 'WARD_SELECT_PENDING' | 'WARD_ENTRY_PENDING' | 'LINKED' | 'DEMO';
+export type TPreferredLanguage = 'ko' | 'ja' | 'en';
+export type TServiceRegion = 'KR' | 'JP' | 'EN';
 
 export type TTutorialKey =
     | 'make'
@@ -33,5 +35,9 @@ export type TAccount = {
     profileImgUrl: string;
     isManager: boolean;
     status: TAccountStatus;
+    serviceRegion?: TServiceRegion | null;
+    preferredLanguage?: TPreferredLanguage | null;
+    resolvedRegion?: TServiceRegion | null;
+    resolvedLanguage?: TPreferredLanguage | null;
     tutorials?: TTutorialProgress;
 };

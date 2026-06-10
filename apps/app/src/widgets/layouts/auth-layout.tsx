@@ -35,12 +35,9 @@ export const AuthLayout = () => {
         }
 
         /**
-         * /register에서 "병동 생성" 클릭 → /register-ward로 이동
-         * AuthLayout effect가 다시 실행됨
-         * accountMe.status는 WARD_SELECT_PENDING(LINKED도 DEMO도 아님)
-         * pathname(/register-ward)이 허용 목록에 없음
-         * → 즉시 /register로 되돌려짐
-         * 온보딩/회원가입 관련 라우트는 아래 허용 목록에 둔다.
+         * When "create ward" moves /register to /register-ward, this effect runs again.
+         * WARD_SELECT_PENDING is neither LINKED nor DEMO, so keep onboarding/register routes
+         * explicitly allowed here to avoid bouncing back to /register.
          */
         if (accountMe && accountMe.status !== 'LINKED' && accountMe.status !== 'DEMO') {
             if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
@@ -78,7 +75,7 @@ export const AuthLayout = () => {
     );
 
     if (!_loaded || (isAuth && !accessToken)) {
-        return <PageState tone="loading" layout="screen" title="로그인 상태를 확인하고 있어요" />;
+        return <PageState tone="loading" layout="screen" title={t('feature.auth.state.loadingTitle')} />;
     }
 
     if (!isAuth || !accessToken) {
@@ -86,7 +83,7 @@ export const AuthLayout = () => {
     }
 
     if (accountMeStatus === 'idle' || accountMeStatus === 'loading') {
-        return <PageState tone="loading" layout="screen" title="로그인 상태를 확인하고 있어요" />;
+        return <PageState tone="loading" layout="screen" title={t('feature.auth.state.loadingTitle')} />;
     }
 
     if (accountMeStatus === 'error') {
@@ -95,12 +92,12 @@ export const AuthLayout = () => {
                 <PageState
                     tone="error"
                     layout="screen"
-                    title="로그인 상태를 확인하지 못했어요"
-                    description="세션이 만료되었거나 네트워크 연결이 불안정할 수 있어요."
-                    action={{label: '다시 시도', onClick: () => void handleGetAccountMe().catch(() => undefined)}}
+                    title={t('feature.auth.state.errorTitle')}
+                    description={t('feature.auth.state.errorDescription')}
+                    action={{label: t('feature.auth.state.retry'), onClick: () => void handleGetAccountMe().catch(() => undefined)}}
                 >
                     <Button type="button" variant="outline" size="md" onClick={() => void handleLogout(ROUTE.LOGIN)}>
-                        로그아웃
+                        {t('feature.auth.state.logout')}
                     </Button>
                 </PageState>
             </div>
@@ -112,10 +109,10 @@ export const AuthLayout = () => {
             <Helmet
                 title={
                     isDemoExpired
-                        ? '체험이 끝났어요 | Dutying'
+                        ? t('feature.auth.demoSession.expiredDocumentTitle')
                         : demoSessionInfo?.isActive
                           ? t('feature.auth.demoSession.documentTitle', {countdown: demoSessionInfo.countdownLabel})
-                          : '듀팅 | Dutying'
+                          : t('feature.auth.documentTitle')
                 }
             />
             <DemoExpiredModal

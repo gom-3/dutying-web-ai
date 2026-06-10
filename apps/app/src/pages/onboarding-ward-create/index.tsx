@@ -9,6 +9,7 @@ import useAuth from '@/features/auth';
 import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getOnboardingInitialScheduleTargets, useOnboardingWardWizard} from './model';
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
@@ -39,6 +40,7 @@ function buildMakeRouteWithOnboardingSchedule(params: {year: number; month: numb
 }
 
 function OnboardingWardCreatePage() {
+    const {t} = useTypedTranslation();
     const navigate = useNavigate();
     const {
         state: {accountMe},
@@ -102,18 +104,20 @@ function OnboardingWardCreatePage() {
     const openSkillModal = () => setShowSkillModal(true);
     const getDeleteTeamModalDescription = () => {
         if (activeTeamNurseCount > 0 && activeTeamScheduleRowCount > 0) {
-            return ` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명과 입력한 근무표도 함께 삭제돼요.`;
+            return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNursesAndSchedule', {
+                count: activeTeamNurseCount,
+            });
         }
 
         if (activeTeamNurseCount > 0) {
-            return ` 팀을 삭제하면 소속 간호사 ${activeTeamNurseCount}명도 함께 삭제돼요.`;
+            return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNurses', {count: activeTeamNurseCount});
         }
 
         if (activeTeamScheduleRowCount > 0) {
-            return ' 팀을 삭제하면 입력한 근무표도 함께 삭제돼요.';
+            return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithSchedule');
         }
 
-        return ' 팀을 삭제할게요.';
+        return t('page.onboardingWardCreate.modal.deleteTeamDescription');
     };
     const handleDeleteTeamClick = () => {
         if (!activeTeam) {
@@ -135,54 +139,55 @@ function OnboardingWardCreatePage() {
             disabled={actionsDisabled || !activeTeam}
             onClick={handleDeleteTeamClick}
         >
-            <Trash2 className="h-4 w-4" />팀 삭제하기
+            <Trash2 className="h-4 w-4" />
+            {t('page.onboardingWardCreate.deleteTeamAction')}
         </WizardButton>
     );
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
-            return '병동을 생성하고 있어요. 잠시만 기다려 주세요.';
+            return t('page.onboardingWardCreate.blocked.submitting');
         }
 
         if (isSuccess) {
-            return '이미 병동 생성을 마쳤어요.';
+            return t('page.onboardingWardCreate.blocked.success');
         }
 
         const blockingIssues = draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
         const codes = new Set(blockingIssues.map((issue) => issue.code));
 
         if (codes.has('missing-hospital-name')) {
-            return '병원명을 입력해 주세요.';
+            return t('page.onboardingWardCreate.blocked.missingHospitalName');
         }
 
         if (codes.has('invalid-ward-name') || codes.has('invalid-hospital-name')) {
-            return '입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.';
+            return t('page.onboardingWardCreate.blocked.invalidWardIdentity');
         }
 
         if (codes.has('empty-team-nurses')) {
-            return '간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.';
+            return t('page.onboardingWardCreate.blocked.emptyTeamNurses');
         }
 
         if (codes.has('empty-team')) {
-            return '팀을 추가하면 병동을 만들 수 있어요.';
+            return t('page.onboardingWardCreate.blocked.emptyTeam');
         }
 
         if (codes.has('missing-nurse-name') || codes.has('invalid-nurse-name')) {
-            return '간호사 이름을 확인해 주세요.';
+            return t('page.onboardingWardCreate.blocked.invalidNurseName');
         }
 
         if (codes.has('duplicate-shift-name') || codes.has('duplicate-shift-short-name')) {
-            return '중복된 근무명 또는 약자가 있어요.';
+            return t('page.onboardingWardCreate.blocked.duplicateShiftType');
         }
 
         if (codes.has('missing-shift-time') || codes.has('invalid-shift-time-format') || codes.has('invalid-shift-time-order')) {
-            return '근무 시간을 확인해 주세요.';
+            return t('page.onboardingWardCreate.blocked.invalidShiftTime');
         }
 
         if (codes.has('missing-shift-name') || codes.has('missing-shift-short-name') || codes.has('empty-shift-types')) {
-            return '근무 유형 정보를 확인해 주세요.';
+            return t('page.onboardingWardCreate.blocked.invalidShiftType');
         }
 
-        return '입력 정보를 확인해 주세요.';
+        return t('page.onboardingWardCreate.blocked.default');
     };
     const getStepOneIssueCodes = () => new Set(currentStepValidation.issues.map((issue) => issue.code));
     const focusFirstInvalidIdentityField = () => {
@@ -216,7 +221,7 @@ function OnboardingWardCreatePage() {
             <div className="space-y-3">
                 <button
                     type="button"
-                    aria-label="숙련도 설정"
+                    aria-label={t('page.onboardingWardCreate.skillCta.aria')}
                     className="group relative w-full cursor-pointer rounded-[16px] bg-[#E9E4FF] px-6 py-5 pr-16 text-left transition-colors duration-200 before:absolute before:inset-0 before:rounded-[16px] before:bg-[#DDD2FF] before:opacity-0 before:transition-opacity before:duration-200 before:content-[''] group-hover:before:opacity-100 after:absolute after:right-8 after:-bottom-2.5 after:h-5 after:w-5 after:rotate-45 after:rounded-[2px] after:bg-[#E9E4FF] after:transition-colors after:duration-200 after:content-[''] group-hover:after:bg-[#DDD2FF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                     onClick={openSkillModal}
                 >
@@ -226,8 +231,8 @@ function OnboardingWardCreatePage() {
                         className="pointer-events-none absolute -top-[17px] -left-[15px] z-20 h-[37px] w-[37px]"
                     />
                     <div className="relative z-10 space-y-1.5">
-                        <p className="font-apple text-[19px] font-semibold text-[#5E45C1]">간호사 숙련도를 설정해볼까요?</p>
-                        <p className="font-apple text-[16px] text-gray-3">근무표 작성시, 숙련도에 따라 자동으로 배정할 수 있어요</p>
+                        <p className="font-apple text-[19px] font-semibold text-[#5E45C1]">{t('page.onboardingWardCreate.skillCta.title')}</p>
+                        <p className="font-apple text-[16px] text-gray-3">{t('page.onboardingWardCreate.skillCta.description')}</p>
                     </div>
                     <span className="pointer-events-none absolute top-1/2 right-5 z-10 -translate-y-1/2 text-[#6A4AE1] transition-transform duration-200 group-hover:translate-x-0.5">
                         <ArrowRight className="h-6 w-6" />
@@ -397,7 +402,9 @@ function OnboardingWardCreatePage() {
                 ? createPortal(
                       <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]">
                           <div role="dialog" aria-modal="true" className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5">
-                              <p className="font-apple text-[20px] font-semibold text-sub-1">팀을 삭제할까요?</p>
+                              <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                  {t('page.onboardingWardCreate.modal.deleteTeamTitle')}
+                              </p>
                               <p className="mt-2 font-apple text-[15px] text-gray-3">
                                   <span className="font-semibold text-sub-1">{activeTeam.name}</span>
                                   {getDeleteTeamModalDescription()}
@@ -408,7 +415,7 @@ function OnboardingWardCreatePage() {
                                       className="rounded-[8px] px-4 py-2 font-apple text-[14px] font-medium text-gray-3 transition-colors hover:bg-gray-7"
                                       onClick={() => setShowDeleteTeamModal(false)}
                                   >
-                                      닫기
+                                      {t('page.member.common.close')}
                                   </button>
                                   <button
                                       type="button"
@@ -418,7 +425,7 @@ function OnboardingWardCreatePage() {
                                           setShowDeleteTeamModal(false);
                                       }}
                                   >
-                                      삭제하기
+                                      {t('page.member.common.deleteAction')}
                                   </button>
                               </div>
                           </div>
@@ -439,7 +446,7 @@ function OnboardingWardCreatePage() {
                         onClick={() => navigate(ROUTE.REGISTER)}
                     >
                         <ArrowLeft className="h-4 w-4" />
-                        병동 선택으로
+                        {t('page.onboardingWardCreate.backToWardSelect')}
                     </button>
                 ) : null}
                 <SectionHeader step={draft.currentStep} aside={headerAside} />
@@ -476,7 +483,7 @@ function OnboardingWardCreatePage() {
                     leftAction={
                         isScheduleInputStep && !hasScheduleInput ? (
                             <WizardButton variant="link" className="text-[18px]" disabled={actionsDisabled} onClick={skipOrComplete}>
-                                건너뛰기
+                                {t('page.onboardingWardCreate.action.skip')}
                             </WizardButton>
                         ) : isNurseRegistrationStep ? (
                             deleteTeamButton
@@ -490,14 +497,14 @@ function OnboardingWardCreatePage() {
                     actionsDisabled={actionsDisabled}
                     nextLabel={
                         draft.currentStep === 1 && isSavingDraft
-                            ? '저장 중...'
+                            ? t('page.onboardingWardCreate.action.saving')
                             : draft.currentStep < 4
-                              ? '다음'
+                              ? t('page.onboardingWardCreate.action.next')
                               : isSubmitting
-                                ? '생성 중...'
+                                ? t('page.onboardingWardCreate.action.creating')
                                 : isSuccess
-                                  ? '생성 완료'
-                                  : '완료'
+                                  ? t('page.onboardingWardCreate.action.created')
+                                  : t('page.onboardingWardCreate.action.complete')
                     }
                 >
                     {stepContent}

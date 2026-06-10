@@ -17,6 +17,7 @@ import {
     type TDutyDoc,
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     isDutyAtMaxFutureMonth,
     isDutyCalendarViewAllowed,
@@ -57,6 +58,7 @@ const EMPTY_DUTY_DOC: TDutyDoc = {
 const ONBOARDING_WARD_CREATED_SEARCH_PARAM = 'onboardingWardCreated';
 
 export function useDutyHook() {
+    const {t} = useTypedTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -127,7 +129,7 @@ export function useDutyHook() {
         shift,
         disabled: !shift,
     });
-    const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? '선택한 팀';
+    const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.duty.selectedTeamFallback');
     const shiftTeamsStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
 
     useEffect(() => {

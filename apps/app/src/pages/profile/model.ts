@@ -2,6 +2,7 @@ import type {TAccount} from '@/entities/account';
 import type {TProfileImageValue} from '@/entities/account/ui/profile-image/model';
 import type {TNurse} from '@/entities/nurse';
 import type {TWard} from '@/entities/ward';
+import i18n from '@/i18n';
 
 const editableProfileFields = ['name', 'gender', 'phoneNum', 'employmentDate'] as const;
 const getMeaningfulDisplayName = (name?: string | null) => {
@@ -43,11 +44,11 @@ export const getCurrentProfileImage = (account: TAccount | null, profileImg?: TP
     return {};
 };
 
-export const getProfileDisplayName = (draftNurse: TNurse | null, account: TAccount | null) => {
+export const getProfileDisplayName = (draftNurse: TNurse | null, account: TAccount | null, fallback = i18n.t('page.profile.unknownName')) => {
     const draftName = getMeaningfulDisplayName(draftNurse?.name);
     const accountName = getMeaningfulDisplayName(account?.name);
 
-    return draftName ?? accountName ?? '이름 미등록';
+    return draftName ?? accountName ?? fallback;
 };
 
 export const getProfilePhoneNum = (draftNurse: TNurse | null, account: TAccount | null) => {

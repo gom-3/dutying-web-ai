@@ -7,6 +7,7 @@ import {
     type TDutyRuleKey,
     type TDutyRuleLevel,
 } from './types';
+import i18n from '@/i18n';
 
 export type TDutyRuleDefinition = {
     key: TDutyRuleKey;
@@ -17,9 +18,8 @@ export type TDutyRuleDefinition = {
 };
 
 /**
- * 예전 정규식 기반 shift 검증 로직(handlers.ts)을 DutyDoc 기반 Validator로 이식.
- * - 입력은 절대 막지 않음
- * - 위반 정보(Violation)만 계산
+ * Legacy regex-based shift validation ported to the DutyDoc validator.
+ * The editor remains permissive and only reports violations.
  */
 export function createDutyValidator(input: TDutyValidationInput): TValidator<TDutyDoc> {
     const options = getDutyRuleDefinitions(input);
@@ -33,7 +33,7 @@ export function createDutyValidator(input: TDutyValidationInput): TValidator<TDu
             for (const opt of options) {
                 if (!opt.isActive) continue;
 
-                // RegExp는 global이므로 row마다 lastIndex 초기화가 필요
+                // Global RegExp instances need a fresh cursor for every row.
                 opt.regExp.lastIndex = 0;
 
                 while (true) {
@@ -70,49 +70,51 @@ export function getDutyRuleDefinitions(input: TDutyValidationInput): TDutyRuleDe
             key: 'maxContinuousWork',
             isActive: c.maxContinuousWork,
             regExp: new RegExp(`[den][den]{${c.maxContinuousWorkVal - 1},}[den]`, 'g'),
-            message: `근무는 연속 ${c.maxContinuousWorkVal}일까지 배정할 수 있어요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.maxContinuousWork', {count: c.maxContinuousWorkVal}),
             level: levelByKey?.maxContinuousWork ?? 'error',
         },
         {
             key: 'minNightInterval',
             isActive: c.minNightInterval,
             regExp: new RegExp(`n[^n]{1,${c.minNightIntervalVal - 1}}n`, 'g'),
-            message: `나이트 간격은 최소 ${c.minNightIntervalVal}일 이상으로 맞춰 주세요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.minNightInterval', {count: c.minNightIntervalVal}),
             level: levelByKey?.minNightInterval ?? 'error',
         },
         {
             key: 'maxContinuousNight',
             isActive: c.maxContinuousNight,
             regExp: new RegExp(`n{${c.maxContinuousNightVal + 1},}`, 'g'),
-            message: `나이트 근무는 연속 ${c.maxContinuousNightVal}일까지 배정할 수 있어요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.maxContinuousNight', {count: c.maxContinuousNightVal}),
             level: levelByKey?.maxContinuousNight ?? 'error',
         },
         {
             key: 'minContinuousNight',
             isActive: c.minContinuousNight,
             regExp: new RegExp(`[^n-]n{1,${c.minContinuousNightVal - 1}}[^n-]`, 'g'),
-            message: `나이트 근무는 최소 ${c.minContinuousNightVal}일 이상 배정해 주세요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.minContinuousNight', {count: c.minContinuousNightVal}),
             level: levelByKey?.minContinuousNight ?? 'warning',
         },
         {
             key: 'minOffAssignAfterNight',
             isActive: c.minOffAssignAfterNight,
             regExp: new RegExp(`n([de]|o{1,${c.minOffAssignAfterNightVal - 1}}[den])`, 'g'),
-            message: `나이트 근무 후에는 OFF를 ${c.minOffAssignAfterNightVal}일 이상 권장해요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.minOffAssignAfterNight', {
+                count: c.minOffAssignAfterNightVal,
+            }),
             level: levelByKey?.minOffAssignAfterNight ?? 'warning',
         },
         {
             key: 'excludeCertainWorkTypes',
             isActive: c.excludeCertainWorkTypes,
             regExp: new RegExp(`(ed|nd|ne|nod)`, 'g'),
-            message: `ND/ED/NE/NOD 형태의 근무는 피하는 게 좋아요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.excludeCertainWorkTypes'),
             level: levelByKey?.excludeCertainWorkTypes ?? 'warning',
         },
         {
             key: 'excludeNightBeforeReqOff',
             isActive: c.excludeNightBeforeReqOff,
             regExp: new RegExp(`nO`, 'g'),
-            message: `신청 오프 전날에는 나이트 근무를 피하는 게 좋아요.`,
+            message: i18n.t('feature.shiftEditor.validation.legacy.excludeNightBeforeReqOff'),
             level: levelByKey?.excludeNightBeforeReqOff ?? 'warning',
         },
     ];
@@ -129,7 +131,7 @@ function buildRowString(doc: TDutyDoc, row: number, requestedOffByRow?: boolean[
 
             if (value === null) return '-';
 
-            // 규칙은 d/e/n/o 기반이므로 1글자 기반으로 normalize
+            // Rules are based on d/e/n/o, so normalize to the first character.
             const str = value.trim();
 
             if (str.length === 0) return '-';
@@ -155,18 +157,18 @@ function rangeToCells(row: number, startCol: number, endCol: number, colCount: n
 }
 
 /* ------------------------------------------------------------------ */
-/*  Violation[] → Map 변환                                             */
+/*  Violation[] to Map                                                 */
 /* ------------------------------------------------------------------ */
 
 const LEVEL_PRIORITY: Record<TDutyRuleLevel, number> = {error: 1, warning: 0};
 
 /**
- * store의 `TViolation[]`을 ShiftCalendar가 기대하는
- * `Map<string, TViolation>` (key: `${workerId},${col}`)으로 변환한다.
+ * Convert store `TViolation[]` to the `Map<string, TViolation>` shape
+ * expected by ShiftCalendar. key: `${workerId},${col}`.
  *
- * ViolationLayer는 일자 그리드에서 `grid-column` span으로 그려지며, 맵은 시작 셀에만 둔다.
- * 각 violation의 **첫 번째 셀(시작 위치)**에만 엔트리를 생성한다.
- * 같은 시작 셀에 여러 violation이 겹칠 경우 severity가 높은 것(error > warning)을 우선한다.
+ * ViolationLayer draws spans across the day grid, so the map stores
+ * only the first cell of each violation. When multiple violations share
+ * the same start cell, the higher severity wins.
  */
 export function buildViolationMap(violations: TViolation[], doc: TDutyDoc): Map<string, TViolation> {
     const map = new Map<string, TViolation>();
@@ -192,8 +194,8 @@ export function buildViolationMap(violations: TViolation[], doc: TDutyDoc): Map<
 }
 
 /**
- * 서버 validation 위반을 모두 캘린더에 표시한다.
- * key: `${workerId},${startCol},${ruleId}` — 시작 셀·ruleId 조합마다 하나씩.
+ * Show all server validation violations on the calendar.
+ * key: `${workerId},${startCol},${ruleId}`.
  */
 export function buildViolationMapAll(violations: TViolation[], doc: TDutyDoc): Map<string, TViolation> {
     const map = new Map<string, TViolation>();

@@ -3,41 +3,20 @@ import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
 
 const mockUseWardSettings = vi.fn();
-const translations: Record<string, string> = {
-    'page.wardSettings.title': '근무 설정',
-    'page.wardSettings.tabs.shiftTypes': '근무 유형',
-    'page.wardSettings.tabs.constraints': '제약 조건',
-    'page.wardSettings.addShiftType': '근무 추가하기',
-    'page.wardSettings.type.work': '근무',
-    'page.wardSettings.type.leave': '휴무',
-    'page.wardSettings.shiftTypes.column.name': '근무명',
-    'page.wardSettings.shiftTypes.column.shortName': '약자',
-    'page.wardSettings.shiftTypes.column.type': '유형',
-    'page.wardSettings.shiftTypes.column.workTime': '근무 시간',
-    'page.wardSettings.shiftTypes.column.color': '색상',
-    'page.wardSettings.constraints.teamLabel': '근무팀',
-    'page.wardSettings.constraints.teamDescription': '제약 조건은 근무팀별로 관리돼요.',
-    'page.wardSettings.constraints.noTeamsTitle': '등록된 근무팀이 없어요',
-    'page.wardSettings.constraints.noTeamsDescription': '제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.',
-    'page.wardSettings.constraints.error': '제약 조건을 불러오지 못했어요',
-    'page.wardSettings.constraints.loading': '제약 조건을 불러오는 중이에요',
-};
 
 vi.mock('../model/ward-settings-hook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
 }));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, string | number>) => {
-            if (key === 'page.wardSettings.shiftTypes.editAria') {
-                return `${values?.name ?? ''} 근무 유형 수정`;
-            }
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
 
-            return translations[key] ?? key;
-        },
-    }),
-}));
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => i18n.t(key, values),
+        }),
+    };
+});
 
 vi.mock('@/features/create-shift-modal', () => ({
     default: ({open, shiftType}: {open: boolean; shiftType: {name: string} | null}) =>
@@ -253,7 +232,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('근무팀')).toBeInTheDocument();
+        expect(screen.getByText('대상 팀')).toBeInTheDocument();
         expect(screen.getByTestId('shift-constraint-rules')).toHaveTextContent('rules:1:1:settings');
     });
 

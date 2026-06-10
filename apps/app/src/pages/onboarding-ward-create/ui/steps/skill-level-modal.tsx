@@ -217,7 +217,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                             type="button"
                             aria-haspopup="listbox"
                             aria-expanded={isLevelCountMenuOpen}
-                            aria-label={`${t('page.onboardingWardCreate.skillLevelModal.levelLabel')} 단계`}
+                            aria-label={t('page.onboardingWardCreate.skillLevelModal.levelCountAria')}
                             className={cn(
                                 'flex h-8 min-w-[112px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[16px] text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                 isLevelCountMenuOpen ? 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'hover:bg-gray-7',
@@ -401,7 +401,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                         className="rounded-[8px] px-3 py-2 font-apple text-[15px] font-medium text-gray-3 transition-colors hover:bg-gray-7"
                         onClick={onDisable}
                     >
-                        숙련도 설정 취소
+                        {t('page.onboardingWardCreate.skillLevelModal.disable')}
                     </button>
                     <WizardButton
                         onClick={() => {

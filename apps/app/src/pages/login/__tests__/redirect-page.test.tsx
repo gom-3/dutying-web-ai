@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
 import {clearSocialSignupProfile, readSocialSignupProfile} from '@/features/auth/model/social-signup';
+import i18n from '@/i18n';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import RedirectPage from '../redirect-page';
 
@@ -25,7 +26,8 @@ describe('RedirectPage', () => {
         vi.unstubAllEnvs();
     });
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         handleLogin.mockReset();
         clearSocialSignupProfile();
         mockedUseAuth.mockReset();

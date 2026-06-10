@@ -2,6 +2,7 @@ import {createPortal} from 'react-dom';
 import Draggable from 'react-draggable';
 import {type TWardConstraint} from '@/entities';
 import {CancelIcon} from '@/shared/assets/svg';
+import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import SetConstraint from '../edit-ward/set-constraint';
 import SetDesignTheme from '../edit-ward/set-design-theme';
 import SetShiftType from '../edit-ward/set-shift-type';
@@ -15,10 +16,10 @@ type TToolbarSettingsPanelProps = {
     onUpdateConstraint: (constraint: TWardConstraint) => void;
 };
 
-const setupTabs: {key: TToolbarSetupTab; label: string}[] = [
-    {key: 'constraint', label: '제약 조건'},
-    {key: 'shiftType', label: '근무 유형'},
-    {key: 'designTheme', label: '디자인 테마'},
+const setupTabs: {key: TToolbarSetupTab; labelKey: TI18nKey}[] = [
+    {key: 'constraint', labelKey: 'feature.shiftEditor.toolbar.settings.constraint'},
+    {key: 'shiftType', labelKey: 'feature.shiftEditor.toolbar.settings.shiftType'},
+    {key: 'designTheme', labelKey: 'feature.shiftEditor.toolbar.settings.designTheme'},
 ];
 
 export function ToolbarSettingsPanel({
@@ -28,6 +29,8 @@ export function ToolbarSettingsPanel({
     onClose,
     onUpdateConstraint,
 }: TToolbarSettingsPanelProps) {
+    const {t} = useTypedTranslation();
+
     if (currentSetup === null) return null;
 
     return createPortal(
@@ -42,7 +45,7 @@ export function ToolbarSettingsPanel({
                             } `}
                             onClick={() => onSelectSetup(tab.key)}
                         >
-                            {tab.label}
+                            {t(tab.labelKey)}
                         </div>
                     ))}
                     <CancelIcon className="absolute right-[.5rem] h-6 w-6 cursor-pointer" onClick={onClose} />

@@ -36,7 +36,7 @@ export function pastePayload(payload: TClipboardPayload, selection: TSelection, 
             const row = startRow + r;
             const col = startCol + c;
 
-            if (!isDutyCellPositionInBounds(doc, row, col)) continue; // 자동 자르기
+            if (!isDutyCellPositionInBounds(doc, row, col)) continue; // Auto-trim out-of-bounds paste cells.
 
             const docRow = doc.rows[row];
 

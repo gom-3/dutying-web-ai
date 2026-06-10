@@ -1,4 +1,4 @@
-import type {TAccount, TAccountStatus, TTutorialKey} from '@dutying/domain';
+import type {TAccount, TAccountStatus, TPreferredLanguage, TServiceRegion, TTutorialKey} from '@dutying/domain';
 import type {TWardResponse} from '../ward';
 
 export type {TAccountStatus};
@@ -18,6 +18,7 @@ export interface IAccountAPI {
     editAccount: (dto: TEditProfileRequest) => Promise<TAccountResponse>;
     editAccountStatus: (accountId: number, status: TAccountStatus) => Promise<TAccountResponse>;
     initAccount: (dto: TEditProfileRequest) => Promise<TAccountResponse>;
+    updatePreferences: (dto: TUpdateAccountPreferencesRequest) => Promise<TAccountResponse>;
     deleteAccount: (accountId: number) => Promise<void>;
     markTutorialSeen: (tutorialKey: TTutorialKey) => Promise<void>;
 }
@@ -28,4 +29,9 @@ export type TEditProfileRequest = {
     phoneNum?: string | null;
     profileImgUrl?: string;
     defaultProfileImgId?: number;
+};
+
+export type TUpdateAccountPreferencesRequest = {
+    serviceRegion?: TServiceRegion | null;
+    preferredLanguage?: TPreferredLanguage | null;
 };

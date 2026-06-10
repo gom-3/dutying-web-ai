@@ -1,10 +1,11 @@
 import {createEvent, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {act} from 'react';
-import {afterEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, type TViolation, useShiftEditorStore} from '@/features/shift-editor/model';
+import i18n from '@/i18n';
 import {MakeShiftCalendar} from '../make-shift-calendar';
 
 const shift = {
@@ -57,6 +58,10 @@ const doc: TDutyDoc = {
 };
 
 describe('MakeShiftCalendar', () => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     afterEach(() => {
         useShiftEditorStore.getState().reset();
         useUIConfigStore.getState().reset();

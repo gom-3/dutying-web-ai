@@ -10,6 +10,7 @@ import {
     SavingIcon,
     ShareIcon,
 } from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
 import {showValidationFeedback} from '@/shared/util/feedback';
@@ -51,12 +52,16 @@ export function ToolbarActionGroup({
     isDownloadingExcel,
     isDownloadingImage,
 }: TToolbarActionGroupProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <>
             {!readonly && (
                 <div className="ml-auto flex gap-[.3125rem] font-apple text-[.875rem] text-sub-2.5">
                     {saveStatus === 'pending' ? <SavingIcon className="h-5 w-5" /> : <SaveCompleteIcon className="h-5 w-5" />}
-                    {saveStatus === 'pending' ? '저장중' : '저장 완료'}
+                    {saveStatus === 'pending'
+                        ? t('feature.shiftEditor.toolbar.savingStatus')
+                        : t('feature.shiftEditor.toolbar.savedStatus')}
                     <div className="ml-7.5 flex gap-[.625rem]">
                         <HistoryBackIcon
                             className="h-6.5 w-6.5 cursor-pointer"
@@ -102,7 +107,7 @@ export function ToolbarActionGroup({
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
                     >
-                        게시하기
+                        {t('feature.shiftEditor.toolbar.publish')}
                     </Button>
                     <Button
                         id="editButton"
@@ -114,7 +119,7 @@ export function ToolbarActionGroup({
                         }}
                         disabled={new Date(year, month + 1, 1) <= new Date()}
                     >
-                        수정하기
+                        {t('feature.shiftEditor.toolbar.edit')}
                         <PenIcon className="h-6 w-6 stroke-white" />
                     </Button>
                     <Button
@@ -127,7 +132,9 @@ export function ToolbarActionGroup({
                             sendEvent(events.makePage.toolbar.downloadImage);
                         }}
                     >
-                        {isDownloadingImage ? '이미지 저장 중' : '이미지 저장'}
+                        {isDownloadingImage
+                            ? t('feature.shiftEditor.toolbar.savingImage')
+                            : t('feature.shiftEditor.toolbar.saveImage')}
                         <CameraIcon className="h-6 w-6 stroke-white" />
                     </Button>
                     <Button
@@ -140,7 +147,9 @@ export function ToolbarActionGroup({
                             sendEvent(events.makePage.toolbar.downloadExcel);
                         }}
                     >
-                        {isDownloadingExcel ? '엑셀 저장 중' : '엑셀 저장'}
+                        {isDownloadingExcel
+                            ? t('feature.shiftEditor.toolbar.savingExcel')
+                            : t('feature.shiftEditor.toolbar.saveExcel')}
                         <ShareIcon className="h-6 w-6" />
                     </Button>
                     <Button
@@ -151,7 +160,7 @@ export function ToolbarActionGroup({
                             sendEvent(events.makePage.toolbar.editNextMonth);
                         }}
                     >
-                        다음달 근무표 만들기
+                        {t('feature.shiftEditor.toolbar.createNextMonth')}
                         <DutyIconSelected className="h-6 w-6" />
                     </Button>
                 </div>
@@ -160,15 +169,15 @@ export function ToolbarActionGroup({
                     <Button
                         variant="default"
                         className="h-10 w-33 rounded-[3.125rem] border-none bg-[rgba(171,171,180,0.80)] text-[1.25rem] font-semibold text-white"
-                        onClick={() => showValidationFeedback('아직 준비 중인 기능입니다.')}
+                        onClick={() => showValidationFeedback(t('feature.shiftEditor.toolbar.notReady'))}
                     >
-                        자동 채우기
+                        {t('feature.shiftEditor.toolbar.autofill')}
                     </Button>
                     <Button
                         className="h-10 rounded-[3.125rem] border-main-1 bg-white px-5 text-[1.25rem] font-semibold text-main-1 transition-all hover:bg-main-1 hover:text-white"
                         onClick={onToggleEditMode}
                     >
-                        저장
+                        {t('feature.shiftEditor.toolbar.save')}
                     </Button>
                 </div>
             )}

@@ -253,6 +253,14 @@ export function useShiftEditorCommands() {
 
             persistDocImmediate(doc, history, {validationSnapshot: snapshot});
         },
+        clearScheduleValidationFromApi: () => {
+            setScheduleValidationSnapshot(null);
+            setLegacyDisplayViolations([]);
+
+            const {doc, history} = getState();
+
+            persistDocImmediate(doc, history, {validationSnapshot: null});
+        },
         setDutyValidationInput: (input: TDutyValidationInput | null) => {
             setDutyValidationInput(input);
 

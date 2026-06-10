@@ -15,26 +15,15 @@ vi.mock('@/analytics', () => ({
     sendEvent: vi.fn(),
 }));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string) =>
-            ({
-                'page.member.title': '근무자 관리',
-                'page.member.skillSettings': '숙련도 설정',
-                'page.member.addTeam': '팀 추가',
-                'page.member.deleteTeam': '팀 삭제',
-                'page.member.addNurse': '간호사 추가',
-                'page.member.addingNurse': '추가 중',
-                'page.member.emptyTeamTitle': '간호사가 없어요',
-                'page.member.emptyTeamDescription': '간호사를 추가해주세요',
-                'page.member.table.name': '이름',
-                'page.member.table.level': '숙련도',
-                'page.member.table.shiftTypes': '근무',
-                'page.member.table.isWorker': '근무자',
-                'page.member.table.connection': '연동',
-            })[key] ?? key,
-    }),
-}));
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => i18n.t(key, values),
+        }),
+    };
+});
 
 vi.mock('@/features/edit-ward', () => ({
     default: () => mockUseEditWard(),
@@ -363,7 +352,7 @@ describe('MemberPage', () => {
         expect(screen.getByText('간호사가 없어요')).toBeInTheDocument();
         expect(screen.getByText('간호사를 추가해주세요')).toBeInTheDocument();
 
-        const addButtons = screen.getAllByRole('button', {name: '간호사 추가'});
+        const addButtons = screen.getAllByRole('button', {name: '간호사 추가하기'});
 
         expect(addButtons).toHaveLength(1);
 
@@ -421,7 +410,7 @@ describe('MemberPage', () => {
             </MemoryRouter>,
         );
 
-        await userEvent.click(screen.getByRole('button', {name: '팀 추가'}));
+        await userEvent.click(screen.getByRole('button', {name: '팀 추가하기'}));
 
         await waitFor(() => {
             expect(screen.getByTestId('location-search')).toHaveTextContent('shiftTeamId=30');

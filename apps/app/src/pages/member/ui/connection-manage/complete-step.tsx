@@ -1,5 +1,6 @@
 ﻿import {LoaderCircle, TriangleAlert, X} from 'lucide-react';
 import {CheckmarkIcon} from 'react-hot-toast';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type TConnectMode, getConnectionManageResultCopy, type TConnectionManageSubmitStatus} from '../../model/connection-manage';
 
 interface IConnectionManageCompleteStepProps {
@@ -23,6 +24,8 @@ function ConnectionManageCompleteStep({
     onRetry,
     onClose,
 }: IConnectionManageCompleteStepProps) {
+    const {t} = useTypedTranslation();
+
     if (submitStatus === 'idle') return null;
 
     const feedback = getConnectionManageResultCopy({
@@ -30,6 +33,7 @@ function ConnectionManageCompleteStep({
         connectMode,
         waitingNurseName,
         targetLabel,
+        t,
     });
     const isLoading = submitStatus === 'loading';
     const isError = submitStatus === 'error';
@@ -45,7 +49,7 @@ function ConnectionManageCompleteStep({
             >
                 <button
                     type="button"
-                    aria-label="닫기"
+                    aria-label={t('page.member.common.close')}
                     className="absolute top-4 right-4 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6 hover:text-sub-2"
                     onClick={onClose}
                 >
@@ -67,14 +71,14 @@ function ConnectionManageCompleteStep({
                         className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                         onClick={onClose}
                     >
-                        닫기
+                        {t('page.member.common.close')}
                     </button>
                     <button
                         type="button"
                         className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
                         onClick={onRestart}
                     >
-                        다른 요청 보기
+                        {t('page.member.connectionManage.complete.viewOtherRequests')}
                     </button>
                 </div>
             </div>
@@ -94,7 +98,7 @@ function ConnectionManageCompleteStep({
                         isError ? 'bg-[#FFF5F5] text-[#D14343]' : 'bg-[#F3F4F6] text-main-1'
                     }`}
                     aria-hidden={!isLoading}
-                    aria-label={isLoading ? '처리 중' : undefined}
+                    aria-label={isLoading ? t('page.member.common.processing') : undefined}
                 >
                     {isLoading ? (
                         <LoaderCircle className="h-5 w-5 animate-spin" strokeWidth={2.2} />
@@ -104,7 +108,7 @@ function ConnectionManageCompleteStep({
                 </div>
                 <button
                     type="button"
-                    aria-label="닫기"
+                    aria-label={t('page.member.common.close')}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6 hover:text-sub-2"
                     onClick={onClose}
                 >
@@ -124,7 +128,7 @@ function ConnectionManageCompleteStep({
                         className="h-11 w-full rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3"
                         disabled
                     >
-                        처리 중...
+                        {t('page.member.common.processingEllipsis')}
                     </button>
                 ) : isError ? (
                     <div className="grid grid-cols-2 gap-3">
@@ -133,14 +137,14 @@ function ConnectionManageCompleteStep({
                             className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                             onClick={onBack}
                         >
-                            이전 단계
+                            {t('page.member.common.previousStep')}
                         </button>
                         <button
                             type="button"
                             className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
                             onClick={onRetry}
                         >
-                            다시 시도
+                            {t('page.member.common.retry')}
                         </button>
                     </div>
                 ) : (
@@ -150,14 +154,14 @@ function ConnectionManageCompleteStep({
                             className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                             onClick={onClose}
                         >
-                            닫기
+                            {t('page.member.common.close')}
                         </button>
                         <button
                             type="button"
                             className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
                             onClick={onRestart}
                         >
-                            다른 요청 보기
+                            {t('page.member.connectionManage.complete.viewOtherRequests')}
                         </button>
                     </div>
                 )}

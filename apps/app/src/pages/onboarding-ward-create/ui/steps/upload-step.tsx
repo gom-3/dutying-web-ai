@@ -1,5 +1,6 @@
 import {Upload} from 'lucide-react';
 import {useRef, useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
 import {Input} from '@/shared/ui/primitives/input';
@@ -32,6 +33,7 @@ const parseTargetMonthValue = (value: string): TUploadTargetMonth | undefined =>
 };
 
 function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
+    const {t} = useTypedTranslation();
     const inputRef = useRef<HTMLInputElement>(null);
     const [targetMonthValue, setTargetMonthValue] = useState(getCurrentMonthValue);
     const uploadFile = (file: File) => onUpload(file, parseTargetMonthValue(targetMonthValue));
@@ -54,7 +56,7 @@ function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
                 }}
             >
                 <label className="mb-5 flex w-full max-w-[360px] flex-col gap-2 font-apple text-[14px] font-medium text-sub-1">
-                    근무표 기준 월
+                    {t('page.onboardingWardCreate.upload.targetMonth')}
                     <Input
                         id="onboarding-upload-target-month"
                         type="month"
@@ -66,7 +68,7 @@ function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
                         onChange={(event) => setTargetMonthValue(event.target.value)}
                     />
                 </label>
-                <p className="font-apple text-[20px] font-medium text-gray-3">근무표 파일을 여기에 놓아 주세요</p>
+                <p className="font-apple text-[20px] font-medium text-gray-3">{t('page.onboardingWardCreate.upload.dropHere')}</p>
                 <input
                     ref={inputRef}
                     data-testid="upload-input"
@@ -90,7 +92,7 @@ function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
                     disabled={isUploading}
                     onClick={() => inputRef.current?.click()}
                 >
-                    {isUploading ? '파일 해석 중...' : '파일 업로드'}
+                    {isUploading ? t('page.onboardingWardCreate.upload.parsing') : t('page.onboardingWardCreate.upload.uploadFile')}
                     <Upload className="h-5 w-5" />
                 </Button>
             </Card>
@@ -100,7 +102,7 @@ function UploadStep({onUpload, isUploading, uploadError}: IUploadStepProps) {
                     padding="none"
                     className="rounded-[10px] border border-[#F3C6C6] bg-[#FFF5F5] px-5 py-4 font-apple text-[16px] text-[#7A4F4F]"
                 >
-                    <p className="text-[18px] font-semibold text-[#C55252]">파일 업로드에 실패했어요</p>
+                    <p className="text-[18px] font-semibold text-[#C55252]">{t('page.onboardingWardCreate.upload.failedTitle')}</p>
                     <p className="mt-2">{uploadError}</p>
                 </Card>
             ) : null}

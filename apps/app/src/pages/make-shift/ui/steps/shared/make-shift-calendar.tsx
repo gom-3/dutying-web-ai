@@ -14,6 +14,9 @@ import {
 } from '@/features/shift-editor/model';
 import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-editor/model/duty-doc-cells';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
+import i18n from '@/i18n';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
 type TViolationMap = Map<string, TViolation>;
@@ -185,6 +188,16 @@ const DAILY_SUMMARY_ROW_HEIGHT = SUMMARY_CELL_HEIGHT;
  * 이월 박스의 round.
  */
 const CARRY_ROUNDED = 'rounded-[clamp(3px,0.35cqw,6px)]';
+const LEGACY_TITLE_MIN_OFF_AFTER_NIGHT = '\uC57C\uAC04 \uD6C4 \uD734\uBB34 \uBD80\uC871';
+const LEGACY_TITLE_MIN_STAFF_SHORTAGE = '\uD544\uC694 \uC778\uC6D0 \uBD80\uC871';
+const LEGACY_HOLIDAY_DAY_TYPES = new Set(['\uACF5\uD734\uC77C', '\uB300\uCCB4\uACF5\uD734\uC77C', '\uD734\uC77C']);
+const LEGACY_TITLE_KEY_BY_TITLE = new Map([
+    [LEGACY_TITLE_MIN_OFF_AFTER_NIGHT, 'feature.shiftEditor.validation.title.minOffAfterNight'],
+    [LEGACY_TITLE_MIN_STAFF_SHORTAGE, 'feature.shiftEditor.validation.title.minStaffShortage'],
+]);
+const KOREAN_NURSE_SUBJECT_PATTERN = /^[^\s:]+\uB2D8\uC740\s+/;
+const LEGACY_OFF_AFTER_NIGHT_PATTERN = /^\uC57C\uAC04 \uD6C4 \uD734\uBB34\uAC00 (\d+)\uC77C\uC774\uC5D0\uC694\.?\s*(\d+)\uC77C \uD544\uC694\uD574\uC694\.?$/;
+const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
 const VIOLATION_POPOVER_WIDTH = 360;
 const VIOLATION_POPOVER_VIEWPORT_PADDING = 8;
 const VIOLATION_POPOVER_MAX_ESTIMATED_HEIGHT = 360;
@@ -231,7 +244,7 @@ function sortViolationsForDisplay(violations: TViolation[]): TViolation[] {
 
         if (priority !== 0) return priority;
 
-        return a.message.localeCompare(b.message, 'ko');
+        return a.message.localeCompare(b.message, getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language));
     });
 }
 
@@ -250,14 +263,9 @@ function formatViolationTitle(violations: TViolation[]): string | undefined {
 }
 
 function normalizeViolationTitle(title: string): string {
-    switch (title) {
-        case '야간 후 휴무 부족':
-            return '야간 후 휴무가 부족해요';
-        case '필요 인원 부족':
-            return '필요 인원이 부족해요';
-        default:
-            return title;
-    }
+    const titleKey = LEGACY_TITLE_KEY_BY_TITLE.get(title);
+
+    return titleKey ? i18n.t(titleKey) : title;
 }
 
 function getViolationProblemSentence(violation: TViolation): string {
@@ -265,13 +273,16 @@ function getViolationProblemSentence(violation: TViolation): string {
     const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
     const detail = detailParts.join(': ').trim();
     const source = detail || fallback || violation.message.trim();
-    const withoutName = source.replace(/^[^\s:]+님은\s+/, '');
-    const offAfterNightMatch = withoutName.match(/^야간 후 휴무가 (\d+)일이에요\.?\s*(\d+)일 필요해요\.?$/);
+    const withoutName = source.replace(KOREAN_NURSE_SUBJECT_PATTERN, '');
+    const offAfterNightMatch = withoutName.match(LEGACY_OFF_AFTER_NIGHT_PATTERN);
 
     if (offAfterNightMatch) {
         const [, actualOffDays, requiredOffDays] = offAfterNightMatch;
 
-        return `야간 후 휴무가 ${actualOffDays}일이라 ${requiredOffDays}일보다 부족해요.`;
+        return i18n.t('feature.shiftEditor.validation.l2MinOffAfterNight', {
+            actual: actualOffDays,
+            expected: requiredOffDays,
+        });
     }
 
     return withoutName;
@@ -348,9 +359,7 @@ function isRedCalendarDay(dayType: TShift['days'][number]['dayType'] | string): 
     return (
         normalizedDayType === 'sunday' ||
         normalizedDayType.includes('holiday') ||
-        normalizedDayType === '공휴일' ||
-        normalizedDayType === '대체공휴일' ||
-        normalizedDayType === '휴일'
+        LEGACY_HOLIDAY_DAY_TYPES.has(normalizedDayType)
     );
 }
 
@@ -371,7 +380,7 @@ function getSelectedDayHeaderClass(dayType: TShift['days'][number]['dayType']): 
 }
 
 function getViolationLevelLabel(level: TViolation['level']): string {
-    return level === 'error' ? '중요' : '일반';
+    return i18n.t(level === 'error' ? 'page.makeShift.calendar.violationLevel.error' : 'page.makeShift.calendar.violationLevel.warning');
 }
 
 function getUniqueViolationDates(violation: TViolation): string[] {
@@ -420,7 +429,10 @@ function getViolationPeriodLabel(violation: TViolation): string | null {
         return dates.map(formatCompactDate).join(', ');
     }
 
-    return `${formatCompactDate(dates[0]!)} 외 ${dates.length - 1}일`;
+    return i18n.t('page.makeShift.calendar.dateOthers', {
+        date: formatCompactDate(dates[0]!),
+        count: dates.length - 1,
+    });
 }
 
 function getViolationMetaLabel(violation: TViolation, options?: {hideSingleDate?: boolean}): string | null {
@@ -434,9 +446,10 @@ function getViolationMetaLabel(violation: TViolation, options?: {hideSingleDate?
 }
 
 function getViolationCountSummary(errorCount: number, warningCount: number): string {
-    const parts = [errorCount > 0 ? `중요 ${errorCount}` : null, warningCount > 0 ? `일반 ${warningCount}` : null].filter(
-        (part): part is string => part !== null,
-    );
+    const parts = [
+        errorCount > 0 ? i18n.t('page.makeShift.calendar.violationCount.error', {count: errorCount}) : null,
+        warningCount > 0 ? i18n.t('page.makeShift.calendar.violationCount.warning', {count: warningCount}) : null,
+    ].filter((part): part is string => part !== null);
 
     return parts.join(' · ');
 }
@@ -455,7 +468,7 @@ function getViolationPopoverHeader(title: string): {title: string; context?: str
 function hasDateContext(value: string | undefined): boolean {
     if (!value) return false;
 
-    return /(?:\d{1,2}일|\d{1,2}\/\d{1,2})/.test(value);
+    return KOREAN_DAY_CONTEXT_PATTERN.test(value);
 }
 
 function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover | null; onClose: () => void}) {
@@ -498,7 +511,7 @@ function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover 
         <div
             data-violation-popover
             role="dialog"
-            aria-label={`제약조건 위반 ${sortedViolations.length}개`}
+            aria-label={i18n.t('page.makeShift.calendar.violationDialogAria')}
             className={cn(
                 'fixed z-[99999] box-border max-w-[calc(100vw-1rem)] overflow-hidden rounded-[12px] border border-gray-6 bg-white text-left font-apple shadow-[0_16px_36px_rgba(15,23,42,0.18)]',
                 popover.placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2',
@@ -611,6 +624,7 @@ function ShiftTypeDropdown({
     onSelect: (rowIndex: number, colIndex: number, value: TCellValue) => void;
     onReposition: () => void;
 }) {
+    const {t} = useTypedTranslation();
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -655,7 +669,7 @@ function ShiftTypeDropdown({
         <div
             ref={menuRef}
             role="listbox"
-            aria-label="근무유형 선택"
+            aria-label={t('page.makeShift.calendar.shiftTypeDropdownAria')}
             style={menuStyle}
             className={cn(
                 'fixed z-[2147483647] max-h-[280px] overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0_16px_36px_rgba(15,23,42,0.18)]',
@@ -674,7 +688,7 @@ function ShiftTypeDropdown({
                 onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, null)}
             >
                 <ShiftBadge shiftType={null} className="size-6 shrink-0 text-[12px]" />
-                <span className="min-w-0 truncate font-apple text-[13px] font-semibold">비우기</span>
+                <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{t('page.makeShift.calendar.clearCell')}</span>
             </button>
             {shiftTypes.map((shiftType) => {
                 const isSelected = dropdown.currentValue === shiftType.shortName;
@@ -718,6 +732,7 @@ export function MakeShiftCalendar({
     editableLastShifts = false,
 }: TMakeShiftCalendarProps) {
     const {separateWeekendColor} = useUIConfigStore();
+    const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
     const selection = useShiftEditorStore((s) => s.selection);
     const selectionRect = useMemo(() => (selection ? normalizeSelection(selection) : null), [selection]);
@@ -989,11 +1004,15 @@ export function MakeShiftCalendar({
                         paddingRight: 0,
                     }}
                 >
-                    <HeaderLabel className="make-shift-calendar__header-label--name">이름</HeaderLabel>
+                    <HeaderLabel className="make-shift-calendar__header-label--name">{t('page.makeShift.calendar.name')}</HeaderLabel>
                     {!isSimplified && (
                         <>
-                            <HeaderLabel className="make-shift-calendar__header-label--carry">이월</HeaderLabel>
-                            <HeaderLabel className="make-shift-calendar__header-label--last">전달 근무</HeaderLabel>
+                            <HeaderLabel className="make-shift-calendar__header-label--carry">
+                                {t('page.makeShift.calendar.carried')}
+                            </HeaderLabel>
+                            <HeaderLabel className="make-shift-calendar__header-label--last">
+                                {t('page.makeShift.calendar.previousShifts')}
+                            </HeaderLabel>
                         </>
                     )}
 
@@ -1024,7 +1043,11 @@ export function MakeShiftCalendar({
                                     onClick={(event) => {
                                         if (!hasDayViolations) return;
 
-                                        showViolationPopover(event.currentTarget, dayViolations, `${d.day}일 전체`);
+                                        showViolationPopover(
+                                            event.currentTarget,
+                                            dayViolations,
+                                            t('page.makeShift.calendar.fullDayLabel', {day: d.day}),
+                                        );
                                     }}
                                     className={cn(
                                         'make-shift-calendar__day-header-cell',
@@ -1263,6 +1286,7 @@ function CalendarRowLeft({
     onCellDoubleClick,
     onViolationClick,
 }: TCalendarRowLeftProps) {
+    const {t} = useTypedTranslation();
     const rowViolationPrefix = `${shiftNurseId},`;
     const displayNurseName = formatNurseDisplayName(nurseName);
     const violationsByDayCol = useMemo(() => {
@@ -1498,7 +1522,11 @@ function CalendarRowLeft({
                                     onCellClick?.(rowIndex, j);
 
                                     if (hasCellViolations) {
-                                        onViolationClick(event.currentTarget, cellViolations, `${displayNurseName} · ${day.day}일`);
+                                        onViolationClick(
+                                            event.currentTarget,
+                                            cellViolations,
+                                            t('page.makeShift.calendar.nurseDayLabel', {name: displayNurseName, day: day.day}),
+                                        );
                                     }
                                 }}
                                 onDoubleClick={(event) => {

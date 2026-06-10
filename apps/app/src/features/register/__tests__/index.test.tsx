@@ -1,6 +1,7 @@
 import type {TCreateWardDTO} from '@dutying/api/ward';
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import useRegister from '..';
 
 const {
@@ -140,7 +141,8 @@ vi.mock('@/shared/api', () => ({
 }));
 
 describe('useRegister', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         vi.clearAllMocks();
         mockHandleGetAccountMe.mockResolvedValue(undefined);
         mockGetWard.mockResolvedValue({wardId: 10, wardShiftTypes: [], shiftTeams: []});
