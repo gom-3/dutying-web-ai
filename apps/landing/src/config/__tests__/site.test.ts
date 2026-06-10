@@ -12,6 +12,7 @@ describe('createSiteConfig', () => {
         expect(config.appLinks).toEqual({
             home: 'https://app.dutying.net',
             login: 'https://app.dutying.net/login',
+            signup: 'https://app.dutying.net/signup',
             makeEntry: 'https://app.dutying.net/login?next=%2Fmake',
             make: 'https://app.dutying.net/make',
             register: 'https://app.dutying.net/register',

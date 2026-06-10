@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {CalendarPlus, Play} from 'lucide-react';
+import {CalendarPlus} from 'lucide-react';
 import {Trans} from 'react-i18next';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
@@ -11,6 +11,21 @@ import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
+
+const PlayActionIcon = () => (
+    <span aria-hidden="true" className="relative inline-flex size-[17px] shrink-0 items-center justify-center overflow-visible">
+        <svg viewBox="0 0 24 24" fill="none" className="size-[17px] overflow-visible">
+            <path
+                className="origin-center fill-current opacity-0 motion-safe:group-hover:animate-[make-shift-play-echo_720ms_ease-out_both]"
+                d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
+            />
+            <path
+                className="origin-center fill-current motion-safe:group-hover:animate-[make-shift-play-nudge_720ms_cubic-bezier(0.22,1,0.36,1)_both]"
+                d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
+            />
+        </svg>
+    </span>
+);
 
 export const MakeShiftPageView = () => {
     const {t} = useTypedTranslation();
@@ -124,9 +139,9 @@ export const MakeShiftPageView = () => {
                                             size="md"
                                             onClick={handleCreateCurrentMonth}
                                             disabled={currentShiftTeamId === null}
-                                            className="h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
+                                            className="group h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
                                         >
-                                            <Play className="size-[17px] fill-current" stroke="none" aria-hidden="true" />
+                                            <PlayActionIcon />
                                             {t('page.makeShift.overview.continueShift')}
                                         </ManagementActionButton>
                                     </div>

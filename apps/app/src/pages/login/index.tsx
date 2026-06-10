@@ -646,11 +646,6 @@ function LoginPage() {
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 로그인
                             </button>
-                            <div className="flex items-center justify-start text-sm">
-                                <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
-                                    회원가입
-                                </Link>
-                            </div>
                         </form>
                     ) : null}
 

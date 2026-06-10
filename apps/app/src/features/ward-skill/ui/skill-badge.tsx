@@ -119,10 +119,12 @@ export function getSkillBadgeBackgroundColor(level: number, config: TSkillLevelC
 }
 
 function SkillBadge({level, config, className = '', label, backgroundColor, textColor}: ISkillBadgeProps) {
+    const isUnselected = level == null;
     const safeLevel = Math.max(1, Math.min(config.levelCount, level ?? config.levelCount));
-    const resolvedBackground = backgroundColor ?? getSkillBadgeBackgroundColor(safeLevel, config);
-    const resolvedTextColor = textColor ?? getSkillBadgeTextColor(resolvedBackground, {level: safeLevel, levelCount: config.levelCount});
-    const resolvedLabel = label ?? config.levelLabels?.[safeLevel] ?? `LV. ${safeLevel}`;
+    const resolvedBackground = backgroundColor ?? (isUnselected ? '#E5E7EB' : getSkillBadgeBackgroundColor(safeLevel, config));
+    const resolvedTextColor =
+        textColor ?? (isUnselected ? '#6B7280' : getSkillBadgeTextColor(resolvedBackground, {level: safeLevel, levelCount: config.levelCount}));
+    const resolvedLabel = label ?? (isUnselected ? '-' : (config.levelLabels?.[safeLevel] ?? `LV. ${safeLevel}`));
 
     return (
         <div

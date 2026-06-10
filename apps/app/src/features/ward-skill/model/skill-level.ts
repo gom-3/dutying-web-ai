@@ -13,9 +13,11 @@ export type TSkillLevelConfig = {
     levelLabels?: Record<number, string>;
 };
 
+export type TSkillLevelValue = number | null;
+
 export type TWardSkillSettings = {
     config: TSkillLevelConfig;
-    frozenLevelsByNurseId: Record<number, number>;
+    frozenLevelsByNurseId: Record<number, TSkillLevelValue>;
 };
 
 /**
@@ -37,7 +39,6 @@ export function getSkillLevelBadgeStyle(level: number): {background: string; tex
 }
 
 const STORAGE_KEY = 'ward-skill-settings:v1';
-const DEFAULT_UNASSIGNED_SKILL_LEVEL = 1;
 const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
     {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
@@ -49,7 +50,7 @@ export const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
     enabled: true,
     levelCount: 5,
     paletteId: 'warm',
-    autoAssign: true,
+    autoAssign: false,
 };
 
 type TSkillLevelNurse = Pick<TNurse, 'nurseId' | 'employmentDate'>;
@@ -59,6 +60,12 @@ const clampLevelCount = (levelCount: number) => Math.min(Math.max(levelCount, 2)
 
 export const clampSkillLevel = (level: number | null | undefined, levelCount: number) =>
     Math.max(1, Math.min(clampLevelCount(levelCount), level ?? clampLevelCount(levelCount)));
+
+const normalizeManualSkillLevel = (level: number | null | undefined, levelCount: number): TSkillLevelValue => {
+    if (level == null || !Number.isFinite(level)) return null;
+
+    return clampSkillLevel(level, levelCount);
+};
 
 export const skillPalettes = SKILL_PALETTES;
 
@@ -125,7 +132,7 @@ export const createAutoAssignedSkillLevels = (nurses: TSkillLevelNurse[], config
 export const resolveWardSkillLevels = (
     nurses: TSkillLevelNurse[],
     settings: TWardSkillSettings | null | undefined,
-): {config: TSkillLevelConfig; levelsByNurseId: Record<number, number>} => {
+): {config: TSkillLevelConfig; levelsByNurseId: Record<number, TSkillLevelValue>} => {
     const config = normalizeSkillLevelConfig(settings?.config);
 
     if (config.autoAssign) {
@@ -135,11 +142,8 @@ export const resolveWardSkillLevels = (
         };
     }
 
-    const levelsByNurseId = nurses.reduce<Record<number, number>>((acc, nurse) => {
-        acc[nurse.nurseId] = clampSkillLevel(
-            settings?.frozenLevelsByNurseId?.[nurse.nurseId] ?? DEFAULT_UNASSIGNED_SKILL_LEVEL,
-            config.levelCount,
-        );
+    const levelsByNurseId = nurses.reduce<Record<number, TSkillLevelValue>>((acc, nurse) => {
+        acc[nurse.nurseId] = normalizeManualSkillLevel(settings?.frozenLevelsByNurseId?.[nurse.nurseId], config.levelCount);
 
         return acc;
     }, {});
@@ -168,8 +172,8 @@ export const createWardSkillSettings = (
 
     return {
         config: normalizedConfig,
-        frozenLevelsByNurseId: nurses.reduce<Record<number, number>>((acc, nurse) => {
-            acc[nurse.nurseId] = clampSkillLevel(currentLevels[nurse.nurseId], normalizedConfig.levelCount);
+        frozenLevelsByNurseId: nurses.reduce<Record<number, TSkillLevelValue>>((acc, nurse) => {
+            acc[nurse.nurseId] = normalizeManualSkillLevel(currentLevels[nurse.nurseId], normalizedConfig.levelCount);
 
             return acc;
         }, {}),

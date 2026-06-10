@@ -2,26 +2,42 @@
 import BaseSectionHeader from '@/shared/ui/SectionHeader';
 import type {TOnboardingStep} from '../model';
 
+function HighlightedTitleText({children}: {children: ReactNode}) {
+    return <span className="text-highlight-soft text-highlight-soft--subtle">{children}</span>;
+}
+
 const STEP_LABELS: Record<TOnboardingStep, {title: ReactNode; description: string}> = {
     1: {
-        title: '병원명과 병동명을 입력해 주세요',
+        title: (
+            <>
+                <HighlightedTitleText>병원명</HighlightedTitleText>과 <HighlightedTitleText>병동명</HighlightedTitleText>을 입력해 주세요
+            </>
+        ),
         description: '',
     },
     2: {
         title: (
             <>
                 병동 및 근무표 설정을 위해{'\n'}
-                <span className="text-main-1">최근에 사용한 근무표</span>를 입력해 주세요
+                <HighlightedTitleText>최근에 사용한 근무표</HighlightedTitleText>를 입력해 주세요
             </>
         ),
         description: '기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.',
     },
     3: {
-        title: '병동의 근무 유형을 설정해 주세요',
+        title: (
+            <>
+                병동의 <HighlightedTitleText>근무 유형</HighlightedTitleText>을 설정해 주세요
+            </>
+        ),
         description: '나중에도 수정할 수 있어요',
     },
     4: {
-        title: '간호사를 등록해 주세요',
+        title: (
+            <>
+                <HighlightedTitleText>간호사</HighlightedTitleText>를 등록해 주세요
+            </>
+        ),
         description: '매월 팀당 하나의 근무표를 만들 수 있어요. 언제든 수정, 추가 가능해요',
     },
 };

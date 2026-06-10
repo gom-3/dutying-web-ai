@@ -155,7 +155,7 @@ const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
     enabled: true,
     levelCount: 5,
     paletteId: 'warm',
-    autoAssign: true,
+    autoAssign: false,
 };
 const MIN_STEP = 1;
 const MAX_STEP = 4;
@@ -414,7 +414,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
             isWorker: !isOffNurse,
             employmentDate: '2024-01-01',
             possibleShiftTypeIds,
-            level: name === '이서윤' ? 1 : name === '박연우' ? 2 : null,
+            level: null,
             initialShifts: [],
             id: `nurse-${index + 1}`,
         });
@@ -440,7 +440,7 @@ export const applySkillLevels = (nurses: TOnboardingNurseDraft[], config: TSkill
     if (!config.autoAssign) {
         return nurses.map((nurse) => ({
             ...nurse,
-            level: nurse.level ? Math.min(nurse.level, levelCount) : levelCount,
+            level: nurse.level == null ? null : Math.min(nurse.level, levelCount),
         }));
     }
 
@@ -687,7 +687,8 @@ export const applyScheduleInputDraft = (
     }
 
     const monthKey = getScheduleMonthKey(schedule.year, schedule.month);
-    const nextTeamScheduleInputs: TOnboardingTeamScheduleInputDraft = {
+    const updatedTeamScheduleInputs: TOnboardingTeamScheduleInputDraft = {
+        ...(draft.scheduleInputs?.[teamId] ?? {}),
         [monthKey]: {
             year: schedule.year,
             month: schedule.month,
@@ -696,10 +697,7 @@ export const applyScheduleInputDraft = (
     };
     const nextScheduleInputs = {
         ...(draft.scheduleInputs ?? {}),
-        [teamId]: {
-            ...(draft.scheduleInputs?.[teamId] ?? {}),
-            ...nextTeamScheduleInputs,
-        },
+        [teamId]: updatedTeamScheduleInputs,
     };
     const existingTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
     const otherNurses = draft.nurses.filter((nurse) => nurse.teamId !== teamId);
@@ -712,7 +710,7 @@ export const applyScheduleInputDraft = (
     const nurseIdByRowKey = new Map<string, string>();
     const getRowKey = (scheduleMonthKey: string, rowId: string) => `${scheduleMonthKey}:${rowId}`;
 
-    Object.entries(nextTeamScheduleInputs).forEach(([scheduleMonthKey, teamSchedule]) => {
+    Object.entries(updatedTeamScheduleInputs).forEach(([scheduleMonthKey, teamSchedule]) => {
         teamSchedule?.rows.forEach((row) => {
             const trimmedName = row.name.trim();
 
@@ -749,8 +747,8 @@ export const applyScheduleInputDraft = (
         });
     });
 
-    const nextTeamScheduleInputsWithNurseIds = Object.fromEntries(
-        Object.entries(nextTeamScheduleInputs).map(([scheduleMonthKey, teamSchedule]) => [
+    const updatedTeamScheduleInputsWithNurseIds = Object.fromEntries(
+        Object.entries(updatedTeamScheduleInputs).map(([scheduleMonthKey, teamSchedule]) => [
             scheduleMonthKey,
             teamSchedule
                 ? {
@@ -765,7 +763,7 @@ export const applyScheduleInputDraft = (
     );
     const initialShiftsByNurseId = new Map<string, TOnboardingNurseDraft['initialShifts']>();
 
-    Object.values(nextTeamScheduleInputsWithNurseIds).forEach((teamSchedule) => {
+    Object.values(updatedTeamScheduleInputsWithNurseIds).forEach((teamSchedule) => {
         teamSchedule?.rows.forEach((row) => {
             if (!row.nurseId) {
                 return;
@@ -778,8 +776,6 @@ export const applyScheduleInputDraft = (
         });
     });
 
-    const hasExistingTeamScheduleInputs = Object.values(draft.scheduleInputs?.[teamId] ?? {}).some((schedule) => Boolean(schedule));
-    const preservedTeamNurses = hasExistingTeamScheduleInputs ? existingTeamNurses.filter((nurse) => !nextNurseById.has(nurse.id)) : [];
     const nextTeamNurses = Array.from(nextNurseById.values()).map((nurse) => ({
         ...nurse,
         initialShifts: (initialShiftsByNurseId.get(nurse.id) ?? []).sort((left, right) => left.date.localeCompare(right.date)),
@@ -788,13 +784,10 @@ export const applyScheduleInputDraft = (
     return {
         ...draft,
         shiftTypes: nextShiftTypes,
-        nurses: pruneUnavailableShiftTypeIds([...otherNurses, ...preservedTeamNurses, ...nextTeamNurses], nextShiftTypes),
+        nurses: pruneUnavailableShiftTypeIds([...otherNurses, ...nextTeamNurses], nextShiftTypes),
         scheduleInputs: {
             ...(draft.scheduleInputs ?? {}),
-            [teamId]: {
-                ...(draft.scheduleInputs?.[teamId] ?? {}),
-                ...nextTeamScheduleInputsWithNurseIds,
-            },
+            [teamId]: updatedTeamScheduleInputsWithNurseIds,
         },
     };
 };

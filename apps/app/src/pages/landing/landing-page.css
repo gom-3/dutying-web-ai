@@ -30,25 +30,6 @@
     transform: translateY(0) scale(1);
 }
 
-.text-highlight-soft {
-    position: relative;
-    z-index: 0;
-    display: inline-block;
-    color: #6c4df6;
-}
-
-.text-highlight-soft::after {
-    content: '';
-    position: absolute;
-    left: -0.12em;
-    right: -0.12em;
-    bottom: 0.08em;
-    height: 0.42em;
-    border-radius: 999px;
-    background: rgba(167, 139, 250, 0.16);
-    z-index: -1;
-}
-
 .hero-gradient-text {
     display: inline-block;
     background: linear-gradient(110deg, #6d4df6 0%, #7c3aed 36%, #ad95ff 52%, #5f3fe7 72%, #7c3aed 100%);

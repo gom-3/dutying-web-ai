@@ -24,7 +24,6 @@ export function ShiftCalendarHeader({
             style={{gridTemplateColumns, maxWidth: '100%'}}
         >
             <div className="min-w-0 truncate text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">이름</div>
-            <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">이월</div>
             <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">전달 근무</div>
 
             <div

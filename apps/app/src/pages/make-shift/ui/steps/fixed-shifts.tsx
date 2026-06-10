@@ -23,6 +23,7 @@ import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
+import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
 /**
  * 고정 근무 화면에서는 violation을 절대 표시하지 않으므로,
@@ -60,6 +61,7 @@ export function FixedShifts() {
     const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingLastShifts} = useDutyEditorStep({
         hydratePreviousLastShifts: true,
     });
+    const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
     const handleNext = useCallback(async () => {
         if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
 
@@ -184,6 +186,7 @@ export function FixedShifts() {
                         tutorialCellId="make_fixed_shift_sample_cell"
                         onCellClick={focusEditor}
                         editableLastShifts
+                        skillColumn={skillColumn}
                     />
                 </div>
             )}

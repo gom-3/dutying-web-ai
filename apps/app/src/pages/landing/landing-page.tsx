@@ -517,12 +517,17 @@ function HeaderActions({
 
     if (!isAuth) {
         return (
-            <Link
-                to={ROUTE.LOGIN}
-                className="flex h-10 items-center rounded-[10px] bg-main-1 px-4 text-sm font-bold text-white transition-colors hover:bg-[#5832E7]"
-            >
-                로그인
-            </Link>
+            <nav aria-label="계정" className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]">
+                <Link to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
+                    로그인
+                </Link>
+                <span aria-hidden="true" className="text-[#A29BB7]">
+                    |
+                </span>
+                <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
+                    회원가입
+                </Link>
+            </nav>
         );
     }
 

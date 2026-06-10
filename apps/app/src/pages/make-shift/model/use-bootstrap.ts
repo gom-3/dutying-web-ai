@@ -259,10 +259,13 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
                 if (cancelled) return;
 
-                setShiftStatus('success');
+                const nextShiftExists = !isDutyShiftWithoutAssignments(shift);
+                const nextShiftFullyAssigned = isDutyShiftFullyAssigned(shift);
+
                 // 근무표 존재: 최소 1칸 이상 배정이 있을 때만 true (`/duty`와 동일 — `isDutyShiftWithoutAssignments` 역).
-                setShiftExists(!isDutyShiftWithoutAssignments(shift));
-                setShiftFullyAssigned(isDutyShiftFullyAssigned(shift));
+                setShiftExists(nextShiftExists);
+                setShiftFullyAssigned(nextShiftFullyAssigned);
+                setShiftStatus('success');
             } catch {
                 if (!cancelled) {
                     setShiftStatus('error');
@@ -289,7 +292,9 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 (target.shiftTeamId === undefined || target.shiftTeamId === currentShiftTeamId),
         );
 
-        if (isConfirmInitialScheduleTarget && shiftExists) {
+        const shouldOpenConfirmedStep = shiftExists && (shiftFullyAssigned || saved === 6 || isConfirmInitialScheduleTarget);
+
+        if (shouldOpenConfirmedStep) {
             const state = useMakeShiftStore.getState();
 
             if (state.phase !== 'stepping' || state.currentStep !== 6) {

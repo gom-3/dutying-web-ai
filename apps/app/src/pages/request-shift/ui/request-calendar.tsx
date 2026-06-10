@@ -80,6 +80,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
     const dutyRequestLookup = createDutyRequestLookup(dutyRequestList);
     const connectedNurseIds = createConnectedNurseIdSet(currentShiftTeam);
     const shiftNurseIdByNurseId = createShiftNurseIdByNurseId(requestShift);
+    const showSkillColumn = skillConfig.enabled;
 
     return (
         <div
@@ -101,6 +102,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
                                     days={requestShift.days}
                                     focusDay={focus?.day}
                                     separateWeekendColor={separateWeekendColor}
+                                    showSkillColumn={showSkillColumn}
                                 />
                                 <RequestCalendarGrid
                                     requestShift={requestShift}
@@ -112,6 +114,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
                                     connectedNurseIds={connectedNurseIds}
                                     skillConfig={skillConfig}
                                     levelsByNurseId={levelsByNurseId}
+                                    showSkillColumn={showSkillColumn}
                                     focusedCellRef={focusedCellRef}
                                     onSelectCell={handleSelectCell}
                                 />

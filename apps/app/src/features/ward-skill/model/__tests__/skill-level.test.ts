@@ -40,7 +40,7 @@ describe('skill-level', () => {
                 autoAssign: false,
             },
             {
-                config: DEFAULT_SKILL_LEVEL_CONFIG,
+                config: {...DEFAULT_SKILL_LEVEL_CONFIG, autoAssign: true},
                 frozenLevelsByNurseId: {},
             },
         );
@@ -113,7 +113,7 @@ describe('skill-level', () => {
             levelsByNurseId: {
                 10: 4,
                 11: 2,
-                12: 1,
+                12: null,
             },
         });
     });

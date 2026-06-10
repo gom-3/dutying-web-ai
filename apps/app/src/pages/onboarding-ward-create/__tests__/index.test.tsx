@@ -938,7 +938,7 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(within(skillLevelDialog).getByRole('option', {name: '3단계'}));
         await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '완료'}));
 
-        expect(screen.getAllByText((content) => content.includes('LV. 3')).length).toBeGreaterThan(0);
+        expect(screen.getAllByText((content) => content.trim() === '-').length).toBeGreaterThan(0);
 
         await user.click(screen.getByRole('button', {name: '완료'}));
 

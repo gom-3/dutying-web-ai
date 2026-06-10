@@ -89,7 +89,28 @@ function renderRequestCalendar() {
     );
 }
 
-function createUseRequestShiftValue() {
+function createUseRequestShiftValue({hasNurses = false}: {hasNurses?: boolean} = {}) {
+    const nurse = {
+        nurseId: 10,
+        accountId: null,
+        shiftTeamId: 3,
+        wardId: 1,
+        name: 'Kim',
+        phoneNum: null,
+        isConnected: false,
+        nurseShiftTypes: [],
+        isWorker: true,
+        isDutyManager: false,
+        isWardManager: false,
+        gender: '',
+        employmentDate: '',
+        memo: '',
+        isDeleted: false,
+        divisionNum: 1,
+        priority: 100,
+    };
+    const nurses = hasNurses ? [nurse] : [];
+
     return {
         state: {
             year: 2026,
@@ -97,7 +118,25 @@ function createUseRequestShiftValue() {
             requestShift: {
                 days: [{day: 1, dayType: 'workday'}],
                 wardShiftTypes: [],
-                divisionShiftNurses: [],
+                divisionShiftNurses: hasNurses
+                    ? [
+                          [
+                              {
+                                  shiftNurse: {
+                                      shiftNurseId: 20,
+                                      nurseId: nurse.nurseId,
+                                      name: nurse.name,
+                                      carried: 0,
+                                      isWorker: true,
+                                      divisionNum: 1,
+                                      priority: 100,
+                                  },
+                                  carry: 0,
+                                  wardReqShiftList: [null],
+                              },
+                          ],
+                      ]
+                    : [],
             },
             dutyRequestList: [],
             dutyRequestStatus: 'success',
@@ -107,15 +146,15 @@ function createUseRequestShiftValue() {
             currentShiftTeam: {
                 shiftTeamId: 3,
                 name: 'A팀',
-                nurseCnt: 0,
-                nurses: [],
+                nurseCnt: nurses.length,
+                nurses,
             },
             shiftTeams: [
                 {
                     shiftTeamId: 3,
                     name: 'A팀',
-                    nurseCnt: 0,
-                    nurses: [],
+                    nurseCnt: nurses.length,
+                    nurses,
                 },
             ],
             editAvailability: {
@@ -154,5 +193,16 @@ describe('RequestCalendar', () => {
         await user.click(screen.getByRole('button', {name: /근무자 관리로 이동/}));
 
         expect(screen.getByTestId('location')).toHaveTextContent('/member?shiftTeamId=3');
+    });
+
+    it('숙련도 기능이 꺼져 있으면 신청근무 캘린더에서 숙련도 컬럼을 숨긴다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar();
+
+        expect(screen.getByText('이름')).toBeInTheDocument();
+        expect(screen.getByText('연동')).toBeInTheDocument();
+        expect(screen.getByText('Kim')).toBeInTheDocument();
+        expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
     });
 });
