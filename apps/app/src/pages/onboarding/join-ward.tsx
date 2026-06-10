@@ -12,6 +12,7 @@ import useGetWardByCode from '@/features/get-ward-by-code';
 import useRegister from '@/features/register';
 import RegisterShell from '@/pages/register/ui/register-shell';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
@@ -31,6 +32,7 @@ const toCodeList = (rawCode: string) => {
 };
 
 function OnboardingJoinWardPage() {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe},
@@ -105,14 +107,14 @@ function OnboardingJoinWardPage() {
                 setError(true);
 
                 if (errorCode !== 404) {
-                    toast.error('병동에 들어가지 못했어요. 코드를 다시 확인해 주세요.');
+                    toast.error(t('page.onboardingJoinWard.toast.joinFailed'));
                 }
             } finally {
                 isSubmittingRef.current = false;
                 setIsSubmitting(false);
             }
         },
-        [getWardByCode, joinWardByCode],
+        [getWardByCode, joinWardByCode, t],
     );
     const handleKeyDown = useCallback(
         async (e: KeyboardEvent) => {
@@ -194,9 +196,12 @@ function OnboardingJoinWardPage() {
                 <div className="flex min-h-[420px] items-center justify-center">
                     <PageState
                         tone="error"
-                        title="계정 정보를 불러오지 못했어요"
-                        description="잠시 후 다시 시도해 주세요. 문제가 계속되면 다시 로그인해 주세요."
-                        action={{label: '다시 시도', onClick: () => void handleGetAccountMe().catch(() => undefined)}}
+                        title={t('page.onboardingJoinWard.state.accountErrorTitle')}
+                        description={t('page.onboardingJoinWard.state.accountErrorDescription')}
+                        action={{
+                            label: t('page.onboardingJoinWard.state.retry'),
+                            onClick: () => void handleGetAccountMe().catch(() => undefined),
+                        }}
                         className="py-0"
                     />
                 </div>
@@ -212,18 +217,22 @@ function OnboardingJoinWardPage() {
                                 onClick={() => navigate(ROUTE.REGISTER)}
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                병동 선택으로
+                                {t('page.onboardingJoinWard.backToWardSelect')}
                             </button>
 
                             <div>
-                                <h1 className="text-[32px] font-semibold text-sub-1">병동 코드를 입력해요</h1>
+                                <h1 className="text-[32px] font-semibold text-sub-1">{t('page.onboardingJoinWard.title')}</h1>
                                 <p className="mt-2 text-sm text-gray-3">
-                                    병동 오너가 공유한 6자리 코드를 입력하면 권한 확인 후 바로 입장해요.
+                                    {t('page.onboardingJoinWard.description')}
                                 </p>
                             </div>
 
                             <section className="mt-6 rounded-[24px] bg-white p-6">
-                                <div ref={clickAwayRef} className="grid grid-cols-6 gap-2" aria-label="병동 코드 입력">
+                                <div
+                                    ref={clickAwayRef}
+                                    className="grid grid-cols-6 gap-2"
+                                    aria-label={t('page.onboardingJoinWard.codeInputAria')}
+                                >
                                     {codeList.map((code, index) => (
                                         <button
                                             type="button"
@@ -236,7 +245,7 @@ function OnboardingJoinWardPage() {
                                                 setFocusedIndex(index);
                                             }}
                                             key={index}
-                                            aria-label={`병동 코드 ${index + 1}번째 자리`}
+                                            aria-label={t('page.onboardingJoinWard.codeDigitAria', {index: index + 1})}
                                             className={cn(
                                                 'flex aspect-square min-h-12 cursor-text items-center justify-center rounded-[14px] bg-gray-7 font-poppins text-[28px] font-semibold text-sub-1 transition-colors',
                                                 focusedIndex === index && 'bg-main-light text-main-1',
@@ -251,7 +260,7 @@ function OnboardingJoinWardPage() {
 
                             {isSubmitting ? (
                                 <p className="mt-4 rounded-[16px] bg-white px-4 py-3 text-center text-sm font-medium text-gray-3">
-                                    입장 권한을 확인하는 중이에요.
+                                    {t('page.onboardingJoinWard.checkingPermission')}
                                 </p>
                             ) : null}
 
@@ -260,7 +269,7 @@ function OnboardingJoinWardPage() {
                                     role="alert"
                                     className="mt-4 rounded-[16px] bg-[#FFF1F6] px-4 py-3 text-center text-sm font-medium text-red"
                                 >
-                                    존재하지 않는 병동 코드예요. 코드를 다시 확인해 주세요.
+                                    {t('page.onboardingJoinWard.invalidCode')}
                                 </p>
                             ) : null}
 
@@ -279,36 +288,44 @@ function OnboardingJoinWardPage() {
                                           >
                                               <div className="flex items-start justify-between gap-4">
                                                   <div>
-                                                      <p className="text-sm font-semibold text-sub-2.5">관리자 권한 필요</p>
+                                                      <p className="text-sm font-semibold text-sub-2.5">
+                                                          {t('page.onboardingJoinWard.permission.eyebrow')}
+                                                      </p>
                                                       <h2
                                                           id="join-ward-permission-title"
                                                           className="mt-2 text-[24px] font-semibold text-sub-1"
                                                       >
                                                           {permissionWard
-                                                              ? `${permissionWard.hospitalName} ${permissionWard.name} 관리자에게 요청해 주세요`
-                                                              : '병동 관리자에게 요청해 주세요'}
+                                                              ? t('page.onboardingJoinWard.permission.titleWithWard', {
+                                                                    hospitalName: permissionWard.hospitalName,
+                                                                    wardName: permissionWard.name,
+                                                                })
+                                                              : t('page.onboardingJoinWard.permission.title')}
                                                       </h2>
                                                   </div>
                                                   <button
                                                       type="button"
                                                       onClick={() => setIsPermissionModalOpen(false)}
                                                       className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                                                      aria-label="닫기"
+                                                      aria-label={t('page.onboardingJoinWard.permission.close')}
                                                   >
                                                       <X className="h-4 w-4" />
                                                   </button>
                                               </div>
                                               <p className="mt-3 text-sm leading-6 text-gray-3">
-                                                  병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요.{' '}
-                                                  {permissionWard ? `${permissionWard.hospitalName} ${permissionWard.name} ` : ''}
-                                                  최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.
+                                                  {permissionWard
+                                                      ? t('page.onboardingJoinWard.permission.descriptionWithWard', {
+                                                            hospitalName: permissionWard.hospitalName,
+                                                            wardName: permissionWard.name,
+                                                        })
+                                                      : t('page.onboardingJoinWard.permission.description')}
                                               </p>
                                               <button
                                                   type="button"
                                                   onClick={() => setIsPermissionModalOpen(false)}
                                                   className="mt-8 flex h-11 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7]"
                                               >
-                                                  확인
+                                                  {t('page.onboardingJoinWard.permission.confirm')}
                                               </button>
                                           </section>
                                       </div>,

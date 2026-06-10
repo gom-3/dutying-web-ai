@@ -1,4 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import RegisterWard from '../register-ward';
 
@@ -38,7 +39,8 @@ vi.mock('@/features/register-ward/model/ward', async () => {
 });
 
 describe('RegisterWard', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         mockNavigate.mockReset();
         mockCreateWard.mockReset();
         mockGetWardShiftValidationMessage.mockReset();

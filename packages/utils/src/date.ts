@@ -18,11 +18,8 @@ export function getDaysInMonth(month?: number, year?: number) {
     return days;
 }
 
-export function getDayName(date: Date) {
-    const week = ['일', '월', '화', '수', '목', '금', '토'];
-    const dayOfWeek = week[date.getDay()];
-
-    return dayOfWeek;
+export function getDayName(date: Date, locale = DateUtil.locale) {
+    return new Intl.DateTimeFormat(locale, {weekday: 'short'}).format(date);
 }
 
 export class DateUtil {

@@ -179,14 +179,35 @@ export const DEFAULT_SHIFT_TYPE_COLORS = [
 export const CUSTOM_SHIFT_TYPE_COLORS = DEFAULT_SHIFT_TYPE_COLORS.slice(4);
 
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 3, 4];
-const WARD_IDENTITY_REGEX = /^[a-zA-Zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]{1,20}$/;
+const WARD_IDENTITY_REGEX = /^[a-zA-Z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9\s]{1,20}$/u;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const ASCII_SPACE_EDGE_REGEX = /^ +| +$/g;
 const KOREAN_SYLLABLE_REGEX = /[\uAC00-\uD7A3]/g;
 const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
 const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
-const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A30-9A-Za-z ]+$/u;
+const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9A-Za-z ]+$/u;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
+const DEFAULT_SHIFT_NAMES = {
+    day: '\uB370\uC774',
+    evening: '\uC774\uBE0C\uB2DD',
+    night: '\uB098\uC774\uD2B8',
+    off: '\uC624\uD504',
+} as const;
+const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
+const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
+const DEFAULT_NEW_NURSE_PREFIX = '\uC2E0\uADDC \uAC04\uD638\uC0AC';
+const DEFAULT_SAMPLE_NURSE_NAMES = {
+    first: '\uD64D\uAE38\uB3D9',
+    second: '\uAE40\uD558\uB298',
+    skilled: '\uC774\uC11C\uC724',
+    off: '\uBC15\uC5F0\uC6B0',
+} as const;
+const DEFAULT_OFF_SHIFT_ALIASES = {
+    off: '\uC624\uD504',
+    rest: '\uD734',
+    leave: '\uD734\uBB34',
+} as const;
+const getDefaultTeamName = (teamNumber: number) => `${DEFAULT_TEAM_NAME_PREFIX}${teamNumber}${DEFAULT_TEAM_NAME_SUFFIX}`;
 const normalizeColor = (color: string) => color.trim().toUpperCase();
 
 export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
@@ -258,7 +279,7 @@ const createScheduleRow = (
 });
 const BASE_SHIFT_TYPES = [
     createShiftType({
-        name: '데이',
+        name: DEFAULT_SHIFT_NAMES.day,
         shortName: 'D',
         startTime: '07:00',
         endTime: '15:00',
@@ -269,7 +290,7 @@ const BASE_SHIFT_TYPES = [
         classification: 'DAY',
     }),
     createShiftType({
-        name: '이브닝',
+        name: DEFAULT_SHIFT_NAMES.evening,
         shortName: 'E',
         startTime: '15:00',
         endTime: '23:00',
@@ -280,7 +301,7 @@ const BASE_SHIFT_TYPES = [
         classification: 'EVENING',
     }),
     createShiftType({
-        name: '나이트',
+        name: DEFAULT_SHIFT_NAMES.night,
         shortName: 'N',
         startTime: '23:00',
         endTime: '07:00',
@@ -291,7 +312,7 @@ const BASE_SHIFT_TYPES = [
         classification: 'NIGHT',
     }),
     createShiftType({
-        name: '오프',
+        name: DEFAULT_SHIFT_NAMES.off,
         shortName: 'O',
         startTime: '',
         endTime: '',
@@ -303,11 +324,16 @@ const BASE_SHIFT_TYPES = [
     }),
 ];
 const BASE_TEAMS: TOnboardingTeamDraft[] = [
-    {id: createId('team'), name: '간호사 1팀'},
-    {id: createId('team'), name: '간호사 2팀'},
-    {id: createId('team'), name: '간호사 3팀'},
+    {id: createId('team'), name: getDefaultTeamName(1)},
+    {id: createId('team'), name: getDefaultTeamName(2)},
+    {id: createId('team'), name: getDefaultTeamName(3)},
 ];
-const BASE_NURSE_NAMES = ['홍길동', '김하늘', '이서윤', '박연우'] as const;
+const BASE_NURSE_NAMES = [
+    DEFAULT_SAMPLE_NURSE_NAMES.first,
+    DEFAULT_SAMPLE_NURSE_NAMES.second,
+    DEFAULT_SAMPLE_NURSE_NAMES.skilled,
+    DEFAULT_SAMPLE_NURSE_NAMES.off,
+] as const;
 
 export const skillPalettes = SKILL_PALETTES;
 
@@ -390,7 +416,7 @@ export const createEmptyShiftType = (colorIndex = 4): TOnboardingWardShiftType =
 export const createEmptyNurse = (teamId: string, shiftTypes: TOnboardingWardShiftType[], nurseNumber: number): TOnboardingNurseDraft =>
     createNurse({
         teamId,
-        name: `신규 간호사 ${nurseNumber}`,
+        name: `${DEFAULT_NEW_NURSE_PREFIX} ${nurseNumber}`,
         memo: '',
         isWorker: true,
         employmentDate: '2024-01-01',
@@ -405,7 +431,7 @@ export const createInitialDraft = (): TOnboardingWardDraft => {
     const firstTeamId = teams[0]?.id ?? 'team-0';
     const possibleShiftTypeIds = shiftTypes.map((shiftType) => shiftType.id);
     const nurses = BASE_NURSE_NAMES.map((name, index) => {
-        const isOffNurse = name === '박연우';
+        const isOffNurse = name === DEFAULT_SAMPLE_NURSE_NAMES.off;
 
         return createNurse({
             teamId: firstTeamId,
@@ -479,7 +505,7 @@ export const goPreviousStep = (draft: TOnboardingWardDraft): TOnboardingWardDraf
 
 export const prepareManualEntryDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
     ...draft,
-    teams: draft.teams[0] ? [draft.teams[0]] : [{id: createId('team'), name: '간호사 1팀'}],
+    teams: draft.teams[0] ? [draft.teams[0]] : [{id: createId('team'), name: getDefaultTeamName(1)}],
     nurses: [],
     scheduleInputs: {},
     constraintCandidates: [],
@@ -538,7 +564,15 @@ const normalizeScheduleRow = (row: TOnboardingScheduleRowDraft): TOnboardingSche
     name: row.name,
     shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, value.trim()])),
 });
-const SCHEDULE_OFF_SHIFT_ALIASES = new Set(['O', '/', '-', 'OFF', '오프', '휴', '휴무']);
+const SCHEDULE_OFF_SHIFT_ALIASES = new Set([
+    'O',
+    '/',
+    '-',
+    'OFF',
+    DEFAULT_OFF_SHIFT_ALIASES.off,
+    DEFAULT_OFF_SHIFT_ALIASES.rest,
+    DEFAULT_OFF_SHIFT_ALIASES.leave,
+]);
 const normalizeScheduleShiftShortName = (value: string): string | null => {
     const normalized = normalizeOnboardingShiftCode(value);
 
@@ -793,7 +827,7 @@ export const applyScheduleInputDraft = (
 };
 
 const createUniqueUploadedTeamName = (rawTeamName: string, teamIndex: number, usedTeamNames: Set<string>) => {
-    const baseName = rawTeamName.trim() || `간호사 ${teamIndex + 1}팀`;
+    const baseName = rawTeamName.trim() || getDefaultTeamName(teamIndex + 1);
 
     let nextName = baseName;
     let suffix = 2;
@@ -1001,11 +1035,11 @@ export const addTeamDraft = (draft: TOnboardingWardDraft) => {
     const existingTeamNames = new Set(draft.teams.map((team) => team.name.trim()));
 
     let nextTeamNumber = draft.teams.length + 1;
-    let nextTeamName = `간호사 ${nextTeamNumber}팀`;
+    let nextTeamName = getDefaultTeamName(nextTeamNumber);
 
     while (existingTeamNames.has(nextTeamName)) {
         nextTeamNumber += 1;
-        nextTeamName = `간호사 ${nextTeamNumber}팀`;
+        nextTeamName = getDefaultTeamName(nextTeamNumber);
     }
 
     const team = {

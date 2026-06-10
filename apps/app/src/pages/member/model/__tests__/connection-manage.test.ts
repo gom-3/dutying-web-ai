@@ -1,6 +1,25 @@
 import {describe, expect, it} from 'vitest';
 import {type TShiftTeam} from '@/entities/ward';
+import type {TI18nKey} from '@/shared/hook/use-typed-translation';
+import {ko} from '@/shared/locales/ko';
 import {getConnectionManageResultCopy, getConnectionManageTargetLabel} from '../connection-manage';
+
+const t = (key: TI18nKey, values?: Record<string, string | number>) => {
+    const template = key.split('.').reduce<unknown>((acc, part) => {
+        if (!acc || typeof acc !== 'object') return undefined;
+
+        return (acc as Record<string, unknown>)[part];
+    }, ko);
+
+    if (typeof template !== 'string') {
+        return key;
+    }
+
+    return Object.entries(values ?? {}).reduce(
+        (result, [name, value]) => result.split(`{{${name}}}`).join(String(value)),
+        template,
+    );
+};
 
 const shiftTeams: TShiftTeam[] = [
     {
@@ -80,6 +99,7 @@ describe('getConnectionManageResultCopy', () => {
                 connectMode: 'link',
                 waitingNurseName: '박신청',
                 targetLabel: '김간호 · A팀',
+                t,
             }).description,
         ).toContain('이어서 확인할 수 있어요');
     });
@@ -90,6 +110,7 @@ describe('getConnectionManageResultCopy', () => {
             connectMode: 'add',
             waitingNurseName: '김간호',
             targetLabel: 'A팀',
+            t,
         });
 
         expect(result.title).toBe('김간호님을 A팀에 추가했어요');
@@ -103,6 +124,7 @@ describe('getConnectionManageResultCopy', () => {
                 connectMode: 'add',
                 waitingNurseName: '박신청',
                 targetLabel: 'B팀',
+                t,
             }).description,
         ).toContain('다시 시도하거나 이전 단계로 돌아가');
     });
@@ -114,6 +136,7 @@ describe('getConnectionManageResultCopy', () => {
                 connectMode: 'add',
                 waitingNurseName: '박신청',
                 targetLabel: 'B팀',
+                t,
             }).description,
         ).toContain('팀과 관계 변경이 반영될 때까지');
     });
@@ -122,6 +145,7 @@ describe('getConnectionManageResultCopy', () => {
         const result = getConnectionManageResultCopy({
             submitStatus: 'error',
             connectMode: 'link',
+            t,
         });
 
         expect(result.title).toBe('기존 계정과 연결하지 못했어요');

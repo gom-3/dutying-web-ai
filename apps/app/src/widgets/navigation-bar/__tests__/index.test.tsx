@@ -25,28 +25,15 @@ const mockUseEditWard = vi.fn(
         },
     }),
 );
-const translations = {
-    'page.navigationBar.ariaLabel': '주요 메뉴',
-    'page.navigationBar.expandAria': '사이드바 펼치기',
-    'page.navigationBar.foldAria': '사이드바 접기',
-    'page.navigationBar.home': '근무표',
-    'page.navigationBar.sections.operations': '근무 운영',
-    'page.navigationBar.sections.settings': '병동 설정',
-    'page.navigationBar.items.make': '근무표',
-    'page.navigationBar.items.request': '신청 근무',
-    'page.navigationBar.items.board': '게시판',
-    'page.navigationBar.items.member': '근무자 관리',
-    'page.navigationBar.items.wardSettings': '근무 설정',
-    'page.navigationBar.items.wardAdmins': '병동 관리자',
-    'page.navigationBar.items.wardInfoSettings': '병동 설정',
-    'page.navigationBar.items.account': '마이페이지',
-} as const;
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string) => translations[key as keyof typeof translations] ?? key,
-    }),
-}));
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => i18n.t(key, values),
+        }),
+    };
+});
 
 vi.mock('@/features/edit-ward', () => ({
     default: () => mockUseEditWard(),
@@ -356,6 +343,6 @@ describe('NavigationBar', () => {
             </MemoryRouter>,
         );
 
-        expect(screen.getByRole('button', {name: translations['page.navigationBar.items.request']})).toHaveTextContent('7');
+        expect(screen.getByRole('button', {name: '신청 근무'})).toHaveTextContent('7');
     });
 });

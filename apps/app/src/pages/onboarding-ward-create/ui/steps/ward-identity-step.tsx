@@ -1,5 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {KeyboardEvent} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface IWardIdentityStepProps {
     hospitalName: string;
@@ -25,6 +26,7 @@ function WardIdentityStep({
     onWardNameChange,
     onIdentityNameEnter,
 }: IWardIdentityStepProps) {
+    const {t} = useTypedTranslation();
     const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         // Keep Enter-to-next from firing while IME composition is active.
         if (event.nativeEvent.isComposing || event.keyCode === 229) {
@@ -46,15 +48,15 @@ function WardIdentityStep({
                 <div className="space-y-4">
                     <label className="block space-y-2" htmlFor="onboarding-hospital-name">
                         <span className={`relative inline-block ${FIELD_LABEL_CLASS}`}>
-                            병원명
+                            {t('page.onboardingWardCreate.identity.hospitalName')}
                             <span aria-hidden="true" className="absolute top-0 -right-2 size-[5px] rounded-full bg-[#E55C6E]" />
                         </span>
                         <input
                             id="onboarding-hospital-name"
-                            aria-label="병원명"
+                            aria-label={t('page.onboardingWardCreate.identity.hospitalName')}
                             aria-invalid={hasHospitalNameError}
                             value={hospitalName}
-                            placeholder="병원명을 입력해 주세요"
+                            placeholder={t('page.onboardingWardCreate.identity.hospitalNamePlaceholder')}
                             maxLength={NAME_FIELD_MAX_LENGTH}
                             className={getInputClassName(hasHospitalNameError)}
                             onChange={(event) => onHospitalNameChange(event.target.value)}
@@ -62,13 +64,13 @@ function WardIdentityStep({
                         />
                     </label>
                     <label className="block space-y-2" htmlFor="onboarding-ward-name">
-                        <span className={`block ${FIELD_LABEL_CLASS}`}>(선택) 병동명</span>
+                        <span className={`block ${FIELD_LABEL_CLASS}`}>{t('page.onboardingWardCreate.identity.wardNameOptional')}</span>
                         <input
                             id="onboarding-ward-name"
-                            aria-label="병동명"
+                            aria-label={t('page.onboardingWardCreate.identity.wardName')}
                             aria-invalid={hasWardNameError}
                             value={wardName}
-                            placeholder="병동명을 입력해 주세요"
+                            placeholder={t('page.onboardingWardCreate.identity.wardNamePlaceholder')}
                             maxLength={NAME_FIELD_MAX_LENGTH}
                             className={getInputClassName(hasWardNameError)}
                             onChange={(event) => onWardNameChange(event.target.value)}

@@ -1,6 +1,7 @@
 import {apiAiScheduleProvider} from './ai-schedule-api-provider';
 import {type TAiScheduleProvider, type TAiScheduleRequest, type TAiScheduleResult} from './ai-schedule-contract';
 import {mockAiScheduleProvider} from './ai-schedule-mock';
+import i18n from '@/i18n';
 
 type TProviderName = 'mock' | 'api';
 
@@ -15,12 +16,24 @@ function getAiScheduleProvider(): TAiScheduleProvider {
 function toErrorMessage(error: unknown): string {
     if (error instanceof Error && error.message) return error.message;
 
-    return 'AI 자동 채우기를 완료하지 못했어요.';
+    return i18n.t('page.makeShift.aiRefill.requestFailed');
+}
+
+function firstUnmetInstruction(response: Awaited<ReturnType<TAiScheduleProvider['generate']>>): string | null {
+    const message = response.unmetInstructions?.find((instruction) => instruction.trim().length > 0)?.trim();
+
+    return message ?? null;
 }
 
 export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TAiScheduleResult> {
     try {
         const response = await getAiScheduleProvider().generate(request);
+
+        if (response.changedCells.length === 0) {
+            const message = firstUnmetInstruction(response);
+
+            if (message) return {ok: false, message};
+        }
 
         return {ok: true, response, validation: response.validation};
     } catch (error) {

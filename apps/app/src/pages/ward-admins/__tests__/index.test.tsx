@@ -295,7 +295,7 @@ describe('WardAdminsPage', () => {
 
         renderPage(<WardAdminsPage />);
 
-        expect(await screen.findByText('현재 병동 소속 계정만 관리자를 추가할 수 있어요.')).toBeInTheDocument();
+        expect(await screen.findByText('병동 구성원으로 등록된 계정만 관리자로 추가할 수 있어요.')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '관리자 추가'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /삭제/})).not.toBeInTheDocument();
     });

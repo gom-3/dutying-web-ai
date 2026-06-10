@@ -1,4 +1,5 @@
 import {toBlob} from 'html-to-image';
+import i18n from '@/i18n';
 
 type TBuildShiftImageFileNameOptions = {
     year: number;
@@ -36,9 +37,11 @@ function normalizeTitleSegment(value?: string | null) {
 
 export function buildShiftImageFileName({year, month, teamName}: TBuildShiftImageFileNameOptions) {
     const safeTeamName = teamName ? sanitizeFileNameSegment(teamName) : '';
-    const baseName = `${year}년 ${month}월 근무표`;
+    const baseName = i18n.t('feature.shiftEditor.export.image.fileName', {year, month});
 
-    return safeTeamName ? `${safeTeamName} ${baseName}.png` : `${baseName}.png`;
+    return safeTeamName
+        ? i18n.t('feature.shiftEditor.export.image.teamFileName', {year, month, teamName: safeTeamName})
+        : baseName;
 }
 
 export function buildShiftImageTitle({
@@ -49,7 +52,9 @@ export function buildShiftImageTitle({
 }: Pick<TShiftToImageOptions, 'year' | 'month' | 'hospitalName' | 'wardName'>) {
     const wardLabel = [normalizeTitleSegment(hospitalName), normalizeTitleSegment(wardName)].filter(Boolean).join(' ');
 
-    return `${year}년 ${month}월${wardLabel ? ` ${wardLabel}` : ''} 근무표`;
+    return wardLabel
+        ? i18n.t('feature.shiftEditor.export.image.titleWithWard', {year, month, wardLabel})
+        : i18n.t('feature.shiftEditor.export.image.title', {year, month});
 }
 
 export function downloadBlobAsFile(blob: Blob, fileName: string) {

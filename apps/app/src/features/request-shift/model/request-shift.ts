@@ -1,5 +1,6 @@
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TWardShiftType} from '@/entities/ward';
+import i18n from '@/i18n';
 import {type TFocus, type TRequestShiftEditAvailability} from './types';
 
 type TBootstrapStatus = 'pending' | 'error' | 'success';
@@ -159,10 +160,14 @@ export const getRequestShiftChangeEventMessage = ({
 }) => {
     const changeLabel =
         prevShiftType === null
-            ? `추가 → ${nextShiftType?.shortName}`
+            ? i18n.t('page.request.changeEvent.add', {shiftType: nextShiftType?.shortName ?? ''})
             : nextShiftType === null
-              ? `${prevShiftType.shortName} → 삭제`
+              ? i18n.t('page.request.changeEvent.delete', {shiftType: prevShiftType.shortName})
               : `${prevShiftType.shortName} → ${nextShiftType.shortName}`;
 
-    return `${focus.shiftNurseName} / ${focus.day + 1}일 | ${changeLabel}`;
+    return i18n.t('page.request.changeEvent.message', {
+        nurseName: focus.shiftNurseName,
+        day: focus.day + 1,
+        changeLabel,
+    });
 };

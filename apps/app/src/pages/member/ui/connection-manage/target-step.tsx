@@ -4,6 +4,7 @@ import {useMemo, useState} from 'react';
 import {type TWaitingNurse} from '@/entities/nurse';
 import {type TShiftTeam} from '@/entities/ward';
 import {PersonIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TConnectMode} from '../../model/connection-manage';
 
 interface IConnectionManageTargetStepProps {
@@ -42,18 +43,20 @@ function ConnectionManageTargetStep({
     onSelectLinkNurse,
     onSelectShiftTeam,
 }: IConnectionManageTargetStepProps) {
+    const {t} = useTypedTranslation();
     const [searchKeyword, setSearchKeyword] = useState('');
     const [linkFilter, setLinkFilter] = useState<TLinkFilter>('all');
 
     const waitingName = normalizeText(currentWaitingNurse?.name);
     const waitingPhone = normalizePhone(currentWaitingNurse?.phoneNum);
     const teamTabs = shiftTeams?.map((team) => ({key: `team:${team.shiftTeamId}` as const, label: team.name, teamId: team.shiftTeamId})) ?? [];
+    const allFilterLabel = t('page.member.connectionManage.target.all');
     const modalWidth = useMemo(() => {
         if (connectMode !== 'link') {
             return 620;
         }
 
-        const filterLabels = ['전체', ...teamTabs.map((tab) => tab.label)];
+        const filterLabels = [allFilterLabel, ...teamTabs.map((tab) => tab.label)];
         const chipWidths = filterLabels.reduce((sum, label) => {
             const textWidth = Math.max(52, label.length * 9);
 
@@ -64,7 +67,7 @@ function ConnectionManageTargetStep({
         const calculated = chipWidths + gaps + horizontalPadding;
 
         return Math.min(900, Math.max(620, calculated));
-    }, [connectMode, teamTabs]);
+    }, [allFilterLabel, connectMode, teamTabs]);
     const allNurseRows = useMemo(
         () =>
             (shiftTeams ?? []).flatMap((shiftTeam) =>
@@ -129,8 +132,10 @@ function ConnectionManageTargetStep({
             <div className="flex items-center justify-between">
                 <h1 className="font-apple text-[22px] font-semibold text-sub-1">
                     {connectMode === 'link'
-                        ? '연결할 기존 간호사를 선택해 주세요'
-                        : `${currentWaitingNurse?.name ?? '간호사'}님이 소속될 팀을 선택해 주세요`}
+                        ? t('page.member.connectionManage.target.linkTitle')
+                        : t('page.member.connectionManage.target.addTitle', {
+                              nurseName: currentWaitingNurse?.name ?? t('page.member.common.nurseFallback'),
+                          })}
                 </h1>
             </div>
 
@@ -144,7 +149,7 @@ function ConnectionManageTargetStep({
                                 setSearchKeyword(event.target.value);
                                 setLinkFilter('all');
                             }}
-                            placeholder="이름 또는 전화번호로 검색"
+                            placeholder={t('page.member.connectionManage.target.searchPlaceholder')}
                             className="h-10 w-full rounded-[10px] border border-[#D9E0EC] bg-white pr-3 pl-9 font-apple text-[14px] text-sub-1 outline-none focus:border-main-2"
                         />
                     </div>
@@ -158,7 +163,7 @@ function ConnectionManageTargetStep({
                                 linkFilter === 'all' ? 'bg-main-1 text-white' : 'bg-[#EEF2F7] text-[#6E7A90]',
                             )}
                         >
-                            전체
+                            {allFilterLabel}
                         </button>
                         {teamTabs.map((teamTab) => (
                             <button
@@ -178,7 +183,9 @@ function ConnectionManageTargetStep({
                     <div className="mt-3 space-y-2">
                         {filteredRows.length === 0 ? (
                             <div className="rounded-[10px] bg-[#F7F9FC] px-3 py-6 text-center font-apple text-[14px] text-gray-3">
-                                {searchKeyword ? '검색어를 바꾸면 간호사를 찾을 수 있어요.' : '팀에 간호사를 추가하면 선택할 수 있어요.'}
+                                {searchKeyword
+                                    ? t('page.member.connectionManage.target.emptySearch')
+                                    : t('page.member.connectionManage.target.emptyTeam')}
                             </div>
                         ) : (
                             filteredRows.map((row) => (
@@ -247,7 +254,7 @@ function ConnectionManageTargetStep({
                     className="h-11 w-[34%] rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                     onClick={onBack}
                 >
-                    이전
+                    {t('page.member.common.previous')}
                 </button>
                 <button
                     type="button"
@@ -255,7 +262,7 @@ function ConnectionManageTargetStep({
                     className="h-11 w-[66%] rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2 disabled:opacity-40"
                     onClick={onNext}
                 >
-                    완료
+                    {t('page.member.common.complete')}
                 </button>
             </div>
         </div>

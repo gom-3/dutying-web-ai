@@ -14,6 +14,7 @@ import {
 } from 'react';
 import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     getAvailableOnboardingShiftColor,
     normalizeOnboardingShiftCode,
@@ -111,9 +112,10 @@ const FIXED_SHIFT_COLOR_BY_TERM = new Map([
     ['O', '#465B7A'],
 ]);
 const SYMBOL_OFF_SHIFT_TERMS = new Set(['/', '-']);
-const OFF_SHIFT_TERMS = new Set(['OFF', '오프', '휴', '휴무']);
+const OFF_SHIFT_TERMS = new Set(['OFF', '\uC624\uD504', '\uD734', '\uD734\uBB34']);
 const getMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
+const RECENT_SCHEDULE_LABEL = '\uCD5C\uADFC \uADFC\uBB34\uD45C';
 const getCurrentMonthOption = (): TMonthOption => {
     const today = new Date();
     const date = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -122,7 +124,7 @@ const getCurrentMonthOption = (): TMonthOption => {
 
     return {
         key: getMonthKey(year, month),
-        label: '최근 근무표',
+        label: RECENT_SCHEDULE_LABEL,
         year,
         month,
     };
@@ -134,12 +136,11 @@ const moveMonthOption = (monthOption: TMonthOption, monthDelta: number): TMonthO
 
     return {
         key: getMonthKey(year, month),
-        label: '최근 근무표',
+        label: RECENT_SCHEDULE_LABEL,
         year,
         month,
     };
 };
-const formatScheduleMonthLabel = (year: number, month: number) => `${year}년 ${month}월`;
 const createTabNurse = (teamId: string, id: string, name: string): TOnboardingNurseDraft => ({
     id,
     teamId,
@@ -278,6 +279,7 @@ function ScheduleInputStep({
     onDeleteTeam,
     isDeleteTeamDisabled,
 }: IScheduleInputStepProps) {
+    const {t} = useTypedTranslation();
     const rowIdRef = useRef(0);
     const calendarWrapRef = useRef<HTMLDivElement | null>(null);
     const inputRefByCell = useRef<Record<string, HTMLInputElement | null>>({});
@@ -822,7 +824,7 @@ function ScheduleInputStep({
                             decoding="async"
                             className="h-[17.6px] w-[17.6px] object-contain"
                         />
-                        근무표 파일 등록
+                        {t('page.onboardingWardCreate.schedule.uploadFile')}
                     </button>
                 </div>
                 <TeamTabs
@@ -851,7 +853,7 @@ function ScheduleInputStep({
                                         className={cn('make-shift-calendar__header-label--name font-semibold text-sub-2', NAME_TEXT_CLASS)}
                                     >
                                         <span className="flex min-w-0 items-center justify-center gap-1.5">
-                                            <span>간호사</span>
+                                            <span>{t('page.member.table.name')}</span>
                                             <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[clamp(11px,0.8cqw,13px)] leading-none font-semibold text-[#6B7280]">
                                                 <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
                                                 <span className="block leading-none tabular-nums">{activeTeamNurseCount}</span>
@@ -967,11 +969,12 @@ function ScheduleInputStep({
                                         <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
                                             <button
                                                 type="button"
-                                                aria-label="행 추가"
+                                                aria-label={t('page.onboardingWardCreate.schedule.addRow')}
                                                 className="mx-auto flex h-9 w-fit min-w-[104px] items-center justify-center gap-1.5 rounded-full bg-[#F2F4F6] px-4 font-apple text-[14px] font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB] focus-visible:outline-2 focus-visible:outline-main-1 active:bg-[#DDE3E8]"
                                                 onClick={addRow}
                                             >
-                                                <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />행 추가
+                                                <Plus className="h-3.5 w-3.5 text-[#8B95A1]" strokeWidth={2.8} />
+                                                {t('page.onboardingWardCreate.schedule.addRow')}
                                             </button>
                                         </div>
                                     </div>
@@ -985,7 +988,8 @@ function ScheduleInputStep({
                                 disabled={isDeleteTeamDisabled}
                                 onClick={onDeleteTeam}
                             >
-                                <Trash2 className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />팀 삭제하기
+                                <Trash2 className="h-4 w-4" strokeWidth={2.2} aria-hidden="true" />
+                                {t('page.onboardingWardCreate.deleteTeamAction')}
                             </button>
                         </div>
                     </>
@@ -994,16 +998,19 @@ function ScheduleInputStep({
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#7B8494] shadow-[0_6px_18px_rgba(49,55,74,0.06)]">
                             <UsersRound className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
                         </div>
-                        <p className="mt-4 font-apple text-[18px] font-semibold text-sub-1">팀을 먼저 만들어 주세요</p>
+                        <p className="mt-4 font-apple text-[18px] font-semibold text-sub-1">
+                            {t('page.onboardingWardCreate.schedule.emptyTeamsTitle')}
+                        </p>
                         <p className="mt-1 font-apple text-[14px] leading-5 text-gray-3">
-                            팀을 추가하면 간호사 이름과 근무표를 입력할 수 있어요.
+                            {t('page.onboardingWardCreate.schedule.emptyTeamsDescription')}
                         </p>
                         <button
                             type="button"
                             className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#3D4658] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#303848] focus-visible:outline-2 focus-visible:outline-main-1"
                             onClick={onAddTeam}
                         >
-                            <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />팀 추가하기
+                            <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />
+                            {t('page.onboardingWardCreate.teamTabs.addTeam')}
                         </button>
                     </div>
                 )}
@@ -1047,6 +1054,8 @@ function ScheduleMonthSelector({
     onNextMonth: () => void;
     isNextMonthDisabled: boolean;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex items-center">
             <div className="flex shrink-0 items-center gap-1">
@@ -1054,12 +1063,12 @@ function ScheduleMonthSelector({
                     type="button"
                     className="grid size-9 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1"
                     onClick={onPreviousMonth}
-                    aria-label="이전 달"
+                    aria-label={t('page.onboardingWardCreate.schedule.previousMonth')}
                 >
                     <ChevronLeft className="h-5 w-5" />
                 </button>
                 <div className="min-w-[112px] text-center font-apple text-[20px] font-semibold text-main-1">
-                    {formatScheduleMonthLabel(year, month)}
+                    {t('page.onboardingWardCreate.schedule.monthLabel', {year, month})}
                 </div>
                 <button
                     type="button"
@@ -1067,7 +1076,7 @@ function ScheduleMonthSelector({
                     onClick={onNextMonth}
                     disabled={isNextMonthDisabled}
                     aria-disabled={isNextMonthDisabled}
-                    aria-label="다음 달"
+                    aria-label={t('page.onboardingWardCreate.schedule.nextMonth')}
                 >
                     <ChevronRight className="h-5 w-5" />
                 </button>
@@ -1127,6 +1136,7 @@ function NameCell({
     onQueueCompositionMove,
     onFlushCompositionMove,
 }: TNameCellProps) {
+    const {t} = useTypedTranslation();
     const colIndex = NAME_COLUMN_INDEX;
     const cell = {row: rowIndex, col: colIndex};
     const isActive = isSelectionVisible && selection.end.row === rowIndex && selection.end.col === colIndex;
@@ -1174,8 +1184,8 @@ function NameCell({
                     inputRefByCell.current[`${rowIndex}:${colIndex}`] = element;
                 }}
                 value={row.name}
-                aria-label={`${rowIndex + 1}행 간호사 이름`}
-                placeholder="이름"
+                aria-label={t('page.onboardingWardCreate.schedule.nurseNameAria', {rowNumber: rowIndex + 1})}
+                placeholder={t('page.member.table.name')}
                 maxLength={MAX_CELL_LENGTH}
                 className={cn(
                     'h-full min-w-0 flex-1 border-0 bg-transparent px-1 text-center font-apple text-sub-1 outline-none placeholder:text-gray-4',
@@ -1205,11 +1215,14 @@ function RowDeleteCell({
     rowIndex: number;
     onDelete: (rowIndex: number) => void;
 }) {
+    const {t} = useTypedTranslation();
+    const rowLabel = row.name || t('page.onboardingWardCreate.schedule.rowFallback', {rowNumber: rowIndex + 1});
+
     return (
         <div className="flex min-h-0 min-w-0 items-center justify-center">
             <button
                 type="button"
-                aria-label={`${row.name || `${rowIndex + 1}행`} 삭제`}
+                aria-label={t('page.onboardingWardCreate.schedule.deleteRowAria', {rowLabel})}
                 className="flex size-5 items-center justify-center rounded-full bg-[#EEF2F6] text-[#7F899A] transition-colors hover:bg-[#FBE8EA] hover:text-[#D14343] focus-visible:outline-2 focus-visible:outline-main-1"
                 onMouseDown={(event) => {
                     event.preventDefault();
@@ -1262,6 +1275,7 @@ function ShiftCell({
     onQueueCompositionMove,
     onFlushCompositionMove,
 }: TShiftCellProps) {
+    const {t} = useTypedTranslation();
     const cell = {row: rowIndex, col: colIndex};
     const isActive = isSelectionVisible && selection.end.row === rowIndex && selection.end.col === colIndex;
     const isSelected = isSelectionVisible && isCellInRange(cell, selectedRange);
@@ -1325,7 +1339,7 @@ function ShiftCell({
                         inputRefByCell.current[`${rowIndex}:${colIndex}`] = element;
                     }}
                     value={value}
-                    aria-label={`${rowIndex + 1}행 ${day}일 근무`}
+                    aria-label={t('page.onboardingWardCreate.schedule.shiftCellAria', {rowNumber: rowIndex + 1, day})}
                     placeholder="-"
                     maxLength={MAX_CELL_LENGTH}
                     className={cn(SHIFT_INPUT_CLASS, isActive && 'outline outline-2 outline-main-1')}

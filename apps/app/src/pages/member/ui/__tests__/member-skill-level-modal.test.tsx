@@ -4,29 +4,15 @@ import {DEFAULT_SKILL_LEVEL_CONFIG} from '@/features/ward-skill/model/skill-leve
 import {render} from '@/shared/util/test-utils';
 import MemberSkillLevelModal from '../member-skill-level-modal';
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, number>) => {
-            if (key === 'page.member.skillLevelModal.levelCountOption') {
-                return `${values?.levelCount ?? ''}단계`;
-            }
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
 
-            const labels: Record<string, string> = {
-                'page.member.skillLevelModal.categoryLabel': '구분',
-                'page.member.skillLevelModal.close': '닫기',
-                'page.member.skillLevelModal.colorLabel': '색상',
-                'page.member.skillLevelModal.complete': '완료',
-                'page.member.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
-                'page.member.skillLevelModal.high': '높음',
-                'page.member.skillLevelModal.levelLabel': '숙련도',
-                'page.member.skillLevelModal.low': '낮음',
-                'page.member.skillLevelModal.title': '숙련도 단계 설정',
-            };
-
-            return labels[key] ?? key;
-        },
-    }),
-}));
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => i18n.t(key, values),
+        }),
+    };
+});
 
 const renderModal = (enabled: boolean) =>
     render(

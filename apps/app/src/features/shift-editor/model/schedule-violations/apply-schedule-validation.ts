@@ -8,13 +8,16 @@ import {useShiftEditorStore} from '../store';
 export async function fetchAndApplyScheduleValidation(
     params: TRefreshScheduleViolationsParams,
     apply: (validation: TValidationRes) => void,
+    onUnavailable?: () => void,
 ): Promise<boolean> {
     const requestedRevision = params.draftRevision;
     const result = await refreshScheduleViolations(params);
-
-    if (!result) return false;
-
     const currentRevision = useShiftEditorStore.getState().draftRevision;
+
+    if (!result) {
+        if (currentRevision === requestedRevision) onUnavailable?.();
+        return false;
+    }
 
     if (result.draftRevision !== requestedRevision || result.draftRevision !== currentRevision) {
         return false;

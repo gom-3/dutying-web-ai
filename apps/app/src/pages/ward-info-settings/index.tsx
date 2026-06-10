@@ -7,6 +7,7 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
@@ -18,28 +19,16 @@ type TWardInfoErrors = Partial<Record<TWardInfoField, string>>;
 type TWardInfoTouched = Partial<Record<TWardInfoField, boolean>>;
 
 const WARD_NAME_MAX_LENGTH = 20;
-const WARD_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]+$/u;
-const WARD_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣0-9\s]/gu;
+const WARD_NAME_ALLOWED_REGEXP = /^[A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9\s]+$/u;
+const WARD_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9\s]/gu;
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 
 const sanitizeWardNameInput = (rawValue: string) =>
     rawValue.replace(WARD_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, WARD_NAME_MAX_LENGTH);
-const getFieldLabel = (field: TWardInfoField) => (field === 'hospitalName' ? '병원명' : '병동명');
-const validateWardName = (field: TWardInfoField, value: string) => {
-    const label = getFieldLabel(field);
-    const trimmed = value.trim();
-
-    if (!trimmed) return `${label}을 입력해 주세요.`;
-
-    if (trimmed.length > WARD_NAME_MAX_LENGTH || !WARD_NAME_ALLOWED_REGEXP.test(trimmed)) {
-        return `${label}은 20자 이하, 한글/영문/숫자만 입력할 수 있어요.`;
-    }
-
-    return undefined;
-};
 
 function WardInfoSettingsPage() {
+    const {t} = useTypedTranslation();
     const {
         state: {wardId},
     } = useAuth();
@@ -60,6 +49,20 @@ function WardInfoSettingsPage() {
     const isDirty =
         draft.hospitalName.trim() !== originalDraft.hospitalName.trim() || draft.name.trim() !== originalDraft.name.trim();
     const isSaveDisabled = isSaving || !isDirty;
+    const getFieldLabel = (field: TWardInfoField) =>
+        field === 'hospitalName' ? t('page.wardInfoSettings.hospitalName') : t('page.wardInfoSettings.wardName');
+    const validateWardName = (field: TWardInfoField, value: string) => {
+        const label = getFieldLabel(field);
+        const trimmed = value.trim();
+
+        if (!trimmed) return t('page.wardInfoSettings.validation.required', {label});
+
+        if (trimmed.length > WARD_NAME_MAX_LENGTH || !WARD_NAME_ALLOWED_REGEXP.test(trimmed)) {
+            return t('page.wardInfoSettings.validation.invalid', {label, count: WARD_NAME_MAX_LENGTH});
+        }
+
+        return undefined;
+    };
     const setFieldError = (field: TWardInfoField, value: string) => {
         const message = validateWardName(field, value);
 
@@ -103,9 +106,9 @@ function WardInfoSettingsPage() {
             });
             queryClient.setQueryData(wardQueryKeys.id(wardId), nextWard);
             await queryClient.invalidateQueries({queryKey: wardQueryKeys.id(wardId)});
-            toast.success('병동 정보를 저장했어요.');
+            toast.success(t('page.wardInfoSettings.toast.saveSuccess'));
         } catch (error) {
-            showActionErrorFeedback(error, '병동 정보를 저장하지 못했어요.');
+            showActionErrorFeedback(error, t('page.wardInfoSettings.toast.saveFailed'));
         } finally {
             setIsSaving(false);
         }
@@ -126,8 +129,8 @@ function WardInfoSettingsPage() {
             <div className="mx-auto flex h-full w-full max-w-306 items-center justify-center px-8">
                 <PageState
                     tone="empty"
-                    title="병동 연결이 필요해요"
-                    description="병동에 입장하거나 새 병동을 만든 뒤 병동 설정을 수정할 수 있어요."
+                    title={t('page.wardInfoSettings.state.noWardTitle')}
+                    description={t('page.wardInfoSettings.state.noWardDescription')}
                     className="py-0"
                 />
             </div>
@@ -137,7 +140,7 @@ function WardInfoSettingsPage() {
     if (wardQuery.isPending) {
         return (
             <div className="mx-auto flex h-full w-full max-w-306 items-center justify-center px-8">
-                <PageState tone="loading" title="병동 정보를 불러오고 있어요" className="py-0" />
+                <PageState tone="loading" title={t('page.wardInfoSettings.state.loadingTitle')} className="py-0" />
             </div>
         );
     }
@@ -147,9 +150,9 @@ function WardInfoSettingsPage() {
             <div className="mx-auto flex h-full w-full max-w-306 items-center justify-center px-8">
                 <PageState
                     tone="error"
-                    title="병동 정보를 불러오지 못했어요"
-                    description="잠시 후 다시 시도해 주세요."
-                    action={{label: '다시 시도', onClick: () => void wardQuery.refetch()}}
+                    title={t('page.wardInfoSettings.state.loadFailedTitle')}
+                    description={t('page.wardInfoSettings.state.retryDescription')}
+                    action={{label: t('page.wardInfoSettings.state.retry'), onClick: () => void wardQuery.refetch()}}
                     className="py-0"
                 />
             </div>
@@ -160,7 +163,9 @@ function WardInfoSettingsPage() {
         <div className="mx-auto w-full max-w-[560px] px-4 py-8 md:px-0">
             <div className="mx-auto flex max-w-[480px] items-start justify-between gap-4">
                 <div>
-                    <h1 className="font-apple text-[32px] font-semibold tracking-normal text-sub-1">병동 설정</h1>
+                    <h1 className="font-apple text-[32px] font-semibold tracking-normal text-sub-1">
+                        {t('page.wardInfoSettings.title')}
+                    </h1>
                 </div>
             </div>
 
@@ -170,12 +175,12 @@ function WardInfoSettingsPage() {
                         <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-main-light text-main-1">
                             <Hospital className="h-5 w-5" />
                         </span>
-                        <h2 className="text-lg font-semibold text-sub-1">병동 정보</h2>
+                        <h2 className="text-lg font-semibold text-sub-1">{t('page.wardInfoSettings.sectionTitle')}</h2>
                     </div>
                     <div className="grid grid-cols-1 gap-3">
                         <div className="max-w-[440px]">
                             <label htmlFor="hospitalName" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
-                                병원명
+                                {t('page.wardInfoSettings.hospitalName')}
                             </label>
                             <input
                                 id="hospitalName"
@@ -184,7 +189,7 @@ function WardInfoSettingsPage() {
                                     fieldErrors.hospitalName && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
                                 )}
                                 maxLength={WARD_NAME_MAX_LENGTH}
-                                placeholder="병원명을 입력하세요"
+                                placeholder={t('page.wardInfoSettings.hospitalNamePlaceholder')}
                                 value={draft.hospitalName}
                                 onChange={(event) => handleChange('hospitalName', event.target.value)}
                                 onBlur={(event) => {
@@ -202,13 +207,13 @@ function WardInfoSettingsPage() {
                         </div>
                         <div className="max-w-[440px]">
                             <label htmlFor="wardName" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">
-                                병동명
+                                {t('page.wardInfoSettings.wardName')}
                             </label>
                             <input
                                 id="wardName"
                                 className={cn(FIELD_CLASS, fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
                                 maxLength={WARD_NAME_MAX_LENGTH}
-                                placeholder="병동명을 입력하세요"
+                                placeholder={t('page.wardInfoSettings.wardNamePlaceholder')}
                                 value={draft.name}
                                 onChange={(event) => handleChange('name', event.target.value)}
                                 onBlur={(event) => {
@@ -234,7 +239,7 @@ function WardInfoSettingsPage() {
 
             <div className="sticky bottom-3 mx-auto mt-4 flex max-w-[480px] items-center justify-end py-2">
                 <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className="h-11 rounded-[12px] px-5 text-sm">
-                    {isSaving ? '저장 중...' : '변경사항 저장'}
+                    {isSaving ? t('page.wardInfoSettings.saving') : t('page.wardInfoSettings.save')}
                 </Button>
             </div>
         </div>

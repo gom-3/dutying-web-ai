@@ -6,8 +6,10 @@ import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
 import requestEmptyShiftImage from '@/shared/assets/images/request-empty-shift.png';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import i18n from '@/i18n';
 import {getRequestFocus} from './utils';
 
 interface IRequestDutyRequestPanelProps {
@@ -62,7 +64,15 @@ const REQUEST_EMPTY_VISUAL = (
         decoding="async"
     />
 );
-const WEEKDAY_LABELS = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+const WEEKDAY_LABEL_KEYS = [
+    'page.request.panel.weekday.sunday',
+    'page.request.panel.weekday.monday',
+    'page.request.panel.weekday.tuesday',
+    'page.request.panel.weekday.wednesday',
+    'page.request.panel.weekday.thursday',
+    'page.request.panel.weekday.friday',
+    'page.request.panel.weekday.saturday',
+] as const;
 const getRequestTimestamp = (request: TDutyRequest) => {
     const timestamp = new Date(request.requestDate).getTime();
 
@@ -82,8 +92,8 @@ const sortByDateThenRequest = (current: TDutyRequest, next: TDutyRequest) => {
 
     return sortByRequestDate(current, next);
 };
-const sortByNurseName = (current: TRequestNurseGroup, next: TRequestNurseGroup) => {
-    const nameDiff = current.nurseName.localeCompare(next.nurseName, 'ko');
+const sortByNurseName = (current: TRequestNurseGroup, next: TRequestNurseGroup, locale: string) => {
+    const nameDiff = current.nurseName.localeCompare(next.nurseName, locale);
 
     if (nameDiff !== 0) return nameDiff;
 
@@ -119,27 +129,27 @@ const getDateMeta = ({year, month, date, days}: {year: number; month: number; da
 
     if (dayType === 'holiday') {
         return {
-            label: '공휴일',
+            labelKey: 'page.request.panel.dayType.holiday' as const,
             className: 'text-red',
         };
     }
 
     if (dayType === 'saturday') {
         return {
-            label: '토요일',
+            labelKey: 'page.request.panel.dayType.saturday' as const,
             className: 'text-blue',
         };
     }
 
     if (dayType === 'sunday') {
         return {
-            label: '일요일',
+            labelKey: 'page.request.panel.dayType.sunday' as const,
             className: 'text-red',
         };
     }
 
     return {
-        label: WEEKDAY_LABELS[new Date(year, month - 1, date).getDay()] ?? '',
+        labelKey: WEEKDAY_LABEL_KEYS[new Date(year, month - 1, date).getDay()] ?? 'page.request.panel.weekday.sunday',
         className: 'text-gray-4',
     };
 };
@@ -166,6 +176,7 @@ export default function RequestDutyRequestPanel({
     const [requestPageIndex, setRequestPageIndex] = useState(0);
     const [exitingPendingRequestById, setExitingPendingRequestById] = useState<Record<number, TDutyRequest>>({});
     const exitingPendingRequestTimerByIdRef = useRef(new Map<number, number>());
+    const sortLocale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const isRequestActionLocked = updatingRequestId !== null;
     const isBulkUpdating = updatingRequestId === -1;
     const displayedRequestList = canEdit ? dutyRequestList : dutyRequestList?.filter((request) => request.isAccepted === true);
@@ -237,8 +248,8 @@ export default function RequestDutyRequestPanel({
                 ...group,
                 requests: [...group.requests].sort(sortByDateThenRequest),
             }))
-            .sort(sortByNurseName);
-    }, [sortedRequestList]);
+            .sort((current, next) => sortByNurseName(current, next, sortLocale));
+    }, [sortLocale, sortedRequestList]);
     const flatRequestList = reviewMode === 'pending' ? pendingRequestList : sortedRequestList;
     const totalDisplayCount =
         reviewMode === 'date' ? requestDateGroups.length : reviewMode === 'nurse' ? requestNurseGroups.length : flatRequestList.length;
@@ -487,10 +498,10 @@ export default function RequestDutyRequestPanel({
                                             >
                                                 <div className="flex w-[56px] shrink-0 flex-col items-center justify-center text-center min-[1440px]:w-[62px]">
                                                     <span className="font-apple text-[11px] leading-none font-semibold text-gray-4">
-                                                        {month}월
+                                                        {t('page.request.panel.monthShortLabel', {month})}
                                                     </span>
                                                     <span className="mt-1 font-apple text-[17px] leading-none font-semibold tracking-[-0.03em] text-sub-1">
-                                                        {requestGroup.date}일
+                                                        {t('page.request.panel.dayShortLabel', {date: requestGroup.date})}
                                                     </span>
                                                     <span
                                                         className={twMerge(
@@ -498,7 +509,7 @@ export default function RequestDutyRequestPanel({
                                                             dateMeta.className,
                                                         )}
                                                     >
-                                                        {dateMeta.label}
+                                                        {t(dateMeta.labelKey)}
                                                     </span>
                                                 </div>
                                                 <div className="flex min-w-0 flex-1 flex-col gap-1.5">

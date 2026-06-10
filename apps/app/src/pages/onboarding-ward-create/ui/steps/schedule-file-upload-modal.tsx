@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import {Download, Loader2, UploadCloud, X} from 'lucide-react';
 import {type DragEvent, useEffect, useRef, useState} from 'react';
 import excelIcon from '@/shared/assets/images/excel.png';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
@@ -10,6 +11,19 @@ type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TUploadTargetMonth = {
     targetYear: number;
     targetMonth: number;
+};
+
+type TScheduleTemplateCopy = {
+    worksheetName: string;
+    nameHeader: string;
+    teamHeader: string;
+    sampleFirstName: string;
+    sampleFirstTeam: string;
+    sampleSecondName: string;
+    sampleSecondTeam: string;
+    guideSheetName: string;
+    guideRows: string[];
+    fileName: string;
 };
 
 interface IScheduleFileUploadModalProps {
@@ -34,16 +48,16 @@ const downloadExcelBuffer = (data: BlobPart, fileName: string) => {
     anchor.click();
     window.URL.revokeObjectURL(url);
 };
-const downloadScheduleTemplate = async (year: number, month: number) => {
+const downloadScheduleTemplate = async (year: number, month: number, copy: TScheduleTemplateCopy) => {
     const Excel = await import('exceljs');
     const workbook = new Excel.Workbook();
-    const worksheet = workbook.addWorksheet(`${year}년 ${month}월 근무표`);
+    const worksheet = workbook.addWorksheet(copy.worksheetName);
     const days = Array.from({length: getDaysInMonth(year, month)}, (_, index) => String(index + 1));
 
     worksheet.columns = [{key: 'name', width: 14}, {key: 'team', width: 12}, ...days.map((day) => ({key: day, width: 6}))];
-    worksheet.addRow(['간호사', '팀명', ...days]);
-    worksheet.addRow(['홍길동', 'A팀', 'D', 'E', 'N', 'O']);
-    worksheet.addRow(['김철수', 'B팀', 'E', 'N', 'O', 'D']);
+    worksheet.addRow([copy.nameHeader, copy.teamHeader, ...days]);
+    worksheet.addRow([copy.sampleFirstName, copy.sampleFirstTeam, 'D', 'E', 'N', 'O']);
+    worksheet.addRow([copy.sampleSecondName, copy.sampleSecondTeam, 'E', 'N', 'O', 'D']);
     worksheet.views = [{state: 'frozen', xSplit: 2, ySplit: 1}];
 
     const headerRow = worksheet.getRow(1);
@@ -66,20 +80,14 @@ const downloadScheduleTemplate = async (year: number, month: number) => {
         });
     });
 
-    const guideSheet = workbook.addWorksheet('작성 가이드');
+    const guideSheet = workbook.addWorksheet(copy.guideSheetName);
 
     guideSheet.columns = [{width: 56}];
-    guideSheet.addRows([
-        ['1. A열에는 간호사 이름을 입력해 주세요.'],
-        ['2. B열에는 간호사가 속한 팀명을 입력해 주세요.'],
-        ['3. C열부터는 1일부터 말일까지 날짜별 근무 유형을 입력해 주세요.'],
-        ['4. 근무 유형은 데이, 이브닝, 나이트, 오프처럼 병동에서 사용하는 이름으로 작성해 주세요.'],
-        ['5. 작성 후 이 화면의 등록 버튼으로 파일을 올려 주세요.'],
-    ]);
+    guideSheet.addRows(copy.guideRows.map((row) => [row]));
 
     const buffer = await workbook.xlsx.writeBuffer();
 
-    downloadExcelBuffer(buffer as BlobPart, `근무표 파일 템플릿_${year}년_${month}월.xlsx`);
+    downloadExcelBuffer(buffer as BlobPart, copy.fileName);
 };
 
 function ScheduleFileUploadModal({
@@ -91,6 +99,7 @@ function ScheduleFileUploadModal({
     onClose,
     onUpload,
 }: IScheduleFileUploadModalProps) {
+    const {t} = useTypedTranslation();
     const inputRef = useRef<HTMLInputElement | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -117,7 +126,30 @@ function ScheduleFileUploadModal({
         setIsDownloadingTemplate(true);
 
         try {
-            await downloadScheduleTemplate(targetYear, targetMonth);
+            await downloadScheduleTemplate(targetYear, targetMonth, {
+                worksheetName: t('page.onboardingWardCreate.scheduleUpload.template.worksheetName', {
+                    year: targetYear,
+                    month: targetMonth,
+                }),
+                nameHeader: t('page.onboardingWardCreate.scheduleUpload.template.nameHeader'),
+                teamHeader: t('page.onboardingWardCreate.scheduleUpload.template.teamHeader'),
+                sampleFirstName: t('page.onboardingWardCreate.scheduleUpload.template.sampleFirstName'),
+                sampleFirstTeam: t('page.onboardingWardCreate.scheduleUpload.template.sampleFirstTeam'),
+                sampleSecondName: t('page.onboardingWardCreate.scheduleUpload.template.sampleSecondName'),
+                sampleSecondTeam: t('page.onboardingWardCreate.scheduleUpload.template.sampleSecondTeam'),
+                guideSheetName: t('page.onboardingWardCreate.scheduleUpload.template.guideSheetName'),
+                guideRows: [
+                    t('page.onboardingWardCreate.scheduleUpload.template.guideRow1'),
+                    t('page.onboardingWardCreate.scheduleUpload.template.guideRow2'),
+                    t('page.onboardingWardCreate.scheduleUpload.template.guideRow3'),
+                    t('page.onboardingWardCreate.scheduleUpload.template.guideRow4'),
+                    t('page.onboardingWardCreate.scheduleUpload.template.guideRow5'),
+                ],
+                fileName: t('page.onboardingWardCreate.scheduleUpload.template.fileName', {
+                    year: targetYear,
+                    month: targetMonth,
+                }),
+            });
         } finally {
             setIsDownloadingTemplate(false);
         }
@@ -167,7 +199,7 @@ function ScheduleFileUploadModal({
                             <button
                                 type="button"
                                 className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6 disabled:opacity-50"
-                                aria-label="닫기"
+                                aria-label={t('page.member.common.close')}
                                 disabled={isUploading}
                             >
                                 <X className="h-4 w-4" strokeWidth={2.2} />
@@ -176,10 +208,10 @@ function ScheduleFileUploadModal({
                     </div>
 
                     <Dialog.Title className="mt-4 font-apple text-[22px] leading-7 font-semibold text-sub-1">
-                        {targetMonth}월 근무표 파일 등록
+                        {t('page.onboardingWardCreate.scheduleUpload.title', {month: targetMonth})}
                     </Dialog.Title>
                     <Dialog.Description className="mt-2 font-apple text-[15px] leading-6 text-gray-3">
-                        &quot;근무표 파일 템플릿&quot; 양식을 다운로드하여 작성하신 후 &quot;등록&quot;을 클릭해주세요
+                        {t('page.onboardingWardCreate.scheduleUpload.description')}
                     </Dialog.Description>
 
                     <button
@@ -194,7 +226,7 @@ function ScheduleFileUploadModal({
                             ) : (
                                 <Download className="h-4 w-4" strokeWidth={2.4} aria-hidden="true" />
                             )}
-                            근무표 파일 템플릿 다운로드
+                            {t('page.onboardingWardCreate.scheduleUpload.downloadTemplate')}
                         </span>
                         <span className="font-poppins text-[12px] font-semibold text-[#4F9F6D]">.xlsx</span>
                     </button>
@@ -235,9 +267,11 @@ function ScheduleFileUploadModal({
                             <UploadCloud className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
                         </span>
                         <span className="mt-4 font-apple text-[16px] font-semibold text-sub-1">
-                            {selectedFile ? selectedFile.name : '엑셀 파일을 끌어오거나 클릭해 업로드'}
+                            {selectedFile ? selectedFile.name : t('page.onboardingWardCreate.scheduleUpload.dropzoneTitle')}
                         </span>
-                        <span className="mt-1 font-apple text-[13px] text-gray-3">.xlsx, .xls 파일을 등록할 수 있어요</span>
+                        <span className="mt-1 font-apple text-[13px] text-gray-3">
+                            {t('page.onboardingWardCreate.scheduleUpload.fileSupport')}
+                        </span>
                     </label>
 
                     {displayedUploadError ? (
@@ -254,7 +288,7 @@ function ScheduleFileUploadModal({
                             disabled={isUploading}
                             onClick={onClose}
                         >
-                            취소
+                            {t('shared.confirmActionDialog.cancel')}
                         </Button>
                         <Button
                             type="button"
@@ -263,7 +297,9 @@ function ScheduleFileUploadModal({
                             onClick={() => void handleSubmit()}
                         >
                             {isUploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-                            {isUploading ? '등록 중' : '등록'}
+                            {isUploading
+                                ? t('page.onboardingWardCreate.scheduleUpload.submitting')
+                                : t('page.onboardingWardCreate.scheduleUpload.submit')}
                         </Button>
                     </div>
                 </Dialog.Content>

@@ -1,5 +1,6 @@
 import {fireEvent} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {render, screen} from '@/shared/util/test-utils';
 import {ProfileImage} from '..';
 
@@ -10,7 +11,8 @@ vi.mock('@/shared/config/runtime', () => ({
 }));
 
 describe('ProfileImage', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         vi.clearAllMocks();
     });
 

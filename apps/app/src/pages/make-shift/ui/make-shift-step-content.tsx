@@ -22,19 +22,24 @@ type TMakeShiftStepContentProps = {
 };
 
 function ImportantIntroBadge() {
+    const {t} = useTypedTranslation();
+
     return (
         <span className="mx-1 inline-flex h-6 translate-y-[-1px] items-center justify-center rounded-full bg-[#FFF3D6] px-2 font-apple text-[12px] font-bold text-[#B86E00] ring-1 ring-[#FFD88A]">
-            중요
+            {t('page.makeShift.stepContent.importantBadge')}
         </span>
     );
 }
 
 function StepIntroDescription({currentStep, description}: {currentStep: TMakeShiftStep; description: string}) {
+    const {t} = useTypedTranslation();
+
     if (currentStep === 2) {
         return (
             <div className={MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS}>
                 <p>
-                    꼭 지켜야 할 조건은 <ImportantIntroBadge /> 버튼을 켜 주세요.
+                    {t('page.makeShift.stepContent.importantPrefix')} <ImportantIntroBadge />{' '}
+                    {t('page.makeShift.stepContent.importantSuffix')}
                 </p>
             </div>
         );

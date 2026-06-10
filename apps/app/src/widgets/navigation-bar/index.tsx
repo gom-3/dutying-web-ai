@@ -34,7 +34,7 @@ const NavigationBar = () => {
                 <div className={cn('flex min-h-11 items-center', isFold ? 'flex-col gap-2' : 'justify-between')}>
                     <Link
                         to={ROUTE.ROOT}
-                        aria-label="랜딩 페이지로 이동"
+                        aria-label={t('page.navigationBar.landingAria')}
                         className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                         {isFold ? (

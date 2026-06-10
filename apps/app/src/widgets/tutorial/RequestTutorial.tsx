@@ -4,10 +4,12 @@ import useRequestShift from '@/features/request-shift';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
 import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';
 
 const RequestTutorial = () => {
+    const {t} = useTypedTranslation();
     const showRequestTutorial = useTutorialStore((state) => state.showRequestTutorial);
     const {setRequestTutorial} = useTutorialUseCase();
     const {
@@ -40,16 +42,16 @@ const RequestTutorial = () => {
             steps: [
                 {
                     highlightIds: ['nurse_request_list'],
-                    title: '오른쪽에서 신청근무를 확인해요',
-                    info: '간호사들이 신청한 근무를 여기서 한 번에 볼 수 있어요.',
+                    title: t('widget.requestTutorial.listTitle'),
+                    info: t('widget.requestTutorial.listInfo'),
                     infoBoxAlignment: 'right',
                 },
                 ...(shouldShowPendingToggleStep
                     ? [
                           {
                               highlightIds: ['nurse_request_pending_toggle'],
-                              title: '대기 신청만 모아 볼 수 있어요',
-                              info: '남은 대기를 여기서 한 번에 볼 수 있어요.',
+                              title: t('widget.requestTutorial.pendingTitle'),
+                              info: t('widget.requestTutorial.pendingInfo'),
                               infoBoxAlignment: 'right' as const,
                           },
                       ]
@@ -59,7 +61,7 @@ const RequestTutorial = () => {
             infoBoxMargin: 20,
             scrollLock: true,
         }),
-        [shouldShowPendingToggleStep],
+        [shouldShowPendingToggleStep, t],
     );
 
     return <TutorialPortal open={showRequestTutorial && canStartRequestTutorial} config={config} closeCallback={onTutorialClose} />;

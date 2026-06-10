@@ -4,7 +4,6 @@ import type {TOnboardingWardDraft} from './draft';
 
 export type TOnboardingWardCreateSubmission = {
     mode: 'created';
-    successMessage: string;
     ward?: TWardResponse;
 };
 
@@ -40,7 +39,6 @@ export const createOnboardingWardCreateExecutor =
 
         return {
             mode: 'created',
-            successMessage: '병동 생성을 완료했어요.',
             ward: ward ?? undefined,
         };
     };

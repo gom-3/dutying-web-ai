@@ -4,11 +4,16 @@ import {events, sendEvent} from '@/analytics';
 import {type TNurse} from '@/entities/nurse';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import {CheckedIcon, FoldIcon, UncheckedIcon2} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {getNurseDrawerFeedback, hasNurseChanges} from '../model/nurse-edit';
 
+const GENDER_MALE = '\uB0A8';
+const GENDER_FEMALE = '\uC5EC';
+
 function NurseEditDrawer() {
+    const {t} = useTypedTranslation();
     const {
         state: {shiftTeams, selectedNurse, selectedNurseDrawerMode, nurseSaveStatus, isDeletingNurse},
         actions: {selectNurse, updateNurse, deleteNurse, setNurseDraftDirty},
@@ -90,7 +95,7 @@ function NurseEditDrawer() {
                     onClick={() => {
                         if (isBusy) return;
 
-                        handleChange('gender', writeNurse?.gender === '남' ? '여' : '남');
+                        handleChange('gender', writeNurse?.gender === GENDER_MALE ? GENDER_FEMALE : GENDER_MALE);
                         sendEvent(events.memberPage.editNurseDrawer.changeNurseGender);
                     }}
                 >
@@ -99,14 +104,14 @@ function NurseEditDrawer() {
             </div>
             <div className="h-[.3125rem] w-full bg-sub-5" />
             <div className={`mx-10 mt-5 rounded-[.625rem] border px-4 py-3 ${feedback.toneClassName}`} aria-live="polite">
-                <p className="font-apple text-[.9375rem] font-semibold">{feedback.title}</p>
-                <p className="mt-1 font-apple text-[.8125rem]">{feedback.description}</p>
+                <p className="font-apple text-[.9375rem] font-semibold">{t(feedback.titleKey)}</p>
+                <p className="mt-1 font-apple text-[.8125rem]">{t(feedback.descriptionKey)}</p>
             </div>
             <div className="flex h-29 w-full flex-col items-stretch justify-between border-b-[.0313rem] border-sub-4 px-10 pt-[.625rem] pb-7.5">
                 <div className="flex items-center justify-between">
-                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">입사 년도</p>
+                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">{t('page.member.detail.employmentDate')}</p>
                     <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">
-                        * 해당 병원에 입사한 년도를 작성해 주세요.
+                        {t('page.member.detail.employmentDateHint')}
                     </p>
                 </div>
                 <TextField
@@ -123,8 +128,8 @@ function NurseEditDrawer() {
             </div>
             <div className="flex h-29 w-full flex-col items-stretch justify-between border-b-[.0313rem] border-sub-4 px-10 pt-[.625rem] pb-7.5">
                 <div className="flex items-center justify-between">
-                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">전화 번호</p>
-                    <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">* 비상 연락 망</p>
+                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">{t('page.member.detail.phone')}</p>
+                    <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">{t('page.member.detail.phoneHint')}</p>
                 </div>
                 <TextField
                     type="tel"
@@ -139,8 +144,8 @@ function NurseEditDrawer() {
             </div>
             <div className="flex h-29 w-full flex-col items-stretch justify-between border-b-[.0313rem] border-sub-4 px-10 pt-[.625rem] pb-7.5">
                 <div className="flex items-center justify-between">
-                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">가능 근무</p>
-                    <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">* 가능 근무를 모두 선택해 주세요.</p>
+                    <p className="shrink-0 font-apple text-base font-medium text-sub-2">{t('page.member.detail.shiftTypes')}</p>
+                    <p className="ml-8 truncate font-apple text-[.625rem] font-light text-sub-3">{t('page.member.detail.shiftTypesHint')}</p>
                 </div>
                 <div className="flex gap-5.5">
                     {writeNurse?.nurseShiftTypes.slice(0, 3).map(({nurseShiftTypeId, isPossible, name}) => (
@@ -165,10 +170,10 @@ function NurseEditDrawer() {
                 </div>
             </div>
             <div className="flex h-10 w-full items-center border-b-[.0313rem] border-sub-4 bg-main-bg px-10 py-[.625rem]">
-                <p className="font-apple text-base font-medium text-sub-2">근무자</p>
+                <p className="font-apple text-base font-medium text-sub-2">{t('page.member.detail.isWorker')}</p>
                 {writeNurse?.isWorker ? (
                     <div className="ml-auto flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.75rem] text-sub-3">해당 됨</p>
+                        <p className="font-apple text-[.75rem] text-sub-3">{t('page.member.detail.isWorkerOn')}</p>
                         <CheckedIcon
                             className={`h-5 w-5 ${isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             fill="#B08BFF"
@@ -182,7 +187,7 @@ function NurseEditDrawer() {
                     </div>
                 ) : (
                     <div className="ml-auto flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.75rem] text-sub-3">해당 안 됨</p>
+                        <p className="font-apple text-[.75rem] text-sub-3">{t('page.member.detail.isWorkerOff')}</p>
                         <UncheckedIcon2
                             className={`h-5 w-5 ${isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             onClick={() => {
@@ -196,10 +201,10 @@ function NurseEditDrawer() {
                 )}
             </div>
             <div className="mt-[.3125rem] flex h-10 w-full items-center border-y-[.0313rem] border-sub-4 bg-main-bg px-10 py-[.625rem]">
-                <p className="font-apple text-base font-medium text-sub-2">근무표 작성 가능자</p>
+                <p className="font-apple text-base font-medium text-sub-2">{t('page.member.detail.isDutyManager')}</p>
                 {writeNurse?.isDutyManager ? (
                     <div className="ml-auto flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.75rem] text-sub-3">해당됨</p>
+                        <p className="font-apple text-[.75rem] text-sub-3">{t('page.member.detail.canMakeDuty')}</p>
                         <CheckedIcon
                             className={`h-5 w-5 ${isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             fill="#B08BFF"
@@ -213,7 +218,7 @@ function NurseEditDrawer() {
                     </div>
                 ) : (
                     <div className="ml-auto flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.75rem] text-sub-3">해당 안 됨</p>
+                        <p className="font-apple text-[.75rem] text-sub-3">{t('page.member.detail.cannotMakeDuty')}</p>
                         <UncheckedIcon2
                             className={`h-5 w-5 ${isBusy ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
                             onClick={() => {
@@ -227,7 +232,7 @@ function NurseEditDrawer() {
                 )}
             </div>
 
-            <p className="mt-7.5 ml-10 font-apple text-base font-medium text-sub-2.5">메모</p>
+            <p className="mt-7.5 ml-10 font-apple text-base font-medium text-sub-2.5">{t('page.member.detail.memo')}</p>
             <textarea
                 value={writeNurse?.memo}
                 disabled={isBusy}
@@ -244,7 +249,9 @@ function NurseEditDrawer() {
                     disabled={isBusy}
                     onClick={() => {
                         if (!selectedNurse || !shiftTeams) return;
-                        const shouldDelete = window.confirm(`${selectedNurse.name} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요.`);
+                        const shouldDelete = window.confirm(
+                            t('page.member.drawer.deleteConfirm', {nurseName: selectedNurse.name || t('page.member.common.selectedNurse')}),
+                        );
 
                         if (!shouldDelete) return;
 
@@ -254,7 +261,7 @@ function NurseEditDrawer() {
                         );
                     }}
                 >
-                    {isDeletingNurse ? '삭제 중...' : '간호사 삭제'}
+                    {isDeletingNurse ? t('page.member.detail.deleting') : t('page.member.detail.delete')}
                 </button>
                 <Button
                     type="button"
@@ -264,7 +271,7 @@ function NurseEditDrawer() {
                     disabled={nurseSaveStatus === 'saving'}
                     onClick={closeDrawer}
                 >
-                    닫기
+                    {t('page.member.detail.cancel')}
                 </Button>
                 <Button
                     id="nurse_edit_drawer"
@@ -273,7 +280,7 @@ function NurseEditDrawer() {
                     disabled={!isDirty || nurseSaveStatus === 'saving'}
                     onClick={() => save()}
                 >
-                    {nurseSaveStatus === 'saving' ? '저장 중...' : '저장'}
+                    {nurseSaveStatus === 'saving' ? t('page.member.detail.saving') : t('page.member.detail.save')}
                 </Button>
             </div>
         </div>

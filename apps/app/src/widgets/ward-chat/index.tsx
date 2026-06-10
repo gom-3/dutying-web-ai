@@ -5,10 +5,13 @@ import {ChevronUp, Loader2, MessageCircle, RefreshCcw, SendHorizontal, Users, X}
 import type {AnimationItem} from 'lottie-web';
 import {Fragment, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
+import i18n from '@/i18n';
 import useAuth from '@/features/auth';
 import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
 import {WardAPI} from '@/shared/api';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Button} from '@/shared/ui/primitives/button';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 
@@ -18,15 +21,6 @@ const UNREAD_REFETCH_INTERVAL_MS = 15000;
 const WARD_CHAT_ICON_REST_FRAME = 40;
 const WARD_CHAT_ICON_HOVER_SEGMENT: [number, number] = [40, 80];
 const WARD_CHAT_ICON_HOVER_SPEED = 0.45;
-const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-});
-const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
-    month: 'long',
-    day: 'numeric',
-    weekday: 'short',
-});
 const wardChatQueryKeys = {
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
     unread: (wardId: number) => ['ward-chat', 'unread', wardId] as const,
@@ -36,20 +30,20 @@ function createClientMessageId() {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function getMessageTime(value: string) {
+function getMessageTime(value: string, formatter: Intl.DateTimeFormat) {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) return '';
 
-    return timeFormatter.format(date);
+    return formatter.format(date);
 }
 
-function getDateLabel(value: string) {
+function getDateLabel(value: string, formatter: Intl.DateTimeFormat) {
     const date = new Date(value);
 
     if (Number.isNaN(date.getTime())) return '';
 
-    return dateFormatter.format(date);
+    return formatter.format(date);
 }
 
 function compareMessages(a: TWardChatMessageResponse, b: TWardChatMessageResponse) {
@@ -82,8 +76,17 @@ function getSenderInitial(senderName: string) {
     return senderName.trim().slice(0, 1) || '?';
 }
 
-function ChatMessage({message, isMine}: {message: TWardChatMessageResponse; isMine: boolean}) {
-    const text = message.isDeleted ? '삭제된 메시지입니다' : message.text;
+function ChatMessage({
+    message,
+    isMine,
+    formatTime,
+}: {
+    message: TWardChatMessageResponse;
+    isMine: boolean;
+    formatTime: (value: string) => string;
+}) {
+    const {t} = useTypedTranslation();
+    const text = message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text;
 
     return (
         <div className={cn('flex w-full gap-2.5', isMine ? 'justify-end' : 'justify-start')}>
@@ -107,7 +110,7 @@ function ChatMessage({message, isMine}: {message: TWardChatMessageResponse; isMi
                     >
                         {text}
                     </p>
-                    <span className="mb-1 shrink-0 text-[11px] font-medium text-gray-4">{getMessageTime(message.sentAt)}</span>
+                    <span className="mb-1 shrink-0 text-[11px] font-medium text-gray-4">{formatTime(message.sentAt)}</span>
                 </div>
             </div>
         </div>
@@ -259,6 +262,7 @@ function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
 }
 
 export default function WardChatWidget() {
+    const {t} = useTypedTranslation();
     const {
         state: {accountId, isDemoExpired, wardId},
     } = useAuth();
@@ -318,12 +322,32 @@ export default function WardChatWidget() {
             void queryClient.invalidateQueries({queryKey: wardChatQueryKeys.messages(effectiveWardId)});
         },
         onError: () => {
-            toast.error('메시지를 보내지 못했어요.');
+            toast.error(t('widget.wardChat.toast.sendFailed'));
         },
     });
     const unreadCount = unreadQuery.data?.unreadCount ?? messagesQuery.data?.unreadCount ?? 0;
     const hasOlderMessages = typeof nextCursorMessageId === 'number' && nextCursorMessageId > 0;
     const newestMessageId = useMemo(() => getNewestMessageId(messages), [messages]);
+    const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const timeFormatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(locale, {
+                hour: '2-digit',
+                minute: '2-digit',
+            }),
+        [locale],
+    );
+    const dateFormatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(locale, {
+                month: 'long',
+                day: 'numeric',
+                weekday: 'short',
+            }),
+        [locale],
+    );
+    const formatMessageTime = (value: string) => getMessageTime(value, timeFormatter);
+    const formatDateLabel = (value: string) => getDateLabel(value, dateFormatter);
 
     useEffect(() => {
         setMessages([]);
@@ -402,7 +426,7 @@ export default function WardChatWidget() {
         <div className="fixed right-4 bottom-4 z-[1200] font-pretendard sm:right-6 sm:bottom-6">
             {isOpen ? (
                 <section
-                    aria-label="병동톡"
+                    aria-label={t('widget.wardChat.title')}
                     className="flex h-[min(640px,calc(100vh-32px))] w-[min(390px,calc(100vw-32px))] animate-in flex-col overflow-hidden rounded-[24px] border border-[#E7EAF0] bg-[#F8FAFC] shadow-[0_24px_70px_rgba(21,24,34,0.22)] duration-200 zoom-in-95 fade-in slide-in-from-bottom-4"
                 >
                     <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#EDF0F4] bg-white px-5 py-4">
@@ -411,17 +435,17 @@ export default function WardChatWidget() {
                                 <span className="flex size-8 items-center justify-center rounded-full bg-main-light text-main-1">
                                     <MessageCircle className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
                                 </span>
-                                <h2 className="truncate text-[17px] font-bold text-[#17171C]">병동톡</h2>
+                                <h2 className="truncate text-[17px] font-bold text-[#17171C]">{t('widget.wardChat.title')}</h2>
                             </div>
                             <div className="mt-1.5 flex items-center gap-1.5 text-[12px] font-semibold text-gray-3">
                                 <Users className="size-3.5" strokeWidth={2} aria-hidden="true" />
-                                <span>병동 인원 채팅</span>
+                                <span>{t('widget.wardChat.subtitle')}</span>
                             </div>
                         </div>
                         <button
                             type="button"
                             className="flex size-9 shrink-0 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
-                            aria-label="병동톡 닫기"
+                            aria-label={t('widget.wardChat.closeAria')}
                             onClick={() => setIsOpen(false)}
                         >
                             <X className="size-5" strokeWidth={2.2} aria-hidden="true" />
@@ -436,7 +460,7 @@ export default function WardChatWidget() {
                                 <div className="flex size-12 items-center justify-center rounded-full bg-[#EEF3F7] text-gray-3">
                                     <RefreshCcw className="size-5" strokeWidth={2} aria-hidden="true" />
                                 </div>
-                                <p className="mt-4 text-[15px] font-bold text-sub-1">대화를 불러오지 못했어요.</p>
+                                <p className="mt-4 text-[15px] font-bold text-sub-1">{t('widget.wardChat.state.loadFailed')}</p>
                                 <Button
                                     type="button"
                                     variant="soft"
@@ -444,7 +468,7 @@ export default function WardChatWidget() {
                                     className="mt-4 h-9 rounded-full px-4"
                                     onClick={() => void messagesQuery.refetch()}
                                 >
-                                    다시 시도
+                                    {t('widget.wardChat.state.retry')}
                                 </Button>
                             </div>
                         ) : null}
@@ -454,8 +478,8 @@ export default function WardChatWidget() {
                                 <div className="flex size-14 items-center justify-center rounded-full bg-white text-main-1 shadow-sm">
                                     <MessageCircle className="size-6" strokeWidth={2.1} aria-hidden="true" />
                                 </div>
-                                <p className="mt-4 text-[15px] font-bold text-sub-1">아직 대화가 없어요.</p>
-                                <p className="mt-1 text-[13px] font-medium text-gray-3">첫 메시지를 남겨보세요.</p>
+                                <p className="mt-4 text-[15px] font-bold text-sub-1">{t('widget.wardChat.state.emptyTitle')}</p>
+                                <p className="mt-1 text-[13px] font-medium text-gray-3">{t('widget.wardChat.state.emptyDescription')}</p>
                             </div>
                         ) : null}
 
@@ -474,18 +498,18 @@ export default function WardChatWidget() {
                                             ) : (
                                                 <ChevronUp className="size-3.5" strokeWidth={2.4} aria-hidden="true" />
                                             )}
-                                            이전 메시지
+                                            {t('widget.wardChat.loadOlder')}
                                         </button>
                                     ) : (
                                         <span className="rounded-full bg-[#EEF3F7] px-3 py-1.5 text-[11px] font-semibold text-gray-4">
-                                            대화의 시작
+                                            {t('widget.wardChat.conversationStart')}
                                         </span>
                                     )}
                                 </div>
 
                                 {messages.map((message, index) => {
-                                    const dateLabel = getDateLabel(message.sentAt);
-                                    const prevDateLabel = index > 0 ? getDateLabel(messages[index - 1].sentAt) : '';
+                                    const dateLabel = formatDateLabel(message.sentAt);
+                                    const prevDateLabel = index > 0 ? formatDateLabel(messages[index - 1].sentAt) : '';
                                     const showDateLabel = dateLabel && dateLabel !== prevDateLabel;
 
                                     return (
@@ -497,7 +521,11 @@ export default function WardChatWidget() {
                                                     </span>
                                                 </div>
                                             ) : null}
-                                            <ChatMessage message={message} isMine={message.senderAccountId === accountId} />
+                                            <ChatMessage
+                                                message={message}
+                                                isMine={message.senderAccountId === accountId}
+                                                formatTime={formatMessageTime}
+                                            />
                                         </Fragment>
                                     );
                                 })}
@@ -512,14 +540,14 @@ export default function WardChatWidget() {
                                 ref={textareaRef}
                                 value={draft}
                                 rows={1}
-                                placeholder="메시지 입력"
+                                placeholder={t('widget.wardChat.inputPlaceholder')}
                                 className="max-h-28 min-h-9 flex-1 resize-none bg-transparent py-2 text-[14px] leading-5 text-sub-1 placeholder:text-gray-4 focus:outline-none"
                                 onChange={(event) => setDraft(event.target.value)}
                                 onKeyDown={handleTextareaKeyDown}
                             />
                             <button
                                 type="submit"
-                                aria-label="메시지 보내기"
+                                aria-label={t('widget.wardChat.sendAria')}
                                 disabled={!draft.trim() || sendMutation.isPending}
                                 className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-main-1 text-white transition-colors hover:bg-[#5631E7] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none disabled:bg-gray-6 disabled:text-gray-4"
                             >
@@ -539,7 +567,9 @@ export default function WardChatWidget() {
                             <button
                                 type="button"
                                 aria-label={
-                                    unreadCount > 0 ? `병동톡 열기, 읽지 않은 메시지 ${getUnreadLabel(unreadCount)}개` : '병동톡 열기'
+                                    unreadCount > 0
+                                        ? t('widget.wardChat.openWithUnreadAria', {count: getUnreadLabel(unreadCount)})
+                                        : t('widget.wardChat.openAria')
                                 }
                                 className="group relative flex size-[60px] items-center justify-center rounded-full bg-main-1 text-white shadow-[0_16px_32px_rgba(102,61,250,0.28)] transition-transform duration-150 hover:scale-[1.03] hover:bg-[#5631E7] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                                 onPointerEnter={() => setIsFloatingButtonHovered(true)}
@@ -558,7 +588,7 @@ export default function WardChatWidget() {
                             </button>
                         </TooltipTrigger>
                         <TooltipContent side="left" className="rounded-full bg-[#1C2331] px-3 py-1.5 text-[12px] font-semibold text-white">
-                            병동톡
+                            {t('widget.wardChat.title')}
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>

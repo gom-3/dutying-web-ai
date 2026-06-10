@@ -1,5 +1,6 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import type {TDutyRequest, TRequestShift} from '@/entities/shift';
+import i18n from '@/i18n';
 import {
     createInitialFoldedLevels,
     createWardShiftTypeMap,
@@ -92,6 +93,10 @@ const dutyRequestFixture: TDutyRequest[] = [
 
 describe('useRequestShift model', () => {
     const now = new Date('2026-03-21T09:00:00+09:00');
+
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
 
     it('bootstrap 상태를 인증/병동 상태에 따라 계산한다', () => {
         expect(

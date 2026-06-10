@@ -2,12 +2,14 @@ import {ArrowLeft, Building2, ChevronRight, DoorOpen} from 'lucide-react';
 import {useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 interface ISelectEnterOrCreateProps {
     onBack?: () => void;
 }
 
 function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe},
     } = useAuth();
@@ -22,15 +24,17 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                     onClick={onBack}
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    계정 정보로
+                    {t('page.register.select.back')}
                 </button>
             ) : null}
 
             <div>
                 <h1 className="text-[32px] font-semibold text-sub-1">
-                    {accountMe?.name ? `${accountMe.name}님,` : '이제'} 병동을 연결해요
+                    {accountMe?.name
+                        ? t('page.register.select.titleWithName', {name: accountMe.name})
+                        : t('page.register.select.titleWithoutName')}
                 </h1>
-                <p className="mt-2 text-sm text-gray-3">처음 시작한다면 새 병동을 만들고, 초대 코드를 받았다면 기존 병동에 들어가요.</p>
+                <p className="mt-2 text-sm text-gray-3">{t('page.register.select.description')}</p>
             </div>
 
             <div className="mt-6 space-y-3">
@@ -43,8 +47,8 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                         <Building2 className="h-6 w-6" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[22px] font-semibold text-sub-1">새 병동 만들기</span>
-                        <span className="mt-2 block text-sm leading-6 text-gray-3">병원명, 병동명, 팀 정보를 차례로 설정해요.</span>
+                        <span className="block text-[22px] leading-tight font-semibold text-sub-1">{t('page.register.select.createTitle')}</span>
+                        <span className="mt-2 block text-sm leading-6 text-gray-3">{t('page.register.select.createDescription')}</span>
                     </span>
                     <ChevronRight className="h-5 w-5 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />
                 </button>
@@ -58,8 +62,8 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                         <DoorOpen className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-semibold text-sub-1">기존 병동 입장하기</span>
-                        <span className="mt-1 block text-sm leading-6 text-gray-3">관리자가 준 6자리 코드가 있을 때 선택해요.</span>
+                        <span className="block text-[17px] leading-tight font-semibold text-sub-1">{t('page.register.select.enterTitle')}</span>
+                        <span className="mt-1 block text-sm leading-6 text-gray-3">{t('page.register.select.enterDescription')}</span>
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-gray-4 transition-transform group-hover:translate-x-0.5" />
                 </button>

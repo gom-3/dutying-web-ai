@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TShift, type TWardConstraint, type TShiftTeam} from '@/entities';
 import {InfoIcon, NextIcon, PenIcon, PrevIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import {ToolbarActionGroup} from './toolbar/toolbar-action-group';
 import {ToolbarLayerToggles} from './toolbar/toolbar-layer-toggles';
@@ -58,6 +59,7 @@ function Toolbar({
     isDownloadingExcel,
     isDownloadingImage,
 }: IToolbarProps) {
+    const {t} = useTypedTranslation();
     const [openInfo, setOpenInfo] = useState(false);
     const [currentSetup, setCurrentSetup] = useState<TToolbarSetupTab | null>(null);
 
@@ -78,7 +80,7 @@ function Toolbar({
                     }}
                     className="h-7.5 w-7.5 cursor-pointer"
                 />
-                <p className="mx-[.625rem] font-poppins text-2xl text-main-1">{month}월</p>
+                <p className="mx-[.625rem] font-poppins text-2xl text-main-1">{t('feature.shiftEditor.editWard.monthLabel', {month})}</p>
                 <NextIcon
                     onClick={() => {
                         onChangeMonth('next');
@@ -87,7 +89,9 @@ function Toolbar({
                     className="h-7.5 w-7.5 cursor-pointer"
                 />
                 <p className="ml-5 font-apple text-[.875rem] text-main-1">
-                    기본 OFF {shift?.days.filter((x) => x.dayType !== 'workday').length}일
+                    {t('feature.shiftEditor.editWard.defaultOffDays', {
+                        count: shift?.days.filter((x) => x.dayType !== 'workday').length ?? 0,
+                    })}
                 </p>
             </div>
 
@@ -101,7 +105,7 @@ function Toolbar({
                     }}
                 >
                     <PenIcon className="h-6 w-6 stroke-main-1" />
-                    설정 편집
+                    {t('feature.shiftEditor.editWard.editSettings')}
                 </Button>
             )}
 

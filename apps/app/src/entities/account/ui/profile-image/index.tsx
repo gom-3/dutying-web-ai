@@ -2,6 +2,7 @@ import {cn} from '@dutying/utils/style';
 import {useEffect, useState} from 'react';
 import {PersonIcon} from '@/shared/assets/svg';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getProfileImageFallbackText, getProfileImageSources, type TProfileImageValue} from './model';
 
 interface IProfileImageProps
@@ -11,11 +12,12 @@ interface IProfileImageProps
 }
 
 export const ProfileImage = ({profileImg, name, className, alt, onError, ...props}: IProfileImageProps) => {
+    const {t} = useTypedTranslation();
     const imageBaseUrl = RUNTIME_CONFIG.profileImageBaseUrl();
     const [failedSources, setFailedSources] = useState<string[]>([]);
     const imageSources = getProfileImageSources({profileImg, imageBaseUrl});
     const currentSource = imageSources.find((source) => !failedSources.includes(source));
-    const accessibleAlt = alt ?? `${name?.trim() ?? '사용자'} 프로필 이미지`;
+    const accessibleAlt = alt ?? t('entity.account.profileImageAlt', {name: name?.trim() || t('entity.account.userFallback')});
     const fallbackText = getProfileImageFallbackText(name);
 
     useEffect(() => {

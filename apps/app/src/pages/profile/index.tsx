@@ -1,8 +1,10 @@
-﻿import {cn} from '@dutying/utils/style';
+﻿import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
+import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
 import {type ChangeEvent, useEffect, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
+import {useTranslation} from 'react-i18next';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward';
@@ -11,6 +13,16 @@ import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
 import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
+import {
+    getDefaultServiceRegionForLanguage,
+    getStoredServiceRegion,
+    normalizePreferredLanguage,
+    normalizeServiceRegion,
+    setStoredServiceRegion,
+    SUPPORTED_LANGUAGES,
+    SUPPORTED_SERVICE_REGIONS,
+} from '@/shared/i18n/locale';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -30,40 +42,49 @@ const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ�
 const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
+const SELECT_FIELD_CLASS =
+    'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
+const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
+const SERVICE_REGION_OPTIONS = SUPPORTED_SERVICE_REGIONS;
 const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const normalizePhone = (value: string) => value.replace(/\D/g, '').slice(0, 11);
-const validateName = (value: string) => {
+const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const trimmed = value.trim();
 
-    if (!trimmed) return '이름을 입력해 주세요.';
+    if (!trimmed) return messages.required;
 
     if (trimmed.length > NURSE_NAME_MAX_LENGTH || !NURSE_NAME_ALLOWED_REGEXP.test(trimmed)) {
-        return "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.";
+        return messages.invalid;
     }
 
     return undefined;
 };
-const validatePhoneNum = (value: string) => {
+const validatePhoneNum = (value: string, messages: {required: string; invalid: string}) => {
     const digits = normalizePhone(value);
 
-    if (!digits) return '전화번호를 입력해 주세요.';
+    if (!digits) return messages.required;
 
     if (!/^01([0|1|6|7|8|9])([0-9]{3,4})([0-9]{4})$/.test(digits)) {
-        return '전화번호는 01012341234처럼 숫자만 입력해 주세요.';
+        return messages.invalid;
     }
 
     return undefined;
 };
 
 export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
+    const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe, handleLogout},
     } = useAuth();
-    const {quitWard, handleEditProfile, handleEditAccountBasic, deleteAccount} = useEditAccount();
+    const {quitWard, handleEditProfile, handleEditAccountBasic, updateAccountPreferences, deleteAccount} = useEditAccount();
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [draftName, setDraftName] = useState('');
     const [draftPhoneNum, setDraftPhoneNum] = useState('');
+    const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
+    const [draftServiceRegion, setDraftServiceRegion] = useState<TServiceRegion>('KR');
+    const [isSavingPreferences, setIsSavingPreferences] = useState(false);
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
     const [fieldTouched, setFieldTouched] = useState<TProfileTouched>({});
@@ -74,12 +95,22 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         enabled: Boolean(accountMe?.wardId),
     });
     const selectedNurse = findProfileNurse(wardQuery.data, accountMe?.accountId);
-    const displayName = getProfileDisplayName(writeNurse, accountMe);
+    const validationMessages = {
+        nameRequired: t('page.profile.validation.nameRequired'),
+        nameInvalid: t('page.profile.validation.nameInvalid'),
+        phoneRequired: t('page.profile.validation.phoneRequired'),
+        phoneInvalid: t('page.profile.validation.phoneInvalid'),
+    };
+    const displayName = getProfileDisplayName(writeNurse, accountMe, t('page.profile.unknownName'));
     const phoneInputValue = writeNurse
         ? hasEditedPhoneNum
             ? (writeNurse.phoneNum ?? '')
             : getProfilePhoneNum(writeNurse, accountMe)
         : draftPhoneNum;
+    const savedPreferredLanguage =
+        normalizePreferredLanguage(accountMe?.preferredLanguage) ?? normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+    const savedServiceRegion =
+        normalizeServiceRegion(accountMe?.serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(savedPreferredLanguage);
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
@@ -95,12 +126,21 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         Boolean(profileImg) ||
         draftName.trim() !== (accountMe?.name ?? '').trim() ||
         draftPhoneNum !== normalizePhone(accountMe?.phoneNum ?? '');
+    const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage || draftServiceRegion !== savedServiceRegion;
     const hasUnsavedChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
     const isSaveDisabled = isProfileImageLoading || !hasUnsavedChanges;
     const validateField = (field: TProfileField, value: string) => {
-        if (field === 'name') return validateName(value);
+        if (field === 'name') {
+            return validateName(value, {
+                required: validationMessages.nameRequired,
+                invalid: validationMessages.nameInvalid,
+            });
+        }
 
-        return validatePhoneNum(value);
+        return validatePhoneNum(value, {
+            required: validationMessages.phoneRequired,
+            invalid: validationMessages.phoneInvalid,
+        });
     };
     const setFieldError = (field: TProfileField, value: string) => {
         const message = validateField(field, value);
@@ -114,8 +154,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
         const nextErrors: TProfileErrors = {
-            name: validateName(writeNurse.name ?? ''),
-            phoneNum: validatePhoneNum(phoneNum),
+            name: validateName(writeNurse.name ?? '', {
+                required: validationMessages.nameRequired,
+                invalid: validationMessages.nameInvalid,
+            }),
+            phoneNum: validatePhoneNum(phoneNum, {
+                required: validationMessages.phoneRequired,
+                invalid: validationMessages.phoneInvalid,
+            }),
         };
 
         setFieldErrors(nextErrors);
@@ -126,8 +172,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const validateAccountForm = () => {
         const nextName = (draftName.trim() || accountMe?.name) ?? '';
         const nextErrors: TProfileErrors = {
-            name: validateName(nextName),
-            phoneNum: validatePhoneNum(draftPhoneNum),
+            name: validateName(nextName, {
+                required: validationMessages.nameRequired,
+                invalid: validationMessages.nameInvalid,
+            }),
+            phoneNum: validatePhoneNum(draftPhoneNum, {
+                required: validationMessages.phoneRequired,
+                invalid: validationMessages.phoneInvalid,
+            }),
         };
 
         setFieldErrors(nextErrors);
@@ -160,6 +212,29 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         if (isSaved) {
             setHasEditedPhoneNum(false);
             resetProfileImage();
+        }
+    };
+    const savePreferences = async () => {
+        if (!isPreferenceDirty || isSavingPreferences) return;
+
+        try {
+            setIsSavingPreferences(true);
+
+            const isSaved = await updateAccountPreferences({
+                preferredLanguage: draftPreferredLanguage,
+                serviceRegion: draftServiceRegion,
+            });
+
+            if (!isSaved) {
+                toast.error(t('page.profile.preferencesFailed'));
+                return;
+            }
+
+            setStoredServiceRegion(draftServiceRegion);
+            await i18n.changeLanguage(draftPreferredLanguage);
+            toast.success(t('page.profile.preferencesSaved'));
+        } finally {
+            setIsSavingPreferences(false);
         }
     };
 
@@ -198,6 +273,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         setHasEditedPhoneNum(false);
     }, [accountMe?.accountId, selectedNurse?.nurseId]);
 
+    useEffect(() => {
+        setDraftPreferredLanguage(savedPreferredLanguage);
+        setDraftServiceRegion(savedServiceRegion);
+    }, [savedPreferredLanguage, savedServiceRegion]);
+
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImage = () => {
         imageInputRef.current?.click();
@@ -218,7 +298,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
             await setPhotoImage(compressedFile);
         } catch {
-            toast.error('프로필 이미지를 처리하지 못했어요.');
+            toast.error(t('page.profile.imageFailed'));
         } finally {
             e.target.value = '';
         }
@@ -249,15 +329,15 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const confirmDialogContent =
         confirmAction === 'deleteAccount'
             ? {
-                  title: '회원 탈퇴할까요?',
-                  description: '탈퇴하면 계정 정보가 삭제되며 되돌릴 수 없어요.',
-                  confirmLabel: '탈퇴하기',
+                  title: t('page.profile.confirm.deleteTitle'),
+                  description: t('page.profile.confirm.deleteDescription'),
+                  confirmLabel: t('page.profile.confirm.deleteConfirm'),
                   tone: 'danger' as const,
               }
             : {
-                  title: '로그아웃할까요?',
-                  description: '현재 계정에서 로그아웃하고 첫 화면으로 이동해요.',
-                  confirmLabel: '로그아웃',
+                  title: t('page.profile.confirm.logoutTitle'),
+                  description: t('page.profile.confirm.logoutDescription'),
+                  confirmLabel: t('page.profile.confirm.logoutConfirm'),
                   tone: 'default' as const,
               };
     const isModalLayout = layout === 'modal';
@@ -271,12 +351,12 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         'font-apple font-semibold text-sub-1',
         isModalLayout ? 'text-[26px] leading-8 tracking-[-0.01em]' : 'text-[32px] tracking-[-0.02em]',
     );
-    const title = '마이페이지';
+    const title = t('page.profile.title');
     const descriptionText = hasUnsavedChanges
-        ? '변경사항이 저장되지 않았어요.'
+        ? t('page.profile.unsavedDescription')
         : isModalLayout
           ? null
-          : '최신 정보가 저장되어 있어요.';
+          : t('page.profile.savedDescription');
     const contentClassName = cn('mx-auto', isModalLayout ? 'mt-6 max-w-none space-y-6' : 'mt-6 max-w-[480px] space-y-4');
     const profileSectionClassName = isModalLayout ? 'rounded-none border-0 bg-white p-0' : 'rounded-[24px] border-transparent p-6';
     const basicInfoSectionClassName = isModalLayout
@@ -300,8 +380,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             <div className={stateContainerClassName}>
                 <PageState
                     tone="loading"
-                    title="프로필 정보를 준비하고 있어요"
-                    description="내 계정과 병동 정보를 순서대로 확인하고 있어요."
+                    title={t('page.profile.loadingTitle')}
+                    description={t('page.profile.loadingDescription')}
                     className="py-0"
                 />
             </div>
@@ -313,9 +393,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             <div className={stateContainerClassName}>
                 <PageState
                     tone="error"
-                    title="프로필 정보를 불러오지 못했어요"
-                    description="잠시 후 다시 시도해 주세요. 문제가 계속되면 다시 로그인해 주세요."
-                    action={{label: '다시 시도', onClick: retryProfilePage}}
+                    title={t('page.profile.errorTitle')}
+                    description={t('page.profile.errorDescription')}
+                    action={{label: t('page.profile.retry'), onClick: retryProfilePage}}
                     className="py-0"
                 />
             </div>
@@ -329,7 +409,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
                 onClick={() => setConfirmAction('logout')}
             >
-                로그아웃
+                {t('page.profile.logout')}
             </button>
             {!isModalLayout && accountMe.wardId ? (
                 <button
@@ -337,7 +417,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-gray-3 underline-offset-4 hover:underline"
                     onClick={quitWard}
                 >
-                    병동 나가기
+                    {t('page.profile.quitWard')}
                 </button>
             ) : null}
             <button
@@ -345,15 +425,35 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 className="cursor-pointer bg-transparent p-0 font-apple text-sm font-medium text-red underline-offset-4 hover:underline"
                 onClick={() => setConfirmAction('deleteAccount')}
             >
-                회원 탈퇴
+                {t('page.profile.deleteAccount')}
             </button>
         </div>
     );
     const saveButton = (
         <Button type="button" onClick={() => void save()} disabled={isSaveDisabled} className={saveButtonClassName}>
-            {isModalLayout ? '저장하기' : '변경사항 저장'}
+            {isModalLayout ? t('page.profile.modalSave') : t('page.profile.save')}
         </Button>
     );
+    const getLanguageLabel = (language: TPreferredLanguage) => {
+        switch (language) {
+            case 'ko':
+                return t('page.profile.language.ko');
+            case 'ja':
+                return t('page.profile.language.ja');
+            case 'en':
+                return t('page.profile.language.en');
+        }
+    };
+    const getServiceRegionLabel = (region: TServiceRegion) => {
+        switch (region) {
+            case 'KR':
+                return t('page.profile.serviceRegion.KR');
+            case 'JP':
+                return t('page.profile.serviceRegion.JP');
+            case 'EN':
+                return t('page.profile.serviceRegion.EN');
+        }
+    };
 
     return (
         <div className={rootClassName}>
@@ -366,7 +466,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
             <div className={contentClassName}>
                 <Card className={profileSectionClassName}>
-                    {isModalLayout ? null : <p className="font-apple text-sm font-semibold text-sub-2.5">프로필</p>}
+                    {isModalLayout ? null : <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.profile.profileSection')}</p>}
                     <div className={cn('flex items-center gap-4', isModalLayout ? '' : 'mt-4')}>
                         <div className={profileImageFrameClassName}>
                             <ProfileImage className="h-full w-full" name={displayName} profileImg={currentProfileImage} />
@@ -383,8 +483,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 className={profileImageButtonClassName}
                                 onClick={setRandomImage}
                                 disabled={isProfileImageLoading}
-                                aria-label="랜덤 아바타"
-                                title="랜덤 아바타"
+                                aria-label={t('page.profile.randomAvatar')}
+                                title={t('page.profile.randomAvatar')}
                             >
                                 <RandomIcon className="h-4 w-4" />
                             </Button>
@@ -395,8 +495,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 className={profileImageButtonClassName}
                                 onClick={handleUploadImage}
                                 disabled={isProfileImageLoading}
-                                aria-label="사진 업로드"
-                                title="사진 업로드"
+                                aria-label={t('page.profile.uploadPhoto')}
+                                title={t('page.profile.uploadPhoto')}
                             >
                                 <CameraIcon className="h-4 w-4" />
                             </Button>
@@ -408,14 +508,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 <Card className={basicInfoSectionClassName}>
                     {isModalLayout ? null : (
                         <>
-                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">기본 정보</h2>
-                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">계정에서 사용하는 정보를 관리해요.</p>
+                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">{t('page.profile.basicInfoTitle')}</h2>
+                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">{t('page.profile.basicInfoDescription')}</p>
                         </>
                     )}
                     <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
                         <div className={fieldContainerClassName}>
                             <label htmlFor="name" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                이름
+                                {t('page.profile.name')}
                             </label>
                             <input
                                 id="name"
@@ -425,7 +525,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                     fieldErrors.name && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
                                 )}
                                 maxLength={NURSE_NAME_MAX_LENGTH}
-                                placeholder="이름을 입력하세요"
+                                placeholder={t('page.profile.namePlaceholder')}
                                 value={writeNurse?.name ?? draftName}
                                 onChange={(e) => {
                                     const nextValue = sanitizeNurseNameInput(e.target.value);
@@ -453,7 +553,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                         </div>
                         <div className={fieldContainerClassName}>
                             <label htmlFor="phoneNum" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                전화번호
+                                {t('page.profile.phoneNum')}
                             </label>
                             <input
                                 id="phoneNum"
@@ -463,7 +563,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                     modalFieldClassName,
                                     fieldErrors.phoneNum && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
                                 )}
-                                placeholder="전화번호를 입력하세요"
+                                placeholder={t('page.profile.phoneNumPlaceholder')}
                                 value={phoneInputValue}
                                 onChange={(e) => {
                                     const nextValue = normalizePhone(e.target.value);
@@ -490,6 +590,60 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 </p>
                             ) : null}
                         </div>
+                    </div>
+                </Card>
+                <Card className={basicInfoSectionClassName}>
+                    {isModalLayout ? null : (
+                        <>
+                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">{t('page.profile.preferencesTitle')}</h2>
+                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">{t('page.profile.preferencesDescription')}</p>
+                        </>
+                    )}
+                    <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
+                        <div className={fieldContainerClassName}>
+                            <label htmlFor="preferredLanguage" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
+                                {t('page.profile.languageLabel')}
+                            </label>
+                            <select
+                                id="preferredLanguage"
+                                className={cn(SELECT_FIELD_CLASS, modalFieldClassName)}
+                                value={draftPreferredLanguage}
+                                onChange={(event) =>
+                                    setDraftPreferredLanguage(normalizePreferredLanguage(event.target.value) ?? savedPreferredLanguage)
+                                }
+                            >
+                                {LANGUAGE_OPTIONS.map((language) => (
+                                    <option key={language} value={language}>
+                                        {getLanguageLabel(language)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className={fieldContainerClassName}>
+                            <label htmlFor="serviceRegion" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
+                                {t('page.profile.serviceRegionLabel')}
+                            </label>
+                            <select
+                                id="serviceRegion"
+                                className={cn(SELECT_FIELD_CLASS, modalFieldClassName)}
+                                value={draftServiceRegion}
+                                onChange={(event) => setDraftServiceRegion(normalizeServiceRegion(event.target.value) ?? savedServiceRegion)}
+                            >
+                                {SERVICE_REGION_OPTIONS.map((region) => (
+                                    <option key={region} value={region}>
+                                        {getServiceRegionLabel(region)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        <Button
+                            type="button"
+                            onClick={() => void savePreferences()}
+                            disabled={!isPreferenceDirty || isSavingPreferences}
+                            className={cn('h-11 rounded-[10px] px-5 text-sm shadow-none', isModalLayout ? 'w-full sm:w-fit' : 'w-fit')}
+                        >
+                            {isSavingPreferences ? t('page.profile.savingPreferences') : t('page.profile.savePreferences')}
+                        </Button>
                     </div>
                 </Card>
                 {isModalLayout ? null : accountActionButtons}

@@ -10,11 +10,13 @@ import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
 import {NurseAPI, WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import useEditNurseStore from './model/store';
 
 const TEMP_NURSE_ID_BASE = -1_000_000;
 const DUMMY_PHONE_NUM = '01000000000';
+const LEGACY_NEW_NURSE_PREFIX = '\uC2E0\uADDC\uAC04\uD638\uC0AC';
 
 export type TUpdateNurseShiftMeta = {
     wardShiftTypeId?: number;
@@ -37,12 +39,14 @@ const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clear
 };
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
-const getNextNewNurseName = (names: string[]) => {
-    const prefix = '신규간호사';
+const getNextNewNurseName = (names: string[], prefix: string) => {
     const usedNumbers = names
         .map((name) => {
-            if (!name.startsWith(prefix)) return null;
-            const suffix = name.slice(prefix.length).trim();
+            const matchedPrefix = [prefix, LEGACY_NEW_NURSE_PREFIX].find((candidate) => name.startsWith(candidate));
+
+            if (!matchedPrefix) return null;
+
+            const suffix = name.slice(matchedPrefix.length).trim();
             const parsed = Number.parseInt(suffix, 10);
             return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
         })
@@ -106,6 +110,7 @@ const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => 
     name: (nurse.name ?? '').trim(),
 });
 const useEditShiftTeam = () => {
+    const {t} = useTypedTranslation();
     const {
         selectedNurseId,
         selectedNurseDrawerMode,
@@ -170,7 +175,10 @@ const useEditShiftTeam = () => {
             try {
                 const currentWard = queryClient.getQueryData<TWard>(wardQueryKey) ?? effectiveWard;
                 const targetShiftTeam = currentWard?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
-                const nextName = getNextNewNurseName((targetShiftTeam?.nurses ?? []).map((nurse) => nurse.name.trim()));
+                const nextName = getNextNewNurseName(
+                    (targetShiftTeam?.nurses ?? []).map((nurse) => nurse.name.trim()),
+                    t('feature.editShiftTeam.newNursePrefix'),
+                );
                 const createdNurse = await WardAPI.addNurseIntoShiftTeam(wardId, shiftTeamId, {
                     name: nextName,
                     isWorker: true,
@@ -194,9 +202,9 @@ const useEditShiftTeam = () => {
                 });
                 completeAddingNurse(createdNurse.nurseId);
                 void invalidateWard();
-                toast.success(`${nextName}를 추가했어요.`, {position: 'bottom-center'});
+                toast.success(t('feature.editShiftTeam.addNurseSuccess', {name: nextName}), {position: 'bottom-center'});
             } catch (error) {
-                showActionErrorFeedback(error, '간호사를 추가하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.addNurseFailed'));
             } finally {
                 finishAddingNurse();
             }
@@ -209,6 +217,7 @@ const useEditShiftTeam = () => {
             invalidateWard,
             queryClient,
             shiftTeamsQueryKey,
+            t,
             wardId,
             wardQueryKey,
         ],
@@ -244,15 +253,15 @@ const useEditShiftTeam = () => {
             try {
                 await WardAPI.removeNurseFromShiftTeam(wardId, shiftTeamId, nurseId);
                 completeDeletingNurse();
-                toast.success('간호사를 삭제했어요.');
+                toast.success(t('feature.editShiftTeam.deleteNurseSuccess'));
                 await invalidateWard();
             } catch (error) {
-                showActionErrorFeedback(error, '간호사를 삭제하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.deleteNurseFailed'));
             } finally {
                 finishDeletingNurse();
             }
         },
-        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, queryClient, ward, wardId, wardQueryKey],
+        [beginDeletingNurse, completeDeletingNurse, finishDeletingNurse, invalidateWard, queryClient, t, ward, wardId, wardQueryKey],
     );
     const disconnectNurse = useCallback(
         async (nurseId: number) => {
@@ -287,7 +296,7 @@ const useEditShiftTeam = () => {
                 await NurseAPI.unConnectNurse(nurseId);
                 completeSavingNurse();
                 await invalidateWardShiftAndRequest();
-                toast.success('연동을 끊었어요.');
+                toast.success(t('feature.editShiftTeam.disconnectSuccess'));
 
                 return true;
             } catch (error) {
@@ -298,7 +307,7 @@ const useEditShiftTeam = () => {
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
                 failSavingNurse();
-                showActionErrorFeedback(error, '연동을 끊지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.disconnectFailed'));
 
                 return false;
             }
@@ -311,6 +320,7 @@ const useEditShiftTeam = () => {
             queryClient,
             requestShiftQueryKey,
             shiftQueryKey,
+            t,
             wardId,
             wardQueryKey,
         ],
@@ -407,7 +417,7 @@ const useEditShiftTeam = () => {
 
                 failSavingNurse();
 
-                showActionErrorFeedback(error, '간호사 정보를 수정하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.updateNurseFailed'));
 
                 return false;
             }
@@ -421,6 +431,7 @@ const useEditShiftTeam = () => {
             queryClient,
             requestShiftQueryKey,
             shiftQueryKey,
+            t,
             wardId,
             wardQueryKey,
         ],
@@ -492,12 +503,12 @@ const useEditShiftTeam = () => {
 
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
-                showActionErrorFeedback(error, '가능한 근무 유형을 저장하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.updateNurseShiftFailed'));
 
                 return false;
             }
         },
-        [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey],
+        [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, t, wardQueryKey],
     );
     const createShiftTeam = useCallback(async () => {
         if (!wardId) return;
@@ -670,12 +681,12 @@ const useEditShiftTeam = () => {
 
                 if (oldReqShift) queryClient.setQueryData(requestShiftQueryKey, oldReqShift);
 
-                showActionErrorFeedback(error, '간호사를 이동하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editShiftTeam.moveNurseFailed'));
 
                 return false;
             }
         },
-        [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, wardQueryKey],
+        [invalidateWardShiftAndRequest, queryClient, requestShiftQueryKey, shiftQueryKey, t, wardQueryKey],
     );
     const updateShiftTeam = useCallback(
         async (shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) => {

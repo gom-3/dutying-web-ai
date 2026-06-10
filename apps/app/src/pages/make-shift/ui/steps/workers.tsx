@@ -344,8 +344,8 @@ export function Workers() {
     const currentShiftTeamName =
         ward?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId)?.name ??
         t('page.makeShift.overview.noTeamsLabel');
-    const noNurseTitle = `${currentShiftTeamName}에는 아직 간호사가 없어요`;
-    const noNurseDescription = '근무표를 만들려면 먼저 간호사를 추가해 주세요. 근무자 관리에서 바로 시작할 수 있어요';
+    const noNurseTitle = t('page.makeShift.workers.noNurseTitle', {teamName: currentShiftTeamName});
+    const noNurseDescription = t('page.makeShift.workers.noNurseDescription');
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
     const isWorkerToggleBusy = nurseSaveStatus === 'saving';
     const isWorkersLoading = enabled && (teamNursesQuery.isPending || wardQuery.isPending);
@@ -548,7 +548,7 @@ export function Workers() {
                                     );
                                 }}
                             >
-                                근무자 관리로 이동
+                                {t('page.makeShift.workers.goMemberManagement')}
                                 <ArrowRight aria-hidden className="size-4" />
                             </ManagementActionButton>
                         </div>

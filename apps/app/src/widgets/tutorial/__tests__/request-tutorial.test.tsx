@@ -1,5 +1,6 @@
 import {render, screen} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import RequestTutorial from '../RequestTutorial';
 import {type ITutorialConfig} from '../tutorial.types';
 
@@ -83,7 +84,8 @@ function createRequestShiftState(overrides: Partial<TMockRequestShiftState> = {}
 }
 
 describe('RequestTutorial', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         tutorialStoreState = {showRequestTutorial: true};
         requestShiftState = createRequestShiftState();
         setRequestTutorialMock.mockReset();

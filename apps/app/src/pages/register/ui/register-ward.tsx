@@ -7,20 +7,21 @@ import {useForm} from 'react-hook-form';
 import {useNavigate} from 'react-router';
 import useRegister from '@/features/register';
 import {registerWardSchema} from '@/features/register-ward/model/schema';
-import {DEFAULT_WARD_SHIFT_TYPES, getWardShiftValidationMessage} from '@/features/register-ward/model/ward';
+import {createDefaultWardShiftTypes, getWardShiftValidationMessage} from '@/features/register-ward/model/ward';
 import RegisterWardShiftTeamsSection from '@/features/register-ward/ui/register-ward-shift-teams-section';
 import RegisterWardShiftTypesSection from '@/features/register-ward/ui/register-ward-shift-types-section';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ValidationMessage from '@/shared/ui/ValidationMessage';
 import RegisterShell from './register-shell';
 
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
-const WARD_NAME_ERROR = '1~50자 한글, 영문, 숫자만 입력할 수 있어요.';
 
 function RegisterWard() {
+    const {t} = useTypedTranslation();
     const [shiftTeams, setShiftTeams] = useState<string[][]>([[]]);
-    const [wardShiftTypes, setWardShiftTypes] = useState<TCreateWardDTO['wardShiftTypes']>(DEFAULT_WARD_SHIFT_TYPES);
+    const [wardShiftTypes, setWardShiftTypes] = useState<TCreateWardDTO['wardShiftTypes']>(() => createDefaultWardShiftTypes(t));
     const [wardShiftError, setWardShiftError] = useState<string | null>(null);
     const {
         formState: {errors, isValid},
@@ -39,8 +40,8 @@ function RegisterWard() {
         actions: {createWard},
     } = useRegister();
     const navigate = useNavigate();
-    const hospitalNameError = errors.hospitalName ? WARD_NAME_ERROR : undefined;
-    const wardNameError = errors.name ? WARD_NAME_ERROR : undefined;
+    const hospitalNameError = errors.hospitalName ? t('page.register.createWard.validation.wardName') : undefined;
+    const wardNameError = errors.name ? t('page.register.createWard.validation.wardName') : undefined;
 
     useEffect(() => {
         if (accountMe?.status !== 'WARD_SELECT_PENDING') navigate(ROUTE.REGISTER);
@@ -81,25 +82,25 @@ function RegisterWard() {
                     onClick={() => navigate(ROUTE.REGISTER)}
                 >
                     <ArrowLeft className="h-4 w-4" />
-                    병동 선택으로
+                    {t('page.register.createWard.back')}
                 </button>
 
                 <div>
-                    <h1 className="text-[32px] font-semibold text-sub-1">새 병동을 만들어요</h1>
-                    <p className="mt-2 text-sm text-gray-3">처음에는 꼭 필요한 정보만 받고, 세부 설정은 나중에 바꿀 수 있어요.</p>
+                    <h1 className="text-[32px] font-semibold text-sub-1">{t('page.register.createWard.title')}</h1>
+                    <p className="mt-2 text-sm text-gray-3">{t('page.register.createWard.description')}</p>
                 </div>
 
                 <section className="mt-6 rounded-[24px] bg-white p-6">
-                    <h2 className="text-[20px] font-semibold text-sub-1">기본 정보</h2>
+                    <h2 className="text-[20px] font-semibold text-sub-1">{t('page.register.createWard.basicInfo')}</h2>
                     <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-[1.2fr_0.8fr]">
                         <div>
                             <label htmlFor="hospitalName" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                병원명
+                                {t('page.register.createWard.hospitalName')}
                             </label>
                             <input
                                 id="hospitalName"
                                 className={cn(FIELD_CLASS, hospitalNameError && 'bg-[#FFF1F6]')}
-                                placeholder="듀팅병원"
+                                placeholder={t('page.register.createWard.hospitalNamePlaceholder')}
                                 aria-invalid={Boolean(hospitalNameError)}
                                 aria-describedby={hospitalNameError ? 'hospital-name-error' : undefined}
                                 {...register('hospitalName')}
@@ -112,7 +113,7 @@ function RegisterWard() {
                         </div>
                         <div>
                             <label htmlFor="wardName" className="mb-1.5 block text-sm font-medium text-sub-2">
-                                병동명
+                                {t('page.register.createWard.wardName')}
                             </label>
                             <input
                                 id="wardName"
@@ -141,7 +142,7 @@ function RegisterWard() {
                     className="mt-6 h-11 cursor-pointer gap-2 self-end rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-main-3"
                 >
                     <Save className="h-4 w-4" />
-                    병동 저장
+                    {t('page.register.createWard.save')}
                 </button>
             </form>
         </RegisterShell>

@@ -5,9 +5,13 @@ import RequestCalendar from '../request-calendar';
 
 const mockUseRequestShift = vi.fn();
 const translations: Record<string, string> = {
+    'page.request.calendar.ariaLabel': '신청 근무 캘린더',
+    'page.request.calendar.linkColumn': '연동',
+    'page.request.calendar.nameColumn': '이름',
     'page.request.calendar.noNurseTitleSuffix': '에는 아직 간호사가 없어요',
     'page.request.calendar.noNurseDescription': '신청 근무를 확인하려면 먼저 근무자 관리에서 팀 간호사를 추가해 주세요.',
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
+    'page.request.calendar.skillColumn': '숙련도',
 };
 
 vi.mock('@/features/request-shift', () => ({

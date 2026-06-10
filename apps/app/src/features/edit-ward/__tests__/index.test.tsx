@@ -155,7 +155,7 @@ describe('useEditWard', () => {
         expect(mockDeleteWaitingNurseRequest).toHaveBeenCalledWith(1, 7);
         expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
         expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.waitingNurses(1)});
-        expect(mockToastSuccess).toHaveBeenCalledWith('연동 요청을 거절했어요.');
+        expect(mockToastSuccess).toHaveBeenCalledWith('연동 대기 요청을 거절했어요.');
         expect(mockToastError).not.toHaveBeenCalled();
     });
 
@@ -174,6 +174,6 @@ describe('useEditWard', () => {
         expect(mockDeleteWaitingNurseRequest).toHaveBeenCalledWith(1, 7);
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
         expect(mockToastSuccess).not.toHaveBeenCalled();
-        expect(mockToastError).toHaveBeenCalledWith('연동 요청을 거절하지 못했어요.');
+        expect(mockToastError).toHaveBeenCalledWith('연동 대기 요청을 거절하지 못했어요.');
     });
 });

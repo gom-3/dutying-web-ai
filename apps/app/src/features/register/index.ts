@@ -19,6 +19,7 @@ import useLoadingUseCase from '@/features/loading';
 import useTutorialUseCase from '@/features/tutorial';
 import {AccountAPI, AdminAPI, WardAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 type TChangeAccountStatusOptions = {
@@ -32,6 +33,7 @@ type TCreateWardOptions = {
 const getIsWorkspaceSetupPending = (account: TAccount | null) => (account?.status as string | undefined) === 'WORKSPACE_SETUP_PENDING';
 const getLinkedWardId = (account: TAccount | null) => (account?.status === 'LINKED' ? (account.wardId ?? undefined) : undefined);
 const useRegister = () => {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe, accountId},
         actions: {handleGetAccountMe, applyAccountMe},
@@ -65,11 +67,11 @@ const useRegister = () => {
 
                 return updatedAccount;
             } catch (error) {
-                showActionErrorFeedback(error, '계정 상태를 변경하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.register.accountStatusChangeFailed'));
                 throw new Error('Failed to change account status.');
             }
         },
-        [applyAccountMe, handleGetAccountMe, navigate],
+        [applyAccountMe, handleGetAccountMe, navigate, t],
     );
     const createWard = useCallback(
         async (createWardDTO: TCreateWardDTO, options?: TCreateWardOptions) => {

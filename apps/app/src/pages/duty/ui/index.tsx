@@ -6,7 +6,7 @@ import {DutyManagementMonthTeamHeader, DutyManagementStatusCard, ManagementActio
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {type TDutyHook} from '../model/duty-hook';
 
-/** /duty에서는 규칙 위반을 표시하지 않으므로 빈 맵만 전달한다. */
+/** /duty does not display rule violations, so pass an empty map. */
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
 type TDutyPageViewProps = {
@@ -16,7 +16,7 @@ type TDutyPageViewProps = {
 export const DutyPageView = ({duty}: TDutyPageViewProps) => {
     const {state, handlers, refs} = duty;
     const {t} = useTypedTranslation();
-    const wardCodeLabel = state.wardCode || '확인 중';
+    const wardCodeLabel = state.wardCode || t('page.duty.wardCodeChecking');
     const showBootstrapLoadingState = state.bootstrapStatus === 'pending';
     const showBootstrapErrorState = state.bootstrapStatus === 'error';
     const showNoTeamsState = state.shiftTeamsStatus === 'success' && state.shiftTeams.length === 0;
@@ -53,16 +53,16 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                 {showBootstrapLoadingState && (
                     <PageState
                         tone="loading"
-                        title="계정 정보를 확인하고 있어요"
-                        description="병동 정보를 확인한 뒤 확정 근무표 화면을 준비하고 있어요."
+                        title={t('page.duty.bootstrapLoadingTitle')}
+                        description={t('page.duty.bootstrapLoadingDescription')}
                         className="py-0"
                     />
                 )}
                 {showBootstrapErrorState && (
                     <PageState
                         tone="error"
-                        title="병동 정보를 불러오지 못했어요"
-                        description="계정 정보를 다시 확인해 주세요. 문제가 계속되면 다시 로그인해 주세요."
+                        title={t('page.duty.bootstrapErrorTitle')}
+                        description={t('page.duty.bootstrapErrorDescription')}
                         action={{label: t('page.state.retry'), onClick: handlers.retry}}
                         className="py-0"
                     />

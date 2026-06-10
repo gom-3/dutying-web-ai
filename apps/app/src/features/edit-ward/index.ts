@@ -5,9 +5,11 @@ import toast from 'react-hot-toast';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 const useEditWard = () => {
+    const {t} = useTypedTranslation();
     const {
         state: {wardId},
     } = useAuth();
@@ -34,10 +36,10 @@ const useEditWard = () => {
                 await WardAPI.editWard(wardId, editWardDTO);
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
             } catch (error) {
-                showActionErrorFeedback(error, '근무 설정을 수정하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editWard.editSettingFailed'));
             }
         },
-        [queryClient, wardId, wardQueryKey],
+        [queryClient, t, wardId, wardQueryKey],
     );
     const addShiftType = useCallback(
         async (createShiftTypeDTO: TCreateShiftTypeDTO) => {
@@ -77,16 +79,16 @@ const useEditWard = () => {
                 await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
-                toast.success('선택한 팀에 간호사를 추가했어요.');
+                toast.success(t('feature.editWard.approveWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '팀을 추가하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editWard.approveWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, shiftTeamsQueryKey, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [queryClient, shiftTeamsQueryKey, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const connectWaitingNurses = useCallback(
         async (waitingNurseId: number, targetNurseId: number) => {
@@ -98,16 +100,16 @@ const useEditWard = () => {
                 await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
-                toast.success('기존 간호사 계정과 연결했어요.');
+                toast.success(t('feature.editWard.connectWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '기존 간호사 계정에 연결하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editWard.connectWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, shiftTeamsQueryKey, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [queryClient, shiftTeamsQueryKey, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
     const cancelWaiting = useCallback(
         async (waitingNurseId: number) => {
@@ -118,16 +120,16 @@ const useEditWard = () => {
                 await queryClient.invalidateQueries({queryKey: wardQueryKey});
                 await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
 
-                toast.success('연동 요청을 거절했어요.');
+                toast.success(t('feature.editWard.rejectWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
-                showActionErrorFeedback(error, '연동 요청을 거절하지 못했어요.');
+                showActionErrorFeedback(error, t('feature.editWard.rejectWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [queryClient, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
     );
 
     return {

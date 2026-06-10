@@ -23,7 +23,7 @@ function ErrorPage({variant, onRetry}: TErrorPageProps) {
 
     return (
         <>
-            <Helmet title={`${title} | 듀팅`} />
+            <Helmet title={t('page.error.documentTitle', {title})} />
             <main className="flex min-h-screen w-full items-center justify-center bg-main-bg px-5 py-10 font-apple">
                 <section
                     className="flex w-full max-w-[680px] flex-col items-center rounded-[24px] bg-white px-6 py-10 text-center shadow-[0_20px_60px_rgba(34,34,56,0.06)] sm:px-10 sm:py-12"

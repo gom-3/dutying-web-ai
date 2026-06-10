@@ -1,8 +1,19 @@
 import type {TAiConstraintViolation, TAiValidation} from '@dutying/api/ward';
+import i18n from '@/i18n';
 import type {TCellPos, TDutyDoc, TViolation} from '../types';
+import {formatScheduleValidationMessage} from './format-validation-message';
+
+const KOREAN_TEXT_PATTERN = /[\u3131-\uD7A3]/;
+const LEGACY_TITLE_MIN_OFF_AFTER_NIGHT = '\uC57C\uAC04 \uD6C4 \uD734\uBB34 \uBD80\uC871';
+const LEGACY_TITLE_MIN_STAFF_SHORTAGE = '\uD544\uC694 \uC778\uC6D0 \uBD80\uC871';
+const VALIDATION_I18N_KEY_PREFIX = 'feature.shiftEditor.validation.';
+const LEGACY_TITLE_KEY_BY_TITLE = new Map([
+    [LEGACY_TITLE_MIN_OFF_AFTER_NIGHT, `${VALIDATION_I18N_KEY_PREFIX}title.minOffAfterNight`],
+    [LEGACY_TITLE_MIN_STAFF_SHORTAGE, `${VALIDATION_I18N_KEY_PREFIX}title.minStaffShortage`],
+]);
 
 function hasKoreanText(value: string): boolean {
-    return /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(value);
+    return KOREAN_TEXT_PATTERN.test(value);
 }
 
 function isEnglishLike(value: string): boolean {
@@ -10,14 +21,9 @@ function isEnglishLike(value: string): boolean {
 }
 
 function normalizeViolationTitle(title: string): string {
-    switch (title) {
-        case '야간 후 휴무 부족':
-            return '야간 후 휴무가 부족해요';
-        case '필요 인원 부족':
-            return '필요 인원이 부족해요';
-        default:
-            return title;
-    }
+    const titleKey = LEGACY_TITLE_KEY_BY_TITLE.get(title);
+
+    return titleKey ? i18n.t(titleKey) : title;
 }
 
 function translateKnownEnglishMessage(item: TAiConstraintViolation): string | null {
@@ -29,17 +35,20 @@ function translateKnownEnglishMessage(item: TAiConstraintViolation): string | nu
     if (offAfterNightMatch) {
         const [, actualOffDays, requiredOffDays] = offAfterNightMatch;
 
-        return `야간 후 휴무가 ${actualOffDays}일이라 ${requiredOffDays}일보다 부족해요.`;
+        return i18n.t(`${VALIDATION_I18N_KEY_PREFIX}l2MinOffAfterNight`, {
+            actual: actualOffDays,
+            expected: requiredOffDays,
+        });
     }
 
     if (/^off days after night shift are insufficient\.?$/i.test(message)) {
-        return '야간 후 휴무가 부족해요.';
+        return i18n.t(`${VALIDATION_I18N_KEY_PREFIX}title.minOffAfterNight`);
     }
 
     const staffingMatch = message.match(/^(.+?)\s+shift staffing is low\.?$/i);
 
     if (staffingMatch) {
-        return `${staffingMatch[1]} 근무 인원이 부족해요.`;
+        return i18n.t(`${VALIDATION_I18N_KEY_PREFIX}l3MinStaffShortage`, {shift: staffingMatch[1]});
     }
 
     return null;
@@ -48,13 +57,16 @@ function translateKnownEnglishMessage(item: TAiConstraintViolation): string | nu
 function formatViolationMessage(item: TAiConstraintViolation): string {
     const title = item.title?.trim() ? normalizeViolationTitle(item.title.trim()) : undefined;
     const message = item.message.trim();
+    const keyedMessage = formatScheduleValidationMessage(item);
     const translatedMessage = translateKnownEnglishMessage(item);
+
+    if (keyedMessage) return keyedMessage;
 
     if (translatedMessage) return translatedMessage;
 
     if (title) return title;
 
-    return isEnglishLike(message) ? '제약 조건을 확인해 주세요.' : message;
+    return isEnglishLike(message) ? i18n.t(`${VALIDATION_I18N_KEY_PREFIX}unknown`) : message;
 }
 
 function resolveDayRange(item: TAiConstraintViolation): {startDay: number; endDay: number} | null {

@@ -2,6 +2,7 @@ import {type DropResult} from '@hello-pangea/dnd';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
+import i18n from '@/i18n';
 
 const PRIORITY_GAP = 2024;
 
@@ -23,11 +24,11 @@ export const createConnectedNurseIdSet = (currentShiftTeam: TShiftTeam) =>
     new Set(currentShiftTeam.nurses.filter((nurse) => nurse.isConnected).map((nurse) => nurse.nurseId));
 
 export const getDutyRequestStatusLabel = (isAccepted: boolean | null) => {
-    if (isAccepted === true) return '반영됨';
+    if (isAccepted === true) return i18n.t('page.request.calendar.status.accepted');
 
-    if (isAccepted === false) return '제외됨';
+    if (isAccepted === false) return i18n.t('page.request.calendar.status.rejected');
 
-    return '확인 필요';
+    return i18n.t('page.request.calendar.status.pending');
 };
 
 export const getDutyRequestStatusDescription = ({
@@ -40,22 +41,22 @@ export const getDutyRequestStatusDescription = ({
     requestFocus: TFocus | null;
 }) => {
     if (isAccepted === true) {
-        return '현재 신청한 근무가 반영되어 있어요.';
+        return i18n.t('page.request.calendar.statusDescription.accepted');
     }
 
     if (isAccepted === false) {
-        return '현재 근무표에는 다른 근무로 확정되어 있어요.';
+        return i18n.t('page.request.calendar.statusDescription.rejected');
     }
 
     if (requestFocus === null) {
-        return '현재 팀에 연결된 간호사 정보가 없어 달력 위치로는 바로 이동할 수 없어요.';
+        return i18n.t('page.request.calendar.statusDescription.noFocus');
     }
 
     if (readonly) {
-        return '수정할 수 없는 달이라 신청 근무 위치만 확인할 수 있어요.';
+        return i18n.t('page.request.calendar.statusDescription.readonly');
     }
 
-    return '이름을 누르면 해당 날짜로 이동해 검토할 수 있어요.';
+    return i18n.t('page.request.calendar.statusDescription.editable');
 };
 
 export const getRequestFocus = (dutyRequest: TDutyRequest, shiftNurseIdByNurseId: Map<number, number>): TFocus | null => {

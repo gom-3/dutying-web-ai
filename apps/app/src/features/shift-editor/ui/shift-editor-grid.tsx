@@ -1,14 +1,16 @@
 import {useMemo} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useScheduleDisplayViolations, useShiftEditorCommands, useShiftEditorKeyBindings, useShiftEditorStore} from '../model';
 import {normalizeSelection} from '../model/selection';
 
 export function ShiftEditorGrid() {
+    const {t} = useTypedTranslation();
     const doc = useShiftEditorStore((s) => s.doc);
     const selection = useShiftEditorStore((s) => s.selection);
     const violations = useScheduleDisplayViolations();
     const commands = useShiftEditorCommands();
     const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({
-        // TODO: 사용자별 주입 지점 (예: settings)
+        // TODO: Inject per-user keyboard settings.
         workKeyMap: {d: 'D', e: 'E', n: 'N', o: 'O'},
     });
     const violationSet = useMemo(() => {
@@ -48,21 +50,23 @@ export function ShiftEditorGrid() {
                     onClick={() => commands.setSelectionValue('D')}
                     type="button"
                 >
-                    선택에 D 입력
+                    {t('feature.shiftEditor.grid.setSelectionD')}
                 </button>
                 <button
                     className="box-border h-9 rounded-lg px-3 py-0 font-apple text-sm leading-none text-sub-2.5"
                     onClick={() => commands.clearSelectionCells()}
                     type="button"
                 >
-                    선택 지우기
+                    {t('feature.shiftEditor.grid.clearSelection')}
                 </button>
             </div>
 
             <table className="min-w-max border-collapse font-apple text-xs">
                 <thead>
                     <tr>
-                        <th className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-sub-2.5">이름</th>
+                        <th className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-sub-2.5">
+                            {t('feature.shiftEditor.grid.nameHeader')}
+                        </th>
                         {doc.columns.map((c) => (
                             <th key={c} className="px-2 py-1 text-sub-2.5">
                                 {c.slice(-2)}

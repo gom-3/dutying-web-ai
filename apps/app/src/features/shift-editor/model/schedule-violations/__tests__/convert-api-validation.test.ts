@@ -1,5 +1,6 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import type {TAiValidation} from '@dutying/api/ward';
+import i18n from '@/i18n';
 import type {TDutyDoc} from '../../types';
 import {violationsFromApiValidation} from '../convert-api-validation';
 
@@ -18,6 +19,10 @@ const doc: TDutyDoc = {
 };
 
 describe('violationsFromApiValidation', () => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     it('maps nurse-specific soft violations to warning level with nurse row', () => {
         const validation: TAiValidation = {
             valid: false,
@@ -100,5 +105,37 @@ describe('violationsFromApiValidation', () => {
         const violations = violationsFromApiValidation(validation, doc);
 
         expect(violations[0]?.message).toBe('제약 조건 확인 필요');
+    });
+
+    it('formats message_key with the active locale', async () => {
+        await i18n.changeLanguage('ja');
+
+        const validation: TAiValidation = {
+            valid: false,
+            hard_constraints_violated: [
+                {
+                    id: 'L1_CONSECUTIVE_WORK:3414',
+                    type: 'L1_CONSECUTIVE_WORK',
+                    severity: 'HARD',
+                    title: '연속 근무일 초과',
+                    message: 'Nurse 3414 works 6 consecutive days, exceeding the limit of 5.',
+                    message_key: 'schedule.validation.l1ConsecutiveWork',
+                    message_args: {
+                        nurse_id: '3414',
+                        nurse_name: 'Kim',
+                        actual: 6,
+                        expected: 5,
+                    },
+                    nurse_id: '3414',
+                    period: {start_day: 1, end_day: 5},
+                },
+            ],
+            soft_constraints_violated: [],
+            warnings: [],
+        };
+
+        const violations = violationsFromApiValidation(validation, doc);
+
+        expect(violations[0]?.message).toBe('連続勤務が6日で、5日の上限を超えています。');
     });
 });

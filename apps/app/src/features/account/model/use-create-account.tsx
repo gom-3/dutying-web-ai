@@ -1,4 +1,5 @@
 import {useCallback, useMemo, useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 export type TCreateAccountStatus = 'idle' | 'loading' | 'success' | 'failure' | 'exception';
 
@@ -26,25 +27,6 @@ const DEFAULT_FEEDBACK: TCreateAccountFeedback = {
     tone: 'neutral',
     message: null,
 };
-const FEEDBACK_BY_STATUS: Record<Exclude<TCreateAccountStatus, 'idle'>, TCreateAccountFeedback> = {
-    loading: {
-        tone: 'neutral',
-        message: '계정 정보를 저장하고 있어요.',
-    },
-    success: {
-        tone: 'neutral',
-        message: '계정 정보를 저장했어요.',
-    },
-    failure: {
-        tone: 'error',
-        message: null,
-    },
-    exception: {
-        tone: 'error',
-        message: '계정 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.',
-    },
-};
-
 function isHandledFailure(error: unknown, customIsHandledError?: (error: unknown) => boolean) {
     const code = typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
 
@@ -52,14 +34,39 @@ function isHandledFailure(error: unknown, customIsHandledError?: (error: unknown
 }
 
 const useCreateAccount = ({submit, isHandledError, shouldRethrowError = true}: TUseCreateAccountParams) => {
+    const {t} = useTypedTranslation();
     const [createAccountStatus, setCreateAccountStatus] = useState<TCreateAccountStatus>('idle');
     const createAccountFeedback = useMemo(() => {
         if (createAccountStatus === 'idle') {
             return DEFAULT_FEEDBACK;
         }
 
-        return FEEDBACK_BY_STATUS[createAccountStatus];
-    }, [createAccountStatus]);
+        if (createAccountStatus === 'loading') {
+            return {
+                tone: 'neutral',
+                message: t('feature.account.create.loading'),
+            } satisfies TCreateAccountFeedback;
+        }
+
+        if (createAccountStatus === 'success') {
+            return {
+                tone: 'neutral',
+                message: t('feature.account.create.success'),
+            } satisfies TCreateAccountFeedback;
+        }
+
+        if (createAccountStatus === 'exception') {
+            return {
+                tone: 'error',
+                message: t('feature.account.create.exception'),
+            } satisfies TCreateAccountFeedback;
+        }
+
+        return {
+            tone: 'error',
+            message: null,
+        } satisfies TCreateAccountFeedback;
+    }, [createAccountStatus, t]);
     const resetCreateAccountStatus = useCallback(() => {
         setCreateAccountStatus((currentStatus) => (currentStatus === 'idle' || currentStatus === 'loading' ? currentStatus : 'idle'));
     }, []);

@@ -2,6 +2,8 @@ import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw, Trash2} from 'lucide-react';
 import {useMemo, useState} from 'react';
+import i18n from '@/i18n';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TAiSnapshotSidebarProps = {
@@ -18,20 +20,20 @@ type TAiSnapshotSidebarProps = {
     onRetry: () => void;
 };
 
-function formatSnapshotTime(iso: string): string {
+function formatSnapshotTime(iso: string, locale: string, formatToday: (time: string) => string): string {
     const date = new Date(iso);
 
     if (Number.isNaN(date.getTime())) return iso;
 
     const now = new Date();
     const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
-    const time = date.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'});
+    const time = date.toLocaleTimeString(locale, {hour: '2-digit', minute: '2-digit'});
 
     if (isToday) {
-        return `오늘 ${time}`;
+        return formatToday(time);
     }
 
-    return date.toLocaleString(undefined, {
+    return date.toLocaleString(locale, {
         month: 'numeric',
         day: 'numeric',
         hour: '2-digit',
@@ -62,6 +64,7 @@ export function AiSnapshotSidebar({
     onRetry,
 }: TAiSnapshotSidebarProps) {
     const {t} = useTypedTranslation();
+    const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const orderedSnapshots = useMemo(() => snapshots, [snapshots]);
     const [draftTitles, setDraftTitles] = useState<Record<number, string>>({});
     const [renamingSnapshotId, setRenamingSnapshotId] = useState<number | null>(null);
@@ -246,7 +249,11 @@ export function AiSnapshotSidebar({
 
                                         <div className="mt-3 flex items-center gap-1.5 font-apple text-[12px] font-medium text-gray-4">
                                             <Clock className="size-3.5 shrink-0" aria-hidden />
-                                            <span className="truncate">{formatSnapshotTime(snapshot.updatedAt)}</span>
+                                            <span className="truncate">
+                                                {formatSnapshotTime(snapshot.updatedAt, locale, (time) =>
+                                                    t('page.makeShift.aiRefill.snapshotSidebar.todayAt', {time}),
+                                                )}
+                                            </span>
                                         </div>
 
                                         {hasViolations && (

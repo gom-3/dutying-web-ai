@@ -1,5 +1,6 @@
 import {events, sendEvent} from '@/analytics';
 import {FaultDotIcon, RequestCheckIcon, RequestSlashIcon} from '@/shared/assets/svg';
+import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import {type TLayerFlags} from '../types';
 
 type TToolbarLayerTogglesProps = {
@@ -10,31 +11,39 @@ type TToolbarLayerTogglesProps = {
 const layerConfigs = [
     {
         key: 'fault',
-        label: '잘못된 근무',
+        labelKey: 'feature.shiftEditor.toolbar.layers.fault',
         borderClassName: 'border-[#FF0000]',
         backgroundClassName: 'bg-[#ff000033]',
         Icon: FaultDotIcon,
     },
     {
         key: 'check',
-        label: '신청 근무 반영',
+        labelKey: 'feature.shiftEditor.toolbar.layers.check',
         borderClassName: 'border-[#06E738]',
         backgroundClassName: 'bg-[#06e73833]',
         Icon: RequestCheckIcon,
     },
     {
         key: 'slash',
-        label: '신청 근무 미반영',
+        labelKey: 'feature.shiftEditor.toolbar.layers.slash',
         borderClassName: 'border-[#0027F4]',
         backgroundClassName: 'bg-[#0027f433]',
         Icon: RequestSlashIcon,
     },
-] as const;
+] satisfies {
+    key: keyof TLayerFlags;
+    labelKey: TI18nKey;
+    borderClassName: string;
+    backgroundClassName: string;
+    Icon: typeof FaultDotIcon;
+}[];
 
 export function ToolbarLayerToggles({showLayer, onToggleLayer}: TToolbarLayerTogglesProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="ml-12.5 flex gap-[.25rem]">
-            {layerConfigs.map(({key, label, borderClassName, backgroundClassName, Icon}) => (
+            {layerConfigs.map(({key, labelKey, borderClassName, backgroundClassName, Icon}) => (
                 <div
                     key={key}
                     className={`flex h-9 cursor-pointer items-center gap-[.5rem] rounded-[.3125rem] border-[.0313rem] border-sub-4 px-[.625rem] ${
@@ -50,7 +59,9 @@ export function ToolbarLayerToggles({showLayer, onToggleLayer}: TToolbarLayerTog
                     >
                         <Icon className="absolute -top-2 -right-0.75 h-[.4rem] w-[.4rem]" />
                     </div>
-                    <p className={`font-apple text-[.75rem] select-none ${showLayer[key] ? 'text-sub-2' : 'text-sub-3'}`}>{label}</p>
+                    <p className={`font-apple text-[.75rem] select-none ${showLayer[key] ? 'text-sub-2' : 'text-sub-3'}`}>
+                        {t(labelKey)}
+                    </p>
                 </div>
             ))}
         </div>

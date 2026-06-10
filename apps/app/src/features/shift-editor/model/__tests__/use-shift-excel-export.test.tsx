@@ -2,6 +2,7 @@ import {act} from 'react';
 import toast from 'react-hot-toast';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities/shift';
+import i18n from '@/i18n';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {useShiftExcelExport} from '../use-shift-excel-export';
 
@@ -57,7 +58,8 @@ const shift = {
 } satisfies TShift;
 
 describe('useShiftExcelExport', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         vi.clearAllMocks();
     });
 

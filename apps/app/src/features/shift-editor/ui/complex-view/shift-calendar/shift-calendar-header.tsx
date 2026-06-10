@@ -1,4 +1,5 @@
 import {type TWardShiftType, type TShift} from '@/entities';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 type TShiftCalendarHeaderProps = {
     shift: TShift;
@@ -15,7 +16,8 @@ export function ShiftCalendarHeader({
     shiftTypeColorStyle,
     gridTemplateColumns,
 }: TShiftCalendarHeaderProps) {
-    const offShiftType = shift.wardShiftTypes.find((x) => x.name === '오프');
+    const {t} = useTypedTranslation();
+    const offShiftType = shift.wardShiftTypes.find((x) => x.isOff);
 
     return (
         <div
@@ -23,8 +25,12 @@ export function ShiftCalendarHeader({
             className="z-20 grid w-full min-w-0 items-center gap-x-2 py-1.5"
             style={{gridTemplateColumns, maxWidth: '100%'}}
         >
-            <div className="min-w-0 truncate text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">이름</div>
-            <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">전달 근무</div>
+            <div className="min-w-0 truncate text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">
+                {t('feature.shiftEditor.calendarHeader.name')}
+            </div>
+            <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">
+                {t('feature.shiftEditor.calendarHeader.carryOver')}
+            </div>
 
             <div
                 className="grid min-w-0 rounded-[2.5rem] border-[.0625rem] border-sub-4 px-2 py-[.1875rem]"

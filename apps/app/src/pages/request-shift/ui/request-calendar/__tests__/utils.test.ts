@@ -1,6 +1,7 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import {type TRequestShift} from '@/entities/shift';
 import {type TWardShiftType} from '@/entities/ward';
+import i18n from '@/i18n';
 import {
     createRequestCalendarCellFocus,
     getDutyRequestStatusDescription,
@@ -87,6 +88,10 @@ const createRequestShift = (): TRequestShift => ({
 });
 
 describe('request-calendar utils', () => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     it('같은 division 안에서 아래로 이동할 때 다음 우선순위를 기준으로 계산한다', () => {
         const requestShift = createRequestShift();
         const payload = getMoveNurseOrderPayload({

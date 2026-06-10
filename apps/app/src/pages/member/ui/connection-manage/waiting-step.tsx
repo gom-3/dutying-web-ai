@@ -1,6 +1,7 @@
 ﻿import {X} from 'lucide-react';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TWaitingNurse} from '@/entities/nurse';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getWaitingNurseSummary} from '../../model/connection-manage';
 
 interface IConnectionManageWaitingStepProps {
@@ -11,25 +12,27 @@ interface IConnectionManageWaitingStepProps {
 }
 
 function ConnectionManageWaitingStep({waitingNurses, onClose, onAccept, onReject}: IConnectionManageWaitingStepProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="relative w-full max-w-[620px] rounded-[16px] bg-white px-6 py-5" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between">
-                <h1 className="font-apple text-[22px] font-semibold text-sub-1">간호사가 병동 연동을 요청했어요</h1>
+                <h1 className="font-apple text-[22px] font-semibold text-sub-1">{t('page.member.connectionManage.waiting.title')}</h1>
                 <button
                     type="button"
                     className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] text-[#8A94A8] transition-colors hover:bg-[#F3F4F6] hover:text-[#5F6878]"
                     onClick={onClose}
-                    aria-label="닫기"
+                    aria-label={t('page.member.common.close')}
                 >
                     <X className="h-5 w-5" />
                 </button>
             </div>
 
-            <p className="mt-1 font-apple text-[14px] text-gray-3">수락하면 병동 소속 간호사로 등록돼요.</p>
+            <p className="mt-1 font-apple text-[14px] text-gray-3">{t('page.member.connectionManage.waiting.description')}</p>
 
             {waitingNurses?.length === 0 ? (
                 <div className="mt-4 flex h-[140px] items-center justify-center rounded-[10px] bg-[#F8FAFC] font-apple text-[15px] text-gray-3">
-                    연동 요청이 들어오면 여기에 보여요.
+                    {t('page.member.connectionManage.waiting.empty')}
                 </div>
             ) : (
                 <div className="mt-4 max-h-[440px] space-y-2 overflow-y-auto">
@@ -56,14 +59,14 @@ function ConnectionManageWaitingStep({waitingNurses, onClose, onAccept, onReject
                                         className="h-9 rounded-[8px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
                                         onClick={() => onAccept(waitingNurse)}
                                     >
-                                        수락
+                                        {t('page.member.connectionManage.waiting.accept')}
                                     </button>
                                     <button
                                         type="button"
                                         className="h-9 rounded-[8px] px-3 font-apple text-[14px] font-semibold text-[#5E6678] transition-colors hover:bg-[#E1E7F0]"
                                         onClick={() => onReject(waitingNurse.waitingNurseId)}
                                     >
-                                        거절
+                                        {t('page.member.connectionManage.waiting.reject')}
                                     </button>
                                 </div>
                             </div>

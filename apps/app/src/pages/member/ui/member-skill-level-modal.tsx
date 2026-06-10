@@ -397,7 +397,7 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
                             className="rounded-[10px] bg-[#F3F4F6] px-4 py-2 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1"
                             onClick={() => setShowDisableConfirmModal(true)}
                         >
-                            숙련도 사용하지 않기
+                            {t('page.member.skillLevelModal.disableAction')}
                         </button>
                     ) : null}
                     <button
@@ -423,15 +423,19 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
                         className="w-full max-w-[460px] rounded-[16px] bg-white px-6 py-5"
                         onClick={(event) => event.stopPropagation()}
                     >
-                        <p className="font-apple text-[22px] font-semibold text-sub-1">숙련도 기능을 끌까요?</p>
-                        <p className="mt-2 font-apple text-[16px] text-gray-3">끄면 숙련도 표시, 선택, 정렬을 잠시 멈춰요.</p>
+                        <p className="font-apple text-[22px] font-semibold text-sub-1">
+                            {t('page.member.skillLevelModal.disableConfirmTitle')}
+                        </p>
+                        <p className="mt-2 font-apple text-[16px] text-gray-3">
+                            {t('page.member.skillLevelModal.disableConfirmDescription')}
+                        </p>
                         <div className="mt-6 flex items-center gap-3">
                             <button
                                 type="button"
                                 className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                 onClick={() => setShowDisableConfirmModal(false)}
                             >
-                                닫기
+                                {t('page.member.common.close')}
                             </button>
                             <button
                                 type="button"
@@ -442,7 +446,7 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
                                     onClose();
                                 }}
                             >
-                                사용하지 않기
+                                {t('page.member.skillLevelModal.disableConfirmAction')}
                             </button>
                         </div>
                     </div>

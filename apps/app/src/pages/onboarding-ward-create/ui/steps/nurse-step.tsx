@@ -3,6 +3,7 @@ import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pan
 import {Check, ChevronDown, Info, Plus, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
+import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {
@@ -31,15 +32,15 @@ interface INurseStepProps {
     onDragEnd: (result: DropResult) => void;
 }
 
-const SORT_OPTIONS: {value: TSortMode; label: string}[] = [
-    {value: 'manual', label: '수동순'},
-    {value: 'name', label: '가나다순'},
-    {value: 'skill', label: '숙련도순'},
+const SORT_OPTIONS: {value: TSortMode; labelKey: TI18nKey}[] = [
+    {value: 'manual', labelKey: 'page.onboardingWardCreate.nurse.sort.manual'},
+    {value: 'name', labelKey: 'page.onboardingWardCreate.nurse.sort.name'},
+    {value: 'skill', labelKey: 'page.onboardingWardCreate.nurse.sort.skill'},
 ];
-const SKILL_UNSELECTED_LABEL = '-';
-const SKILL_UNSELECTED_OPTION_LABEL = '-';
 const SKILL_UNSELECTED_BACKGROUND = '#E5E7EB';
 const SKILL_UNSELECTED_TEXT = '#6B7280';
+const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
+const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
 const NURSE_GRID_PADDING_X = 'px-6';
 const NURSE_GRID_GAP_CLASS = 'gap-x-3';
 const NURSE_GRID_COLS_STEP_3 =
@@ -51,14 +52,14 @@ const limitNurseNameInput = (value: string) => value.slice(0, MAX_ONBOARDING_NUR
 
 type TNurseRoleHelp = 'preceptor' | 'preceptee';
 
-const NURSE_ROLE_HELP: Record<TNurseRoleHelp, {label: string; description: string}> = {
+const NURSE_ROLE_HELP: Record<TNurseRoleHelp, {labelKey: TI18nKey; descriptionKey: TI18nKey}> = {
     preceptor: {
-        label: '프리셉터',
-        description: '신규 또는 저연차 간호사의 적응과 교육을 도와주는 담당 간호사예요.',
+        labelKey: 'page.member.roleHelp.preceptor.label',
+        descriptionKey: 'page.member.roleHelp.preceptor.description',
     },
     preceptee: {
-        label: '프리셉티',
-        description: '프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.',
+        labelKey: 'page.member.roleHelp.preceptee.label',
+        descriptionKey: 'page.member.roleHelp.preceptee.description',
     },
 };
 
@@ -71,15 +72,17 @@ function NurseRoleHeaderHelp({
     openedType: TNurseRoleHelp | null;
     onToggle: (type: TNurseRoleHelp) => void;
 }) {
+    const {t} = useTypedTranslation();
     const help = NURSE_ROLE_HELP[type];
+    const label = t(help.labelKey);
     const isOpen = openedType === type;
 
     return (
         <span className="group relative inline-flex items-center justify-center gap-1">
-            <span>{help.label}</span>
+            <span>{label}</span>
             <button
                 type="button"
-                aria-label={`${help.label} 설명`}
+                aria-label={t('page.member.roleHelp.aria', {label})}
                 aria-expanded={isOpen}
                 className="flex h-4 w-4 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-6 hover:text-main-1 focus-visible:outline-2 focus-visible:outline-main-1"
                 onClick={() => onToggle(type)}
@@ -93,7 +96,7 @@ function NurseRoleHeaderHelp({
                     isOpen && 'opacity-100',
                 )}
             >
-                {help.description}
+                {t(help.descriptionKey)}
             </span>
         </span>
     );
@@ -114,6 +117,7 @@ function NurseStep({
     onTeamNameChange,
     onDragEnd,
 }: INurseStepProps) {
+    const {t} = useTypedTranslation();
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
     const [openedSkillMenuNurseId, setOpenedSkillMenuNurseId] = useState<string | null>(null);
     const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelp | null>(null);
@@ -124,6 +128,7 @@ function NurseStep({
     const skipFlipAnimationOnceRef = useRef(false);
     const availableSortOptions = showSkillColumn ? SORT_OPTIONS : SORT_OPTIONS.filter((option) => option.value !== 'skill');
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
+    const selectedSortOptionLabel = selectedSortOption ? t(selectedSortOption.labelKey) : '';
     const currentNurses = useMemo(() => draft.nurses.filter((nurse) => nurse.teamId === selectedTeamId), [draft.nurses, selectedTeamId]);
     const sortedNurses = useMemo(() => sortNursesByMode(currentNurses, sortMode), [currentNurses, sortMode]);
     const hasNursesInSelectedTeam = currentNurses.length > 0;
@@ -271,20 +276,20 @@ function NurseStep({
                             type="button"
                             aria-haspopup="listbox"
                             aria-expanded={isSortMenuOpen}
-                            aria-label="간호사 정렬"
+                            aria-label={t('page.onboardingWardCreate.nurse.sortAria')}
                             className={cn(
                                 'flex h-8 min-w-[112px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[16px] text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                 isSortMenuOpen ? 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'hover:bg-gray-7',
                             )}
                             onClick={() => setIsSortMenuOpen((prev) => !prev)}
                         >
-                            <span>{selectedSortOption.label}</span>
+                            <span>{selectedSortOptionLabel}</span>
                             <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', isSortMenuOpen && 'rotate-180')} />
                         </button>
                         {isSortMenuOpen ? (
                             <div
                                 role="listbox"
-                                aria-label="간호사 정렬 옵션"
+                                aria-label={t('page.onboardingWardCreate.nurse.sortOptionsAria')}
                                 className="absolute top-full right-0 z-20 mt-1 w-[150px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
                             >
                                 {availableSortOptions.map((option) => {
@@ -305,7 +310,7 @@ function NurseStep({
                                                 setIsSortMenuOpen(false);
                                             }}
                                         >
-                                            {option.label}
+                                            {t(option.labelKey)}
                                         </button>
                                     );
                                 })}
@@ -328,9 +333,9 @@ function NurseStep({
                     <div className="flex h-8 w-full items-center justify-center">
                         <span
                             className="flex min-w-0 items-center justify-center gap-1.5"
-                            aria-label={`선택한 팀 간호사 ${currentNurses.length}명`}
+                            aria-label={t('page.onboardingWardCreate.nurse.selectedTeamCountAria', {count: currentNurses.length})}
                         >
-                            <span>이름</span>
+                            <span>{t('page.member.table.name')}</span>
                             <span className="inline-flex h-4 items-center gap-0.5 align-middle font-poppins text-[13px] leading-none font-semibold text-[#6B7280]">
                                 <PersonIcon className="block h-3.5 w-3.5 shrink-0 text-[#7B8494]" aria-hidden="true" />
                                 <span className="block leading-none tabular-nums">{currentNurses.length}</span>
@@ -339,11 +344,11 @@ function NurseStep({
                     </div>
                     {showSkillColumn ? (
                         <div className="flex h-8 w-full items-center justify-center">
-                            <span className="block w-full text-center">숙련도</span>
+                            <span className="block w-full text-center">{t('page.member.table.level')}</span>
                         </div>
                     ) : null}
                     <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">가능 근무</span>
+                        <span className="block w-full text-center">{t('page.member.table.shiftTypes')}</span>
                     </div>
                     <div className="flex h-8 w-full items-center justify-center">
                         <NurseRoleHeaderHelp
@@ -360,7 +365,7 @@ function NurseStep({
                         />
                     </div>
                     <div className="flex h-8 w-full items-center justify-center">
-                        <span className="block w-full text-center">근무 투입</span>
+                        <span className="block w-full text-center">{t('page.member.table.isWorker')}</span>
                     </div>
                     <div />
                 </div>
@@ -373,11 +378,14 @@ function NurseStep({
                             <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
                                 {sortedNurses.map((nurse, index) => {
                                     const isSkillMenuOpen = openedSkillMenuNurseId === nurse.id;
-                                    const isPreceptor = nurse.memo.trim() === '프리셉터';
-                                    const isPreceptee = nurse.memo.trim() === '프리셉티';
+                                    const isPreceptor = nurse.memo.trim() === PRECEPTOR_MEMO;
+                                    const isPreceptee = nurse.memo.trim() === PRECEPTEE_MEMO;
                                     const isSkillUnselected = nurse.level == null;
-                                    const skillBadgeLabel = isSkillUnselected ? SKILL_UNSELECTED_LABEL : getSkillLabel(nurse.level ?? 1);
+                                    const skillBadgeLabel = isSkillUnselected
+                                        ? t('page.onboardingWardCreate.nurse.skillUnselectedBadge')
+                                        : getSkillLabel(nurse.level ?? 1);
                                     const fadedClass = nurse.isWorker ? '' : 'opacity-45';
+                                    const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
 
                                     return (
                                         <Draggable key={nurse.id} draggableId={nurse.id} index={index}>
@@ -399,7 +407,7 @@ function NurseStep({
                                                 >
                                                     <button
                                                         type="button"
-                                                        aria-label="드래그하여 순서 변경"
+                                                        aria-label={t('page.onboardingWardCreate.nurse.dragAria')}
                                                         {...dragProvided.dragHandleProps}
                                                         className={cn(
                                                             'flex h-6 w-6 items-center justify-center text-gray-4 transition-colors hover:text-gray-3',
@@ -417,7 +425,7 @@ function NurseStep({
                                                         variant="flush"
                                                         fieldSize="default"
                                                         className={cn('text-center text-[16px] font-medium', fadedClass)}
-                                                        placeholder="이름"
+                                                        placeholder={t('page.member.table.name')}
                                                         maxLength={MAX_ONBOARDING_NURSE_NAME_LENGTH}
                                                     />
 
@@ -459,7 +467,9 @@ function NurseStep({
                                                             {isSkillMenuOpen ? (
                                                                 <div
                                                                     role="listbox"
-                                                                    aria-label={`${nurse.name || '간호사'} 숙련도`}
+                                                                    aria-label={t('page.onboardingWardCreate.nurse.skillAria', {
+                                                                        nurseName: nurseNameForAria,
+                                                                    })}
                                                                     className="absolute top-full left-1/2 z-[1300] mt-2 min-w-[120px] -translate-x-1/2 rounded-[10px] border border-gray-6 bg-white p-2 opacity-100 shadow-[0px_12px_28px_rgba(61,70,88,0.18)]"
                                                                 >
                                                                     <div className="space-y-1.5">
@@ -479,7 +489,7 @@ function NurseStep({
                                                                             <SkillBadge
                                                                                 level={null}
                                                                                 config={draft.skillLevelConfig}
-                                                                                label={SKILL_UNSELECTED_OPTION_LABEL}
+                                                                                label={t('page.onboardingWardCreate.nurse.skillUnselectedOption')}
                                                                                 backgroundColor={SKILL_UNSELECTED_BACKGROUND}
                                                                                 textColor={SKILL_UNSELECTED_TEXT}
                                                                                 className="text-[12px]"
@@ -554,14 +564,14 @@ function NurseStep({
                                                             type="button"
                                                             role="checkbox"
                                                             aria-checked={isPreceptor}
-                                                            aria-label={`${nurse.name || '간호사'} 프리셉터`}
+                                                            aria-label={t('page.member.row.preceptorAria', {nurseName: nurseNameForAria})}
                                                             className={cn(
                                                                 'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                                                 isPreceptor
                                                                     ? 'border-main-1 bg-main-1 text-white hover:bg-main-2'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
-                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptor ? '' : '프리셉터'})}
+                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptor ? '' : PRECEPTOR_MEMO})}
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </button>
@@ -572,14 +582,14 @@ function NurseStep({
                                                             type="button"
                                                             role="checkbox"
                                                             aria-checked={isPreceptee}
-                                                            aria-label={`${nurse.name || '간호사'} 프리셉티`}
+                                                            aria-label={t('page.member.row.precepteeAria', {nurseName: nurseNameForAria})}
                                                             className={cn(
                                                                 'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                                                 isPreceptee
                                                                     ? 'border-main-1 bg-main-1 text-white hover:bg-main-2'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
-                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptee ? '' : '프리셉티'})}
+                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptee ? '' : PRECEPTEE_MEMO})}
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </button>
@@ -588,7 +598,7 @@ function NurseStep({
                                                     <div className={cn('flex items-center justify-center', fadedClass)}>
                                                         <Switch
                                                             checked={nurse.isWorker}
-                                                            aria-label={`${nurse.name || '간호사'} 근무 투입`}
+                                                            aria-label={t('page.member.row.workerAria', {nurseName: nurseNameForAria})}
                                                             className="relative h-5 w-9 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
                                                             thumbClassName="absolute top-0.5 left-0.5 h-4 w-4 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-4"
                                                             onCheckedChange={(checked) => onNurseChange(nurse.id, {isWorker: checked})}
@@ -597,7 +607,9 @@ function NurseStep({
 
                                                     <button
                                                         type="button"
-                                                        aria-label={`${nurse.name || '간호사'} 삭제`}
+                                                        aria-label={t('page.onboardingWardCreate.nurse.deleteNurseAria', {
+                                                            nurseName: nurseNameForAria,
+                                                        })}
                                                         className={cn(
                                                             'flex h-7 w-7 items-center justify-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1',
                                                             fadedClass,
@@ -627,7 +639,7 @@ function NurseStep({
                     <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
                         <Plus className="h-[11px] w-[11px] text-white" />
                     </span>
-                    간호사 추가하기
+                    {t('page.member.addNurse')}
                 </button>
             </div>
         </div>
