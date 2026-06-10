@@ -22,7 +22,6 @@ type TShiftCalendarDivisionProps = {
     onToggleFoldLevel?: (level: number) => void;
     onEditDivision?: (opts: {shiftNurseId: number; level: number; direction: 1 | -1}) => void;
     onSelectNurse?: (nurseId: number | null) => void;
-    onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
     workerRowMap: Map<string, {row: TDutyDoc['rows'][number]; index: number}>;
     doc: TDutyDoc;
     getCellShiftType: (rowIndex: number, colIndex: number) => TWardShiftType | null;
@@ -50,7 +49,6 @@ export function ShiftCalendarDivision({
     onToggleFoldLevel,
     onEditDivision,
     onSelectNurse,
-    onUpdateCarry,
     workerRowMap,
     doc,
     getCellShiftType,
@@ -115,7 +113,6 @@ export function ShiftCalendarDivision({
                                     enableDivisionManagement={enableDivisionManagement}
                                     onEditDivision={onEditDivision}
                                     onSelectNurse={onSelectNurse}
-                                    onUpdateCarry={onUpdateCarry}
                                     docRowIndex={docEntry?.index ?? -1}
                                     docRow={docEntry?.row}
                                     doc={doc}

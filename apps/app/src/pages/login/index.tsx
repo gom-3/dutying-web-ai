@@ -115,6 +115,7 @@ function LoginPage() {
     const currentLoginVisualPage = loginVisualSlideIndex + 1;
     const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
     const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
+    const legacyInvalidLoginCredentialsServerText = t('page.login.feedback.legacyInvalidCredentialsServerText');
     const title = isSignupPage
         ? t('page.login.signupTitle')
         : isPasswordResetMode
@@ -137,7 +138,8 @@ function LoginPage() {
         }, delay);
     };
 
-    const shouldShowPasswordResetFromLoginError = loginError === invalidLoginCredentialsMessage;
+    const shouldShowPasswordResetFromLoginError =
+        loginError === invalidLoginCredentialsMessage || loginError === legacyInvalidLoginCredentialsServerText;
     const showPreviousLoginVisualSlide = () => {
         setLoginVisualSlideIndex((current) => (current - 1 + totalLoginVisualPages) % totalLoginVisualPages);
         scheduleLoginVisualAutoRotateRef.current(LOGIN_VISUAL_MANUAL_RESUME_MS);
@@ -664,11 +666,6 @@ function LoginPage() {
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 {t('page.login.submitLogin')}
                             </button>
-                            <div className="flex items-center justify-start text-sm">
-                                <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
-                                    {t('page.login.signupLink')}
-                                </Link>
-                            </div>
                         </form>
                     ) : null}
 

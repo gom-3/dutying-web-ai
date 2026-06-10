@@ -1,6 +1,7 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {type ComponentProps} from 'react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
+import {type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {getMemoWithoutPrecepteeMarker, hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
@@ -146,7 +147,7 @@ export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
 type TWorkersListProps = {
     grouped: TGroupedDivisionNurses;
     shiftTeamId: number;
-    levelsByNurseId: Record<number, number>;
+    levelsByNurseId: Record<number, TSkillLevelValue>;
     skillConfig: TSkillConfig;
     wardShiftTypes: TWardShiftType[] | undefined;
     isBusy: boolean;
@@ -207,7 +208,7 @@ export function WorkersList({
 type TWorkerRowProps = {
     nurse: TNurse;
     index: number;
-    level: number | undefined;
+    level: TSkillLevelValue | undefined;
     skillConfig: TSkillConfig;
     wardShiftTypes: TWardShiftType[] | undefined;
     showSkill: boolean;

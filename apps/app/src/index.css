@@ -74,6 +74,29 @@
 }
 
 @layer components {
+    .text-highlight-soft {
+        position: relative;
+        z-index: 0;
+        display: inline-block;
+        color: #6c4df6;
+    }
+
+    .text-highlight-soft::after {
+        content: '';
+        position: absolute;
+        left: -0.12em;
+        right: -0.12em;
+        bottom: 0.08em;
+        height: 0.42em;
+        border-radius: 999px;
+        background: rgba(167, 139, 250, 0.16);
+        z-index: -1;
+    }
+
+    .text-highlight-soft--subtle::after {
+        background: rgba(167, 139, 250, 0.1);
+    }
+
     /* Chrome, Edge, and Safari */
     ::-webkit-scrollbar {
         width: 16px;
@@ -97,6 +120,45 @@
     body {
         scrollbar-width: thin;
         scrollbar-color: #888 #f0f0f0;
+    }
+}
+
+@keyframes make-shift-play-nudge {
+    0% {
+        transform: translateX(0) scale(1);
+    }
+
+    34% {
+        transform: translateX(-1px) scale(0.9);
+    }
+
+    68% {
+        transform: translateX(2px) scale(1.08);
+    }
+
+    100% {
+        transform: translateX(0) scale(1);
+    }
+}
+
+@keyframes make-shift-play-echo {
+    0% {
+        opacity: 0;
+        transform: translateX(-3px) scale(0.74);
+    }
+
+    26% {
+        opacity: 0.32;
+    }
+
+    72% {
+        opacity: 0;
+        transform: translateX(4px) scale(1.24);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(4px) scale(1.24);
     }
 }
 

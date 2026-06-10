@@ -62,7 +62,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
     const paletteMenuRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        setLocalConfig({...config, autoAssign: true});
+        setLocalConfig(config);
         setEditingLevel(null);
         setEditingLabel('');
         setIsLevelCountMenuOpen(false);
@@ -405,7 +405,7 @@ function SkillLevelModal({open, config, onClose, onSave, onDisable}: ISkillLevel
                     </button>
                     <WizardButton
                         onClick={() => {
-                            onSave({...localConfig, autoAssign: true});
+                            onSave(localConfig);
                             onClose();
                         }}
                     >

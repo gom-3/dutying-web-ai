@@ -26,7 +26,6 @@ interface IShiftCalendarProps {
     violations?: Map<string, TViolationItem>;
     foldedLevels?: boolean[];
     onToggleFoldLevel?: (level: number) => void;
-    onUpdateCarry?: (shiftNurseId: number, nextCarry: number) => void;
     onSelectNurse?: (nurseId: number | null) => void;
     enableDragAndDrop?: boolean;
     onDragEnd?: (result: DropResult) => void;
@@ -49,7 +48,6 @@ function ShiftCalendar({
     violations,
     foldedLevels,
     onToggleFoldLevel,
-    onUpdateCarry,
     onSelectNurse,
     enableDragAndDrop = false,
     onDragEnd,
@@ -196,7 +194,6 @@ function ShiftCalendar({
                                 onToggleFoldLevel={onToggleFoldLevel}
                                 onEditDivision={onEditDivision}
                                 onSelectNurse={onSelectNurse}
-                                onUpdateCarry={onUpdateCarry}
                                 workerRowMap={workerRowMap}
                                 doc={doc}
                                 getCellShiftType={getCellShiftType}

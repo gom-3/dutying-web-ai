@@ -695,10 +695,11 @@ export const ko = {
                 "verificationFailed": "인증 메일을 보내지 못했어요. 다시 시도해 주세요.",
                 "verificationSent": "인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.",
                 "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
+                "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
                 "emailVerified": "이메일 인증이 완료됐어요.",
                 "verificationInvalid": "인증번호를 확인해 주세요.",
-                "passwordResetTokenVerified": "인증이 완료됐어요. 새 비밀번호를 입력해 주세요.",
-                "passwordResetSuccess": "비밀번호를 변경했어요. 다시 로그인해 주세요.",
+                "passwordResetTokenVerified": "인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.",
+                "passwordResetSuccess": "비밀번호가 변경됐어요. 새 비밀번호로 로그인해 주세요.",
                 "passwordResetFailed": "비밀번호를 변경하지 못했어요. 다시 시도해 주세요."
             },
             "hasAccountPrompt": "이미 계정이 있나요?",
@@ -738,29 +739,29 @@ export const ko = {
                 "nameRequired": "이름을 입력해 주세요.",
                 "passwordMinLength": "비밀번호는 {{count}}자 이상 입력해 주세요.",
                 "passwordMismatch": "비밀번호가 서로 달라요.",
-                "emailVerificationRequired": "이메일 인증을 먼저 완료해 주세요.",
+                "emailVerificationRequired": "이메일 인증을 완료해 주세요.",
                 "verificationCodeRequired": "인증번호를 입력해 주세요.",
                 "verificationConfirmRequired": "인증 확인을 완료해 주세요.",
-                "passwordConfirmRequired": "비밀번호 확인을 입력해 주세요."
+                "passwordConfirmRequired": "비밀번호를 다시 입력해 주세요."
             },
             "verificationCodeAria": "이메일 인증번호",
             "verificationCodePlaceholder": "인증번호를 입력해 주세요",
             "verificationResend": "재전송",
             "verificationSend": "인증",
-            "passwordResetTitle": "비밀번호 재설정",
-            "forgotPassword": "비밀번호를 잊으셨나요?",
+            "passwordResetTitle": "비밀번호 찾기",
+            "forgotPassword": "비밀번호 찾기",
             "previousImage": "이전 이미지",
             "nextImage": "다음 이미지",
             "loginVisualAria": "듀팅 로그인 소개 이미지",
             "sixDigitVerificationCodePlaceholder": "6자리 인증번호",
             "passwordResetVerificationCodeAria": "비밀번호 재설정 인증번호",
             "verificationComplete": "인증 완료",
-            "verificationConfirm": "인증 확인",
+            "verificationConfirm": "확인",
             "newPassword": "새 비밀번호",
             "newPasswordPlaceholder": "새 비밀번호를 입력해 주세요",
             "newPasswordConfirm": "새 비밀번호 확인",
             "newPasswordConfirmPlaceholder": "새 비밀번호를 다시 입력해 주세요",
-            "passwordResetSubmit": "비밀번호 변경",
+            "passwordResetSubmit": "비밀번호 재설정",
             "backToLogin": "로그인으로 돌아가기"
         },
         "makeShift": {
@@ -866,15 +867,15 @@ export const ko = {
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "전달 근무",
                 "shiftTypeDropdownAria": "근무유형 선택",
-                "violationDialogAria": "제약 문제",
+                "violationDialogAria": "제약조건 위반 {{count}}개",
                 "violationLevel": {
-                    "error": "오류",
-                    "warning": "경고"
+                    "error": "중요",
+                    "warning": "일반"
                 },
                 "dateOthers": "외 {{count}}일",
                 "violationCount": {
-                    "error": "오류 {{count}}건",
-                    "warning": "경고 {{count}}건"
+                    "error": "중요 {{count}}",
+                    "warning": "일반 {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -1651,16 +1652,16 @@ export const ko = {
             "modal": {
                 "deleteTeamDescriptionSuffix": " 팀을 삭제하면 소속 간호사 {{count}}명도 함께 삭제돼요.",
                 "deleteTeamTitle": "팀을 삭제할까요?",
-                "deleteTeamDescriptionWithNursesAndSchedule": "{{teamName}}에 등록된 간호사 {{nurseCount}}명과 입력한 근무표가 함께 삭제돼요.",
-                "deleteTeamDescriptionWithNurses": "{{teamName}}에 등록된 간호사 {{nurseCount}}명이 함께 삭제돼요.",
-                "deleteTeamDescriptionWithSchedule": "{{teamName}}에 입력한 근무표가 함께 삭제돼요.",
-                "deleteTeamDescription": "{{teamName}} 팀을 삭제할까요?"
+                "deleteTeamDescriptionWithNursesAndSchedule": "에 등록된 간호사 {{nurseCount}}명과 입력한 근무표가 함께 삭제돼요.",
+                "deleteTeamDescriptionWithNurses": "에 등록된 간호사 {{nurseCount}}명이 함께 삭제돼요.",
+                "deleteTeamDescriptionWithSchedule": "에 입력한 근무표가 함께 삭제돼요.",
+                "deleteTeamDescription": "을 삭제할까요?"
             },
             "nurse": {
                 "deleteNurseAria": "{{nurseName}} 삭제",
                 "dragAria": "드래그하여 순서 변경",
                 "skillAria": "{{nurseName}} 숙련도",
-                "skillUnselectedBadge": "숙련도 미선택",
+                "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "미선택",
                 "sort": {
                     "manual": "수동순",
@@ -3028,10 +3029,11 @@ export const en: TLocale = {
                 "verificationFailed": "Could not send the verification email. Please try again.",
                 "verificationSent": "We sent a verification email. Check your inbox and enter the code.",
                 "invalidCredentials": "Email or password is incorrect.",
+                "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
                 "emailVerified": "Email verification is complete.",
                 "verificationInvalid": "Check the verification code.",
-                "passwordResetTokenVerified": "Verification is complete. Enter a new password.",
-                "passwordResetSuccess": "Password changed. Please sign in again.",
+                "passwordResetTokenVerified": "Code verified. Enter a new password.",
+                "passwordResetSuccess": "Password changed. Sign in with your new password.",
                 "passwordResetFailed": "Could not change the password. Please try again."
             },
             "hasAccountPrompt": "Already have an account?",
@@ -3071,29 +3073,29 @@ export const en: TLocale = {
                 "nameRequired": "Enter your name.",
                 "passwordMinLength": "Enter at least {{count}} characters for your password.",
                 "passwordMismatch": "Passwords do not match.",
-                "emailVerificationRequired": "Complete email verification first.",
+                "emailVerificationRequired": "Complete email verification.",
                 "verificationCodeRequired": "Enter the verification code.",
                 "verificationConfirmRequired": "Confirm the verification code first.",
-                "passwordConfirmRequired": "Enter the password confirmation."
+                "passwordConfirmRequired": "Enter the password again."
             },
             "verificationCodeAria": "Email verification code",
             "verificationCodePlaceholder": "Enter the verification code",
             "verificationResend": "Resend",
             "verificationSend": "Verify",
             "passwordResetTitle": "Reset password",
-            "forgotPassword": "Forgot password?",
+            "forgotPassword": "Forgot password",
             "previousImage": "Previous image",
             "nextImage": "Next image",
             "loginVisualAria": "Dutying sign-in visual",
             "sixDigitVerificationCodePlaceholder": "6-digit verification code",
             "passwordResetVerificationCodeAria": "Password reset verification code",
             "verificationComplete": "Verified",
-            "verificationConfirm": "Confirm code",
+            "verificationConfirm": "Confirm",
             "newPassword": "New password",
             "newPasswordPlaceholder": "Enter a new password",
             "newPasswordConfirm": "Confirm new password",
             "newPasswordConfirmPlaceholder": "Enter the new password again",
-            "passwordResetSubmit": "Change password",
+            "passwordResetSubmit": "Reset password",
             "backToLogin": "Back to sign in"
         },
         "makeShift": {
@@ -3199,15 +3201,15 @@ export const en: TLocale = {
                 "nurseDayLabel": "{{name}} · day {{day}}",
                 "previousShifts": "Prev",
                 "shiftTypeDropdownAria": "Select shift type",
-                "violationDialogAria": "Constraint issue",
+                "violationDialogAria": "Constraint issues: {{count}}",
                 "violationLevel": {
-                    "error": "Error",
-                    "warning": "Warning"
+                    "error": "Important",
+                    "warning": "General"
                 },
                 "dateOthers": "+{{count}} more day",
                 "violationCount": {
-                    "error": "{{count}} error",
-                    "warning": "{{count}} warning"
+                    "error": "Important {{count}}",
+                    "warning": "General {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -3984,16 +3986,16 @@ export const en: TLocale = {
             "modal": {
                 "deleteTeamDescriptionSuffix": " team and its {{count}} nurses will be deleted.",
                 "deleteTeamTitle": "Delete this team?",
-                "deleteTeamDescriptionWithNursesAndSchedule": "{{nurseCount}} nurses and the entered schedule in {{teamName}} will also be deleted.",
-                "deleteTeamDescriptionWithNurses": "{{nurseCount}} nurses in {{teamName}} will also be deleted.",
-                "deleteTeamDescriptionWithSchedule": "The entered schedule in {{teamName}} will also be deleted.",
-                "deleteTeamDescription": "Delete {{teamName}}?"
+                "deleteTeamDescriptionWithNursesAndSchedule": "'s {{nurseCount}} nurses and entered schedule will also be deleted.",
+                "deleteTeamDescriptionWithNurses": "'s {{nurseCount}} nurses will also be deleted.",
+                "deleteTeamDescriptionWithSchedule": "'s entered schedule will also be deleted.",
+                "deleteTeamDescription": " will be deleted."
             },
             "nurse": {
                 "deleteNurseAria": "Delete {{nurseName}}",
                 "dragAria": "Drag to change order",
                 "skillAria": "Skill level for {{nurseName}}",
-                "skillUnselectedBadge": "Skill unselected",
+                "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "Unselected",
                 "sort": {
                     "manual": "Manual order",
@@ -5359,10 +5361,11 @@ export const ja: TLocale = {
                 "verificationFailed": "認証メールを送信できませんでした。もう一度お試しください。",
                 "verificationSent": "認証メールを送信しました。メールボックスで認証コードを確認して入力してください。",
                 "invalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
+                "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
                 "emailVerified": "メール認証が完了しました。",
                 "verificationInvalid": "認証コードを確認してください。",
-                "passwordResetTokenVerified": "認証が完了しました。新しいパスワードを入力してください。",
-                "passwordResetSuccess": "パスワードを変更しました。もう一度ログインしてください。",
+                "passwordResetTokenVerified": "認証番号を確認しました。新しいパスワードを入力してください。",
+                "passwordResetSuccess": "パスワードが変更されました。新しいパスワードでログインしてください。",
                 "passwordResetFailed": "パスワードを変更できませんでした。もう一度お試しください。"
             },
             "hasAccountPrompt": "すでにアカウントをお持ちですか？",
@@ -5402,10 +5405,10 @@ export const ja: TLocale = {
                 "nameRequired": "名前を入力してください。",
                 "passwordMinLength": "パスワードは{{count}}文字以上で入力してください。",
                 "passwordMismatch": "パスワードが一致しません。",
-                "emailVerificationRequired": "先にメール認証を完了してください。",
+                "emailVerificationRequired": "メール認証を完了してください。",
                 "verificationCodeRequired": "認証コードを入力してください。",
                 "verificationConfirmRequired": "先に認証確認を完了してください。",
-                "passwordConfirmRequired": "パスワード確認を入力してください。"
+                "passwordConfirmRequired": "パスワードをもう一度入力してください。"
             },
             "verificationCodeAria": "メール認証コード",
             "verificationCodePlaceholder": "認証コードを入力してください",
@@ -5419,12 +5422,12 @@ export const ja: TLocale = {
             "sixDigitVerificationCodePlaceholder": "6桁の認証コード",
             "passwordResetVerificationCodeAria": "パスワード再設定認証コード",
             "verificationComplete": "認証完了",
-            "verificationConfirm": "認証を確認",
+            "verificationConfirm": "確認",
             "newPassword": "新しいパスワード",
             "newPasswordPlaceholder": "新しいパスワードを入力してください",
             "newPasswordConfirm": "新しいパスワード確認",
             "newPasswordConfirmPlaceholder": "新しいパスワードをもう一度入力してください",
-            "passwordResetSubmit": "パスワードを変更",
+            "passwordResetSubmit": "パスワード再設定",
             "backToLogin": "ログインに戻る"
         },
         "makeShift": {
@@ -5530,15 +5533,15 @@ export const ja: TLocale = {
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
                 "shiftTypeDropdownAria": "勤務タイプを選択",
-                "violationDialogAria": "制約の問題",
+                "violationDialogAria": "制約の問題 {{count}}件",
                 "violationLevel": {
-                    "error": "エラー",
-                    "warning": "警告"
+                    "error": "重要",
+                    "warning": "通常"
                 },
                 "dateOthers": "ほか{{count}}日",
                 "violationCount": {
-                    "error": "エラー{{count}}件",
-                    "warning": "警告{{count}}件"
+                    "error": "重要 {{count}}",
+                    "warning": "通常 {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -6315,16 +6318,16 @@ export const ja: TLocale = {
             "modal": {
                 "deleteTeamDescriptionSuffix": "チームを削除すると所属看護師{{count}}名も一緒に削除されます。",
                 "deleteTeamTitle": "チームを削除しますか？",
-                "deleteTeamDescriptionWithNursesAndSchedule": "{{teamName}}に登録された看護師{{nurseCount}}名と入力済み勤務表も削除されます。",
-                "deleteTeamDescriptionWithNurses": "{{teamName}}に登録された看護師{{nurseCount}}名も削除されます。",
-                "deleteTeamDescriptionWithSchedule": "{{teamName}}に入力済みの勤務表も削除されます。",
-                "deleteTeamDescription": "{{teamName}}チームを削除しますか？"
+                "deleteTeamDescriptionWithNursesAndSchedule": "に登録された看護師{{nurseCount}}名と入力済み勤務表も削除されます。",
+                "deleteTeamDescriptionWithNurses": "に登録された看護師{{nurseCount}}名も削除されます。",
+                "deleteTeamDescriptionWithSchedule": "に入力済みの勤務表も削除されます。",
+                "deleteTeamDescription": "を削除しますか？"
             },
             "nurse": {
                 "deleteNurseAria": "{{nurseName}}を削除",
                 "dragAria": "ドラッグして順序を変更",
                 "skillAria": "{{nurseName}}の習熟度",
-                "skillUnselectedBadge": "習熟度未選択",
+                "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "未選択",
                 "sort": {
                     "manual": "手動順",

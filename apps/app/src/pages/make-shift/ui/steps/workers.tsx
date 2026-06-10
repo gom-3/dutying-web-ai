@@ -8,7 +8,7 @@ import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useEditShiftTeam from '@/features/edit-shift-team';
-import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward-skill/model/skill-level';
+import {getWardSkillSettings, resolveWardSkillLevels, type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
 import {getGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {PersonIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
@@ -42,7 +42,7 @@ const compareWorkerName = (left: TNurse, right: TNurse) => {
 const sortWorkersForDisplay = (
     workers: TNurse[],
     sortMode: TMakeShiftWorkerSortMode,
-    levelsByNurseId: Record<number, number>,
+    levelsByNurseId: Record<number, TSkillLevelValue>,
     getWorkerState: (nurse: TNurse) => boolean,
 ) => {
     const activeWorkers = workers.filter((nurse) => getWorkerState(nurse));

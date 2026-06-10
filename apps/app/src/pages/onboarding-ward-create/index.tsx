@@ -105,12 +105,12 @@ function OnboardingWardCreatePage() {
     const getDeleteTeamModalDescription = () => {
         if (activeTeamNurseCount > 0 && activeTeamScheduleRowCount > 0) {
             return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNursesAndSchedule', {
-                count: activeTeamNurseCount,
+                nurseCount: activeTeamNurseCount,
             });
         }
 
         if (activeTeamNurseCount > 0) {
-            return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNurses', {count: activeTeamNurseCount});
+            return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNurses', {nurseCount: activeTeamNurseCount});
         }
 
         if (activeTeamScheduleRowCount > 0) {

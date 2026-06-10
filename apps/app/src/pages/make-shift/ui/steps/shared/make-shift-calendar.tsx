@@ -14,12 +14,18 @@ import {
 } from '@/features/shift-editor/model';
 import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-editor/model/duty-doc-cells';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
+import {type TSkillLevelConfig, type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
+import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import i18n from '@/i18n';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
 type TViolationMap = Map<string, TViolation>;
+type TSkillColumnConfig = {
+    config: TSkillLevelConfig;
+    levelsByNurseId: Record<number, TSkillLevelValue>;
+};
 
 type TMakeShiftCalendarProps = {
     shift: TShift;
@@ -28,8 +34,8 @@ type TMakeShiftCalendarProps = {
     teamViolations?: TViolation[];
     showFaults: boolean;
     /**
-     * default: 이름·이월·전달·일자·우측 행 합계·하단 일자별 통계.
-     * simplified: 이름·일자만 (이월·전달 근무·합계·통계 제외) — 신청 근무 단계 등.
+     * default: 이름·전달·일자·우측 행 합계·하단 일자별 통계.
+     * simplified: 이름·일자만 (전달 근무·합계·통계 제외) — 신청 근무 단계 등.
      */
     variant?: 'default' | 'simplified';
     /**
@@ -49,11 +55,12 @@ type TMakeShiftCalendarProps = {
      * true면 "전달 근무" 4칸도 일반 캘린더 셀처럼 선택/입력할 수 있다.
      */
     editableLastShifts?: boolean;
+    skillColumn?: TSkillColumnConfig;
 };
 
 /**
  * 근무 만들기·/duty 공용 일자 캘린더. 스케일(transform)·내부 가로 스크롤 없음, 레이아웃은 `cqw`+`@container`.
- * 열: 이름 / 이월 / 전달 / N일 / 우측 D·E·N·O·WO 합계.
+ * 열: 이름 / 전달 / N일 / 우측 D·E·N·O·WO 합계.
  */
 const VIOLATION_TONE: Record<TViolation['level'], {border: string; surface: string; rail: string; markerBg: string; markerText: string}> = {
     error: {
@@ -73,15 +80,20 @@ const VIOLATION_TONE: Record<TViolation['level'], {border: string; surface: stri
 };
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const NAME_COL = 'clamp(64px,4.4cqw,76px)';
-const CARRY_COL = 'clamp(20px,1.5cqw,26px)';
+const SKILL_COL = '44px';
 const LAST_COL = 'clamp(74px,5.4cqw,98px)';
+const ROW_SKILL_BADGE_CLASS = 'make-shift-calendar__row-skill-badge min-h-[18px] min-w-10 px-1.5 text-[10px]';
+
+type TRowInfoColumnMode = 'skill' | 'none';
+
 /**
  * 행의 좌측(카드 안에 들어가는) 그리드.
  * 사진처럼 division 카드는 이 좌측만 감싸고, 우측 합계(row-summary-counts)는
  * 카드 밖에 별도로 배치된다.
  */
-const LEFT_GRID_TEMPLATE_COLUMNS = `${NAME_COL} ${CARRY_COL} ${LAST_COL} minmax(0,1fr)`;
-/** 이월·전달·통계 열 없이 이름 + 일자만 */
+const getLeftGridTemplateColumns = (rowInfoColumnMode: TRowInfoColumnMode) =>
+    `${NAME_COL} ${rowInfoColumnMode === 'none' ? '' : `${SKILL_COL} `}${LAST_COL} minmax(0,1fr)`;
+/** 전달·통계 열 없이 이름 + 일자만 */
 const LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED = `${NAME_COL} minmax(0,1fr)`;
 const ROW_GAP_X = 'clamp(4px,0.5cqw,10px)';
 /**
@@ -184,10 +196,6 @@ const SHIFT_BADGE_SMALL_BASE =
  * D/E/N 행 사이 세로 간격만 SUMMARY_GAP(우측 합계 열 가로 gap)으로 맞춘다.
  */
 const DAILY_SUMMARY_ROW_HEIGHT = SUMMARY_CELL_HEIGHT;
-/**
- * 이월 박스의 round.
- */
-const CARRY_ROUNDED = 'rounded-[clamp(3px,0.35cqw,6px)]';
 const LEGACY_TITLE_MIN_OFF_AFTER_NIGHT = '\uC57C\uAC04 \uD6C4 \uD734\uBB34 \uBD80\uC871';
 const LEGACY_TITLE_MIN_STAFF_SHORTAGE = '\uD544\uC694 \uC778\uC6D0 \uBD80\uC871';
 const LEGACY_HOLIDAY_DAY_TYPES = new Set(['\uACF5\uD734\uC77C', '\uB300\uCCB4\uACF5\uD734\uC77C', '\uD734\uC77C']);
@@ -511,7 +519,7 @@ function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover 
         <div
             data-violation-popover
             role="dialog"
-            aria-label={i18n.t('page.makeShift.calendar.violationDialogAria')}
+            aria-label={i18n.t('page.makeShift.calendar.violationDialogAria', {count: sortedViolations.length})}
             className={cn(
                 'fixed z-[99999] box-border max-w-[calc(100vw-1rem)] overflow-hidden rounded-[12px] border border-gray-6 bg-white text-left font-apple shadow-[0_16px_36px_rgba(15,23,42,0.18)]',
                 popover.placement === 'top' ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2',
@@ -730,6 +738,7 @@ export function MakeShiftCalendar({
     readonly = false,
     disableInitialSelection = false,
     editableLastShifts = false,
+    skillColumn,
 }: TMakeShiftCalendarProps) {
     const {separateWeekendColor} = useUIConfigStore();
     const {t} = useTypedTranslation();
@@ -971,7 +980,10 @@ export function MakeShiftCalendar({
     }, [shift.wardShiftTypes, stickySummaryShiftTypeIds, visibleSummaryShiftTypeIds]);
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
-    const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : LEFT_GRID_TEMPLATE_COLUMNS;
+    const showSkillColumn = !isSimplified && skillColumn?.config.enabled === true;
+    const showRowInfoColumn = showSkillColumn;
+    const rowInfoColumnMode: TRowInfoColumnMode = showSkillColumn ? 'skill' : 'none';
+    const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : getLeftGridTemplateColumns(rowInfoColumnMode);
 
     let didAssignTutorialCell = false;
 
@@ -984,7 +996,7 @@ export function MakeShiftCalendar({
             //
             // 행 단위 구조:
             //   <row>
-            //     <row-left>  (이름·이월·전달근무·일자) — division 카드 내부에 들어감
+            //     <row-left>  (이름·전달근무·일자) — division 카드 내부에 들어감
             //     <row-summary>(D/E/N/O/WO 합계) — 카드 밖, 우측에 분리 배치
             //   </row>
             className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-2"
@@ -1007,9 +1019,11 @@ export function MakeShiftCalendar({
                     <HeaderLabel className="make-shift-calendar__header-label--name">{t('page.makeShift.calendar.name')}</HeaderLabel>
                     {!isSimplified && (
                         <>
-                            <HeaderLabel className="make-shift-calendar__header-label--carry">
-                                {t('page.makeShift.calendar.carried')}
-                            </HeaderLabel>
+                            {showRowInfoColumn ? (
+                                <HeaderLabel className="make-shift-calendar__header-label--carry">
+                                    {t('page.request.calendar.skillColumn')}
+                                </HeaderLabel>
+                            ) : null}
                             <HeaderLabel className="make-shift-calendar__header-label--last">
                                 {t('page.makeShift.calendar.previousShifts')}
                             </HeaderLabel>
@@ -1140,7 +1154,8 @@ export function MakeShiftCalendar({
                                         >
                                             <CalendarRowLeft
                                                 nurseName={row.shiftNurse.name}
-                                                carried={row.shiftNurse.carried}
+                                                skillLevel={skillColumn?.levelsByNurseId[row.shiftNurse.nurseId]}
+                                                skillConfig={skillColumn?.config}
                                                 lastShifts={row.lastWardShiftList.map((id) =>
                                                     id != null ? (idToType.get(id) ?? null) : null,
                                                 )}
@@ -1156,6 +1171,9 @@ export function MakeShiftCalendar({
                                                 showFaults={showFaults}
                                                 separateWeekendColor={separateWeekendColor}
                                                 simplified={isSimplified}
+                                                showSkillColumn={showSkillColumn}
+                                                showRowInfoColumn={showRowInfoColumn}
+                                                leftGridTemplateColumns={leftGridTemplateColumns}
                                                 readonly={readonly}
                                                 editableLastShifts={editableLastShifts}
                                                 selectionRect={selectionRect}
@@ -1202,7 +1220,13 @@ export function MakeShiftCalendar({
 
             {/* FOOTER: 일자별 D / E / N 합계 — simplified 에서는 생략 */}
             {!isSimplified && hasSummaryShiftTypes && (
-                <DailySummary doc={doc} shortNameToType={shortNameToType} summaryShiftTypes={summaryShiftTypes} />
+                <DailySummary
+                    doc={doc}
+                    shortNameToType={shortNameToType}
+                    summaryShiftTypes={summaryShiftTypes}
+                    leftGridTemplateColumns={leftGridTemplateColumns}
+                    showRowInfoColumn={showRowInfoColumn}
+                />
             )}
             <ShiftTypeDropdown
                 dropdown={shiftTypeDropdown}
@@ -1232,7 +1256,8 @@ function HeaderLabel({children, className}: {children: React.ReactNode; classNam
 
 type TCalendarRowLeftProps = {
     nurseName: string;
-    carried: number;
+    skillLevel?: TSkillLevelValue;
+    skillConfig?: TSkillLevelConfig;
     lastShifts: (TWardShiftType | null)[];
     lastShiftCells?: TCellValue[];
     days: TShift['days'];
@@ -1246,6 +1271,9 @@ type TCalendarRowLeftProps = {
     showFaults: boolean;
     separateWeekendColor: boolean;
     simplified: boolean;
+    showSkillColumn: boolean;
+    showRowInfoColumn: boolean;
+    leftGridTemplateColumns: string;
     readonly: boolean;
     editableLastShifts: boolean;
     selectionRect: {top: number; left: number; bottom: number; right: number} | null;
@@ -1258,11 +1286,12 @@ type TCalendarRowLeftProps = {
 };
 
 /**
- * 행의 좌측 (이름·이월·전달근무·일자) — division 카드 안에 들어간다.
+ * 행의 좌측 (이름·전달근무·일자) — division 카드 안에 들어간다.
  */
 function CalendarRowLeft({
     nurseName,
-    carried,
+    skillLevel,
+    skillConfig,
     lastShifts,
     lastShiftCells,
     days,
@@ -1276,6 +1305,9 @@ function CalendarRowLeft({
     showFaults,
     separateWeekendColor,
     simplified,
+    showSkillColumn,
+    showRowInfoColumn,
+    leftGridTemplateColumns,
     readonly,
     editableLastShifts,
     selectionRect,
@@ -1350,7 +1382,7 @@ function CalendarRowLeft({
                 data-row-index={rowIndex}
                 className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(28px,2.4cqw,40px)] w-full min-w-0 items-stretch"
                 style={{
-                    gridTemplateColumns: simplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : LEFT_GRID_TEMPLATE_COLUMNS,
+                    gridTemplateColumns: leftGridTemplateColumns,
                     columnGap: ROW_GAP_X,
                 }}
             >
@@ -1367,17 +1399,17 @@ function CalendarRowLeft({
 
                 {!simplified && (
                     <>
-                        <div className="make-shift-calendar__row-carry flex min-h-0 items-center justify-center">
-                            <div
-                                className={cn(
-                                    'make-shift-calendar__row-carry-value',
-                                    'grid size-[clamp(20px,1.8cqw,28px)] place-items-center bg-main-bg font-poppins text-[clamp(12px,1.05cqw,16px)] leading-none text-sub-2 tabular-nums',
-                                    CARRY_ROUNDED,
-                                )}
-                            >
-                                {carried}
+                        {showRowInfoColumn ? (
+                            <div className="make-shift-calendar__row-carry flex min-h-0 items-center justify-center">
+                                {showSkillColumn && skillConfig ? (
+                                    <SkillBadge
+                                        level={skillLevel}
+                                        config={skillConfig}
+                                        className={ROW_SKILL_BADGE_CLASS}
+                                    />
+                                ) : null}
                             </div>
-                        </div>
+                        ) : null}
 
                         <div
                             className="make-shift-calendar__row-last-shifts flex min-h-0 min-w-0 flex-nowrap items-center justify-center overflow-hidden"
@@ -1645,10 +1677,14 @@ function DailySummary({
     doc,
     shortNameToType,
     summaryShiftTypes,
+    leftGridTemplateColumns,
+    showRowInfoColumn,
 }: {
     doc: TDutyDoc;
     shortNameToType: Map<string, TWardShiftType>;
     summaryShiftTypes: TWardShiftType[];
+    leftGridTemplateColumns: string;
+    showRowInfoColumn: boolean;
 }) {
     const countByDay = (j: number, typeId: number) =>
         doc.rows.filter((row) => {
@@ -1673,10 +1709,10 @@ function DailySummary({
                         key={type.wardShiftTypeId}
                         data-shift-type-id={type.wardShiftTypeId}
                         className={cn('make-shift-daily-summary__row grid w-full min-w-0 items-center', DAILY_SUMMARY_ROW_HEIGHT)}
-                        style={{gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS, columnGap: ROW_GAP_X}}
+                        style={{gridTemplateColumns: leftGridTemplateColumns, columnGap: ROW_GAP_X}}
                     >
                         <div />
-                        <div />
+                        {showRowInfoColumn ? <div /> : null}
                         <div className="make-shift-daily-summary__label flex items-center justify-end">
                             <div
                                 className={cn(

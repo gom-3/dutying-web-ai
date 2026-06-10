@@ -587,12 +587,17 @@ function HeaderActions({
 
     if (!isAuth) {
         return (
-            <Link
-                to={ROUTE.LOGIN}
-                className="flex h-10 items-center rounded-[10px] bg-main-1 px-4 text-sm font-bold text-white transition-colors hover:bg-[#5832E7]"
-            >
-                {t('page.landing.common.login')}
-            </Link>
+            <nav aria-label={t('page.navigationBar.items.account')} className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]">
+                <Link to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
+                    {t('page.landing.common.login')}
+                </Link>
+                <span aria-hidden="true" className="text-[#A29BB7]">
+                    |
+                </span>
+                <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
+                    {t('page.login.signupLink')}
+                </Link>
+            </nav>
         );
     }
 

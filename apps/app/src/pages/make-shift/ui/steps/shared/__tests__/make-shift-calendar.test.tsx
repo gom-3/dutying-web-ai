@@ -5,6 +5,7 @@ import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, type TViolation, useShiftEditorStore} from '@/features/shift-editor/model';
+import {DEFAULT_SKILL_LEVEL_CONFIG} from '@/features/ward-skill/model/skill-level';
 import i18n from '@/i18n';
 import {MakeShiftCalendar} from '../make-shift-calendar';
 
@@ -95,6 +96,57 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid).toHaveClass('px-0');
         expect(headerGrid).not.toHaveClass('px-1.5');
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
+    });
+
+    it('hides the carry column by default', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
+
+        expect(screen.queryByText('이월')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carry-value')).not.toBeInTheDocument();
+    });
+
+    it('replaces the carry column with a skill badge when skillColumn is provided', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                skillColumn={{
+                    config: DEFAULT_SKILL_LEVEL_CONFIG,
+                    levelsByNurseId: {100: 3},
+                }}
+            />,
+        );
+
+        expect(screen.getByText('숙련도')).toBeInTheDocument();
+        expect(screen.queryByText('이월')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carry-value')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('LV. 3');
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass('min-h-[18px]', 'min-w-10', 'text-[10px]');
+    });
+
+    it('hides the skill column when skill settings are disabled', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                skillColumn={{
+                    config: {...DEFAULT_SKILL_LEVEL_CONFIG, enabled: false},
+                    levelsByNurseId: {100: 3},
+                }}
+            />,
+        );
+
+        expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
+        expect(screen.queryByText('이월')).not.toBeInTheDocument();
+        expect(screen.getByText('전달 근무')).toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carry')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).not.toBeInTheDocument();
     });
 
     it('shows the nurse once in the header and keeps violation rows compact', async () => {

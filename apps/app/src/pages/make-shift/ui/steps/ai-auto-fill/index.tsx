@@ -35,6 +35,7 @@ import {
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {maskDutyDocNonFixedCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
+import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {hasBlankLastShiftCells} from './last-shift-warning';
@@ -166,6 +167,7 @@ export function AiAutofill() {
         focusEditor,
         isHydratingLastShifts,
     } = useDutyEditorStep({onContextChanged: resetAiStatus, hydratePreviousLastShifts: true});
+    const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
@@ -661,6 +663,7 @@ export function AiAutofill() {
                         showFaults={showFaults}
                         onCellClick={focusEditor}
                         editableLastShifts
+                        skillColumn={skillColumn}
                     />
                 )}
                 {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && !dutyQuery.data && (

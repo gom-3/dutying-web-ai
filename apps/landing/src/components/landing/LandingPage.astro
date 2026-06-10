@@ -71,7 +71,11 @@ const formattedFeatureSections = featureSections.map((section) => ({
             <div class="landing-header__actions">
                 <a href={appStoreLink} target="_blank" rel="noreferrer">다운로드</a>
                 <a href={inquiryLink} target="_blank" rel="noreferrer">문의하기</a>
-                <a class="button button--primary button--compact" href={siteConfig.appLinks.login}>로그인</a>
+                <nav class="auth-text-links" aria-label="계정">
+                    <a href={siteConfig.appLinks.login}>로그인</a>
+                    <span aria-hidden="true">|</span>
+                    <a href={siteConfig.appLinks.signup}>회원가입</a>
+                </nav>
             </div>
         </div>
     </section>
@@ -357,6 +361,24 @@ const formattedFeatureSections = featureSections.map((section) => ({
         align-items: center;
         gap: 32px;
         margin-left: 48px;
+    }
+
+    .auth-text-links {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #150b3c;
+        font-size: 1.125rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .landing-header__actions .auth-text-links a {
+        font-weight: 700;
+    }
+
+    .auth-text-links span {
+        color: #a29bb7;
     }
 
     .landing-header__actions > a:not(.button),

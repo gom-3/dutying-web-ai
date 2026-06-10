@@ -7,9 +7,10 @@ interface IRequestCalendarHeaderProps {
     days: TRequestShift['days'];
     focusDay: number | undefined;
     separateWeekendColor: boolean;
+    showSkillColumn: boolean;
 }
 
-export default function RequestCalendarHeader({days, focusDay, separateWeekendColor}: IRequestCalendarHeaderProps) {
+export default function RequestCalendarHeader({days, focusDay, separateWeekendColor, showSkillColumn}: IRequestCalendarHeaderProps) {
     const {t} = useTypedTranslation();
 
     return (
@@ -18,9 +19,11 @@ export default function RequestCalendarHeader({days, focusDay, separateWeekendCo
                 <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>
                     {t('page.request.calendar.nameColumn')}
                 </div>
-                <div className="w-11 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">
-                    {t('page.request.calendar.skillColumn')}
-                </div>
+                {showSkillColumn ? (
+                    <div className="w-11 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">
+                        {t('page.request.calendar.skillColumn')}
+                    </div>
+                ) : null}
                 <div className="w-6 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">
                     {t('page.request.calendar.linkColumn')}
                 </div>

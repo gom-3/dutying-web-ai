@@ -2,10 +2,12 @@ import type {TWardChatMessageResponse, TWardChatUnreadCountResponse} from '@duty
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {ChevronUp, Loader2, MessageCircle, RefreshCcw, SendHorizontal, Users, X} from 'lucide-react';
+import type {AnimationItem} from 'lottie-web';
 import {Fragment, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import i18n from '@/i18n';
 import useAuth from '@/features/auth';
+import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
 import {WardAPI} from '@/shared/api';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -16,6 +18,9 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared
 const CHAT_PAGE_SIZE = 30;
 const OPEN_REFETCH_INTERVAL_MS = 5000;
 const UNREAD_REFETCH_INTERVAL_MS = 15000;
+const WARD_CHAT_ICON_REST_FRAME = 40;
+const WARD_CHAT_ICON_HOVER_SEGMENT: [number, number] = [40, 80];
+const WARD_CHAT_ICON_HOVER_SPEED = 0.45;
 const wardChatQueryKeys = {
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
     unread: (wardId: number) => ['ward-chat', 'unread', wardId] as const,
@@ -125,6 +130,137 @@ function MessageSkeleton() {
     );
 }
 
+function recolorLottieShapesWhite(value: unknown) {
+    if (!value || typeof value !== 'object') return;
+
+    if (Array.isArray(value)) {
+        value.forEach(recolorLottieShapesWhite);
+        return;
+    }
+
+    const record = value as Record<string, unknown>;
+    const color = record.c;
+
+    if (color && typeof color === 'object' && Array.isArray((color as Record<string, unknown>).k)) {
+        (color as Record<string, unknown>).k = [1, 1, 1];
+    }
+
+    Object.values(record).forEach(recolorLottieShapesWhite);
+}
+
+function keepChatDotsVisible(animationData: typeof popiconsChatDotsAnimation) {
+    animationData.layers.slice(0, 3).forEach((layer) => {
+        const dotTransform = layer.shapes?.[0]?.it?.[2];
+
+        if (!dotTransform || !('o' in dotTransform)) return;
+
+        dotTransform.o = {a: 0, k: 100, ix: 2};
+    });
+}
+
+function clonePopiconsChatDotsAnimation() {
+    const animationData = JSON.parse(JSON.stringify(popiconsChatDotsAnimation)) as typeof popiconsChatDotsAnimation;
+
+    recolorLottieShapesWhite(animationData);
+    keepChatDotsVisible(animationData);
+
+    return animationData;
+}
+
+function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
+    const containerRef = useRef<HTMLDivElement | null>(null);
+    const animationRef = useRef<AnimationItem | null>(null);
+    const isPlayingRef = useRef(isPlaying);
+    const [isAnimationReady, setIsAnimationReady] = useState(false);
+
+    useEffect(() => {
+        isPlayingRef.current = isPlaying;
+    }, [isPlaying]);
+
+    useEffect(() => {
+        let isDisposed = false;
+
+        if (!containerRef.current) return;
+        if (import.meta.env.MODE === 'test') return;
+
+        void import('lottie-web/build/player/lottie_light').then(({default: lottiePlayer}) => {
+            if (isDisposed || !containerRef.current) return;
+
+            const animation = lottiePlayer.loadAnimation({
+                container: containerRef.current,
+                renderer: 'svg',
+                loop: false,
+                autoplay: false,
+                animationData: clonePopiconsChatDotsAnimation(),
+                rendererSettings: {
+                    preserveAspectRatio: 'xMidYMid meet',
+                },
+            });
+
+            animationRef.current = animation;
+            animation.setSpeed(WARD_CHAT_ICON_HOVER_SPEED);
+            setIsAnimationReady(true);
+
+            if (isPlayingRef.current) {
+                animation.playSegments(WARD_CHAT_ICON_HOVER_SEGMENT, true);
+                return;
+            }
+
+            animation.goToAndStop(WARD_CHAT_ICON_REST_FRAME, true);
+        });
+
+        return () => {
+            isDisposed = true;
+            animationRef.current?.destroy();
+            animationRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        const animation = animationRef.current;
+
+        if (!animation) return;
+
+        if (isPlaying) {
+            animation.playSegments(WARD_CHAT_ICON_HOVER_SEGMENT, true);
+            return;
+        }
+
+        animation.goToAndStop(WARD_CHAT_ICON_REST_FRAME, true);
+    }, [isPlaying]);
+
+    return (
+        <span aria-hidden="true" className="relative block size-11 overflow-hidden">
+            <svg
+                viewBox="0 0 75 75"
+                fill="none"
+                className={cn(
+                    'absolute inset-0 size-full scale-[3.1] transition-opacity duration-150',
+                    isAnimationReady ? 'opacity-0' : 'opacity-100',
+                )}
+            >
+                <path
+                    d="M45.76 37.3c0 4.44-3.7 8.04-8.25 8.04-.7 0-1.4-.08-2.06-.25-.45-.11-.86-.08-1.3.08-.87.32-2.17.47-3.89.43.7-.73 1.06-1.52 1.12-2.37.04-.45-.12-.85-.39-1.21-.99-1.33-1.57-2.95-1.57-4.72 0-4.44 3.69-8.04 8.25-8.04s8.25 3.6 8.25 8.04z"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                />
+                <circle cx="33.5" cy="37.48" r="1" fill="#FFFFFF" />
+                <circle cx="37.5" cy="37.48" r="1" fill="#FFFFFF" />
+                <circle cx="41.5" cy="37.48" r="1" fill="#FFFFFF" />
+            </svg>
+            <span
+                ref={containerRef}
+                className={cn(
+                    'absolute inset-0 block size-full scale-[3.1] transition-opacity duration-150 [&>svg]:block [&>svg]:size-full',
+                    isAnimationReady ? 'opacity-100' : 'opacity-0',
+                )}
+            />
+        </span>
+    );
+}
+
 export default function WardChatWidget() {
     const {t} = useTypedTranslation();
     const {
@@ -132,6 +268,7 @@ export default function WardChatWidget() {
     } = useAuth();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
+    const [isFloatingButtonHovered, setIsFloatingButtonHovered] = useState(false);
     const [draft, setDraft] = useState('');
     const [messages, setMessages] = useState<TWardChatMessageResponse[]>([]);
     const [nextCursorMessageId, setNextCursorMessageId] = useState<number | null>(null);
@@ -435,13 +572,14 @@ export default function WardChatWidget() {
                                         : t('widget.wardChat.openAria')
                                 }
                                 className="group relative flex size-[60px] items-center justify-center rounded-full bg-main-1 text-white shadow-[0_16px_32px_rgba(102,61,250,0.28)] transition-transform duration-150 hover:scale-[1.03] hover:bg-[#5631E7] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
-                                onClick={() => setIsOpen(true)}
+                                onPointerEnter={() => setIsFloatingButtonHovered(true)}
+                                onPointerLeave={() => setIsFloatingButtonHovered(false)}
+                                onClick={() => {
+                                    setIsFloatingButtonHovered(false);
+                                    setIsOpen(true);
+                                }}
                             >
-                                <MessageCircle
-                                    className="size-7 transition-transform group-hover:scale-105"
-                                    strokeWidth={2.2}
-                                    aria-hidden="true"
-                                />
+                                <WardChatFloatingIcon isPlaying={isFloatingButtonHovered} />
                                 {unreadCount > 0 ? (
                                     <span className="absolute -top-1 -right-1 flex min-w-[24px] items-center justify-center rounded-full border-2 border-white bg-[#E55C6E] px-1.5 text-[11px] leading-5 font-bold text-white">
                                         {getUnreadLabel(unreadCount)}

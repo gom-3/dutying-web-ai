@@ -31,9 +31,6 @@ export function ShiftCalendarHeader({
             <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">
                 {t('feature.shiftEditor.calendarHeader.carryOver')}
             </div>
-            <div className="text-center font-apple text-[clamp(11px,0.7vw,14px)] font-medium text-sub-3">
-                {t('feature.shiftEditor.calendarHeader.previousShift')}
-            </div>
 
             <div
                 className="grid min-w-0 rounded-[2.5rem] border-[.0625rem] border-sub-4 px-2 py-[.1875rem]"
