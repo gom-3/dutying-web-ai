@@ -41,6 +41,7 @@ function cloneDoc(doc: TDutyDoc): TDutyDoc {
         rows: doc.rows.map((row) => ({
             workerId: row.workerId,
             cells: [...row.cells],
+            ...(row.lastCells ? {lastCells: [...row.lastCells]} : {}),
         })),
         workerMeta: Object.fromEntries(Object.entries(doc.workerMeta).map(([workerId, meta]) => [workerId, {...meta}])),
         fixedCells: {...doc.fixedCells},
