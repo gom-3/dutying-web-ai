@@ -32,8 +32,8 @@ export const ko = {
             home: '근무표',
             sections: {
                 schedule: '근무표',
-                operations: '근무 운영',
-                settings: '병동 설정',
+                operations: '병동',
+                settings: '설정',
             },
             items: {
                 make: '근무표',
@@ -42,7 +42,7 @@ export const ko = {
                 member: '근무자 관리',
                 wardSettings: '근무 설정',
                 wardAdmins: '병동 관리자',
-                wardInfoSettings: '병동 설정',
+                wardInfoSettings: '설정',
                 account: '마이페이지',
             },
         },

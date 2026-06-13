@@ -1184,12 +1184,12 @@ page.navigationBar.items.make,web,page.navigationBar.items.make,page.navigationB
 page.navigationBar.items.member,web,page.navigationBar.items.member,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무자 관리,Members,スタッフ管理,,2026-06-10
 page.navigationBar.items.request,web,page.navigationBar.items.request,page.navigationBar,navigationBar,text,imported,,,,,,,,,신청 근무,Shift requests,希望シフト,,2026-06-10
 page.navigationBar.items.wardAdmins,web,page.navigationBar.items.wardAdmins,page.navigationBar,navigationBar,text,imported,,,,,,,,,병동 관리자,Ward admins,病棟管理者,,2026-06-10
-page.navigationBar.items.wardInfoSettings,web,page.navigationBar.items.wardInfoSettings,page.navigationBar,navigationBar,description,imported,,,,,,,,,병동 설정,Ward settings,病棟設定,,2026-06-10
+page.navigationBar.items.wardInfoSettings,web,page.navigationBar.items.wardInfoSettings,page.navigationBar,navigationBar,description,imported,,,,,,,,,설정,Ward settings,病棟設定,,2026-06-10
 page.navigationBar.items.wardSettings,web,page.navigationBar.items.wardSettings,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무 설정,Duty settings,勤務設定,,2026-06-10
 page.navigationBar.landingAria,web,page.navigationBar.landingAria,page.navigationBar,navigationBar,accessibility,imported,,,,,,,,,랜딩 페이지로 이동,Go to landing page,ランディングページへ移動,,2026-06-10
-page.navigationBar.sections.operations,web,page.navigationBar.sections.operations,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무 운영,Operations,勤務管理,,2026-06-10
+page.navigationBar.sections.operations,web,page.navigationBar.sections.operations,page.navigationBar,navigationBar,text,imported,,,,,,,,,병동,Operations,勤務管理,,2026-06-10
 page.navigationBar.sections.schedule,web,page.navigationBar.sections.schedule,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무표,Schedule,勤務表,,2026-06-10
-page.navigationBar.sections.settings,web,page.navigationBar.sections.settings,page.navigationBar,navigationBar,text,imported,,,,,,,,,병동 설정,Settings,病棟設定,,2026-06-10
+page.navigationBar.sections.settings,web,page.navigationBar.sections.settings,page.navigationBar,navigationBar,text,imported,,,,,,,,,설정,Settings,病棟設定,,2026-06-10
 page.navigationBar.wardCodeGuideAria,web,page.navigationBar.wardCodeGuideAria,page.navigationBar,navigationBar,accessibility,imported,,,,,,,,,병동코드 {{wardCode}} 안내 보기,Open ward code {{wardCode}} guide,病棟コード{{wardCode}}の案内を開く,,2026-06-10
 page.onboardingJoinWard.backToWardSelect,web,page.onboardingJoinWard.backToWardSelect,page.onboardingJoinWard,onboardingJoinWard,text,imported,,,,,,,,,병동 선택으로,Back to ward selection,病棟選択へ,,2026-06-10
 page.onboardingJoinWard.checkingPermission,web,page.onboardingJoinWard.checkingPermission,page.onboardingJoinWard,onboardingJoinWard,text,imported,,,,,,,,,입장 권한을 확인하는 중이에요.,Checking access permission.,参加権限を確認しています。,,2026-06-10
@@ -1258,15 +1258,20 @@ page.onboardingWardCreate.schedule.previousMonth,web,page.onboardingWardCreate.s
 page.onboardingWardCreate.schedule.rowFallback,web,page.onboardingWardCreate.schedule.rowFallback,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,{{rowNumber}}행,Row {{rowNumber}},{{rowNumber}}行目,,2026-06-10
 page.onboardingWardCreate.schedule.shiftCellAria,web,page.onboardingWardCreate.schedule.shiftCellAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,{{rowNumber}}행 {{day}}일 근무,"Shift for row {{rowNumber}}, day {{day}}",{{rowNumber}}行目 {{day}}日の勤務,,2026-06-10
 page.onboardingWardCreate.section.identity.description,web,page.onboardingWardCreate.section.identity.description,page.onboardingWardCreate,onboardingWardCreate,description,imported,,,ko|en|ja,,,,,,,,,,2026-06-10
+page.onboardingWardCreate.section.identity.highlightHospitalName,web,page.onboardingWardCreate.section.identity.highlightHospitalName,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,병원명,hospital,病院名,,2026-06-13
+page.onboardingWardCreate.section.identity.highlightWardName,web,page.onboardingWardCreate.section.identity.highlightWardName,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,병동명,ward,病棟名,,2026-06-13
 page.onboardingWardCreate.section.identity.title,web,page.onboardingWardCreate.section.identity.title,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,병원명과 병동명을 입력해 주세요,Enter hospital and ward names,病院名と病棟名を入力してください,,2026-06-10
 page.onboardingWardCreate.section.nurse.description,web,page.onboardingWardCreate.section.nurse.description,page.onboardingWardCreate,onboardingWardCreate,description,imported,,,,,,,,,"매월 팀당 하나의 근무표를 만들 수 있어요. 언제든 수정, 추가 가능해요",You can create one schedule per team each month. You can edit or add nurses anytime.,毎月チームごとに1つの勤務表を作成できます。いつでも修正・追加できます,,2026-06-10
+page.onboardingWardCreate.section.nurse.highlight,web,page.onboardingWardCreate.section.nurse.highlight,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,간호사,nurses,看護師,,2026-06-13
 page.onboardingWardCreate.section.nurse.title,web,page.onboardingWardCreate.section.nurse.title,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,간호사를 등록해 주세요,Register nurses,看護師を登録してください,,2026-06-10
 page.onboardingWardCreate.section.schedule.description,web,page.onboardingWardCreate.section.schedule.description,page.onboardingWardCreate,onboardingWardCreate,description,imported,,,ko|en|ja,,,,,,,,,,2026-06-10
+page.onboardingWardCreate.section.schedule.highlight,web,page.onboardingWardCreate.section.schedule.highlight,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,가장 최근에 사용한 근무표,the most recent schedule,直近で使用した勤務表,,2026-06-13
 page.onboardingWardCreate.section.schedule.title,web,page.onboardingWardCreate.section.schedule.title,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,"병동과 근무표 설정을 위해
 가장 최근에 사용한 근무표를 입력해 주세요","Enter the most recent schedule
 for ward and schedule setup","病棟と勤務表設定のため
 直近で使用した勤務表を入力してください",,2026-06-10
 page.onboardingWardCreate.section.shiftType.description,web,page.onboardingWardCreate.section.shiftType.description,page.onboardingWardCreate,onboardingWardCreate,description,imported,,,,,,,,,나중에도 수정할 수 있어요,You can edit these later,後からでも修正できます,,2026-06-10
+page.onboardingWardCreate.section.shiftType.highlight,web,page.onboardingWardCreate.section.shiftType.highlight,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,근무 유형,shift types,勤務タイプ,,2026-06-13
 page.onboardingWardCreate.section.shiftType.title,web,page.onboardingWardCreate.section.shiftType.title,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,병동의 근무 유형을 설정해 주세요,Set ward shift types,病棟の勤務タイプを設定してください,,2026-06-10
 page.onboardingWardCreate.shiftType.add,web,page.onboardingWardCreate.shiftType.add,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,근무 유형 추가하기,Add shift type,勤務タイプを追加,,2026-06-10
 page.onboardingWardCreate.shiftType.color,web,page.onboardingWardCreate.shiftType.color,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,색상,Color,色,,2026-06-10

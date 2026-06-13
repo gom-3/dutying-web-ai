@@ -1575,14 +1575,14 @@ export const ko = {
                 "member": "근무자 관리",
                 "request": "신청 근무",
                 "wardAdmins": "병동 관리자",
-                "wardInfoSettings": "병동 설정",
+                "wardInfoSettings": "설정",
                 "wardSettings": "근무 설정"
             },
             "landingAria": "랜딩 페이지로 이동",
             "sections": {
-                "operations": "근무 운영",
+                "operations": "병동",
                 "schedule": "근무표",
-                "settings": "병동 설정"
+                "settings": "설정"
             },
             "wardCodeGuideAria": "병동코드 {{wardCode}} 안내 보기"
         },
@@ -1688,18 +1688,23 @@ export const ko = {
             "section": {
                 "identity": {
                     "description": "",
+                    "highlightHospitalName": "병원명",
+                    "highlightWardName": "병동명",
                     "title": "병원명과 병동명을 입력해 주세요"
                 },
                 "nurse": {
                     "description": "매월 팀당 하나의 근무표를 만들 수 있어요. 언제든 수정, 추가 가능해요",
+                    "highlight": "간호사",
                     "title": "간호사를 등록해 주세요"
                 },
                 "schedule": {
                     "description": "",
+                    "highlight": "가장 최근에 사용한 근무표",
                     "title": "병동과 근무표 설정을 위해\n가장 최근에 사용한 근무표를 입력해 주세요"
                 },
                 "shiftType": {
                     "description": "나중에도 수정할 수 있어요",
+                    "highlight": "근무 유형",
                     "title": "병동의 근무 유형을 설정해 주세요"
                 }
             },
@@ -4022,18 +4027,23 @@ export const en: TLocale = {
             "section": {
                 "identity": {
                     "description": "",
+                    "highlightHospitalName": "hospital",
+                    "highlightWardName": "ward",
                     "title": "Enter hospital and ward names"
                 },
                 "nurse": {
                     "description": "You can create one schedule per team each month. You can edit or add nurses anytime.",
+                    "highlight": "nurses",
                     "title": "Register nurses"
                 },
                 "schedule": {
                     "description": "",
+                    "highlight": "the most recent schedule",
                     "title": "Enter the most recent schedule\nfor ward and schedule setup"
                 },
                 "shiftType": {
                     "description": "You can edit these later",
+                    "highlight": "shift types",
                     "title": "Set ward shift types"
                 }
             },
@@ -6354,18 +6364,23 @@ export const ja: TLocale = {
             "section": {
                 "identity": {
                     "description": "",
+                    "highlightHospitalName": "病院名",
+                    "highlightWardName": "病棟名",
                     "title": "病院名と病棟名を入力してください"
                 },
                 "nurse": {
                     "description": "毎月チームごとに1つの勤務表を作成できます。いつでも修正・追加できます",
+                    "highlight": "看護師",
                     "title": "看護師を登録してください"
                 },
                 "schedule": {
                     "description": "",
+                    "highlight": "直近で使用した勤務表",
                     "title": "病棟と勤務表設定のため\n直近で使用した勤務表を入力してください"
                 },
                 "shiftType": {
                     "description": "後からでも修正できます",
+                    "highlight": "勤務タイプ",
                     "title": "病棟の勤務タイプを設定してください"
                 }
             },

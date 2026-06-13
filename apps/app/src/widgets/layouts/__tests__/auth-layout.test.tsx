@@ -1,6 +1,7 @@
-import {MemoryRouter, Route, Routes} from 'react-router';
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
+import type i18nDefault from '@/i18n';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import useInterval from '@/shared/util/useInterval';
@@ -15,7 +16,7 @@ vi.mock('@/shared/util/useInterval', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+    const {default: i18n} = await vi.importActual<{default: typeof i18nDefault}>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -29,6 +30,11 @@ const mockedUseInterval = vi.mocked(useInterval);
 const defaultHandleLogout = vi.fn();
 const defaultSetDemoExpired = vi.fn();
 const defaultStartDemoSignupTransition = vi.fn();
+const CurrentLocation = () => {
+    const location = useLocation();
+
+    return <div>{`${location.pathname}${location.search}`}</div>;
+};
 
 describe('AuthLayout', () => {
     beforeEach(() => {
@@ -97,6 +103,42 @@ describe('AuthLayout', () => {
         expect(screen.queryByText('make page')).not.toBeInTheDocument();
     });
 
+    it('preserves the social signup register URL when redirecting unauthenticated users to login', async () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: false,
+                isDemoExpired: false,
+                accessToken: null,
+                accountMeStatus: 'idle',
+                accountMe: null,
+                demoStartDate: null,
+                _loaded: true,
+            },
+            actions: {
+                handleLogout: defaultHandleLogout,
+                setDemoExpired: defaultSetDemoExpired,
+                startDemoSignupTransition: defaultStartDemoSignupTransition,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.REGISTER}?socialSignup=1`]}>
+                <Routes>
+                    <Route element={<AuthLayout />}>
+                        <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
+                    </Route>
+                    <Route path={ROUTE.LOGIN} element={<CurrentLocation />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('/login?next=%2Fregister%3FsocialSignup%3D1')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText('register page')).not.toBeInTheDocument();
+    });
+
     it('waits for persisted auth hydration before rendering protected routes', () => {
         mockedUseAuth.mockReturnValue({
             state: {
@@ -132,6 +174,8 @@ describe('AuthLayout', () => {
     });
 
     it('shows an account bootstrap loading state before protected routes render', async () => {
+        const handleGetAccountMe = vi.fn().mockResolvedValue(undefined);
+
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
@@ -143,7 +187,7 @@ describe('AuthLayout', () => {
                 _loaded: true,
             },
             actions: {
-                handleGetAccountMe: vi.fn(),
+                handleGetAccountMe,
                 handleLogout: defaultHandleLogout,
                 setDemoExpired: defaultSetDemoExpired,
                 startDemoSignupTransition: defaultStartDemoSignupTransition,
@@ -162,6 +206,9 @@ describe('AuthLayout', () => {
 
         expect(screen.getByText('로그인 상태를 확인하고 있어요')).toBeInTheDocument();
         expect(screen.queryByText('make page')).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(handleGetAccountMe).toHaveBeenCalledTimes(1);
+        });
     });
 
     it('shows retry and logout actions when account bootstrap fails', async () => {

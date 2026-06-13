@@ -20,6 +20,7 @@ describe('NotAuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
+                _loaded: true,
             },
         } as never);
 
@@ -41,5 +42,54 @@ describe('NotAuthLayout', () => {
 
         expect(screen.queryByText('login page')).not.toBeInTheDocument();
         expect(screen.queryByText('root page')).not.toBeInTheDocument();
+    });
+
+    it('redirects authenticated users to the requested next path', async () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: true,
+                _loaded: true,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[`${ROUTE.LOGIN}?next=%2Fregister%3FsocialSignup%3D1`]}>
+                <Routes>
+                    <Route element={<NotAuthLayout />}>
+                        <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
+                    </Route>
+                    <Route path={ROUTE.REGISTER} element={<div>register page</div>} />
+                    <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('register page')).toBeInTheDocument();
+        });
+
+        expect(screen.queryByText('login page')).not.toBeInTheDocument();
+        expect(screen.queryByText('make page')).not.toBeInTheDocument();
+    });
+
+    it('waits for persisted auth hydration before rendering the public route', () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                isAuth: false,
+                _loaded: false,
+            },
+        } as never);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.LOGIN]}>
+                <Routes>
+                    <Route element={<NotAuthLayout />}>
+                        <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.queryByText('login page')).not.toBeInTheDocument();
     });
 });

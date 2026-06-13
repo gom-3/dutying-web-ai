@@ -4,7 +4,7 @@ import {Router} from '@/app/Router';
 import useAuth from '@/features/auth';
 
 function App() {
-    useAuth(true);
+    useAuth();
 
     const setScreenHeight = () => {
         const vh = window.innerHeight * 0.01;

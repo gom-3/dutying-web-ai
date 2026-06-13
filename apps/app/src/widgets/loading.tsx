@@ -9,7 +9,7 @@ const Loading = () => {
 
     return (
         loading && (
-            <div className="fixed z-1005 flex h-screen w-screen items-center justify-center bg-[#0000006e] backdrop-blur-[1px]">
+            <div className="fixed inset-0 z-1005 flex h-screen w-screen items-center justify-center bg-[#0000006e] backdrop-blur-[1px]">
                 <PageState tone="loading" layout="screen" loadingColor={loadingColor} title={t('page.state.loadingTitle')} />
             </div>
         )

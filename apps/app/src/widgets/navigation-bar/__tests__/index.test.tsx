@@ -57,12 +57,12 @@ describe('NavigationBar', () => {
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('근무 운영')).toBeInTheDocument();
+        expect(screen.getByText('병동')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '근무표 만들기'})).not.toBeInTheDocument();
         expect(screen.getAllByRole('button', {name: '근무표'})).toHaveLength(1);
     });
 
-    it('근무 운영 섹션 위에 병원/병동명과 병동코드를 노출한다', () => {
+    it('병동 섹션 위에 병원/병동명과 병동코드를 노출한다', () => {
         mockUseEditWard.mockReturnValueOnce({
             state: {
                 ward: {
@@ -244,7 +244,7 @@ describe('NavigationBar', () => {
         expect(await screen.findByText('landing main page')).toBeInTheDocument();
     });
 
-    it('병동 설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {
+    it('설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <Routes>
@@ -272,7 +272,7 @@ describe('NavigationBar', () => {
 
         expect(screen.getByText('make page')).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('button', {name: '병동 설정'}));
+        await userEvent.click(screen.getByRole('button', {name: '설정'}));
 
         expect(await screen.findByText('ward info settings page')).toBeInTheDocument();
     });
@@ -298,7 +298,7 @@ describe('NavigationBar', () => {
 
         expect(screen.getByRole('button', {name: '사이드바 펼치기'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '게시판'})).toBeInTheDocument();
-        expect(screen.queryByText('근무 운영')).not.toBeInTheDocument();
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
     });
 
     it('게시판 메뉴를 클릭하면 게시판 페이지로 이동한다', async () => {
