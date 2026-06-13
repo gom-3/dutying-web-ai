@@ -104,21 +104,30 @@ vi.mock('@/features/auth', () => ({
     }),
 }));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, string | number>) => {
-            if (key === 'page.onboardingWardCreate.skillLevelModal.levelCountOption') {
-                return `${values?.levelCount ?? ''}단계`;
-            }
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {ko} = await vi.importActual<typeof import('@/shared/i18n/resources.generated')>('@/shared/i18n/resources.generated');
+    const getCatalogValue = (key: string) => {
+        const value = key.split('.').reduce<unknown>((current, part) => {
+            if (!current || typeof current !== 'object') return undefined;
 
-            if (key === 'page.onboardingWardCreate.skillLevelModal.levelDisplay') {
-                return `LV. ${values?.level ?? ''}`;
-            }
+            return (current as Record<string, unknown>)[part];
+        }, ko);
 
-            return typedTranslations[key as keyof typeof typedTranslations] ?? key;
-        },
-    }),
-}));
+        return typeof value === 'string' ? value : undefined;
+    };
+    const interpolate = (template: string, values?: Record<string, string | number>) =>
+        template.replace(/\{\{(\w+)\}\}/g, (_, token: string) => String(values?.[token] ?? ''));
+
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => {
+                const template = getCatalogValue(key) ?? typedTranslations[key as keyof typeof typedTranslations] ?? key;
+
+                return interpolate(template, values);
+            },
+        }),
+    };
+});
 
 vi.mock('@/shared/api', async () => {
     const actual = (await vi.importActual('@/shared/api')) as typeof SharedApiModule;
@@ -270,9 +279,8 @@ describe('OnboardingWardCreatePage', () => {
         await prepareValidFinalStep(user);
 
         expect(
-            screen.getByRole('heading', {name: /병동 및 근무표 설정을 위해\s+최근에 사용한 근무표를 입력해 주세요/}),
+            screen.getByRole('heading', {name: /병동과 근무표 설정을 위해\s+가장 최근에 사용한 근무표를 입력해 주세요/}),
         ).toBeInTheDocument();
-        expect(screen.getByText('기존 근무표 엑셀 내용을 복사해 아래 캘린더에 붙여넣어 주세요.')).toBeInTheDocument();
 
         fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
             clipboardData: {
@@ -434,7 +442,7 @@ describe('OnboardingWardCreatePage', () => {
         const confirmDialog = screen.getByRole('dialog');
 
         expect(within(confirmDialog).getByText('팀을 삭제할까요?')).toBeInTheDocument();
-        expect(within(confirmDialog).getByText(/소속 간호사 1명과 입력한 근무표도 함께 삭제돼요/)).toBeInTheDocument();
+        expect(within(confirmDialog).getByText(/등록된 간호사 1명과 입력한 근무표가 함께 삭제돼요/)).toBeInTheDocument();
 
         await user.click(within(confirmDialog).getByRole('button', {name: '삭제하기'}));
 
@@ -473,8 +481,8 @@ describe('OnboardingWardCreatePage', () => {
             expect(screen.queryByLabelText('1행 간호사 이름')).not.toBeInTheDocument();
         });
         expect(screen.queryByRole('button', {name: '팀 삭제하기'})).not.toBeInTheDocument();
-        expect(screen.getByText('팀을 먼저 만들어 주세요')).toBeInTheDocument();
-        expect(screen.getByText('팀을 추가하면 간호사 이름과 근무표를 입력할 수 있어요.')).toBeInTheDocument();
+        expect(screen.getByText('먼저 팀을 추가해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('팀을 만든 뒤 초기 근무표를 입력할 수 있어요.')).toBeInTheDocument();
 
         const teamAddButtons = screen.getAllByRole('button', {name: /팀 추가하기/});
 
@@ -497,20 +505,20 @@ describe('OnboardingWardCreatePage', () => {
 
         const currentMonth = getRelativeScheduleMonth(0);
 
-        await user.click(screen.getByRole('button', {name: '근무표 파일 등록'}));
+        await user.click(screen.getByRole('button', {name: '근무표 파일 업로드'}));
 
         const dialog = screen.getByRole('dialog');
 
-        expect(within(dialog).getByText(`${currentMonth.month}월 근무표 파일 등록`)).toBeInTheDocument();
-        expect(within(dialog).getByText('"근무표 파일 템플릿" 양식을 다운로드하여 작성하신 후 "등록"을 클릭해주세요')).toBeInTheDocument();
-        expect(within(dialog).getByRole('button', {name: /근무표 파일 템플릿 다운로드/})).toBeInTheDocument();
+        expect(within(dialog).getByText('근무표 파일 업로드')).toBeInTheDocument();
+        expect(within(dialog).getByText('엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.')).toBeInTheDocument();
+        expect(within(dialog).getByRole('button', {name: /양식 다운로드/})).toBeInTheDocument();
 
         const file = await createScheduleTemplateFile();
 
         fireEvent.change(within(dialog).getByTestId('schedule-file-upload-input'), {
             target: {files: [file]},
         });
-        await user.click(within(dialog).getByRole('button', {name: '등록'}));
+        await user.click(within(dialog).getByRole('button', {name: '파일 적용'}));
 
         await waitFor(() => {
             expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {
@@ -859,7 +867,7 @@ describe('OnboardingWardCreatePage', () => {
         const confirmDialog = screen.getByRole('dialog');
 
         expect(within(confirmDialog).getByText('팀을 삭제할까요?')).toBeInTheDocument();
-        expect(within(confirmDialog).getByText(/팀을 삭제하면 소속 간호사/)).toBeInTheDocument();
+        expect(within(confirmDialog).getByText(/등록된 간호사 1명이 함께 삭제돼요/)).toBeInTheDocument();
 
         await user.click(within(confirmDialog).getByRole('button', {name: '삭제하기'}));
 

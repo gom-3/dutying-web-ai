@@ -6,6 +6,7 @@ import {type TFocus} from '@/features/request-shift/model/types';
 import {type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {DragIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import RequestCalendarGridCell from './request-calendar-grid-cell';
 import {REQUEST_CALENDAR_NAME_COLUMN_CLASS, REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS} from './request-calendar-layout';
 import {getDutyRequestLookupKey, getRequestCalendarRowClassName} from './utils';
@@ -49,6 +50,7 @@ export default function RequestCalendarGridRow({
     draggableProvided,
     onSelectCell,
 }: TRequestCalendarGridRowProps) {
+    const {t} = useTypedTranslation();
     const isFocusedRow = focus?.shiftNurseId === row.shiftNurse.shiftNurseId;
 
     return (
@@ -61,7 +63,7 @@ export default function RequestCalendarGridRow({
                 <div
                     className="relative flex w-6 shrink-0 items-center justify-center text-gray-4"
                     {...draggableProvided.dragHandleProps}
-                    aria-label={`${row.shiftNurse.name} 순서 변경`}
+                    aria-label={t('page.request.calendar.reorderAria', {name: row.shiftNurse.name})}
                 >
                     <DragIcon className="h-5 w-5 cursor-grab active:cursor-grabbing" />
                 </div>

@@ -53,6 +53,14 @@ export type TOnboardingParseDraftInjection = {
     parsedWardData: TOnboardingParsedWardData;
     warnings: string[];
 };
+export type TOnboardingParseWarningCopy = {
+    failedSheet: (sheetName: string) => string;
+    failedRow: (rowLabel: string) => string;
+};
+export type TOnboardingUploadFailureCopy = {
+    defaultMessage: string;
+    networkMessage: string;
+};
 
 const SHIFT_TIME_RANGES: Record<string, {startTime: string; endTime: string}> = {
     D: {startTime: '07:00', endTime: '15:00'},
@@ -73,10 +81,23 @@ const DEFAULT_CONSTRAINT_SEVERITY: TShiftConstraintSeverity = 'SOFT';
 const CORE_SHIFT_SHORT_NAMES = ['D', 'E', 'N', 'O'] as const;
 const PLACEHOLDER_CUSTOM_SHIFT_COLORS = new Set(['#94A3B8', '#BFC7D4']);
 const SHIFT_CODE_LABELS: Record<string, string> = {
-    D: '데이',
-    E: '이브닝',
-    N: '나이트',
-    O: '오프',
+    D: '\uB370\uC774',
+    E: '\uC774\uBE0C\uB2DD',
+    N: '\uB098\uC774\uD2B8',
+    O: '\uC624\uD504',
+};
+const DEFAULT_WARD_FALLBACK_NAME = '\uB4C0\uD305 \uBCD1\uB3D9';
+const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
+const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
+const DEFAULT_PARSE_WARNING_COPY: TOnboardingParseWarningCopy = {
+    failedSheet: (sheetName) => `\uC2DC\uD2B8 "${sheetName}" \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC5B4\uC694.`,
+    failedRow: (rowLabel) => `\uC77C\uBD80 \uD589(${rowLabel})\uC744 \uD574\uC11D\uD558\uC9C0 \uBABB\uD574 \uC81C\uC678\uD588\uC5B4\uC694.`,
+};
+const DEFAULT_UPLOAD_FAILURE_COPY: TOnboardingUploadFailureCopy = {
+    defaultMessage:
+        '\uD30C\uC77C\uC744 \uD574\uC11D\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694. \uC5D1\uC140 \uC591\uC2DD\uC744 \uD655\uC778\uD55C \uB4A4 \uB2E4\uC2DC \uC5C5\uB85C\uB4DC\uD574 \uC8FC\uC138\uC694.',
+    networkMessage:
+        '\uD30C\uC2F1 \uC11C\uBC84\uC5D0 \uC5F0\uACB0\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.',
 };
 const VALID_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classification']>([
     'DAY',
@@ -411,13 +432,13 @@ const buildParsedNurses = (
         };
     });
 };
-const collectWarnings = (response: TOnboardingWardParseApiResponse) =>
+const collectWarnings = (response: TOnboardingWardParseApiResponse, copy: TOnboardingParseWarningCopy = DEFAULT_PARSE_WARNING_COPY) =>
     [
         ...(response.warnings ?? []),
         ...(response.quality_report?.warnings ?? []),
         ...(response.blocking_questions ?? []),
-        ...(response.failedSheets ?? []).map((sheetName) => `시트 "${sheetName}" 데이터를 불러오지 못했어요.`),
-        ...(response.failedRows ?? []).map((rowLabel) => `일부 행(${rowLabel})을 해석하지 못해 제외했어요.`),
+        ...(response.failedSheets ?? []).map(copy.failedSheet),
+        ...(response.failedRows ?? []).map(copy.failedRow),
     ].filter((warning): warning is string => Boolean(warning?.trim()));
 const collectResponseObservedShiftCodes = (response: TOnboardingWardParseApiResponse) => {
     const shiftCodes = new Set<string>();
@@ -624,16 +645,15 @@ export const isSupportedOnboardingUploadFile = (fileName: string) =>
         getOnboardingUploadExtension(fileName) as (typeof SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS)[number],
     );
 
-export const getOnboardingUploadFailureMessage = (error: unknown) => {
-    const defaultMessage = '파일을 해석하지 못했어요. 엑셀 양식을 확인한 뒤 다시 업로드해 주세요.';
+export const getOnboardingUploadFailureMessage = (error: unknown, copy: TOnboardingUploadFailureCopy = DEFAULT_UPLOAD_FAILURE_COPY) => {
     const message = error instanceof Error ? error.message.trim() : '';
 
     if (!message) {
-        return defaultMessage;
+        return copy.defaultMessage;
     }
 
     if (message.includes('Network Error')) {
-        return '파싱 서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.';
+        return copy.networkMessage;
     }
 
     return message;
@@ -643,6 +663,7 @@ export const buildOnboardingParseDraftInjection = (
     response: TOnboardingWardParseApiResponse,
     uploadedFileName: string,
     options?: TOnboardingWardParseOptions,
+    copy: TOnboardingParseWarningCopy = DEFAULT_PARSE_WARNING_COPY,
 ): TOnboardingParseDraftInjection => ({
     parsedWardData: {
         fileName: trimToUndefined(response.fileName) ?? uploadedFileName,
@@ -653,7 +674,7 @@ export const buildOnboardingParseDraftInjection = (
         nurses: normalizeParsedNurses(response, options),
         constraintCandidates: normalizeParsedConstraintCandidates(response),
     },
-    warnings: collectWarnings(response),
+    warnings: collectWarnings(response, copy),
 });
 
 export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboardingParsedWardData): TOnboardingWardDraft => {
@@ -683,7 +704,7 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
 export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWardDTO => {
     const normalizedWardName = draft.wardName.trim();
     const normalizedHospitalName = draft.hospitalName.trim();
-    const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
+    const fallbackName = normalizedWardName || normalizedHospitalName || DEFAULT_WARD_FALLBACK_NAME;
     const shiftTypeById = new Map(draft.shiftTypes.map((shiftType) => [shiftType.id, shiftType]));
     const constraintRules = buildConstraintRulePayloads(draft);
 
@@ -710,8 +731,8 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     isWorker: nurse.isWorker,
                     employmentDate: nurse.employmentDate,
                     level: draft.skillLevelConfig.enabled ? nurse.level : null,
-                    isPreceptor: nurse.memo.trim() === '프리셉터',
-                    isPreceptee: nurse.memo.trim() === '프리셉티',
+                    isPreceptor: nurse.memo.trim() === PRECEPTOR_MEMO,
+                    isPreceptee: nurse.memo.trim() === PRECEPTEE_MEMO,
                     possibleShiftShortNames: nurse.possibleShiftTypeIds
                         .map((shiftTypeId) => shiftTypeById.get(shiftTypeId)?.shortName)
                         .filter((shortName): shortName is string => Boolean(shortName)),

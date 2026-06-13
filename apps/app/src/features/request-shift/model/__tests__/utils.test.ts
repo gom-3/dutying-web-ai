@@ -1,8 +1,14 @@
-import {describe, expect, it} from 'vitest';
+import i18n from 'i18next';
+import {beforeEach, describe, expect, it} from 'vitest';
+import '@/i18n';
 import {getRequestShiftEditAvailability} from '../utils';
 
 describe('useRequestShift utils', () => {
     const now = new Date('2026-03-21T09:00:00+09:00');
+
+    beforeEach(() => {
+        i18n.changeLanguage('ko');
+    });
 
     it('지난달부터 다음 달까지는 수정 가능으로 판단한다', () => {
         expect(getRequestShiftEditAvailability(2026, 2, now)).toMatchObject({

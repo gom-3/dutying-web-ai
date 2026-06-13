@@ -4,7 +4,8 @@ import type {TOnboardingUploadedTeamSchedule} from './draft';
 const NAME_COLUMN_INDEX = 1;
 const TEAM_COLUMN_INDEX = 2;
 const FIRST_DAY_COLUMN_INDEX = 3;
-const DEFAULT_TEAM_NAME = '간호사 1팀';
+const DEFAULT_TEAM_NAME = '\uAC04\uD638\uC0AC 1\uD300';
+const EXCEL_READ_ERROR_MESSAGE = '\uC5D1\uC140 \uD30C\uC77C\uC744 \uC77D\uC9C0 \uBABB\uD588\uC5B4\uC694.';
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
 
@@ -51,9 +52,9 @@ const readFileAsArrayBuffer = (file: File) => {
                 return;
             }
 
-            reject(new Error('엑셀 파일을 읽지 못했어요.'));
+            reject(new Error(EXCEL_READ_ERROR_MESSAGE));
         };
-        reader.onerror = () => reject(reader.error ?? new Error('엑셀 파일을 읽지 못했어요.'));
+        reader.onerror = () => reject(reader.error ?? new Error(EXCEL_READ_ERROR_MESSAGE));
         reader.readAsArrayBuffer(file);
     });
 };

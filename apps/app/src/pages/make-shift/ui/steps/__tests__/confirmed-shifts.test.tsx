@@ -46,25 +46,15 @@ vi.mock('@/features/shift-editor', () => ({
     }),
 }));
 
-vi.mock('@/shared/hook/use-typed-translation', () => ({
-    useTypedTranslation: () => ({
-        t: (key: string, values?: Record<string, string | number>) => {
-            const translations: Record<string, string> = {
-                'page.makeShift.confirmedShifts.title': `${values?.teamName}의 ${values?.month}월 근무표예요`,
-                'page.makeShift.confirmedShifts.hint': '병동과 연동한 간호사는 앱에서 확정 근무표를 바로 볼 수 있어요!',
-                'page.makeShift.confirmedShifts.wardCodeGuideAction': '병동코드 안내 보기',
-                'page.makeShift.confirmedShifts.imageAction': '이미지 다운로드',
-                'page.makeShift.confirmedShifts.imageActionLoading': '이미지 다운로드 중',
-                'page.makeShift.confirmedShifts.editAction': '수정하기',
-                'page.makeShift.confirmedShifts.empty': '확정된 근무표가 아직 없어요',
-                'page.makeShift.confirmedShifts.fallbackTeamName': '선택한 팀',
-                'page.state.emptyDescription': '화면 안내에 따라 진행해 주세요.',
-            };
+vi.mock('@/shared/hook/use-typed-translation', async () => {
+    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
 
-            return translations[key] ?? key;
-        },
-    }),
-}));
+    return {
+        useTypedTranslation: () => ({
+            t: (key: string, values?: Record<string, string | number>) => i18n.t(key, values),
+        }),
+    };
+});
 
 vi.mock('../../../model/make-shift-store', () => ({
     useMakeShiftStore: (selector: (state: TMakeShiftStoreState) => unknown) => selector(makeShiftStoreState),

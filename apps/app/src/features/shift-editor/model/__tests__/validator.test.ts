@@ -1,5 +1,6 @@
-import {describe, expect, it} from 'vitest';
+import {beforeEach, describe, expect, it} from 'vitest';
 import type {TWardConstraint} from '@/entities';
+import i18n from '@/i18n';
 import type {TDutyDoc, TDutyValidationInput} from '../types';
 import {buildViolationMap, createDutyValidator} from '../validator';
 
@@ -43,6 +44,10 @@ function validate(rowCells: Array<string | null>, input: Partial<TDutyValidation
 }
 
 describe('validator combinations', () => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
     it('keeps warning-only combinations non-blocking while reporting every matched warning rule', () => {
         const {violations} = validate(['N', 'O', 'D'], {
             wardConstraint: createWardConstraint({

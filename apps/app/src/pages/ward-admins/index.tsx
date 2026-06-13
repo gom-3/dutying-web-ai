@@ -5,13 +5,13 @@ import {type FormEvent, useState} from 'react';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const getRoleLabel = (role: string) => (role === 'OWNER' ? '최고 관리자' : '관리자');
 const compareAdminRolePriority = (a: TWardAdminMembershipResponse, b: TWardAdminMembershipResponse) =>
     Number(b.role === 'OWNER') - Number(a.role === 'OWNER');
 const isEmail = (value: string) => EMAIL_PATTERN.test(value);
@@ -49,6 +49,11 @@ const getAccountRole = (account: unknown, currentWardId?: number | null) => {
 };
 const getApiErrorCode = (error: unknown) =>
     typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
+
+type TWardAdminRoleLabelKey = 'page.wardAdmins.role.owner' | 'page.wardAdmins.role.editor';
+
+const getRoleLabelKey = (role: string): TWardAdminRoleLabelKey =>
+    role === 'OWNER' ? 'page.wardAdmins.role.owner' : 'page.wardAdmins.role.editor';
 const isActiveWardMembershipStatus = (status?: string | null) => status === undefined || status === null || status === 'ACTIVE';
 const hasAccountWardMembership = (account: unknown, currentWardId?: number | null) => {
     if (typeof account !== 'object' || account === null || currentWardId === undefined || currentWardId === null) return false;
@@ -68,17 +73,24 @@ const hasAccountWardMembership = (account: unknown, currentWardId?: number | nul
     return Boolean(roleSource.role);
 };
 
-function showAdminActionError(error: unknown, fallbackMessage: string, forbiddenMessage = '최고 관리자만 변경할 수 있어요.') {
+function showAdminActionError(
+    error: unknown,
+    fallbackMessage: string,
+    copy: {
+        ownerOnly: string;
+        duplicateEmail: string;
+    },
+) {
     const code = getApiErrorCode(error);
 
     if (code === 403) {
-        toast.error(forbiddenMessage);
+        toast.error(copy.ownerOnly);
 
         return;
     }
 
     if (code === 409) {
-        toast.error('이미 등록된 관리자 이메일이에요.');
+        toast.error(copy.duplicateEmail);
 
         return;
     }
@@ -97,7 +109,8 @@ function ActiveAdminRow({
     isRemoving: boolean;
     onRemove: (admin: TWardAdminMembershipResponse) => void;
 }) {
-    const adminEmail = admin.email ?? `계정 #${admin.accountId}`;
+    const {t} = useTypedTranslation();
+    const adminEmail = admin.email ?? t('page.wardAdmins.accountFallback', {accountId: admin.accountId});
 
     return (
         <div className="flex items-center justify-between gap-4 border-b border-gray-6 py-3 last:border-b-0">
@@ -105,11 +118,11 @@ function ActiveAdminRow({
                 <p className="truncate text-sm font-semibold text-sub-1">{adminEmail}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{getRoleLabel(admin.role)}</span>
+                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{t(getRoleLabelKey(admin.role))}</span>
                 {canRemove ? (
                     <button
                         type="button"
-                        aria-label={`${adminEmail} 관리자 삭제`}
+                        aria-label={t('page.wardAdmins.removeActiveAria', {email: adminEmail})}
                         disabled={isRemoving}
                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-red disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => onRemove(admin)}
@@ -133,17 +146,19 @@ function ReservedAdminEmailRow({
     isRemoving: boolean;
     onRemove: (admin: TWardReservedAdminEmailResponse) => void;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex items-center justify-between gap-4 border-b border-gray-6 py-3 last:border-b-0">
             <div className="min-w-0">
                 <p className="truncate text-sm font-semibold text-sub-1">{admin.email}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{getRoleLabel(admin.role)}</span>
+                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{t(getRoleLabelKey(admin.role))}</span>
                 {canRemove ? (
                     <button
                         type="button"
-                        aria-label={`${admin.email} 예약 관리자 삭제`}
+                        aria-label={t('page.wardAdmins.removeReservedAria', {email: admin.email})}
                         disabled={isRemoving}
                         className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-red disabled:cursor-not-allowed disabled:opacity-50"
                         onClick={() => onRemove(admin)}
@@ -157,6 +172,7 @@ function ReservedAdminEmailRow({
 }
 
 function WardAdminsPage() {
+    const {t} = useTypedTranslation();
     const {
         state: {accountMe, wardId},
     } = useAuth();
@@ -178,38 +194,47 @@ function WardAdminsPage() {
                 role: 'EDITOR',
             }),
         onSuccess: async (result) => {
-            toast.success(result.status === 'ACTIVE' ? '관리자를 등록했어요.' : '관리자 이메일을 예약했어요.');
+            toast.success(result.status === 'ACTIVE' ? t('page.wardAdmins.toast.createActive') : t('page.wardAdmins.toast.createReserved'));
             setEmail('');
             await invalidateAdmins();
         },
         onError: (mutationError) => {
-            showAdminActionError(mutationError, '관리자를 등록하지 못했어요.', '관리자 추가 권한을 확인해 주세요.');
+            showAdminActionError(mutationError, t('page.wardAdmins.toast.createFailed'), {
+                ownerOnly: t('page.wardAdmins.toast.createOwnerOnly'),
+                duplicateEmail: t('page.wardAdmins.toast.duplicateEmail'),
+            });
         },
     });
     const removeMemberMutation = useMutation({
         mutationFn: (admin: TWardAdminMembershipResponse) => {
             const membershipId = getWardAdminMembershipId(admin);
 
-            if (typeof membershipId !== 'number') throw new Error('관리자 삭제 식별자를 찾지 못했어요.');
+            if (typeof membershipId !== 'number') throw new Error('Ward admin membership id was not found.');
 
             return WardAPI.removeWardAdmin(wardId ?? 0, membershipId);
         },
         onSuccess: async () => {
-            toast.success('관리자를 삭제했어요.');
+            toast.success(t('page.wardAdmins.toast.removeActive'));
             await invalidateAdmins();
         },
         onError: (mutationError) => {
-            showAdminActionError(mutationError, '관리자를 삭제하지 못했어요.');
+            showAdminActionError(mutationError, t('page.wardAdmins.toast.removeActiveFailed'), {
+                ownerOnly: t('page.wardAdmins.toast.ownerOnly'),
+                duplicateEmail: t('page.wardAdmins.toast.duplicateEmail'),
+            });
         },
     });
     const removeReservedEmailMutation = useMutation({
         mutationFn: (admin: TWardReservedAdminEmailResponse) => WardAPI.removeWardAdminEmail(wardId ?? 0, admin.emailRegistrationId),
         onSuccess: async () => {
-            toast.success('예약된 관리자 이메일을 삭제했어요.');
+            toast.success(t('page.wardAdmins.toast.removeReserved'));
             await invalidateAdmins();
         },
         onError: (mutationError) => {
-            showAdminActionError(mutationError, '예약된 관리자 이메일을 삭제하지 못했어요.');
+            showAdminActionError(mutationError, t('page.wardAdmins.toast.removeReservedFailed'), {
+                ownerOnly: t('page.wardAdmins.toast.ownerOnly'),
+                duplicateEmail: t('page.wardAdmins.toast.duplicateEmail'),
+            });
         },
     });
     const canAddAdmins = hasAccountWardMembership(accountMe, wardId);
@@ -224,7 +249,7 @@ function WardAdminsPage() {
         setError(null);
 
         if (hasReachedAdminLimit) {
-            setError(`병동 관리자는 최대 ${WARD_ADMIN_MAX_COUNT}명까지 추가할 수 있어요.`);
+            setError(t('page.wardAdmins.error.maxAdmins', {count: WARD_ADMIN_MAX_COUNT}));
 
             return;
         }
@@ -232,13 +257,13 @@ function WardAdminsPage() {
         const normalizedEmail = email.trim().toLowerCase();
 
         if (!normalizedEmail) {
-            setError('이메일을 입력해 주세요.');
+            setError(t('page.wardAdmins.error.emailRequired'));
 
             return;
         }
 
         if (!isEmail(normalizedEmail)) {
-            setError('올바른 이메일을 입력해 주세요.');
+            setError(t('page.wardAdmins.error.emailInvalid'));
 
             return;
         }
@@ -250,8 +275,8 @@ function WardAdminsPage() {
         return (
             <PageState
                 tone="empty"
-                title="관리 중인 병동이 없어요"
-                description="새 병동을 만들거나 기존 병동에 들어간 뒤 관리자 관리를 사용할 수 있어요."
+                title={t('page.wardAdmins.state.noWardTitle')}
+                description={t('page.wardAdmins.state.noWardDescription')}
             />
         );
     }
@@ -268,9 +293,9 @@ function WardAdminsPage() {
         return (
             <PageState
                 tone="error"
-                title="관리자 목록을 불러오지 못했어요"
-                description="잠시 후 다시 시도해 주세요."
-                action={{label: '다시 시도', onClick: () => void adminsQuery.refetch()}}
+                title={t('page.wardAdmins.state.loadFailedTitle')}
+                description={t('page.wardAdmins.state.retryDescription')}
+                action={{label: t('page.wardAdmins.state.retry'), onClick: () => void adminsQuery.refetch()}}
             />
         );
     }
@@ -285,7 +310,7 @@ function WardAdminsPage() {
                         <UserPlus className="h-5 w-5" />
                     </span>
                     <div>
-                        <h2 className="text-lg font-semibold text-sub-1">병동 관리자</h2>
+                        <h2 className="text-lg font-semibold text-sub-1">{t('page.wardAdmins.title')}</h2>
                     </div>
                 </div>
 
@@ -295,7 +320,7 @@ function WardAdminsPage() {
                             <input
                                 value={email}
                                 className={FIELD_CLASS}
-                                placeholder="이메일"
+                                placeholder={t('page.wardAdmins.emailPlaceholder')}
                                 inputMode="email"
                                 autoComplete="email"
                                 disabled={hasReachedAdminLimit}
@@ -304,7 +329,7 @@ function WardAdminsPage() {
                             <button
                                 type="submit"
                                 disabled={isSubmitting || hasReachedAdminLimit}
-                                aria-label="관리자 추가"
+                                aria-label={t('page.wardAdmins.addAria')}
                                 className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-main-3"
                             >
                                 <Plus className="h-5 w-5" />
@@ -312,17 +337,19 @@ function WardAdminsPage() {
                         </div>
                         {error ? <p className="mt-2 text-xs text-red">{error}</p> : null}
                         {hasReachedAdminLimit ? (
-                            <p className="mt-2 text-xs text-gray-3">병동 관리자는 최대 {WARD_ADMIN_MAX_COUNT}명까지 추가할 수 있어요.</p>
+                            <p className="mt-2 text-xs text-gray-3">
+                                {t('page.wardAdmins.error.maxAdmins', {count: WARD_ADMIN_MAX_COUNT})}
+                            </p>
                         ) : null}
                     </form>
                 ) : (
                     <p className="mt-4 rounded-[12px] bg-gray-7 px-4 py-3 text-sm text-gray-3">
-                        현재 병동 소속 계정만 관리자를 추가할 수 있어요.
+                        {t('page.wardAdmins.memberOnlyDescription')}
                     </p>
                 )}
 
                 <div className="mt-6 border-t border-gray-6 pt-5">
-                    <h2 className="font-apple text-sm font-medium text-sub-2">등록된 관리자</h2>
+                    <h2 className="font-apple text-sm font-medium text-sub-2">{t('page.wardAdmins.registeredTitle')}</h2>
                 </div>
                 <div className="mt-3">
                     {hasAdmins ? (
@@ -347,7 +374,7 @@ function WardAdminsPage() {
                             ))}
                         </>
                     ) : (
-                        <p className="rounded-[12px] bg-gray-7 px-4 py-5 text-sm text-gray-3">아직 등록된 관리자가 없어요.</p>
+                        <p className="rounded-[12px] bg-gray-7 px-4 py-5 text-sm text-gray-3">{t('page.wardAdmins.emptyAdmins')}</p>
                     )}
                 </div>
             </section>

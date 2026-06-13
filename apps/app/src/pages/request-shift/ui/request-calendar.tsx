@@ -92,7 +92,7 @@ export default function ShiftCalendar({defaultReviewMode}: TRequestCalendarProps
         >
             <section
                 className={cn('min-h-0 min-w-0 overflow-hidden rounded-[18px] bg-white p-2', !hasCurrentTeamNurses && 'h-full')}
-                aria-label="신청 근무표"
+                aria-label={t('page.request.calendar.ariaLabel')}
             >
                 <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col rounded-[18px] bg-white">
                     {hasCurrentTeamNurses ? (

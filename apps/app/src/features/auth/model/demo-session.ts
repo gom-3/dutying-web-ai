@@ -1,5 +1,6 @@
 import {sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
+import i18n from '@/i18n';
 
 export const DEMO_SESSION_DURATION_MS = 3_540_000;
 export const DEMO_SESSION_EXPIRING_SOON_MS = 10 * 60 * 1000;
@@ -75,7 +76,10 @@ export const formatDemoSessionRemainingLabel = (demoStartDate: string | null | u
 
     if (!sessionInfo?.isActive) return null;
 
-    return `듀팅 체험중 ${sessionInfo.remainingMinutes}:${String(sessionInfo.remainingSeconds).padStart(2, '0')}`;
+    return i18n.t('feature.auth.demoSession.remainingPrecise', {
+        minutes: sessionInfo.remainingMinutes,
+        seconds: String(sessionInfo.remainingSeconds).padStart(2, '0'),
+    });
 };
 
 export const buildDemoSignupLoginPath = (nextPath: string = ROUTE.REGISTER) => {

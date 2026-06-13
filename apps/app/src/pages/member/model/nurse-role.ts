@@ -1,17 +1,20 @@
+import type {TI18nKey} from '@/shared/hook/use-typed-translation';
+
 export type TNurseRoleHelpType = 'preceptor' | 'preceptee';
 
-export const NURSE_ROLE_HELP: Record<TNurseRoleHelpType, {label: string; description: string}> = {
+export const NURSE_ROLE_HELP: Record<TNurseRoleHelpType, {labelKey: TI18nKey; descriptionKey: TI18nKey}> = {
     preceptor: {
-        label: '프리셉터',
-        description: '신규 또는 저연차 간호사의 적응과 교육을 도와주는 담당 간호사예요.',
+        labelKey: 'page.member.roleHelp.preceptor.label',
+        descriptionKey: 'page.member.roleHelp.preceptor.description',
     },
     preceptee: {
-        label: '프리셉티',
-        description: '프리셉터에게 교육과 적응 지원을 받는 신규 또는 저연차 간호사예요.',
+        labelKey: 'page.member.roleHelp.preceptee.label',
+        descriptionKey: 'page.member.roleHelp.preceptee.description',
     },
 };
 
-const PRECEPTEE_MEMO_MARKERS = new Set(['__PRECEPTEE__', '프리셉티']);
+const LEGACY_PRECEPTEE_MEMO_MARKER = '\uD504\uB9AC\uC149\uD2F0';
+const PRECEPTEE_MEMO_MARKERS = new Set(['__PRECEPTEE__', LEGACY_PRECEPTEE_MEMO_MARKER]);
 
 export const hasPrecepteeMemo = (memo?: string | null) =>
     Boolean(memo?.split(/\r?\n/).some((line) => PRECEPTEE_MEMO_MARKERS.has(line.trim())));

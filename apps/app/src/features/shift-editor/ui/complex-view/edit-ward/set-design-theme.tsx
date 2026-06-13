@@ -1,8 +1,10 @@
 import useUIConfigUseCase from '@/entities/ui/useUIConfig';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Toggle from '@/shared/ui/Toggle';
 
 const SetDesignTheme = () => {
+    const {t} = useTypedTranslation();
     const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
     const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
     const {handleChangeSeparateWeekendColor, handleShiftTypeColorStyle} = useUIConfigUseCase();
@@ -10,7 +12,7 @@ const SetDesignTheme = () => {
     return (
         <div className="flex w-145 flex-col">
             <div className="flex h-18.5 items-center border-b-[.0313rem] border-sub-4.5 px-10 last:border-none">
-                <p className="font-apple text-[1.25rem] text-sub-1">토/일 배경색 구분</p>
+                <p className="font-apple text-[1.25rem] text-sub-1">{t('feature.shiftEditor.editWard.weekendColor')}</p>
                 <div className="ml-auto flex w-30.25 cursor-pointer items-center justify-between">
                     <Toggle
                         isOn={separateWeekendColor}
@@ -19,14 +21,14 @@ const SetDesignTheme = () => {
                         }}
                     />
                     {separateWeekendColor ? (
-                        <p className="flex-1 text-center text-[.75rem] text-sub-3">근무표 적용</p>
+                        <p className="flex-1 text-center text-[.75rem] text-sub-3">{t('feature.shiftEditor.editWard.applied')}</p>
                     ) : (
-                        <p className="flex-1 text-center text-[.75rem] text-sub-3">근무표 미적용</p>
+                        <p className="flex-1 text-center text-[.75rem] text-sub-3">{t('feature.shiftEditor.editWard.notApplied')}</p>
                     )}
                 </div>
             </div>
             <div className="border-bg flex h-18.5 items-center border-b-[.0313rem] px-10 last:border-none">
-                <p className="font-apple text-[1.25rem] text-sub-1">근무 유형 표시 스타일</p>
+                <p className="font-apple text-[1.25rem] text-sub-1">{t('feature.shiftEditor.editWard.shiftTypeColorStyle')}</p>
                 <div className="bg-bg ml-auto flex h-11 w-32 cursor-pointer justify-between gap-[.25rem] rounded-[.3125rem] border-[.0625rem] border-main-4 p-[.25rem]">
                     <div
                         className={`flex flex-1 items-center justify-center rounded-[.3125rem] font-apple text-[1.25rem] font-medium ${
@@ -36,7 +38,7 @@ const SetDesignTheme = () => {
                         }`}
                         onClick={() => handleShiftTypeColorStyle('background')}
                     >
-                        배경
+                        {t('feature.shiftEditor.editWard.background')}
                     </div>
                     <div
                         className={`flex flex-1 items-center justify-center rounded-[.3125rem] font-apple text-[1.25rem] font-medium ${
@@ -44,7 +46,7 @@ const SetDesignTheme = () => {
                         }`}
                         onClick={() => handleShiftTypeColorStyle('text')}
                     >
-                        글자
+                        {t('feature.shiftEditor.editWard.text')}
                     </div>
                 </div>
             </div>

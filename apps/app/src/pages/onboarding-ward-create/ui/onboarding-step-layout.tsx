@@ -1,5 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {ReactNode} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TOnboardingStep} from '../model';
 import WizardButton from './wizard-button';
 
@@ -26,6 +27,8 @@ function OnboardingStepLayout({
     nextLabel,
     children,
 }: IOnboardingStepLayoutProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <>
             {children}
@@ -34,7 +37,7 @@ function OnboardingStepLayout({
                 <div className="flex items-center gap-[42px]">
                     {step > 1 ? (
                         <WizardButton variant="secondary" onClick={onPrev} disabled={actionsDisabled}>
-                            이전
+                            {t('page.onboardingWardCreate.action.previous')}
                         </WizardButton>
                     ) : null}
                     <WizardButton
@@ -52,7 +55,7 @@ function OnboardingStepLayout({
                             nextDisabled && 'border-0 bg-[#EFEAFF] text-[#A69BCF] hover:bg-[#EFEAFF] hover:text-[#A69BCF] active:scale-100',
                         )}
                     >
-                        {nextLabel ?? (step < 4 ? '다음' : '완료')}
+                        {nextLabel ?? (step < 4 ? t('page.onboardingWardCreate.action.next') : t('page.onboardingWardCreate.action.complete'))}
                     </WizardButton>
                 </div>
             </div>

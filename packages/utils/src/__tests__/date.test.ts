@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getDaysInMonth} from '../date';
+import {DateUtil, getDayName, getDaysInMonth} from '../date';
 
 describe('getDaysInMonth', () => {
     it('returns days for the current month when month is omitted', () => {
@@ -17,5 +17,20 @@ describe('getDaysInMonth', () => {
         expect(days[0]?.getFullYear()).toBe(2024);
         expect(days[0]?.getMonth()).toBe(1);
         expect(days).toHaveLength(29);
+    });
+});
+
+describe('getDayName', () => {
+    it('keeps Korean weekday formatting as the default behavior', () => {
+        DateUtil.setLocale('ko-KR');
+
+        expect(getDayName(new Date(2026, 5, 7))).toBe('일');
+    });
+
+    it('formats weekday names with the requested locale', () => {
+        const sunday = new Date(2026, 5, 7);
+
+        expect(getDayName(sunday, 'ja-JP')).toBe('日');
+        expect(getDayName(sunday, 'en-US')).toBe('Sun');
     });
 });

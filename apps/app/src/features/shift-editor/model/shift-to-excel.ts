@@ -1,11 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {type TShift} from '@/entities/shift';
+import i18n from '@/i18n';
 
 const SHIFT_EXCEL_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
 export function buildShiftExcelFileName(month: number) {
-    return `${month}월 근무표.xlsx`;
+    return i18n.t('feature.shiftEditor.export.excel.fileName', {month});
+}
+
+export function buildShiftExcelSheetName(month: number) {
+    return i18n.t('feature.shiftEditor.export.excel.sheetName', {month});
+}
+
+export function buildShiftExcelTitle(month: number) {
+    return i18n.t('feature.shiftEditor.export.excel.title', {month});
 }
 
 export function downloadExcelBuffer(data: BlobPart, fileName: string) {
@@ -25,7 +34,7 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
     const Excel = await import('exceljs');
     const flatRows = shift.divisionShiftNurses.flatMap((row) => row);
     const workbook = new Excel.Workbook();
-    const worksheet = workbook.addWorksheet(`${month}월 근무표`);
+    const worksheet = workbook.addWorksheet(buildShiftExcelSheetName(month));
 
     worksheet.columns = [
         {key: 'name', width: 8, style: {alignment: {horizontal: 'center', vertical: 'middle'}}},
@@ -51,14 +60,14 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
         },
     ];
 
-    const title = worksheet.addRow({name: `${month}월 근무표`});
+    const title = worksheet.addRow({name: buildShiftExcelTitle(month)});
 
     title.font = {bold: true, size: 16};
     title.alignment = {horizontal: 'left'};
 
     const header = worksheet.addRow({
-        name: '이름',
-        lastShift: '전달 근무',
+        name: i18n.t('feature.shiftEditor.export.excel.nameHeader'),
+        lastShift: i18n.t('feature.shiftEditor.export.excel.previousShiftHeader'),
         ...shift.days.reduce(
             (acc, day, index) => {
                 acc[index + 1] = day.day;
@@ -111,7 +120,7 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
             ),
             WO: dutyRow.wardShiftList.filter(
                 (current, i) =>
-                    shift.wardShiftTypes.find((x) => x.wardShiftTypeId === current)?.name === '오프' &&
+                    shift.wardShiftTypes.find((x) => x.wardShiftTypeId === current)?.isOff === true &&
                     shift.days.find((x) => x.day === i + 1)?.dayType != 'workday',
             ).length,
         }),

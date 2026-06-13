@@ -4,9 +4,11 @@ import toast from 'react-hot-toast';
 import useEditShiftTeam from '@/features/edit-shift-team';
 import useEditWard from '@/features/edit-ward';
 import {CopyIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConnectionManage from './connection-manage';
 
 function WardInfo() {
+    const {t} = useTypedTranslation();
     const {
         state: {ward, shiftTeams},
     } = useEditShiftTeam();
@@ -18,57 +20,57 @@ function WardInfo() {
     return (
         <div id="ward_info" className="flex gap-5">
             <div className="flex flex-col gap-[.4375rem]">
-                <p className="font-apple text-base font-medium text-sub-3">병원 정보</p>
+                <p className="font-apple text-base font-medium text-sub-3">{t('page.member.wardInfo.hospitalInfo')}</p>
                 <div className="flex h-17.5 min-w-70 rounded-[.9375rem] border-[.0625rem] border-sub-4 bg-sub-5 px-7 py-[.625rem]">
                     <div className="flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.875rem] text-sub-2.5">병원</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.wardInfo.hospital')}</p>
                         <p className="font-apple text-[1.75rem] font-bold text-sub-2.5">{ward?.hospitalName}</p>
                     </div>
                     <div className="mx-5 h-12.5 min-w-[.0313rem] bg-sub-4" />
                     <div className="flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.875rem] text-sub-2.5">병동</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.wardInfo.ward')}</p>
                         <p className="font-apple text-[1.75rem] font-bold text-sub-2.5">{ward?.name}</p>
                     </div>
                 </div>
             </div>
             <div className="flex flex-col gap-[.4375rem]">
-                <p className="font-apple text-base font-medium text-sub-3">전체 인원</p>
+                <p className="font-apple text-base font-medium text-sub-3">{t('page.member.summary.totalNurses')}</p>
                 <div className="flex h-17.5 min-w-25 items-center gap-[.3125rem] rounded-[.9375rem] border-[.0625rem] border-sub-4 bg-sub-5 px-7 py-[.625rem]">
                     <p className="font-apple text-[1.75rem] font-bold text-sub-2.5">{shiftTeams?.flatMap((x) => x.nurses).length}</p>
-                    <p className="font-apple text-[.875rem] text-sub-2.5">명</p>
+                    <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.wardInfo.personUnit')}</p>
                 </div>
             </div>
             <div className="flex flex-col gap-[.4375rem]">
-                <p className="font-apple text-base font-medium text-sub-3">연동 상태</p>
+                <p className="font-apple text-base font-medium text-sub-3">{t('page.member.wardInfo.connectionStatus')}</p>
                 <div className="flex h-17.5 min-w-70 rounded-[.9375rem] border-[.0625rem] border-sub-4 bg-sub-5 px-7 py-[.625rem]">
                     <div className="flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.875rem] text-sub-2.5">연동됨</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.summary.connected')}</p>
                         <p className="font-apple text-[1.75rem] font-bold text-sub-2.5">
                             {shiftTeams?.flatMap((x) => x.nurses).filter((x) => x.isConnected).length}
                         </p>
-                        <p className="font-apple text-[.875rem] text-sub-2.5">명</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.wardInfo.personUnit')}</p>
                     </div>
                     <div className="mx-5 h-12.5 min-w-[.0313rem] bg-sub-4" />
                     <div className="flex items-center gap-[.625rem]">
-                        <p className="font-apple text-[.875rem] text-sub-2.5">미연동</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.summary.unconnected')}</p>
                         <p className="font-apple text-[1.75rem] font-bold text-sub-2.5">
                             {shiftTeams?.flatMap((x) => x.nurses).filter((x) => !x.isConnected).length}
                         </p>
-                        <p className="font-apple text-[.875rem] text-sub-2.5">명</p>
+                        <p className="font-apple text-[.875rem] text-sub-2.5">{t('page.member.wardInfo.personUnit')}</p>
                     </div>
                 </div>
             </div>
             <div className="flex flex-col gap-[.4375rem]">
                 <div className="flex items-center gap-[.25rem]">
-                    <p className="font-apple text-base font-medium text-main-3">병동 코드</p>
+                    <p className="font-apple text-base font-medium text-main-3">{t('page.member.summary.wardCode')}</p>
                     <CopyIcon
                         className="h-6 w-6 cursor-pointer"
                         onClick={() => {
                             if (ward) {
                                 toast.promise(navigator.clipboard.writeText(ward.code), {
-                                    loading: '복사하고 있어요...',
-                                    success: '복사 완료!',
-                                    error: '복사하지 못했어요.',
+                                    loading: t('page.member.wardInfo.copying'),
+                                    success: t('page.member.wardInfo.copySuccess'),
+                                    error: t('page.member.wardInfo.copyError'),
                                 });
                             }
                         }}
@@ -79,7 +81,7 @@ function WardInfo() {
                 </div>
             </div>
             <div className="flex flex-col gap-[.4375rem]">
-                <p className="font-apple text-base font-medium text-main-3">연동 관리</p>
+                <p className="font-apple text-base font-medium text-main-3">{t('page.member.summary.connectionManage')}</p>
                 <div
                     className="relative flex h-15.5 w-15.5 cursor-pointer items-center justify-center rounded-full border-[.0938rem] border-main-3 shadow-banner"
                     onClick={() => setOpen(true)}

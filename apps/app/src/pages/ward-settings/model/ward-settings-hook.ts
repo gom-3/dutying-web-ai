@@ -5,6 +5,7 @@ import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 export type TWardSettingsTab = 'shiftTypes' | 'constraints';
@@ -24,6 +25,7 @@ function normalizeShiftTypes(input: unknown): TWardShiftType[] {
 }
 
 export function useWardSettings() {
+    const {t} = useTypedTranslation();
     const {
         state: {wardId},
     } = useAuth();
@@ -72,7 +74,7 @@ export function useWardSettings() {
             await WardAPI.createShiftType(wardId, payload);
             await invalidateShiftTypeQueries();
         } catch (error) {
-            showActionErrorFeedback(error, '근무 유형을 추가하지 못했어요.');
+            showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.addFailed'));
         }
     };
     const updateShiftType = async (shiftTypeId: number, payload: TCreateShiftTypeDTO) => {
@@ -82,7 +84,7 @@ export function useWardSettings() {
             await WardAPI.updateShiftType(wardId, shiftTypeId, payload);
             await invalidateShiftTypeQueries();
         } catch (error) {
-            showActionErrorFeedback(error, '근무 유형을 수정하지 못했어요.');
+            showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.updateFailed'));
         }
     };
     const deleteShiftType = async (shiftTypeId: number) => {
@@ -94,7 +96,7 @@ export function useWardSettings() {
             const exists = latestShiftTypes.some((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
 
             if (!exists) {
-                showActionErrorFeedback(new Error('shift type not found'), '이미 삭제했거나 최신 목록에서 찾을 수 없는 근무 유형이에요.');
+                showActionErrorFeedback(new Error('shift type not found'), t('page.wardSettings.shiftTypes.toast.notFound'));
                 return;
             }
 
@@ -102,7 +104,7 @@ export function useWardSettings() {
             await invalidateShiftTypeQueries();
         } catch (error) {
             await shiftTypesQuery.refetch();
-            showActionErrorFeedback(error, '근무 유형을 삭제하지 못했어요.');
+            showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.deleteFailed'));
         }
     };
     const retryShiftTypes = async () => {

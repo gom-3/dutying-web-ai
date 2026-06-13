@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 import {useLocation, useSearchParams} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {useMakeShiftBootstrap} from './model/use-bootstrap';
 import {MakeShiftPageView} from './ui';
@@ -93,6 +94,7 @@ function readOnboardingInitialScheduleTargets(
 }
 
 const MakeShiftPage = () => {
+    const {t} = useTypedTranslation();
     const {
         state: {wardId},
     } = useAuth();
@@ -136,7 +138,7 @@ const MakeShiftPage = () => {
         <>
             <WardCodeGuideModal
                 open={showOnboardingWardCodeGuide}
-                wardCode={getWardDisplayCode(wardQuery.data, '확인 중')}
+                wardCode={getWardDisplayCode(wardQuery.data, t('page.makeShift.wardCodeLoading'))}
                 wardTitle={getWardDisplayTitle(wardQuery.data)}
                 onClose={() => setShowOnboardingWardCodeGuide(false)}
             />

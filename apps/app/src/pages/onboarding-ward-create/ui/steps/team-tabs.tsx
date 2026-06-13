@@ -1,6 +1,7 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {Pencil, Plus} from 'lucide-react';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import type {TOnboardingNurseDraft, TOnboardingTeamDraft} from '../../model';
 
 interface ITeamTabsProps {
@@ -16,6 +17,7 @@ interface ITeamTabsProps {
 const TEAM_NAME_MAX_LENGTH = 12;
 
 function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canAdd}: ITeamTabsProps) {
+    const {t} = useTypedTranslation();
     const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
     const [editingTeamName, setEditingTeamName] = useState('');
     const [activeIndicatorStyle, setActiveIndicatorStyle] = useState<{left: number; width: number} | null>(null);
@@ -161,7 +163,7 @@ function TeamTabs({teams, nurses, currentTeamId, onSelect, onAdd, onRename, canA
                     <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full bg-[#CFD6DF] transition-colors group-hover:bg-[#EEF2F6]">
                         <Plus className="h-[12px] w-[12px] text-[#4F5A71]" strokeWidth={3} />
                     </span>
-                    팀 추가하기
+                    {t('page.onboardingWardCreate.teamTabs.addTeam')}
                 </span>
             </button>
         </div>

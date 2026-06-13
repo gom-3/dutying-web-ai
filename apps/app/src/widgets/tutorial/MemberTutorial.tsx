@@ -4,6 +4,7 @@ import useEditShiftTeam from '@/features/edit-shift-team';
 import useTutorialUseCase from '@/features/tutorial';
 import {useTutorialStore} from '@/features/tutorial/model/store';
 import {useTutorialDismissPersistence} from '@/features/tutorial/model/use-tutorial-dismiss-persistence';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type ITutorialConfig} from './tutorial.types';
 import {TutorialPortal} from './TutorialPortal';
 
@@ -14,6 +15,7 @@ function scrollTutorialTargetIntoView(id: string) {
 }
 
 const MemberTutorial = () => {
+    const {t} = useTypedTranslation();
     const showMemberTutorial = useTutorialStore((state) => state.showMemberTutorial);
     const {setMemberTutorial} = useTutorialUseCase();
     const {
@@ -36,8 +38,8 @@ const MemberTutorial = () => {
         const steps: ITutorialConfig['steps'] = [
             {
                 highlightIds: ['shift_team_list'],
-                title: '팀별 간호사 보기',
-                info: '근무팀별 간호사 목록을 한눈에 볼 수 있어요.\n팀명을 두 번 클릭하면 팀 이름도 바꿀 수 있어요.',
+                title: t('page.member.tutorial.team.title'),
+                info: t('page.member.tutorial.team.info'),
                 infoBoxAlignment: 'left',
                 onNextStep: () => {
                     scrollTutorialTargetIntoView('member_add_nurse_button');
@@ -45,8 +47,8 @@ const MemberTutorial = () => {
             },
             {
                 highlightIds: ['member_add_nurse_button'],
-                title: '간호사 추가하기',
-                info: '팀을 선택하고 간호사 추가하기를 누르면 새 간호사가 만들어져요.\n추가한 뒤 이름과 근무 정보를 바로 입력할 수 있어요.',
+                title: t('page.member.tutorial.add.title'),
+                info: t('page.member.tutorial.add.info'),
                 infoBoxAlignment: 'right',
                 onPrevStep: () => {
                     selectNurseRef.current(null);
@@ -65,8 +67,8 @@ const MemberTutorial = () => {
         if (typeof firstNurseId === 'number') {
             steps.push({
                 highlightIds: ['nurse_sample', 'nurse_edit_drawer'],
-                title: '간호사 정보 수정하기',
-                info: '오른쪽 패널에서 이름, 숙련도, 가능한 근무, 역할·권한, 메모를 바로 수정할 수 있어요.',
+                title: t('page.member.tutorial.edit.title'),
+                info: t('page.member.tutorial.edit.info'),
                 infoBoxAlignment: 'right',
                 onPrevStep: () => {
                     selectNurseRef.current(null);
@@ -77,8 +79,8 @@ const MemberTutorial = () => {
 
         steps.push({
             highlightIds: ['member_skill_settings_button'],
-            title: '숙련도 설정하기',
-            info: '숙련도 기능을 쓰려면 병원·병동 기준에 맞춰 단계와 색상을 설정해 주세요.',
+            title: t('page.member.tutorial.skill.title'),
+            info: t('page.member.tutorial.skill.info'),
             infoBoxAlignment: 'right',
             onNextStep: () => {
                 selectNurseRef.current(null);
@@ -91,7 +93,7 @@ const MemberTutorial = () => {
             infoBoxMargin: 20,
             scrollLock: true,
         };
-    }, [firstNurseId]);
+    }, [firstNurseId, t]);
 
     useEffect(() => {
         if (showMemberTutorial) {

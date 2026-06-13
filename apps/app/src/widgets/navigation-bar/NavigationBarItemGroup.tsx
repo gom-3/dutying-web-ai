@@ -105,6 +105,7 @@ type TWardIdentityProps = {
 };
 
 const WardIdentity = ({collapsed, ward}: TWardIdentityProps) => {
+    const {t} = useTypedTranslation();
     const {supportingName, primaryName} = getWardDisplayIdentity(ward);
     const wardTitle = getWardDisplayTitle(ward);
     const wardCode = getWardDisplayCode(ward);
@@ -112,7 +113,7 @@ const WardIdentity = ({collapsed, ward}: TWardIdentityProps) => {
     const wardCodeButton = (
         <button
             type="button"
-            aria-label={`병동코드 ${wardCode} 안내 보기`}
+            aria-label={t('page.navigationBar.wardCodeGuideAria', {wardCode})}
             className="inline-flex shrink-0 items-center rounded-full bg-main-light px-2.5 py-1 transition-colors hover:bg-main-4 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
             onClick={() => setIsGuideOpen(true)}
         >

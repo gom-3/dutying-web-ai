@@ -5,8 +5,10 @@ import {type TWardShiftType} from '@/entities/ward';
 import CreateShiftModal from '@/features/create-shift-modal';
 import useEditWard from '@/features/edit-ward';
 import {PenIcon, PlusIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 function SetShiftType() {
+    const {t} = useTypedTranslation();
     const {
         state: {ward},
         actions: {editShiftType, removeShiftType, addShiftType},
@@ -29,13 +31,13 @@ function SetShiftType() {
     return (
         <div className="relative h-fit w-179.25 rounded-[1.25rem]">
             <div className="mt-5 flex items-center text-center font-apple text-[.875rem] text-sub-2.5">
-                <p className="flex-2">근무 명</p>
-                <p className="flex-1">약자</p>
-                <p className="flex-3">근무 시간</p>
-                <p className="flex-1">색상</p>
-                <p className="flex-1">유형</p>
-                <p className="flex-1">카운트</p>
-                <p className="flex-1">수정</p>
+                <p className="flex-2">{t('feature.shiftEditor.editWard.shiftName')}</p>
+                <p className="flex-1">{t('feature.shiftEditor.editWard.shortName')}</p>
+                <p className="flex-3">{t('feature.shiftEditor.editWard.workTime')}</p>
+                <p className="flex-1">{t('feature.shiftEditor.editWard.color')}</p>
+                <p className="flex-1">{t('feature.shiftEditor.editWard.type')}</p>
+                <p className="flex-1">{t('feature.shiftEditor.editWard.count')}</p>
+                <p className="flex-1">{t('feature.shiftEditor.editWard.edit')}</p>
             </div>
             {ward?.wardShiftTypes.map((shiftType, index) => (
                 <div
@@ -80,7 +82,7 @@ function SetShiftType() {
                                 sendEvent(events.makePage.editWardModal.changeShiftTypeOffType);
                             }}
                         >
-                            {shiftType.isOff ? '휴가' : '근무'}
+                            {shiftType.isOff ? t('feature.shiftEditor.editWard.leave') : t('feature.shiftEditor.editWard.work')}
                         </div>
                     </div>
                     <div className="flex flex-1 justify-center">
@@ -117,7 +119,7 @@ function SetShiftType() {
                     }}
                 >
                     <PlusIcon className="h-5 w-5 stroke-main-2" />
-                    <p className="font-apple text-[.875rem] text-main-2">새로운 근무/휴가 추가하기</p>
+                    <p className="font-apple text-[.875rem] text-main-2">{t('feature.shiftEditor.editWard.addShiftType')}</p>
                 </div>
             </div>
             <CreateShiftModal

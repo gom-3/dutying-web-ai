@@ -16,6 +16,7 @@ import {
 } from '@/features/ward-skill/model/skill-level';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     applyParsedWardData,
     buildOnboardingParseDraftInjection,
@@ -483,10 +484,10 @@ const updateConstraintParamsStaffingCount = (
         ),
     };
 };
-const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft) => {
+const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWardName: string) => {
     const normalizedWardName = draft.wardName.trim();
     const normalizedHospitalName = draft.hospitalName.trim();
-    const fallbackName = normalizedWardName || normalizedHospitalName || '듀팅 병동';
+    const fallbackName = normalizedWardName || normalizedHospitalName || fallbackWardName;
 
     return {
         name: normalizedWardName || normalizedHospitalName || fallbackName,
@@ -573,6 +574,7 @@ const saveOnboardingWardSkillSettings = (draft: TOnboardingWardDraft, ward: TOnb
 };
 
 function useOnboardingWardWizard() {
+    const {t} = useTypedTranslation();
     const {
         actions: {
             createWard,
@@ -596,6 +598,7 @@ function useOnboardingWardWizard() {
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
+    const fallbackWardName = t('page.onboardingWardCreate.fallback.wardName');
     const onboardingWardCreateExecutor = useMemo(
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
         [completeOnboardingWardDraft, createWard, draftWardId],
@@ -674,7 +677,7 @@ function useOnboardingWardWizard() {
             }
 
             const targetDraft = draftOverride ?? draft;
-            const identityPayload = buildDraftWardIdentityPayload(targetDraft);
+            const identityPayload = buildDraftWardIdentityPayload(targetDraft, fallbackWardName);
             const draftPayload = buildServerOnboardingWardDraftPayload(targetDraft, draftWardId, selectedTeamId, sortMode);
 
             try {
@@ -715,7 +718,7 @@ function useOnboardingWardWizard() {
                 setDraftCreationStatus('error');
 
                 if (showErrorToast) {
-                    toast.error('병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.');
+                    toast.error(t('page.onboardingWardCreate.toast.saveDraftError'));
                 }
 
                 return false;
@@ -726,10 +729,12 @@ function useOnboardingWardWizard() {
             draft,
             draftCreationStatus,
             draftWardId,
+            fallbackWardName,
             saveOnboardingWardDraft,
             selectedTeamId,
             sortMode,
             submissionStatus,
+            t,
         ],
     );
 
@@ -818,7 +823,7 @@ function useOnboardingWardWizard() {
                 tags: {feature: 'onboarding-ward-create'},
                 extra: {phase: 'reload-draft-after-save', step: nextDraft.currentStep},
             });
-            toast.error('저장한 온보딩 정보를 다시 불러오지 못했어요. 다시 시도해 주세요.');
+            toast.error(t('page.onboardingWardCreate.toast.reloadDraftError'));
 
             return false;
         }
@@ -854,7 +859,7 @@ function useOnboardingWardWizard() {
                 tags: {feature: 'onboarding-ward-create'},
                 extra: {phase: 'preview-and-save-schedule-input', step: draft.currentStep},
             });
-            toast.error('근무표를 서버에 저장하지 못했어요. 다시 시도해 주세요.');
+            toast.error(t('page.onboardingWardCreate.toast.saveScheduleError'));
 
             return false;
         }
@@ -926,7 +931,7 @@ function useOnboardingWardWizard() {
         markDraftTouched();
 
         if (draft.teams.length >= MAX_ONBOARDING_TEAMS) {
-            toast.error('팀은 최대 8개까지 추가할 수 있어요.');
+            toast.error(t('page.onboardingWardCreate.toast.maxTeams', {count: MAX_ONBOARDING_TEAMS}));
 
             return;
         }
@@ -936,10 +941,11 @@ function useOnboardingWardWizard() {
         setDraft(nextDraft);
 
         if (addedTeamId) {
-            const addedTeamName = nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '새 팀';
+            const addedTeamName =
+                nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
 
             setSelectedTeamId(addedTeamId);
-            toast.success(`${addedTeamName}을 추가했어요.`, {position: 'bottom-center'});
+            toast.success(t('page.onboardingWardCreate.toast.addTeam', {teamName: addedTeamName}), {position: 'bottom-center'});
         }
     };
     const addNurse = () => {
@@ -951,15 +957,18 @@ function useOnboardingWardWizard() {
             const teamNurseCount = draft.nurses.filter((nurse) => nurse.teamId === targetTeamId).length;
 
             if (teamNurseCount >= MAX_ONBOARDING_NURSES) {
-                toast.error('한 팀에는 간호사를 최대 40명까지 추가할 수 있어요.');
+                toast.error(t('page.onboardingWardCreate.toast.maxNursesPerTeam', {count: MAX_ONBOARDING_NURSES}));
 
                 return;
             }
 
-            const targetTeamName = draft.teams.find((team) => team.id === targetTeamId)?.name ?? '선택한 팀';
+            const targetTeamName =
+                draft.teams.find((team) => team.id === targetTeamId)?.name ?? t('page.onboardingWardCreate.fallback.selectedTeam');
 
             setDraft((prev) => addNurseDraft(prev, targetTeamId));
-            toast.success(`${targetTeamName}에 간호사를 추가했어요.`, {position: 'bottom-center'});
+            toast.success(t('page.onboardingWardCreate.toast.addNurseToTeam', {teamName: targetTeamName}), {
+                position: 'bottom-center',
+            });
 
             return;
         }
@@ -967,16 +976,19 @@ function useOnboardingWardWizard() {
         const {draft: withTeamDraft, addedTeamId} = addTeamDraft(draft);
 
         if (!addedTeamId) {
-            toast.error('팀은 최대 8개까지 추가할 수 있어요.');
+            toast.error(t('page.onboardingWardCreate.toast.maxTeams', {count: MAX_ONBOARDING_TEAMS}));
 
             return;
         }
 
-        const addedTeamName = withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? '새 팀';
+        const addedTeamName =
+            withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
 
         setDraft(addNurseDraft(withTeamDraft, addedTeamId));
         setSelectedTeamId(addedTeamId);
-        toast.success(`${addedTeamName}을 추가하고 간호사도 등록했어요.`, {position: 'bottom-center'});
+        toast.success(t('page.onboardingWardCreate.toast.addTeamAndNurse', {teamName: addedTeamName}), {
+            position: 'bottom-center',
+        });
     };
     const deleteActiveTeam = () => {
         markDraftTouched();
@@ -992,7 +1004,7 @@ function useOnboardingWardWizard() {
         setSelectedTeamId(nextDraft.teams[0]?.id ?? '');
 
         if (deletedTeamNurseCount > 0) {
-            toast.success('팀을 삭제했어요. 팀에 속한 간호사도 함께 삭제했어요.');
+            toast.success(t('page.onboardingWardCreate.toast.deleteTeamWithNurses'));
         }
     };
     const deleteNurse = (nurseId: string) => {
@@ -1003,7 +1015,7 @@ function useOnboardingWardWizard() {
         }
 
         setDraft((prev) => deleteNurseDraft(prev, nurseId));
-        toast.success('간호사를 삭제했어요.');
+        toast.success(t('page.onboardingWardCreate.toast.deleteNurse'));
     };
     const updateTeamName = (teamId: string, teamName: string) => {
         markDraftTouched();
@@ -1111,7 +1123,7 @@ function useOnboardingWardWizard() {
         markDraftTouched();
 
         if (!isSupportedOnboardingUploadFile(file.name)) {
-            const message = '엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.';
+            const message = t('page.onboardingWardCreate.upload.unsupportedFile');
 
             setUploadStatus('error');
             setUploadError(message);
@@ -1130,7 +1142,10 @@ function useOnboardingWardWizard() {
                 FileAPI.parseOnboardingWardExcel(file, options),
                 parseScheduleTemplateSafely(file, options),
             ]);
-            const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options);
+            const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
+                failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
+                failedRow: (rowLabel) => t('page.onboardingWardCreate.upload.failedRow', {rowLabel}),
+            });
 
             let nextActiveTeamId: string | null = null;
 
@@ -1159,9 +1174,12 @@ function useOnboardingWardWizard() {
 
             setUploadWarnings(warnings);
             setUploadStatus(warnings.length > 0 ? 'warning' : 'success');
-            toast.success('근무표 파일을 반영했어요.');
+            toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
         } catch (error) {
-            const message = getOnboardingUploadFailureMessage(error);
+            const message = getOnboardingUploadFailureMessage(error, {
+                defaultMessage: t('page.onboardingWardCreate.upload.parseFailed'),
+                networkMessage: t('page.onboardingWardCreate.upload.networkFailed'),
+            });
 
             setUploadStatus('error');
             setUploadError(message);
@@ -1172,7 +1190,7 @@ function useOnboardingWardWizard() {
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         markDraftTouched();
         setDraft((prev) => saveSkillLevelConfig(prev, {...config, enabled: true}));
-        toast.success('숙련도 설정이 간호사 목록에 반영됐어요.');
+        toast.success(t('page.onboardingWardCreate.toast.skillConfigSaved'));
     };
     const disableSkillConfig = () => {
         markDraftTouched();
@@ -1188,7 +1206,7 @@ function useOnboardingWardWizard() {
             setSortModeState('manual');
         }
 
-        toast.success('숙련도 설정을 사용하지 않아요.');
+        toast.success(t('page.onboardingWardCreate.toast.skillConfigDisabled'));
     };
     const complete = async () => {
         if (submissionStatus === 'submitting') {
@@ -1218,14 +1236,14 @@ function useOnboardingWardWizard() {
             saveOnboardingWardSkillSettings(nextDraft, submission.ward);
             setCreatedWard(submission.ward ?? null);
             setSubmissionStatus('success');
-            toast.success(submission.successMessage);
+            toast.success(t('page.onboardingWardCreate.toast.completeSuccess'));
         } catch (error) {
             Sentry.captureException(error, {
                 tags: {feature: 'onboarding-ward-create'},
                 extra: {step: draft.currentStep},
             });
             setSubmissionStatus('error');
-            toast.error('병동을 만들지 못했어요. 다시 시도해 주세요.');
+            toast.error(t('page.onboardingWardCreate.toast.completeError'));
         }
     };
     const skipOrComplete = () => {

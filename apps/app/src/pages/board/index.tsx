@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import {type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
+import i18n from '@/i18n';
 import {BoardAPI} from '@/shared/api';
 import {
     type TCreateWardBoardPostDTO,
@@ -31,6 +32,7 @@ import {
     type TUpdateWardBoardScheduleDTO,
 } from '@/shared/api/board';
 import PageState from '@/shared/ui/PageState';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
 const POST_PAGE_SIZE = 40;
@@ -44,6 +46,8 @@ const POST_IMAGE_MAX_COUNT = 5;
 const POST_IMAGE_MAX_SIZE_MB = 5;
 const POST_IMAGE_MAX_SIZE_BYTES = POST_IMAGE_MAX_SIZE_MB * 1024 * 1024;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const BOARD_I18N_PREFIX = 'page.board.';
+const WEEKDAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 const initialPostDraft: TCreateWardBoardPostDTO = {
     title: '',
     content: '',
@@ -99,10 +103,12 @@ const boardQueryKeys = {
     schedulesRoot: (wardId: number) => [...boardQueryKeys.all, 'schedules', wardId] as const,
     schedules: (wardId: number, year: number, month: number) => [...boardQueryKeys.schedulesRoot(wardId), year, month] as const,
 };
+const boardT = (key: string, options?: Record<string, string | number | boolean | null | undefined>) =>
+    i18n.t(`${BOARD_I18N_PREFIX}${key}`, options);
 const getPostId = (post: TWardBoardPost) => BoardAPI.getPostId(post);
 const getScheduleId = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleId(schedule);
 const getCommentId = (comment: TWardBoardComment) => comment.commentId ?? comment.id ?? 0;
-const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? '작성자';
+const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? boardT('common.author');
 const readBooleanLike = (value: unknown) => {
     if (typeof value === 'boolean') return value;
 
@@ -119,7 +125,7 @@ const readBooleanLike = (value: unknown) => {
     return undefined;
 };
 const getScheduleWriterName = (schedule: TWardBoardSchedule) =>
-    schedule.writerName ?? schedule.writer_name ?? schedule.authorName ?? schedule.author_name ?? '작성자';
+    schedule.writerName ?? schedule.writer_name ?? schedule.authorName ?? schedule.author_name ?? boardT('common.author');
 const getScheduleSourceType = (schedule: TWardBoardSchedule) => schedule.sourceType ?? schedule.source_type;
 const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => getScheduleSourceType(schedule) === 'BOARD_DEADLINE';
 const isManualSchedule = (schedule: TWardBoardSchedule) => !getScheduleSourceType(schedule) || getScheduleSourceType(schedule) === 'MANUAL';
@@ -161,20 +167,34 @@ const formatDate = (dateKey: string) => {
 
     if (Number.isNaN(date.getTime())) return dateKey;
 
-    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+    return boardT('date.monthDay', {month: date.getMonth() + 1, day: date.getDate()});
+};
+const formatCompactDate = (dateKey: string) => {
+    const date = parseDateKey(dateKey);
+
+    if (Number.isNaN(date.getTime())) return dateKey;
+
+    return boardT('date.compactMonthDay', {month: date.getMonth() + 1, day: date.getDate()});
 };
 const formatDateRange = (startDate: string, endDate: string) =>
     startDate === endDate ? formatDate(startDate) : `${formatDate(startDate)} - ${formatDate(endDate)}`;
 const formatDateTime = (value?: string) => {
-    if (!value) return '방금';
+    if (!value) return boardT('date.justNow');
 
     const date = new Date(value);
 
-    if (Number.isNaN(date.getTime())) return '방금';
+    if (Number.isNaN(date.getTime())) return boardT('date.justNow');
 
     return `${date.getMonth() + 1}.${date.getDate()} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 };
-const formatMonthTitle = (year: number, month: number) => `${year}년 ${month}월`;
+const formatMonthTitle = (year: number, month: number) => boardT('date.monthTitle', {year, month});
+const formatDateSelectAria = (dateKey: string) => boardT('date.selectAria', {date: formatDate(dateKey)});
+const getWeekdayLabels = () => WEEKDAY_KEYS.map((key) => boardT(`date.weekdays.${key}`));
+const getQuickChoices = (today: Date) => [
+    {label: boardT('date.quick.today'), date: today},
+    {label: boardT('date.quick.tomorrow'), date: addDays(today, 1)},
+    {label: boardT('date.quick.inThreeDays'), date: addDays(today, 3)},
+];
 const makePreview = (content: string) => content.replace(/\s+/g, ' ').trim();
 const truncateText = (value: string, maxLength: number) => {
     if (value.length <= maxLength) return value;
@@ -251,7 +271,7 @@ const getDateKeysInRange = (startDate: string, endDate: string) => {
     return dates;
 };
 const formatScheduleTimeRange = (startTime?: string | null, endTime?: string | null, allDay = false) => {
-    if (allDay) return '종일';
+    if (allDay) return boardT('date.allDay');
 
     const start = normalizeTimeInput(startTime);
     const end = normalizeTimeInput(endTime);
@@ -269,7 +289,7 @@ const getScheduleDateTimeDetail = (draft: TScheduleDraft) => {
     if (draft.allDay) {
         return {
             primary: formatDateRange(draft.startDate, draft.endDate),
-            badge: '종일',
+            badge: boardT('date.allDay'),
         };
     }
 
@@ -278,13 +298,13 @@ const getScheduleDateTimeDetail = (draft: TScheduleDraft) => {
     if (draft.startDate === draft.endDate) {
         return {
             primary: formatDate(draft.startDate),
-            secondary: timeRange || '시간 미정',
+            secondary: timeRange || boardT('date.timeUnknown'),
         };
     }
 
     return {
         primary: `${formatScheduleDateTime(draft.startDate, draft.startTime)} - ${formatScheduleDateTime(draft.endDate, draft.endTime)}`,
-        secondary: timeRange ? undefined : '시간 미정',
+        secondary: timeRange ? undefined : boardT('date.timeUnknown'),
     };
 };
 const toSchedulePayload = (draft: TScheduleDraft): TCreateWardBoardScheduleDTO => ({
@@ -332,9 +352,9 @@ const getDeadlineMeta = (deadlineDate?: string, options?: {forceDday?: boolean})
     const deadline = parseDateKey(deadlineDate);
     const diff = Math.round((deadline.getTime() - today.getTime()) / MS_PER_DAY);
 
-    if (diff < 0) return {label: '마감 지남', tone: 'overdue' as const};
+    if (diff < 0) return {label: boardT('deadline.overdue'), tone: 'overdue' as const};
 
-    if (diff === 0) return {label: '오늘 마감', tone: 'today' as const};
+    if (diff === 0) return {label: boardT('deadline.today'), tone: 'today' as const};
 
     if (diff > 0 && options?.forceDday) {
         if (diff > DEADLINE_DDAY_VISIBLE_DAYS) return null;
@@ -411,7 +431,9 @@ function PostListItem({post, selected, onSelect}: {post: TWardBoardPost; selecte
                         <p className="min-w-0 flex-1 truncate text-[15px] leading-6 font-semibold text-sub-1">{title}</p>
                         <DeadlineBadge deadlineDate={post.deadlineDate} forceDday />
                     </div>
-                    <p className="mt-2.5 line-clamp-2 min-h-[42px] text-[13px] leading-[21px] text-gray-3">{preview || '내용 없음'}</p>
+                    <p className="mt-2.5 line-clamp-2 min-h-[42px] text-[13px] leading-[21px] text-gray-3">
+                        {preview || boardT('common.noContent')}
+                    </p>
 
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                         <span className="truncate text-[12px] font-medium text-sub-2.5">
@@ -479,7 +501,9 @@ function CommentThread({
                 return (
                     <div key={`${commentId}-${comment.createdAt ?? comment.content}`} className="rounded-[8px] bg-gray-7 px-3 py-2.5">
                         <div className="flex items-center justify-between gap-2">
-                            <span className="text-[13px] font-semibold text-sub-1">{comment.authorName ?? '작성자'}</span>
+                            <span className="text-[13px] font-semibold text-sub-1">
+                                {comment.authorName ?? boardT('common.author')}
+                            </span>
                             <span className="text-[11px] font-medium text-gray-4">{formatDateTime(comment.createdAt)}</span>
                         </div>
                         <p className="mt-1.5 text-[13px] leading-[18px] whitespace-pre-line text-sub-2">{comment.content}</p>
@@ -492,7 +516,7 @@ function CommentThread({
                                         disabled={disabled || deletingCommentId === commentId}
                                         onClick={() => onDeleteComment(commentId)}
                                     >
-                                        삭제
+                                        {boardT('common.delete')}
                                     </button>
                                 ) : null}
                                 {canReply ? (
@@ -502,7 +526,7 @@ function CommentThread({
                                         disabled={disabled}
                                         onClick={() => onStartReply(commentId)}
                                     >
-                                        답글
+                                        {boardT('common.reply')}
                                     </button>
                                 ) : null}
                             </div>
@@ -523,7 +547,7 @@ function CommentThread({
                                             onSubmitReply(commentId);
                                         }
                                     }}
-                                    placeholder="답글을 입력해 주세요"
+                                    placeholder={boardT('comment.replyPlaceholder')}
                                     rows={1}
                                     className="min-h-10 min-w-0 flex-1 resize-none overflow-hidden rounded-[7px] bg-white px-2.5 py-3 text-[12px] leading-4 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:ring-main-3"
                                 />
@@ -533,14 +557,14 @@ function CommentThread({
                                     disabled={disabled || !replyDraft.trim()}
                                     onClick={() => onSubmitReply(commentId)}
                                 >
-                                    등록
+                                    {boardT('common.submit')}
                                 </button>
                                 <button
                                     type="button"
                                     className="h-10 w-10 rounded-[7px] text-gray-4 transition-colors hover:bg-white hover:text-sub-1"
                                     onClick={onCancelReply}
-                                    aria-label="답글 취소"
-                                    title="답글 취소"
+                                    aria-label={boardT('comment.cancelReply')}
+                                    title={boardT('comment.cancelReply')}
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -585,11 +609,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
     });
     const pickerRef = useRef<HTMLDivElement>(null);
     const cells = useMemo(() => getCalendarCells(viewMonth.year, viewMonth.month), [viewMonth]);
-    const quickChoices = [
-        {label: '오늘', date: today},
-        {label: '내일', date: addDays(today, 1)},
-        {label: '3일 후', date: addDays(today, 3)},
-    ];
+    const quickChoices = getQuickChoices(today);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -648,7 +668,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
 
     return (
         <div id="board_composer_deadline_picker" ref={pickerRef} className="relative grid w-full max-w-full gap-1.5 sm:max-w-[300px]">
-            <span className="text-[13px] font-semibold text-sub-2">마감일</span>
+            <span className="text-[13px] font-semibold text-sub-2">{boardT('deadline.label')}</span>
             <button
                 type="button"
                 className={cn(
@@ -670,7 +690,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                         <CalendarDays className="size-4" strokeWidth={1.8} aria-hidden="true" />
                     </span>
                     <span className="min-w-0 truncate text-[14px] font-semibold text-sub-1">
-                        {value ? `${formatDate(value)} 마감` : '선택 안 함'}
+                        {value ? boardT('deadline.selectedSuffix', {date: formatDate(value)}) : boardT('deadline.noSelection')}
                     </span>
                 </span>
                 <ChevronRight
@@ -684,15 +704,17 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                 <div className="absolute bottom-full left-0 z-50 mb-2 w-[320px] max-w-[calc(100vw-48px)] rounded-[16px] bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-gray-6">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[13px] font-semibold text-gray-3">마감일 선택</p>
-                            <p className="mt-1 text-[18px] font-semibold text-sub-1">{value ? formatDate(value) : '선택 안 함'}</p>
+                            <p className="text-[13px] font-semibold text-gray-3">{boardT('deadline.pickerTitle')}</p>
+                            <p className="mt-1 text-[18px] font-semibold text-sub-1">
+                                {value ? formatDate(value) : boardT('deadline.noSelection')}
+                            </p>
                         </div>
                         <button
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => setIsOpen(false)}
-                            aria-label="마감일 선택 닫기"
-                            title="마감일 선택 닫기"
+                            aria-label={boardT('deadline.closePicker')}
+                            title={boardT('deadline.closePicker')}
                         >
                             <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
@@ -727,7 +749,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                             )}
                             onClick={clearDate}
                         >
-                            없음
+                            {boardT('common.none')}
                         </button>
                     </div>
 
@@ -736,8 +758,8 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => moveViewMonth(-1)}
-                            aria-label="이전 달"
-                            title="이전 달"
+                            aria-label={boardT('date.prevMonth')}
+                            title={boardT('date.prevMonth')}
                         >
                             <ChevronLeft className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
@@ -746,15 +768,15 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => moveViewMonth(1)}
-                            aria-label="다음 달"
-                            title="다음 달"
+                            aria-label={boardT('date.nextMonth')}
+                            title={boardT('date.nextMonth')}
                         >
                             <ChevronRight className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
                     </div>
 
                     <div className="mt-3 grid grid-cols-7 text-center text-[11px] font-semibold text-gray-4">
-                        {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
+                        {getWeekdayLabels().map((dayLabel) => (
                             <span key={dayLabel} className="h-7 leading-7">
                                 {dayLabel}
                             </span>
@@ -778,7 +800,7 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
                                         isToday && !isSelected ? 'text-[#3182F6] ring-1 ring-[#BFD7FF]' : undefined,
                                     )}
                                     onClick={() => selectDate(cell.key)}
-                                    aria-label={`${formatDate(cell.key)} 선택`}
+                                    aria-label={formatDateSelectAria(cell.key)}
                                 >
                                     {cell.date.getDate()}
                                 </button>
@@ -819,11 +841,7 @@ function ScheduleDatePicker({
     });
     const pickerRef = useRef<HTMLDivElement>(null);
     const cells = useMemo(() => getCalendarCells(viewMonth.year, viewMonth.month), [viewMonth]);
-    const quickChoices = [
-        {label: '오늘', date: today},
-        {label: '내일', date: addDays(today, 1)},
-        {label: '3일 후', date: addDays(today, 3)},
-    ];
+    const quickChoices = getQuickChoices(today);
 
     useEffect(() => {
         if (!isOpen) return;
@@ -896,7 +914,7 @@ function ScheduleDatePicker({
                     if (!disabled) setIsOpen((current) => !current);
                 }}
                 disabled={disabled}
-                aria-label={`${label} ${value ? formatDate(value) : '날짜 선택'}`}
+                aria-label={boardT('date.datePickerButtonAria', {label, value: value ? formatDate(value) : boardT('date.datePlaceholder')})}
                 aria-expanded={isOpen}
                 aria-required="true"
                 aria-invalid={invalid}
@@ -910,7 +928,9 @@ function ScheduleDatePicker({
                     >
                         <CalendarDays className="size-4" strokeWidth={1.8} aria-hidden="true" />
                     </span>
-                    <span className="min-w-0 truncate text-[15px] font-semibold text-sub-1">{value ? formatDate(value) : '날짜 선택'}</span>
+                    <span className="min-w-0 truncate text-[15px] font-semibold text-sub-1">
+                        {value ? formatDate(value) : boardT('date.datePlaceholder')}
+                    </span>
                 </span>
                 <ChevronRight
                     className={cn('size-4 shrink-0 text-gray-4 transition-transform', isOpen ? 'rotate-90 text-[#3182F6]' : undefined)}
@@ -923,15 +943,17 @@ function ScheduleDatePicker({
                 <div className="absolute top-full left-0 z-50 mt-2 w-full max-w-[calc(100vw-48px)] rounded-[14px] bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-gray-6">
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[13px] font-semibold text-gray-3">일정 {label}</p>
-                            <p className="mt-1 text-[18px] font-semibold text-sub-1">{value ? formatDate(value) : '날짜 선택'}</p>
+                            <p className="text-[13px] font-semibold text-gray-3">{boardT('schedule.datePickerHeader', {label})}</p>
+                            <p className="mt-1 text-[18px] font-semibold text-sub-1">
+                                {value ? formatDate(value) : boardT('date.datePlaceholder')}
+                            </p>
                         </div>
                         <button
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => setIsOpen(false)}
-                            aria-label="날짜 선택 닫기"
-                            title="날짜 선택 닫기"
+                            aria-label={boardT('schedule.datePickerClose')}
+                            title={boardT('schedule.datePickerClose')}
                         >
                             <X className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
@@ -969,8 +991,8 @@ function ScheduleDatePicker({
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => moveViewMonth(-1)}
-                            aria-label="이전 달"
-                            title="이전 달"
+                            aria-label={boardT('date.prevMonth')}
+                            title={boardT('date.prevMonth')}
                         >
                             <ChevronLeft className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
@@ -979,15 +1001,15 @@ function ScheduleDatePicker({
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={() => moveViewMonth(1)}
-                            aria-label="다음 달"
-                            title="다음 달"
+                            aria-label={boardT('date.nextMonth')}
+                            title={boardT('date.nextMonth')}
                         >
                             <ChevronRight className="size-4" strokeWidth={1.8} aria-hidden="true" />
                         </button>
                     </div>
 
                     <div className="mt-3 grid grid-cols-7 text-center text-[11px] font-semibold text-gray-4">
-                        {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
+                        {getWeekdayLabels().map((dayLabel) => (
                             <span key={dayLabel} className="h-7 leading-7">
                                 {dayLabel}
                             </span>
@@ -1015,7 +1037,7 @@ function ScheduleDatePicker({
                                     )}
                                     disabled={cellDisabled}
                                     onClick={() => selectDate(cell.key)}
-                                    aria-label={`${formatDate(cell.key)} 선택`}
+                                    aria-label={formatDateSelectAria(cell.key)}
                                 >
                                     {cell.date.getDate()}
                                 </button>
@@ -1054,7 +1076,7 @@ function ScheduleTimeInput({
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
                     disabled={disabled}
-                    aria-label={`${label} 시간`}
+                    aria-label={boardT('schedule.timeInputAria', {label})}
                     className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-semibold text-sub-1 outline-none disabled:cursor-default disabled:opacity-100"
                 />
             </span>
@@ -1073,17 +1095,17 @@ function ScheduleTimeRangePicker({
 }) {
     return (
         <div className="grid gap-2">
-            <span className="text-[13px] font-semibold text-sub-2">시간</span>
+            <span className="text-[13px] font-semibold text-sub-2">{boardT('schedule.time')}</span>
             <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
                 <ScheduleTimeInput
-                    label="시작"
+                    label={boardT('schedule.startTime')}
                     value={draft.startTime}
                     disabled={disabled}
                     onChange={(startTime) => onChange({...draft, startTime})}
                 />
                 <span className="text-[13px] font-semibold text-gray-4">~</span>
                 <ScheduleTimeInput
-                    label="종료"
+                    label={boardT('schedule.endTime')}
                     value={draft.endTime}
                     disabled={disabled}
                     onChange={(endTime) => onChange({...draft, endTime})}
@@ -1156,7 +1178,11 @@ function WardScheduleModal({
         !draft.allDay &&
         draft.startDate === draft.endDate &&
         Boolean(draft.startTime && draft.endTime && draft.startTime >= draft.endTime);
-    const modalTitle = isViewMode ? '일정 보기' : isEditMode ? '일정 수정' : '일정 등록';
+    const modalTitle = isViewMode
+        ? boardT('schedule.modalView')
+        : isEditMode
+          ? boardT('schedule.modalEdit')
+          : boardT('schedule.modalCreate');
     const headerTitle = isViewMode ? draft.title || modalTitle : modalTitle;
     const detailDateTime = getScheduleDateTimeDetail(draft);
     const updateStartDate = (startDate: string) => {
@@ -1190,7 +1216,7 @@ function WardScheduleModal({
             <form
                 role="dialog"
                 aria-modal="true"
-                aria-label={`병동 ${modalTitle}`}
+                aria-label={boardT('schedule.modalAria', {title: modalTitle})}
                 className="w-full max-w-[440px] rounded-[16px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
                 onMouseDown={(event) => event.stopPropagation()}
                 onSubmit={onSubmit}
@@ -1198,7 +1224,7 @@ function WardScheduleModal({
             >
                 <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-gray-3">병동 일정</p>
+                        <p className="text-[13px] font-semibold text-gray-3">{boardT('schedule.sectionTitle')}</p>
                         <h2 className="mt-1 text-[22px] leading-7 font-semibold break-words text-sub-1">{headerTitle}</h2>
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
@@ -1207,8 +1233,8 @@ function WardScheduleModal({
                                 type="button"
                                 className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-main-light hover:text-main-1"
                                 onClick={onEdit}
-                                aria-label="병동 일정 수정"
-                                title="병동 일정 수정"
+                                aria-label={boardT('schedule.editAria')}
+                                title={boardT('schedule.editAria')}
                             >
                                 <Pencil className="size-4" aria-hidden="true" />
                             </button>
@@ -1217,8 +1243,8 @@ function WardScheduleModal({
                             type="button"
                             className="grid h-9 w-9 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                             onClick={onClose}
-                            aria-label="병동 일정 닫기"
-                            title="병동 일정 닫기"
+                            aria-label={boardT('schedule.closeAria')}
+                            title={boardT('schedule.closeAria')}
                         >
                             <X className="size-4" aria-hidden="true" />
                         </button>
@@ -1227,7 +1253,7 @@ function WardScheduleModal({
 
                 {isViewMode ? (
                     <div className="mt-5 grid gap-4">
-                        <ScheduleDetailField label="날짜 및 시간" icon={CalendarDays} contentClassName="items-start">
+                        <ScheduleDetailField label={boardT('schedule.dateTime')} icon={CalendarDays} contentClassName="items-start">
                             <div className="grid gap-1">
                                 <div className="flex min-w-0 flex-wrap items-center gap-2">
                                     <span className="min-w-0 break-words">{detailDateTime.primary}</span>
@@ -1242,9 +1268,9 @@ function WardScheduleModal({
                                 ) : null}
                             </div>
                         </ScheduleDetailField>
-                        <ScheduleDetailField label="메모" contentClassName="min-h-[112px] items-start font-medium">
+                        <ScheduleDetailField label={boardT('schedule.memo')} contentClassName="min-h-[112px] items-start font-medium">
                             <p className={cn('min-h-5 whitespace-pre-line', draft.content.trim() ? 'text-sub-1' : 'text-gray-4')}>
-                                {draft.content.trim() || '메모 없음'}
+                                {draft.content.trim() || boardT('schedule.noMemo')}
                             </p>
                         </ScheduleDetailField>
                     </div>
@@ -1252,7 +1278,7 @@ function WardScheduleModal({
                     <div className="mt-5 grid gap-4">
                         <label className="grid gap-1.5">
                             <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                                제목
+                                {boardT('schedule.title')}
                                 <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
                             </span>
                             <input
@@ -1265,22 +1291,24 @@ function WardScheduleModal({
                                     'h-11 w-full rounded-[8px] bg-gray-7 px-3.5 text-[15px] text-sub-1 ring-1 transition outline-none focus:bg-white',
                                     isTitleInvalid ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]' : 'ring-transparent focus:ring-main-3',
                                 )}
-                                placeholder="제목을 입력하세요"
+                                placeholder={boardT('schedule.titlePlaceholder')}
                             />
-                            {isTitleInvalid ? <span className="text-[11px] font-medium text-[#E85D75]">제목을 입력해 주세요.</span> : null}
+                            {isTitleInvalid ? (
+                                <span className="text-[11px] font-medium text-[#E85D75]">{boardT('schedule.titleRequired')}</span>
+                            ) : null}
                         </label>
 
                         <div className="grid gap-1.5">
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                                 <ScheduleDatePicker
-                                    label="시작일"
+                                    label={boardT('schedule.startDate')}
                                     value={draft.startDate}
                                     invalid={isStartDateInvalid}
                                     disabled={false}
                                     onChange={updateStartDate}
                                 />
                                 <ScheduleDatePicker
-                                    label="종료일"
+                                    label={boardT('schedule.endDate')}
                                     value={draft.endDate}
                                     invalid={isEndDateInvalid}
                                     minDate={draft.startDate}
@@ -1289,17 +1317,17 @@ function WardScheduleModal({
                                 />
                             </div>
                             {isStartDateInvalid || isEndDateInvalid ? (
-                                <span className="text-[11px] font-medium text-[#E85D75]">일정 기간을 선택해 주세요.</span>
+                                <span className="text-[11px] font-medium text-[#E85D75]">{boardT('schedule.periodRequired')}</span>
                             ) : null}
                         </div>
 
                         <label className="flex h-10 items-center justify-between rounded-[8px] bg-gray-7 px-3.5">
-                            <span className="text-[13px] font-semibold text-sub-2">종일</span>
+                            <span className="text-[13px] font-semibold text-sub-2">{boardT('date.allDay')}</span>
                             <input
                                 type="checkbox"
                                 checked={draft.allDay}
                                 onChange={(event) => updateAllDay(event.target.checked)}
-                                aria-label="종일"
+                                aria-label={boardT('date.allDay')}
                                 className="h-4 w-4 accent-main-1"
                             />
                         </label>
@@ -1309,25 +1337,25 @@ function WardScheduleModal({
                                 <ScheduleTimeRangePicker draft={draft} disabled={false} onChange={onChange} />
                                 {isTimeMissingInvalid ? (
                                     <span className="text-[11px] font-medium text-[#E85D75]">
-                                        시간 일정은 시작 시간과 종료 시간을 모두 입력해 주세요.
+                                        {boardT('schedule.timeMissing')}
                                     </span>
                                 ) : isTimeRangeInvalid ? (
                                     <span className="text-[11px] font-medium text-[#E85D75]">
-                                        같은 날 일정은 종료 시간이 시작 시간보다 늦어야 해요.
+                                        {boardT('schedule.timeRangeInvalid')}
                                     </span>
                                 ) : null}
                             </div>
                         ) : null}
 
                         <label className="grid gap-1.5">
-                            <span className="text-[13px] font-semibold text-sub-2">메모</span>
+                            <span className="text-[13px] font-semibold text-sub-2">{boardT('schedule.memo')}</span>
                             <textarea
                                 value={draft.content}
                                 onChange={(event) => onChange({...draft, content: event.target.value})}
                                 maxLength={SCHEDULE_CONTENT_MAX_LENGTH}
                                 rows={4}
                                 className="min-h-[112px] w-full resize-none rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none focus:bg-white focus:ring-main-3"
-                                placeholder="필요한 내용을 입력해 주세요"
+                                placeholder={boardT('schedule.memoPlaceholder')}
                             />
                             <span className="justify-self-end text-[11px] font-medium text-gray-4">
                                 {draft.content.length}/{SCHEDULE_CONTENT_MAX_LENGTH}
@@ -1345,7 +1373,7 @@ function WardScheduleModal({
                             onClick={onDelete}
                         >
                             <Trash2 className="size-3.5" aria-hidden="true" />
-                            삭제
+                            {boardT('common.delete')}
                         </button>
                     ) : (
                         <span />
@@ -1356,7 +1384,7 @@ function WardScheduleModal({
                             className="h-10 rounded-[8px] bg-gray-7 px-4 text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6"
                             onClick={onClose}
                         >
-                            {isViewMode ? '닫기' : '취소'}
+                            {isViewMode ? boardT('common.close') : boardT('common.cancel')}
                         </button>
                         {!isViewMode ? (
                             <button
@@ -1364,7 +1392,7 @@ function WardScheduleModal({
                                 className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:opacity-40"
                                 disabled={disabled || deleting}
                             >
-                                {isEditMode ? '수정' : '등록'}
+                                {isEditMode ? boardT('common.update') : boardT('common.submit')}
                             </button>
                         ) : null}
                     </div>
@@ -1449,7 +1477,7 @@ function DeadlineCalendar({
             key: getDeadlineEventKey(deadline),
             date: deadline.deadlineDate,
             title: deadline.postTitle,
-            meta: '게시글 마감',
+            meta: boardT('schedule.postDeadline'),
             deadline,
         }));
         const sortEvents = (events: TCalendarEvent[]) =>
@@ -1490,7 +1518,7 @@ function DeadlineCalendar({
                 <div className="min-w-0">
                     <div className="flex items-center justify-between gap-2">
                         <div>
-                            <p className="text-[12px] font-semibold text-gray-3">병동 캘린더</p>
+                            <p className="text-[12px] font-semibold text-gray-3">{boardT('schedule.calendarTitle')}</p>
                             <h2 className="mt-0.5 text-[18px] font-semibold text-sub-1">{formatMonthTitle(year, month)}</h2>
                         </div>
                         <div className="flex items-center gap-1">
@@ -1499,8 +1527,8 @@ function DeadlineCalendar({
                                 type="button"
                                 className="grid h-7 w-7 place-items-center rounded-[7px] bg-main-1 text-white transition-colors hover:bg-main-1-hover"
                                 onClick={() => onCreateSchedule(defaultScheduleDate)}
-                                aria-label="병동 일정 등록"
-                                title="병동 일정 등록"
+                                aria-label={boardT('schedule.createAria')}
+                                title={boardT('schedule.createAria')}
                             >
                                 <CalendarPlus className="size-3.5" aria-hidden="true" />
                             </button>
@@ -1508,8 +1536,8 @@ function DeadlineCalendar({
                                 type="button"
                                 className="grid h-7 w-7 place-items-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                                 onClick={() => onMoveMonth(-1)}
-                                aria-label="이전 달"
-                                title="이전 달"
+                                aria-label={boardT('date.prevMonth')}
+                                title={boardT('date.prevMonth')}
                             >
                                 <ChevronLeft className="size-3.5" aria-hidden="true" />
                             </button>
@@ -1517,8 +1545,8 @@ function DeadlineCalendar({
                                 type="button"
                                 className="grid h-7 w-7 place-items-center rounded-[7px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
                                 onClick={() => onMoveMonth(1)}
-                                aria-label="다음 달"
-                                title="다음 달"
+                                aria-label={boardT('date.nextMonth')}
+                                title={boardT('date.nextMonth')}
                             >
                                 <ChevronRight className="size-3.5" aria-hidden="true" />
                             </button>
@@ -1526,7 +1554,7 @@ function DeadlineCalendar({
                     </div>
 
                     <div className="mt-3 grid grid-cols-7 gap-0.5 text-center text-[10px] font-semibold text-gray-4">
-                        {['일', '월', '화', '수', '목', '금', '토'].map((dayLabel) => (
+                        {getWeekdayLabels().map((dayLabel) => (
                             <span key={dayLabel} className="h-5 leading-5">
                                 {dayLabel}
                             </span>
@@ -1560,7 +1588,11 @@ function DeadlineCalendar({
                                     onClick={() => {
                                         setSelectedDate(cell.key);
                                     }}
-                                    aria-label={`${formatDate(cell.key)} 일정 ${dayEvents.length}건${isSelected ? ', 선택됨' : ''}`}
+                                    aria-label={boardT('schedule.dayAria', {
+                                        date: formatDate(cell.key),
+                                        count: dayEvents.length,
+                                        selectedSuffix: isSelected ? boardT('schedule.selectedSuffix') : '',
+                                    })}
                                 >
                                     {cell.date.getDate()}
                                     {hasEvent ? (
@@ -1585,14 +1617,14 @@ function DeadlineCalendar({
                 <div className="min-w-0">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[13px] font-semibold text-sub-1">
-                            {selectedDate ? `${formatDate(selectedDate)} 일정` : '이번 달 일정'}
+                            {selectedDate ? boardT('schedule.selectedDateTitle', {date: formatDate(selectedDate)}) : boardT('schedule.monthEventsTitle')}
                         </h3>
-                        <span className="text-[11px] font-semibold text-gray-4">{visibleEvents.length}건</span>
+                        <span className="text-[11px] font-semibold text-gray-4">{boardT('common.count', {count: visibleEvents.length})}</span>
                     </div>
                     <div className="mt-2.5 space-y-1.5">
                         {visibleEvents.length === 0 ? (
                             <p className="rounded-[8px] bg-gray-7 px-2.5 py-2.5 text-[12px] leading-5 text-gray-3">
-                                {selectedDate ? '선택한 날짜에 일정이 없어요.' : '병동 일정을 등록하면 여기에 보여요.'}
+                                {selectedDate ? boardT('schedule.noSelectedDateEvents') : boardT('schedule.noMonthEvents')}
                             </p>
                         ) : (
                             visibleEvents.slice(0, 6).map((event) => (
@@ -1616,7 +1648,7 @@ function DeadlineCalendar({
                                             event.kind === 'schedule' ? 'text-main-1' : 'text-[#2468B2]',
                                         )}
                                     >
-                                        {formatDate(event.date).replace('월 ', '.').replace('일', '')}
+                                        {formatCompactDate(event.date)}
                                     </span>
                                     <span className="min-w-0 flex-1">
                                         <span className="block truncate text-[12px] font-semibold text-sub-1">{event.title}</span>
@@ -1645,6 +1677,7 @@ function DeadlineCalendar({
 }
 
 function BoardPage() {
+    useTypedTranslation();
     const {
         state: {wardId, accountId, accountMeStatus, _loaded, isAuth},
         actions: {handleGetAccountMe},
@@ -2024,7 +2057,7 @@ function BoardPage() {
     const handleDeleteSchedule = () => {
         if (!editingScheduleId || !selectedSchedule || !canDeleteSchedule(selectedSchedule)) return;
 
-        if (!globalThis.confirm('병동 일정을 삭제할까요?')) return;
+        if (!globalThis.confirm(boardT('confirm.deleteSchedule'))) return;
 
         deleteScheduleMutation.mutate(editingScheduleId);
     };
@@ -2051,14 +2084,14 @@ function BoardPage() {
 
         if (!post.isMine || !postId) return;
 
-        if (!globalThis.confirm('게시글을 삭제할까요?')) return;
+        if (!globalThis.confirm(boardT('confirm.deletePost'))) return;
 
         deletePostMutation.mutate(postId);
     };
     const handleDeleteComment = (commentId: number) => {
         if (!commentId) return;
 
-        if (!globalThis.confirm('댓글을 삭제할까요?')) return;
+        if (!globalThis.confirm(boardT('confirm.deleteComment'))) return;
 
         deleteCommentMutation.mutate(commentId);
     };
@@ -2072,7 +2105,7 @@ function BoardPage() {
         const availableCount = POST_IMAGE_MAX_COUNT - postImageAttachments.length;
 
         if (availableCount <= 0) {
-            setPostImageError(`사진은 최대 ${POST_IMAGE_MAX_COUNT}장까지 첨부할 수 있어요.`);
+            setPostImageError(boardT('composer.maxImageCount', {count: POST_IMAGE_MAX_COUNT}));
 
             return;
         }
@@ -2080,17 +2113,18 @@ function BoardPage() {
         const nextFiles = selectedFiles.slice(0, availableCount);
         const validFiles: File[] = [];
 
-        let nextError = selectedFiles.length > availableCount ? `사진은 최대 ${POST_IMAGE_MAX_COUNT}장까지 첨부할 수 있어요.` : '';
+        let nextError =
+            selectedFiles.length > availableCount ? boardT('composer.maxImageCount', {count: POST_IMAGE_MAX_COUNT}) : '';
 
         nextFiles.forEach((file) => {
             if (!file.type.startsWith('image/')) {
-                nextError = '이미지 파일만 첨부할 수 있어요.';
+                nextError = boardT('composer.imageOnly');
 
                 return;
             }
 
             if (file.size > POST_IMAGE_MAX_SIZE_BYTES) {
-                nextError = `사진은 장당 ${POST_IMAGE_MAX_SIZE_MB}MB 이하로 첨부해 주세요.`;
+                nextError = boardT('composer.maxImageSize', {size: POST_IMAGE_MAX_SIZE_MB});
 
                 return;
             }
@@ -2119,7 +2153,7 @@ function BoardPage() {
 
             setPostImageAttachments((current) => [...current, ...attachments].slice(0, POST_IMAGE_MAX_COUNT));
         } catch {
-            setPostImageError('사진을 불러오지 못했어요. 다시 선택해 주세요.');
+            setPostImageError(boardT('composer.imageReadFailed'));
         } finally {
             setIsPostImageReading(false);
         }
@@ -2207,7 +2241,12 @@ function BoardPage() {
     if (bootstrapPending) {
         return (
             <div className="flex h-full w-full items-center justify-center px-8">
-                <PageState tone="loading" title="게시판을 준비하고 있어요" description="병동 정보를 확인하는 중이에요." className="py-0" />
+                <PageState
+                    tone="loading"
+                    title={boardT('state.loadingTitle')}
+                    description={boardT('state.loadingDescription')}
+                    className="py-0"
+                />
             </div>
         );
     }
@@ -2217,9 +2256,9 @@ function BoardPage() {
             <div className="flex h-full w-full items-center justify-center px-8">
                 <PageState
                     tone="error"
-                    title="병동 정보를 불러오지 못했어요"
-                    description="잠시 후 다시 시도해 주세요."
-                    action={{label: '다시 시도', onClick: retry}}
+                    title={boardT('state.wardLoadFailedTitle')}
+                    description={boardT('state.retryDescription')}
+                    action={{label: boardT('state.retry'), onClick: retry}}
                     className="py-0"
                 />
             </div>
@@ -2231,8 +2270,8 @@ function BoardPage() {
             <div className="flex h-full w-full items-center justify-center px-8">
                 <PageState
                     tone="empty"
-                    title="병동에 연결하면 게시판을 쓸 수 있어요"
-                    description="병동 연결 후 게시판을 사용할 수 있어요."
+                    title={boardT('state.noWardTitle')}
+                    description={boardT('state.noWardDescription')}
                     className="py-0"
                 />
             </div>
@@ -2242,9 +2281,9 @@ function BoardPage() {
     return (
         <div className="mx-auto flex min-h-screen w-full max-w-[1520px] min-w-[1120px] flex-col bg-main-bg px-4 py-4 font-apple sm:px-5 sm:py-5 lg:px-6 lg:py-6 2xl:px-10 2xl:py-7">
             <div className="min-w-0">
-                <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">게시판</h1>
+                <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">{boardT('title')}</h1>
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-                    <p className="min-w-0 text-[14px] leading-6 text-gray-3">같은 병동 간호사에게 필요한 내용을 공유할 수 있어요.</p>
+                    <p className="min-w-0 text-[14px] leading-6 text-gray-3">{boardT('description')}</p>
                     <button
                         id="board_create_button"
                         type="button"
@@ -2256,7 +2295,7 @@ function BoardPage() {
                         }}
                     >
                         <Plus className="mr-1.5 size-4" aria-hidden="true" />
-                        글쓰기
+                        {boardT('common.write')}
                     </button>
                 </div>
             </div>
@@ -2267,7 +2306,7 @@ function BoardPage() {
                     className="flex min-h-[360px] min-w-0 flex-col rounded-[8px] bg-white p-3 sm:min-h-[420px] lg:min-h-[520px]"
                 >
                     <div className="mb-2 flex items-center justify-between px-1">
-                        <h2 className="text-[15px] font-semibold text-sub-1">게시글</h2>
+                        <h2 className="text-[15px] font-semibold text-sub-1">{boardT('list.title')}</h2>
                         <button
                             id="board_search_button"
                             type="button"
@@ -2276,8 +2315,8 @@ function BoardPage() {
                                 isSearchVisible ? 'bg-gray-7 text-sub-1' : 'text-gray-4 hover:bg-gray-7 hover:text-sub-1',
                             )}
                             onClick={handleToggleSearch}
-                            aria-label="게시글 검색"
-                            title="게시글 검색"
+                            aria-label={boardT('list.searchAria')}
+                            title={boardT('list.searchAria')}
                             aria-expanded={isSearchVisible}
                         >
                             <Search className="size-4" aria-hidden="true" />
@@ -2291,7 +2330,7 @@ function BoardPage() {
                                     ref={searchInputRef}
                                     value={keywordInput}
                                     onChange={(event) => setKeywordInput(event.target.value)}
-                                    placeholder="제목, 내용 검색"
+                                    placeholder={boardT('list.searchPlaceholder')}
                                     className="min-w-0 flex-1 bg-transparent px-2 text-[14px] font-medium text-sub-1 outline-none placeholder:text-gray-4"
                                 />
                                 {keywordInput || keyword ? (
@@ -2299,8 +2338,8 @@ function BoardPage() {
                                         type="button"
                                         className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-gray-6 text-gray-4 transition-colors hover:bg-gray-5 hover:text-sub-1"
                                         onClick={clearSearch}
-                                        aria-label="검색어 지우기"
-                                        title="검색어 지우기"
+                                        aria-label={boardT('list.clearSearch')}
+                                        title={boardT('list.clearSearch')}
                                     >
                                         <X className="size-3.5" aria-hidden="true" />
                                     </button>
@@ -2309,17 +2348,17 @@ function BoardPage() {
                         </form>
                     ) : null}
                     {postsQuery.isPending ? (
-                        <PageState tone="loading" title="게시글을 불러오고 있어요" className="py-0" />
+                        <PageState tone="loading" title={boardT('list.loading')} className="py-0" />
                     ) : postsQuery.isError ? (
                         <PageState
                             tone="error"
-                            title="게시글을 불러오지 못했어요"
-                            description="잠시 후 다시 시도해 주세요."
-                            action={{label: '다시 시도', onClick: () => void postsQuery.refetch()}}
+                            title={boardT('list.loadFailed')}
+                            description={boardT('state.retryDescription')}
+                            action={{label: boardT('state.retry'), onClick: () => void postsQuery.refetch()}}
                             className="py-0"
                         />
                     ) : posts.length === 0 ? (
-                        <PageState tone="empty" title="새 글을 등록해 보세요" className="py-0" />
+                        <PageState tone="empty" title={boardT('list.empty')} className="py-0" />
                     ) : (
                         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                             {posts.map((post) => {
@@ -2346,8 +2385,10 @@ function BoardPage() {
                         <form id="board_composer_panel" className="flex h-full min-h-0 flex-col" onSubmit={handleCreatePost} noValidate>
                             <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-[13px] font-semibold text-gray-3">새 게시글</p>
-                                    <h2 className="mt-1 text-[22px] font-semibold text-sub-1 sm:text-[24px]">병동에 공유하기</h2>
+                                    <p className="text-[13px] font-semibold text-gray-3">{boardT('composer.newPost')}</p>
+                                    <h2 className="mt-1 text-[22px] font-semibold text-sub-1 sm:text-[24px]">
+                                        {boardT('composer.shareTitle')}
+                                    </h2>
                                 </div>
                                 <button
                                     type="button"
@@ -2356,8 +2397,8 @@ function BoardPage() {
                                         setPostDraftSubmitAttempted(false);
                                         setIsComposerOpen(false);
                                     }}
-                                    aria-label="글쓰기 닫기"
-                                    title="글쓰기 닫기"
+                                    aria-label={boardT('composer.closeAria')}
+                                    title={boardT('composer.closeAria')}
                                 >
                                     <X className="size-4" aria-hidden="true" />
                                 </button>
@@ -2367,7 +2408,7 @@ function BoardPage() {
                                 <div id="board_composer_required_fields" className="grid gap-4">
                                     <label className="grid gap-1.5">
                                         <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                                            제목
+                                            {boardT('composer.title')}
                                             <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
                                         </span>
                                         <input
@@ -2383,12 +2424,12 @@ function BoardPage() {
                                                     ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
                                                     : 'ring-transparent focus:ring-main-3',
                                             )}
-                                            placeholder="제목을 입력해 주세요"
+                                            placeholder={boardT('composer.titlePlaceholder')}
                                         />
                                     </label>
                                     <label className="grid gap-1.5">
                                         <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-sub-2">
-                                            내용
+                                            {boardT('composer.content')}
                                             <span className="h-[3px] w-[3px] rounded-full bg-[#E85D75]" aria-hidden="true" />
                                         </span>
                                         <textarea
@@ -2404,7 +2445,7 @@ function BoardPage() {
                                                     ? 'bg-white ring-[#E85D75] focus:ring-[#E85D75]'
                                                     : 'ring-transparent focus:ring-main-3',
                                             )}
-                                            placeholder="공유할 내용을 입력해 주세요"
+                                            placeholder={boardT('composer.contentPlaceholder')}
                                         />
                                         <span className="justify-self-end text-[11px] font-medium text-gray-4">
                                             {postDraft.content.length}/{POST_CONTENT_MAX_LENGTH}
@@ -2414,7 +2455,7 @@ function BoardPage() {
                                 <div id="board_composer_options" className="grid gap-4">
                                     <div className="grid gap-2">
                                         <div className="flex items-center justify-between gap-3">
-                                            <span className="text-[13px] font-semibold text-sub-2">사진</span>
+                                            <span className="text-[13px] font-semibold text-sub-2">{boardT('composer.image')}</span>
                                             <span className="font-poppins text-[11px] font-semibold text-gray-4">
                                                 {postImageAttachments.length}/{POST_IMAGE_MAX_COUNT}
                                             </span>
@@ -2430,8 +2471,8 @@ function BoardPage() {
                                                         type="button"
                                                         className="absolute top-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-black/55 text-white transition-colors hover:bg-black/70"
                                                         onClick={() => handleRemovePostImage(attachment.id)}
-                                                        aria-label={`${attachment.name} 삭제`}
-                                                        title={`${attachment.name} 삭제`}
+                                                        aria-label={boardT('common.removeNamed', {name: attachment.name})}
+                                                        title={boardT('common.removeNamed', {name: attachment.name})}
                                                     >
                                                         <X className="size-3" aria-hidden="true" />
                                                     </button>
@@ -2446,7 +2487,7 @@ function BoardPage() {
                                                 >
                                                     <ImagePlus className="size-5" strokeWidth={1.8} aria-hidden="true" />
                                                     <span className="text-[12px] font-semibold">
-                                                        {isPostImageReading ? '첨부 중' : '추가'}
+                                                        {isPostImageReading ? boardT('composer.addingImage') : boardT('common.add')}
                                                     </span>
                                                 </button>
                                             ) : null}
@@ -2461,7 +2502,11 @@ function BoardPage() {
                                         />
                                         <div className="flex items-center justify-between gap-3 text-[11px] font-medium">
                                             <span className={postImageError ? 'text-[#E85D75]' : 'text-gray-4'}>
-                                                {postImageError || `최대 ${POST_IMAGE_MAX_COUNT}장 · 장당 ${POST_IMAGE_MAX_SIZE_MB}MB`}
+                                                {postImageError ||
+                                                    boardT('composer.imageLimit', {
+                                                        count: POST_IMAGE_MAX_COUNT,
+                                                        size: POST_IMAGE_MAX_SIZE_MB,
+                                                    })}
                                             </span>
                                         </div>
                                     </div>
@@ -2479,7 +2524,7 @@ function BoardPage() {
                                     className="h-10 w-full rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                                     disabled={createPostMutation.isPending || isPostImageReading}
                                 >
-                                    등록
+                                    {boardT('common.submit')}
                                 </button>
                             </div>
                         </form>
@@ -2490,7 +2535,7 @@ function BoardPage() {
                                     {selectedPost.isNotice ? (
                                         <div className="flex flex-wrap items-center gap-2">
                                             <span className="inline-flex h-6 items-center rounded-full bg-[#EDF6FF] px-2.5 text-[12px] font-semibold text-[#2468B2]">
-                                                공지
+                                                {boardT('common.notice')}
                                             </span>
                                         </div>
                                     ) : null}
@@ -2510,7 +2555,7 @@ function BoardPage() {
                                     {selectedPost.deadlineDate ? (
                                         <div className="inline-flex h-9 items-center gap-1.5 rounded-[8px] bg-gray-7 px-3 text-[12px] font-semibold text-sub-1">
                                             <Clock3 className="size-3.5 text-main-1" aria-hidden="true" />
-                                            <span className="text-gray-3">마감일</span>
+                                            <span className="text-gray-3">{boardT('deadline.label')}</span>
                                             <span>{formatDate(selectedPost.deadlineDate)}</span>
                                         </div>
                                     ) : null}
@@ -2520,8 +2565,8 @@ function BoardPage() {
                                             className="grid h-8 w-8 place-items-center rounded-[8px] text-[#D8495F] transition-colors hover:bg-[#FFF1F3] hover:text-[#B93249] disabled:cursor-not-allowed disabled:opacity-40"
                                             disabled={deletePostMutation.isPending}
                                             onClick={() => handleDeletePost(selectedPost)}
-                                            aria-label="글 삭제"
-                                            title="글 삭제"
+                                            aria-label={boardT('detail.deletePost')}
+                                            title={boardT('detail.deletePost')}
                                         >
                                             <Trash2 className="size-4" aria-hidden="true" />
                                         </button>
@@ -2538,8 +2583,8 @@ function BoardPage() {
                                     )}
                                     onClick={() => likeMutation.mutate(selectedPost)}
                                     disabled={likeMutation.isPending}
-                                    aria-label={selectedPost.isLikedByMe ? '좋아요 취소' : '좋아요'}
-                                    title={selectedPost.isLikedByMe ? '좋아요 취소' : '좋아요'}
+                                    aria-label={selectedPost.isLikedByMe ? boardT('detail.unlike') : boardT('detail.like')}
+                                    title={selectedPost.isLikedByMe ? boardT('detail.unlike') : boardT('detail.like')}
                                 >
                                     <Heart
                                         className="size-4"
@@ -2556,8 +2601,8 @@ function BoardPage() {
                                     )}
                                     onClick={() => checkMutation.mutate(selectedPost)}
                                     disabled={checkMutation.isPending}
-                                    aria-label={selectedPost.isCheckedByMe ? '체크 취소' : '완료 체크'}
-                                    title={selectedPost.isCheckedByMe ? '체크 취소' : '완료 체크'}
+                                    aria-label={selectedPost.isCheckedByMe ? boardT('detail.uncheck') : boardT('detail.check')}
+                                    title={selectedPost.isCheckedByMe ? boardT('detail.uncheck') : boardT('detail.check')}
                                 >
                                     {selectedPost.isCheckedByMe ? (
                                         <span
@@ -2588,8 +2633,8 @@ function BoardPage() {
                                                 type="button"
                                                 className="group overflow-hidden rounded-[8px] bg-gray-7 text-left transition outline-none focus-visible:ring-2 focus-visible:ring-main-3"
                                                 onClick={() => setPreviewImageUrl(imageUrl)}
-                                                aria-label={`첨부 사진 ${index + 1} 확대 보기`}
-                                                title="사진 확대 보기"
+                                                aria-label={boardT('detail.attachedImagePreview', {index: index + 1})}
+                                                title={boardT('detail.imagePreview')}
                                             >
                                                 <img
                                                     src={imageUrl}
@@ -2613,7 +2658,7 @@ function BoardPage() {
                                                     <Check className="size-3" strokeWidth={3} />
                                                 </span>
                                                 <span className="text-[14px] font-semibold text-sub-1">
-                                                    체크 {selectedPost.checkCount ?? 0}명
+                                                    {boardT('detail.checkedPeople', {count: selectedPost.checkCount ?? 0})}
                                                 </span>
                                             </div>
                                         </div>
@@ -2632,7 +2677,9 @@ function BoardPage() {
 
                                 <div className="mt-6">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[15px] font-semibold text-sub-1">댓글 {selectedPost.commentCount ?? 0}</h3>
+                                        <h3 className="text-[15px] font-semibold text-sub-1">
+                                            {boardT('comment.title', {count: selectedPost.commentCount ?? 0})}
+                                        </h3>
                                     </div>
                                     <div
                                         id="board_comment_form"
@@ -2643,7 +2690,7 @@ function BoardPage() {
                                             value={commentDraft}
                                             onChange={(event) => setCommentDraft(event.target.value)}
                                             onKeyDown={handleCommentKeyDown}
-                                            placeholder="댓글을 입력해 주세요"
+                                            placeholder={boardT('comment.placeholder')}
                                             rows={1}
                                             className="min-h-12 min-w-0 flex-1 resize-none overflow-hidden rounded-[8px] bg-gray-7 px-3 py-[14px] text-[13px] leading-5 text-sub-1 ring-1 ring-transparent transition outline-none ring-inset focus:bg-white focus:ring-main-3"
                                         />
@@ -2653,13 +2700,13 @@ function BoardPage() {
                                             disabled={!canSubmitComment || createCommentMutation.isPending}
                                             onClick={handleCreateComment}
                                         >
-                                            등록
+                                            {boardT('common.submit')}
                                         </button>
                                     </div>
 
                                     <div className="mt-3">
                                         {commentsQuery.isPending ? (
-                                            <PageState tone="loading" title="댓글을 불러오고 있어요" className="py-0" />
+                                            <PageState tone="loading" title={boardT('comment.loading')} className="py-0" />
                                         ) : comments.length > 0 ? (
                                             <CommentThread
                                                 comments={comments}
@@ -2688,7 +2735,7 @@ function BoardPage() {
                         <div className="flex h-full min-h-[320px] items-center justify-center sm:min-h-[480px]">
                             <PageState
                                 tone="empty"
-                                title="게시글을 선택해 주세요"
+                                title={boardT('detail.selectPost')}
                                 className="py-0"
                                 visual={
                                     <img
@@ -2750,7 +2797,7 @@ function BoardPage() {
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6"
                     role="dialog"
                     aria-modal="true"
-                    aria-label="사진 확대 보기"
+                    aria-label={boardT('detail.imagePreview')}
                     onClick={() => setPreviewImageUrl(null)}
                 >
                     <div className="relative max-h-full max-w-5xl" onClick={(event) => event.stopPropagation()}>
@@ -2758,8 +2805,8 @@ function BoardPage() {
                             type="button"
                             className="absolute top-3 right-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-white/95 text-sub-1 shadow-[0_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-white"
                             onClick={() => setPreviewImageUrl(null)}
-                            aria-label="사진 닫기"
-                            title="사진 닫기"
+                            aria-label={boardT('detail.closeImage')}
+                            title={boardT('detail.closeImage')}
                         >
                             <X className="size-4" aria-hidden="true" />
                         </button>

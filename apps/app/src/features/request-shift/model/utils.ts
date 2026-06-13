@@ -1,8 +1,9 @@
 import {koToEn} from '@dutying/utils/ko-to-en';
 import type {TRequestShift, TWardConstraint, TShiftNurse, TWardShiftType, TShift} from '@/entities';
+import i18n from '@/i18n';
 import {type TFault, type TCheckFaultOptions, type TFocus, type TFaultType, type TRequestShiftEditAvailability} from './types';
 
-const REQUEST_SHIFT_EDITABLE_PERIOD_LABEL = '수정 가능 범위: 지난달부터 다음 달까지';
+const t = (key: string, values?: Record<string, string | number>) => i18n.t(key, values);
 const getMonthIndex = (year: number, month: number) => year * 12 + month;
 
 export const getRequestShiftEditAvailability = (year: number, month: number, now: Date = new Date()): TRequestShiftEditAvailability => {
@@ -13,10 +14,10 @@ export const getRequestShiftEditAvailability = (year: number, month: number, now
         return {
             canEdit: false,
             status: 'lockedPast',
-            validationMessage: '두 달 전 신청 근무는 조회만 가능해요.',
-            badgeLabel: '조회 전용',
-            periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
-            description: '이 달은 조회만 가능해요. 제출된 신청과 현재 배치만 확인할 수 있어요.',
+            validationMessage: t('page.request.availability.lockedPast.validationMessage'),
+            badgeLabel: t('page.request.availability.lockedPast.badgeLabel'),
+            periodLabel: t('page.request.availability.editablePeriodLabel'),
+            description: t('page.request.availability.lockedPast.description'),
         };
     }
 
@@ -24,10 +25,10 @@ export const getRequestShiftEditAvailability = (year: number, month: number, now
         return {
             canEdit: false,
             status: 'lockedFuture',
-            validationMessage: '두 달 뒤 신청 근무는 아직 작성 전이에요.',
-            badgeLabel: '작성 대기',
-            periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
-            description: '다음 달 신청 근무까지만 작성할 수 있어요. 아직 열리지 않은 달은 열리면 수정할 수 있어요.',
+            validationMessage: t('page.request.availability.lockedFuture.validationMessage'),
+            badgeLabel: t('page.request.availability.lockedFuture.badgeLabel'),
+            periodLabel: t('page.request.availability.editablePeriodLabel'),
+            description: t('page.request.availability.lockedFuture.description'),
         };
     }
 
@@ -35,9 +36,9 @@ export const getRequestShiftEditAvailability = (year: number, month: number, now
         canEdit: true,
         status: 'editable',
         validationMessage: null,
-        badgeLabel: '수정 가능',
-        periodLabel: REQUEST_SHIFT_EDITABLE_PERIOD_LABEL,
-        description: '현재 달력 범위에서는 신청 근무를 수정할 수 있어요.',
+        badgeLabel: t('page.request.availability.editable.badgeLabel'),
+        periodLabel: t('page.request.availability.editablePeriodLabel'),
+        description: t('page.request.availability.editable.description'),
     };
 };
 
@@ -135,57 +136,59 @@ export const updateCheckFaultOption = (wardConstraint: TWardConstraint): TCheckF
             type: 'wrong',
             isActive: wardConstraint.maxContinuousWork,
             regExp: new RegExp(`[den][den]{${wardConstraint.maxContinuousWorkVal - 1},}[den]`, 'g'),
-            message: `근무는 연속 ${wardConstraint.maxContinuousWorkVal}일까지 배정할 수 있어요.`,
+            message: t('page.request.faultOptions.maxContinuousWork.message', {count: wardConstraint.maxContinuousWorkVal}),
             value: wardConstraint.maxContinuousWorkVal,
-            label: '연속 근무 수',
+            label: t('page.request.faultOptions.maxContinuousWork.label'),
         },
         minNightInterval: {
             type: 'wrong',
             isActive: wardConstraint.minNightInterval,
             regExp: new RegExp(`n[^n]{1,${wardConstraint.minNightIntervalVal - 1}}n`, 'g'),
-            message: `나이트 간격은 최소 ${wardConstraint.minNightIntervalVal}일 이상으로 맞춰 주세요.`,
+            message: t('page.request.faultOptions.minNightInterval.message', {count: wardConstraint.minNightIntervalVal}),
             value: wardConstraint.minNightIntervalVal,
-            label: '나이트 간격',
+            label: t('page.request.faultOptions.minNightInterval.label'),
         },
         maxContinuousNight: {
             type: 'wrong',
             isActive: wardConstraint.maxContinuousNight,
             regExp: new RegExp(`n{${wardConstraint.maxContinuousNightVal + 1},}`, 'g'),
-            message: `나이트 근무는 연속 ${wardConstraint.maxContinuousNightVal}일까지 배정할 수 있어요.`,
+            message: t('page.request.faultOptions.maxContinuousNight.message', {count: wardConstraint.maxContinuousNightVal}),
             value: wardConstraint.maxContinuousNightVal,
-            label: '연속 나이트',
+            label: t('page.request.faultOptions.maxContinuousNight.label'),
         },
         minContinuousNight: {
             type: 'bad',
             isActive: wardConstraint.minContinuousNight,
             regExp: new RegExp(`[^n-]n{1,${wardConstraint.minContinuousNightVal - 1}}[^n-]`, 'g'),
-            message: `나이트 근무는 최소 ${wardConstraint.minContinuousNightVal}일 이상 배정해 주세요.`,
+            message: t('page.request.faultOptions.minContinuousNight.message', {count: wardConstraint.minContinuousNightVal}),
             value: wardConstraint.minContinuousNightVal,
-            label: '연속 나이트',
+            label: t('page.request.faultOptions.minContinuousNight.label'),
         },
         minOffAssignAfterNight: {
             type: 'bad',
             isActive: wardConstraint.minOffAssignAfterNight,
             regExp: new RegExp(`n([de]|o{1,${wardConstraint.minOffAssignAfterNightVal - 1}}[den])`, 'g'),
-            message: `나이트 근무 후에는 OFF를 ${wardConstraint.minOffAssignAfterNightVal}일 이상 권장해요.`,
+            message: t('page.request.faultOptions.minOffAssignAfterNight.message', {
+                count: wardConstraint.minOffAssignAfterNightVal,
+            }),
             value: wardConstraint.minOffAssignAfterNightVal,
-            label: '나이트 근무 후 오프 배정',
+            label: t('page.request.faultOptions.minOffAssignAfterNight.label'),
         },
         excludeCertainWorkTypes: {
             type: 'bad',
             isActive: wardConstraint.excludeCertainWorkTypes,
             regExp: new RegExp(`(ed|nd|ne|nod)`, 'g'),
-            message: `ND/ED/NE/NOD 형태의 근무는 피하는 게 좋아요.`,
+            message: t('page.request.faultOptions.excludeCertainWorkTypes.message'),
             value: null,
-            label: 'ND / ED / NE / NOD 근무 패턴 피하기',
+            label: t('page.request.faultOptions.excludeCertainWorkTypes.label'),
         },
         excludeNightBeforeReqOff: {
             type: 'bad',
             isActive: wardConstraint.excludeNightBeforeReqOff,
             regExp: new RegExp(`nO`, 'g'),
-            message: `신청 오프 전날에는 나이트 근무를 피하는 게 좋아요.`,
+            message: t('page.request.faultOptions.excludeNightBeforeReqOff.message'),
             value: null,
-            label: '신청 오프 전날 나이트 피하기',
+            label: t('page.request.faultOptions.excludeNightBeforeReqOff.label'),
         },
     };
 };
@@ -209,7 +212,7 @@ export const checkShift = (shift: TShift, checkFaultOptions: TCheckFaultOptions,
                 )
                 .join('');
 
-            str = '-' + str + '-'; // 단일 나이트 검사를 위한 처리
+            str = '-' + str + '-'; // Pad edges so single-night checks can inspect boundaries.
 
             for (const key of Object.keys(checkFaultOptions) as TFaultType[]) {
                 const option = checkFaultOptions[key];

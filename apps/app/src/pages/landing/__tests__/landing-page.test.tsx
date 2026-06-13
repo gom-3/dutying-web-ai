@@ -1,5 +1,6 @@
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import useAuth from '@/features/auth';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
@@ -42,9 +43,10 @@ const mockUseAuthState = (isAuth: boolean, accountMe: ReturnType<typeof useAuth>
 };
 
 describe('LandingPage', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1.0" />';
         window.localStorage.clear();
+        await i18n.changeLanguage('ko');
         mockHandleGetAccountMe.mockReset();
         mockHandleLogout.mockReset();
         setPhoneViewport(false);

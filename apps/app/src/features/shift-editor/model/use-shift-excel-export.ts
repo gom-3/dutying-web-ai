@@ -1,6 +1,7 @@
 import {useCallback, useState} from 'react';
 import toast from 'react-hot-toast';
 import {type TShift} from '@/entities/shift';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {shiftToExcel} from './shift-to-excel';
 
 type TUseShiftExcelExportOptions = {
@@ -10,6 +11,7 @@ type TUseShiftExcelExportOptions = {
 };
 
 export function useShiftExcelExport({month, shift, disabled = false}: TUseShiftExcelExportOptions) {
+    const {t} = useTypedTranslation();
     const [isExporting, setIsExporting] = useState(false);
     const exportExcel = useCallback(async () => {
         if (disabled || isExporting || !shift) return;
@@ -18,14 +20,14 @@ export function useShiftExcelExport({month, shift, disabled = false}: TUseShiftE
 
         try {
             await shiftToExcel(month, shift);
-            toast.success('근무표 엑셀 파일을 저장했어요.');
+            toast.success(t('feature.shiftEditor.export.excel.success'));
         } catch (error) {
             console.error(error);
-            toast.error('근무표 엑셀 파일을 저장하지 못했어요. 다시 시도해 주세요.');
+            toast.error(t('feature.shiftEditor.export.excel.failure'));
         } finally {
             setIsExporting(false);
         }
-    }, [disabled, isExporting, month, shift]);
+    }, [disabled, isExporting, month, shift, t]);
 
     return {isExporting, exportExcel};
 }

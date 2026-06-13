@@ -3,9 +3,13 @@ import {type ReactNode, type RefObject} from 'react';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse} from '@/entities/nurse';
 import {CancelIcon, CheckedIcon, UncheckedIcon2} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import {isNurseEditSaveDisabled} from './is-nurse-edit-save-disabled';
+
+const GENDER_MALE = '\uB0A8';
+const GENDER_FEMALE = '\uC5EC';
 
 type TNurseEditFormProps = {
     selectedNurse: TNurse | null;
@@ -42,17 +46,19 @@ type TNurseEditToggleRowProps = {
 };
 
 function NurseEditToggleRow({title, checked, onToggle, borderClassName}: TNurseEditToggleRowProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className={`flex h-10 w-full items-center ${borderClassName} bg-main-bg px-10 py-[.625rem]`}>
             <p className="font-apple text-base font-medium text-sub-2">{title}</p>
             {checked ? (
                 <div className="ml-auto flex items-center gap-[.625rem]">
-                    <p className="font-apple text-[.75rem] text-sub-3">해당 됨</p>
+                    <p className="max-w-28 truncate font-apple text-[.75rem] text-sub-3">{t('feature.shiftEditor.nurseEdit.enabled')}</p>
                     <CheckedIcon className="h-5 w-5 cursor-pointer" fill="#B08BFF" onClick={onToggle} />
                 </div>
             ) : (
                 <div className="ml-auto flex items-center gap-[.625rem]">
-                    <p className="font-apple text-[.75rem] text-sub-3">해당 안 됨</p>
+                    <p className="max-w-28 truncate font-apple text-[.75rem] text-sub-3">{t('feature.shiftEditor.nurseEdit.disabled')}</p>
                     <UncheckedIcon2 className="h-5 w-5 cursor-pointer" onClick={onToggle} />
                 </div>
             )}
@@ -61,12 +67,14 @@ function NurseEditToggleRow({title, checked, onToggle, borderClassName}: TNurseE
 }
 
 export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onChange, onSubmit}: TNurseEditFormProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex h-fit w-full flex-col">
             <div className="flex h-11 items-center bg-sub-5 px-10">
-                <p className="font-apple text-base text-sub-3">간호사별 관리</p>
+                <p className="font-apple text-base text-sub-3">{t('feature.shiftEditor.nurseEdit.title')}</p>
                 <div className="ml-auto flex cursor-pointer items-center" onClick={onClose}>
-                    <p className="font-apple text-base text-sub-3">닫기</p>
+                    <p className="font-apple text-base text-sub-3">{t('feature.shiftEditor.nurseEdit.close')}</p>
                     <CancelIcon className="h-6 w-6" />
                 </div>
             </div>
@@ -85,15 +93,22 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                 <div
                     className="ml-auto flex h-5 w-7 cursor-pointer items-center justify-center rounded-[.3125rem] bg-sub-5 font-apple text-[.875rem] text-[#A2A6F5]"
                     onClick={() => {
-                        onChange('gender', writeNurse?.gender === '남' ? '여' : '남');
+                        onChange('gender', writeNurse?.gender === GENDER_MALE ? GENDER_FEMALE : GENDER_MALE);
                         sendEvent(events.makePage.editNurseModal.changeNurseGender);
                     }}
                 >
-                    {writeNurse?.gender}
+                    {writeNurse?.gender === GENDER_MALE
+                        ? t('feature.shiftEditor.nurseEdit.gender.male')
+                        : writeNurse?.gender === GENDER_FEMALE
+                          ? t('feature.shiftEditor.nurseEdit.gender.female')
+                          : writeNurse?.gender}
                 </div>
             </div>
             <div className="h-[.3125rem] w-full bg-sub-5" />
-            <NurseEditFieldSection title="입사 년도" description="* 해당 병원에 입사한 년도를 작성해 주세요.">
+            <NurseEditFieldSection
+                title={t('feature.shiftEditor.nurseEdit.employmentDate')}
+                description={t('feature.shiftEditor.nurseEdit.employmentDateDescription')}
+            >
                 <TextField
                     type="date"
                     className="h-10 font-poppins text-[1.25rem] text-sub-3"
@@ -105,7 +120,10 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                     value={writeNurse?.employmentDate ?? ''}
                 />
             </NurseEditFieldSection>
-            <NurseEditFieldSection title="전화 번호" description="* 비상 연락 망">
+            <NurseEditFieldSection
+                title={t('feature.shiftEditor.nurseEdit.phoneNumber')}
+                description={t('feature.shiftEditor.nurseEdit.phoneNumberDescription')}
+            >
                 <TextField
                     type="tel"
                     className="h-10 font-poppins text-[1.25rem] text-sub-3"
@@ -116,7 +134,10 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                     value={writeNurse?.phoneNum ?? ''}
                 />
             </NurseEditFieldSection>
-            <NurseEditFieldSection title="가능 근무" description="* 가능 근무를 모두 선택해 주세요.">
+            <NurseEditFieldSection
+                title={t('feature.shiftEditor.nurseEdit.availableShifts')}
+                description={t('feature.shiftEditor.nurseEdit.availableShiftsDescription')}
+            >
                 <div className="flex gap-5.5">
                     {writeNurse?.nurseShiftTypes.slice(0, 3).map(({nurseShiftTypeId, isPossible, name}) => (
                         <div
@@ -138,7 +159,7 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                 </div>
             </NurseEditFieldSection>
             <NurseEditToggleRow
-                title="근무자"
+                title={t('feature.shiftEditor.nurseEdit.worker')}
                 checked={writeNurse?.isWorker}
                 borderClassName="border-b-[.0313rem] border-sub-4"
                 onToggle={() => {
@@ -147,7 +168,7 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                 }}
             />
             <NurseEditToggleRow
-                title="근무표 작성 가능자"
+                title={t('feature.shiftEditor.nurseEdit.dutyManager')}
                 checked={writeNurse?.isDutyManager}
                 borderClassName="mt-[.3125rem] border-y-[.0313rem] border-sub-4"
                 onToggle={() => {
@@ -156,7 +177,7 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                 }}
             />
 
-            <p className="mt-7.5 ml-10 font-apple text-base font-medium text-sub-2.5">메모</p>
+            <p className="mt-7.5 ml-10 font-apple text-base font-medium text-sub-2.5">{t('feature.shiftEditor.nurseEdit.memo')}</p>
             <textarea
                 value={writeNurse?.memo ?? ''}
                 className="mx-10 mt-[.9375rem] h-43.25 resize-none rounded-[.3125rem] border-[.0313rem] border-sub-4.5 bg-main-bg p-2 font-apple text-sm text-sub-1"
@@ -171,7 +192,7 @@ export function NurseEditForm({selectedNurse, writeNurse, nameRef, onClose, onCh
                 disabled={isNurseEditSaveDisabled(selectedNurse, writeNurse)}
                 onClick={onSubmit}
             >
-                저장
+                {t('feature.shiftEditor.nurseEdit.save')}
             </Button>
         </div>
     );

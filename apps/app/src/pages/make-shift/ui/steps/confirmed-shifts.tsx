@@ -76,7 +76,7 @@ export function ConfirmedShifts() {
         <>
             <WardCodeGuideModal
                 open={wardCodeGuideOpen}
-                wardCode={getWardDisplayCode(wardQuery.data, '확인 중')}
+                wardCode={getWardDisplayCode(wardQuery.data, t('entity.ward.codeChecking'))}
                 wardTitle={getWardDisplayTitle(wardQuery.data)}
                 onClose={() => setWardCodeGuideOpen(false)}
             />

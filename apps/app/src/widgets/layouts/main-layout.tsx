@@ -3,6 +3,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import NavigationBar from '@/widgets/navigation-bar';
 import WardChatWidget from '@/widgets/ward-chat';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -44,6 +45,7 @@ const readStoredWardCreatedGuidePayload = () => {
 };
 
 export const MainLayout = () => {
+    const {t} = useTypedTranslation();
     const {
         state: {wardId},
     } = useAuth();
@@ -60,7 +62,7 @@ export const MainLayout = () => {
         enabled: wardId !== null,
         staleTime: 1000 * 60 * 5,
     });
-    const wardCode = createdWardGuidePayload?.wardCode ?? getWardDisplayCode(wardQuery.data, '확인 중');
+    const wardCode = createdWardGuidePayload?.wardCode ?? getWardDisplayCode(wardQuery.data, t('entity.ward.codeChecking'));
     const wardTitle = createdWardGuidePayload?.wardTitle ?? getWardDisplayTitle(wardQuery.data);
 
     useEffect(() => {

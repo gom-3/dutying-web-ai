@@ -1,5 +1,6 @@
 import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
+import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {getNurseShiftTypeKey} from './nurse-shift-types';
 
 const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager', 'memo'] as const;
@@ -28,52 +29,56 @@ export function hasNurseChanges(original: TNurse | null | undefined, draft: TNur
     return original.nurseShiftTypes.some((shiftType) => !draftShiftTypeByKey.has(getNurseShiftTypeKey(shiftType)));
 }
 
-export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStatus: TNurseSaveStatus; isDirty: boolean}) {
+export function getNurseDrawerFeedback(params: {mode: TNurseDrawerMode; saveStatus: TNurseSaveStatus; isDirty: boolean}): {
+    titleKey: TI18nKey;
+    descriptionKey: TI18nKey;
+    toneClassName: string;
+} {
     const {mode, saveStatus, isDirty} = params;
 
     if (saveStatus === 'saving') {
         return {
-            title: '저장 중이에요',
-            description: '입력한 내용을 반영하고 있어요. 저장이 끝날 때까지 잠시만 기다려 주세요.',
+            titleKey: 'page.member.nurseDrawerFeedback.saving.title',
+            descriptionKey: 'page.member.nurseDrawerFeedback.saving.description',
             toneClassName: 'border-main-3 bg-main-light text-main-1',
         };
     }
 
     if (saveStatus === 'error') {
         return {
-            title: '저장하지 못했어요',
-            description: '입력한 내용은 그대로 남아 있어요. 내용을 확인한 뒤 다시 저장해 주세요.',
+            titleKey: 'page.member.nurseDrawerFeedback.error.title',
+            descriptionKey: 'page.member.nurseDrawerFeedback.error.description',
             toneClassName: 'border-red/30 bg-red/5 text-red',
         };
     }
 
     if (saveStatus === 'success' && !isDirty) {
         return {
-            title: '저장을 마쳤어요',
-            description: '간호사 정보를 반영했어요. 더 수정할 내용이 없다면 닫아도 괜찮아요.',
+            titleKey: 'page.member.nurseDrawerFeedback.success.title',
+            descriptionKey: 'page.member.nurseDrawerFeedback.success.description',
             toneClassName: 'border-main-2/20 bg-main-4 text-main-1',
         };
     }
 
     if (mode === 'create') {
         return {
-            title: '새 간호사를 추가했어요',
-            description: '이름과 연락처를 입력한 뒤 저장해 주세요.',
+            titleKey: 'page.member.nurseDrawerFeedback.create.title',
+            descriptionKey: 'page.member.nurseDrawerFeedback.create.description',
             toneClassName: 'border-main-3/60 bg-sub-5 text-sub-1',
         };
     }
 
     if (isDirty) {
         return {
-            title: '변경 사항이 있어요',
-            description: '저장하지 않고 닫으면 수정한 내용이 사라져요.',
+            titleKey: 'page.member.nurseDrawerFeedback.dirty.title',
+            descriptionKey: 'page.member.nurseDrawerFeedback.dirty.description',
             toneClassName: 'border-sub-4 bg-main-bg text-sub-1',
         };
     }
 
     return {
-        title: '수정할 항목을 확인해 주세요',
-        description: '변경된 내용이 생기면 저장 버튼이 활성화돼요.',
+        titleKey: 'page.member.nurseDrawerFeedback.idle.title',
+        descriptionKey: 'page.member.nurseDrawerFeedback.idle.description',
         toneClassName: 'border-sub-4 bg-main-bg text-sub-2',
     };
 }

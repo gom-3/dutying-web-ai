@@ -1,6 +1,7 @@
 import type React from 'react';
+import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {type ko} from '../locales/ko';
+import {type ko} from '../i18n/resources.generated';
 
 type TJoin<K, P> = K extends string | number ? (P extends string | number ? `${K}.${P}` : never) : never;
 
@@ -21,9 +22,9 @@ type TValueType = string | number | React.JSX.Element;
 export function useTypedTranslation() {
     const {t} = useTranslation();
 
-    function typedT<K extends TI18nKey>(key: K, values?: Record<string, TValueType>): string {
+    const typedT = useCallback(function typedT<K extends TI18nKey>(key: K, values?: Record<string, TValueType>): string {
         return t(key, values) as string;
-    }
+    }, [t]);
 
     return {t: typedT};
 }

@@ -1,5 +1,6 @@
 ﻿import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 import {Input} from '@/shared/ui/primitives/input';
 import {DEFAULT_SHIFT_TYPE_COLORS, type TOnboardingWardShiftType} from '../../model';
@@ -100,6 +101,7 @@ function InlineFieldError({id, children}: {id?: string; children: ReactNode}) {
 }
 
 function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepProps) {
+    const {t} = useTypedTranslation();
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
@@ -140,9 +142,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
     const getShiftNameError = (name: string) => {
         const normalizedName = name.trim().toLocaleLowerCase();
 
-        if (!normalizedName) return '근무명을 입력해 주세요.';
+        if (!normalizedName) return t('page.onboardingWardCreate.shiftType.validation.nameRequired');
 
-        if (duplicatedShiftNames.has(normalizedName)) return '중복된 근무명은 사용할 수 없어요.';
+        if (duplicatedShiftNames.has(normalizedName)) return t('page.onboardingWardCreate.shiftType.validation.nameDuplicate');
 
         return null;
     };
@@ -151,9 +153,11 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
 
         const normalizedShortName = shortName.trim().toLocaleUpperCase();
 
-        if (!normalizedShortName) return '약자를 입력해 주세요.';
+        if (!normalizedShortName) return t('page.onboardingWardCreate.shiftType.validation.shortNameRequired');
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) return '다른 약자를 입력해 주세요.';
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) {
+            return t('page.onboardingWardCreate.shiftType.validation.shortNameDuplicate');
+        }
 
         return null;
     };
@@ -163,17 +167,19 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
         const normalizedStartTime = shiftType.startTime.trim();
         const normalizedEndTime = shiftType.endTime.trim();
 
-        if (!normalizedStartTime || !normalizedEndTime) return '시간을 입력해 주세요.';
+        if (!normalizedStartTime || !normalizedEndTime) return t('page.onboardingWardCreate.shiftType.validation.timeRequired');
 
         const startMinutes = parseShiftTimeToMinutes(normalizedStartTime);
         const endMinutes = parseShiftTimeToMinutes(normalizedEndTime);
 
-        if (startMinutes == null || endMinutes == null) return '시간은 00:00 형식으로 입력해 주세요.';
+        if (startMinutes == null || endMinutes == null) return t('page.onboardingWardCreate.shiftType.validation.timeFormat');
 
         const isEndEarlierThanStart = endMinutes < startMinutes;
         const isSameTime = endMinutes === startMinutes;
 
-        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) return '퇴근 시간은 출근 시간보다 늦어야 해요.';
+        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) {
+            return t('page.onboardingWardCreate.shiftType.validation.timeOrder');
+        }
 
         return null;
     };
@@ -225,11 +231,11 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             <div
                 className={`mb-2 grid ${SHIFT_TYPE_GRID_COLS} items-center gap-4 px-3 text-center font-apple text-[13px] font-medium text-gray-3`}
             >
-                <span>근무명</span>
-                <span>약자</span>
-                <span>유형</span>
-                <span>근무 시간</span>
-                <span>색상</span>
+                <span>{t('page.onboardingWardCreate.shiftType.name')}</span>
+                <span>{t('page.onboardingWardCreate.shiftType.shortName')}</span>
+                <span>{t('page.onboardingWardCreate.shiftType.type')}</span>
+                <span>{t('page.onboardingWardCreate.shiftType.workTime')}</span>
+                <span>{t('page.onboardingWardCreate.shiftType.color')}</span>
                 <span />
             </div>
             <div className="overflow-visible rounded-[16px] bg-white px-1 py-1">
@@ -249,7 +255,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 className={`mx-auto w-full text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                     getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                 }`}
-                                placeholder="근무명"
+                                placeholder={t('page.onboardingWardCreate.shiftType.name')}
                             />
                             {getShiftNameError(shiftType.name) ? (
                                 <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
@@ -267,7 +273,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                     if (hasInvalidShiftShortNameInput(event.target.value)) {
                                         setShortNameErrorById((prev) => ({
                                             ...prev,
-                                            [shiftType.id]: '공백 없이 2글자까지 입력해 주세요.',
+                                            [shiftType.id]: t('page.onboardingWardCreate.shiftType.validation.shortNameLength'),
                                         }));
                                     } else {
                                         setShortNameErrorById((prev) => ({...prev, [shiftType.id]: ''}));
@@ -309,7 +315,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                     })
                                 }
                             >
-                                근무
+                                {t('page.onboardingWardCreate.shiftType.work')}
                             </button>
                             <button
                                 type="button"
@@ -325,7 +331,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                     })
                                 }
                             >
-                                휴무
+                                {t('page.onboardingWardCreate.shiftType.leave')}
                             </button>
                         </div>
                         <div className="ml-[12px] flex justify-center self-center">
@@ -389,7 +395,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                         >
                             <button
                                 type="button"
-                                aria-label={`${shiftType.name || '근무'} 색상 선택`}
+                                aria-label={t('page.onboardingWardCreate.shiftType.colorSelectAria', {
+                                    shiftName: shiftType.name || t('page.onboardingWardCreate.shiftType.work'),
+                                })}
                                 className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
                                 onClick={() => setOpenedColorShiftTypeId((prev) => (prev === shiftType.id ? null : shiftType.id))}
                             >
@@ -404,7 +412,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                             <button
                                                 key={color}
                                                 type="button"
-                                                aria-label={`${color} 선택`}
+                                                aria-label={t('page.onboardingWardCreate.shiftType.colorOptionAria', {color})}
                                                 className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
                                                 style={{backgroundColor: color}}
                                                 onClick={() => {
@@ -424,7 +432,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                         ) : (
                             <button
                                 type="button"
-                                aria-label={`${shiftType.name || '근무'} 삭제`}
+                                aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
+                                    shiftName: shiftType.name || t('page.onboardingWardCreate.shiftType.work'),
+                                })}
                                 onClick={() => onDelete(shiftType.id)}
                                 className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"
                             >
@@ -443,7 +453,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                     <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-gray-3 transition-colors group-hover:bg-sub-2.5">
                         <Plus className="h-[11px] w-[11px] text-white" />
                     </span>
-                    근무 유형 추가하기
+                    {t('page.onboardingWardCreate.shiftType.add')}
                 </button>
             </div>
         </Card>

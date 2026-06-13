@@ -1,8 +1,12 @@
 import {type TCreateWardDTO} from '@dutying/api/ward';
+import i18n from '@/i18n';
+import {type useTypedTranslation} from '@/shared/hook/use-typed-translation';
+
+type TRegisterWardTranslator = ReturnType<typeof useTypedTranslation>['t'];
 
 export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
     {
-        name: '데이',
+        name: '\uB370\uC774',
         shortName: 'D',
         startTime: '07:00',
         endTime: '15:00',
@@ -13,7 +17,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'DAY',
     },
     {
-        name: '이브닝',
+        name: '\uC774\uBE0C\uB2DD',
         shortName: 'E',
         startTime: '15:00',
         endTime: '23:00',
@@ -24,7 +28,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'EVENING',
     },
     {
-        name: '나이트',
+        name: '\uB098\uC774\uD2B8',
         shortName: 'N',
         startTime: '23:00',
         endTime: '07:00',
@@ -35,7 +39,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'NIGHT',
     },
     {
-        name: '오프',
+        name: '\uC624\uD504',
         shortName: 'O',
         startTime: '',
         endTime: '',
@@ -46,6 +50,24 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'OFF',
     },
 ];
+
+const DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME = {
+    D: 'feature.registerWard.defaultShiftType.day',
+    E: 'feature.registerWard.defaultShiftType.evening',
+    N: 'feature.registerWard.defaultShiftType.night',
+    O: 'feature.registerWard.defaultShiftType.off',
+} as const;
+
+export function createDefaultWardShiftTypes(t: TRegisterWardTranslator): TCreateWardDTO['wardShiftTypes'] {
+    return DEFAULT_WARD_SHIFT_TYPES.map((shiftType) => ({
+        ...shiftType,
+        name:
+            DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as keyof typeof DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME] !==
+            undefined
+                ? t(DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as keyof typeof DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME])
+                : shiftType.name,
+    }));
+}
 
 export function getWardShiftValidationMessage(wardShiftTypes: TCreateWardDTO['wardShiftTypes']) {
     const invalidShiftType = wardShiftTypes.find((shiftType) => {
@@ -61,12 +83,12 @@ export function getWardShiftValidationMessage(wardShiftTypes: TCreateWardDTO['wa
     if (!invalidShiftType) return null;
 
     if (invalidShiftType.name === '') {
-        return '근무 이름을 입력해 주세요.';
+        return i18n.t('feature.registerWard.validation.nameRequired');
     }
 
     if (!invalidShiftType.isOff && (invalidShiftType.startTime === '' || invalidShiftType.endTime === '')) {
-        return `${invalidShiftType.name} 근무의 근무 시간을 입력해 주세요.`;
+        return i18n.t('feature.registerWard.validation.timeRequired', {name: invalidShiftType.name});
     }
 
-    return `${invalidShiftType.name} 근무의 근무 약자를 입력해 주세요.`;
+    return i18n.t('feature.registerWard.validation.shortNameRequired', {name: invalidShiftType.name});
 }

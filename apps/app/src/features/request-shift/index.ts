@@ -5,6 +5,7 @@ import {type TShiftTeam} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback, showValidationFeedback} from '@/shared/util/feedback';
 import {countPendingDutyRequests} from './model/pending-request-count';
 import {
@@ -23,6 +24,7 @@ import {useRequestShiftKeyboard} from './model/use-request-shift-keyboard';
 import {getRequestShiftEditAvailability} from './model/utils';
 
 const useRequestShift = (activeEffect = false) => {
+    const {t} = useTypedTranslation();
     const {
         year,
         month,
@@ -159,7 +161,7 @@ const useRequestShift = (activeEffect = false) => {
                 await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
 
                 if (rejectedResults.length > 0) {
-                    showActionErrorFeedback(rejectedResults[0].reason, '신청을 처리하지 못했어요.');
+                    showActionErrorFeedback(rejectedResults[0].reason, t('feature.requestShift.processFailed'));
 
                     return false;
                 }
@@ -169,7 +171,7 @@ const useRequestShift = (activeEffect = false) => {
                 setState('updatingRequestId', null);
             }
         },
-        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, wardId],
+        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, t, wardId],
     );
     const acceptRequest = useCallback(
         async (reqShiftId: number, isAccepted: boolean | null) => {

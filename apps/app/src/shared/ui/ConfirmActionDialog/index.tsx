@@ -1,6 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {AlertTriangle, X} from 'lucide-react';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 
 type TConfirmActionDialogTone = 'default' | 'danger';
@@ -21,11 +22,13 @@ function ConfirmActionDialog({
     title,
     description,
     confirmLabel,
-    cancelLabel = '취소',
+    cancelLabel,
     tone = 'default',
     onClose,
     onConfirm,
 }: IConfirmActionDialogProps) {
+    const {t} = useTypedTranslation();
+    const resolvedCancelLabel = cancelLabel ?? t('shared.confirmActionDialog.cancel');
     const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
     const isDanger = tone === 'danger';
 
@@ -48,7 +51,7 @@ function ConfirmActionDialog({
                             <button
                                 type="button"
                                 className="h-9 w-9 shrink-0 cursor-pointer rounded-full bg-gray-7 text-gray-3 transition-colors hover:bg-gray-6"
-                                aria-label="닫기"
+                                aria-label={t('shared.confirmActionDialog.close')}
                             >
                                 <X className="h-4 w-4" strokeWidth={2.2} />
                             </button>
@@ -63,7 +66,7 @@ function ConfirmActionDialog({
                     <div className="mt-6 grid grid-cols-2 gap-2">
                         <Dialog.Close asChild>
                             <Button type="button" variant="soft" className="h-11 rounded-[12px] text-[15px]">
-                                {cancelLabel}
+                                {resolvedCancelLabel}
                             </Button>
                         </Dialog.Close>
                         <Button

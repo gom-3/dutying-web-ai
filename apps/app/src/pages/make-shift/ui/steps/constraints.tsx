@@ -1,4 +1,4 @@
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {ChevronDown, Plus, RotateCcw, X} from 'lucide-react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -7,25 +7,26 @@ import {type TShiftTeam} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
 import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
+import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import {loadConstraintRulesDraft, saveConstraintRulesDraft} from '../../model/constraint-rules-draft-storage';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {
     getShiftConstraintRuleCandidates,
     getShiftConstraintRules,
-    putShiftConstraintRules,
     shiftConstraintRuleQueryKeys,
     type TShiftConstraintOption,
     type TShiftConstraintOptions,
     type TShiftConstraintRule,
     type TShiftConstraintRuleDraft,
-    type TShiftConstraintRulesResponse,
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
 } from '../../model/shift-constraint-rules';
 
 type TSelectOption = {value: string; label: string; kind?: 'duty'; shortName?: string; name?: string; color?: string};
 type TTemplateCategory = string;
+type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
 type TControlDef = {
     key: string;
     kind: 'select' | 'number';
@@ -70,26 +71,28 @@ const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
 const RECOMMENDED_MODAL_CATEGORY = 'RECOMMENDED';
-const CATEGORY_LABEL: Record<string, string> = {
-    STAFFING: '인원수',
-    STAFFING_COUNT: '인원수',
-    FORBIDDEN: '금지 패턴',
-    FORBIDDEN_PATTERN: '금지 패턴',
-    WORK_REST: '연속 근무/휴식',
-    PERSONAL: '사람별 제한',
-    NURSE_LIMIT: '사람별 제한',
-    SKILL: '숙련도',
-    PROFICIENCY: '숙련도',
-    COMBINATION: '근무자 조합',
-    NURSE_COMBINATION: '근무자 조합',
-    CORE: '권장',
-    IMPORTANT: '권장',
+const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
+    STAFFING: 'page.makeShift.constraints.category.staffing',
+    STAFFING_COUNT: 'page.makeShift.constraints.category.staffing',
+    FORBIDDEN: 'page.makeShift.constraints.category.forbidden',
+    FORBIDDEN_PATTERN: 'page.makeShift.constraints.category.forbidden',
+    WORK_REST: 'page.makeShift.constraints.category.workRest',
+    PERSONAL: 'page.makeShift.constraints.category.personal',
+    NURSE_LIMIT: 'page.makeShift.constraints.category.personal',
+    SKILL: 'page.makeShift.constraints.category.skill',
+    PROFICIENCY: 'page.makeShift.constraints.category.skill',
+    COMBINATION: 'page.makeShift.constraints.category.combination',
+    NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
+    CORE: 'page.makeShift.constraints.category.recommended',
+    IMPORTANT: 'page.makeShift.constraints.category.recommended',
 };
 
-function getCategoryLabel(category: TModalCategory) {
-    if (category === RECOMMENDED_MODAL_CATEGORY) return '권장';
+function getCategoryLabel(t: TTypedT, category: TModalCategory) {
+    if (category === RECOMMENDED_MODAL_CATEGORY) return t('page.makeShift.constraints.category.recommended');
 
-    return CATEGORY_LABEL[category] ?? category;
+    const key = CATEGORY_LABEL_KEY_BY_CATEGORY[category];
+
+    return key ? t(key) : category;
 }
 
 function resolveDutyStyle(optionOrCode: TSelectOption) {
@@ -166,398 +169,183 @@ function hasFinalConsonant(value: unknown) {
     return (code - 0xac00) % 28 !== 0;
 }
 
-function withParticle(value: string, withBatchim: string, withoutBatchim: string) {
-    return `${value}${hasFinalConsonant(value) ? withBatchim : withoutBatchim}`;
+const KO_PARTICLES = {
+    topicWithBatchim: '\uC740',
+    topicWithoutBatchim: '\uB294',
+    subjectWithBatchim: '\uC774',
+    subjectWithoutBatchim: '\uAC00',
+    objectWithBatchim: '\uC744',
+    objectWithoutBatchim: '\uB97C',
+    pairWithBatchim: '\uACFC',
+    pairWithoutBatchim: '\uC640',
+};
+const LEGACY_ALL_LABELS = new Set(['\uBAA8\uB4E0', '\uBAA8\uB4E0\uB0A0']);
+const LEGACY_OFF_NAME = '\uC624\uD504';
+
+function getTemplateTranslationKey(templateId: string, property: 'label' | 'sentence') {
+    return `page.makeShift.constraints.templates.${templateId}.${property}` as TI18nKey;
 }
 
-const SOFT_RULE_TEMPLATES: TSoftRuleTemplate[] = [
+type TSoftRuleTemplateDefinition = Pick<TSoftRuleTemplate, 'id' | 'category' | 'controls'>;
+
+const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
     {
         id: 'IMPORTANT_MAX_WORK_STREAK',
         category: 'WORK_REST',
-        label: '중요 기본 조건',
-        controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6], suffix: '일'}],
-        sentence: [
-            {type: 'text', text: '연속 근무는 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일까지 할 수 있어요'},
-        ],
-        buildText: (p) => `연속 근무는 ${p.days}일까지 할 수 있어요`,
+        controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6]}],
     },
     {
         id: 'IMPORTANT_MAX_SAME_DUTY_STREAK',
         category: 'WORK_REST',
-        label: '중요 기본 조건',
-        controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6], suffix: '일'}],
-        sentence: [
-            {type: 'text', text: '같은 근무를 연속으로 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일까지 할 수 있어요'},
-        ],
-        buildText: (p) => `같은 근무는 연속으로 ${p.days}일까지 할 수 있어요`,
+        controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6]}],
     },
     {
         id: 'IMPORTANT_MIN_NIGHT_INTERVAL',
         category: 'WORK_REST',
-        label: '중요 기본 조건',
-        controls: [{key: 'days', kind: 'number', min: 3, max: 7, suffix: '일'}],
-        sentence: [
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무는 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일 이상 간격을 두어야 해요'},
-        ],
-        buildText: (p) => `N 근무는 ${p.days}일 이상 간격을 두어야 해요`,
+        controls: [{key: 'days', kind: 'number', min: 3, max: 7}],
     },
     {
         id: 'IMPORTANT_MAX_NIGHT_STREAK',
         category: 'WORK_REST',
-        label: '중요 기본 조건',
-        controls: [{key: 'days', kind: 'number', values: [2, 3, 4, 5, 7], suffix: '일'}],
-        sentence: [
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무를 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일까지 연속으로 할 수 있어요'},
-        ],
-        buildText: (p) => `N 근무는 ${p.days}일까지 연속으로 할 수 있어요`,
+        controls: [{key: 'days', kind: 'number', values: [2, 3, 4, 5, 7]}],
     },
     {
         id: 'IMPORTANT_OFF_AFTER_NIGHT',
         category: 'WORK_REST',
-        label: '중요 기본 조건',
-        controls: [{key: 'days', kind: 'number', min: 1, max: 5, suffix: '일'}],
-        sentence: [
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무 후에는 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일 이상 쉬어야('},
-            {type: 'duty', code: 'OFF'},
-            {type: 'text', text: ') 해요'},
-        ],
-        buildText: (p) => `나이트 근무 후에는 ${p.days}일 이상 쉬어야(OFF) 해요`,
+        controls: [{key: 'days', kind: 'number', min: 1, max: 5}],
     },
     {
         id: 'IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF',
         category: 'FORBIDDEN',
-        label: '중요 기본 조건',
         controls: [],
-        sentence: [
-            {type: 'text', text: '신청 '},
-            {type: 'duty', code: 'OFF'},
-            {type: 'text', text: ' 전날에는 '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무를 피해요'},
-        ],
-        buildText: () => '신청 오프 전날에는 나이트 근무를 피해요',
     },
     {
         id: 'IMPORTANT_FORBIDDEN_DUTY_PATTERNS',
         category: 'FORBIDDEN',
-        label: '중요 기본 조건',
         controls: [],
-        sentence: [
-            {type: 'dutyPattern', codes: ['N', 'D']},
-            {type: 'text', text: ' / '},
-            {type: 'dutyPattern', codes: ['E', 'D']},
-            {type: 'text', text: ' / '},
-            {type: 'dutyPattern', codes: ['N', 'E']},
-            {type: 'text', text: ' / '},
-            {type: 'dutyPattern', codes: ['N', 'OFF', 'D']},
-            {type: 'text', text: ' 근무 패턴은 피해요'},
-        ],
-        buildText: () => 'ND / ED / NE / NOD 근무 패턴은 피해요',
     },
     {
         id: 'SOFT_MIN_STAFF_BY_DUTY',
         category: 'STAFFING',
-        label: '인원수 규칙',
         controls: [
             {key: 'duty', kind: 'select', optionsKey: 'duty'},
-            {key: 'count', kind: 'number', min: 1, max: 10, suffix: '명'},
+            {key: 'count', kind: 'number', min: 1, max: 10},
         ],
-        sentence: [
-            {type: 'control', key: 'duty'},
-            {type: 'text', text: ' 근무에는 최소 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '명이 있어야 해요'},
-        ],
-        buildText: (p) => `${p.duty} 근무에는 최소 ${p.count}명이 있어야 해요`,
     },
     {
         id: 'SOFT_MAX_STAFF_BY_DUTY',
         category: 'STAFFING',
-        label: '인원수 규칙',
         controls: [
             {key: 'duty', kind: 'select', optionsKey: 'duty'},
-            {key: 'count', kind: 'number', min: 1, max: 10, suffix: '명'},
+            {key: 'count', kind: 'number', min: 1, max: 10},
         ],
-        sentence: [
-            {type: 'control', key: 'duty'},
-            {type: 'text', text: ' 근무에는 최대 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '명까지만 배정할 수 있어요'},
-        ],
-        buildText: (p) => `${p.duty} 근무에는 최대 ${p.count}명까지만 배정할 수 있어요`,
     },
     {
         id: 'SOFT_MIN_STAFF_BY_DATE_DUTY',
         category: 'STAFFING',
-        label: '인원수 규칙',
         controls: [
             {key: 'date', kind: 'select', optionsKey: 'date'},
             {key: 'duty', kind: 'select', optionsKey: 'duty'},
-            {key: 'count', kind: 'number', min: 1, max: 10, suffix: '명'},
+            {key: 'count', kind: 'number', min: 1, max: 10},
         ],
-        sentence: [
-            {type: 'control', key: 'date'},
-            {type: 'text', text: '에는 '},
-            {type: 'control', key: 'duty'},
-            {type: 'text', text: ' 근무에 최소 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '명이 필요해요'},
-        ],
-        buildText: (p) => `${p.date}에는 ${p.duty} 근무에 최소 ${p.count}명이 필요해요`,
     },
     {
         id: 'SOFT_MIN_STAFF_WEEKEND_HOLIDAY',
         category: 'STAFFING',
-        label: '인원수 규칙',
         controls: [
             {key: 'duty', kind: 'select', optionsKey: 'duty'},
-            {key: 'count', kind: 'number', min: 1, max: 10, suffix: '명'},
+            {key: 'count', kind: 'number', min: 1, max: 10},
         ],
-        sentence: [
-            {type: 'text', text: '주말/공휴일에는 '},
-            {type: 'control', key: 'duty'},
-            {type: 'text', text: ' 근무에 최소 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '명이 필요해요'},
-        ],
-        buildText: (p) => `주말/공휴일에는 ${p.duty} 근무에 최소 ${p.count}명이 필요해요`,
     },
     {
         id: 'SOFT_NO_N_TO_D',
         category: 'FORBIDDEN',
-        label: '금지 패턴 규칙',
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 다음날 '},
-            {type: 'duty', code: 'D'},
-            {type: 'text', text: ' 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} N 다음날 D 근무를 피해요`,
     },
     {
         id: 'SOFT_NO_N_TO_E',
         category: 'FORBIDDEN',
-        label: '금지 패턴 규칙',
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 다음날 '},
-            {type: 'duty', code: 'E'},
-            {type: 'text', text: ' 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} N 다음날 E 근무를 피해요`,
     },
     {
         id: 'SOFT_NO_E_TO_D',
         category: 'FORBIDDEN',
-        label: '금지 패턴 규칙',
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'duty', code: 'E'},
-            {type: 'text', text: ' 다음날 '},
-            {type: 'duty', code: 'D'},
-            {type: 'text', text: ' 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} E 다음날 D 근무를 피해요`,
     },
     {
         id: 'SOFT_MAX_CONSECUTIVE_N',
         category: 'FORBIDDEN',
-        label: '금지 패턴 규칙',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'count', kind: 'number', min: 2, max: 7, suffix: '번'},
+            {key: 'count', kind: 'number', min: 2, max: 7},
         ],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' 연속으로 '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: '을 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '번까지 할 수 있어요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} 연속 N은 ${p.count}번까지 할 수 있어요`,
     },
     {
         id: 'SOFT_MAX_CONSECUTIVE_WORK',
         category: 'WORK_REST',
-        label: '연속 근무 / 휴식 규칙',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'days', kind: 'number', min: 3, max: 15, suffix: '일'},
+            {key: 'days', kind: 'number', min: 3, max: 15},
         ],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' 한 달에 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일까지 연속으로 근무할 수 있어요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} 한 달에 ${p.days}일까지 연속으로 근무할 수 있어요`,
     },
     {
         id: 'SOFT_NEED_OFF_AFTER_CONSECUTIVE',
         category: 'WORK_REST',
-        label: '연속 근무 / 휴식 규칙',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'days', kind: 'number', min: 2, max: 15, suffix: '일'},
+            {key: 'days', kind: 'number', min: 2, max: 15},
         ],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일 연속 근무 후에는 '},
-            {type: 'duty', code: 'OFF'},
-            {type: 'text', text: '가 필요해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} ${p.days}일 연속 근무 후에는 OFF가 필요해요`,
     },
     {
         id: 'SOFT_NEED_OFF_AFTER_N',
         category: 'WORK_REST',
-        label: '연속 근무 / 휴식 규칙',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'days', kind: 'number', min: 1, max: 5, suffix: '일'},
+            {key: 'days', kind: 'number', min: 1, max: 5},
         ],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무 후 최소 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일 '},
-            {type: 'duty', code: 'OFF'},
-            {type: 'text', text: '가 필요해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} N 근무 후 최소 ${p.days}일 OFF가 필요해요`,
     },
     {
         id: 'SOFT_MIN_MONTHLY_OFF',
         category: 'WORK_REST',
-        label: '연속 근무 / 휴식 규칙',
         controls: [
             {key: 'target', kind: 'select', optionsKey: 'target'},
-            {key: 'days', kind: 'number', min: 1, max: 15, suffix: '일'},
+            {key: 'days', kind: 'number', min: 1, max: 15},
         ],
-        sentence: [
-            {type: 'control', key: 'target'},
-            {type: 'particle', key: 'target', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' 한 달에 최소 '},
-            {type: 'control', key: 'days'},
-            {type: 'text', text: '일 '},
-            {type: 'duty', code: 'OFF'},
-            {type: 'text', text: '가 있어야 해요'},
-        ],
-        buildText: (p) => `${withParticle(p.target, '은', '는')} 한 달에 최소 ${p.days}일 OFF가 있어야 해요`,
     },
     {
         id: 'SOFT_NO_WEEKEND_FOR_NURSE',
         category: 'PERSONAL',
-        label: '사람별 근무 제한',
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
-        sentence: [
-            {type: 'control', key: 'nurse'},
-            {type: 'particle', key: 'nurse', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' 주말 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.nurse, '은', '는')} 주말 근무를 피해요`,
     },
     {
         id: 'SOFT_NEWBIE_NO_SOLO_N',
         category: 'SKILL',
-        label: '신규 / 경력 / 숙련도 규칙',
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
-        sentence: [
-            {type: 'control', key: 'nurse'},
-            {type: 'particle', key: 'nurse', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' (신규) 혼자 '},
-            {type: 'duty', code: 'N'},
-            {type: 'text', text: ' 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.nurse, '은', '는')} (신규) 혼자 N 근무를 피해요`,
     },
     {
         id: 'SOFT_MIN_SKILL_IN_DUTY',
         category: 'SKILL',
-        label: '신규 / 경력 / 숙련도 규칙',
         controls: [
             {key: 'duty', kind: 'select', optionsKey: 'dutyStrict'},
             {key: 'level', kind: 'select', optionsKey: 'level'},
-            {key: 'count', kind: 'number', min: 1, max: 6, suffix: '명'},
+            {key: 'count', kind: 'number', min: 1, max: 6},
         ],
-        sentence: [
-            {type: 'control', key: 'duty'},
-            {type: 'text', text: ' 근무에는 '},
-            {type: 'control', key: 'level'},
-            {type: 'text', text: ' 이상 간호사가 '},
-            {type: 'control', key: 'count'},
-            {type: 'text', text: '명 이상 있어야 해요'},
-        ],
-        buildText: (p) => `${p.duty} 근무에는 ${p.level} 이상 간호사가 ${p.count}명 이상 있어야 해요`,
     },
     {
         id: 'SOFT_NO_SAME_DUTY_PAIR',
         category: 'COMBINATION',
-        label: '근무자 조합',
         controls: [
             {key: 'nurseA', kind: 'select', optionsKey: 'nurse'},
             {key: 'nurseB', kind: 'select', optionsKey: 'nurse'},
         ],
-        sentence: [
-            {type: 'control', key: 'nurseA'},
-            {type: 'particle', key: 'nurseA', withBatchim: '과', withoutBatchim: '와'},
-            {type: 'text', text: ' '},
-            {type: 'control', key: 'nurseB'},
-            {type: 'particle', key: 'nurseB', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' 같은 근무를 피해요'},
-        ],
-        buildText: (p) => `${withParticle(p.nurseA, '과', '와')} ${withParticle(p.nurseB, '은', '는')} 같은 근무를 피해요`,
     },
     {
         id: 'SOFT_PREFER_SAME_DUTY_PAIR',
         category: 'COMBINATION',
-        label: '근무자 조합',
         controls: [
             {key: 'nurseA', kind: 'select', optionsKey: 'nurse'},
             {key: 'nurseB', kind: 'select', optionsKey: 'nurse'},
         ],
-        sentence: [
-            {type: 'control', key: 'nurseA'},
-            {type: 'particle', key: 'nurseA', withBatchim: '은', withoutBatchim: '는'},
-            {type: 'text', text: ' '},
-            {type: 'control', key: 'nurseB'},
-            {type: 'particle', key: 'nurseB', withBatchim: '과', withoutBatchim: '와'},
-            {type: 'text', text: ' 같은 근무를 하는 것이 좋아요'},
-        ],
-        buildText: (p) => `${withParticle(p.nurseA, '은', '는')} ${withParticle(p.nurseB, '과', '와')} 같은 근무를 하는 것이 좋아요`,
     },
 ];
 const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, string>> = {
@@ -725,17 +513,17 @@ function createTextSentenceParts(text: string): TSentencePart[] {
 
 function getLeadingParticle(text: string) {
     const particlePairs = [
-        {withBatchim: '은', withoutBatchim: '는'},
-        {withBatchim: '이', withoutBatchim: '가'},
-        {withBatchim: '을', withoutBatchim: '를'},
-        {withBatchim: '과', withoutBatchim: '와'},
+        {withBatchim: KO_PARTICLES.topicWithBatchim, withoutBatchim: KO_PARTICLES.topicWithoutBatchim},
+        {withBatchim: KO_PARTICLES.subjectWithBatchim, withoutBatchim: KO_PARTICLES.subjectWithoutBatchim},
+        {withBatchim: KO_PARTICLES.objectWithBatchim, withoutBatchim: KO_PARTICLES.objectWithoutBatchim},
+        {withBatchim: KO_PARTICLES.pairWithBatchim, withoutBatchim: KO_PARTICLES.pairWithoutBatchim},
     ];
     const firstChar = text.charAt(0);
 
     return particlePairs.find((particle) => particle.withBatchim === firstChar || particle.withoutBatchim === firstChar) ?? null;
 }
 
-function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls: TControlDef[]): TSentencePart[] {
+function createSentenceFromPattern(displayTemplate: string, controls: TControlDef[]): TSentencePart[] {
     const parts: TSentencePart[] = [];
     const controlKeys = new Set(controls.map((control) => control.key));
     const pattern = /\{([^}]+)\}/g;
@@ -743,9 +531,9 @@ function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = pattern.exec(template.displayTemplate))) {
+    while ((match = pattern.exec(displayTemplate))) {
         if (match.index > lastIndex) {
-            parts.push(...createTextSentenceParts(template.displayTemplate.slice(lastIndex, match.index)));
+            parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex, match.index)));
         }
 
         const key = match[1]?.trim() ?? '';
@@ -753,7 +541,7 @@ function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls
         if (controlKeys.has(key)) {
             parts.push({type: 'control', key});
 
-            const particle = getLeadingParticle(template.displayTemplate.slice(match.index + match[0].length));
+            const particle = getLeadingParticle(displayTemplate.slice(match.index + match[0].length));
 
             if (particle) {
                 parts.push({type: 'particle', key, ...particle});
@@ -768,11 +556,19 @@ function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls
         lastIndex = match.index + match[0].length;
     }
 
-    if (lastIndex < template.displayTemplate.length) {
-        parts.push(...createTextSentenceParts(template.displayTemplate.slice(lastIndex)));
+    if (lastIndex < displayTemplate.length) {
+        parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex)));
     }
 
-    return parts.length ? parts : [{type: 'text', text: template.templateCode}];
+    return parts.length ? parts : [{type: 'text', text: displayTemplate}];
+}
+
+function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls: TControlDef[]): TSentencePart[] {
+    return createSentenceFromPattern(template.displayTemplate, controls);
+}
+
+function interpolateLocalizedPattern(pattern: string, params: Record<string, string>) {
+    return pattern.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
 }
 
 function canUseLegacySentence(legacyTemplate: TSoftRuleTemplate | undefined, controls: TControlDef[]) {
@@ -787,10 +583,24 @@ function interpolateDisplayTemplate(template: TShiftConstraintTemplate, params: 
     return template.displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
 }
 
-function createSoftRuleTemplates(templates: TShiftConstraintTemplate[]) {
+function createLocalizedSoftRuleTemplate(definition: TSoftRuleTemplateDefinition, t: TTypedT): TSoftRuleTemplate {
+    const sentencePattern = t(getTemplateTranslationKey(definition.id, 'sentence'));
+
+    return {
+        ...definition,
+        label: t(getTemplateTranslationKey(definition.id, 'label')),
+        sentence: createSentenceFromPattern(sentencePattern, definition.controls),
+        buildText: (params) => interpolateLocalizedPattern(sentencePattern, params),
+        isRecommended: isRecommendedTemplateCode(definition.id, definition.category),
+    };
+}
+
+function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TTypedT) {
+    const legacyTemplates = createLegacySoftRuleTemplates(t);
+
     return templates.filter(isTemplateSelectableAsSoft).map<TSoftRuleTemplate>((template) => {
         const controls = template.slots.map(createControlFromSlot);
-        const legacyTemplate = SOFT_RULE_TEMPLATES.find((item) => item.id === template.templateCode);
+        const legacyTemplate = legacyTemplates.find((item) => item.id === template.templateCode);
         const sentence = canUseLegacySentence(legacyTemplate, controls)
             ? legacyTemplate!.sentence
             : createSentenceFromTemplate(template, controls);
@@ -798,21 +608,18 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[]) {
         return {
             id: template.templateCode,
             category: template.category,
-            label: legacyTemplate?.label ?? getCategoryLabel(template.category),
+            label: legacyTemplate?.label ?? getCategoryLabel(t, template.category),
             controls,
             sentence,
-            buildText: (params) => interpolateDisplayTemplate(template, params),
+            buildText: legacyTemplate?.buildText ?? ((params) => interpolateDisplayTemplate(template, params)),
             isRecommended: isRecommendedTemplateCode(template.templateCode, template.category),
             sourceTemplate: template,
         };
     });
 }
 
-function createLegacySoftRuleTemplates() {
-    return SOFT_RULE_TEMPLATES.map((template) => ({
-        ...template,
-        isRecommended: isRecommendedTemplateCode(template.id, template.category),
-    }));
+function createLegacySoftRuleTemplates(t: TTypedT) {
+    return SOFT_RULE_TEMPLATE_DEFINITIONS.map((template) => createLocalizedSoftRuleTemplate(template, t));
 }
 
 function createClientId(rule: {shiftConstraintRuleId?: number; templateCode: string}) {
@@ -891,44 +698,6 @@ function createVisibleSoftRules(
     const hiddenServerRules = loadedRules.filter((rule) => rule.selected === false);
 
     return [...visibleDefaults, ...visibleServerRules, ...hiddenServerRules].map((rule, index) => ({...rule, sortOrder: index + 1}));
-}
-
-function toSavedRule(rule: TShiftConstraintRuleDraft, index: number) {
-    return {
-        shiftConstraintRuleId: rule.shiftConstraintRuleId,
-        templateCode: rule.templateCode,
-        severity: rule.severity,
-        sortOrder: index + 1,
-        params: rule.params,
-        selected: rule.selected !== false,
-        isImportant: rule.isImportant,
-    };
-}
-
-function toRulesQueryData(
-    wardId: number,
-    shiftTeamId: number,
-    rules: TShiftConstraintRuleDraft[],
-    previous?: TShiftConstraintRulesResponse,
-): TShiftConstraintRulesResponse {
-    return {
-        schemaVersion: previous?.schemaVersion ?? 1,
-        wardId,
-        shiftTeamId,
-        rules: rules.map((rule, index) => ({
-            shiftConstraintRuleId: rule.shiftConstraintRuleId,
-            templateCode: rule.templateCode,
-            category: rule.category,
-            severity: rule.severity,
-            sortOrder: index + 1,
-            params: rule.params,
-            selected: rule.selected !== false,
-            isImportant: rule.isImportant,
-            displayText: rule.displayText,
-            isValid: rule.isValid,
-            invalidReason: rule.invalidReason,
-        })),
-    };
 }
 
 function getOptionKey(option: TShiftConstraintOption) {
@@ -1081,17 +850,17 @@ function getCandidateOptionValue(option: TShiftConstraintOption) {
 function isAllCandidateOption(option: TShiftConstraintOption) {
     const values = [option.type, option.code, option.label, option.name].filter(Boolean).map((value) => String(value).toUpperCase());
 
-    return values.some((value) => value === 'ALL' || value.includes('ALL_') || value === '모든' || value === '모든날');
+    return values.some((value) => value === 'ALL' || value.includes('ALL_') || LEGACY_ALL_LABELS.has(value));
 }
 
-function getCandidateOptionLabel(option: TShiftConstraintOption, shiftType?: TShiftTypeLike) {
+function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, shiftType?: TShiftTypeLike) {
     if (option.label) return option.label;
 
     if (option.name) return option.name;
 
     if (option.code) return option.code;
 
-    if (option.day != null) return `${option.day}일`;
+    if (option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});
 
     if (option.level != null) return `LV. ${option.level}`;
 
@@ -1100,11 +869,11 @@ function getCandidateOptionLabel(option: TShiftConstraintOption, shiftType?: TSh
     return shiftType?.name ?? option.type;
 }
 
-function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, shiftTypes: TShiftTypeLike[]): TSelectOption {
+function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, shiftTypes: TShiftTypeLike[], t: TTypedT): TSelectOption {
     const shiftType =
         option.wardShiftTypeId != null ? shiftTypes.find((item) => item.wardShiftTypeId === option.wardShiftTypeId) : undefined;
     const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict';
-    const label = getCandidateOptionLabel(option, shiftType);
+    const label = getCandidateOptionLabel(t, option, shiftType);
 
     if (!isDuty) {
         return {
@@ -1132,18 +901,20 @@ function getCandidateOptions(
     candidateKeys: string[],
     fallback: TSelectOption[],
     shiftTypes: TShiftTypeLike[],
+    t: TTypedT,
 ) {
     const serverOptions = candidateKeys.flatMap((key) => candidates[key] ?? []);
 
     if (!serverOptions.length) return fallback;
 
-    return uniqueByValue(serverOptions.map((option) => toSelectOption(option, optionMapKey, shiftTypes)));
+    return uniqueByValue(serverOptions.map((option) => toSelectOption(option, optionMapKey, shiftTypes, t)));
 }
 
 function mergeCandidateOptionMap(
     candidates: TShiftConstraintOptions,
     fallback: Record<string, TSelectOption[]>,
     shiftTypes: TShiftTypeLike[],
+    t: TTypedT,
 ): Record<string, TSelectOption[]> {
     const duty = getCandidateOptions(
         candidates,
@@ -1151,17 +922,25 @@ function mergeCandidateOptionMap(
         ['shiftsWithAll', 'shifts', 'shiftTypes', 'SHIFT_TYPE', 'SHIFTS_WITH_ALL'],
         fallback.duty,
         shiftTypes,
+        t,
     );
-    const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes);
+    const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes, t);
 
     return {
-        target: getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes),
+        target: getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t),
         duty,
-        date: getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes),
+        date: getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes, t),
         nurse,
-        preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes),
-        preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee ?? nurse, shiftTypes),
-        level: getCandidateOptions(candidates, 'level', ['proficiencies', 'levels', 'PROFICIENCIES', 'LEVELS'], fallback.level, shiftTypes),
+        preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
+        preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee ?? nurse, shiftTypes, t),
+        level: getCandidateOptions(
+            candidates,
+            'level',
+            ['proficiencies', 'levels', 'PROFICIENCIES', 'LEVELS'],
+            fallback.level,
+            shiftTypes,
+            t,
+        ),
         dutyStrict: duty.filter((option) => !isAllCandidateOption({type: option.value, label: option.label, code: option.shortName})),
     };
 }
@@ -1173,7 +952,7 @@ function findDutyOptionByCode(options: TSelectOption[], code: string) {
         return (
             options.find((option) => option.shortName?.toUpperCase() === 'OFF') ??
             options.find((option) => option.shortName?.toUpperCase() === 'O') ??
-            options.find((option) => Boolean(option.name?.includes('오프')) || option.name?.toUpperCase() === 'OFF')
+            options.find((option) => Boolean(option.name?.includes(LEGACY_OFF_NAME)) || option.name?.toUpperCase() === 'OFF')
         );
     }
 
@@ -1228,11 +1007,7 @@ function stringifyRuleParamValue(value: unknown): string {
     return '';
 }
 
-function getControlParamString(
-    control: TControlDef,
-    value: unknown,
-    optionMap: Record<string, TSelectOption[]>,
-) {
+function getControlParamString(control: TControlDef, value: unknown, optionMap: Record<string, TSelectOption[]>) {
     const stringValue = stringifyRuleParamValue(value);
 
     if (control.kind === 'number') return stringValue;
@@ -1252,9 +1027,10 @@ function normalizeSoftRuleParams(
     params: Record<string, unknown>,
     optionMap: Record<string, TSelectOption[]>,
 ): Record<string, string> {
-    const normalized = Object.fromEntries(
-        Object.entries(params).map(([key, value]) => [key, stringifyRuleParamValue(value)]),
-    ) as Record<string, string>;
+    const normalized = Object.fromEntries(Object.entries(params).map(([key, value]) => [key, stringifyRuleParamValue(value)])) as Record<
+        string,
+        string
+    >;
 
     template.controls.forEach((control) => {
         normalized[control.key] = getControlParamString(control, params[control.key], optionMap);
@@ -1602,13 +1378,19 @@ function ImportantToggle({
     isRecommended: boolean;
     onChange: (next: boolean) => void;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <button
             type="button"
             role="checkbox"
             aria-checked={checked}
-            aria-label={checked ? '중요 표시 해제' : '중요 표시'}
-            title={isRecommended ? '권장 중요 사항' : '중요 표시'}
+            aria-label={checked ? t('page.makeShift.constraints.important.ariaRemove') : t('page.makeShift.constraints.important.ariaMark')}
+            title={
+                isRecommended
+                    ? t('page.makeShift.constraints.important.recommendedTitle')
+                    : t('page.makeShift.constraints.important.ariaMark')
+            }
             onClick={() => onChange(!checked)}
             className={`mr-6 inline-flex h-6 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2 font-apple text-[12px] font-bold ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
                 checked
@@ -1616,7 +1398,7 @@ function ImportantToggle({
                     : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
             }`}
         >
-            중요
+            {t('page.makeShift.constraints.important.label')}
         </button>
     );
 }
@@ -1635,6 +1417,7 @@ const RuleRow = memo(function RuleRow({
     onParamChange,
     onSoftParamChange,
 }: TRuleRowProps) {
+    const {t} = useTypedTranslation();
     const slots = template?.slots ?? [];
 
     return (
@@ -1675,7 +1458,7 @@ const RuleRow = memo(function RuleRow({
                     type="button"
                     onClick={onDelete}
                     className="grid size-7 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                    aria-label="제약 조건 삭제"
+                    aria-label={t('page.makeShift.constraints.ruleAction.deleteAria')}
                 >
                     <X className="size-4" />
                 </button>
@@ -1690,11 +1473,13 @@ type TSectionProps = {
 };
 
 function Section({action, children}: TSectionProps) {
+    const {t} = useTypedTranslation();
+
     return (
         <section className="mb-4">
             <div className="rounded-[18px] bg-[#F8F9FB] px-3 pt-5 pb-8">
                 <div className="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3">
-                    <span className="font-apple text-[13px] font-bold text-gray-4">제약조건</span>
+                    <span className="font-apple text-[13px] font-bold text-gray-4">{t('page.makeShift.constraints.listTitle')}</span>
                     {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
                 </div>
                 <div className="space-y-2.5">{children}</div>
@@ -1711,13 +1496,14 @@ type TConstraintImportButtonProps = {
 };
 
 function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId, onImport}: TConstraintImportButtonProps) {
+    const {t} = useTypedTranslation();
     const [open, setOpen] = useState(false);
     const [selectedShiftTeamId, setSelectedShiftTeamId] = useState<number | null>(null);
     const sourceTeams = useMemo(() => teams.filter((team) => team.shiftTeamId !== currentShiftTeamId), [currentShiftTeamId, teams]);
     const currentTeam = teams.find((team) => team.shiftTeamId === currentShiftTeamId);
     const hasMultipleTeams = teams.length >= 2;
     const disabled = currentShiftTeamId == null || !hasMultipleTeams || sourceTeams.length === 0 || importingShiftTeamId !== null;
-    const title = hasMultipleTeams ? '다른 팀 제약조건 불러오기' : '팀이 2개 이상일 때 사용할 수 있어요';
+    const title = hasMultipleTeams ? t('page.makeShift.constraints.import.title') : t('page.makeShift.constraints.import.disabledTitle');
 
     useEffect(() => {
         if (!open) return;
@@ -1752,7 +1538,7 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                 type="button"
                 aria-haspopup="dialog"
                 aria-expanded={open}
-                aria-label="다른 팀 제약조건 불러오기"
+                aria-label={t('page.makeShift.constraints.import.title')}
                 title={title}
                 disabled={disabled}
                 onClick={() => setOpen(true)}
@@ -1772,24 +1558,28 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
                                 <p id="constraint-import-title" className="font-apple text-[20px] font-bold text-sub-1">
-                                    제약조건 불러오기
+                                    {t('page.makeShift.constraints.import.modalTitle')}
                                 </p>
                                 <p className="mt-1 truncate font-apple text-[13px] text-gray-4">
-                                    현재 팀: {currentTeam?.name ?? '선택된 팀'}
+                                    {t('page.makeShift.constraints.import.currentTeam', {
+                                        teamName: currentTeam?.name ?? t('page.makeShift.constraints.import.selectedTeamFallback'),
+                                    })}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={closeModal}
                                 className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                                aria-label="닫기"
+                                aria-label={t('page.makeShift.constraints.modal.close')}
                             >
                                 <X className="size-5" />
                             </button>
                         </div>
 
                         <div className="mt-5">
-                            <p className="mb-2 font-apple text-[12px] font-bold text-gray-4">불러올 팀</p>
+                            <p className="mb-2 font-apple text-[12px] font-bold text-gray-4">
+                                {t('page.makeShift.constraints.import.teamLabel')}
+                            </p>
                             <div className="space-y-1.5">
                                 {sourceTeams.map((team) => {
                                     const selected = team.shiftTeamId === selectedShiftTeamId;
@@ -1819,7 +1609,7 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                                 onClick={closeModal}
                                 className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                             >
-                                취소
+                                {t('page.makeShift.constraints.import.cancel')}
                             </button>
                             <button
                                 type="button"
@@ -1827,7 +1617,9 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                                 disabled={selectedShiftTeamId === null || importingShiftTeamId !== null}
                                 className="h-11 flex-1 cursor-pointer rounded-[10px] bg-main-1 px-6 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-[#5948F5] disabled:cursor-not-allowed disabled:bg-gray-5"
                             >
-                                {importingShiftTeamId !== null ? '불러오는 중' : '불러오기'}
+                                {importingShiftTeamId !== null
+                                    ? t('page.makeShift.constraints.import.loading')
+                                    : t('page.makeShift.constraints.import.confirm')}
                             </button>
                         </div>
                     </div>
@@ -1855,6 +1647,7 @@ type TSoftModalProps = {
 };
 
 function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
+    const {t} = useTypedTranslation();
     const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
     const categories = useMemo<TModalCategory[]>(() => {
         const normalCategories = Array.from(new Set(templates.filter((template) => !template.isRecommended).map((t) => t.category)));
@@ -1891,16 +1684,16 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
             <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
-                        <p className="font-apple text-[28px] font-bold text-sub-1">제약조건 추가</p>
+                        <p className="font-apple text-[28px] font-bold text-sub-1">{t('page.makeShift.constraints.modal.title')}</p>
                         <p className="mt-1 font-apple text-[13px] font-medium text-gray-4">
-                            근무표 상황에 따라 일부 조건은 반영되지 않을 수 있어요.
+                            {t('page.makeShift.constraints.modal.description')}
                         </p>
                     </div>
                     <button
                         type="button"
                         onClick={onClose}
                         className="grid size-8 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                        aria-label="닫기"
+                        aria-label={t('page.makeShift.constraints.modal.close')}
                     >
                         <X className="size-5" />
                     </button>
@@ -1918,7 +1711,7 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                                     : 'bg-gray-7 text-gray-4 hover:bg-gray-6/60 hover:text-sub-1'
                             }`}
                         >
-                            {getCategoryLabel(category)}
+                            {getCategoryLabel(t, category)}
                         </button>
                     ))}
                 </div>
@@ -1954,8 +1747,8 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                                         type="button"
                                         onClick={() => onAdd(template, templateParams)}
                                         className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-1-hover focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
-                                        aria-label="제약 조건 추가"
-                                        title="추가"
+                                        aria-label={t('page.makeShift.constraints.modal.addAria')}
+                                        title={t('page.makeShift.constraints.modal.addTitle')}
                                     >
                                         <Plus className="size-4" />
                                     </button>
@@ -1981,6 +1774,8 @@ type TRecommendedRuleWarningModalProps = {
 };
 
 function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommendedRuleWarningModalProps) {
+    const {t} = useTypedTranslation();
+
     if (!warning) return null;
 
     const isDelete = warning.action === 'delete';
@@ -1989,11 +1784,13 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
             <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <p className="font-apple text-[20px] font-bold text-sub-1">
-                    {isDelete ? '권장 조건을 삭제할까요?' : '중요 표시를 뺄까요?'}
+                    {isDelete ? t('page.makeShift.constraints.warning.deleteTitle') : t('page.makeShift.constraints.warning.unmarkTitle')}
                 </p>
                 <p className="mt-2 font-apple text-[14px] leading-6 text-gray-4">
-                    이 조건은 안정적인 근무표를 위해 기본으로 권장하는 중요 사항이에요.{' '}
-                    {isDelete ? '그래도 목록에서 삭제할까요?' : '그래도 중요 표시를 해제할까요?'}
+                    {t('page.makeShift.constraints.warning.description')}{' '}
+                    {isDelete
+                        ? t('page.makeShift.constraints.warning.deleteDescription')
+                        : t('page.makeShift.constraints.warning.unmarkDescription')}
                 </p>
                 <div className="mt-5 flex gap-2">
                     <button
@@ -2001,14 +1798,16 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
                         onClick={onClose}
                         className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                     >
-                        유지하기
+                        {t('page.makeShift.constraints.warning.keep')}
                     </button>
                     <button
                         type="button"
                         onClick={onConfirm}
                         className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
                     >
-                        {isDelete ? '삭제하기' : '중요 표시 빼기'}
+                        {isDelete
+                            ? t('page.makeShift.constraints.warning.deleteConfirm')
+                            : t('page.makeShift.constraints.warning.unmarkConfirm')}
                     </button>
                 </div>
             </div>
@@ -2024,6 +1823,7 @@ export function Constraints({
     month: monthProp,
     variant = 'flow',
 }: TConstraintsProps = {}) {
+    const {t} = useTypedTranslation();
     const queryClient = useQueryClient();
     const authWardId = useAuthStore((s) => s.wardId);
     const storeShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
@@ -2045,7 +1845,6 @@ export function Constraints({
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
-    const saveRulesRequestSeqRef = useRef(0);
     const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -2070,10 +1869,10 @@ export function Constraints({
     });
     const templates = candidatesQuery.data?.templates ?? [];
     const softTemplates = useMemo(() => {
-        if (templates.length) return createSoftRuleTemplates(templates);
+        if (templates.length) return createSoftRuleTemplates(templates, t);
 
-        return createLegacySoftRuleTemplates();
-    }, [templates]);
+        return createLegacySoftRuleTemplates(t);
+    }, [t, templates]);
     const templateByCode = useMemo(() => new Map(templates.map((template) => [template.templateCode, template] as const)), [templates]);
     const softTemplateByCode = useMemo(() => new Map(softTemplates.map((template) => [template.id, template] as const)), [softTemplates]);
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
@@ -2082,7 +1881,7 @@ export function Constraints({
     const skillConfig = useMemo(() => getWardSkillSettings(wardId)?.config ?? DEFAULT_SKILL_LEVEL_CONFIG, [wardId]);
     const optionMap = useMemo(() => {
         const dutyOptions = uniqueByValue([
-            {value: 'ALL_DUTY', label: '모든'},
+            {value: 'ALL_DUTY', label: t('page.makeShift.constraints.option.all')},
             ...shiftTypes
                 .filter((shiftType) => shiftType.wardShiftTypeId != null && (shiftType.shortName ?? shiftType.name))
                 .map((shiftType) => ({
@@ -2094,8 +1893,11 @@ export function Constraints({
                     color: shiftType.color,
                 })),
         ]);
-        const dateOptions = [{value: 'ALL_DATE', label: '모든날'}].concat(
-            Array.from({length: daysInMonth(year, month)}, (_, idx) => ({value: String(idx + 1), label: `${idx + 1}일`})),
+        const dateOptions = [{value: 'ALL_DATE', label: t('page.makeShift.constraints.option.allDays')}].concat(
+            Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
+                value: String(idx + 1),
+                label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
+            })),
         );
         const nurseOptions = nurses
             .filter((nurse) => nurse.nurseId != null && nurse.name)
@@ -2104,7 +1906,7 @@ export function Constraints({
             .filter((nurse) => nurse.nurseId != null && nurse.name && nurse.isPreceptor)
             .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name)}));
         const fallbackOptionMap = {
-            target: [{value: 'ALL', label: '모든사람'}, ...nurseOptions],
+            target: [{value: 'ALL', label: t('page.makeShift.constraints.option.allPeople')}, ...nurseOptions],
             duty: dutyOptions,
             date: dateOptions,
             nurse: nurseOptions,
@@ -2119,75 +1921,29 @@ export function Constraints({
             dutyStrict: dutyOptions.filter((option) => option.value !== 'ALL_DUTY'),
         } as Record<string, TSelectOption[]>;
 
-        return mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes);
-    }, [nurses, options, shiftTypes, skillConfig, year, month]);
-    const {mutate: mutateSaveRules} = useMutation({
-        mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
-            if (wardId == null || currentShiftTeamId == null) {
-                throw new Error('Cannot save shift constraint rules without a ward and shift team.');
-            }
-
-            return putShiftConstraintRules(wardId, currentShiftTeamId, {
-                rules: rules.map(toSavedRule),
-            });
-        },
-        onMutate: async ({rules}) => {
-            if (wardId == null || currentShiftTeamId == null) return {previousRules: undefined};
-
-            await queryClient.cancelQueries({queryKey: rulesQueryKey});
-
-            const previousRules = queryClient.getQueryData<TShiftConstraintRulesResponse>(rulesQueryKey);
-
-            queryClient.setQueryData(rulesQueryKey, toRulesQueryData(wardId, currentShiftTeamId, rules, previousRules));
-
-            return {previousRules};
-        },
-        onSuccess: (response, variables) => {
-            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
-
-            queryClient.setQueryData(rulesQueryKey, response);
-
-            if (wardId != null && currentShiftTeamId != null) {
-                void queryClient.invalidateQueries({
-                    queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace'],
-                });
-            }
-        },
-        onError: (_error, variables, context) => {
-            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
-
-            if (context?.previousRules) {
-                queryClient.setQueryData(rulesQueryKey, context.previousRules);
-            } else {
-                void queryClient.invalidateQueries({queryKey: rulesQueryKey});
-            }
-
-            toast.error('제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
-        },
-    });
-    const persistRules = useCallback(
+        return mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t);
+    }, [nurses, options, shiftTypes, skillConfig, t, year, month]);
+    const shouldUseRulesDraft = variant === 'flow' && wardId != null && currentShiftTeamId != null;
+    const persistRulesDraft = useCallback(
         (nextRules: TShiftConstraintRuleDraft[]) => {
-            if (wardId == null || currentShiftTeamId == null) return;
+            if (!shouldUseRulesDraft || wardId == null || currentShiftTeamId == null) return;
 
-            const requestId = saveRulesRequestSeqRef.current + 1;
-
-            saveRulesRequestSeqRef.current = requestId;
-            mutateSaveRules({rules: nextRules, requestId});
+            saveConstraintRulesDraft(wardId, currentShiftTeamId, year, month, nextRules);
         },
-        [currentShiftTeamId, mutateSaveRules, wardId],
+        [currentShiftTeamId, month, shouldUseRulesDraft, wardId, year],
     );
     const replaceRules = useCallback(
-        (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
+        (nextRules: TShiftConstraintRuleDraft[], options: {persist?: boolean} = {}) => {
             const normalizedRules = nextRules.map((rule, index) => ({...rule, sortOrder: index + 1}));
 
             rulesRef.current = normalizedRules;
             setRules(normalizedRules);
 
-            if (options.sync !== false) {
-                persistRules(normalizedRules);
+            if (options.persist !== false) {
+                persistRulesDraft(normalizedRules);
             }
         },
-        [persistRules],
+        [persistRulesDraft],
     );
     const updateRules = useCallback(
         (updater: TRulesUpdate) => {
@@ -2200,14 +1956,23 @@ export function Constraints({
         if (!rulesQuery.data || candidatesQuery.isPending) return;
 
         const serverRules = createVisibleSoftRules(rulesQuery.data.rules, softTemplates, optionMap);
+        const draftRules =
+            shouldUseRulesDraft && wardId != null && currentShiftTeamId != null
+                ? loadConstraintRulesDraft(wardId, currentShiftTeamId, year, month)
+                : null;
 
-        replaceRules(serverRules, {sync: false});
+        replaceRules(draftRules ?? serverRules, {persist: false});
     }, [
         candidatesQuery.isPending,
+        currentShiftTeamId,
+        month,
         optionMap,
         replaceRules,
         rulesQuery.data,
+        shouldUseRulesDraft,
         softTemplates,
+        wardId,
+        year,
     ]);
 
     useEffect(() => {
@@ -2221,10 +1986,10 @@ export function Constraints({
 
         replaceRules(result.rules);
         setHighlightedRuleId(null);
-        toast.success(`중복 제약조건 ${result.removedCount}개를 정리했어요.`);
+        toast.success(t('page.makeShift.constraints.toast.duplicatesRemoved', {count: result.removedCount}));
 
         return result.removedCount;
-    }, [replaceRules]);
+    }, [replaceRules, t]);
 
     useEffect(() => {
         if (variant !== 'flow') return;
@@ -2278,7 +2043,7 @@ export function Constraints({
         });
         setHighlightedRuleId(nextRule.clientId);
         setSoftModalOpen(false);
-        toast.success('제약조건을 추가했어요.');
+        toast.success(t('page.makeShift.constraints.toast.added'));
 
         window.setTimeout(() => {
             setHighlightedRuleId((current) => (current === nextRule.clientId ? null : current));
@@ -2289,8 +2054,8 @@ export function Constraints({
 
         replaceRules(defaults);
         setHighlightedRuleId(null);
-        toast.success(`권장 조건 ${defaults.length}개로 초기화했어요.`);
-    }, [optionMap, replaceRules, softTemplates]);
+        toast.success(t('page.makeShift.constraints.toast.resetDefaults', {count: defaults.length}));
+    }, [optionMap, replaceRules, softTemplates, t]);
     const importRulesFromTeam = useCallback(
         async (sourceShiftTeamId: number) => {
             if (!wardId || currentShiftTeamId == null || importingShiftTeamId !== null) return;
@@ -2308,14 +2073,18 @@ export function Constraints({
 
                 replaceRules(next);
                 setHighlightedRuleId(null);
-                toast.success(`${sourceTeam?.name ?? '다른 팀'} 제약조건을 그대로 불러왔어요.`);
+                toast.success(
+                    t('page.makeShift.constraints.toast.imported', {
+                        teamName: sourceTeam?.name ?? t('page.makeShift.constraints.import.sourceTeamFallback'),
+                    }),
+                );
             } catch {
-                toast.error('제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.');
+                toast.error(t('page.makeShift.constraints.toast.importFailed'));
             } finally {
                 setImportingShiftTeamId(null);
             }
         },
-        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, optionMap, queryClient, replaceRules, softTemplates, wardId],
+        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, optionMap, queryClient, replaceRules, softTemplates, t, wardId],
     );
     const updateRuleParam = useCallback(
         (clientId: string, key: string, value: unknown) => {
@@ -2332,11 +2101,7 @@ export function Constraints({
                     if (item.clientId !== clientId) return item;
 
                     const currentParams = normalizeSoftRuleParams(template, item.params, optionMap);
-                    const nextParams = normalizeCombinationParams(
-                        template,
-                        {...currentParams, [key]: value},
-                        optionMap,
-                    );
+                    const nextParams = normalizeCombinationParams(template, {...currentParams, [key]: value}, optionMap);
 
                     return {
                         ...item,
@@ -2387,10 +2152,10 @@ export function Constraints({
                     item.clientId === recommendedWarning.rule.clientId ? {...item, selected: false, isImportant: false} : item,
                 ),
             );
-            toast.success('권장 조건을 삭제했어요.');
+            toast.success(t('page.makeShift.constraints.toast.recommendedDeleted'));
         } else {
             setRuleImportant(recommendedWarning.rule.clientId, false);
-            toast.success('중요 표시를 해제했어요.');
+            toast.success(t('page.makeShift.constraints.toast.importantUnmarked'));
         }
 
         setRecommendedWarning(null);
@@ -2400,7 +2165,7 @@ export function Constraints({
         return (
             <div className={frameClassName}>
                 <div className={`${surfaceWidthClassName} rounded-[18px] bg-white px-5 py-5 font-apple text-[14px] text-gray-4`}>
-                    근무팀을 먼저 선택해 주세요.
+                    {t('page.makeShift.constraints.state.teamRequired')}
                 </div>
             </div>
         );
@@ -2414,7 +2179,7 @@ export function Constraints({
                         tone="loading"
                         layout="inline"
                         loadingColor="purple"
-                        title="제약조건 불러오는 중"
+                        title={t('page.makeShift.constraints.state.loading')}
                         className="min-h-[180px] py-0"
                     />
                 </div>
@@ -2426,7 +2191,7 @@ export function Constraints({
         return (
             <div className={frameClassName}>
                 <div className={`${surfaceWidthClassName} rounded-[18px] bg-white px-5 py-5 font-apple text-[14px] text-gray-4`}>
-                    제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
+                    {t('page.makeShift.constraints.state.loadError')}
                 </div>
             </div>
         );
@@ -2454,7 +2219,7 @@ export function Constraints({
                                     className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#6C5CFF] px-4 font-apple text-[13px] font-bold text-white transition-colors hover:bg-[#5948F5] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                 >
                                     <Plus className="size-4" />
-                                    제약 조건 추가
+                                    {t('page.makeShift.constraints.action.add')}
                                 </button>
                                 <button
                                     type="button"
@@ -2462,7 +2227,7 @@ export function Constraints({
                                     className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#F8F9FB] px-4 font-apple text-[13px] font-bold text-gray-4 transition-colors hover:bg-[#EEF0F4] hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                 >
                                     <RotateCcw className="size-4" />
-                                    초기화
+                                    {t('page.makeShift.constraints.action.reset')}
                                 </button>
                             </>
                         }

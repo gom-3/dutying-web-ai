@@ -52,6 +52,7 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
                     rulesHash,
                 },
                 commands.setScheduleValidationFromApi,
+                commands.clearScheduleValidationFromApi,
             );
         }, debounceMs);
 

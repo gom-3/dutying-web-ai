@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import i18n from '@/i18n';
 import {renderHook} from '@/shared/util/test-utils';
 import useEditShiftTeam from '..';
 import useEditNurseStore from '../model/store';
@@ -85,7 +86,8 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 describe('useEditShiftTeam', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
+        await i18n.changeLanguage('ko');
         useEditNurseStore.getState().reset();
         mockInvalidateQueries.mockReset();
         mockCancelQueries.mockReset();

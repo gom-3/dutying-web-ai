@@ -67,6 +67,7 @@ function NurseDetailPanel({
     const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptee = hasPrecepteeMemo(writeNurse?.memo);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
+    const nurseNameForAria = writeNurse?.name || t('page.member.common.nurseFallback');
 
     useEffect(() => {
         setWriteNurse(selectedNurse ?? null);
@@ -184,7 +185,7 @@ function NurseDetailPanel({
         }
 
         if (isDirty || isSkillDirty) {
-            toast.success('근무자 정보를 저장했어요.');
+            toast.success(t('page.member.toast.saveNurseInfo'));
         }
 
         return true;
@@ -197,6 +198,7 @@ function NurseDetailPanel({
         onSaveSkillLevel,
         selectedNurse,
         skillDraftLevel,
+        t,
         shiftTypeOptions,
         updateNurse,
         updateNurseShift,
@@ -235,7 +237,7 @@ function NurseDetailPanel({
         return (
             <aside className="h-full w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
                 <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-gray-6 bg-main-bg px-6 text-center">
-                    <p className="font-apple text-[15px] leading-7 text-gray-3">간호사를 선택하면 상세 정보가 여기에 고정되어 보여요.</p>
+                    <p className="font-apple text-[15px] leading-7 text-gray-3">{t('page.member.detail.emptyPinnedDescription')}</p>
                 </div>
             </aside>
         );
@@ -267,7 +269,7 @@ function NurseDetailPanel({
                             disabled={isBusy}
                             name="nurseName"
                             maxLength={30}
-                            placeholder={showNameRequiredError ? '이름' : undefined}
+                            placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
                             className={cn(
                                 'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1440px]:h-11 min-[1440px]:text-[20px]',
                                 showNameRequiredError &&
@@ -298,12 +300,14 @@ function NurseDetailPanel({
 
                                         onOpenWardCodeGuide();
                                     }}
-                                    aria-label={`${writeNurse.name} 연동 상태`}
+                                    aria-label={t('page.member.detail.connectionStatusAria', {nurseName: nurseNameForAria})}
                                 >
                                     {writeNurse.isConnected ? <LinkedIcon className="h-5 w-5" /> : <UnlinkedIcon className="h-5 w-5" />}
                                 </button>
                             </TooltipTrigger>
-                            {!writeNurse.isConnected ? <TooltipContent side="top">연동이 안 되고 있어요.</TooltipContent> : null}
+                            {!writeNurse.isConnected ? (
+                                <TooltipContent side="top">{t('page.member.detail.disconnectedTooltip')}</TooltipContent>
+                            ) : null}
                         </Tooltip>
                     </div>
 
@@ -311,7 +315,9 @@ function NurseDetailPanel({
                     {isSkillFeatureEnabled ? (
                         <div>
                             <div className="flex items-center justify-between">
-                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">숙련도</p>
+                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                                    {t('page.member.table.level')}
+                                </p>
                             </div>
                             <div
                                 className="mt-2 grid w-full gap-1.5"
@@ -361,7 +367,7 @@ function NurseDetailPanel({
                                     <button
                                         type="button"
                                         className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:size-7"
-                                        aria-label="가능 근무 안내"
+                                        aria-label={t('page.member.detail.shiftTypesHelpAria')}
                                     >
                                         <InfoIcon className="size-4" />
                                     </button>
@@ -448,15 +454,19 @@ function NurseDetailPanel({
                     </div>
 
                     <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
-                        <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">역할 및 권한</p>
+                        <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                            {t('page.member.detail.rolesAndPermissions')}
+                        </p>
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
                             <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉터</p>
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                                    {t('page.member.detail.preceptor')}
+                                </p>
                                 <button
                                     type="button"
                                     role="checkbox"
                                     aria-checked={Boolean(writeNurse.isWardManager)}
-                                    aria-label={`${writeNurse.name || '간호사'} 프리셉터`}
+                                    aria-label={t('page.member.row.preceptorAria', {nurseName: nurseNameForAria})}
                                     disabled={isBusy}
                                     className={cn(
                                         'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
@@ -480,12 +490,14 @@ function NurseDetailPanel({
                                 </button>
                             </div>
                             <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">프리셉티</p>
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                                    {t('page.member.detail.preceptee')}
+                                </p>
                                 <button
                                     type="button"
                                     role="checkbox"
                                     aria-checked={isPreceptee}
-                                    aria-label={`${writeNurse.name || '간호사'} 프리셉티`}
+                                    aria-label={t('page.member.row.precepteeAria', {nurseName: nurseNameForAria})}
                                     disabled={isBusy}
                                     className={cn(
                                         'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
@@ -511,21 +523,25 @@ function NurseDetailPanel({
                                 </button>
                             </div>
                             <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">근무투입</p>
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                                    {t('page.member.detail.worker')}
+                                </p>
                                 <Switch
                                     checked={writeNurse.isWorker}
                                     disabled={isBusy}
                                     onCheckedChange={(checked) => setWriteNurse((prev) => (prev ? {...prev, isWorker: checked} : prev))}
                                     className="relative h-6 w-11 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
                                     thumbClassName="absolute top-0.5 left-0.5 h-5 w-5 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-5"
-                                    aria-label={`${writeNurse.name} 근무투입`}
+                                    aria-label={t('page.member.row.workerAria', {nurseName: nurseNameForAria})}
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div className="flex min-h-0 flex-1 flex-col border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
-                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">전화번호</p>
+                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                            {t('page.member.detail.phone')}
+                        </p>
                         <input
                             type="tel"
                             disabled={isBusy}
@@ -534,7 +550,9 @@ function NurseDetailPanel({
                             value={writeNurse.phoneNum ?? ''}
                             onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
                         />
-                        <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">메모</p>
+                        <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                            {t('page.member.detail.memo')}
+                        </p>
                         <textarea
                             ref={memoTextareaRef}
                             name="nurseMemo"
@@ -566,7 +584,7 @@ function NurseDetailPanel({
                                     ) : (
                                         <ArrowRightLeft className="h-4 w-4" strokeWidth={2.4} />
                                     )}
-                                    팀 이동
+                                    {t('page.member.detail.moveTeam')}
                                 </button>
                                 <button
                                     type="button"
@@ -574,7 +592,7 @@ function NurseDetailPanel({
                                     className="h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1440px]:h-10 min-[1440px]:text-[14px]"
                                     onClick={() => setDeleteConfirmModalOpen(true)}
                                 >
-                                    삭제하기
+                                    {t('page.member.common.deleteAction')}
                                 </button>
                             </div>
                             {moveTeamMenuOpen ? (
@@ -582,7 +600,9 @@ function NurseDetailPanel({
                                     role="listbox"
                                     className="absolute right-0 bottom-full left-0 z-20 mb-2 overflow-hidden rounded-[12px] border border-gray-6 bg-white py-2 shadow-[0px_12px_28px_rgba(61,70,88,0.14)]"
                                 >
-                                    <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">이동할 팀</p>
+                                    <p className="px-3 pb-2 font-apple text-[12px] font-semibold text-[#8A94A8]">
+                                        {t('page.member.detail.moveTargetTeam')}
+                                    </p>
                                     <div className="px-2">
                                         {moveTargetShiftTeams.map((shiftTeam) => (
                                             <button
@@ -630,7 +650,7 @@ function NurseDetailPanel({
                         className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >
-                        저장하기
+                        {t('page.member.detail.saveAction')}
                     </button>
                 </div>
 
@@ -645,10 +665,10 @@ function NurseDetailPanel({
                             className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                             onClick={(event) => event.stopPropagation()}
                         >
-                            <p className="font-apple text-[20px] font-semibold text-sub-1">연동을 끊을까요?</p>
+                            <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.disconnectTitle')}</p>
                             <p className="mt-2 font-apple text-[15px] text-gray-3">
-                                <span className="font-semibold text-sub-1">{writeNurse.name || '선택한 간호사'}</span>
-                                {' 의 앱 연동을 끊어요.'}
+                                <span className="font-semibold text-sub-1">{writeNurse.name || t('page.member.common.selectedNurse')}</span>
+                                {t('page.member.modal.disconnectDescriptionSuffix')}
                             </p>
                             <div className="mt-6 flex items-center gap-3">
                                 <button
@@ -656,7 +676,7 @@ function NurseDetailPanel({
                                     className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                     onClick={() => setDisconnectConfirmModalOpen(false)}
                                 >
-                                    닫기
+                                    {t('page.member.common.close')}
                                 </button>
                                 <button
                                     type="button"
@@ -669,7 +689,7 @@ function NurseDetailPanel({
                                         }
                                     }}
                                 >
-                                    연동 끊기
+                                    {t('page.member.common.disconnectAction')}
                                 </button>
                             </div>
                         </div>
@@ -687,10 +707,12 @@ function NurseDetailPanel({
                                   className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">간호사를 삭제할까요?</p>
+                                  <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.deleteNurseTitle')}</p>
                                   <p className="mt-2 font-apple text-[15px] text-gray-3">
-                                      <span className="font-semibold text-sub-1">{writeNurse.name || '선택한 간호사'}</span>
-                                      {' 삭제 후에는 되돌릴 수 없어요.'}
+                                      <span className="font-semibold text-sub-1">
+                                          {writeNurse.name || t('page.member.common.selectedNurse')}
+                                      </span>
+                                      {t('page.member.modal.deleteNurseDescriptionSuffix')}
                                   </p>
                                   <div className="mt-6 flex items-center gap-3">
                                       <button
@@ -698,7 +720,7 @@ function NurseDetailPanel({
                                           className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                           onClick={() => setDeleteConfirmModalOpen(false)}
                                       >
-                                          닫기
+                                          {t('page.member.common.close')}
                                       </button>
                                       <button
                                           type="button"
@@ -711,7 +733,7 @@ function NurseDetailPanel({
                                               await deleteNurse(writeNurse.shiftTeamId, writeNurse.nurseId);
                                           }}
                                       >
-                                          삭제하기
+                                          {t('page.member.common.deleteAction')}
                                       </button>
                                   </div>
                               </div>
@@ -731,15 +753,15 @@ function NurseDetailPanel({
                                   className="w-full max-w-[460px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">저장하지 않고 나갈까요?</p>
-                                  <p className="mt-2 font-apple text-[15px] text-gray-3">변경사항이 저장되지 않을 수 있어요.</p>
+                                  <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.unsavedExitTitle')}</p>
+                                  <p className="mt-2 font-apple text-[15px] text-gray-3">{t('page.member.modal.unsavedExitDescription')}</p>
                                   <div className="mt-6 grid grid-cols-3 gap-2">
                                       <button
                                           type="button"
                                           className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                                           onClick={() => setExitConfirmModalOpen(false)}
                                       >
-                                          취소
+                                          {t('page.member.common.cancel')}
                                       </button>
                                       <button
                                           type="button"
@@ -749,7 +771,7 @@ function NurseDetailPanel({
                                               onClose();
                                           }}
                                       >
-                                          저장 안 함
+                                          {t('page.member.common.discard')}
                                       </button>
                                       <button
                                           type="button"
@@ -763,7 +785,7 @@ function NurseDetailPanel({
                                               onClose();
                                           }}
                                       >
-                                          저장 후 나가기
+                                          {t('page.member.common.saveAndLeave')}
                                       </button>
                                   </div>
                               </div>

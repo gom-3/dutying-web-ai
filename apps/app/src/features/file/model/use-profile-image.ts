@@ -3,11 +3,13 @@ import {useState} from 'react';
 import toast from 'react-hot-toast';
 import {FileAPI} from '@/shared/api';
 import {FILE_TYPE} from '@/shared/api/file/type';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {uploadImageToS3} from './upload-file';
 
 export const DEFAULT_IMAGE_COUNT = 30;
 
 const useProfileImage = (initialImg?: {profileImgUrl?: string; defaultProfileImgId?: number}) => {
+    const {t} = useTypedTranslation();
     const [profileImg, setProfileImg] = useState<{profileImgUrl?: string; defaultProfileImgId?: number} | undefined>(initialImg);
     const [isLoading, setIsLoading] = useState(false);
     const setRandomImage = () => {
@@ -28,7 +30,7 @@ const useProfileImage = (initialImg?: {profileImgUrl?: string; defaultProfileImg
                 tags: {feature: 'profile-image', action: 'upload'},
                 extra: {extension},
             });
-            toast.error('프로필 이미지를 업로드하지 못했어요.');
+            toast.error(t('feature.file.profileImageUploadFailed'));
         } finally {
             setIsLoading(false);
         }

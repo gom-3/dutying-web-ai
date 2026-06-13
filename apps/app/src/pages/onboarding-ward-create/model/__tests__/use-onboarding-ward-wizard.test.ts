@@ -1,6 +1,7 @@
 import type {DropResult} from '@hello-pangea/dnd';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import '@/i18n';
 import {getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
@@ -526,13 +527,13 @@ describe('useOnboardingWardWizard upload flow', () => {
             Promise.resolve({
                 targetYear: request.targetYear,
                 targetMonth: request.targetMonth,
-                nurses: request.nurseNameBlock
-                    .split('\n')
-                    .map((name: string, index: number) => ({
-                        name,
-                        displayOrder: index + 1,
-                        initialShifts: [{date: `${request.targetYear}-${String(request.targetMonth).padStart(2, '0')}-01`, shiftShortName: 'D'}],
-                    })),
+                nurses: request.nurseNameBlock.split('\n').map((name: string, index: number) => ({
+                    name,
+                    displayOrder: index + 1,
+                    initialShifts: [
+                        {date: `${request.targetYear}-${String(request.targetMonth).padStart(2, '0')}-01`, shiftShortName: 'D'},
+                    ],
+                })),
                 wardShiftTypes: [
                     {name: 'Day', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
                     {name: 'Evening', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
@@ -569,10 +570,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             result.current.updateScheduleInput(teamId, {
                 year: 2026,
                 month: 6,
-                rows: [
-                    {...nurseARow!, name: ''},
-                    nurseBRow!,
-                ],
+                rows: [{...nurseARow!, name: ''}, nurseBRow!],
             });
         });
 

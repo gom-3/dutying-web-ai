@@ -1,5 +1,6 @@
 import {type RefObject} from 'react';
 import {twMerge} from 'tailwind-merge';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type ITutorialStepConfig} from './tutorial.types';
 
 type TTutorialInfoBoxProps = {
@@ -17,6 +18,7 @@ const primaryButtonClassName =
     'inline-flex h-10 min-w-16 items-center justify-center rounded-xl bg-[#3182F6] px-4 text-[.9375rem] font-semibold text-white transition-colors hover:bg-[#1B64DA]';
 
 export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious, stepIndex, totalSteps}: TTutorialInfoBoxProps) {
+    const {t} = useTypedTranslation();
     const isLastStep = stepIndex === totalSteps - 1;
 
     return (
@@ -59,10 +61,10 @@ export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious
                         </a>
                     ) : null}
                     <button className={secondaryButtonClassName} onClick={onPrevious} disabled={stepIndex === 0}>
-                        이전
+                        {t('widget.tutorialInfoBox.previous')}
                     </button>
                     <button className={twMerge(primaryButtonClassName, isLastStep && 'min-w-[4.5rem]')} onClick={onNext}>
-                        {isLastStep ? '완료' : '다음'}
+                        {isLastStep ? t('widget.tutorialInfoBox.done') : t('widget.tutorialInfoBox.next')}
                     </button>
                 </div>
             </div>

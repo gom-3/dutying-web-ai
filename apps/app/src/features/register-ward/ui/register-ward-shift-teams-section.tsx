@@ -30,7 +30,7 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h2 className="text-[20px] font-semibold text-sub-1">{t('feature.registerWard.shiftTeams.title')}</h2>
-                    <p className="mt-1 text-xs leading-5 text-gray-3">팀별 간호사 이름을 입력해요. 본인은 자동으로 연결돼요.</p>
+                    <p className="mt-1 text-xs leading-5 text-gray-3">{t('feature.registerWard.shiftTeams.description')}</p>
                 </div>
                 <button
                     type="button"
@@ -43,7 +43,8 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                         );
                     }}
                 >
-                    <Plus className="h-4 w-4" />팀 추가
+                    <Plus className="h-4 w-4" />
+                    {t('feature.registerWard.shiftTeams.addTeam')}
                 </button>
             </div>
 
@@ -70,8 +71,8 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                                     );
                                 }}
                                 disabled={shiftTeams.length === 1}
-                                aria-label={`${index + 1}팀 삭제`}
-                                title={`${index + 1}팀 삭제`}
+                                aria-label={t('feature.registerWard.shiftTeams.deleteTeamAria', {index: index + 1})}
+                                title={t('feature.registerWard.shiftTeams.deleteTeamAria', {index: index + 1})}
                             >
                                 <X className="h-4 w-4" />
                             </button>
@@ -91,7 +92,7 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                                                 }),
                                             );
                                         }}
-                                        aria-label={`${name} 삭제`}
+                                        aria-label={t('feature.registerWard.shiftTeams.deleteNurseAria', {name})}
                                     >
                                         <X className="h-3.5 w-3.5" />
                                     </button>
@@ -99,7 +100,7 @@ function RegisterWardShiftTeamsSection({shiftTeams, setShiftTeams}: IRegisterWar
                             ))}
                             <label className="flex h-8 min-w-32 items-center gap-1 rounded-[10px] bg-white px-3">
                                 <input
-                                    aria-label={`${index + 1}팀 간호사 이름 추가`}
+                                    aria-label={t('feature.registerWard.shiftTeams.addNurseAria', {index: index + 1})}
                                     placeholder={t('feature.registerWard.shiftTeams.addNamePlaceholder')}
                                     className="min-w-0 flex-1 bg-transparent text-sm font-medium text-sub-1 outline-none placeholder:text-gray-4"
                                     onKeyDown={(e) => {

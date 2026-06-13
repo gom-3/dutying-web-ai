@@ -2,6 +2,7 @@ import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {CancelIcon} from '@/shared/assets/svg';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import TimeInput from '@/shared/ui/form-controls/TimeInput';
@@ -32,24 +33,25 @@ const normalizeShiftShortNameInput = (value: string) =>
     Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
 
 function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
+    const {t} = useTypedTranslation();
     const [writeShift, setWriteShift] = useState(initialValue);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const modalRoot = document.querySelector('#modal-root');
     const handleSubmit = () => {
         if (writeShift.name === '') {
-            setValidationMessage('근무 이름을 입력해 주세요.');
+            setValidationMessage(t('feature.createShiftModal.validation.nameRequired'));
 
             return;
         }
 
         if (!writeShift.isOff && (writeShift.startTime === '' || writeShift.endTime === '')) {
-            setValidationMessage('근무 시간을 입력해 주세요.');
+            setValidationMessage(t('feature.createShiftModal.validation.timeRequired'));
 
             return;
         }
 
         if (writeShift.shortName === '') {
-            setValidationMessage('근무 약자를 입력해 주세요.');
+            setValidationMessage(t('feature.createShiftModal.validation.shortNameRequired'));
 
             return;
         }
@@ -83,7 +85,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                   >
                       <div className="flex items-center">
                           <h1 className="flex-1 font-apple text-[1.75rem] font-semibold text-[#150B3C]">
-                              {shiftType ? '근무•휴가 수정하기' : '근무•휴가 추가하기'}
+                              {shiftType ? t('feature.createShiftModal.editTitle') : t('feature.createShiftModal.createTitle')}
                           </h1>
                           <CancelIcon className="h-7.5 w-7.5 cursor-pointer" onClick={() => close()} />
                       </div>
@@ -99,7 +101,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                                   setWriteShift({...writeShift, isOff: false, classification: 'OTHER_WORK'});
                               }}
                           >
-                              근무
+                              {t('feature.createShiftModal.work')}
                           </div>
                           <div
                               className={`h-10 flex-1 cursor-pointer border-b-[.3125rem] text-center font-apple text-[1.25rem] font-medium ${
@@ -112,14 +114,20 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                                   setWriteShift({...writeShift, isOff: true, classification: 'OTHER_LEAVE'});
                               }}
                           >
-                              휴가
+                              {t('feature.createShiftModal.leave')}
                           </div>
                       </div>
                       <div className="w-[50%]">
-                          <p className="mt-8.75 mb-[.625rem] font-apple text-base text-sub-3">근무명</p>
+                          <p className="mt-8.75 mb-[.625rem] font-apple text-base text-sub-3">
+                              {t('feature.createShiftModal.name')}
+                          </p>
                           <TextField
                               className="h-13.5 font-apple text-[1.5rem] font-medium text-sub-1"
-                              placeholder={writeShift.isOff ? '휴가 명을 작성해 주세요.' : '근무 명을 작성해 주세요.'}
+                              placeholder={
+                                  writeShift.isOff
+                                      ? t('feature.createShiftModal.leaveNamePlaceholder')
+                                      : t('feature.createShiftModal.workNamePlaceholder')
+                              }
                               value={writeShift.name}
                               onChange={(e) => {
                                   setWriteShift({...writeShift, name: e.target.value});
@@ -129,9 +137,11 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                       </div>
                       <div className="">
                           <div className="flex items-center gap-4">
-                              <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">약자</p>
+                              <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">
+                                  {t('feature.createShiftModal.shortName')}
+                              </p>
                               <p className="mt-7.5 mb-[.625rem] font-apple text-[.75rem] text-main-2">
-                                  * 기본 근무 유형인 D, E, N, O의 약자는 그대로 유지해 주세요
+                                  {t('feature.createShiftModal.shortNameHint')}
                               </p>
                           </div>
                           <TextField
@@ -147,7 +157,9 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                       </div>
                       {!writeShift.isOff && (
                           <div className="w-[40%]">
-                              <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">근무 시간</p>
+                              <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">
+                                  {t('feature.createShiftModal.workTime')}
+                              </p>
                               <div className="flex items-center gap-[.9375rem]">
                                   <TimeInput
                                       className="h-13.5 w-35 text-center text-[1.5rem]"
@@ -172,7 +184,9 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                       )}
                       {writeShift.isOff ? <ValidationMessage message={validationMessage} className="mt-4" /> : null}
                       <div className="flex flex-col items-start">
-                          <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">배경 색</p>
+                          <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">
+                              {t('feature.createShiftModal.backgroundColor')}
+                          </p>
                           <div className="flex flex-1 items-center gap-17.5">
                               <label
                                   htmlFor={`pick_background_color`}
@@ -198,7 +212,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                                       close();
                                   }}
                               >
-                                  삭제
+                                  {t('feature.createShiftModal.delete')}
                               </Button>
                           )}
                           <Button
@@ -206,7 +220,7 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               variant="outline"
                               onClick={handleSubmit}
                           >
-                              저장
+                              {t('feature.createShiftModal.save')}
                           </Button>
                       </div>
                   </div>

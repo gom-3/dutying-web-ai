@@ -1,6 +1,7 @@
 ﻿import {groupBy} from 'lodash-es';
 import type {TNurse, TWaitingNurse} from '@/entities/nurse';
 import type {TShiftTeam} from '@/entities/ward';
+import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 
 export type TConnectionManageStep = 0 | 1 | 2 | 3;
 export type TConnectMode = 'link' | 'add';
@@ -49,36 +50,37 @@ interface IGetConnectionManageResultCopyParams {
     connectMode: TConnectMode;
     waitingNurseName?: string;
     targetLabel?: string | null;
+    t: (key: TI18nKey, values?: Record<string, string | number>) => string;
 }
 
 function getObjectParticle(word: string) {
     const trimmed = word.trim();
     const lastChar = trimmed.charAt(trimmed.length - 1);
 
-    if (!lastChar) return '을';
+    if (!lastChar) return '\uC744';
 
     const code = lastChar.charCodeAt(0);
     const isHangulSyllable = code >= 0xac00 && code <= 0xd7a3;
 
-    if (!isHangulSyllable) return '을';
+    if (!isHangulSyllable) return '\uC744';
 
     const hasBatchim = (code - 0xac00) % 28 !== 0;
 
-    return hasBatchim ? '을' : '를';
+    return hasBatchim ? '\uC744' : '\uB97C';
 }
 
-function getLinkFailureDescription(targetLabel?: string | null) {
+function getLinkFailureDescription(targetLabel: string | null | undefined, t: IGetConnectionManageResultCopyParams['t']) {
     if (!targetLabel) {
-        return '선택한 간호사 계정에 연결하지 못했어요. 다시 시도해 주세요.';
+        return t('page.member.connectionManage.result.failure.linkNoTargetDescription');
     }
 
     const [targetNurseName, targetTeamName] = targetLabel.split('·').map((text) => text.trim());
 
     if (targetNurseName && targetTeamName) {
-        return `${targetTeamName}의 ${targetNurseName} 계정에 연결하지 못했어요. 다시 시도해 주세요.`;
+        return t('page.member.connectionManage.result.failure.linkTeamDescription', {targetNurseName, targetTeamName});
     }
 
-    return `${targetLabel} 계정에 연결하지 못했어요. 다시 시도해 주세요.`;
+    return t('page.member.connectionManage.result.failure.linkDescription', {targetLabel});
 }
 
 export function getConnectionManageResultCopy({
@@ -86,35 +88,62 @@ export function getConnectionManageResultCopy({
     connectMode,
     waitingNurseName,
     targetLabel,
+    t,
 }: IGetConnectionManageResultCopyParams) {
-    const safeWaitingNurseName = waitingNurseName ?? '선택한 간호사';
-    const safeTargetLabel = targetLabel ?? (connectMode === 'link' ? '선택한 간호사' : '선택한 팀');
+    const safeWaitingNurseName = waitingNurseName ?? t('page.member.common.selectedNurse');
+    const safeTargetLabel =
+        targetLabel ?? (connectMode === 'link' ? t('page.member.common.selectedNurse') : t('page.member.common.selectedTeam'));
 
     if (submitStatus === 'loading') {
         return {
-            title: connectMode === 'link' ? '기존 계정에 연결하고 있어요' : '선택한 팀으로 추가하고 있어요',
+            title:
+                connectMode === 'link'
+                    ? t('page.member.connectionManage.result.loading.linkTitle')
+                    : t('page.member.connectionManage.result.loading.addTitle'),
             description:
                 connectMode === 'link'
-                    ? `${safeWaitingNurseName} 신청 정보를 ${safeTargetLabel} 계정에 연결하고 있어요. 잠시만 기다려 주세요.`
-                    : `${safeWaitingNurseName}님을 ${safeTargetLabel} 팀으로 추가하고 있어요. 팀과 관계 변경이 반영될 때까지 잠시만 기다려 주세요.`,
+                    ? t('page.member.connectionManage.result.loading.linkDescription', {
+                          waitingNurseName: safeWaitingNurseName,
+                          targetLabel: safeTargetLabel,
+                      })
+                    : t('page.member.connectionManage.result.loading.addDescription', {
+                          waitingNurseName: safeWaitingNurseName,
+                          targetLabel: safeTargetLabel,
+                      }),
         };
     }
 
     if (submitStatus === 'success') {
         return {
-            title: connectMode === 'link' ? '기존 계정과 연결했어요' : `${safeWaitingNurseName}님을 ${safeTargetLabel}에 추가했어요`,
+            title:
+                connectMode === 'link'
+                    ? t('page.member.connectionManage.result.success.linkTitle')
+                    : t('page.member.connectionManage.result.success.addTitle', {
+                          waitingNurseName: safeWaitingNurseName,
+                          targetLabel: safeTargetLabel,
+                      }),
             description:
                 connectMode === 'link'
-                    ? `${safeWaitingNurseName} 신청을 ${safeTargetLabel} 계정에 연결했어요. 이어서 확인할 수 있어요.`
+                    ? t('page.member.connectionManage.result.success.linkDescription', {
+                          waitingNurseName: safeWaitingNurseName,
+                          targetLabel: safeTargetLabel,
+                      })
                     : '',
         };
     }
 
     return {
-        title: connectMode === 'link' ? '기존 계정과 연결하지 못했어요' : '팀에 추가하지 못했어요',
+        title:
+            connectMode === 'link'
+                ? t('page.member.connectionManage.result.failure.linkTitle')
+                : t('page.member.connectionManage.result.failure.addTitle'),
         description:
             connectMode === 'link'
-                ? getLinkFailureDescription(targetLabel)
-                : `${safeWaitingNurseName}${getObjectParticle(safeWaitingNurseName)} ${safeTargetLabel}에 추가하지 못했어요. 다시 시도하거나 이전 단계로 돌아가 주세요.`,
+                ? getLinkFailureDescription(targetLabel, t)
+                : t('page.member.connectionManage.result.failure.addDescription', {
+                      waitingNurseName: safeWaitingNurseName,
+                      targetLabel: safeTargetLabel,
+                      objectParticle: getObjectParticle(safeWaitingNurseName),
+                  }),
     };
 }
