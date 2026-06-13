@@ -756,7 +756,7 @@ function ShiftTypeTable({
                         'h-11 rounded-[12px] px-5 font-apple text-sm font-semibold transition-colors',
                         showValidationHighlight && hasAnyValidationError
                             ? 'bg-gray-6 text-gray-3 hover:bg-gray-6'
-                            : 'bg-main-1 text-white hover:bg-main-2',
+                            : 'bg-main-1 text-white hover:bg-main-1-hover',
                     )}
                 >
                     저장하기

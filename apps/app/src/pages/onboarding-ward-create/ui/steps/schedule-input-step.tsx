@@ -16,6 +16,7 @@ import whiteExcelIcon from '@/shared/assets/images/w_excel.png';
 import {PersonIcon} from '@/shared/assets/svg';
 import {
     getAvailableOnboardingShiftColor,
+    getDefaultShiftTypeColor,
     normalizeOnboardingShiftCode,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
@@ -104,12 +105,7 @@ const SHIFT_TERM_TEXT_COLOR = '#384255';
 const SYMBOL_OFF_SHIFT_COLOR = '#555A64';
 const SYMBOL_OFF_SHIFT_TEXT_COLOR = '#FFFFFF';
 const FIXED_SHIFT_TEXT_COLOR = '#FFFFFF';
-const FIXED_SHIFT_COLOR_BY_TERM = new Map([
-    ['D', '#4DC2AD'],
-    ['E', '#FF8BA5'],
-    ['N', '#3580FF'],
-    ['O', '#465B7A'],
-]);
+const CORE_SHIFT_TERMS = new Set(['D', 'E', 'N', 'O']);
 const SYMBOL_OFF_SHIFT_TERMS = new Set(['/', '-']);
 const OFF_SHIFT_TERMS = new Set(['OFF', '오프', '휴', '휴무']);
 const getMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
@@ -209,11 +205,17 @@ const getLatestSchedule = (scheduleInputs: TOnboardingWardDraft['scheduleInputs'
         .filter((schedule): schedule is TOnboardingTeamScheduleDraft => Boolean(schedule))
         .sort((left, right) => right.year * 12 + right.month - (left.year * 12 + left.month))[0];
 const isSymbolOffShiftCode = (value: string) => SYMBOL_OFF_SHIFT_TERMS.has(value.trim());
-const getFixedShiftColor = (value: string) => {
+const getCanonicalShiftColorTerm = (value: string) => {
     const term = normalizeShiftCode(value);
 
-    return FIXED_SHIFT_COLOR_BY_TERM.get(OFF_SHIFT_TERMS.has(term) || SYMBOL_OFF_SHIFT_TERMS.has(term) ? 'O' : term) ?? null;
+    if (!term) {
+        return '';
+    }
+
+    return OFF_SHIFT_TERMS.has(term) || SYMBOL_OFF_SHIFT_TERMS.has(term) ? 'O' : term;
 };
+const isCoreShiftTerm = (value: string) => CORE_SHIFT_TERMS.has(getCanonicalShiftColorTerm(value));
+const normalizeColorKey = (color: string) => color.trim().toUpperCase();
 const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
     const terms: string[] = [];
     const termSet = new Set<string>();
@@ -224,7 +226,7 @@ const collectCustomShiftTerms = (rows: TOnboardingScheduleRowDraft[]) => {
             .forEach(([, value]) => {
                 const term = normalizeShiftCode(value);
 
-                if (!term || termSet.has(term) || isSymbolOffShiftCode(term) || getFixedShiftColor(term)) {
+                if (!term || termSet.has(term) || isSymbolOffShiftCode(term) || OFF_SHIFT_TERMS.has(term) || isCoreShiftTerm(term)) {
                     return;
                 }
 
@@ -250,18 +252,46 @@ const appendNewShiftTerms = (currentOrder: string[], rows: TOnboardingScheduleRo
 
     return nextOrder.length === currentOrder.length ? currentOrder : nextOrder;
 };
-const buildShiftTermColorMap = (termOrder: string[]) => {
-    const usedColors = new Set(FIXED_SHIFT_COLOR_BY_TERM.values());
+const buildShiftTermColorMap = (shiftTypes: TOnboardingWardDraft['shiftTypes'], termOrder: string[]) => {
+    const usedColors = new Set<string>();
+    const termColorMap = new Map<string, string>();
+    const setTermColor = (term: string, color: string) => {
+        const normalizedTerm = normalizeShiftCode(term);
 
-    return new Map(
-        termOrder.map((term, index) => {
-            const color = getAvailableOnboardingShiftColor(usedColors, index);
+        if (!normalizedTerm) {
+            return;
+        }
 
-            usedColors.add(color);
+        if (!termColorMap.has(normalizedTerm)) {
+            termColorMap.set(normalizedTerm, color);
+        }
 
-            return [term, color];
-        }),
-    );
+        usedColors.add(normalizeColorKey(color));
+    };
+
+    shiftTypes.forEach((shiftType) => {
+        setTermColor(shiftType.shortName, shiftType.color);
+    });
+
+    ['D', 'E', 'N', 'O'].forEach((term, index) => {
+        if (!termColorMap.has(term)) {
+            setTermColor(term, getDefaultShiftTypeColor(term, index));
+        }
+    });
+
+    const offColor = termColorMap.get('O') ?? getDefaultShiftTypeColor('O', 3);
+
+    OFF_SHIFT_TERMS.forEach((term) => setTermColor(term, offColor));
+
+    termOrder.forEach((term, index) => {
+        if (termColorMap.has(term)) {
+            return;
+        }
+
+        setTermColor(term, getAvailableOnboardingShiftColor(usedColors, index));
+    });
+
+    return termColorMap;
 };
 
 function ScheduleInputStep({
@@ -368,8 +398,8 @@ function ScheduleInputStep({
         });
     }, []);
     const shiftTermColorMap = useMemo(
-        () => buildShiftTermColorMap(shiftTermOrderBySchedule[activeScheduleKey] ?? []),
-        [activeScheduleKey, shiftTermOrderBySchedule],
+        () => buildShiftTermColorMap(draft.shiftTypes, shiftTermOrderBySchedule[activeScheduleKey] ?? []),
+        [activeScheduleKey, draft.shiftTypes, shiftTermOrderBySchedule],
     );
     const selectedRange = normalizeRange(selection);
     const fillRange = isSelectionVisible && fillDrag ? normalizeRange({start: selection.start, end: fillDrag.target}) : null;
@@ -1270,13 +1300,13 @@ function ShiftCell({
     const normalizedValue = normalizeShiftCode(value);
     const hasValue = Boolean(normalizedValue);
     const isSymbolOffValue = isSymbolOffShiftCode(value);
-    const fixedShiftColor = getFixedShiftColor(value);
-    const backgroundColor = isSymbolOffValue
-        ? SYMBOL_OFF_SHIFT_COLOR
-        : (fixedShiftColor ?? (hasValue ? (termColorMap.get(normalizedValue) ?? FALLBACK_SHIFT_COLOR) : FALLBACK_SHIFT_COLOR));
+    const shiftColorTerm = getCanonicalShiftColorTerm(value);
+    const shiftTypeColor = shiftColorTerm ? (termColorMap.get(shiftColorTerm) ?? null) : null;
+    const isFixedShiftValue = shiftColorTerm ? CORE_SHIFT_TERMS.has(shiftColorTerm) : false;
+    const backgroundColor = isSymbolOffValue ? SYMBOL_OFF_SHIFT_COLOR : (shiftTypeColor ?? FALLBACK_SHIFT_COLOR);
     const textColor = isSymbolOffValue
         ? SYMBOL_OFF_SHIFT_TEXT_COLOR
-        : fixedShiftColor !== null
+        : isFixedShiftValue
           ? FIXED_SHIFT_TEXT_COLOR
           : hasValue
             ? SHIFT_TERM_TEXT_COLOR

@@ -437,7 +437,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             <div className="mt-4 flex justify-end">
                 <button
                     type="button"
-                    className="group flex items-center gap-2 font-apple text-sm font-medium text-gray-3 transition-colors hover:text-sub-2.5"
+                    className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-sub-2.5"
                     onClick={onAdd}
                 >
                     <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-gray-3 transition-colors group-hover:bg-sub-2.5">

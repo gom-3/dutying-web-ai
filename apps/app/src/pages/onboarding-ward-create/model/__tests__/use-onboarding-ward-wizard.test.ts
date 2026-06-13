@@ -1,6 +1,7 @@
 import type {DropResult} from '@hello-pangea/dnd';
 import {act} from 'react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
 import type * as SharedApiModule from '@/shared/api';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {createInitialDraft, DEFAULT_SHIFT_TYPE_COLORS, getScheduleMonthKey} from '../draft';
@@ -343,6 +344,9 @@ describe('useOnboardingWardWizard upload flow', () => {
         const {result} = renderHook(() => useOnboardingWardWizard());
 
         await waitFor(() => expect(result.current.draft.currentStep).toBe(2));
+
+        expect(result.current.draft.skillLevelConfig.enabled).toBe(false);
+        expect(result.current.isSkillLevelEnabled).toBe(false);
 
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
         expect(result.current.draft.wardName).toBe('중환자실');
@@ -905,6 +909,7 @@ describe('useOnboardingWardWizard skill config behavior', () => {
     beforeEach(() => {
         toastSuccess.mockReset();
         toastError.mockReset();
+        window.localStorage.clear();
     });
 
     it('applies updated skill config to nurse list and shows 안내 toast', () => {
@@ -947,8 +952,130 @@ describe('useOnboardingWardWizard skill config behavior', () => {
         });
 
         expect(result.current.isSkillLevelEnabled).toBe(false);
+        expect(result.current.draft.skillLevelConfig.enabled).toBe(false);
+        expect(result.current.draft.skillLevelConfig.autoAssign).toBe(false);
         expect(toastSuccess).toHaveBeenCalledWith('숙련도 설정을 사용하지 않아요.');
         expect(toastError).not.toHaveBeenCalled();
+    });
+
+    it('persists disabled skill settings for the created ward', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+        mockCompleteOnboardingWardDraft.mockResolvedValue({
+            ...draftWardResponse,
+            wardId: 10,
+            shiftTeams: [],
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: 'Hospital', wardName: 'Ward'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        act(() => {
+            result.current.disableSkillConfig();
+        });
+
+        await act(async () => {
+            await result.current.complete();
+        });
+
+        expect(getWardSkillSettings(10)).toEqual({
+            config: {
+                enabled: false,
+                levelCount: 5,
+                paletteId: 'warm',
+                autoAssign: false,
+            },
+            frozenLevelsByNurseId: {},
+        });
+    });
+
+    it('keeps unselected skill levels when the created ward response contains backend defaults', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: 'Hospital', wardName: 'Ward'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        act(() => {
+            result.current.saveSkillConfig({
+                enabled: true,
+                levelCount: 5,
+                paletteId: 'warm',
+                autoAssign: false,
+            });
+        });
+
+        const teamName = result.current.draft.teams[0]?.name ?? '';
+        const createdNurses = result.current.draft.nurses.map((nurse, index) => ({
+            nurseId: 100 + index,
+            name: nurse.name,
+            employmentDate: nurse.employmentDate,
+            proficiency: 1,
+        }));
+
+        mockCompleteOnboardingWardDraft.mockResolvedValue({
+            ...draftWardResponse,
+            wardId: 11,
+            shiftTeams: [
+                {
+                    shiftTeamId: 101,
+                    name: teamName,
+                    nurseCnt: createdNurses.length,
+                    nurses: createdNurses,
+                },
+            ],
+        });
+
+        await act(async () => {
+            await result.current.complete();
+        });
+
+        const settings = getWardSkillSettings(11);
+
+        expect(settings?.config.enabled).toBe(true);
+        expect(Object.values(settings?.frozenLevelsByNurseId ?? {})).toEqual(createdNurses.map(() => null));
     });
 });
 

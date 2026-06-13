@@ -997,7 +997,7 @@ function MemberPage() {
                                   </button>
                                   <button
                                       type="button"
-                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
+                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                                       onClick={() => void saveDraftAndRunPendingAction()}
                                   >
                                       저장 후 나가기

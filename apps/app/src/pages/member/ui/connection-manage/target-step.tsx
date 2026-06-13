@@ -252,7 +252,7 @@ function ConnectionManageTargetStep({
                 <button
                     type="button"
                     disabled={isNextDisabled}
-                    className="h-11 w-[66%] rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2 disabled:opacity-40"
+                    className="h-11 w-[66%] rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:opacity-40"
                     onClick={onNext}
                 >
                     완료

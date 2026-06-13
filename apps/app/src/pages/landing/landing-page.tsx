@@ -546,7 +546,7 @@ function HeaderActions({
             <Link
                 to={ROUTE.MAKE}
                 aria-label="근무표 만들기"
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-[#5832E7] sm:px-4"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-main-1-hover sm:px-4"
             >
                 <CtaIcon src={webCtaIconSrc} className="size-4" />
                 <span className="hidden sm:inline">근무표 만들기</span>

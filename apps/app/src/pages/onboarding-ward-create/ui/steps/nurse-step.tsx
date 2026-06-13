@@ -558,7 +558,7 @@ function NurseStep({
                                                             className={cn(
                                                                 'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                                                 isPreceptor
-                                                                    ? 'border-main-1 bg-main-1 text-white hover:bg-main-2'
+                                                                    ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
                                                             onClick={() => onNurseChange(nurse.id, {memo: isPreceptor ? '' : '프리셉터'})}
@@ -576,7 +576,7 @@ function NurseStep({
                                                             className={cn(
                                                                 'flex h-5 w-5 items-center justify-center rounded-[5px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                                                                 isPreceptee
-                                                                    ? 'border-main-1 bg-main-1 text-white hover:bg-main-2'
+                                                                    ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
                                                             onClick={() => onNurseChange(nurse.id, {memo: isPreceptee ? '' : '프리셉티'})}

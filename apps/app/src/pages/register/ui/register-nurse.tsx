@@ -300,7 +300,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                 <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="h-11 min-w-24 cursor-pointer rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-main-3"
+                    className="h-11 min-w-24 cursor-pointer rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-main-3"
                 >
                     {isSubmitting ? '저장 중...' : '다음'}
                 </button>

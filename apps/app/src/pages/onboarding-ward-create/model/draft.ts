@@ -151,12 +151,14 @@ const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'violet', colors: ['#E8D9FF', '#D8C3FF', '#C4A8FF', '#A382F5']},
     {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
-const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
-    enabled: true,
+
+export const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
+    enabled: false,
     levelCount: 5,
     paletteId: 'warm',
     autoAssign: false,
 };
+
 const MIN_STEP = 1;
 const MAX_STEP = 4;
 
@@ -894,12 +896,19 @@ export const applyUploadedScheduleTemplateDraft = (
         };
     });
 
+    const nextShiftTypes = syncScheduleInputShiftTypes(draft.shiftTypes, scheduleInputs);
+    const nextPossibleShiftTypeIds = nextShiftTypes.map((shiftType) => shiftType.id);
+
     return {
         draft: {
             ...draft,
             uploadedFileName: fileName,
+            shiftTypes: nextShiftTypes,
             teams,
-            nurses,
+            nurses: nurses.map((nurse) => ({
+                ...nurse,
+                possibleShiftTypeIds: nextPossibleShiftTypeIds,
+            })),
             scheduleInputs,
         },
         activeTeamId: teams[0]?.id ?? null,

@@ -71,7 +71,7 @@ function ConnectionManageCompleteStep({
                     </button>
                     <button
                         type="button"
-                        className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
+                        className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                         onClick={onRestart}
                     >
                         다른 요청 보기
@@ -137,7 +137,7 @@ function ConnectionManageCompleteStep({
                         </button>
                         <button
                             type="button"
-                            className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
+                            className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                             onClick={onRetry}
                         >
                             다시 시도
@@ -154,7 +154,7 @@ function ConnectionManageCompleteStep({
                         </button>
                         <button
                             type="button"
-                            className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2"
+                            className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                             onClick={onRestart}
                         >
                             다른 요청 보기

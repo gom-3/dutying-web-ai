@@ -82,6 +82,26 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1']);
     });
 
+    it('clears nurse levels from the create payload when skill levels are disabled', () => {
+        const initialDraft = createInitialDraft();
+        const firstTeamId = initialDraft.teams[0]?.id ?? '';
+        const payload = buildCreateWardPayload({
+            ...initialDraft,
+            skillLevelConfig: {
+                ...initialDraft.skillLevelConfig,
+                enabled: false,
+            },
+            nurses: [
+                createNurseDraft(firstTeamId, {
+                    name: 'Nurse A',
+                    level: 3,
+                }),
+            ],
+        });
+
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.level).toBeNull();
+    });
+
     it('uses a safe fallback name when both ward and hospital names are blank', () => {
         const payload = buildCreateWardPayload(createInitialDraft());
 

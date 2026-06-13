@@ -138,7 +138,7 @@ function RegisterWard() {
                 <button
                     type="submit"
                     disabled={!isValid}
-                    className="mt-6 h-11 cursor-pointer gap-2 self-end rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-main-3"
+                    className="mt-6 h-11 cursor-pointer gap-2 self-end rounded-[12px] bg-main-1 px-5 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-main-3"
                 >
                     <Save className="h-4 w-4" />
                     병동 저장

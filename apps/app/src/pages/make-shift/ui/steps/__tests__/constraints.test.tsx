@@ -27,6 +27,8 @@ vi.mock('../../../model/make-shift-store', () => ({
 vi.mock('@/shared/api', () => ({
     WardAPI: {
         getShiftConstraintRuleCandidates: vi.fn(),
+        getShiftConstraintRules: vi.fn(),
+        updateShiftConstraintRules: vi.fn(),
         getShiftTeamNurses: vi.fn(),
         getShiftTypes: vi.fn(),
     },
@@ -36,6 +38,25 @@ const wardApiMocks = vi.mocked(WardAPI);
 
 describe('Constraints', () => {
     beforeEach(() => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValue({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [],
+        });
+        wardApiMocks.updateShiftConstraintRules.mockImplementation(async (wardId, shiftTeamId, payload) => ({
+            schemaVersion: 1,
+            wardId,
+            shiftTeamId,
+            rules: payload.rules.map((rule, index) => ({
+                ...rule,
+                shiftConstraintRuleId: rule.shiftConstraintRuleId ?? index + 100,
+                category: rule.templateCode === 'SOFT_NO_SAME_DUTY_PAIR' ? 'COMBINATION' : 'CORE',
+                displayText: '',
+                isValid: true,
+                invalidReason: null,
+            })),
+        }));
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValue({
             schemaVersion: 1,
             wardId: 1,
@@ -95,5 +116,78 @@ describe('Constraints', () => {
 
         expect(within(listbox).getByRole('option', {name: 'Nurse A'})).toBeInTheDocument();
         expect(within(listbox).queryByRole('option', {name: 'Nurse B'})).not.toBeInTheDocument();
+    });
+
+    it('saves changed rules through the shared shift constraint rules API', async () => {
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="flow" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(document.querySelector<HTMLButtonElement>('button[title="추가"]')!);
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({
+                            templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
+                            severity: 'SOFT',
+                            selected: true,
+                        }),
+                    ]),
+                }),
+            );
+        });
+    });
+
+    it('renders server rules with numeric params without crashing', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {},
+            templates: [
+                {
+                    templateCode: 'SOFT_NO_N_TO_D',
+                    category: 'FORBIDDEN',
+                    displayTemplate: '{target}은 N 다음날 D 근무를 피해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'NURSES'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 20,
+                    templateCode: 'SOFT_NO_N_TO_D',
+                    category: 'FORBIDDEN',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {target: 1},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        expect(await screen.findByRole('button', {name: 'Nurse A'})).toBeInTheDocument();
     });
 });

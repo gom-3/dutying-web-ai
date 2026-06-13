@@ -65,6 +65,7 @@ const typedTranslations = {
 } as const;
 
 vi.mock('react-hot-toast', () => ({
+    CheckmarkIcon: () => <span data-testid="toast-checkmark-icon" />,
     default: {
         success: (...args: unknown[]) => toastSuccess(...args),
         error: (...args: unknown[]) => toastError(...args),
@@ -643,6 +644,40 @@ describe('OnboardingWardCreatePage', () => {
         expect(customTerm.style.backgroundColor).not.toBe(dayShift.style.backgroundColor);
     });
 
+    it('keeps custom schedule cell colors aligned with the shift type step', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tCCC\tAAA',
+            },
+        });
+
+        const firstCustomTerm = screen.getByLabelText('1행 1일 근무') as HTMLInputElement;
+        const secondCustomTerm = screen.getByLabelText('1행 2일 근무') as HTMLInputElement;
+        const scheduleColorByShortName = new Map([
+            ['CCC', firstCustomTerm.style.backgroundColor],
+            ['AAA', secondCustomTerm.style.backgroundColor],
+        ]);
+        const getShiftTypeSwatchColor = (shortName: string) => {
+            const shiftTypeInput = screen.getAllByDisplayValue(shortName)[0];
+            const row = shiftTypeInput?.closest('.grid');
+            const swatch = row?.querySelector('button span[style]') as HTMLElement | null;
+
+            return swatch?.style.backgroundColor;
+        };
+
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(getShiftTypeSwatchColor('CCC')).toBe(scheduleColorByShortName.get('CCC'));
+            expect(getShiftTypeSwatchColor('AAA')).toBe(scheduleColorByShortName.get('AAA'));
+        });
+    });
+
     it('keeps existing custom shift colors when a new custom term is added', async () => {
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(userEvent.setup());
@@ -913,6 +948,38 @@ describe('OnboardingWardCreatePage', () => {
 
         expect(screen.getByText('근무명')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
+    });
+
+    it('shows ward creation progress while submission is pending', async () => {
+        const user = userEvent.setup();
+
+        let resolveCreateWard!: () => void;
+
+        mockCompleteOnboardingWardDraft.mockImplementation(
+            () =>
+                new Promise<void>((resolve) => {
+                    resolveCreateWard = resolve;
+                }),
+        );
+
+        render(<OnboardingWardCreatePage />);
+
+        await prepareValidCreationState(user);
+        await user.click(screen.getByRole('button', {name: '완료'}));
+
+        expect(screen.getByRole('dialog', {name: '병동을 세팅하고 있어요'})).toBeInTheDocument();
+        expect(screen.getByText('입력한 병동 정보를 정리하고 있어요.')).toBeInTheDocument();
+
+        const progressValue = Number(screen.getByRole('progressbar', {name: '병동 생성 진행률'}).getAttribute('aria-valuenow'));
+
+        expect(progressValue).toBeGreaterThanOrEqual(12);
+        expect(progressValue).toBeLessThanOrEqual(96);
+
+        resolveCreateWard();
+
+        await waitFor(() => {
+            expect(screen.getByText('병동 생성이 완료됐어요')).toBeInTheDocument();
+        });
     });
 
     it('shows toast and auto navigates to make after ward creation succeeds', async () => {

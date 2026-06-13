@@ -709,7 +709,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     memo: nurse.memo,
                     isWorker: nurse.isWorker,
                     employmentDate: nurse.employmentDate,
-                    level: nurse.level,
+                    level: draft.skillLevelConfig.enabled ? nurse.level : null,
                     isPreceptor: nurse.memo.trim() === '프리셉터',
                     isPreceptee: nurse.memo.trim() === '프리셉티',
                     possibleShiftShortNames: nurse.possibleShiftTypeIds

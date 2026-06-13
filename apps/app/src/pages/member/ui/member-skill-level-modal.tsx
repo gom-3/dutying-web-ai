@@ -402,7 +402,7 @@ function MemberSkillLevelModal({open, config, onClose, onSave, onDisable}: IMemb
                     ) : null}
                     <button
                         type="button"
-                        className="h-11 rounded-[10px] bg-main-1 px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-2 focus-visible:outline-2 focus-visible:outline-main-1"
+                        className="h-11 rounded-[10px] bg-main-1 px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover focus-visible:outline-2 focus-visible:outline-main-1"
                         onClick={() => {
                             onSave({...localConfig, enabled: true});
                             onClose();

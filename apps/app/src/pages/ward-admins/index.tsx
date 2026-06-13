@@ -305,7 +305,7 @@ function WardAdminsPage() {
                                 type="submit"
                                 disabled={isSubmitting || hasReachedAdminLimit}
                                 aria-label="관리자 추가"
-                                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-main-3"
+                                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-main-3"
                             >
                                 <Plus className="h-5 w-5" />
                             </button>

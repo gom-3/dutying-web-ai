@@ -18,6 +18,7 @@ import ScheduleInputStep from './ui/steps/schedule-input-step';
 import ShiftTypeStep from './ui/steps/shift-type-step';
 import SkillLevelModal from './ui/steps/skill-level-modal';
 import WardIdentityStep from './ui/steps/ward-identity-step';
+import WardCreationProgressOverlay from './ui/ward-creation-progress-overlay';
 import WizardButton from './ui/wizard-button';
 
 const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
@@ -426,6 +427,7 @@ function OnboardingWardCreatePage() {
                       modalRoot,
                   )
                 : null}
+            {isSubmitting || isSuccess ? createPortal(<WardCreationProgressOverlay isComplete={isSuccess} />, modalRoot) : null}
             <div
                 className={cn(
                     'mx-auto w-full px-4 pt-7 pb-20 sm:px-6 lg:px-0',
