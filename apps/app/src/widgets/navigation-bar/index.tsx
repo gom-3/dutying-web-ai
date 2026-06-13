@@ -26,11 +26,11 @@ const NavigationBar = () => {
         <aside
             data-testid="navigation-bar"
             className={cn(
-                'sticky top-0 z-[997] h-screen shrink-0 overflow-hidden border-r border-gray-6 bg-white font-apple shadow-[8px_0_24px_rgba(36,36,40,0.04)] transition-[width] duration-300 ease-out',
+                'sticky top-0 z-[997] min-h-screen shrink-0 overflow-x-hidden border-r border-gray-6 bg-white font-apple shadow-[8px_0_24px_rgba(36,36,40,0.04)] transition-[width] duration-300 ease-out',
                 isFold ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
             )}
         >
-            <div className={cn('flex h-full flex-col', isFold ? 'px-2 py-3' : 'px-3 py-4')}>
+            <div className={cn('flex min-h-screen flex-col', isFold ? 'px-2 py-3' : 'px-3 py-4')}>
                 <div className={cn('flex min-h-11 items-center', isFold ? 'flex-col gap-2' : 'justify-between')}>
                     <Link
                         to={ROUTE.ROOT}

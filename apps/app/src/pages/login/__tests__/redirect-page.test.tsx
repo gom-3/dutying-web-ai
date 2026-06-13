@@ -32,6 +32,9 @@ describe('RedirectPage', () => {
         clearSocialSignupProfile();
         mockedUseAuth.mockReset();
         mockedUseAuth.mockReturnValue({
+            state: {
+                _loaded: true,
+            },
             actions: {
                 handleLogin,
             },
@@ -50,6 +53,8 @@ describe('RedirectPage', () => {
 
         render(<RedirectPage />);
 
+        expect(screen.queryByLabelText('loading')).not.toBeInTheDocument();
+
         await waitFor(() => {
             expect(handleLogin).toHaveBeenCalledWith(adminToken, '/make');
         });
@@ -66,6 +71,16 @@ describe('RedirectPage', () => {
 
         await waitFor(() => {
             expect(handleLogin).toHaveBeenCalledWith(adminToken, '/request?month=3#calendar');
+        });
+    });
+
+    it('accepts access tokens from the callback hash payload', async () => {
+        window.history.replaceState({}, '', `/oauth2/redirect#access_token=${adminToken}&next=%2Frequest`);
+
+        render(<RedirectPage />);
+
+        await waitFor(() => {
+            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/request');
         });
     });
 
@@ -147,11 +162,52 @@ describe('RedirectPage', () => {
         });
     });
 
+    it('waits for persisted auth hydration before applying the callback token', async () => {
+        window.history.replaceState({}, '', `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=%2Frequest`);
+        mockedUseAuth
+            .mockReturnValueOnce({
+                state: {
+                    _loaded: false,
+                },
+                actions: {
+                    handleLogin,
+                },
+            } as never)
+            .mockReturnValue({
+                state: {
+                    _loaded: true,
+                },
+                actions: {
+                    handleLogin,
+                },
+            } as never);
+
+        const {rerender} = render(<RedirectPage />);
+
+        expect(handleLogin).not.toHaveBeenCalled();
+
+        rerender(<RedirectPage />);
+
+        await waitFor(() => {
+            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/request');
+        });
+    });
+
     it('does not trigger login without accessToken', () => {
         window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=%2Frequest');
 
         render(<RedirectPage />);
 
+        expect(handleLogin).not.toHaveBeenCalled();
+    });
+
+    it('does not stay in the loading state when the callback has no token', async () => {
+        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=%2Frequest');
+
+        render(<RedirectPage />);
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        expect(screen.queryByLabelText('loading')).not.toBeInTheDocument();
         expect(handleLogin).not.toHaveBeenCalled();
     });
 

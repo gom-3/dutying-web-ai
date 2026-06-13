@@ -8,6 +8,7 @@ import useTutorialUseCase from '@/features/tutorial';
 import {AdminAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
+import {withTimeout} from '@/shared/util/with-timeout';
 import {toAccountCompatibleAdminMe} from './model/admin-account';
 import {isWardAdminAccessToken} from './model/admin-token';
 import {buildDemoSignupLoginPath, isDemoSessionExpired} from './model/demo-session';
@@ -18,6 +19,19 @@ type THandleLoginOptions = {
     preserveDemoStartDate?: boolean;
 };
 
+const ACCOUNT_BOOTSTRAP_TIMEOUT_MS = 15000;
+
+let accountMeRequest: {id: number; accessToken: string | null; promise: Promise<void>} | null = null;
+let accountMeRequestId = 0;
+
+const canceledAccountMeRequestIds = new Set<number>();
+const clearAccountMeRequest = () => {
+    if (accountMeRequest) {
+        canceledAccountMeRequestIds.add(accountMeRequest.id);
+    }
+
+    accountMeRequest = null;
+};
 const useAuth = (activeEffect = false) => {
     const {
         accountMe,
@@ -44,6 +58,7 @@ const useAuth = (activeEffect = false) => {
     const {initTutorial} = useTutorialUseCase();
     const navigate = useNavigate();
     const resetSessionState = () => {
+        clearAccountMeRequest();
         resetRequestShiftState();
         resetState();
         setAccessToken('');
@@ -60,6 +75,8 @@ const useAuth = (activeEffect = false) => {
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
     };
     const handleLogin = (accessToken: string, nextPageUrl?: string | null, options?: THandleLoginOptions) => {
+        clearAccountMeRequest();
+        setLoading(false);
         beginLogin(accessToken, {preserveDemoStartDate: options?.preserveDemoStartDate});
         syncAccessTokenHeaders(accessToken);
 
@@ -98,16 +115,56 @@ const useAuth = (activeEffect = false) => {
         }
     };
     const handleGetAccountMe = async () => {
-        setAccountMeLoading();
+        const requestAccessToken = useAuthStore.getState().accessToken;
 
-        try {
-            const account = toAccountCompatibleAdminMe(await AdminAPI.getMe());
-
-            setAccountMeSuccess(account as TAccount);
-        } catch (error) {
-            setAccountMeError();
-            throw error;
+        if (accountMeRequest?.accessToken === requestAccessToken) {
+            return accountMeRequest.promise;
         }
+
+        const requestId = ++accountMeRequestId;
+
+        let resolveRequest: () => void = () => undefined;
+        let rejectRequest: (error: unknown) => void = () => undefined;
+
+        const requestPromise = new Promise<void>((resolve, reject) => {
+            resolveRequest = resolve;
+            rejectRequest = reject;
+        });
+
+        accountMeRequest = {id: requestId, accessToken: requestAccessToken, promise: requestPromise};
+
+        void (async () => {
+            setAccountMeLoading();
+
+            try {
+                const account = toAccountCompatibleAdminMe(
+                    await withTimeout(AdminAPI.getMe(), ACCOUNT_BOOTSTRAP_TIMEOUT_MS, 'account_bootstrap_timeout'),
+                );
+
+                if (canceledAccountMeRequestIds.has(requestId) || useAuthStore.getState().accessToken !== requestAccessToken) {
+                    resolveRequest();
+
+                    return;
+                }
+
+                setAccountMeSuccess(account as TAccount);
+                resolveRequest();
+            } catch (error) {
+                if (!canceledAccountMeRequestIds.has(requestId)) {
+                    setAccountMeError();
+                }
+
+                rejectRequest(error);
+            } finally {
+                if (accountMeRequest?.id === requestId) {
+                    accountMeRequest = null;
+                }
+
+                canceledAccountMeRequestIds.delete(requestId);
+            }
+        })();
+
+        return requestPromise;
     };
 
     useEffect(() => {

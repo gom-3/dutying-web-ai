@@ -352,11 +352,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         isModalLayout ? 'text-[26px] leading-8 tracking-[-0.01em]' : 'text-[32px] tracking-[-0.02em]',
     );
     const title = t('page.profile.title');
-    const descriptionText = hasUnsavedChanges
-        ? t('page.profile.unsavedDescription')
-        : isModalLayout
-          ? null
-          : t('page.profile.savedDescription');
+    const descriptionText = hasUnsavedChanges ? t('page.profile.unsavedDescription') : null;
     const contentClassName = cn('mx-auto', isModalLayout ? 'mt-6 max-w-none space-y-6' : 'mt-6 max-w-[480px] space-y-4');
     const profileSectionClassName = isModalLayout ? 'rounded-none border-0 bg-white p-0' : 'rounded-[24px] border-transparent p-6';
     const basicInfoSectionClassName = isModalLayout
@@ -655,7 +651,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     {saveButton}
                 </div>
             ) : (
-                <div className="sticky bottom-3 mx-auto mt-4 flex max-w-[480px] items-center justify-end py-2">{saveButton}</div>
+                <div className="mx-auto mt-6 flex max-w-[480px] items-center justify-end">{saveButton}</div>
             )}
             <ConfirmActionDialog
                 open={confirmAction !== null}

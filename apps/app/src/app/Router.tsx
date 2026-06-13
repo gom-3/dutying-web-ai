@@ -1,5 +1,6 @@
 import {Suspense, lazy} from 'react';
 import {Route, Routes} from 'react-router-dom';
+import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
@@ -8,7 +9,6 @@ import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
 const UiPreviewPage = lazy(() => import('@/pages/ui-preview'));
-const RedirectPage = lazy(() => import('@/pages/login/redirect-page.tsx'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
 const EnterWard = lazy(() => import('@/pages/register/enter-ward-page.tsx'));

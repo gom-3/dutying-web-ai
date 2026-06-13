@@ -120,6 +120,9 @@ describe('useAuth', () => {
         expect(setAccessTokenMock).toHaveBeenCalledWith(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}));
         expect(setAdminAccessTokenMock).toHaveBeenCalledWith(createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 12}));
         expect(setAccessTokenMock.mock.invocationCallOrder[0]).toBeLessThan(mockExecuteLoginRedirect.mock.invocationCallOrder[0]);
+
+        expect(mockExecuteLoginRedirect).toHaveBeenCalledWith({type: 'none'});
+        expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('does not attach non-admin tokens to the admin API client', () => {
@@ -166,12 +169,14 @@ describe('useAuth', () => {
             }),
         ).rejects.toThrow('boom');
 
-        expect(useAuthStore.getState()).toMatchObject({
-            accountMe: {accountId: 9, wardId: 99, nurseId: 19},
-            accountMeStatus: 'error',
-            accountId: 9,
-            nurseId: 19,
-            wardId: 99,
+        await vi.waitFor(() => {
+            expect(useAuthStore.getState()).toMatchObject({
+                accountMe: {accountId: 9, wardId: 99, nurseId: 19},
+                accountMeStatus: 'error',
+                accountId: 9,
+                nurseId: 19,
+                wardId: 99,
+            });
         });
     });
 

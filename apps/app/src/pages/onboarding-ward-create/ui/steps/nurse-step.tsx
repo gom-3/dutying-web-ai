@@ -375,7 +375,7 @@ function NurseStep({
                 <DragDropContext onDragEnd={handleDragEnd}>
                     <Droppable droppableId={selectedTeamId}>
                         {(provided) => (
-                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
                                 {sortedNurses.map((nurse, index) => {
                                     const isSkillMenuOpen = openedSkillMenuNurseId === nurse.id;
                                     const isPreceptor = nurse.memo.trim() === PRECEPTOR_MEMO;
@@ -397,7 +397,7 @@ function NurseStep({
                                                     }}
                                                     {...dragProvided.draggableProps}
                                                     className={cn(
-                                                        'grid items-center rounded-[12px] bg-white py-1.5',
+                                                        'grid items-center rounded-[12px] bg-white py-1',
                                                         NURSE_GRID_GAP_CLASS,
                                                         NURSE_GRID_PADDING_X,
                                                         gridTemplateClass,
@@ -424,7 +424,7 @@ function NurseStep({
                                                         }
                                                         variant="flush"
                                                         fieldSize="default"
-                                                        className={cn('text-center text-[16px] font-medium', fadedClass)}
+                                                        className={cn('h-8 text-center text-[16px] font-medium', fadedClass)}
                                                         placeholder={t('page.member.table.name')}
                                                         maxLength={MAX_ONBOARDING_NURSE_NAME_LENGTH}
                                                     />

@@ -19,6 +19,9 @@ type TNavigationBarComponentIcon = {
 
 export type TNavigationBarItemIcon = TNavigationBarImageIcon | TNavigationBarComponentIcon;
 
+const iconTapMotionClass =
+    'transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] will-change-transform group-active:scale-[0.9] group-active:duration-100 group-active:ease-out motion-reduce:transition-none';
+
 interface INavigationBarItemProps {
     path?: TRoute;
     activePaths?: TRoute[];
@@ -92,7 +95,7 @@ const NavigationBarItem = ({
                 />
             ) : null}
             {icon.kind === 'image' ? (
-                <span aria-hidden="true" className="relative size-[22px] shrink-0">
+                <span aria-hidden="true" className={cn('relative size-[22px] shrink-0', iconTapMotionClass)}>
                     <img
                         src={icon.defaultSrc}
                         alt=""
@@ -127,7 +130,11 @@ const NavigationBarItem = ({
                 </span>
             ) : CurrentComponentIcon ? (
                 <CurrentComponentIcon
-                    className={cn('size-5 shrink-0', isSelected ? 'text-[#844AFF]' : 'text-gray-4 group-hover:text-sub-1')}
+                    className={cn(
+                        'size-5 shrink-0',
+                        iconTapMotionClass,
+                        isSelected ? 'text-[#844AFF]' : 'text-gray-4 group-hover:text-sub-1',
+                    )}
                     aria-hidden="true"
                 />
             ) : null}

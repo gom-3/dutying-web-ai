@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Helmet} from 'react-helmet';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import useAuth from '@/features/auth';
@@ -14,8 +14,9 @@ import DemoSessionBanner from './demo-session-banner';
 export const AuthLayout = () => {
     const [currentTime, setCurrentTime] = useState(() => Date.now());
     const navigate = useNavigate();
-    const {pathname} = useLocation();
+    const {pathname, search} = useLocation();
     const {t} = useTypedTranslation();
+    const accountBootstrapTokenRef = useRef<string | null>(null);
     const {
         state: {isAuth, isDemoExpired, accountMe, accountMeStatus, accessToken, demoStartDate, _loaded},
         actions: {handleGetAccountMe, handleLogout, setDemoExpired, startDemoSignupTransition},
@@ -30,7 +31,8 @@ export const AuthLayout = () => {
         }
 
         if (!isAuth || !accessToken) {
-            navigate(ROUTE.LOGIN);
+            navigate(`${ROUTE.LOGIN}?next=${encodeURIComponent(`${pathname}${search}`)}`, {replace: true});
+
             return;
         }
 
@@ -43,7 +45,28 @@ export const AuthLayout = () => {
             if (![ROUTE.REGISTER, ROUTE.REGISTER_WARD, ROUTE.ENTER_WARD, ROUTE.ONBOARDING_WARD_CREATE].includes(pathname))
                 navigate(ROUTE.REGISTER);
         }
-    }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname]);
+    }, [_loaded, accessToken, accountMe, isAuth, navigate, pathname, search]);
+
+    useEffect(() => {
+        if (!_loaded || !isAuth || !accessToken) {
+            accountBootstrapTokenRef.current = null;
+
+            return;
+        }
+
+        if (accountMeStatus === 'success' || accountMeStatus === 'error') {
+            accountBootstrapTokenRef.current = null;
+
+            return;
+        }
+
+        if (accountBootstrapTokenRef.current === accessToken) {
+            return;
+        }
+
+        accountBootstrapTokenRef.current = accessToken;
+        void handleGetAccountMe().catch(() => undefined);
+    }, [_loaded, accessToken, accountMeStatus, handleGetAccountMe, isAuth]);
 
     useEffect(() => {
         setCurrentTime(Date.now());

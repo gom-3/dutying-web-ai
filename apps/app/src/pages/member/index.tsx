@@ -1340,7 +1340,7 @@ function MemberPage() {
                         {!isActiveTeamEmpty ? (
                             <div
                                 className={cn(
-                                    'grid items-center py-3 font-apple text-[16px] text-gray-3',
+                                    'grid items-center py-2 font-apple text-[16px] text-gray-3',
                                     MEMBER_GRID_GAP_CLASS,
                                     MEMBER_GRID_PADDING_X,
                                     isSkillFeatureEnabled ? MEMBER_GRID_COLS_WITH_SKILL : MEMBER_GRID_COLS_WITHOUT_SKILL,
@@ -1370,12 +1370,12 @@ function MemberPage() {
                             </div>
                         ) : null}
 
-                        <div className="space-y-2 pb-4">
+                        <div className="space-y-1.5 pb-4">
                             {!isActiveTeamEmpty ? (
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <Droppable droppableId={String(activeShiftTeam?.shiftTeamId ?? 0)}>
                                         {(provided) => (
-                                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-2">
+                                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
                                                 {displayedNurses.map((nurse, index) => (
                                                     <Draggable key={nurse.nurseId} draggableId={String(nurse.nurseId)} index={index}>
                                                         {(dragProvided) => (
@@ -1627,7 +1627,7 @@ function MemberNurseRow({
                 ref={dragRef}
                 {...draggableProps}
                 className={cn(
-                    'relative grid w-full items-center rounded-[12px] border py-[6px] text-left transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                    'relative grid w-full items-center rounded-[12px] border py-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                     MEMBER_GRID_GAP_CLASS,
                     MEMBER_GRID_PADDING_X,
                     isSkillFeatureEnabled ? MEMBER_GRID_COLS_WITH_SKILL : MEMBER_GRID_COLS_WITHOUT_SKILL,
@@ -1676,7 +1676,7 @@ function MemberNurseRow({
                     }}
                     variant="flush"
                     fieldSize="default"
-                    className={cn('min-w-0 text-center text-[16px] font-medium text-sub-1', fadedClass)}
+                    className={cn('h-8 min-w-0 text-center text-[16px] font-medium text-sub-1', fadedClass)}
                     placeholder="-"
                     maxLength={30}
                 />

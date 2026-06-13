@@ -170,9 +170,9 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
     return (
         <nav
             aria-label={t('page.navigationBar.ariaLabel')}
-            className={cn('flex min-h-0 w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}
+            className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}
         >
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div>
                 <WardIdentity collapsed={collapsed} ward={ward} />
                 {sections.map((section, sectionIndex) => (
                     <div
