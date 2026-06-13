@@ -661,7 +661,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isLoginDisabled}
-                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 {t('page.login.submitLogin')}
@@ -724,7 +724,7 @@ function LoginPage() {
                                             <button
                                                 type="button"
                                                 disabled={!hasPasswordResetCode || isConfirmingPasswordReset || isPasswordResetTokenVerified}
-                                                className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                                className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                                 onClick={handleConfirmPasswordResetToken}
                                             >
                                                 {isConfirmingPasswordReset ? (
@@ -790,7 +790,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isPasswordResetDisabled}
-                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isResettingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 {t('page.login.passwordResetSubmit')}
@@ -879,7 +879,7 @@ function LoginPage() {
                                         <button
                                             type="button"
                                             disabled={!hasSignupVerificationCode || isConfirmingSignupVerification || isSignupEmailVerified}
-                                            className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
+                                            className="flex h-11 w-[76px] shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-2 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-gray-6 disabled:text-gray-3"
                                             onClick={handleConfirmSignupEmailVerification}
                                         >
                                             {isConfirmingSignupVerification ? (
@@ -941,7 +941,7 @@ function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={isSignupDisabled}
-                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-[#5832E7] disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
+                                className="mx-auto flex h-[44px] w-full max-w-[334px] cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[1px] border-main-1 bg-main-1 px-[12px] text-sm font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:border-transparent disabled:bg-gray-6 disabled:text-gray-3"
                             >
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 {t('page.login.submitSignup')}

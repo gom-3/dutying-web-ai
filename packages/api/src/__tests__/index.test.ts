@@ -270,6 +270,52 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenCalledWith('/wards/onboarding/schedule-input/preview', request);
     });
 
+    it('gets and updates shift constraint rules for a shift team', async () => {
+        const client = createClient();
+        const getMock = client.get as ReturnType<typeof vi.fn>;
+        const putMock = client.put as ReturnType<typeof vi.fn>;
+        const wardApi = createWardApi(client);
+        const response = {
+            schemaVersion: 1,
+            wardId: 7,
+            shiftTeamId: 3,
+            rules: [
+                {
+                    shiftConstraintRuleId: 12,
+                    templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
+                    category: 'COMBINATION',
+                    severity: 'SOFT' as const,
+                    sortOrder: 1,
+                    params: {nurseA: 'A', nurseB: 'B'},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        };
+        const payload = {
+            rules: [
+                {
+                    shiftConstraintRuleId: 12,
+                    templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
+                    severity: 'SOFT' as const,
+                    sortOrder: 1,
+                    params: {nurseA: 'A', nurseB: 'B'},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        };
+
+        getMock.mockResolvedValueOnce({data: response});
+        putMock.mockResolvedValueOnce({data: response});
+
+        await expect(wardApi.getShiftConstraintRules(7, 3)).resolves.toEqual(response);
+        await expect(wardApi.updateShiftConstraintRules(7, 3, payload)).resolves.toEqual(response);
+
+        expect(getMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules');
+        expect(putMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/shift-constraint-rules', payload);
+    });
+
     it('builds the account deletion endpoint', async () => {
         const client = createClient();
         const deleteMock = client.delete as ReturnType<typeof vi.fn>;

@@ -26,8 +26,8 @@ import {
     type TWardSkillSettings,
 } from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
-import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
 import i18n from '@/i18n';
+import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
 import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
@@ -60,6 +60,7 @@ const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId =>
         const parsed = JSON.parse(value) as Record<string, unknown>;
         const entries = Object.entries(parsed).flatMap(([teamId, nurseIds]) => {
             if (!Array.isArray(nurseIds)) return [];
+
             const numericTeamId = Number.parseInt(teamId, 10);
 
             if (Number.isNaN(numericTeamId)) return [];
@@ -74,7 +75,6 @@ const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId =>
         return {};
     }
 };
-
 const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
@@ -267,10 +267,12 @@ function MemberPage() {
     useEffect(() => {
         if (!wardId) {
             setManualOrderByTeamId({});
+
             return;
         }
 
         const stored = localStorage.getItem(getMemberManualOrderStorageKey(wardId));
+
         setManualOrderByTeamId(parseManualOrderByTeamId(stored));
     }, [wardId]);
     useEffect(() => {
@@ -346,6 +348,7 @@ function MemberPage() {
     useEffect(() => {
         if (!shiftTeams?.length) {
             setActiveShiftTeamId(null);
+
             return;
         }
 
@@ -375,6 +378,7 @@ function MemberPage() {
 
             if (selectedShiftTeam) {
                 setActiveShiftTeamId(selectedShiftTeam.shiftTeamId);
+
                 return;
             }
         }
@@ -397,6 +401,7 @@ function MemberPage() {
     }, [sortMenuOpen]);
     useEffect(() => {
         if (isSkillFeatureEnabled) return;
+
         if (nurseSortMode !== 'skill') return;
 
         setNurseSortMode('manual');
@@ -448,6 +453,7 @@ function MemberPage() {
             if (prev.has(selectedNurse.nurseId)) return prev;
 
             const next = new Set(prev);
+
             next.add(selectedNurse.nurseId);
 
             return next;
@@ -533,6 +539,7 @@ function MemberPage() {
 
         const onVisibilityChange = () => {
             if (document.visibilityState !== 'visible') return;
+
             skipFlipForReentry();
         };
 
@@ -698,7 +705,9 @@ function MemberPage() {
             })
         )
             return;
+
         if (!activeShiftTeam) return;
+
         const deletingTeamName = activeShiftTeam.name;
 
         if ((activeShiftTeam.nurseCnt ?? activeShiftTeam.nurses.length) === 0) {
@@ -794,6 +803,7 @@ function MemberPage() {
                 reorderNurseForWorkerToggle(nurse.shiftTeamId, nurse.nurseId, nurse.isWorker);
                 setPendingWorkerByNurseId((prev) => {
                     const next = {...prev};
+
                     delete next[nurse.nurseId];
 
                     return next;
@@ -805,6 +815,7 @@ function MemberPage() {
 
         return true;
     };
+
     useEffect(() => {
         if (Object.keys(pendingWorkerByNurseId).length === 0) {
             return;
@@ -812,12 +823,14 @@ function MemberPage() {
 
         setPendingWorkerByNurseId((prev) => {
             const next = {...prev};
+
             let changed = false;
 
             allNurses.forEach((nurse) => {
                 const pending = next[nurse.nurseId];
 
                 if (pending == null) return;
+
                 if (pending !== nurse.isWorker) return;
 
                 delete next[nurse.nurseId];
@@ -827,6 +840,7 @@ function MemberPage() {
             return changed ? next : prev;
         });
     }, [allNurses, pendingWorkerByNurseId]);
+
     const handleCreateShiftTeam = async () => {
         if (
             shouldBlockForUnsavedChanges(async () => {
@@ -844,6 +858,7 @@ function MemberPage() {
         }
 
         const createdShiftTeam = await createShiftTeam();
+
         if (createdShiftTeam?.shiftTeamId) {
             setActiveShiftTeamId(createdShiftTeam.shiftTeamId);
             selectNurse(null);
@@ -853,11 +868,11 @@ function MemberPage() {
             nextSearchParams.set('shiftTeamId', String(createdShiftTeam.shiftTeamId));
             setSearchParams(nextSearchParams, {replace: true});
         }
+
         sendEvent(events.memberPage.createShiftTeam);
         toast.success(t('page.member.toast.createTeam', {teamNumber: teamCount + 1}), {position: 'bottom-center'});
     };
     const modalRoot = document.getElementById('modal-root') ?? document.body;
-
     const handleAddNurse = async () => {
         if (
             shouldBlockForUnsavedChanges(async () => {
@@ -865,6 +880,7 @@ function MemberPage() {
             })
         )
             return;
+
         if (!activeShiftTeam) return;
 
         const activeTeamNurseCount = activeShiftTeam.nurses.length;
@@ -884,6 +900,7 @@ function MemberPage() {
             })
         )
             return false;
+
         if (!selectedNurse || !shiftTeams) return false;
 
         const payload = createMoveNurseToTeamPayload({
@@ -937,8 +954,8 @@ function MemberPage() {
     const totalNurseCount = allNurses.length;
     const connectedNurseCount = allNurses.filter((nurse) => nurse.isConnected).length;
     const unconnectedNurseCount = Math.max(0, totalNurseCount - connectedNurseCount);
-    const hospitalName = ward?.hospitalName?.trim() || '-';
-    const wardName = ward?.name?.trim() || '-';
+    const hospitalName = ward?.hospitalName?.trim() ?? '-';
+    const wardName = ward?.name?.trim() ?? '-';
     const wardGuideTitle = getWardDisplayTitle(ward);
     const wardGuideCode = getWardDisplayCode(ward, '-');
 
@@ -963,8 +980,8 @@ function MemberPage() {
                                   <button
                                       type="button"
                                       className="h-11 flex-1 rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                  onClick={() => setShowDeleteTeamModal(false)}
-                              >
+                                      onClick={() => setShowDeleteTeamModal(false)}
+                                  >
                                       {t('page.member.common.close')}
                                   </button>
                                   <button
@@ -1011,22 +1028,22 @@ function MemberPage() {
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                                  onClick={cancelPendingUnsavedAction}
-                              >
+                                      onClick={cancelPendingUnsavedAction}
+                                  >
                                       {t('page.member.common.cancel')}
                                   </button>
                                   <button
                                       type="button"
                                       className="h-11 rounded-[10px] bg-[#FFF5F5] px-4 font-apple text-[15px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC]"
-                                  onClick={() => void discardDraftAndRunPendingAction()}
-                              >
+                                      onClick={() => void discardDraftAndRunPendingAction()}
+                                  >
                                       {t('page.member.common.discard')}
                                   </button>
                                   <button
                                       type="button"
-                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
-                                  onClick={() => void saveDraftAndRunPendingAction()}
-                              >
+                                      className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-1-hover"
+                                      onClick={() => void saveDraftAndRunPendingAction()}
+                                  >
                                       {t('page.member.common.saveAndLeave')}
                                   </button>
                               </div>
@@ -1404,6 +1421,7 @@ function MemberPage() {
                                                                         })
                                                                     )
                                                                         return;
+
                                                                     selectNurse(nurse.nurseId);
                                                                     sendEvent(events.memberPage.focusNurse);
                                                                 }}
@@ -1481,8 +1499,7 @@ function MemberPage() {
                                 onRegisterDraftActions={handleRegisterNurseDraftActions}
                                 isSkillFeatureEnabled={isSkillFeatureEnabled}
                                 isSkillUnselected={
-                                    unselectedSkillNurseIds.has(selectedNurse.nurseId) ||
-                                    levelsByNurseId[selectedNurse.nurseId] == null
+                                    unselectedSkillNurseIds.has(selectedNurse.nurseId) || levelsByNurseId[selectedNurse.nurseId] == null
                                 }
                                 onSaveSkillLevel={(nextLevel) => {
                                     if (!isSkillFeatureEnabled) return;
@@ -1735,6 +1752,7 @@ function MemberNurseRow({
                                     ? shiftTypeColorById.get(shiftType.wardShiftTypeId)
                                     : undefined) ?? '#BFC7D4';
                             const badgeBackgroundColor = selected ? baseColor : tintHexColor(baseColor, 0.45);
+
                             return (
                                 <button
                                     key={shiftType.apiShiftTypeId}
@@ -1809,6 +1827,7 @@ function MemberNurseRow({
                         onClick={async (event) => {
                             event.stopPropagation();
                             onSelect();
+
                             const nextIsPreceptor = !isPreceptor;
 
                             await onUpdateNurse(nurse.nurseId, {
@@ -1836,6 +1855,7 @@ function MemberNurseRow({
                         onClick={async (event) => {
                             event.stopPropagation();
                             onSelect();
+
                             const nextIsPreceptee = !isPreceptee;
 
                             await onUpdateNurse(nurse.nurseId, {

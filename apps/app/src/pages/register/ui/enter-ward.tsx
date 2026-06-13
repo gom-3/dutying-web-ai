@@ -214,7 +214,7 @@ function EnterWard() {
                                   <button
                                       type="button"
                                       onClick={() => ward && enterWard(ward.wardId)}
-                                      className="h-11 cursor-pointer gap-2 rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7]"
+                                      className="h-11 cursor-pointer gap-2 rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover"
                                   >
                                       <Check className="h-4 w-4" />
                                       {t('page.register.enterWard.submit')}

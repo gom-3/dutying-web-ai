@@ -40,7 +40,7 @@ const managementActionVariants = cva(
     {
         variants: {
             variant: {
-                primary: 'bg-main-1 text-white hover:bg-main-2',
+                primary: 'bg-main-1 text-white hover:bg-main-1-hover',
                 secondary: 'bg-main-light text-main-1 hover:bg-main-4',
                 neutral: 'bg-gray-6 text-gray-3 hover:bg-gray-5',
                 outline: 'border border-main-1 bg-transparent text-main-1 hover:bg-main-light',

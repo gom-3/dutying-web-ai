@@ -120,7 +120,7 @@ const getRequestShiftType = (request: TDutyRequest, wardShiftTypeMap: Map<number
 const getActionButtonClassName = ({active, tone}: {active: boolean; tone: 'accept' | 'reject'}) =>
     twMerge(
         'h-8 min-w-0 cursor-pointer rounded-[10px] px-1.5 font-apple text-[11px] font-semibold transition-colors min-[1440px]:px-2 min-[1440px]:text-[12px] disabled:cursor-wait disabled:opacity-60',
-        active && tone === 'accept' && 'bg-main-1 text-white hover:bg-main-2',
+        active && tone === 'accept' && 'bg-main-1 text-white hover:bg-main-1-hover',
         active && tone === 'reject' && 'bg-gray-3 text-white hover:bg-sub-2',
         !active && 'bg-[#EDF2F7] text-gray-3 hover:bg-[#E4ECF5] hover:text-sub-1',
     );

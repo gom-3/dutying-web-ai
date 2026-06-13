@@ -182,6 +182,39 @@ export type TShiftConstraintRuleCandidatesResponse = {
     templates: TShiftConstraintTemplate[];
 };
 
+export type TShiftConstraintRuleResponse = {
+    shiftConstraintRuleId?: number;
+    templateCode: string;
+    category: string;
+    severity: TShiftConstraintSeverity;
+    sortOrder: number;
+    params: Record<string, unknown>;
+    selected?: boolean;
+    isImportant?: boolean;
+    displayText?: string;
+    isValid?: boolean;
+    invalidReason?: string | null;
+};
+
+export type TShiftConstraintRulesResponse = {
+    schemaVersion: number;
+    wardId: number;
+    shiftTeamId: number;
+    rules: TShiftConstraintRuleResponse[];
+};
+
+export type TUpdateShiftConstraintRulesDTO = {
+    rules: {
+        shiftConstraintRuleId?: number;
+        templateCode: string;
+        severity: TShiftConstraintSeverity;
+        sortOrder: number;
+        params: Record<string, unknown>;
+        selected?: boolean;
+        isImportant?: boolean;
+    }[];
+};
+
 export type TAiConstraintViolationPeriod = {
     start_day: number;
     end_day: number;
@@ -477,6 +510,12 @@ export interface IWardAPI {
     getWard: (wardId: number) => Promise<TWardResponse>;
     getWardConstraint: (wardId: number, shiftTeamId: number) => Promise<TWardConstraintResponse>;
     getShiftConstraintRuleCandidates: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRuleCandidatesResponse>;
+    getShiftConstraintRules: (wardId: number, shiftTeamId: number) => Promise<TShiftConstraintRulesResponse>;
+    updateShiftConstraintRules: (
+        wardId: number,
+        shiftTeamId: number,
+        constraintRules: TUpdateShiftConstraintRulesDTO,
+    ) => Promise<TShiftConstraintRulesResponse>;
     getWardByCode: (code: string) => Promise<TWardResponse>;
     getWaitingNurses: (wardId: number) => Promise<TWaitingNurseResponse[]>;
     createWard: (createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;

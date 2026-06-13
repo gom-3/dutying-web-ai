@@ -4,6 +4,7 @@ import {
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
+    applyUploadedScheduleTemplateDraft,
     canComplete,
     canGoNext,
     createInitialDraft,
@@ -123,6 +124,7 @@ describe('OnboardingWardCreatePage model', () => {
 
     it('limits shift types to the maximum count', () => {
         const draft = createInitialDraft();
+
         let maxShiftDraft = draft;
 
         for (let index = draft.shiftTypes.length; index < MAX_ONBOARDING_SHIFT_TYPES; index += 1) {
@@ -203,10 +205,7 @@ describe('OnboardingWardCreatePage model', () => {
         const clearedDraft = applyScheduleInputDraft(withNurses, teamId, {
             year: 2026,
             month: 5,
-            rows: [
-                {...nurseARow!, name: ''},
-                nurseBRow!,
-            ],
+            rows: [{...nurseARow!, name: ''}, nurseBRow!],
         });
 
         expect(clearedDraft.nurses.map((nurse) => nurse.name)).toEqual(['Nurse B']);
@@ -297,7 +296,6 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 4 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-
         const koreanNameDraft = updateNurseDraft(draft, nurseId, {name: '신규 간호사 1'});
         const englishNameDraft = updateNurseDraft(draft, nurseId, {name: 'Nurse 1'});
 
@@ -455,7 +453,6 @@ describe('OnboardingWardCreatePage model', () => {
     it('converts manual schedule input rows into initial shifts for save payload', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
-
         const nextDraft = applyScheduleInputDraft(draft, teamId, {
             year: 2026,
             month: 5,
@@ -497,6 +494,34 @@ describe('OnboardingWardCreatePage model', () => {
         );
         expect(customShiftType?.color).not.toBe('#BFC7D4');
         expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.nurseId).toBe(nurse?.id);
+    });
+
+    it('syncs custom shift types discovered only from an uploaded schedule template', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const {draft: nextDraft} = applyUploadedScheduleTemplateDraft(draft, {
+            fileName: 'schedule-template.xlsx',
+            year: 2026,
+            month: 5,
+            teamSchedules: [
+                {
+                    teamName: 'Team A',
+                    rows: [
+                        {
+                            name: 'Nurse A',
+                            shifts: {'1': 'CCC', '2': 'AAA'},
+                        },
+                    ],
+                },
+            ],
+        });
+        const customShiftTypes = nextDraft.shiftTypes.filter((shiftType) => ['AAA', 'CCC'].includes(shiftType.shortName));
+        const nurse = nextDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
+        const teamId = nextDraft.teams[0]?.id ?? '';
+
+        expect(customShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['AAA', 'CCC']);
+        expect(customShiftTypes.map((shiftType) => shiftType.color)).toEqual([DEFAULT_SHIFT_TYPE_COLORS[4], DEFAULT_SHIFT_TYPE_COLORS[5]]);
+        expect(nurse?.possibleShiftTypeIds).toEqual(nextDraft.shiftTypes.map((shiftType) => shiftType.id));
+        expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'CCC', '2': 'AAA'});
     });
 
     it('removes schedule-generated shift types when the entered code is cleared', () => {

@@ -647,7 +647,7 @@ function NurseDetailPanel({
                     <button
                         type="button"
                         disabled={isBusy || (!isDirty && !isSkillDirty)}
-                        className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
+                        className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >
                         {t('page.member.detail.saveAction')}
@@ -775,7 +775,7 @@ function NurseDetailPanel({
                                       </button>
                                       <button
                                           type="button"
-                                          className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-2"
+                                          className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                                           onClick={async () => {
                                               const saved = await handleSave();
 

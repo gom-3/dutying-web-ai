@@ -49,7 +49,9 @@ const getAccountRole = (account: unknown, currentWardId?: number | null) => {
 };
 const getApiErrorCode = (error: unknown) =>
     typeof error === 'object' && error !== null && 'code' in error ? (error as {code?: number}).code : undefined;
+
 type TWardAdminRoleLabelKey = 'page.wardAdmins.role.owner' | 'page.wardAdmins.role.editor';
+
 const getRoleLabelKey = (role: string): TWardAdminRoleLabelKey =>
     role === 'OWNER' ? 'page.wardAdmins.role.owner' : 'page.wardAdmins.role.editor';
 const isActiveWardMembershipStatus = (status?: string | null) => status === undefined || status === null || status === 'ACTIVE';
@@ -116,9 +118,7 @@ function ActiveAdminRow({
                 <p className="truncate text-sm font-semibold text-sub-1">{adminEmail}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">
-                    {t(getRoleLabelKey(admin.role))}
-                </span>
+                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{t(getRoleLabelKey(admin.role))}</span>
                 {canRemove ? (
                     <button
                         type="button"
@@ -154,9 +154,7 @@ function ReservedAdminEmailRow({
                 <p className="truncate text-sm font-semibold text-sub-1">{admin.email}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">
-                    {t(getRoleLabelKey(admin.role))}
-                </span>
+                <span className="rounded-full bg-gray-7 px-3 py-1 text-xs font-semibold text-main-1">{t(getRoleLabelKey(admin.role))}</span>
                 {canRemove ? (
                     <button
                         type="button"
@@ -194,13 +192,9 @@ function WardAdminsPage() {
             WardAPI.createWardAdminEmail(wardId ?? 0, {
                 email: normalizedEmail,
                 role: 'EDITOR',
-        }),
+            }),
         onSuccess: async (result) => {
-            toast.success(
-                result.status === 'ACTIVE'
-                    ? t('page.wardAdmins.toast.createActive')
-                    : t('page.wardAdmins.toast.createReserved'),
-            );
+            toast.success(result.status === 'ACTIVE' ? t('page.wardAdmins.toast.createActive') : t('page.wardAdmins.toast.createReserved'));
             setEmail('');
             await invalidateAdmins();
         },
@@ -336,7 +330,7 @@ function WardAdminsPage() {
                                 type="submit"
                                 disabled={isSubmitting || hasReachedAdminLimit}
                                 aria-label={t('page.wardAdmins.addAria')}
-                                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:bg-main-3"
+                                className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-main-3"
                             >
                                 <Plus className="h-5 w-5" />
                             </button>
@@ -380,9 +374,7 @@ function WardAdminsPage() {
                             ))}
                         </>
                     ) : (
-                        <p className="rounded-[12px] bg-gray-7 px-4 py-5 text-sm text-gray-3">
-                            {t('page.wardAdmins.emptyAdmins')}
-                        </p>
+                        <p className="rounded-[12px] bg-gray-7 px-4 py-5 text-sm text-gray-3">{t('page.wardAdmins.emptyAdmins')}</p>
                     )}
                 </div>
             </section>

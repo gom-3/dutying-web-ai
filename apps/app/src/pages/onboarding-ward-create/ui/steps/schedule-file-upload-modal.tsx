@@ -292,7 +292,7 @@ function ScheduleFileUploadModal({
                         </Button>
                         <Button
                             type="button"
-                            className="h-11 rounded-[12px] bg-[#107C41] text-[15px] font-semibold text-white shadow-none hover:bg-[#0E6F3A] disabled:bg-[#C7D8CC]"
+                            className="h-11 rounded-[12px] bg-main-1 text-[15px] font-semibold text-white shadow-none hover:bg-main-1-hover disabled:bg-main-3"
                             disabled={!canSubmit}
                             onClick={() => void handleSubmit()}
                         >

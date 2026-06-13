@@ -645,10 +645,7 @@ export const isSupportedOnboardingUploadFile = (fileName: string) =>
         getOnboardingUploadExtension(fileName) as (typeof SUPPORTED_ONBOARDING_UPLOAD_EXTENSIONS)[number],
     );
 
-export const getOnboardingUploadFailureMessage = (
-    error: unknown,
-    copy: TOnboardingUploadFailureCopy = DEFAULT_UPLOAD_FAILURE_COPY,
-) => {
+export const getOnboardingUploadFailureMessage = (error: unknown, copy: TOnboardingUploadFailureCopy = DEFAULT_UPLOAD_FAILURE_COPY) => {
     const message = error instanceof Error ? error.message.trim() : '';
 
     if (!message) {
@@ -733,7 +730,7 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     memo: nurse.memo,
                     isWorker: nurse.isWorker,
                     employmentDate: nurse.employmentDate,
-                    level: nurse.level,
+                    level: draft.skillLevelConfig.enabled ? nurse.level : null,
                     isPreceptor: nurse.memo.trim() === PRECEPTOR_MEMO,
                     isPreceptee: nurse.memo.trim() === PRECEPTEE_MEMO,
                     possibleShiftShortNames: nurse.possibleShiftTypeIds

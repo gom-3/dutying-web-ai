@@ -1,5 +1,7 @@
 import {Check, Info, Plus, RefreshCcw, Save, Trash2, X} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
+import {useSearchParams} from 'react-router';
+import WardCreationProgressOverlay from '@/pages/onboarding-ward-create/ui/ward-creation-progress-overlay';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
 import Select from '@/shared/ui/form-controls/Select';
@@ -51,11 +53,14 @@ function SampleBox({label, children}: {label: string; children: ReactNode}) {
 }
 
 function UiPreviewPage() {
+    const [searchParams] = useSearchParams();
     const [toggleOn, setToggleOn] = useState(true);
     const [switchOn, setSwitchOn] = useState(false);
     const [selectValue, setSelectValue] = useState('day');
     const [nameValue, setNameValue] = useState('김듀팅');
     const [inputValue, setInputValue] = useState('Sample input');
+    const wardCreationLoadingPreview = searchParams.get('wardCreationLoading');
+    const shouldShowWardCreationPreview = wardCreationLoadingPreview === 'submitting' || wardCreationLoadingPreview === 'complete';
 
     return (
         <TooltipProvider>
@@ -221,6 +226,29 @@ function UiPreviewPage() {
                     </div>
                 </PreviewSection>
 
+                <PreviewSection title="Onboarding ward creation" description="Open the fixed progress overlay used after ward creation.">
+                    <div className="flex flex-wrap gap-3">
+                        <a
+                            href="/__ui?wardCreationLoading=submitting"
+                            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-main-1 px-5 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
+                        >
+                            생성 중 오버레이 보기
+                        </a>
+                        <a
+                            href="/__ui?wardCreationLoading=complete"
+                            className="inline-flex h-11 items-center justify-center rounded-[14px] border border-gray-6 bg-white px-5 font-apple text-[14px] font-semibold text-sub-1 transition-colors hover:bg-gray-7"
+                        >
+                            완료 상태 보기
+                        </a>
+                        <a
+                            href="/__ui"
+                            className="inline-flex h-11 items-center justify-center rounded-[14px] px-2 font-apple text-[14px] font-semibold text-gray-3 underline underline-offset-2 transition-colors hover:text-sub-1"
+                        >
+                            닫기
+                        </a>
+                    </div>
+                </PreviewSection>
+
                 <PreviewSection title="Icon states">
                     <div className="grid gap-4 sm:grid-cols-3">
                         <SampleBox label="success">
@@ -244,6 +272,7 @@ function UiPreviewPage() {
                     </div>
                 </PreviewSection>
             </main>
+            {shouldShowWardCreationPreview ? <WardCreationProgressOverlay isComplete={wardCreationLoadingPreview === 'complete'} /> : null}
         </TooltipProvider>
     );
 }

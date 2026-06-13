@@ -8,6 +8,12 @@ import * as Sentry from '@sentry/react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/register';
+import {
+    clampSkillLevel,
+    saveWardSkillSettings,
+    type TSkillLevelValue,
+    type TWardSkillSettings,
+} from '@/features/ward-skill/model/skill-level';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -28,6 +34,7 @@ import {
     canGoNext,
     canGoPrev,
     createInitialDraft,
+    DEFAULT_SKILL_LEVEL_CONFIG,
     deleteNurseDraft,
     deleteShiftTypeDraft,
     deleteTeamDraft,
@@ -39,6 +46,7 @@ import {
     hasScheduleInputDraft,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
+    normalizeNurseNameForRequest,
     prepareManualEntryDraft,
     saveSkillLevelConfig,
     type TOnboardingNurseDraft,
@@ -86,7 +94,6 @@ const parseScheduleTemplateSafely = async (file: File, options?: TOnboardingWard
 type TPersistedOnboardingWardDraft = {
     draft: TOnboardingWardDraft;
     draftWardId: number | null;
-    isSkillLevelEnabled: boolean;
     selectedTeamId: string;
     sortMode: TSortMode;
 };
@@ -121,6 +128,16 @@ const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['schedule
         }),
     );
 };
+const normalizeRestoredSkillLevelConfig = (value: unknown, legacyEnabled: unknown): TOnboardingWardDraft['skillLevelConfig'] => {
+    const config = isRecord(value) ? (value as Partial<TSkillLevelConfig>) : {};
+    const enabled = typeof legacyEnabled === 'boolean' ? legacyEnabled : config.enabled;
+
+    return {
+        ...DEFAULT_SKILL_LEVEL_CONFIG,
+        ...config,
+        enabled: enabled ?? DEFAULT_SKILL_LEVEL_CONFIG.enabled,
+    };
+};
 const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
@@ -146,10 +163,10 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     return {
         draft: {
             ...restoredDraft,
+            skillLevelConfig: normalizeRestoredSkillLevelConfig(restoredDraft.skillLevelConfig, payload.isSkillLevelEnabled),
             scheduleInputs: normalizeScheduleInputs(restoredDraft.scheduleInputs),
         },
         draftWardId,
-        isSkillLevelEnabled: payload.isSkillLevelEnabled === true,
         selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
         sortMode: isSortMode(payload.sortMode) ? payload.sortMode : 'manual',
     };
@@ -157,13 +174,12 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
 const buildServerOnboardingWardDraftPayload = (
     draft: TOnboardingWardDraft,
     draftWardId: number | null,
-    isSkillLevelEnabled: boolean,
     selectedTeamId: string,
     sortMode: TSortMode,
 ): Record<string, unknown> => ({
     draft,
     draftWardId,
-    isSkillLevelEnabled,
+    isSkillLevelEnabled: draft.skillLevelConfig.enabled,
     selectedTeamId,
     sortMode,
 });
@@ -479,6 +495,84 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWard
     };
 };
 
+type TCreatedWardSkillNurse = {
+    nurseId: number;
+    name: string;
+    employmentDate: string;
+    proficiency?: number | null;
+    level?: number | null;
+};
+
+const getSkillLevelKey = (teamName: string | null | undefined, nurseName: string) =>
+    `${teamName?.trim() ?? ''}:${normalizeNurseNameForRequest(nurseName)}`;
+const getManualSkillLevel = (value: number | null | undefined, levelCount: number): TSkillLevelValue => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return null;
+    }
+
+    return clampSkillLevel(value, levelCount);
+};
+const buildOnboardingWardSkillSettings = (
+    draft: TOnboardingWardDraft,
+    ward: TOnboardingWardCreateSubmission['ward'],
+): TWardSkillSettings | null => {
+    if (!ward?.wardId) {
+        return null;
+    }
+
+    const config = draft.skillLevelConfig.enabled
+        ? draft.skillLevelConfig
+        : {
+              ...draft.skillLevelConfig,
+              enabled: false,
+              autoAssign: false,
+          };
+
+    if (!config.enabled || config.autoAssign) {
+        return {
+            config,
+            frozenLevelsByNurseId: {},
+        };
+    }
+
+    const teamNameById = new Map(draft.teams.map((team) => [team.id, team.name]));
+    const draftLevelByTeamAndNurseName = new Map(
+        draft.nurses.map((nurse) => [getSkillLevelKey(teamNameById.get(nurse.teamId), nurse.name), nurse.level]),
+    );
+    const frozenLevelsByNurseId: TWardSkillSettings['frozenLevelsByNurseId'] = {};
+
+    (ward.shiftTeams ?? []).forEach((shiftTeam) => {
+        (shiftTeam.nurses ?? []).forEach((nurse) => {
+            const skillNurse = nurse as TCreatedWardSkillNurse;
+            const skillLevelKey = getSkillLevelKey(shiftTeam.name, skillNurse.name);
+            const hasDraftLevel = draftLevelByTeamAndNurseName.has(skillLevelKey);
+            const draftLevel = draftLevelByTeamAndNurseName.get(skillLevelKey);
+            const serverLevel =
+                typeof skillNurse.proficiency === 'number'
+                    ? skillNurse.proficiency
+                    : typeof skillNurse.level === 'number'
+                      ? skillNurse.level
+                      : undefined;
+
+            frozenLevelsByNurseId[skillNurse.nurseId] = getManualSkillLevel(hasDraftLevel ? draftLevel : serverLevel, config.levelCount);
+        });
+    });
+
+    return {
+        config,
+        frozenLevelsByNurseId,
+    };
+};
+const saveOnboardingWardSkillSettings = (draft: TOnboardingWardDraft, ward: TOnboardingWardCreateSubmission['ward']) => {
+    const settings = buildOnboardingWardSkillSettings(draft, ward);
+
+    if (!settings || !ward?.wardId) {
+        return;
+    }
+
+    saveWardSkillSettings(ward.wardId, settings);
+};
+
 function useOnboardingWardWizard() {
     const {t} = useTypedTranslation();
     const {
@@ -496,7 +590,6 @@ function useOnboardingWardWizard() {
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
-    const [isSkillLevelEnabled, setIsSkillLevelEnabled] = useState(false);
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -510,6 +603,7 @@ function useOnboardingWardWizard() {
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
         [completeOnboardingWardDraft, createWard, draftWardId],
     );
+    const isSkillLevelEnabled = draft.skillLevelConfig.enabled;
     const markDraftTouched = () => {
         draftTouchedRef.current = true;
     };
@@ -535,7 +629,6 @@ function useOnboardingWardWizard() {
                         setDraft(restoredDraftState.draft);
                         setSelectedTeamId(restoredDraftState.selectedTeamId);
                         setSortModeState(restoredDraftState.sortMode);
-                        setIsSkillLevelEnabled(restoredDraftState.isSkillLevelEnabled);
                     } else {
                         setDraft((prev) => ({
                             ...prev,
@@ -585,13 +678,7 @@ function useOnboardingWardWizard() {
 
             const targetDraft = draftOverride ?? draft;
             const identityPayload = buildDraftWardIdentityPayload(targetDraft, fallbackWardName);
-            const draftPayload = buildServerOnboardingWardDraftPayload(
-                targetDraft,
-                draftWardId,
-                isSkillLevelEnabled,
-                selectedTeamId,
-                sortMode,
-            );
+            const draftPayload = buildServerOnboardingWardDraftPayload(targetDraft, draftWardId, selectedTeamId, sortMode);
 
             try {
                 if (draftWardId) {
@@ -643,7 +730,6 @@ function useOnboardingWardWizard() {
             draftCreationStatus,
             draftWardId,
             fallbackWardName,
-            isSkillLevelEnabled,
             saveOnboardingWardDraft,
             selectedTeamId,
             sortMode,
@@ -714,7 +800,6 @@ function useOnboardingWardWizard() {
         setDraft(restoredDraftState.draft);
         setSelectedTeamId(restoredDraftState.selectedTeamId);
         setSortModeState(restoredDraftState.sortMode);
-        setIsSkillLevelEnabled(restoredDraftState.isSkillLevelEnabled);
     };
     const saveAndReloadDraft = async (nextDraft: TOnboardingWardDraft) => {
         const isSaved = await saveDraftSnapshot({showErrorToast: true, draftOverride: nextDraft});
@@ -856,7 +941,8 @@ function useOnboardingWardWizard() {
         setDraft(nextDraft);
 
         if (addedTeamId) {
-            const addedTeamName = nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
+            const addedTeamName =
+                nextDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
 
             setSelectedTeamId(addedTeamId);
             toast.success(t('page.onboardingWardCreate.toast.addTeam', {teamName: addedTeamName}), {position: 'bottom-center'});
@@ -876,7 +962,8 @@ function useOnboardingWardWizard() {
                 return;
             }
 
-            const targetTeamName = draft.teams.find((team) => team.id === targetTeamId)?.name ?? t('page.onboardingWardCreate.fallback.selectedTeam');
+            const targetTeamName =
+                draft.teams.find((team) => team.id === targetTeamId)?.name ?? t('page.onboardingWardCreate.fallback.selectedTeam');
 
             setDraft((prev) => addNurseDraft(prev, targetTeamId));
             toast.success(t('page.onboardingWardCreate.toast.addNurseToTeam', {teamName: targetTeamName}), {
@@ -894,7 +981,8 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        const addedTeamName = withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
+        const addedTeamName =
+            withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
 
         setDraft(addNurseDraft(withTeamDraft, addedTeamId));
         setSelectedTeamId(addedTeamId);
@@ -1058,6 +1146,7 @@ function useOnboardingWardWizard() {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
                 failedRow: (rowLabel) => t('page.onboardingWardCreate.upload.failedRow', {rowLabel}),
             });
+
             let nextActiveTeamId: string | null = null;
 
             setDraft((prev) => {
@@ -1100,13 +1189,18 @@ function useOnboardingWardWizard() {
     };
     const saveSkillConfig = (config: TSkillLevelConfig) => {
         markDraftTouched();
-        setDraft((prev) => saveSkillLevelConfig(prev, config));
-        setIsSkillLevelEnabled(true);
+        setDraft((prev) => saveSkillLevelConfig(prev, {...config, enabled: true}));
         toast.success(t('page.onboardingWardCreate.toast.skillConfigSaved'));
     };
     const disableSkillConfig = () => {
         markDraftTouched();
-        setIsSkillLevelEnabled(false);
+        setDraft((prev) =>
+            saveSkillLevelConfig(prev, {
+                ...prev.skillLevelConfig,
+                enabled: false,
+                autoAssign: false,
+            }),
+        );
 
         if (sortMode === 'skill') {
             setSortModeState('manual');
@@ -1139,6 +1233,7 @@ function useOnboardingWardWizard() {
         try {
             const submission = await onboardingWardCreateExecutor(nextDraft);
 
+            saveOnboardingWardSkillSettings(nextDraft, submission.ward);
             setCreatedWard(submission.ward ?? null);
             setSubmissionStatus('success');
             toast.success(t('page.onboardingWardCreate.toast.completeSuccess'));

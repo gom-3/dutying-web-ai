@@ -73,7 +73,7 @@ function ConfirmActionDialog({
                             type="button"
                             className={cn(
                                 'h-11 rounded-[12px] text-[15px] font-semibold text-white shadow-none',
-                                isDanger ? 'bg-[#D14343] hover:bg-[#BD3434]' : 'bg-main-1 hover:bg-[#5832E7]',
+                                isDanger ? 'bg-[#D14343] hover:bg-[#BD3434]' : 'bg-main-1 hover:bg-main-1-hover',
                             )}
                             onClick={onConfirm}
                         >

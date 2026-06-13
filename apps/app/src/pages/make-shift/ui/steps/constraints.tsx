@@ -156,8 +156,8 @@ const RECOMMENDED_DEFAULT_RULE_IDS = new Set([
     'IMPORTANT_FORBIDDEN_DUTY_PATTERNS',
 ]);
 
-function hasFinalConsonant(value: string) {
-    const trimmed = value.trim();
+function hasFinalConsonant(value: unknown) {
+    const trimmed = String(value ?? '').trim();
     const lastChar = trimmed.charAt(trimmed.length - 1);
 
     if (!lastChar) return false;
@@ -672,6 +672,7 @@ function createRecommendedDefaultRules(templates: TSoftRuleTemplate[], optionMap
                 severity: 'SOFT',
                 sortOrder: index + 1,
                 params,
+                selected: true,
                 isImportant: true,
                 displayText: template.buildText(params),
                 isValid: true,
@@ -686,12 +687,17 @@ function createVisibleSoftRules(
     optionMap: Record<string, TSelectOption[]> = {},
 ) {
     const defaults = createRecommendedDefaultRules(templates, optionMap);
-    const defaultTemplateCodes = new Set(defaults.map((rule) => rule.templateCode));
     const loadedRules = fromServerRules(serverRules);
-
-    return [...defaults, ...loadedRules.filter((rule) => rule.severity === 'SOFT' && !defaultTemplateCodes.has(rule.templateCode))].map(
-        (rule, index) => ({...rule, sortOrder: index + 1}),
+    const hiddenTemplateCodes = new Set(loadedRules.filter((rule) => rule.selected === false).map((rule) => rule.templateCode));
+    const selectedRules = loadedRules.filter((rule) => rule.selected !== false);
+    const selectedTemplateCodes = new Set(selectedRules.map((rule) => rule.templateCode));
+    const visibleDefaults = defaults.filter(
+        (rule) => !selectedTemplateCodes.has(rule.templateCode) && !hiddenTemplateCodes.has(rule.templateCode),
     );
+    const visibleServerRules = selectedRules.filter((rule) => rule.severity === 'SOFT');
+    const hiddenServerRules = loadedRules.filter((rule) => rule.selected === false);
+
+    return [...visibleDefaults, ...visibleServerRules, ...hiddenServerRules].map((rule, index) => ({...rule, sortOrder: index + 1}));
 }
 
 function getOptionKey(option: TShiftConstraintOption) {
@@ -927,7 +933,14 @@ function mergeCandidateOptionMap(
         nurse,
         preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
         preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee ?? nurse, shiftTypes, t),
-        level: getCandidateOptions(candidates, 'level', ['proficiencies', 'levels', 'PROFICIENCIES', 'LEVELS'], fallback.level, shiftTypes, t),
+        level: getCandidateOptions(
+            candidates,
+            'level',
+            ['proficiencies', 'levels', 'PROFICIENCIES', 'LEVELS'],
+            fallback.level,
+            shiftTypes,
+            t,
+        ),
         dutyStrict: duty.filter((option) => !isAllCandidateOption({type: option.value, label: option.label, code: option.shortName})),
     };
 }
@@ -971,6 +984,59 @@ function getOptionsForControl(
     if (!priorNurseValues.size) return options;
 
     return options.filter((option) => !priorNurseValues.has(option.label) && !priorNurseValues.has(option.value));
+}
+
+function stringifyRuleParamValue(value: unknown): string {
+    if (value == null) return '';
+
+    if (typeof value === 'string') return value;
+
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') return String(value);
+
+    if (isConstraintOption(value)) return getValueLabel(value);
+
+    if (Array.isArray(value)) return value.map(stringifyRuleParamValue).filter(Boolean).join(', ');
+
+    if (typeof value === 'object') {
+        const maybe = value as Record<string, unknown>;
+        const label = maybe.label ?? maybe.name ?? maybe.code ?? maybe.value ?? maybe.id;
+
+        if (label != null) return stringifyRuleParamValue(label);
+    }
+
+    return '';
+}
+
+function getControlParamString(control: TControlDef, value: unknown, optionMap: Record<string, TSelectOption[]>) {
+    const stringValue = stringifyRuleParamValue(value);
+
+    if (control.kind === 'number') return stringValue;
+
+    const options = optionMap[control.optionsKey ?? ''] ?? [];
+    const matchedOption = options.find((option) => {
+        const candidates = [option.label, option.value, option.shortName, option.name].filter(Boolean).map(String);
+
+        return candidates.includes(stringValue);
+    });
+
+    return matchedOption?.label ?? stringValue;
+}
+
+function normalizeSoftRuleParams(
+    template: TSoftRuleTemplate,
+    params: Record<string, unknown>,
+    optionMap: Record<string, TSelectOption[]>,
+): Record<string, string> {
+    const normalized = Object.fromEntries(Object.entries(params).map(([key, value]) => [key, stringifyRuleParamValue(value)])) as Record<
+        string,
+        string
+    >;
+
+    template.controls.forEach((control) => {
+        normalized[control.key] = getControlParamString(control, params[control.key], optionMap);
+    });
+
+    return normalizeCombinationParams(template, normalized, optionMap);
 }
 
 function getControlDisplayValue(
@@ -1163,12 +1229,14 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
 
 type TSoftSentenceProps = {
     template: TSoftRuleTemplate;
-    params: Record<string, string>;
+    params: Record<string, unknown>;
     optionMap: Record<string, TSelectOption[]>;
     onParamChange: (key: string, value: string) => void;
 };
 
 function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenceProps) {
+    const displayParams = useMemo(() => normalizeSoftRuleParams(template, params, optionMap), [optionMap, params, template]);
+
     return (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] leading-7">
             {template.sentence.map((part, idx) => {
@@ -1198,7 +1266,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
 
                 if (part.type === 'particle') {
                     const control = template.controls.find((item) => item.key === part.key);
-                    const particleValue = getControlDisplayValue(control, template, params, optionMap);
+                    const particleValue = getControlDisplayValue(control, template, displayParams, optionMap);
 
                     return (
                         <span key={`${template.id}-particle-${idx}`} className="font-apple text-[14px] font-medium text-sub-1">
@@ -1215,7 +1283,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                     const min = control.min ?? 1;
                     const max = control.max ?? min;
                     const values = control.values ?? Array.from({length: max - min + 1}, (_, i) => min + i);
-                    const current = Number(getControlDisplayValue(control, template, params, optionMap) || values[0] || min);
+                    const current = Number(getControlDisplayValue(control, template, displayParams, optionMap) || values[0] || min);
 
                     return (
                         <InlineDropdown
@@ -1228,8 +1296,8 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                     );
                 }
 
-                const options = getOptionsForControl(control, template, params, optionMap);
-                const selected = getControlDisplayValue(control, template, params, optionMap);
+                const options = getOptionsForControl(control, template, displayParams, optionMap);
+                const selected = getControlDisplayValue(control, template, displayParams, optionMap);
 
                 return (
                     <InlineDropdown
@@ -1317,11 +1385,7 @@ function ImportantToggle({
             type="button"
             role="checkbox"
             aria-checked={checked}
-            aria-label={
-                checked
-                    ? t('page.makeShift.constraints.important.ariaRemove')
-                    : t('page.makeShift.constraints.important.ariaMark')
-            }
+            aria-label={checked ? t('page.makeShift.constraints.important.ariaRemove') : t('page.makeShift.constraints.important.ariaMark')}
             title={
                 isRecommended
                     ? t('page.makeShift.constraints.important.recommendedTitle')
@@ -1367,7 +1431,7 @@ const RuleRow = memo(function RuleRow({
                 {softTemplate ? (
                     <SoftSentence
                         template={softTemplate}
-                        params={rule.params as Record<string, string>}
+                        params={rule.params}
                         optionMap={optionMap}
                         onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
                     />
@@ -1415,9 +1479,7 @@ function Section({action, children}: TSectionProps) {
         <section className="mb-4">
             <div className="rounded-[18px] bg-[#F8F9FB] px-3 pt-5 pb-8">
                 <div className="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3">
-                    <span className="font-apple text-[13px] font-bold text-gray-4">
-                        {t('page.makeShift.constraints.listTitle')}
-                    </span>
+                    <span className="font-apple text-[13px] font-bold text-gray-4">{t('page.makeShift.constraints.listTitle')}</span>
                     {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
                 </div>
                 <div className="space-y-2.5">{children}</div>
@@ -1441,9 +1503,7 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
     const currentTeam = teams.find((team) => team.shiftTeamId === currentShiftTeamId);
     const hasMultipleTeams = teams.length >= 2;
     const disabled = currentShiftTeamId == null || !hasMultipleTeams || sourceTeams.length === 0 || importingShiftTeamId !== null;
-    const title = hasMultipleTeams
-        ? t('page.makeShift.constraints.import.title')
-        : t('page.makeShift.constraints.import.disabledTitle');
+    const title = hasMultipleTeams ? t('page.makeShift.constraints.import.title') : t('page.makeShift.constraints.import.disabledTitle');
 
     useEffect(() => {
         if (!open) return;
@@ -1624,9 +1684,7 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
             <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
-                        <p className="font-apple text-[28px] font-bold text-sub-1">
-                            {t('page.makeShift.constraints.modal.title')}
-                        </p>
+                        <p className="font-apple text-[28px] font-bold text-sub-1">{t('page.makeShift.constraints.modal.title')}</p>
                         <p className="mt-1 font-apple text-[13px] font-medium text-gray-4">
                             {t('page.makeShift.constraints.modal.description')}
                         </p>
@@ -1688,7 +1746,7 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                                     <button
                                         type="button"
                                         onClick={() => onAdd(template, templateParams)}
-                                        className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                        className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-1-hover focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
                                         aria-label={t('page.makeShift.constraints.modal.addAria')}
                                         title={t('page.makeShift.constraints.modal.addTitle')}
                                     >
@@ -1726,9 +1784,7 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
             <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <p className="font-apple text-[20px] font-bold text-sub-1">
-                    {isDelete
-                        ? t('page.makeShift.constraints.warning.deleteTitle')
-                        : t('page.makeShift.constraints.warning.unmarkTitle')}
+                    {isDelete ? t('page.makeShift.constraints.warning.deleteTitle') : t('page.makeShift.constraints.warning.unmarkTitle')}
                 </p>
                 <p className="mt-2 font-apple text-[14px] leading-6 text-gray-4">
                     {t('page.makeShift.constraints.warning.description')}{' '}
@@ -1789,6 +1845,7 @@ export function Constraints({
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
+    const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
         queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -1797,7 +1854,7 @@ export function Constraints({
         refetchOnWindowFocus: false,
     });
     const rulesQuery = useQuery({
-        queryKey: shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1),
+        queryKey: rulesQueryKey,
         queryFn: () => getShiftConstraintRules(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
         refetchOnWindowFocus: false,
@@ -1946,7 +2003,7 @@ export function Constraints({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
-    const softRules = rules.filter((rule) => rule.severity === 'SOFT');
+    const softRules = rules.filter((rule) => rule.severity === 'SOFT' && rule.selected !== false);
     const isLoading = candidatesQuery.isPending || rulesQuery.isPending;
     const isLoadError = rulesQuery.isError;
     const softRuleViewModels = useMemo(
@@ -1969,6 +2026,7 @@ export function Constraints({
             severity: 'SOFT',
             sortOrder: softRules.length + 1,
             params,
+            selected: true,
             isImportant: Boolean(template.isRecommended),
             displayText: template.buildText(params),
             isValid: true,
@@ -1977,10 +2035,11 @@ export function Constraints({
 
         updateRules((prev) => {
             const hard = prev.filter((r) => r.severity === 'HARD');
-            const soft = prev.filter((r) => r.severity === 'SOFT');
+            const soft = prev.filter((r) => r.severity === 'SOFT' && r.selected !== false);
+            const hidden = prev.filter((r) => r.selected === false && r.templateCode !== nextRule.templateCode);
             const nextSoft = [...soft, nextRule].map((r, idx) => ({...r, sortOrder: idx + 1}));
 
-            return [...hard, ...nextSoft];
+            return [...hard, ...nextSoft, ...hidden];
         });
         setHighlightedRuleId(nextRule.clientId);
         setSoftModalOpen(false);
@@ -2041,11 +2100,8 @@ export function Constraints({
                 prev.map((item) => {
                     if (item.clientId !== clientId) return item;
 
-                    const nextParams = normalizeCombinationParams(
-                        template,
-                        {...item.params, [key]: value} as Record<string, string>,
-                        optionMap,
-                    );
+                    const currentParams = normalizeSoftRuleParams(template, item.params, optionMap);
+                    const nextParams = normalizeCombinationParams(template, {...currentParams, [key]: value}, optionMap);
 
                     return {
                         ...item,
@@ -2091,7 +2147,11 @@ export function Constraints({
         if (!recommendedWarning) return;
 
         if (recommendedWarning.action === 'delete') {
-            updateRules((prev) => prev.filter((item) => item.clientId !== recommendedWarning.rule.clientId));
+            updateRules((prev) =>
+                prev.map((item) =>
+                    item.clientId === recommendedWarning.rule.clientId ? {...item, selected: false, isImportant: false} : item,
+                ),
+            );
             toast.success(t('page.makeShift.constraints.toast.recommendedDeleted'));
         } else {
             setRuleImportant(recommendedWarning.rule.clientId, false);

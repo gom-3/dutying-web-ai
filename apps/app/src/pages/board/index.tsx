@@ -1389,7 +1389,7 @@ function WardScheduleModal({
                         {!isViewMode ? (
                             <button
                                 type="submit"
-                                className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="h-10 rounded-[8px] bg-main-1 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:opacity-40"
                                 disabled={disabled || deleting}
                             >
                                 {isEditMode ? boardT('common.update') : boardT('common.submit')}
@@ -1525,7 +1525,7 @@ function DeadlineCalendar({
                             <button
                                 id="board_schedule_create_button"
                                 type="button"
-                                className="grid h-7 w-7 place-items-center rounded-[7px] bg-main-1 text-white transition-colors hover:bg-main-2"
+                                className="grid h-7 w-7 place-items-center rounded-[7px] bg-main-1 text-white transition-colors hover:bg-main-1-hover"
                                 onClick={() => onCreateSchedule(defaultScheduleDate)}
                                 aria-label={boardT('schedule.createAria')}
                                 title={boardT('schedule.createAria')}
@@ -2521,7 +2521,7 @@ function BoardPage() {
                                 <button
                                     id="board_composer_submit"
                                     type="submit"
-                                    className="h-10 w-full rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-2 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+                                    className="h-10 w-full rounded-[8px] bg-main-1 px-4 text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
                                     disabled={createPostMutation.isPending || isPostImageReading}
                                 >
                                     {boardT('common.submit')}

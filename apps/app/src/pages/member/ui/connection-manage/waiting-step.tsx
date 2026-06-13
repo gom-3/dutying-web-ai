@@ -56,7 +56,7 @@ function ConnectionManageWaitingStep({waitingNurses, onClose, onAccept, onReject
                                 <div className="ml-auto flex items-center gap-2">
                                     <button
                                         type="button"
-                                        className="h-9 rounded-[8px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
+                                        className="h-9 rounded-[8px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover"
                                         onClick={() => onAccept(waitingNurse)}
                                     >
                                         {t('page.member.connectionManage.waiting.accept')}

@@ -323,7 +323,7 @@ function OnboardingJoinWardPage() {
                                               <button
                                                   type="button"
                                                   onClick={() => setIsPermissionModalOpen(false)}
-                                                  className="mt-8 flex h-11 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-[#5832E7]"
+                                                  className="mt-8 flex h-11 cursor-pointer items-center justify-center rounded-[12px] bg-main-1 px-4 text-sm font-semibold text-white transition-colors hover:bg-main-1-hover"
                                               >
                                                   {t('page.onboardingJoinWard.permission.confirm')}
                                               </button>

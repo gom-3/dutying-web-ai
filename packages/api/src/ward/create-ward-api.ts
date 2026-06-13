@@ -19,6 +19,7 @@ import type {
     TReadWardChatDTO,
     TRequestShiftResponse,
     TShiftConstraintRuleCandidatesResponse,
+    TShiftConstraintRulesResponse,
     TShiftResponse,
     TShiftTeamResponse,
     TSnapshotDetailRes,
@@ -26,6 +27,7 @@ import type {
     TOnboardingWardDraftResponse,
     TSnapshotSaveRes,
     TUpdateOnboardingWardDraftDTO,
+    TUpdateShiftConstraintRulesDTO,
     TUpdateShiftTeamDTO,
     TValidationRes,
     TWaitingNurseResponse,
@@ -198,6 +200,23 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             (
                 await client.get<TShiftConstraintRuleCandidatesResponse>(
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules/candidates`),
+                )
+            ).data,
+        getShiftConstraintRules: async (wardId: number, shiftTeamId: number) =>
+            (
+                await client.get<TShiftConstraintRulesResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`),
+                )
+            ).data,
+        updateShiftConstraintRules: async (
+            wardId: number,
+            shiftTeamId: number,
+            constraintRules: TUpdateShiftConstraintRulesDTO,
+        ) =>
+            (
+                await client.put<TShiftConstraintRulesResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`),
+                    constraintRules,
                 )
             ).data,
         updateWardConstraint: async (wardId: number, shiftTeamId: number, constraint: TWardConstraintDTO) =>

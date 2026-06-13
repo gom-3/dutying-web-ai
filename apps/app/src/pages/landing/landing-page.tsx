@@ -587,7 +587,10 @@ function HeaderActions({
 
     if (!isAuth) {
         return (
-            <nav aria-label={t('page.navigationBar.items.account')} className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]">
+            <nav
+                aria-label={t('page.navigationBar.items.account')}
+                className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]"
+            >
                 <Link to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
                     {t('page.landing.common.login')}
                 </Link>
@@ -616,7 +619,7 @@ function HeaderActions({
             <Link
                 to={ROUTE.MAKE}
                 aria-label={t('page.landing.common.makeSchedule')}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-[#5832E7] sm:px-4"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-[10px] bg-main-1 px-3 text-sm font-bold text-white transition-colors hover:bg-main-1-hover sm:px-4"
             >
                 <CtaIcon src={webCtaIconSrc} className="size-4" />
                 <span className="hidden sm:inline">{t('page.landing.common.makeSchedule')}</span>
