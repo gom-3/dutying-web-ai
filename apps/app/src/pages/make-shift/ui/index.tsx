@@ -47,7 +47,8 @@ export const MakeShiftPageView = () => {
     const isOverview = phase === 'overview';
     const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
-    const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
+    const currentShiftTeamName =
+        shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
     const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
     const draftStep = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
     const hasProgress = shiftStatus === 'success' && (draftStep !== null || shiftExists || shiftFullyAssigned);
@@ -58,11 +59,18 @@ export const MakeShiftPageView = () => {
 
     return (
         <div
-            className="min-h-full w-full overflow-x-auto transition-[padding-right] duration-300 ease-out"
-            style={{paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'}}
+            className={cn(
+                'min-h-full w-full transition-[padding-right] duration-300 ease-out',
+                isStepping ? 'overflow-x-auto' : 'overflow-x-hidden',
+            )}
+            style={{paddingRight: isStepping ? 'var(--make-ai-snapshot-sidebar-offset, 0px)' : 0}}
         >
-            {/* /request와 같은 외곽 밀도. 근무표는 31일 폭이 필요해 최소 폭만 유지한다. */}
-            <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-[1510px] flex-col px-6 pt-4 pb-3 min-[1440px]:px-10">
+            <div
+                className={cn(
+                    'mx-auto flex min-h-full w-full flex-col pt-4 pb-3',
+                    isStepping ? 'max-w-[1680px] min-w-[1510px] px-6 lg:px-10' : 'max-w-[1640px] px-4 sm:px-6 lg:px-10',
+                )}
+            >
                 <MakeShiftHeader />
 
                 <div

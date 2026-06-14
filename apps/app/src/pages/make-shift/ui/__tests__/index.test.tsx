@@ -94,11 +94,14 @@ describe('MakeShiftPageView layout', () => {
             maxReachedStep: currentStep,
         };
 
-        render(<MakeShiftPageView />);
-
+        const {container} = render(<MakeShiftPageView />);
+        const pageRoot = container.firstElementChild;
+        const pageFrame = pageRoot?.firstElementChild;
         const stepContentWrapper = screen.getByTestId('make-shift-step-content').parentElement;
         const contentCard = screen.getByTestId('make-shift-stepper').parentElement;
 
+        expect(pageRoot).toHaveClass('overflow-x-auto');
+        expect(pageFrame).toHaveClass('min-w-[1510px]');
         expect(contentCard).toHaveClass('overflow-visible');
         expect(contentCard).not.toHaveClass('overflow-hidden');
         expect(contentCard).not.toHaveClass('min-h-0');
@@ -114,10 +117,14 @@ describe('MakeShiftPageView layout', () => {
             shiftStatus: 'pending',
         };
 
-        render(<MakeShiftPageView />);
-
+        const {container} = render(<MakeShiftPageView />);
+        const pageRoot = container.firstElementChild;
+        const pageFrame = pageRoot?.firstElementChild;
         const contentCard = screen.getByTestId('make-shift-header').nextElementSibling;
 
+        expect(pageRoot).toHaveClass('overflow-x-hidden');
+        expect(pageFrame).toHaveClass('max-w-[1640px]');
+        expect(pageFrame).not.toHaveClass('min-w-[1510px]');
         expect(contentCard).toHaveClass('overflow-hidden');
         expect(contentCard).toHaveClass('min-h-0');
     });
