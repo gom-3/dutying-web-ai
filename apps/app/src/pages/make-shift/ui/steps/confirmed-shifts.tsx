@@ -82,12 +82,12 @@ export function ConfirmedShifts() {
             />
             <div id="make_confirmed_shifts_step" className="confirmed-shifts-root flex w-full min-w-0 flex-col gap-3 pt-3 outline-none">
                 <div className="confirmed-shifts-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1 pl-8 min-[1440px]:pl-10">
-                        <h1 className="confirmed-shifts-toolbar__title truncate font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1440px]:text-[28px]">
+                    <div className="min-w-0 flex-1 pl-8 min-[1600px]:pl-10">
+                        <h1 className="confirmed-shifts-toolbar__title truncate font-apple text-[26px] leading-tight font-bold text-sub-1 min-[1600px]:text-[28px]">
                             {t('page.makeShift.confirmedShifts.title', {teamName, month})}
                         </h1>
-                        <div className="mt-3 flex min-w-0 items-center gap-1.5 min-[1440px]:mt-4">
-                            <p className="confirmed-shifts-toolbar__hint truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1440px]:text-[16px] min-[1440px]:leading-[28px]">
+                        <div className="mt-3 flex min-w-0 items-center gap-1.5 min-[1600px]:mt-4">
+                            <p className="confirmed-shifts-toolbar__hint truncate font-apple text-[15px] leading-[26px] font-medium text-gray-3 min-[1600px]:text-[16px] min-[1600px]:leading-[28px]">
                                 {t('page.makeShift.confirmedShifts.hint')}
                             </p>
                             <TooltipProvider delayDuration={120}>

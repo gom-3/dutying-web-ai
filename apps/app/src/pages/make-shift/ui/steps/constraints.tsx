@@ -1837,7 +1837,10 @@ export function Constraints({
     const month = monthProp ?? storeMonth;
     const enabled = wardId !== null && wardId !== undefined && currentShiftTeamId !== null && currentShiftTeamId !== undefined;
     const frameClassName = variant === 'settings' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
-    const surfaceWidthClassName = variant === 'settings' ? 'w-full' : 'w-full min-w-[920px] max-w-[1088px]';
+    const surfaceWidthClassName =
+        variant === 'settings'
+            ? 'w-full'
+            : 'w-full min-w-[720px] max-w-[920px] min-[1400px]:min-w-[740px] min-[1400px]:max-w-[1000px] min-[1600px]:min-w-[920px] min-[1600px]:max-w-[1088px]';
     const surfacePaddingYClassName = variant === 'settings' ? 'py-[clamp(10px,1.1vw,16px)]' : 'py-0';
     const [rules, setRules] = useState<TShiftConstraintRuleDraft[]>([]);
     const rulesRef = useRef<TShiftConstraintRuleDraft[]>([]);

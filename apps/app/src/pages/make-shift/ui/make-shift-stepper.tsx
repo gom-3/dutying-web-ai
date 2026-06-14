@@ -88,8 +88,12 @@ export function MakeShiftStepper({
     const visibleSteps = isConfirmedStep ? ([6] as TMakeShiftStep[]) : MAKE_SHIFT_STEPS;
 
     return (
-        <nav id="make_stepper" className="make-shift-stepper w-full px-3 pt-8" aria-label={t('page.makeShift.progress.ariaLabel')}>
-            <div className="relative pb-6 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-['']">
+        <nav
+            id="make_stepper"
+            className="make-shift-stepper w-full px-2 pt-5 min-[1600px]:px-3 min-[1600px]:pt-8"
+            aria-label={t('page.makeShift.progress.ariaLabel')}
+        >
+            <div className="relative pb-4 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-[''] min-[1600px]:pb-6">
                 <ol
                     className={cn(
                         'grid px-1 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none',

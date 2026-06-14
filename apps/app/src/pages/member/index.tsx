@@ -76,8 +76,8 @@ const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId =>
     }
 };
 const TEAM_NAME_MAX_LENGTH = 12;
-const MEMBER_GRID_PADDING_X = 'px-4';
-const MEMBER_GRID_GAP_CLASS = 'gap-x-2';
+const MEMBER_GRID_PADDING_X = 'px-3 min-[1600px]:px-4';
+const MEMBER_GRID_GAP_CLASS = 'gap-x-1.5 min-[1600px]:gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
     'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
@@ -1052,48 +1052,48 @@ function MemberPage() {
                       modalRoot,
                   )
                 : null}
-            <div className="mx-auto flex min-h-screen w-full max-w-[1560px] min-w-[1280px] gap-4 overflow-visible px-6 pt-11 pb-12 min-[1440px]:min-w-[1360px] min-[1440px]:gap-5 min-[1440px]:px-10 min-[1440px]:pt-[52px] min-[1440px]:pb-14">
-                <section className="min-w-[840px] flex-1">
-                    <div id="ward_info" className="flex min-w-0 items-center gap-4 min-[1440px]:gap-5">
+            <div className="mx-auto flex min-h-screen w-full max-w-[1560px] min-w-0 gap-2 overflow-visible px-3 pt-5 pb-6 min-[1400px]:gap-3 min-[1400px]:px-4 min-[1400px]:pt-6 min-[1400px]:pb-8 min-[1600px]:min-w-[1360px] min-[1600px]:gap-5 min-[1600px]:px-10 min-[1600px]:pt-[52px] min-[1600px]:pb-14">
+                <section className="min-w-0 flex-1">
+                    <div id="ward_info" className="flex min-w-0 flex-wrap items-center gap-3 min-[1600px]:gap-5">
                         <div className="shrink-0">
-                            <h1 className="font-apple text-[30px] font-semibold text-text-1 min-[1440px]:text-[32px]">
+                            <h1 className="font-apple text-[28px] font-semibold text-text-1 min-[1600px]:text-[32px]">
                                 {t('page.member.title')}
                             </h1>
                         </div>
-                        <div className="flex min-w-0 items-center gap-1.5 min-[1440px]:gap-2">
-                            <div className="flex h-11 max-w-[360px] min-w-[300px] items-center justify-center rounded-[10px] bg-white px-3 min-[1440px]:h-[46px] min-[1440px]:max-w-none min-[1440px]:min-w-[370px] min-[1440px]:px-4">
-                                <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 pr-3 min-[1440px]:gap-2 min-[1440px]:pr-4">
-                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1440px]:text-[16px]">
+                        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 min-[1600px]:gap-2">
+                            <div className="flex h-10 max-w-[320px] min-w-[240px] items-center justify-center rounded-[10px] bg-white px-3 min-[1400px]:max-w-[340px] min-[1400px]:min-w-[260px] min-[1600px]:h-[46px] min-[1600px]:max-w-none min-[1600px]:min-w-[370px] min-[1600px]:px-4">
+                                <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 pr-3 min-[1600px]:gap-2 min-[1600px]:pr-4">
+                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1600px]:text-[16px]">
                                         {hospitalName}
                                     </span>
-                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1440px]:text-[16px]">
+                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1600px]:text-[16px]">
                                         {wardName}
                                     </span>
                                 </div>
                                 <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
-                                <div className="flex shrink-0 items-center justify-center gap-2 pl-3 min-[1440px]:gap-3 min-[1440px]:pl-4">
-                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
-                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                <div className="flex shrink-0 items-center justify-center gap-2 pl-3 min-[1600px]:gap-3 min-[1600px]:pl-4">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1600px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1600px]:text-[14px]">
                                             {t('page.member.summary.totalNurses')}
                                         </span>
-                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1600px]:text-[16px]">
                                             {totalNurseCount}
                                         </span>
                                     </div>
                                     <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
-                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
-                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1600px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1600px]:text-[14px]">
                                             {t('page.member.summary.connected')}
                                         </span>
-                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1600px]:text-[16px]">
                                             {connectedNurseCount}
                                         </span>
                                     </div>
-                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1440px]:gap-2">
-                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1440px]:text-[14px]">
+                                    <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1600px]:gap-2">
+                                        <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1600px]:text-[14px]">
                                             {t('page.member.summary.unconnected')}
                                         </span>
-                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1440px]:text-[16px]">
+                                        <span className="font-poppins text-[15px] leading-none font-bold text-[#657084] min-[1600px]:text-[16px]">
                                             {unconnectedNurseCount}
                                         </span>
                                     </div>
@@ -1103,7 +1103,7 @@ function MemberPage() {
                                 role="button"
                                 tabIndex={0}
                                 aria-label={t('page.member.summary.wardCodeGuideAria', {wardCode: wardGuideCode})}
-                                className="flex h-11 shrink-0 cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-3 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[46px] min-[1440px]:px-4"
+                                className="flex h-10 shrink-0 cursor-pointer items-center rounded-[10px] border border-[#D6DDEA] bg-white px-3 shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[46px] min-[1600px]:px-4"
                                 onClick={() => setWardCodeGuideOpen(true)}
                                 onKeyDown={(event) => {
                                     if (event.target !== event.currentTarget) return;
@@ -1114,10 +1114,10 @@ function MemberPage() {
                                     setWardCodeGuideOpen(true);
                                 }}
                             >
-                                <span className="font-apple text-[13px] text-[#8A94A8] min-[1440px]:text-[14px]">
+                                <span className="font-apple text-[13px] text-[#8A94A8] min-[1600px]:text-[14px]">
                                     {t('page.member.summary.wardCode')}
                                 </span>
-                                <span className="ml-2 font-poppins text-[15px] font-bold text-main-1 min-[1440px]:text-[16px]">
+                                <span className="ml-2 font-poppins text-[15px] font-bold text-main-1 min-[1600px]:text-[16px]">
                                     {wardGuideCode}
                                 </span>
                                 <button
@@ -1138,7 +1138,7 @@ function MemberPage() {
                             </div>
                             <button
                                 type="button"
-                                className="relative flex h-11 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#D6DDEA] bg-white px-3 font-apple text-[13px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[46px] min-[1440px]:px-4 min-[1440px]:text-[14px]"
+                                className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#D6DDEA] bg-white px-3 font-apple text-[13px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[46px] min-[1600px]:px-4 min-[1600px]:text-[14px]"
                                 onClick={() => setConnectionManageModalOpen(true)}
                             >
                                 {(watingNurses?.length ?? 0) > 0 ? (
@@ -1147,7 +1147,7 @@ function MemberPage() {
                                     </span>
                                 ) : null}
                                 {t('page.member.summary.connectionManage')}
-                                <Link2 className="h-[18px] w-[18px] text-main-1 min-[1440px]:h-5 min-[1440px]:w-5" strokeWidth={2.8} />
+                                <Link2 className="h-[18px] w-[18px] text-main-1 min-[1600px]:h-5 min-[1600px]:w-5" strokeWidth={2.8} />
                             </button>
                         </div>
                         <button
@@ -1156,20 +1156,20 @@ function MemberPage() {
                             aria-label={t('page.member.skillSettings')}
                             title={t('page.member.skillSettings')}
                             className={cn(
-                                'ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:h-[42px]',
+                                'ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
                                 selectedNurse
-                                    ? 'min-[1440px]:w-[42px] min-[1440px]:px-0'
-                                    : 'min-[1440px]:w-auto min-[1440px]:gap-1.5 min-[1440px]:px-4',
+                                    ? 'min-[1600px]:w-[42px] min-[1600px]:px-0'
+                                    : 'min-[1600px]:w-auto min-[1600px]:gap-1.5 min-[1600px]:px-4',
                             )}
                             onClick={() => setSkillModalOpen(true)}
                         >
-                            <span className={cn('hidden', !selectedNurse && 'min-[1440px]:inline')}>{t('page.member.skillSettings')}</span>
+                            <span className={cn('hidden', !selectedNurse && 'min-[1600px]:inline')}>{t('page.member.skillSettings')}</span>
                             <Settings2 className="h-5 w-5 text-[#7658D8]" />
                         </button>
                     </div>
                     <ConnectionManage open={connectionManageModalOpen} setOpen={setConnectionManageModalOpen} />
 
-                    <div className="mt-8">
+                    <div className="mt-5 min-[1600px]:mt-8">
                         <div
                             id="shift_team_list"
                             className="flex w-full min-w-0 items-center rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5"
@@ -1268,7 +1268,7 @@ function MemberPage() {
                     </div>
 
                     {!isActiveTeamEmpty ? (
-                        <div className="mt-6 flex items-center justify-end gap-4">
+                        <div className="mt-4 flex items-center justify-end gap-4 min-[1600px]:mt-6">
                             <div ref={sortMenuRef} className="relative">
                                 {(() => {
                                     const selectedSortOption = availableSortOptions.find((option) => option.value === nurseSortMode);
@@ -1340,7 +1340,7 @@ function MemberPage() {
                         {!isActiveTeamEmpty ? (
                             <div
                                 className={cn(
-                                    'grid items-center py-2 font-apple text-[16px] text-gray-3',
+                                    'grid items-center py-2 font-apple text-[14px] text-gray-3 min-[1600px]:text-[16px]',
                                     MEMBER_GRID_GAP_CLASS,
                                     MEMBER_GRID_PADDING_X,
                                     isSkillFeatureEnabled ? MEMBER_GRID_COLS_WITH_SKILL : MEMBER_GRID_COLS_WITHOUT_SKILL,
@@ -1484,14 +1484,14 @@ function MemberPage() {
                 <aside
                     id="nurse_edit_drawer"
                     className={cn(
-                        'sticky top-11 h-[calc(100vh-5.75rem)] shrink-0 overflow-hidden rounded-[16px] border bg-white transition-[width,opacity,transform,border-color] duration-250 ease-out will-change-[width,opacity,transform] min-[1440px]:top-[52px] min-[1440px]:h-[calc(100vh-6.75rem)]',
+                        'sticky top-5 h-[calc(100vh-2.5rem)] shrink-0 overflow-hidden rounded-[16px] border bg-white transition-[width,opacity,transform,border-color] duration-250 ease-out will-change-[width,opacity,transform] min-[1400px]:top-6 min-[1400px]:h-[calc(100vh-3rem)] min-[1600px]:top-[52px] min-[1600px]:h-[calc(100vh-6.75rem)]',
                         selectedNurse
-                            ? 'pointer-events-auto w-[360px] translate-x-0 border-gray-7/80 opacity-100 min-[1440px]:w-[400px]'
+                            ? 'pointer-events-auto w-[300px] translate-x-0 border-gray-7/80 opacity-100 min-[1400px]:w-[340px] min-[1600px]:w-[400px]'
                             : 'pointer-events-none w-0 translate-x-3 border-transparent opacity-0',
                     )}
                     aria-hidden={!selectedNurse}
                 >
-                    <div className="h-full w-[360px] min-[1440px]:w-[400px]">
+                    <div className="h-full w-[300px] min-[1400px]:w-[340px] min-[1600px]:w-[400px]">
                         {selectedNurse ? (
                             <NurseDetailPanel
                                 onClose={handleDismissDetailPanel}

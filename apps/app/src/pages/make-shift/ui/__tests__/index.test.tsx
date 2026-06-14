@@ -101,7 +101,8 @@ describe('MakeShiftPageView layout', () => {
         const contentCard = screen.getByTestId('make-shift-stepper').parentElement;
 
         expect(pageRoot).toHaveClass('overflow-x-auto');
-        expect(pageFrame).toHaveClass('min-w-[1510px]');
+        expect(pageFrame).toHaveClass('min-w-0');
+        expect(pageFrame).not.toHaveClass('min-w-[1510px]');
         expect(contentCard).toHaveClass('overflow-visible');
         expect(contentCard).not.toHaveClass('overflow-hidden');
         expect(contentCard).not.toHaveClass('min-h-0');
