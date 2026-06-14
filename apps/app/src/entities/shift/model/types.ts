@@ -1,1 +1,1 @@
-export type {TDay, TDayType, TRequestShift, TRow, TShift} from '@dutying/domain/shift';
+export type {TDay, TDayType, TRequestShift, TRow, TShift, TShiftWorkflowStatus} from '@dutying/domain/shift';

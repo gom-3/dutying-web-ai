@@ -4,6 +4,7 @@ import {useState} from 'react';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
+import {HomeIcon, HomeIconSelected} from '@/shared/assets/svg';
 import ROUTE, {type TRoute} from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -13,7 +14,8 @@ type TNavItem = {
     path?: TRoute;
     activePaths?: TRoute[];
     icon: TNavigationBarItemIcon;
-    textKey: TI18nKey;
+    text?: string;
+    textKey?: TI18nKey;
     disabled?: boolean;
 };
 
@@ -28,7 +30,6 @@ const navigationImageIcon = (name: string): TNavigationBarItemIcon => ({
     hoverSrc: `/img/navigation/${name}-hover.png`,
     activeSrc: `/img/navigation/${name}-active.png`,
 });
-
 const navigationIcons = {
     make: navigationImageIcon('make'),
     request: navigationImageIcon('request'),
@@ -37,16 +38,24 @@ const navigationIcons = {
     wardSettings: navigationImageIcon('ward-settings'),
     wardInfo: navigationImageIcon('ward-info'),
 } as const;
-
 const sections: TNavSection[] = [
     {
         labelKey: 'page.navigationBar.sections.operations',
         items: [
             {
+                path: ROUTE.HOME,
+                icon: {
+                    kind: 'component',
+                    Icon: HomeIcon,
+                    SelectedIcon: HomeIconSelected,
+                },
+                text: '홈',
+            },
+            {
                 path: ROUTE.MAKE,
                 activePaths: [ROUTE.MAKE, ROUTE.DUTY],
                 icon: navigationIcons.make,
-                textKey: 'page.navigationBar.items.make',
+                text: '근무표 만들기',
             },
             {
                 path: ROUTE.REQUEST,
@@ -93,6 +102,7 @@ const accountItem: TNavItem = {
 
 type TNavigationBarItemGroupsProps = {
     collapsed?: boolean;
+    onItemNavigate?: () => void;
 };
 
 type TWardIdentityProps = {
@@ -159,7 +169,7 @@ const WardIdentity = ({collapsed, ward}: TWardIdentityProps) => {
         </>
     );
 };
-const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsProps) => {
+const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigationBarItemGroupsProps) => {
     const {t} = useTypedTranslation();
     const {
         state: {ward, watingNurses},
@@ -168,10 +178,7 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
     const pendingRequestCount = useTotalPendingRequestCount();
 
     return (
-        <nav
-            aria-label={t('page.navigationBar.ariaLabel')}
-            className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}
-        >
+        <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}>
             <div>
                 <WardIdentity collapsed={collapsed} ward={ward} />
                 {sections.map((section, sectionIndex) => (
@@ -184,16 +191,17 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
                         <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
                             {section.items.map((item) => (
                                 <NavigationBarItem
-                                    key={item.path ?? item.textKey}
+                                    key={item.path ?? item.textKey ?? item.text}
                                     path={item.path}
                                     activePaths={item.activePaths}
                                     icon={item.icon}
-                                    text={t(item.textKey)}
+                                    text={item.text ?? t(item.textKey!)}
                                     collapsed={collapsed}
                                     disabled={item.disabled}
                                     badgeCount={
                                         item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
                                     }
+                                    onNavigate={onItemNavigate}
                                 />
                             ))}
                         </div>
@@ -207,9 +215,10 @@ const NavigationBarItemGroups = ({collapsed = false}: TNavigationBarItemGroupsPr
                         path={accountItem.path}
                         activePaths={accountItem.activePaths}
                         icon={accountItem.icon}
-                        text={t(accountItem.textKey)}
+                        text={accountItem.text ?? t(accountItem.textKey!)}
                         collapsed={collapsed}
                         disabled={accountItem.disabled}
+                        onNavigate={onItemNavigate}
                     />
                 </div>
             </div>

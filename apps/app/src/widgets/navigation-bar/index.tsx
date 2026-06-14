@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Link} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
@@ -22,11 +22,16 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
     const resetFold = useNavigationBarFoldStore((s) => s.reset);
     const [isHoverExpanded, setIsHoverExpanded] = useState(false);
     const [isFocusExpanded, setIsFocusExpanded] = useState(false);
+    const closePreviewTimeoutRef = useRef<number | null>(null);
     const isPreviewExpanded = compactMode && (isHoverExpanded || isFocusExpanded);
     const isCollapsed = compactMode ? !isPreviewExpanded : isFold;
 
     useEffect(() => {
         return () => {
+            if (closePreviewTimeoutRef.current !== null) {
+                window.clearTimeout(closePreviewTimeoutRef.current);
+            }
+
             resetFold();
         };
     }, [resetFold]);
@@ -37,6 +42,18 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
             setIsFocusExpanded(false);
         }
     }, [compactMode]);
+
+    const closePreview = () => {
+        if (closePreviewTimeoutRef.current !== null) {
+            window.clearTimeout(closePreviewTimeoutRef.current);
+        }
+
+        closePreviewTimeoutRef.current = window.setTimeout(() => {
+            setIsHoverExpanded(false);
+            setIsFocusExpanded(false);
+            closePreviewTimeoutRef.current = null;
+        }, 120);
+    };
 
     return (
         <aside
@@ -64,7 +81,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                 }
             }}
         >
-            <div className={cn('flex min-h-screen flex-col', isCollapsed ? 'px-2 py-3' : 'px-3 py-4')}>
+            <div className={cn('flex min-h-screen shrink-0 flex-col', isCollapsed ? 'w-[64px] px-2 py-3' : 'w-[216px] px-3 py-4')}>
                 <div className={cn('flex min-h-11 items-center', isCollapsed ? 'flex-col gap-2' : 'justify-between')}>
                     <Link
                         to={ROUTE.ROOT}
@@ -103,7 +120,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                     )}
                 </div>
 
-                <NavigationBarItemGroups collapsed={isCollapsed} />
+                <NavigationBarItemGroups collapsed={isCollapsed} onItemNavigate={compactMode ? closePreview : undefined} />
             </div>
         </aside>
     );

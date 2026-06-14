@@ -15,11 +15,15 @@ export type TRow = {
     wardReqShiftList: (number | null)[];
 };
 
+export type TShiftWorkflowStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'CONFIRMED';
+
 export type TShift = {
     lastDays: TDay[];
     days: TDay[];
     wardShiftTypes: TWardShiftType[];
     divisionShiftNurses: TRow[][];
+    workflowStatus?: TShiftWorkflowStatus | null;
+    workflowStep?: number | null;
 };
 
 export type TRequestShift = {

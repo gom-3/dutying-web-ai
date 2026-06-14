@@ -342,8 +342,9 @@ function MemberPage() {
         nurseSortMode,
         pendingWorkerByNurseId,
     ]);
+    const hasShiftTeams = (shiftTeams?.length ?? 0) > 0;
     const activeTeamNurseCount = activeShiftTeam?.nurseCnt ?? activeShiftTeam?.nurses.length ?? 0;
-    const isActiveTeamEmpty = activeTeamNurseCount === 0;
+    const hasActiveTeamNurses = hasShiftTeams && activeTeamNurseCount > 0;
 
     useEffect(() => {
         if (!shiftTeams?.length) {
@@ -442,10 +443,10 @@ function MemberPage() {
     }, [activeShiftTeam?.shiftTeamId, editingTeamId, editingTeamName, shiftTeams]);
 
     useEffect(() => {
-        if (!isActiveTeamEmpty) return;
+        if (hasActiveTeamNurses) return;
 
         setSortMenuOpen(false);
-    }, [isActiveTeamEmpty]);
+    }, [hasActiveTeamNurses]);
     useEffect(() => {
         if (!selectedNurse || selectedNurseDrawerMode !== 'create') return;
 
@@ -1267,7 +1268,7 @@ function MemberPage() {
                         </div>
                     </div>
 
-                    {!isActiveTeamEmpty ? (
+                    {hasActiveTeamNurses ? (
                         <div className="mt-4 flex items-center justify-end gap-4 min-[1600px]:mt-6">
                             <div ref={sortMenuRef} className="relative">
                                 {(() => {
@@ -1337,7 +1338,7 @@ function MemberPage() {
                     ) : null}
 
                     <div className="mt-2 rounded-[15px]">
-                        {!isActiveTeamEmpty ? (
+                        {hasActiveTeamNurses ? (
                             <div
                                 className={cn(
                                     'grid items-center py-2 font-apple text-[14px] text-gray-3 min-[1600px]:text-[16px]',
@@ -1371,7 +1372,7 @@ function MemberPage() {
                         ) : null}
 
                         <div className="space-y-1.5 pb-4">
-                            {!isActiveTeamEmpty ? (
+                            {hasActiveTeamNurses ? (
                                 <DragDropContext onDragEnd={handleDragEnd}>
                                     <Droppable droppableId={String(activeShiftTeam?.shiftTeamId ?? 0)}>
                                         {(provided) => (
@@ -1434,6 +1435,21 @@ function MemberPage() {
                                         )}
                                     </Droppable>
                                 </DragDropContext>
+                            ) : !hasShiftTeams ? (
+                                <div className="mt-2 flex min-h-[280px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#C8CFDB] bg-white px-6 py-12 text-center">
+                                    <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.emptyTeamsTitle')}</p>
+                                    <p className="mt-2 font-apple text-[16px] text-gray-3">{t('page.member.emptyTeamsDescription')}</p>
+                                    <button
+                                        type="button"
+                                        className="group mt-6 flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C] focus-visible:outline-2 focus-visible:outline-main-1"
+                                        onClick={() => void handleCreateShiftTeam()}
+                                    >
+                                        <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
+                                            <Plus className="h-[11px] w-[11px] text-white" />
+                                        </span>
+                                        {t('page.member.addTeam')}
+                                    </button>
+                                </div>
                             ) : (
                                 <div className="mt-2 flex min-h-[280px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#C8CFDB] bg-white px-6 py-12 text-center">
                                     <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.emptyTeamTitle')}</p>
@@ -1464,7 +1480,7 @@ function MemberPage() {
                             <Trash2 className="h-[16px] w-[16px]" strokeWidth={2.2} />
                             {t('page.member.deleteTeam')}
                         </button>
-                        {!isActiveTeamEmpty ? (
+                        {hasActiveTeamNurses ? (
                             <button
                                 id="member_add_nurse_button"
                                 type="button"

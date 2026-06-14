@@ -877,6 +877,28 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByRole('button', {name: /간호사 1팀/})).not.toBeInTheDocument();
     });
 
+    it('shows a team-first prompt on the nurse step after deleting every team', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToNurseStep(user);
+
+        for (let index = 0; index < 3; index += 1) {
+            await user.click(screen.getByRole('button', {name: '팀 삭제하기'}));
+        }
+
+        expect(screen.getByText('먼저 팀을 추가해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('팀을 만든 뒤 간호사를 등록할 수 있어요.')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '간호사 추가하기'})).not.toBeInTheDocument();
+
+        const teamAddButtons = screen.getAllByRole('button', {name: /팀 추가하기/});
+
+        await user.click(teamAddButtons[teamAddButtons.length - 1]!);
+
+        expect(screen.getByRole('button', {name: /간호사 1팀/})).toBeInTheDocument();
+    });
+
     it('disables next in step 4 when a nurse name is empty', async () => {
         const user = userEvent.setup();
 

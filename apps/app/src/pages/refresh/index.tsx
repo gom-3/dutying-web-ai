@@ -22,7 +22,7 @@ function RefreshPage() {
     }, []);
 
     useEffect(() => {
-        const refreshKey = next ?? ROUTE.MAKE;
+        const refreshKey = next ?? ROUTE.HOME;
 
         if (attemptedRefreshKeyRef.current === refreshKey) {
             return;

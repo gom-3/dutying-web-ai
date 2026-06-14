@@ -87,11 +87,11 @@ describe('LoginPage', () => {
         expect(screen.queryByRole('link', {name: '회원가입'})).not.toBeInTheDocument();
         expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toHaveAttribute(
             'href',
-            'https://api.dutying.net/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fmake',
+            'https://api.dutying.net/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fhome',
         );
         expect(screen.getByRole('link', {name: 'Apple로 계속하기'})).toHaveAttribute(
             'href',
-            'https://api.dutying.net/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fmake',
+            'https://api.dutying.net/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fhome',
         );
     });
 

@@ -191,9 +191,9 @@ export function AiAutofillToolbar({
                         aria-busy={isConfirming}
                         className={cn(
                             'ai-autofill-toolbar__cta ai-autofill-toolbar__cta--confirm',
-                            'inline-flex min-h-[43px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[13px] bg-[#34383F] px-4 py-0',
+                            'inline-flex min-h-[43px] shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[13px] bg-[#20A66A] px-4 py-0',
                             'font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white transition-colors duration-150',
-                            'hover:bg-[#2B3036] focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none active:bg-[#24282E]',
+                            'hover:bg-[#1C925D] focus-visible:ring-2 focus-visible:ring-[#6ED7A2] focus-visible:ring-offset-2 focus-visible:outline-none active:bg-[#167A52]',
                             'disabled:cursor-not-allowed disabled:bg-gray-5 disabled:text-white/70',
                         )}
                     >

@@ -357,6 +357,14 @@ export default function WardChatWidget() {
     }, [effectiveWardId]);
 
     useEffect(() => {
+        const handleOpenWardChat = () => setIsOpen(true);
+
+        window.addEventListener('dutying:open-ward-chat', handleOpenWardChat);
+
+        return () => window.removeEventListener('dutying:open-ward-chat', handleOpenWardChat);
+    }, []);
+
+    useEffect(() => {
         if (!messagesQuery.data) return;
 
         setMessages((prev) => mergeMessages(prev, messagesQuery.data.messages));

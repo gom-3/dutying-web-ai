@@ -288,7 +288,11 @@ export function AiAutofill() {
             applyRowOrder: true,
         });
 
-        const nextShift = docToShift(editorDoc, dutyQuery.data);
+        const nextShift = {
+            ...docToShift(editorDoc, dutyQuery.data),
+            workflowStatus: 'CONFIRMED' as const,
+            workflowStep: 6,
+        };
         const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
 
         useCase.confirm(nextShift);
@@ -663,6 +667,7 @@ export function AiAutofill() {
                         showFaults={showFaults}
                         onCellClick={focusEditor}
                         editableLastShifts
+                        isShimmering={isAiGenerating}
                         skillColumn={skillColumn}
                     />
                 )}

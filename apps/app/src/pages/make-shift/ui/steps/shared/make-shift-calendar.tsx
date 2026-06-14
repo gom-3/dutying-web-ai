@@ -55,6 +55,10 @@ type TMakeShiftCalendarProps = {
      * true면 "전달 근무" 4칸도 일반 캘린더 셀처럼 선택/입력할 수 있다.
      */
     editableLastShifts?: boolean;
+    /**
+     * true면 캘린더 위에 자동 채우기 진행 shimmer를 표시한다.
+     */
+    isShimmering?: boolean;
     skillColumn?: TSkillColumnConfig;
 };
 
@@ -134,6 +138,12 @@ const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] l
  */
 const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const getDayGridTemplateColumns = (dayCount: number) => `repeat(${dayCount}, minmax(0, 1fr))`;
+const getShimmerInsetLeft = (isSimplified: boolean, showRowInfoColumn: boolean) =>
+    isSimplified
+        ? `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X})`
+        : showRowInfoColumn
+          ? `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X} + ${SKILL_COL} + ${ROW_GAP_X} + ${LAST_COL} + ${ROW_GAP_X})`
+          : `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X} + ${LAST_COL} + ${ROW_GAP_X})`;
 const LAST_SHIFTS_GAP = 'clamp(1px,0.15cqw,3px)';
 const DUTY_CELL_SELECTOR = '[data-duty-cell="true"]';
 const SELECTED_CELL_BACKGROUND_CLASS = 'bg-main-4/70';
@@ -204,7 +214,8 @@ const LEGACY_TITLE_KEY_BY_TITLE = new Map([
     [LEGACY_TITLE_MIN_STAFF_SHORTAGE, 'feature.shiftEditor.validation.title.minStaffShortage'],
 ]);
 const KOREAN_NURSE_SUBJECT_PATTERN = /^[^\s:]+\uB2D8\uC740\s+/;
-const LEGACY_OFF_AFTER_NIGHT_PATTERN = /^\uC57C\uAC04 \uD6C4 \uD734\uBB34\uAC00 (\d+)\uC77C\uC774\uC5D0\uC694\.?\s*(\d+)\uC77C \uD544\uC694\uD574\uC694\.?$/;
+const LEGACY_OFF_AFTER_NIGHT_PATTERN =
+    /^\uC57C\uAC04 \uD6C4 \uD734\uBB34\uAC00 (\d+)\uC77C\uC774\uC5D0\uC694\.?\s*(\d+)\uC77C \uD544\uC694\uD574\uC694\.?$/;
 const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
 const VIOLATION_POPOVER_WIDTH = 360;
 const VIOLATION_POPOVER_VIEWPORT_PADDING = 8;
@@ -364,11 +375,7 @@ function isSaturday(dayType: TShift['days'][number]['dayType'] | string): boolea
 function isRedCalendarDay(dayType: TShift['days'][number]['dayType'] | string): boolean {
     const normalizedDayType = normalizeDayType(dayType);
 
-    return (
-        normalizedDayType === 'sunday' ||
-        normalizedDayType.includes('holiday') ||
-        LEGACY_HOLIDAY_DAY_TYPES.has(normalizedDayType)
-    );
+    return normalizedDayType === 'sunday' || normalizedDayType.includes('holiday') || LEGACY_HOLIDAY_DAY_TYPES.has(normalizedDayType);
 }
 
 function getDayHeaderTextClass(dayType: TShift['days'][number]['dayType']): string {
@@ -738,6 +745,7 @@ export function MakeShiftCalendar({
     readonly = false,
     disableInitialSelection = false,
     editableLastShifts = false,
+    isShimmering = false,
     skillColumn,
 }: TMakeShiftCalendarProps) {
     const {separateWeekendColor} = useUIConfigStore();
@@ -984,6 +992,7 @@ export function MakeShiftCalendar({
     const showRowInfoColumn = showSkillColumn;
     const rowInfoColumnMode: TRowInfoColumnMode = showSkillColumn ? 'skill' : 'none';
     const leftGridTemplateColumns = isSimplified ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED : getLeftGridTemplateColumns(rowInfoColumnMode);
+    const shimmerInsetLeft = getShimmerInsetLeft(isSimplified, showRowInfoColumn);
 
     let didAssignTutorialCell = false;
 
@@ -999,7 +1008,12 @@ export function MakeShiftCalendar({
             //     <row-left>  (이름·전달근무·일자) — division 카드 내부에 들어감
             //     <row-summary>(D/E/N/O/WO 합계) — 카드 밖, 우측에 분리 배치
             //   </row>
-            className="make-shift-calendar @container flex w-full min-w-0 flex-col gap-2"
+            aria-busy={isShimmering || undefined}
+            data-shimmer={isShimmering ? 'true' : undefined}
+            className={cn(
+                'make-shift-calendar @container relative isolate flex w-full min-w-0 flex-col gap-2',
+                isShimmering && 'make-shift-calendar--shimmering',
+            )}
         >
             {/* HEADER */}
             <div
@@ -1132,6 +1146,17 @@ export function MakeShiftCalendar({
                              * 행 그리드는 items-stretch → 주말 셀이 행 높이 전체를 칠함(행 안에서 잘리지 않음).
                              */}
                             <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-[16px] bg-white">
+                                {isShimmering && (
+                                    <div
+                                        aria-hidden="true"
+                                        data-shimmer-scope="duty-cells"
+                                        className="make-shift-calendar__shimmer pointer-events-none absolute top-0 right-0 bottom-0 z-[80] overflow-hidden bg-main-light/25"
+                                        style={{left: shimmerInsetLeft}}
+                                    >
+                                        <span className="absolute inset-0 bg-white/10" />
+                                        <span className="make-shift-calendar__shimmer-sweep absolute top-0 bottom-0 w-[18%]" />
+                                    </div>
+                                )}
                                 {rows.map((row, i) => {
                                     const workerId = String(row.shiftNurse.shiftNurseId);
                                     const docEntry = workerRowMap.get(workerId);
@@ -1402,11 +1427,7 @@ function CalendarRowLeft({
                         {showRowInfoColumn ? (
                             <div className="make-shift-calendar__row-carry flex min-h-0 items-center justify-center">
                                 {showSkillColumn && skillConfig ? (
-                                    <SkillBadge
-                                        level={skillLevel}
-                                        config={skillConfig}
-                                        className={ROW_SKILL_BADGE_CLASS}
-                                    />
+                                    <SkillBadge level={skillLevel} config={skillConfig} className={ROW_SKILL_BADGE_CLASS} />
                                 ) : null}
                             </div>
                         ) : null}

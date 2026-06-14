@@ -166,9 +166,11 @@ describe('MainLayout', () => {
         );
 
         expect(screen.getByText('expanded navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('navigation-bar')).toHaveAttribute('data-compact-mode', 'false');
+        expect(screen.getByRole('button', {name: 'toggle navigation'})).toBeInTheDocument();
     });
 
-    it('keeps the navigation folded after moving from a compact workspace page to another page', async () => {
+    it('keeps compact navigation controls hidden after moving from a compact workspace page to another page', async () => {
         setViewportWidth(1512);
 
         render(
@@ -198,6 +200,28 @@ describe('MainLayout', () => {
 
         expect(await screen.findByText('board page')).toBeInTheDocument();
         expect(screen.getByText('folded navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('navigation-bar')).toHaveAttribute('data-compact-mode', 'true');
+        expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
+    });
+
+    it('switches to compact navigation controls when the navigation is folded on a small screen', async () => {
+        setViewportWidth(1512);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.BOARD]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={ROUTE.BOARD} element={<div>board page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByRole('button', {name: 'toggle navigation'}));
+
+        expect(screen.getByText('folded navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('navigation-bar')).toHaveAttribute('data-compact-mode', 'true');
+        expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
     });
 
     it('folds the navigation on every page below 1280px', async () => {

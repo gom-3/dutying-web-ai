@@ -226,6 +226,6 @@ describe('RegisterPage', () => {
 
         render(<RegisterPage />);
 
-        expect(screen.getByText(`navigate:${ROUTE.MAKE}`)).toBeInTheDocument();
+        expect(screen.getByText(`navigate:${ROUTE.HOME}`)).toBeInTheDocument();
     });
 });

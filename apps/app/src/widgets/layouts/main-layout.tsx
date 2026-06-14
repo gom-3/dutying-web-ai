@@ -67,6 +67,7 @@ export const MainLayout = () => {
         [locationState?.onboardingWardCreated],
     );
     const [createdWardGuidePayload, setCreatedWardGuidePayload] = useState<TWardCreatedGuidePayload | null>(null);
+    const isNavigationFolded = useNavigationBarFoldStore((state) => state.isFold);
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
@@ -75,6 +76,7 @@ export const MainLayout = () => {
     const wardCode = createdWardGuidePayload?.wardCode ?? getWardDisplayCode(wardQuery.data, t('entity.ward.codeChecking'));
     const wardTitle = createdWardGuidePayload?.wardTitle ?? getWardDisplayTitle(wardQuery.data);
     const shouldFoldNavigation = shouldAutoFoldNavigation(location.pathname, viewportWidth);
+    const shouldUseCompactNavigation = shouldFoldNavigation || (viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH && isNavigationFolded);
 
     useEffect(() => {
         const guidePayload = locationGuidePayload ?? readStoredWardCreatedGuidePayload();
@@ -150,7 +152,7 @@ export const MainLayout = () => {
                 wardTitle={wardTitle}
                 onClose={() => setCreatedWardGuidePayload(null)}
             />
-            <NavigationBar compactMode={shouldFoldNavigation} />
+            <NavigationBar compactMode={shouldUseCompactNavigation} />
             <main className="min-w-0 flex-1 overflow-x-auto">
                 <Outlet />
             </main>

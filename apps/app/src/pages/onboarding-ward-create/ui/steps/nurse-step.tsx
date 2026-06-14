@@ -1,6 +1,6 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
-import {Check, ChevronDown, Info, Plus, X} from 'lucide-react';
+import {Check, ChevronDown, Info, Plus, UsersRound, X} from 'lucide-react';
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-translation';
@@ -131,7 +131,8 @@ function NurseStep({
     const selectedSortOptionLabel = selectedSortOption ? t(selectedSortOption.labelKey) : '';
     const currentNurses = useMemo(() => draft.nurses.filter((nurse) => nurse.teamId === selectedTeamId), [draft.nurses, selectedTeamId]);
     const sortedNurses = useMemo(() => sortNursesByMode(currentNurses, sortMode), [currentNurses, sortMode]);
-    const hasNursesInSelectedTeam = currentNurses.length > 0;
+    const hasTeams = draft.teams.length > 0;
+    const hasNursesInSelectedTeam = hasTeams && currentNurses.length > 0;
     const activeShiftTypes = useMemo(() => draft.shiftTypes.filter((shiftType) => shiftType.shortName), [draft.shiftTypes]);
     const levelItems = useMemo(
         () => Array.from({length: draft.skillLevelConfig.levelCount}, (_, index) => draft.skillLevelConfig.levelCount - index),
@@ -630,18 +631,40 @@ function NurseStep({
                 </DragDropContext>
             ) : null}
 
-            <div className={cn('flex', hasNursesInSelectedTeam ? 'mt-2 justify-end' : 'mt-12 justify-center')}>
-                <button
-                    type="button"
-                    className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C]"
-                    onClick={onAddNurse}
-                >
-                    <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
-                        <Plus className="h-[11px] w-[11px] text-white" />
-                    </span>
-                    {t('page.member.addNurse')}
-                </button>
-            </div>
+            {!hasTeams ? (
+                <div className="flex min-h-[280px] w-full flex-col items-center justify-center rounded-[16px] border border-dashed border-[#D3D8E2] bg-[#F8FAFC] px-6 py-12 text-center">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-[#7B8494] shadow-[0_6px_18px_rgba(49,55,74,0.06)]">
+                        <UsersRound className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
+                    </div>
+                    <p className="mt-4 font-apple text-[18px] font-semibold text-sub-1">
+                        {t('page.onboardingWardCreate.nurse.emptyTeamsTitle')}
+                    </p>
+                    <p className="mt-1 font-apple text-[14px] leading-5 text-gray-3">
+                        {t('page.onboardingWardCreate.nurse.emptyTeamsDescription')}
+                    </p>
+                    <button
+                        type="button"
+                        className="mt-5 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#3D4658] px-4 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-[#303848] focus-visible:outline-2 focus-visible:outline-main-1"
+                        onClick={onAddTeam}
+                    >
+                        <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />
+                        {t('page.onboardingWardCreate.teamTabs.addTeam')}
+                    </button>
+                </div>
+            ) : (
+                <div className={cn('flex', hasNursesInSelectedTeam ? 'mt-2 justify-end' : 'mt-12 justify-center')}>
+                    <button
+                        type="button"
+                        className="group flex items-center gap-2 font-apple text-[16px] font-medium text-gray-3 transition-colors hover:text-[#4E586C]"
+                        onClick={onAddNurse}
+                    >
+                        <span className="flex h-[19px] w-[19px] items-center justify-center rounded-full bg-[#657084] transition-colors group-hover:bg-[#4E586C]">
+                            <Plus className="h-[11px] w-[11px] text-white" />
+                        </span>
+                        {t('page.member.addNurse')}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

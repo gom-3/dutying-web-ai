@@ -1,6 +1,8 @@
 import {cn} from '@dutying/utils/style';
-import {CalendarPlus} from 'lucide-react';
+import {ArrowRight, CalendarPlus} from 'lucide-react';
 import {Trans} from 'react-i18next';
+import {useNavigate} from 'react-router';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
@@ -29,6 +31,7 @@ const PlayActionIcon = () => (
 
 export const MakeShiftPageView = () => {
     const {t} = useTypedTranslation();
+    const navigate = useNavigate();
     const useCase = useMakeShiftUseCase();
     const phase = useMakeShiftStore((s) => s.phase);
     const currentStep = useMakeShiftStore((s) => s.currentStep);
@@ -97,7 +100,19 @@ export const MakeShiftPageView = () => {
                                     title={t('page.makeShift.overview.noTeamsTitle')}
                                     description={t('page.makeShift.overview.noTeamsDescription')}
                                     className="min-h-0 py-0"
-                                />
+                                >
+                                    <div className="mt-1 flex justify-center">
+                                        <ManagementActionButton
+                                            variant="primary"
+                                            size="sm"
+                                            className="h-11 cursor-pointer rounded-[12px] px-5 text-[15px]"
+                                            onClick={() => navigate(ROUTE.MEMBER)}
+                                        >
+                                            {t('page.makeShift.workers.goMemberManagement')}
+                                            <ArrowRight aria-hidden className="size-4" />
+                                        </ManagementActionButton>
+                                    </div>
+                                </PageState>
                             ) : shiftStatus === 'pending' || shiftStatus === 'idle' ? (
                                 <PageState
                                     tone="loading"

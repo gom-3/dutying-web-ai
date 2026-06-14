@@ -14,7 +14,7 @@ function OnboardingPage() {
     } = useAuth();
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
-    const redirectTarget = accountMe?.status === 'LINKED' || accountMe?.status === 'DEMO' ? ROUTE.MAKE : ROUTE.REGISTER;
+    const redirectTarget = accountMe?.status === 'LINKED' || accountMe?.status === 'DEMO' ? ROUTE.HOME : ROUTE.REGISTER;
 
     return (
         <RegisterShell>

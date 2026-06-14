@@ -55,6 +55,6 @@ describe('OnboardingPage', () => {
 
         render(<OnboardingPage />);
 
-        expect(screen.getByText(`navigate:${ROUTE.MAKE}`)).toBeInTheDocument();
+        expect(screen.getByText(`navigate:${ROUTE.HOME}`)).toBeInTheDocument();
     });
 });
