@@ -68,7 +68,9 @@ export const MakeShiftPageView = () => {
             <div
                 className={cn(
                     'mx-auto flex min-h-full w-full flex-col pt-4 pb-3',
-                    isStepping ? 'max-w-[1680px] min-w-[1510px] px-6 lg:px-10' : 'max-w-[1640px] px-4 sm:px-6 lg:px-10',
+                    isStepping
+                        ? 'max-w-[1680px] min-w-0 px-3 min-[1600px]:px-10 lg:px-4'
+                        : 'max-w-[1640px] px-3 min-[1600px]:px-10 sm:px-4 lg:px-5',
                 )}
             >
                 <MakeShiftHeader />

@@ -444,7 +444,7 @@ export function Workers() {
 
     return (
         <div id="make_workers_step" className="make-shift-workers-root flex min-w-0 flex-col items-end">
-            <div className="make-shift-workers w-full max-w-[1088px] min-w-[920px] rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)]">
+            <div className="make-shift-workers w-full max-w-[920px] min-w-[720px] rounded-[18px] bg-[#F8F9FB] px-[clamp(14px,1.5vw,22px)] py-[clamp(14px,1.5vw,22px)] min-[1400px]:max-w-[1000px] min-[1400px]:min-w-[740px] min-[1600px]:max-w-[1088px] min-[1600px]:min-w-[920px]">
                 {isWorkersLoading ? (
                     <PageState
                         tone="loading"

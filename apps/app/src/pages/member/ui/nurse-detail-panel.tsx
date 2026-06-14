@@ -67,7 +67,7 @@ function NurseDetailPanel({
     const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptee = hasPrecepteeMemo(writeNurse?.memo);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
-    const nurseNameForAria = writeNurse?.name || t('page.member.common.nurseFallback');
+    const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
 
     useEffect(() => {
         setWriteNurse(selectedNurse ?? null);
@@ -235,7 +235,7 @@ function NurseDetailPanel({
 
     if (!selectedNurse || !writeNurse) {
         return (
-            <aside className="h-full w-[360px] overflow-hidden border-0 bg-white p-4 min-[1440px]:w-[400px] min-[1440px]:p-5">
+            <aside className="h-full w-[300px] overflow-hidden border-0 bg-white p-4 min-[1400px]:w-[340px] min-[1600px]:w-[400px] min-[1600px]:p-5">
                 <div className="flex h-full items-center justify-center rounded-[14px] border border-dashed border-gray-6 bg-main-bg px-6 text-center">
                     <p className="font-apple text-[15px] leading-7 text-gray-3">{t('page.member.detail.emptyPinnedDescription')}</p>
                 </div>
@@ -245,19 +245,19 @@ function NurseDetailPanel({
 
     return (
         <TooltipProvider delayDuration={120}>
-            <aside className="flex h-full w-[360px] flex-col overflow-hidden bg-white min-[1440px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
-                <div className="shrink-0 px-3 pt-3 pb-2.5 min-[1440px]:px-4 min-[1440px]:pt-4 min-[1440px]:pb-3">
+            <aside className="flex h-full w-[300px] flex-col overflow-hidden bg-white min-[1400px]:w-[340px] min-[1600px]:w-[400px] [&_button:not(:disabled)]:cursor-pointer">
+                <div className="shrink-0 px-3 pt-3 pb-2.5 min-[1600px]:px-4 min-[1600px]:pt-4 min-[1600px]:pb-3">
                     <div className="flex items-center justify-between">
                         <p className="font-apple text-[13px] font-semibold text-gray-3">{t('page.member.table.name')}</p>
                         <button
                             type="button"
-                            className="grid size-7 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:size-8"
+                            className="grid size-7 place-items-center rounded-full bg-gray-7 text-gray-4 transition-colors hover:bg-gray-6 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-8"
                             onClick={handleRequestClose}
                             aria-label={t('page.member.detail.close')}
                         >
                             <ChevronRight
                                 aria-hidden="true"
-                                className="h-[18px] w-[18px] min-[1440px]:h-5 min-[1440px]:w-5"
+                                className="h-[18px] w-[18px] min-[1600px]:h-5 min-[1600px]:w-5"
                                 strokeWidth={2.4}
                             />
                         </button>
@@ -271,7 +271,7 @@ function NurseDetailPanel({
                             maxLength={30}
                             placeholder={showNameRequiredError ? t('page.member.table.name') : undefined}
                             className={cn(
-                                'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1440px]:h-11 min-[1440px]:text-[20px]',
+                                'h-10 min-w-0 rounded-[10px] border-gray-6 px-3 text-[18px] font-bold text-text-1 shadow-none outline-none focus:!border focus-visible:!border min-[1600px]:h-11 min-[1600px]:text-[20px]',
                                 showNameRequiredError &&
                                     '!border !border-[#E57373] font-normal placeholder:font-normal placeholder:text-[#D6DCE6] focus:!outline-none focus-visible:!border-[#E57373]',
                             )}
@@ -290,7 +290,7 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     disabled={isBusy}
-                                    className="inline-flex h-10 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1440px]:h-11"
+                                    className="inline-flex h-10 w-full items-center justify-center text-sub-2 transition-colors hover:text-sub-1 disabled:opacity-50 min-[1600px]:h-11"
                                     onClick={() => {
                                         if (writeNurse.isConnected) {
                                             setDisconnectConfirmModalOpen(true);
@@ -315,7 +315,7 @@ function NurseDetailPanel({
                     {isSkillFeatureEnabled ? (
                         <div>
                             <div className="flex items-center justify-between">
-                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                                     {t('page.member.table.level')}
                                 </p>
                             </div>
@@ -335,7 +335,7 @@ function NurseDetailPanel({
                                             disabled={isBusy}
                                             aria-pressed={isSelected}
                                             className={cn(
-                                                'inline-flex min-h-6 w-full min-w-0 cursor-pointer items-center justify-center rounded-full border py-0.5 font-apple text-[12px] leading-none tabular-nums transition duration-150 hover:-translate-y-[1px] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:min-h-7 min-[1440px]:py-1 min-[1440px]:text-[13px]',
+                                                'inline-flex min-h-6 w-full min-w-0 cursor-pointer items-center justify-center rounded-full border py-0.5 font-apple text-[12px] leading-none tabular-nums transition duration-150 hover:-translate-y-[1px] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-7 min-[1600px]:py-1 min-[1600px]:text-[13px]',
                                                 isSelected ? 'px-3 font-semibold' : 'px-1.5 font-normal',
                                             )}
                                             style={{
@@ -357,16 +357,16 @@ function NurseDetailPanel({
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col">
-                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
+                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <div className="flex items-center justify-between">
-                            <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                            <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                                 {t('page.member.detail.shiftTypes')}
                             </p>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <button
                                         type="button"
-                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1440px]:size-7"
+                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
                                         aria-label={t('page.member.detail.shiftTypesHelpAria')}
                                     >
                                         <InfoIcon className="size-4" />
@@ -388,7 +388,7 @@ function NurseDetailPanel({
                                         disabled={isBusy}
                                         aria-pressed={isPossible}
                                         className={cn(
-                                            'inline-flex min-h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:min-h-8 min-[1440px]:px-2.5 min-[1440px]:text-[14px]',
+                                            'inline-flex min-h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-8 min-[1600px]:px-2.5 min-[1600px]:text-[14px]',
                                         )}
                                         style={
                                             isPossible
@@ -453,13 +453,13 @@ function NurseDetailPanel({
                         </div>
                     </div>
 
-                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
-                        <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                    <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                        <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.rolesAndPermissions')}
                         </p>
                         <div className="mt-2 grid grid-cols-2 gap-1.5">
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.preceptor')}
                                 </p>
                                 <button
@@ -489,8 +489,8 @@ function NurseDetailPanel({
                                     <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                                 </button>
                             </div>
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.preceptee')}
                                 </p>
                                 <button
@@ -522,8 +522,8 @@ function NurseDetailPanel({
                                     <Check className="h-3.5 w-3.5 stroke-[3] transition-[stroke-width] duration-150 group-hover:stroke-[3.6]" />
                                 </button>
                             </div>
-                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1440px]:min-h-10">
-                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1440px]:text-[14px]">
+                            <div className="flex min-h-9 items-center justify-between rounded-[9px] bg-gray-7 px-3 min-[1600px]:min-h-10">
+                                <p className="font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[14px]">
                                     {t('page.member.detail.worker')}
                                 </p>
                                 <Switch
@@ -538,19 +538,19 @@ function NurseDetailPanel({
                         </div>
                     </div>
 
-                    <div className="flex min-h-0 flex-1 flex-col border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
-                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                    <div className="flex min-h-0 flex-1 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                        <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.phone')}
                         </p>
                         <input
                             type="tel"
                             disabled={isBusy}
                             name="nursePhoneNum"
-                            className="mt-2 h-10 w-full shrink-0 rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-poppins text-[13px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1440px]:text-[14px]"
+                            className="mt-2 h-10 w-full shrink-0 rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-poppins text-[13px] text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:text-[14px]"
                             value={writeNurse.phoneNum ?? ''}
                             onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, phoneNum: event.target.value} : prev))}
                         />
-                        <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1440px]:text-[14px]">
+                        <p className="mt-2.5 shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.memo')}
                         </p>
                         <textarea
@@ -559,7 +559,7 @@ function NurseDetailPanel({
                             aria-label={t('page.member.detail.memo')}
                             value={getMemoWithoutPrecepteeMarker(writeNurse.memo)}
                             disabled={isBusy}
-                            className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1440px]:h-16 min-[1440px]:text-[14px]"
+                            className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1600px]:h-16 min-[1600px]:text-[14px]"
                             onChange={(event) =>
                                 setWriteNurse((prev) =>
                                     prev ? {...prev, memo: setPrecepteeMemo(event.target.value, hasPrecepteeMemo(prev.memo))} : prev,
@@ -574,7 +574,7 @@ function NurseDetailPanel({
                                     aria-expanded={moveTeamMenuOpen}
                                     disabled={isBusy || moveTargetShiftTeams.length === 0}
                                     className={cn(
-                                        'inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#F3F4F6] px-3 font-apple text-[13px] font-semibold text-[#5C667D] transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-45 min-[1440px]:h-10 min-[1440px]:text-[14px]',
+                                        'inline-flex h-9 w-full items-center justify-center gap-2 rounded-[9px] bg-[#F3F4F6] px-3 font-apple text-[13px] font-semibold text-[#5C667D] transition-colors hover:bg-[#EAECEF] focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-45 min-[1600px]:h-10 min-[1600px]:text-[14px]',
                                         moveTeamMenuOpen && 'bg-[#EAECEF] text-sub-1',
                                     )}
                                     onClick={() => setMoveTeamMenuOpen((prev) => !prev)}
@@ -589,7 +589,7 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     disabled={isBusy}
-                                    className="h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1440px]:h-10 min-[1440px]:text-[14px]"
+                                    className="h-9 w-full rounded-[9px] bg-[#FFF5F5] px-3 font-apple text-[13px] font-semibold text-[#D14343] transition-colors hover:bg-[#FEECEC] disabled:opacity-50 min-[1600px]:h-10 min-[1600px]:text-[14px]"
                                     onClick={() => setDeleteConfirmModalOpen(true)}
                                 >
                                     {t('page.member.common.deleteAction')}
@@ -643,7 +643,7 @@ function NurseDetailPanel({
                         </div>
                     </div>
                 </div>
-                <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1440px]:px-4 min-[1440px]:py-3">
+                <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                     <button
                         type="button"
                         disabled={isBusy || (!isDirty && !isSkillDirty)}
@@ -667,7 +667,9 @@ function NurseDetailPanel({
                         >
                             <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.disconnectTitle')}</p>
                             <p className="mt-2 font-apple text-[15px] text-gray-3">
-                                <span className="font-semibold text-sub-1">{writeNurse.name || t('page.member.common.selectedNurse')}</span>
+                                <span className="font-semibold text-sub-1">
+                                    {writeNurse.name.trim() ? writeNurse.name : t('page.member.common.selectedNurse')}
+                                </span>
                                 {t('page.member.modal.disconnectDescriptionSuffix')}
                             </p>
                             <div className="mt-6 flex items-center gap-3">
@@ -707,10 +709,12 @@ function NurseDetailPanel({
                                   className="w-full max-w-[440px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.deleteNurseTitle')}</p>
+                                  <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                      {t('page.member.modal.deleteNurseTitle')}
+                                  </p>
                                   <p className="mt-2 font-apple text-[15px] text-gray-3">
                                       <span className="font-semibold text-sub-1">
-                                          {writeNurse.name || t('page.member.common.selectedNurse')}
+                                          {writeNurse.name.trim() ? writeNurse.name : t('page.member.common.selectedNurse')}
                                       </span>
                                       {t('page.member.modal.deleteNurseDescriptionSuffix')}
                                   </p>
@@ -753,7 +757,9 @@ function NurseDetailPanel({
                                   className="w-full max-w-[460px] rounded-[16px] bg-white px-6 py-5"
                                   onClick={(event) => event.stopPropagation()}
                               >
-                                  <p className="font-apple text-[20px] font-semibold text-sub-1">{t('page.member.modal.unsavedExitTitle')}</p>
+                                  <p className="font-apple text-[20px] font-semibold text-sub-1">
+                                      {t('page.member.modal.unsavedExitTitle')}
+                                  </p>
                                   <p className="mt-2 font-apple text-[15px] text-gray-3">{t('page.member.modal.unsavedExitDescription')}</p>
                                   <div className="mt-6 grid grid-cols-3 gap-2">
                                       <button

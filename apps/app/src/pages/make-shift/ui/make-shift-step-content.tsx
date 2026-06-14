@@ -72,9 +72,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
         const widePtClass = currentStep === 3 ? 'pt-3' : '';
 
         return (
-            <div
-                className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-[1360px] flex-col pb-3 ${widePtClass}`}
-            >
+            <div className={`make-shift-step-content make-shift-step-content--wide flex w-full min-w-0 flex-col pb-3 ${widePtClass}`}>
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>
@@ -91,16 +89,16 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
     };
 
     return (
-        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-[1320px] gap-4 pt-3 pb-3">
-            <aside className="make-shift-step-content__intro flex w-[400px] shrink-0 flex-col min-[1440px]:w-[clamp(400px,25vw,440px)]">
-                <div className={`${MAKE_SHIFT_STEP_HEADING_PADDING_CLASS} min-h-[159px] min-[1440px]:min-h-[140px]`}>
+        <div className="make-shift-step-content make-shift-step-content--narrow flex w-full min-w-0 gap-2 pt-3 pb-3 min-[1400px]:gap-3 min-[1600px]:gap-4">
+            <aside className="make-shift-step-content__intro flex w-[300px] shrink-0 flex-col min-[1400px]:w-[320px] min-[1600px]:w-[clamp(400px,25vw,440px)]">
+                <div className={`${MAKE_SHIFT_STEP_HEADING_PADDING_CLASS} min-h-[130px] min-[1600px]:min-h-[140px]`}>
                     <p className={`make-shift-step-content__intro-title ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>
                         {intro ? t(intro.titleKey) : ''}
                     </p>
                     {intro && <StepIntroDescription currentStep={currentStep} description={t(intro.descriptionKey)} />}
                 </div>
 
-                <div className="make-shift-step-content__intro-actions mt-[50px] grid w-[292px] grid-cols-[auto_auto] items-center justify-end gap-2">
+                <div className="make-shift-step-content__intro-actions mt-6 grid w-[252px] grid-cols-[auto_auto] items-center justify-end gap-2 min-[1400px]:w-[260px] min-[1600px]:mt-[50px] min-[1600px]:w-[292px]">
                     {currentStep > 1 ? (
                         <Button
                             variant="secondary"
@@ -129,7 +127,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                 </div>
             </aside>
 
-            <div className="make-shift-step-content__main min-w-[920px] flex-1">
+            <div className="make-shift-step-content__main min-w-[720px] flex-1 min-[1400px]:min-w-[740px] min-[1600px]:min-w-[920px]">
                 <p className="sr-only">{t(stepConfig.labelKey)}</p>
                 <StepComponent />
             </div>

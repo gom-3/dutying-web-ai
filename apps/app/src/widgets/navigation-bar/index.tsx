@@ -1,12 +1,12 @@
 import {cn} from '@dutying/utils/style';
+import {useEffect} from 'react';
+import {Link} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {useEffect} from 'react';
-import {Link} from 'react-router';
-import NavigationBarItemGroups from './NavigationBarItemGroup';
 import {useNavigationBarFoldStore} from './navigation-bar-fold-store';
+import NavigationBarItemGroups from './NavigationBarItemGroup';
 
 const NAV_WIDTH_EXPANDED = 'w-[216px]';
 const NAV_WIDTH_COLLAPSED = 'w-[64px]';
@@ -57,7 +57,7 @@ const NavigationBar = () => {
                             'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
                         )}
                         onClick={() => {
-                            setFold(!isFold);
+                            setFold(!isFold, 'user');
                             sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
                         }}
                     >
