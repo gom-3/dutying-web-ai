@@ -10,14 +10,21 @@ import NavigationBarItemGroups from './NavigationBarItemGroup';
 
 const NAV_WIDTH_EXPANDED = 'w-[216px]';
 const NAV_WIDTH_COLLAPSED = 'w-[64px]';
-const NavigationBar = () => {
+
+type TNavigationBarProps = {
+    compactMode?: boolean;
+};
+
+const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
     const {t} = useTypedTranslation();
     const isFold = useNavigationBarFoldStore((s) => s.isFold);
     const setFold = useNavigationBarFoldStore((s) => s.setFold);
     const resetFold = useNavigationBarFoldStore((s) => s.reset);
     const [isHoverExpanded, setIsHoverExpanded] = useState(false);
-    const isPreviewExpanded = isFold && isHoverExpanded;
-    const isCollapsed = isFold && !isPreviewExpanded;
+    const [isFocusExpanded, setIsFocusExpanded] = useState(false);
+    const isBaseFolded = compactMode || isFold;
+    const isPreviewExpanded = isBaseFolded && (isHoverExpanded || isFocusExpanded);
+    const isCollapsed = isBaseFolded && !isPreviewExpanded;
 
     useEffect(() => {
         return () => {
@@ -26,10 +33,11 @@ const NavigationBar = () => {
     }, [resetFold]);
 
     useEffect(() => {
-        if (!isFold) {
+        if (!isBaseFolded) {
             setIsHoverExpanded(false);
+            setIsFocusExpanded(false);
         }
-    }, [isFold]);
+    }, [isBaseFolded]);
 
     return (
         <aside
@@ -39,11 +47,23 @@ const NavigationBar = () => {
                 isCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
             )}
             onPointerEnter={() => {
-                if (isFold) {
+                if (isBaseFolded) {
                     setIsHoverExpanded(true);
                 }
             }}
             onPointerLeave={() => setIsHoverExpanded(false)}
+            onFocusCapture={() => {
+                if (isBaseFolded) {
+                    setIsFocusExpanded(true);
+                }
+            }}
+            onBlurCapture={(event) => {
+                const nextFocusedElement = event.relatedTarget;
+
+                if (!(nextFocusedElement instanceof Node) || !event.currentTarget.contains(nextFocusedElement)) {
+                    setIsFocusExpanded(false);
+                }
+            }}
         >
             <div className={cn('flex min-h-screen flex-col', isCollapsed ? 'px-2 py-3' : 'px-3 py-4')}>
                 <div className={cn('flex min-h-11 items-center', isCollapsed ? 'flex-col gap-2' : 'justify-between')}>
@@ -63,22 +83,25 @@ const NavigationBar = () => {
                             />
                         )}
                     </Link>
-                    <button
-                        data-testid="navigation-bar-fold-trigger"
-                        type="button"
-                        aria-label={t(isFold ? 'page.navigationBar.expandAria' : 'page.navigationBar.foldAria')}
-                        className={cn(
-                            'flex size-11 shrink-0 items-center justify-center rounded-[10px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1',
-                            'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
-                        )}
-                        onClick={() => {
-                            setFold(!isFold, 'user');
-                            setIsHoverExpanded(false);
-                            sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
-                        }}
-                    >
-                        <FoldIcon className={cn('size-[26px]', isFold ? 'rotate-180' : undefined)} />
-                    </button>
+                    {compactMode ? null : (
+                        <button
+                            data-testid="navigation-bar-fold-trigger"
+                            type="button"
+                            aria-label={t(isFold ? 'page.navigationBar.expandAria' : 'page.navigationBar.foldAria')}
+                            className={cn(
+                                'flex size-11 shrink-0 items-center justify-center rounded-[10px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1',
+                                'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
+                            )}
+                            onClick={() => {
+                                setFold(!isFold, 'user');
+                                setIsHoverExpanded(false);
+                                setIsFocusExpanded(false);
+                                sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
+                            }}
+                        >
+                            <FoldIcon className={cn('size-[26px]', isFold ? 'rotate-180' : undefined)} />
+                        </button>
+                    )}
                 </div>
 
                 <NavigationBarItemGroups collapsed={isCollapsed} />

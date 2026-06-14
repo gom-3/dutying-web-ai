@@ -330,6 +330,33 @@ describe('NavigationBar', () => {
         expect(screen.queryByText('병동')).not.toBeInTheDocument();
     });
 
+    it('compact mode에서는 접기/펼치기 버튼 없이 hover 동안만 임시로 펼친다', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar compactMode />
+            </MemoryRouter>,
+        );
+
+        const navigationBar = screen.getByTestId('navigation-bar');
+
+        expect(navigationBar).toHaveClass('w-[64px]');
+        expect(screen.queryByRole('button', {name: '사이드바 펼치기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '사이드바 접기'})).not.toBeInTheDocument();
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
+
+        await userEvent.hover(navigationBar);
+
+        expect(navigationBar).toHaveClass('w-[216px]');
+        expect(screen.getByText('병동')).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '사이드바 펼치기'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '사이드바 접기'})).not.toBeInTheDocument();
+
+        await userEvent.unhover(navigationBar);
+
+        expect(navigationBar).toHaveClass('w-[64px]');
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
+    });
+
     it('게시판 메뉴를 클릭하면 게시판 페이지로 이동한다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>

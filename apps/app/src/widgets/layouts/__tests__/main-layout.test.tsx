@@ -30,17 +30,24 @@ vi.mock('@/widgets/navigation-bar', async () => {
         '@/widgets/navigation-bar/navigation-bar-fold-store',
     );
 
+    type TMockNavigationBarProps = {
+        compactMode?: boolean;
+    };
+
     return {
-        default: () => {
+        default: ({compactMode = false}: TMockNavigationBarProps) => {
             const isFold = useNavigationBarFoldStore((state) => state.isFold);
             const setFold = useNavigationBarFoldStore((state) => state.setFold);
+            const isRenderedFolded = compactMode || isFold;
 
             return (
-                <nav data-testid="navigation-bar">
-                    <span>{isFold ? 'folded navigation' : 'expanded navigation'}</span>
-                    <button type="button" onClick={() => setFold(!isFold, 'user')}>
-                        toggle navigation
-                    </button>
+                <nav data-testid="navigation-bar" data-compact-mode={compactMode ? 'true' : 'false'}>
+                    <span>{isRenderedFolded ? 'folded navigation' : 'expanded navigation'}</span>
+                    {compactMode ? null : (
+                        <button type="button" onClick={() => setFold(!isFold, 'user')}>
+                            toggle navigation
+                        </button>
+                    )}
                 </nav>
             );
         },
@@ -141,6 +148,8 @@ describe('MainLayout', () => {
         await waitFor(() => {
             expect(screen.getByText('folded navigation')).toBeInTheDocument();
         });
+        expect(screen.getByTestId('navigation-bar')).toHaveAttribute('data-compact-mode', 'true');
+        expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
     });
 
     it('keeps the navigation expanded on non-workspace pages at the same width', () => {
@@ -207,33 +216,6 @@ describe('MainLayout', () => {
         await waitFor(() => {
             expect(screen.getByText('folded navigation')).toBeInTheDocument();
         });
-    });
-
-    it('keeps a manual expansion open until the user clicks outside on compact workspace pages', async () => {
-        setViewportWidth(1512);
-
-        render(
-            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
-                <Routes>
-                    <Route element={<MainLayout />}>
-                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
-                    </Route>
-                </Routes>
-            </MemoryRouter>,
-        );
-
-        await waitFor(() => {
-            expect(screen.getByText('folded navigation')).toBeInTheDocument();
-        });
-
-        await userEvent.click(screen.getByRole('button', {name: 'toggle navigation'}));
-
-        expect(screen.getByText('expanded navigation')).toBeInTheDocument();
-
-        await userEvent.click(screen.getByText('make page'));
-
-        await waitFor(() => {
-            expect(screen.getByText('folded navigation')).toBeInTheDocument();
-        });
+        expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
     });
 });
