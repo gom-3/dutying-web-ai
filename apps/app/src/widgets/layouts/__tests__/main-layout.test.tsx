@@ -1,4 +1,4 @@
-import {MemoryRouter, Route, Routes} from 'react-router';
+import {Link, MemoryRouter, Route, Routes} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
@@ -157,6 +157,38 @@ describe('MainLayout', () => {
         );
 
         expect(screen.getByText('expanded navigation')).toBeInTheDocument();
+    });
+
+    it('keeps the navigation folded after moving from a compact workspace page to another page', async () => {
+        setViewportWidth(1512);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route
+                            path={ROUTE.MAKE}
+                            element={
+                                <div>
+                                    <Link to={ROUTE.BOARD}>go board</Link>
+                                    make page
+                                </div>
+                            }
+                        />
+                        <Route path={ROUTE.BOARD} element={<div>board page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('folded navigation')).toBeInTheDocument();
+        });
+
+        await userEvent.click(screen.getByRole('link', {name: 'go board'}));
+
+        expect(await screen.findByText('board page')).toBeInTheDocument();
+        expect(screen.getByText('folded navigation')).toBeInTheDocument();
     });
 
     it('folds the navigation on every page below 1280px', async () => {

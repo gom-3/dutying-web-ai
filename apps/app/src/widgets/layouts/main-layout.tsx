@@ -114,12 +114,6 @@ export const MainLayout = () => {
             if (routeChanged || becameAutoFolded || navigationState.lastChangeSource !== 'user') {
                 navigationState.collapse('auto');
             }
-
-            return;
-        }
-
-        if (navigationState.isFold && navigationState.lastChangeSource === 'auto') {
-            navigationState.expand('auto');
         }
     }, [location.pathname, shouldFoldNavigation]);
 
