@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {Link} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {FoldIcon} from '@/shared/assets/svg';
@@ -15,6 +15,9 @@ const NavigationBar = () => {
     const isFold = useNavigationBarFoldStore((s) => s.isFold);
     const setFold = useNavigationBarFoldStore((s) => s.setFold);
     const resetFold = useNavigationBarFoldStore((s) => s.reset);
+    const [isHoverExpanded, setIsHoverExpanded] = useState(false);
+    const isPreviewExpanded = isFold && isHoverExpanded;
+    const isCollapsed = isFold && !isPreviewExpanded;
 
     useEffect(() => {
         return () => {
@@ -22,22 +25,34 @@ const NavigationBar = () => {
         };
     }, [resetFold]);
 
+    useEffect(() => {
+        if (!isFold) {
+            setIsHoverExpanded(false);
+        }
+    }, [isFold]);
+
     return (
         <aside
             data-testid="navigation-bar"
             className={cn(
                 'sticky top-0 z-[997] min-h-screen shrink-0 overflow-x-hidden border-r border-gray-6 bg-white font-apple shadow-[8px_0_24px_rgba(36,36,40,0.04)] transition-[width] duration-300 ease-out',
-                isFold ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
+                isCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
             )}
+            onPointerEnter={() => {
+                if (isFold) {
+                    setIsHoverExpanded(true);
+                }
+            }}
+            onPointerLeave={() => setIsHoverExpanded(false)}
         >
-            <div className={cn('flex min-h-screen flex-col', isFold ? 'px-2 py-3' : 'px-3 py-4')}>
-                <div className={cn('flex min-h-11 items-center', isFold ? 'flex-col gap-2' : 'justify-between')}>
+            <div className={cn('flex min-h-screen flex-col', isCollapsed ? 'px-2 py-3' : 'px-3 py-4')}>
+                <div className={cn('flex min-h-11 items-center', isCollapsed ? 'flex-col gap-2' : 'justify-between')}>
                     <Link
                         to={ROUTE.ROOT}
                         aria-label={t('page.navigationBar.landingAria')}
                         className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
-                        {isFold ? (
+                        {isCollapsed ? (
                             <img src="/img/image-43-2.png" alt="" aria-hidden="true" className="mt-2 size-[22px] object-contain" />
                         ) : (
                             <img
@@ -58,6 +73,7 @@ const NavigationBar = () => {
                         )}
                         onClick={() => {
                             setFold(!isFold, 'user');
+                            setIsHoverExpanded(false);
                             sendEvent(isFold ? events.navigationBar.spreadNavigation : events.navigationBar.foldNavigation);
                         }}
                     >
@@ -65,7 +81,7 @@ const NavigationBar = () => {
                     </button>
                 </div>
 
-                <NavigationBarItemGroups collapsed={isFold} />
+                <NavigationBarItemGroups collapsed={isCollapsed} />
             </div>
         </aside>
     );
