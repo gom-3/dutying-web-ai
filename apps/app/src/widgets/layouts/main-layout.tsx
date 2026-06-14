@@ -111,15 +111,9 @@ export const MainLayout = () => {
         };
 
         if (shouldFoldNavigation) {
-            if (routeChanged || becameAutoFolded || navigationState.lastChangeSource !== 'user') {
+            if (routeChanged || becameAutoFolded || !navigationState.isFold) {
                 navigationState.collapse('auto');
             }
-
-            return;
-        }
-
-        if (navigationState.isFold && navigationState.lastChangeSource === 'auto') {
-            navigationState.expand('auto');
         }
     }, [location.pathname, shouldFoldNavigation]);
 
@@ -156,7 +150,7 @@ export const MainLayout = () => {
                 wardTitle={wardTitle}
                 onClose={() => setCreatedWardGuidePayload(null)}
             />
-            <NavigationBar />
+            <NavigationBar compactMode={shouldFoldNavigation} />
             <main className="min-w-0 flex-1 overflow-x-auto">
                 <Outlet />
             </main>
