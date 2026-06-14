@@ -1,14 +1,19 @@
 import {useQuery} from '@tanstack/react-query';
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import NavigationBar from '@/widgets/navigation-bar';
+import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import WardChatWidget from '@/widgets/ward-chat';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 
 const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
+const WORKSPACE_NAV_AUTO_FOLD_WIDTH = 1536;
+const DEFAULT_NAV_AUTO_FOLD_WIDTH = 1280;
+const NAV_AUTO_FOLD_ROUTES = new Set<string>([ROUTE.MAKE, ROUTE.MEMBER]);
 
 type TWardCreatedGuidePayload = {
     wardCode?: string | null;
@@ -43,6 +48,8 @@ const readStoredWardCreatedGuidePayload = () => {
         return null;
     }
 };
+const shouldAutoFoldNavigation = (pathname: string, viewportWidth: number) =>
+    viewportWidth < DEFAULT_NAV_AUTO_FOLD_WIDTH || (NAV_AUTO_FOLD_ROUTES.has(pathname) && viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH);
 
 export const MainLayout = () => {
     const {t} = useTypedTranslation();
@@ -51,7 +58,10 @@ export const MainLayout = () => {
     } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
+    const layoutRef = useRef<HTMLDivElement>(null);
+    const previousResponsiveStateRef = useRef<{pathname: string; shouldAutoFold: boolean} | null>(null);
     const locationState = location.state as TMainLayoutLocationState;
+    const [viewportWidth, setViewportWidth] = useState(() => window.innerWidth);
     const locationGuidePayload = useMemo(
         () => normalizeWardCreatedGuidePayload(locationState?.onboardingWardCreated),
         [locationState?.onboardingWardCreated],
@@ -64,6 +74,7 @@ export const MainLayout = () => {
     });
     const wardCode = createdWardGuidePayload?.wardCode ?? getWardDisplayCode(wardQuery.data, t('entity.ward.codeChecking'));
     const wardTitle = createdWardGuidePayload?.wardTitle ?? getWardDisplayTitle(wardQuery.data);
+    const shouldFoldNavigation = shouldAutoFoldNavigation(location.pathname, viewportWidth);
 
     useEffect(() => {
         const guidePayload = locationGuidePayload ?? readStoredWardCreatedGuidePayload();
@@ -80,8 +91,65 @@ export const MainLayout = () => {
         }
     }, [location.pathname, location.search, locationGuidePayload, navigate]);
 
+    useEffect(() => {
+        const handleResize = () => setViewportWidth(window.innerWidth);
+
+        window.addEventListener('resize', handleResize);
+
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        const previousResponsiveState = previousResponsiveStateRef.current;
+        const routeChanged = previousResponsiveState?.pathname !== location.pathname;
+        const becameAutoFolded = previousResponsiveState?.shouldAutoFold !== true && shouldFoldNavigation;
+        const navigationState = useNavigationBarFoldStore.getState();
+
+        previousResponsiveStateRef.current = {
+            pathname: location.pathname,
+            shouldAutoFold: shouldFoldNavigation,
+        };
+
+        if (shouldFoldNavigation) {
+            if (routeChanged || becameAutoFolded || navigationState.lastChangeSource !== 'user') {
+                navigationState.collapse('auto');
+            }
+
+            return;
+        }
+
+        if (navigationState.isFold && navigationState.lastChangeSource === 'auto') {
+            navigationState.expand('auto');
+        }
+    }, [location.pathname, shouldFoldNavigation]);
+
+    useEffect(() => {
+        if (!shouldFoldNavigation) {
+            return;
+        }
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const layoutElement = layoutRef.current;
+            const navigationElement = layoutElement?.querySelector('[data-testid="navigation-bar"]');
+
+            if (!navigationElement || !(event.target instanceof Node) || navigationElement.contains(event.target)) {
+                return;
+            }
+
+            const navigationState = useNavigationBarFoldStore.getState();
+
+            if (!navigationState.isFold) {
+                navigationState.collapse('auto');
+            }
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [shouldFoldNavigation]);
+
     return (
-        <div className="flex h-full w-full bg-main-bg">
+        <div ref={layoutRef} className="flex h-full w-full bg-main-bg">
             <WardCodeGuideModal
                 open={createdWardGuidePayload !== null}
                 wardCode={wardCode}
