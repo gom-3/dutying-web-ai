@@ -162,6 +162,51 @@
     }
 }
 
+@keyframes make-shift-calendar-shimmer {
+    0% {
+        left: -28%;
+        opacity: 0;
+        transform: skewX(-14deg);
+    }
+
+    10% {
+        opacity: 0.68;
+    }
+
+    82% {
+        opacity: 0.68;
+    }
+
+    100% {
+        left: 108%;
+        opacity: 0;
+        transform: skewX(-14deg);
+    }
+}
+
+.make-shift-calendar__shimmer-sweep {
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(102, 61, 250, 0.08) 18%,
+        rgba(255, 255, 255, 0.78) 46%,
+        rgba(102, 61, 250, 0.18) 56%,
+        rgba(67, 109, 255, 0.14) 68%,
+        transparent 100%
+    );
+    box-shadow: 0 0 30px rgba(102, 61, 250, 0.16);
+    transform: skewX(-14deg);
+    transform-origin: center;
+    animation: make-shift-calendar-shimmer 2.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .make-shift-calendar__shimmer-sweep {
+        animation: none;
+        opacity: 0;
+    }
+}
+
 /* 100 Thin */
 @font-face {
     font-family: 'Apple-SDG';

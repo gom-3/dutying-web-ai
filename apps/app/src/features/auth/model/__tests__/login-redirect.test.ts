@@ -41,7 +41,7 @@ describe('getLoginRedirectDecision', () => {
 
         expect(getLoginRedirectDecision(undefined)).toEqual({
             type: 'replace',
-            href: ROUTE.MAKE,
+            href: ROUTE.HOME,
         });
     });
 
@@ -73,7 +73,7 @@ describe('getLoginRedirectDecision', () => {
 
         expect(getLoginRedirectDecision('https://dutying.net/request?month=3')).toEqual({
             type: 'replace',
-            href: ROUTE.MAKE,
+            href: ROUTE.HOME,
         });
     });
 });

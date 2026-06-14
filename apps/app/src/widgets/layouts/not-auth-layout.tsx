@@ -10,7 +10,7 @@ export const NotAuthLayout = () => {
     const {
         state: {isAuth, _loaded},
     } = useAuth();
-    const nextPath = sanitizeInternalPath(new URLSearchParams(search).get('next'), ROUTE.MAKE);
+    const nextPath = sanitizeInternalPath(new URLSearchParams(search).get('next'), ROUTE.HOME);
 
     useEffect(() => {
         if (_loaded && isAuth) navigate(nextPath, {replace: true});

@@ -1,5 +1,7 @@
+import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen} from '@/shared/util/test-utils';
+import ROUTE from '@/shared/constant/path';
+import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {loadDraftStep} from '../../model/make-shift-progress-storage';
 import {MakeShiftPageView} from '../index';
 
@@ -62,6 +64,31 @@ vi.mock('../make-shift-step-content', () => ({
 
 const mockLoadDraftStep = vi.mocked(loadDraftStep);
 
+function LocationProbe() {
+    const location = useLocation();
+
+    return <div data-testid="location-path">{location.pathname}</div>;
+}
+
+function renderMakeShiftPageView() {
+    return render(
+        <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+            <Routes>
+                <Route
+                    path={ROUTE.MAKE}
+                    element={
+                        <>
+                            <MakeShiftPageView />
+                            <LocationProbe />
+                        </>
+                    }
+                />
+                <Route path={ROUTE.MEMBER} element={<LocationProbe />} />
+            </Routes>
+        </MemoryRouter>,
+    );
+}
+
 describe('MakeShiftPageView layout', () => {
     beforeEach(() => {
         mockLoadDraftStep.mockReturnValue(null);
@@ -94,7 +121,7 @@ describe('MakeShiftPageView layout', () => {
             maxReachedStep: currentStep,
         };
 
-        const {container} = render(<MakeShiftPageView />);
+        const {container} = renderMakeShiftPageView();
         const pageRoot = container.firstElementChild;
         const pageFrame = pageRoot?.firstElementChild;
         const stepContentWrapper = screen.getByTestId('make-shift-step-content').parentElement;
@@ -118,7 +145,7 @@ describe('MakeShiftPageView layout', () => {
             shiftStatus: 'pending',
         };
 
-        const {container} = render(<MakeShiftPageView />);
+        const {container} = renderMakeShiftPageView();
         const pageRoot = container.firstElementChild;
         const pageFrame = pageRoot?.firstElementChild;
         const contentCard = screen.getByTestId('make-shift-header').nextElementSibling;
@@ -139,7 +166,7 @@ describe('MakeShiftPageView layout', () => {
             shiftFullyAssigned: false,
         };
 
-        render(<MakeShiftPageView />);
+        renderMakeShiftPageView();
 
         expect(screen.getByRole('button', {name: /page\.makeShift\.overview\.createShift/})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: 'page.makeShift.overview.continueShift'})).not.toBeInTheDocument();
@@ -154,7 +181,7 @@ describe('MakeShiftPageView layout', () => {
             shiftFullyAssigned: false,
         };
 
-        render(<MakeShiftPageView />);
+        renderMakeShiftPageView();
 
         expect(screen.getByRole('button', {name: 'page.makeShift.overview.continueShift'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /page\.makeShift\.overview\.createShift/})).not.toBeInTheDocument();
@@ -170,8 +197,27 @@ describe('MakeShiftPageView layout', () => {
         };
         mockLoadDraftStep.mockReturnValue(2);
 
-        render(<MakeShiftPageView />);
+        renderMakeShiftPageView();
 
         expect(screen.getByRole('button', {name: 'page.makeShift.overview.continueShift'})).toBeInTheDocument();
+    });
+
+    it('shows a member management shortcut when there are no teams', async () => {
+        const user = userEvent.setup();
+
+        makeShiftState = {
+            ...makeShiftState,
+            phase: 'overview',
+            shiftStatus: 'success',
+            shiftTeams: [],
+            shiftTeamsStatus: 'success',
+            currentShiftTeamId: null,
+        };
+
+        renderMakeShiftPageView();
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.workers.goMemberManagement'}));
+
+        expect(screen.getByTestId('location-path')).toHaveTextContent(ROUTE.MEMBER);
     });
 });

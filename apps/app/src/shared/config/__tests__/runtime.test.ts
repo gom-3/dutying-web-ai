@@ -8,7 +8,7 @@ describe('sanitizeInternalPath', () => {
     });
 
     it('falls back for absolute urls', () => {
-        expect(sanitizeInternalPath('https://evil.example/steal')).toBe(ROUTE.MAKE);
+        expect(sanitizeInternalPath('https://evil.example/steal')).toBe(ROUTE.HOME);
     });
 });
 
@@ -30,7 +30,7 @@ describe('resolveSafeRedirectTarget', () => {
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://evil.example/request')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('https://evil.example/request')).toBe(ROUTE.HOME);
     });
 
     it('accepts redirects that match the configured public app origin in local development', () => {
@@ -45,7 +45,7 @@ describe('resolveSafeRedirectTarget', () => {
     });
 
     it('rejects protocol-relative redirect targets', () => {
-        expect(resolveSafeRedirectTarget('//evil.example/phish')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('//evil.example/phish')).toBe(ROUTE.HOME);
     });
 
     it('rejects same-origin redirects whose normalized path becomes protocol-relative', () => {
@@ -55,8 +55,8 @@ describe('resolveSafeRedirectTarget', () => {
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://app.dutying.net//evil.example')).toBe(ROUTE.MAKE);
-        expect(resolveSafeRedirectTarget('https://app.dutying.net/\\evil.example')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('https://app.dutying.net//evil.example')).toBe(ROUTE.HOME);
+        expect(resolveSafeRedirectTarget('https://app.dutying.net/\\evil.example')).toBe(ROUTE.HOME);
     });
 
     it('rejects landing-domain redirects after domain split', () => {
@@ -66,7 +66,7 @@ describe('resolveSafeRedirectTarget', () => {
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://dutying.net/request')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('https://dutying.net/request')).toBe(ROUTE.HOME);
     });
 
     it('rejects docs-domain redirects after domain split', () => {
@@ -76,11 +76,11 @@ describe('resolveSafeRedirectTarget', () => {
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://docs.dutying.net/request')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('https://docs.dutying.net/request')).toBe(ROUTE.HOME);
     });
 
     it('rejects slash-backslash redirect targets', () => {
-        expect(resolveSafeRedirectTarget('/\\evil.example')).toBe(ROUTE.MAKE);
+        expect(resolveSafeRedirectTarget('/\\evil.example')).toBe(ROUTE.HOME);
     });
 });
 
@@ -101,7 +101,7 @@ describe('buildAuthAuthorizeUrl', () => {
 
         expect(url.origin).toBe('https://api.dutying.net');
         expect(url.pathname).toBe('/oauth2/authorization/admin/kakao');
-        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/make');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/home');
     });
 
     it('uses the default server origin when VITE_SERVER_URL is blank', () => {

@@ -3,6 +3,7 @@ import {useSearchParams} from 'react-router';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
+import {getShiftWorkflowStatus, getShiftWorkflowStep} from '@/shared/lib/shift-workflow-status';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep} from './make-shift-progress-storage';
 import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
@@ -259,10 +260,33 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
                 if (cancelled) return;
 
-                const nextShiftExists = !isDutyShiftWithoutAssignments(shift);
-                const nextShiftFullyAssigned = isDutyShiftFullyAssigned(shift);
+                const workflowStatus = getShiftWorkflowStatus(shift);
+                const workflowStep = getShiftWorkflowStep(shift);
+                const nextShiftExists =
+                    workflowStatus === 'NOT_STARTED'
+                        ? false
+                        : workflowStatus === 'IN_PROGRESS' || workflowStatus === 'CONFIRMED'
+                          ? true
+                          : !isDutyShiftWithoutAssignments(shift);
+                const nextShiftFullyAssigned =
+                    workflowStatus === 'CONFIRMED'
+                        ? true
+                        : workflowStatus === 'NOT_STARTED' || workflowStatus === 'IN_PROGRESS'
+                          ? false
+                          : isDutyShiftFullyAssigned(shift);
 
-                // 근무표 존재: 최소 1칸 이상 배정이 있을 때만 true (`/duty`와 동일 — `isDutyShiftWithoutAssignments` 역).
+                if (workflowStatus === 'NOT_STARTED') {
+                    clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
+                } else if (workflowStatus === 'IN_PROGRESS' && workflowStep !== null) {
+                    const safeWorkflowStep = Math.min(workflowStep, 5) as 1 | 2 | 3 | 4 | 5;
+
+                    saveDraftStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
+                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
+                } else if (workflowStatus === 'CONFIRMED') {
+                    saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
+                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+                }
+
                 setShiftExists(nextShiftExists);
                 setShiftFullyAssigned(nextShiftFullyAssigned);
                 setShiftStatus('success');

@@ -1,5 +1,5 @@
 import {cn} from '@dutying/utils/style';
-import {type ComponentType, type SVGProps, useEffect, useState} from 'react';
+import {type ComponentType, type SVGProps, useEffect, useRef, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router';
 import {events, sendEvent} from '@/analytics';
 import {type TRoute} from '@/shared/constant/path';
@@ -30,6 +30,7 @@ interface INavigationBarItemProps {
     collapsed?: boolean;
     disabled?: boolean;
     badgeCount?: number;
+    onNavigate?: () => void;
 }
 
 const NavigationBarItem = ({
@@ -40,6 +41,7 @@ const NavigationBarItem = ({
     collapsed = false,
     disabled = false,
     badgeCount = 0,
+    onNavigate,
 }: INavigationBarItemProps) => {
     const navigate = useNavigate();
     const {pathname} = useLocation();
@@ -47,16 +49,39 @@ const NavigationBarItem = ({
     const isDisabled = disabled || !path;
     const [isPressedPreview, setIsPressedPreview] = useState(false);
     const [isNavigationPreview, setIsNavigationPreview] = useState(false);
+    const [isTapAnimating, setIsTapAnimating] = useState(false);
+    const tapAnimationTimeoutRef = useRef<number | null>(null);
     const isInteractionPreview = !isSelected && (isPressedPreview || isNavigationPreview);
     const badgeLabel = badgeCount > 99 ? '99+' : String(badgeCount);
     const canSwapImageIcon = icon.kind === 'image' && !isSelected && !isInteractionPreview && !isDisabled;
     const CurrentComponentIcon =
         icon.kind === 'component' && isSelected && icon.SelectedIcon ? icon.SelectedIcon : icon.kind === 'component' ? icon.Icon : null;
+    const iconMotionClassName = cn(iconTapMotionClass, isTapAnimating ? 'scale-[0.9] duration-100 ease-out' : undefined);
 
     useEffect(() => {
         setIsPressedPreview(false);
         setIsNavigationPreview(false);
     }, [pathname]);
+
+    useEffect(() => {
+        return () => {
+            if (tapAnimationTimeoutRef.current !== null) {
+                window.clearTimeout(tapAnimationTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const triggerTapAnimation = () => {
+        if (tapAnimationTimeoutRef.current !== null) {
+            window.clearTimeout(tapAnimationTimeoutRef.current);
+        }
+
+        setIsTapAnimating(true);
+        tapAnimationTimeoutRef.current = window.setTimeout(() => {
+            setIsTapAnimating(false);
+            tapAnimationTimeoutRef.current = null;
+        }, 120);
+    };
 
     return (
         <button
@@ -74,15 +99,21 @@ const NavigationBarItem = ({
                 isDisabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-gray-3' : 'cursor-pointer',
             )}
             onPointerDown={() => {
-                if (isDisabled || isSelected) return;
+                if (isDisabled) return;
 
-                setIsPressedPreview(true);
+                triggerTapAnimation();
+
+                if (!isSelected) {
+                    setIsPressedPreview(true);
+                }
             }}
+            onPointerUp={() => setIsPressedPreview(false)}
             onPointerCancel={() => setIsPressedPreview(false)}
             onPointerLeave={() => setIsPressedPreview(false)}
             onClick={() => {
                 if (isDisabled) return;
 
+                onNavigate?.();
                 setIsNavigationPreview(true);
                 navigate(path);
                 sendEvent(events.navigationBar.navigate, path);
@@ -95,7 +126,7 @@ const NavigationBarItem = ({
                 />
             ) : null}
             {icon.kind === 'image' ? (
-                <span aria-hidden="true" className={cn('relative size-[22px] shrink-0', iconTapMotionClass)}>
+                <span aria-hidden="true" className={cn('relative size-[22px] shrink-0', iconMotionClassName)}>
                     <img
                         src={icon.defaultSrc}
                         alt=""
@@ -132,7 +163,7 @@ const NavigationBarItem = ({
                 <CurrentComponentIcon
                     className={cn(
                         'size-5 shrink-0',
-                        iconTapMotionClass,
+                        iconMotionClassName,
                         isSelected ? 'text-[#844AFF]' : 'text-gray-4 group-hover:text-sub-1',
                     )}
                     aria-hidden="true"

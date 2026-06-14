@@ -2,6 +2,7 @@ import {type TValues} from '@dutying/utils';
 
 const ROUTE = {
     ROOT: '/',
+    HOME: '/home',
     REGISTER: '/register',
     ENTER_WARD: '/enter-ward',
     REGISTER_WARD: '/register-ward',

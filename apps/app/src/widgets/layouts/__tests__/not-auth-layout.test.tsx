@@ -16,7 +16,7 @@ describe('NotAuthLayout', () => {
         mockedUseAuth.mockReset();
     });
 
-    it('redirects authenticated users to make instead of root', async () => {
+    it('redirects authenticated users to home instead of root', async () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
@@ -30,14 +30,14 @@ describe('NotAuthLayout', () => {
                     <Route element={<NotAuthLayout />}>
                         <Route path={ROUTE.LOGIN} element={<div>login page</div>} />
                     </Route>
-                    <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    <Route path={ROUTE.HOME} element={<div>home page</div>} />
                     <Route path={ROUTE.ROOT} element={<div>root page</div>} />
                 </Routes>
             </MemoryRouter>,
         );
 
         await waitFor(() => {
-            expect(screen.getByText('make page')).toBeInTheDocument();
+            expect(screen.getByText('home page')).toBeInTheDocument();
         });
 
         expect(screen.queryByText('login page')).not.toBeInTheDocument();

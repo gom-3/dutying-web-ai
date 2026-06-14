@@ -165,6 +165,54 @@ describe('useMakeShiftBootstrap', () => {
         });
     });
 
+    it('opens the confirmed step when the backend workflow status is confirmed', async () => {
+        wardApiMocks.getShift.mockResolvedValue({
+            ...makeEmptyShift(),
+            workflowStatus: 'CONFIRMED',
+            workflowStep: 6,
+        });
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 6,
+                maxReachedStep: 6,
+                shiftExists: true,
+                shiftFullyAssigned: true,
+                restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('keeps the overview as progress when the backend workflow status is in progress', async () => {
+        wardApiMocks.getShift.mockResolvedValue({
+            ...makeEmptyShift(),
+            workflowStatus: 'IN_PROGRESS',
+            workflowStep: 3,
+        });
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'overview',
+                currentShiftTeamId: 10,
+                currentStep: 1,
+                shiftExists: true,
+                shiftFullyAssigned: false,
+            });
+        });
+        expect(window.localStorage.getItem('make-shift:draft-step:1:10:2026:6')).toBe('3');
+        expect(window.localStorage.getItem('make-shift:max-step:1:10:2026:6')).toBe('3');
+    });
+
     it('starts on the current month when there is no saved month', async () => {
         const currentYearMonth = getCalendarYearMonthNow();
 

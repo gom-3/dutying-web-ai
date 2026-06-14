@@ -56,7 +56,7 @@ describe('RedirectPage', () => {
         expect(screen.queryByLabelText('loading')).not.toBeInTheDocument();
 
         await waitFor(() => {
-            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/make');
+            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/home');
         });
     });
 

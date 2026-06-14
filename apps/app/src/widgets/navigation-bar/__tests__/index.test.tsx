@@ -2,7 +2,7 @@ import {MemoryRouter, Route, Routes} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as I18nModule from '@/i18n';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import NavigationBar from '..';
 import {useNavigationBarFoldStore} from '../navigation-bar-fold-store';
 
@@ -54,7 +54,7 @@ describe('NavigationBar', () => {
         useNavigationBarFoldStore.getState().reset();
     });
 
-    it('상단 근무표 버튼을 제거하고 근무표 메뉴를 하나만 노출한다', () => {
+    it('홈과 근무표 만들기 메뉴를 각각 노출한다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
@@ -62,8 +62,9 @@ describe('NavigationBar', () => {
         );
 
         expect(screen.getByText('병동')).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '근무표 만들기'})).not.toBeInTheDocument();
-        expect(screen.getAllByRole('button', {name: '근무표'})).toHaveLength(1);
+        expect(screen.getAllByRole('button', {name: '홈'})).toHaveLength(1);
+        expect(screen.getAllByRole('button', {name: '근무표 만들기'})).toHaveLength(1);
+        expect(screen.queryByRole('button', {name: '근무표'})).not.toBeInTheDocument();
     });
 
     it('병동 섹션 위에 병원/병동명과 병동코드를 노출한다', () => {
@@ -355,6 +356,35 @@ describe('NavigationBar', () => {
 
         expect(navigationBar).toHaveClass('w-[64px]');
         expect(screen.queryByText('병동')).not.toBeInTheDocument();
+    });
+
+    it('compact mode에서 열린 메뉴를 클릭하면 내비게이션을 다시 접는다', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <div className="flex">
+                    <NavigationBar compactMode />
+                    <Routes>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                        <Route path={ROUTE.BOARD} element={<div>board page</div>} />
+                    </Routes>
+                </div>
+            </MemoryRouter>,
+        );
+
+        const navigationBar = screen.getByTestId('navigation-bar');
+
+        await userEvent.hover(navigationBar);
+
+        expect(navigationBar).toHaveClass('w-[216px]');
+        expect(screen.getByText('병동')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '게시판'}));
+
+        expect(await screen.findByText('board page')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(navigationBar).toHaveClass('w-[64px]');
+            expect(screen.queryByText('병동')).not.toBeInTheDocument();
+        });
     });
 
     it('게시판 메뉴를 클릭하면 게시판 페이지로 이동한다', async () => {

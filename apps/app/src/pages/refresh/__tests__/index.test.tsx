@@ -54,7 +54,7 @@ describe('RefreshPage', () => {
         });
     });
 
-    it('falls back to make when the next path is external', async () => {
+    it('falls back to home when the next path is external', async () => {
         refreshSpy.mockResolvedValue(undefined);
 
         render(
@@ -66,11 +66,11 @@ describe('RefreshPage', () => {
         );
 
         await waitFor(() => {
-            expect(replaceSpy).toHaveBeenCalledWith(ROUTE.MAKE);
+            expect(replaceSpy).toHaveBeenCalledWith(ROUTE.HOME);
         });
     });
 
-    it('falls back to make when the next path is protocol-relative', async () => {
+    it('falls back to home when the next path is protocol-relative', async () => {
         refreshSpy.mockResolvedValue(undefined);
 
         render(
@@ -82,7 +82,7 @@ describe('RefreshPage', () => {
         );
 
         await waitFor(() => {
-            expect(replaceSpy).toHaveBeenCalledWith(ROUTE.MAKE);
+            expect(replaceSpy).toHaveBeenCalledWith(ROUTE.HOME);
         });
     });
 

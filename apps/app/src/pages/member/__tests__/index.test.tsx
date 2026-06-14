@@ -361,6 +361,59 @@ describe('MemberPage', () => {
         expect(addNurse).toHaveBeenCalledWith(10);
     });
 
+    it('팀이 없으면 간호사 없음보다 팀 생성 안내를 먼저 보여준다', async () => {
+        const createShiftTeam = vi.fn().mockResolvedValue({shiftTeamId: 10, name: 'A팀', nurseCnt: 0, nurses: []});
+
+        mockUseEditShiftTeam.mockReturnValue({
+            state: {
+                ward: {
+                    wardId: 1,
+                    hospitalName: '듀팅병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    nurseCnt: 0,
+                    wardShiftTypes: [],
+                    shiftTeams: [],
+                },
+                shiftTeams: [],
+                selectedNurse: null,
+                selectedNurseDrawerMode: null,
+                isNurseDraftDirty: false,
+                isAddingNurse: false,
+                nurseSaveStatus: 'idle',
+                isDeletingNurse: false,
+            },
+            actions: {
+                selectNurse: vi.fn(() => true),
+                setNurseDraftDirty: vi.fn(),
+                createShiftTeam,
+                addNurse: vi.fn(),
+                deleteNurse: vi.fn(),
+                deleteShiftTeam: vi.fn(),
+                updateShiftTeam: vi.fn(),
+                updateNurse: vi.fn(),
+                updateNurseShift: vi.fn(),
+                disconnectNurse: vi.fn(),
+            },
+        });
+
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('먼저 팀을 만들어 주세요')).toBeInTheDocument();
+        expect(screen.getByText('팀을 만든 뒤 간호사를 추가할 수 있어요.')).toBeInTheDocument();
+        expect(screen.queryByText('간호사가 없어요')).not.toBeInTheDocument();
+
+        const teamAddButtons = screen.getAllByRole('button', {name: '팀 추가하기'});
+
+        await userEvent.click(teamAddButtons[teamAddButtons.length - 1]!);
+
+        expect(createShiftTeam).toHaveBeenCalledTimes(1);
+    });
+
     it('팀을 추가하면 새로 생성한 팀으로 이동한다', async () => {
         const createShiftTeam = vi.fn().mockResolvedValue({shiftTeamId: 30, name: 'C팀', nurseCnt: 0, nurses: []});
 

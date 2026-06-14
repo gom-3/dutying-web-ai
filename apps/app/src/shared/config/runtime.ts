@@ -32,12 +32,12 @@ export const RUNTIME_CONFIG = {
     },
 } as const;
 
-export const sanitizeInternalPath = (path: string | null | undefined, fallback: string = ROUTE.MAKE) =>
+export const sanitizeInternalPath = (path: string | null | undefined, fallback: string = ROUTE.HOME) =>
     path && INTERNAL_PATH_PATTERN.test(path) ? path : fallback;
 
 export const buildAppUrl = (path: string) => new URL(sanitizeInternalPath(path), `${RUNTIME_CONFIG.publicAppUrl()}/`).toString();
 
-export const resolveSafeRedirectTarget = (target: string | null | undefined, fallback: string = ROUTE.MAKE) => {
+export const resolveSafeRedirectTarget = (target: string | null | undefined, fallback: string = ROUTE.HOME) => {
     if (target === 'back') return 'back';
 
     if (!target) return fallback;
@@ -58,7 +58,7 @@ export const resolveSafeRedirectTarget = (target: string | null | undefined, fal
     }
 };
 
-export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: string = ROUTE.MAKE) => {
+export const buildAuthAuthorizeUrl = (provider: 'kakao' | 'apple', nextPath: string = ROUTE.HOME) => {
     const url = new URL(`/oauth2/authorization/admin/${provider}`, `${RUNTIME_CONFIG.serverUrl()}/`);
 
     url.searchParams.set('nextPageUrl', buildAppUrl(sanitizeInternalPath(nextPath)));

@@ -1401,6 +1401,8 @@ export const ko = {
             },
             "emptyTeamDescription": "간호사를 추가해주세요",
             "emptyTeamTitle": "간호사가 없어요",
+            "emptyTeamsDescription": "팀을 만든 뒤 간호사를 추가할 수 있어요.",
+            "emptyTeamsTitle": "먼저 팀을 만들어 주세요",
             "modal": {
                 "deleteNurseDescriptionSuffix": " 삭제 후에는 되돌릴 수 없어요.",
                 "deleteNurseTitle": "간호사를 삭제할까요?",
@@ -1663,6 +1665,8 @@ export const ko = {
                 "skillAria": "{{nurseName}} 숙련도",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "미선택",
+                "emptyTeamsDescription": "팀을 만든 뒤 간호사를 등록할 수 있어요.",
+                "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
                 "sort": {
                     "manual": "수동순",
                     "name": "가나다순",
@@ -3740,6 +3744,8 @@ export const en: TLocale = {
             },
             "emptyTeamDescription": "Please add a nurse.",
             "emptyTeamTitle": "There are no nurses.",
+            "emptyTeamsDescription": "Create a team before adding nurses.",
+            "emptyTeamsTitle": "Create a team first",
             "modal": {
                 "deleteNurseDescriptionSuffix": " will be deleted permanently.",
                 "deleteNurseTitle": "Delete this nurse?",
@@ -4002,6 +4008,8 @@ export const en: TLocale = {
                 "skillAria": "Skill level for {{nurseName}}",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "Unselected",
+                "emptyTeamsDescription": "Create a team before registering nurses.",
+                "emptyTeamsTitle": "Add a team first.",
                 "sort": {
                     "manual": "Manual order",
                     "name": "Name order",
@@ -6077,6 +6085,8 @@ export const ja: TLocale = {
             },
             "emptyTeamDescription": "看護師を追加してください",
             "emptyTeamTitle": "看護師がいません",
+            "emptyTeamsDescription": "チームを作成すると看護師を追加できます。",
+            "emptyTeamsTitle": "先にチームを作成してください",
             "modal": {
                 "deleteNurseDescriptionSuffix": " 削除後は元に戻せません。",
                 "deleteNurseTitle": "看護師を削除しますか？",
@@ -6339,6 +6349,8 @@ export const ja: TLocale = {
                 "skillAria": "{{nurseName}}の習熟度",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "未選択",
+                "emptyTeamsDescription": "チームを作成すると看護師を登録できます。",
+                "emptyTeamsTitle": "先にチームを追加してください。",
                 "sort": {
                     "manual": "手動順",
                     "name": "名前順",

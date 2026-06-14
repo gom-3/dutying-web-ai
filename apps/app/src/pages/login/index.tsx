@@ -60,7 +60,7 @@ function LoginPage() {
         actions: {handleLogin},
     } = useAuth();
     const params = new URLSearchParams(search);
-    const nextPath = sanitizeInternalPath(params.get('next'), ROUTE.MAKE);
+    const nextPath = sanitizeInternalPath(params.get('next'), ROUTE.HOME);
     const isDemoSignupFlow = getIsDemoSignupLoginReason(search);
     const isSignupPage = pathname === ROUTE.SIGN_UP;
     const [loginEmail, setLoginEmail] = useState('');

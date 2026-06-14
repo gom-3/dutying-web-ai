@@ -70,8 +70,8 @@ function RegisterPage() {
                         ),
                     )
                     .with('WARD_ENTRY_PENDING', () => <PendingEnter />)
-                    .with('LINKED', () => <Navigate to={ROUTE.MAKE} />)
-                    .with('DEMO', () => <Navigate to={ROUTE.MAKE} />)
+                    .with('LINKED', () => <Navigate to={ROUTE.HOME} />)
+                    .with('DEMO', () => <Navigate to={ROUTE.HOME} />)
                     .otherwise(() => (
                         <div className="flex min-h-[420px] items-center justify-center">
                             <PageState

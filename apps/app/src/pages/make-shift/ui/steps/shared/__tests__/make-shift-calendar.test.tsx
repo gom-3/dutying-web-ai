@@ -98,6 +98,22 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('shows a busy shimmer layer while auto fill is loading', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly isShimmering />);
+
+        const calendar = document.querySelector<HTMLElement>('.make-shift-calendar');
+        const shimmer = document.querySelector<HTMLElement>('.make-shift-calendar__shimmer');
+
+        expect(calendar).toHaveAttribute('aria-busy', 'true');
+        expect(calendar).toHaveAttribute('data-shimmer', 'true');
+        expect(shimmer).toBeInTheDocument();
+        expect(shimmer).toHaveAttribute('data-shimmer-scope', 'duty-cells');
+        expect(shimmer?.style.left).not.toBe('');
+        expect(document.querySelector('.make-shift-calendar__header .make-shift-calendar__shimmer')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-daily-summary .make-shift-calendar__shimmer')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__shimmer-sweep')).toBeInTheDocument();
+    });
+
     it('hides the carry column by default', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
 

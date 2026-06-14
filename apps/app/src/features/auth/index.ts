@@ -109,7 +109,7 @@ const useAuth = (activeEffect = false) => {
             });
 
             syncAccessTokenHeaders(data.accessToken);
-            navigate(ROUTE.MAKE);
+            navigate(ROUTE.HOME);
         } finally {
             setLoading(false);
         }
