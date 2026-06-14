@@ -22,9 +22,8 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
     const resetFold = useNavigationBarFoldStore((s) => s.reset);
     const [isHoverExpanded, setIsHoverExpanded] = useState(false);
     const [isFocusExpanded, setIsFocusExpanded] = useState(false);
-    const isBaseFolded = compactMode || isFold;
-    const isPreviewExpanded = isBaseFolded && (isHoverExpanded || isFocusExpanded);
-    const isCollapsed = isBaseFolded && !isPreviewExpanded;
+    const isPreviewExpanded = compactMode && (isHoverExpanded || isFocusExpanded);
+    const isCollapsed = compactMode ? !isPreviewExpanded : isFold;
 
     useEffect(() => {
         return () => {
@@ -33,11 +32,11 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
     }, [resetFold]);
 
     useEffect(() => {
-        if (!isBaseFolded) {
+        if (!compactMode) {
             setIsHoverExpanded(false);
             setIsFocusExpanded(false);
         }
-    }, [isBaseFolded]);
+    }, [compactMode]);
 
     return (
         <aside
@@ -47,13 +46,13 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                 isCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
             )}
             onPointerEnter={() => {
-                if (isBaseFolded) {
+                if (compactMode) {
                     setIsHoverExpanded(true);
                 }
             }}
             onPointerLeave={() => setIsHoverExpanded(false)}
             onFocusCapture={() => {
-                if (isBaseFolded) {
+                if (compactMode) {
                     setIsFocusExpanded(true);
                 }
             }}

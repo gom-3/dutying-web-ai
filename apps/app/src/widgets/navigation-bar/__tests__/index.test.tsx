@@ -305,7 +305,7 @@ describe('NavigationBar', () => {
         expect(screen.queryByText('병동')).not.toBeInTheDocument();
     });
 
-    it('접힌 사이드바에 마우스를 올리면 임시로 펼치고, 벗어나면 다시 접는다', async () => {
+    it('일반 화면에서 접힌 사이드바는 hover해도 펼치지 않는다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
@@ -321,8 +321,8 @@ describe('NavigationBar', () => {
 
         await userEvent.hover(navigationBar);
 
-        expect(navigationBar).toHaveClass('w-[216px]');
-        expect(screen.getByText('병동')).toBeInTheDocument();
+        expect(navigationBar).toHaveClass('w-[64px]');
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
 
         await userEvent.unhover(navigationBar);
 
