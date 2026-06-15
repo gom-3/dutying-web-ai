@@ -1577,7 +1577,7 @@ export const ko = {
                 "member": "근무자 관리",
                 "request": "신청 근무",
                 "wardAdmins": "병동 관리자",
-                "wardInfoSettings": "설정",
+                "wardInfoSettings": "병동 설정",
                 "wardSettings": "근무 설정"
             },
             "landingAria": "랜딩 페이지로 이동",

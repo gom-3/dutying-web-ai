@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {useQueries, useQuery} from '@tanstack/react-query';
-import {ChevronDown} from 'lucide-react';
+import {CalendarDays, ChevronDown} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {type TShift, type TShiftTeam, type TWardShiftClassification, type TWardShiftType} from '@/entities';
@@ -9,7 +9,8 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments} from '@/features/shift-editor';
 import {BoardAPI, WardAPI} from '@/shared/api';
-import {type TWardBoardDeadline} from '@/shared/api/board';
+import {type TWardBoardDeadline, type TWardBoardSchedule} from '@/shared/api/board';
+import {PersonIcon} from '@/shared/assets/svg';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import {getShiftWorkflowStatus} from '@/shared/lib/shift-workflow-status';
@@ -17,6 +18,7 @@ import PageState from '@/shared/ui/PageState';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TASK_LOOKAHEAD_DAYS = 7;
+const CALENDAR_ITEM_LIMIT = 3;
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const SHIFT_CLASSIFICATION_ORDER: Partial<Record<TWardShiftClassification, number>> = {
     DAY: 10,
@@ -28,6 +30,7 @@ const SHIFT_CLASSIFICATION_ORDER: Partial<Record<TWardShiftClassification, numbe
 
 type TScheduleStatus = 'checking' | 'error' | 'empty' | 'draft' | 'complete';
 type TTaskTone = 'danger' | 'warning' | 'info' | 'quiet';
+type TCalendarItemTone = 'today' | 'warning' | 'danger' | 'quiet';
 type TMonthlyTeamFilter = number | 'all';
 type TMonthlySortOption = 'default' | 'nameAsc' | 'todayShift';
 
@@ -66,6 +69,15 @@ type TTaskItem = {
     path: string;
 };
 
+type TCalendarItem = {
+    key: string;
+    tone: TCalendarItemTone;
+    badge: string;
+    title: string;
+    meta: string;
+    sortOrder: number;
+};
+
 type TMonthlyShiftCell = {
     day: number;
     weekday: string;
@@ -95,11 +107,30 @@ const parseDateKey = (dateKey: string) => {
 
     return new Date(year, (month || 1) - 1, day || 1);
 };
+const compareDateKey = (left: string, right: string) => left.localeCompare(right);
+const addDays = (date: Date, days: number) => {
+    const nextDate = new Date(date);
+
+    nextDate.setDate(nextDate.getDate() + days);
+
+    return nextDate;
+};
+const getMaxDateKey = (left: string, right: string) => (compareDateKey(left, right) >= 0 ? left : right);
 const getNextYearMonth = (year: number, month: number) => (month === 12 ? {year: year + 1, month: 1} : {year, month: month + 1});
 const getMonthStartKey = (year: number, month: number) => toDateKey(new Date(year, month - 1, 1));
 const getMonthEndKey = (year: number, month: number) => toDateKey(new Date(year, month, 0));
 const formatMonth = (year: number, month: number) => `${year}년 ${month}월`;
 const formatDateWithWeekday = (date: Date) => `${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}요일`;
+const formatMonthDay = (dateKey: string) => {
+    const date = parseDateKey(dateKey);
+
+    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+};
+const formatShortMonthDay = (dateKey: string) => {
+    const date = parseDateKey(dateKey);
+
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+};
 const getDayDiff = (dateKey: string, todayKey: string) =>
     Math.round((parseDateKey(dateKey).getTime() - parseDateKey(todayKey).getTime()) / DAY_MS);
 const getShiftTeamNameList = (teams: TShiftTeam[]) => teams.map((team) => team.name).join(', ');
@@ -122,6 +153,111 @@ const getDeadlineBuckets = (deadlines: TWardBoardDeadline[], todayKey: string) =
         return diff > 0 && diff <= TASK_LOOKAHEAD_DAYS;
     }),
 });
+
+const readBooleanLike = (value: unknown) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+
+    if (typeof value === 'string') {
+        const normalizedValue = value.trim().toLowerCase();
+
+        if (normalizedValue === 'true' || normalizedValue === '1') return true;
+        if (normalizedValue === 'false' || normalizedValue === '0') return false;
+    }
+
+    return undefined;
+};
+const getFirstNonEmptyValue = (...values: Array<string | null | undefined>) => values.find((value) => value?.trim()) ?? '';
+const getBoardScheduleStartDate = (schedule: TWardBoardSchedule) =>
+    getFirstNonEmptyValue(schedule.startDate, schedule.start_date, schedule.scheduleDate, schedule.schedule_date);
+const getBoardScheduleEndDate = (schedule: TWardBoardSchedule) =>
+    getFirstNonEmptyValue(
+        schedule.endDate,
+        schedule.end_date,
+        schedule.scheduleDate,
+        schedule.schedule_date,
+        getBoardScheduleStartDate(schedule),
+    );
+const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => (schedule.sourceType ?? schedule.source_type) === 'BOARD_DEADLINE';
+const isScheduleOnDate = (schedule: TWardBoardSchedule, dateKey: string) => {
+    const startDate = getBoardScheduleStartDate(schedule);
+    const endDate = getBoardScheduleEndDate(schedule);
+
+    if (!startDate || !endDate) return false;
+
+    return compareDateKey(startDate, dateKey) <= 0 && compareDateKey(endDate, dateKey) >= 0;
+};
+const normalizeTimeInput = (value?: string | null) => (value ? value.slice(0, 5) : '');
+const getBoardScheduleAllDay = (schedule: TWardBoardSchedule) =>
+    readBooleanLike(schedule.allDay ?? schedule.isAllDay ?? schedule.all_day ?? schedule.is_all_day) ?? false;
+const getBoardScheduleTimeLabel = (schedule: TWardBoardSchedule) => {
+    if (getBoardScheduleAllDay(schedule)) return '종일';
+
+    const startTime = normalizeTimeInput(schedule.startTime ?? schedule.start_time);
+    const endTime = normalizeTimeInput(schedule.endTime ?? schedule.end_time);
+
+    if (startTime && endTime) return `${startTime}-${endTime}`;
+
+    return getFirstNonEmptyValue(startTime, endTime, '시간 미정');
+};
+const getCalendarItems = (schedules: TWardBoardSchedule[], deadlines: TWardBoardDeadline[], todayKey: string): TCalendarItem[] => {
+    const scheduleItems: TCalendarItem[] = schedules
+        .filter((schedule) => !isBoardDeadlineSchedule(schedule))
+        .flatMap((schedule): TCalendarItem[] => {
+            const startDate = getBoardScheduleStartDate(schedule);
+            const endDate = getBoardScheduleEndDate(schedule);
+
+            if (!startDate || !endDate) return [];
+
+            if (isScheduleOnDate(schedule, todayKey)) {
+                return [
+                    {
+                        key: `schedule-today-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
+                        tone: 'today',
+                        badge: '오늘',
+                        title: schedule.title,
+                        meta: `일정 · ${getBoardScheduleTimeLabel(schedule)}`,
+                        sortOrder: 10,
+                    },
+                ];
+            }
+
+            const diff = getDayDiff(startDate, todayKey);
+
+            if (diff <= 0 || diff > TASK_LOOKAHEAD_DAYS) return [];
+
+            return [
+                {
+                    key: `schedule-upcoming-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
+                    tone: 'quiet',
+                    badge: formatShortMonthDay(startDate),
+                    title: schedule.title,
+                    meta: `일정 · ${formatMonthDay(startDate)} · ${getBoardScheduleTimeLabel(schedule)}`,
+                    sortOrder: 50 + diff,
+                },
+            ];
+        });
+    const deadlineItems: TCalendarItem[] = deadlines.flatMap((deadline): TCalendarItem[] => {
+        const diff = getDayDiff(deadline.deadlineDate, todayKey);
+
+        if (diff < -TASK_LOOKAHEAD_DAYS || diff > TASK_LOOKAHEAD_DAYS) return [];
+
+        return [
+            {
+                key: `deadline-${deadline.postId}-${deadline.deadlineDate}`,
+                tone: diff < 0 ? 'danger' : 'warning',
+                badge: diff < 0 ? '지남' : diff === 0 ? '오늘' : `D-${diff}`,
+                title: deadline.postTitle,
+                meta: `마감 · ${formatMonthDay(deadline.deadlineDate)}`,
+                sortOrder: diff === 0 ? 20 : diff < 0 ? 25 + Math.abs(diff) : 30 + diff,
+            },
+        ];
+    });
+
+    return [...scheduleItems, ...deadlineItems]
+        .sort((left, right) => left.sortOrder - right.sortOrder || left.title.localeCompare(right.title, 'ko-KR'))
+        .slice(0, CALENDAR_ITEM_LIMIT);
+};
 
 const hasDutyShiftWorkerRows = (shift: TShift) =>
     Boolean(shift.days?.length) && (shift.divisionShiftNurses ?? []).some((division) => division.some((row) => row.shiftNurse.isWorker));
@@ -180,6 +316,17 @@ const getTaskToneClassName = (tone: TTaskTone) =>
               ? 'bg-[#FFF6E8] text-[#A35F00]'
               : tone === 'info'
                 ? 'bg-[#EDF3FF] text-[#2457B7]'
+              : 'bg-[#F1F3F5] text-gray-3',
+    );
+
+const getCalendarToneClassName = (tone: TCalendarItemTone) =>
+    cn(
+        tone === 'today'
+            ? 'bg-[#EAF6EE] text-[#1E7A43]'
+            : tone === 'warning'
+              ? 'bg-[#FFF6E8] text-[#A35F00]'
+              : tone === 'danger'
+                ? 'bg-[#FFF0F0] text-[#C74343]'
                 : 'bg-[#F1F3F5] text-gray-3',
     );
 
@@ -521,7 +668,10 @@ function TodayShiftLine({group}: {group: TTodayShiftGroup}) {
                     <ShiftBadge shiftType={group.shiftType} className="!size-7 !rounded-[7px] !text-[13px]" />
                     <p className="min-w-0 truncate text-[13px] leading-4 font-bold text-sub-1">{shiftName}</p>
                 </div>
-                <span className="shrink-0 text-[11px] font-bold text-gray-4">{group.names.length}명</span>
+                <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-bold text-gray-4">
+                    <PersonIcon aria-hidden="true" className="size-3" />
+                    {group.names.length}
+                </span>
             </div>
             <div className="mt-2 flex min-w-0 flex-wrap gap-1">
                 {group.names.map((name) => (
@@ -546,7 +696,10 @@ function TodayTeamDutyLine({duty}: {duty: TTodayTeamDuty}) {
         <article className="grid min-w-0 grid-cols-[108px_minmax(0,1fr)] gap-2 rounded-[8px] bg-[#F6F7F9] p-2.5">
             <div className="flex min-w-0 flex-col justify-center px-1.5 py-1">
                 <h3 className="truncate text-[16px] leading-5 font-bold text-sub-1">{duty.teamName}</h3>
-                <p className="mt-1 text-[12px] leading-4 font-bold text-gray-3">오늘 {duty.assignedCount}명</p>
+                <p className="mt-1 inline-flex items-center gap-1 text-[12px] leading-4 font-bold text-gray-3">
+                    <PersonIcon aria-hidden="true" className="size-3" />
+                    {duty.assignedCount}
+                </p>
             </div>
             {hasSchedule && filledGroups.length > 0 ? (
                 <div className="grid min-w-0 grid-cols-[repeat(auto-fit,minmax(152px,1fr))] gap-1.5">
@@ -555,7 +708,7 @@ function TodayTeamDutyLine({duty}: {duty: TTodayTeamDuty}) {
                     ))}
                 </div>
             ) : (
-                <div className="flex min-h-[72px] items-center justify-center rounded-[8px] bg-white px-4 text-center">
+                <div className="flex min-h-[72px] items-center justify-center px-4 text-center">
                     <p className="text-[14px] font-bold text-gray-3">오늘 근무가 비어 있어요</p>
                 </div>
             )}
@@ -613,6 +766,74 @@ function TaskRow({task, onNavigate}: {task: TTaskItem; onNavigate: (path: string
     );
 }
 
+function CalendarActionButton({onClick}: {onClick: () => void}) {
+    return (
+        <button
+            type="button"
+            aria-label="캘린더 전체 보기"
+            title="캘린더 전체 보기"
+            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-[8px] bg-[#F1F3F5] text-gray-3 transition hover:bg-[#E9ECEF] hover:text-sub-1 focus-visible:bg-main-light focus-visible:outline-none"
+            onClick={onClick}
+        >
+            <CalendarDays aria-hidden="true" className="size-3.5" />
+        </button>
+    );
+}
+
+function CalendarPreview({
+    items,
+    isLoading,
+    onOpen,
+}: {
+    items: TCalendarItem[];
+    isLoading: boolean;
+    onOpen: () => void;
+}) {
+    if (isLoading) {
+        return <div className="rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">캘린더 확인 중</div>;
+    }
+
+    if (items.length === 0) {
+        return (
+            <button
+                type="button"
+                className="flex w-full cursor-pointer items-center gap-3 rounded-[8px] bg-[#F6F7F9] p-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
+                onClick={onOpen}
+            >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] bg-white text-gray-3">
+                    <CalendarDays aria-hidden="true" className="size-4" />
+                </span>
+                <span className="min-w-0">
+                    <span className="block truncate text-[14px] font-bold text-sub-1">가까운 일정 없음</span>
+                </span>
+            </button>
+        );
+    }
+
+    return (
+        <div className="grid gap-2">
+            {items.map((item) => (
+                <button
+                    key={item.key}
+                    type="button"
+                    className="w-full cursor-pointer rounded-[8px] bg-[#F6F7F9] p-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
+                    onClick={onOpen}
+                >
+                    <div className="flex min-w-0 items-start gap-3">
+                        <span className={cn('shrink-0 rounded-[8px] px-2 py-1 text-[11px] font-bold', getCalendarToneClassName(item.tone))}>
+                            {item.badge}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14px] font-bold text-sub-1">{item.title}</span>
+                            <span className="mt-1 block truncate text-[12px] font-semibold text-gray-3">{item.meta}</span>
+                        </span>
+                    </div>
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function MonthlyScheduleTable({
     rows,
     hasTeams,
@@ -630,7 +851,7 @@ function MonthlyScheduleTable({
 }) {
     const days = rows[0]?.cells ?? [];
     const dayGridTemplateColumns = `repeat(${days.length}, minmax(0, 1fr))`;
-    const gridTemplateColumns = showTeamName ? '96px minmax(0, 1fr)' : '76px minmax(0, 1fr)';
+    const gridTemplateColumns = '96px minmax(0, 1fr)';
 
     if (!hasTeams) {
         return (
@@ -682,7 +903,7 @@ function MonthlyScheduleTable({
                 {rows.map((row) => (
                     <div
                         key={`${row.teamId}-${row.shiftNurseId}`}
-                        className={cn('make-shift-calendar__row grid w-full min-w-0 items-stretch', showTeamName ? 'h-[44px]' : 'h-[36px]')}
+                        className="make-shift-calendar__row grid h-[44px] w-full min-w-0 items-stretch"
                         style={{gridTemplateColumns, columnGap: '8px', paddingLeft: '4px'}}
                     >
                         <div
@@ -690,7 +911,12 @@ function MonthlyScheduleTable({
                             title={showTeamName ? `${row.teamName} ${row.nurseName}` : row.nurseName}
                         >
                             <span className="block max-w-full truncate text-[13px]">{row.nurseName}</span>
-                            {showTeamName ? <span className="mt-1 block max-w-full truncate text-[10px] font-bold text-gray-4">{row.teamName}</span> : null}
+                            <span
+                                aria-hidden={!showTeamName}
+                                className={cn('mt-1 block max-w-full truncate text-[10px] font-bold text-gray-4', !showTeamName && 'invisible')}
+                            >
+                                {row.teamName}
+                            </span>
                         </div>
                         <div className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0" style={{gridTemplateColumns: dayGridTemplateColumns}}>
                             {row.cells.map((cell) => (
@@ -733,6 +959,8 @@ function HomePage() {
     const nextYearMonth = getNextYearMonth(currentYearMonth.year, currentYearMonth.month);
     const monthStartKey = getMonthStartKey(currentYearMonth.year, currentYearMonth.month);
     const monthEndKey = getMonthEndKey(currentYearMonth.year, currentYearMonth.month);
+    const calendarEndKey = toDateKey(addDays(today, TASK_LOOKAHEAD_DAYS));
+    const boardCalendarEndKey = getMaxDateKey(monthEndKey, calendarEndKey);
     const isChatEnabled = isWardChatEnabled();
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
@@ -760,8 +988,14 @@ function HomePage() {
         staleTime: 15_000,
     });
     const deadlinesQuery = useQuery({
-        queryKey: ['home', 'board-deadlines', wardId, monthStartKey, monthEndKey],
-        queryFn: () => BoardAPI.getDeadlines(wardId!, monthStartKey, monthEndKey),
+        queryKey: ['home', 'board-deadlines', wardId, monthStartKey, boardCalendarEndKey],
+        queryFn: () => BoardAPI.getDeadlines(wardId!, monthStartKey, boardCalendarEndKey),
+        enabled: wardId !== null,
+        staleTime: 30_000,
+    });
+    const schedulesQuery = useQuery({
+        queryKey: ['home', 'board-schedules', wardId, monthStartKey, boardCalendarEndKey],
+        queryFn: () => BoardAPI.getSchedules(wardId!, monthStartKey, boardCalendarEndKey),
         enabled: wardId !== null,
         staleTime: 30_000,
     });
@@ -837,12 +1071,13 @@ function HomePage() {
         [currentYearMonth.month, currentYearMonth.year, monthlySortOption, monthlySourceItems, todayKey],
     );
     const deadlines = deadlinesQuery.data ?? [];
+    const schedules = schedulesQuery.data ?? [];
     const deadlineBuckets = useMemo(() => getDeadlineBuckets(deadlines, todayKey), [deadlines, todayKey]);
+    const calendarItems = useMemo(() => getCalendarItems(schedules, deadlines, todayKey), [deadlines, schedules, todayKey]);
     const waitingNurseCount = waitingNursesQuery.data?.length ?? 0;
     const pendingRequestCount = pendingRequestsQuery.data?.totalPendingCount ?? 0;
     const unreadChatCount = chatUnreadQuery.data?.unreadCount ?? 0;
     const nextEmptyTeams = nextScheduleStatusItems.filter((item) => item.status === 'empty');
-    const nextDraftTeams = nextScheduleStatusItems.filter((item) => item.status === 'draft');
     const todayAssignedCount = todayDuties.reduce((total, duty) => total + duty.assignedCount, 0);
     const taskItems = useMemo<TTaskItem[]>(() => {
         const tasks: TTaskItem[] = [];
@@ -906,21 +1141,6 @@ function HomePage() {
             });
         }
 
-        if (nextDraftTeams.length > 0) {
-            tasks.push({
-                key: 'next-draft',
-                tone: 'quiet',
-                title: `${nextYearMonth.month}월 근무표 진행 중 ${nextDraftTeams.length}팀`,
-                description: getShiftTeamNameList(nextDraftTeams.map((item) => item.team)),
-                actionLabel: '계속',
-                path: buildMakePath({
-                    year: nextYearMonth.year,
-                    month: nextYearMonth.month,
-                    shiftTeamId: nextDraftTeams[0]?.team.shiftTeamId,
-                }),
-            });
-        }
-
         if (unreadChatCount > 0) {
             tasks.push({
                 key: 'unread-chat',
@@ -936,7 +1156,6 @@ function HomePage() {
     }, [
         deadlineBuckets.overdue,
         deadlineBuckets.today,
-        nextDraftTeams,
         nextEmptyTeams,
         nextYearMonth.month,
         nextYearMonth.year,
@@ -1023,9 +1242,6 @@ function HomePage() {
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                        <HomeButton variant="plain" onClick={() => navigate(ROUTE.REQUEST)}>
-                            신청 근무 {pendingRequestCount}
-                        </HomeButton>
                         <HomeButton
                             onClick={() =>
                                 navigate(
@@ -1054,7 +1270,7 @@ function HomePage() {
                     </SectionShell>
 
                     <aside className="flex min-w-0 flex-col gap-5">
-                        <SectionShell title="해야 할 일" description={taskItems.length > 0 ? `지금 확인할 일 ${taskItems.length}개` : '지금 할 일은 없어요'}>
+                        <SectionShell title="해야 할 일" description={taskItems.length > 0 ? `지금 확인할 일 ${taskItems.length}개` : undefined}>
                             <div className="grid grid-cols-2 gap-2">
                                 <QueueButton label="대기 중인 신청 근무" value={pendingRequestCount} onClick={() => navigate(ROUTE.REQUEST)} />
                                 <QueueButton label="입장 대기" value={waitingNurseCount} onClick={() => navigate(ROUTE.MEMBER)} />
@@ -1062,16 +1278,24 @@ function HomePage() {
                             {waitingNursesQuery.isPending || pendingRequestsQuery.isPending || deadlinesQuery.isPending ? (
                                 <div className="mt-3 rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">확인하고 있어요</div>
                             ) : null}
-                            <div className="mt-3 grid gap-2">
-                                {taskItems.length > 0 ? (
-                                    taskItems.slice(0, 5).map((task) => <TaskRow key={task.key} task={task} onNavigate={handleNavigate} />)
-                                ) : (
-                                    <div className="rounded-[8px] bg-[#F6F7F9] px-4 py-5">
-                                        <p className="text-[15px] font-bold text-sub-1">지금 할 일은 없어요</p>
-                                        <p className="mt-1 text-[13px] font-semibold text-gray-3">오늘 근무와 이번 달 근무표만 보면 돼요.</p>
-                                    </div>
-                                )}
-                            </div>
+                            {taskItems.length > 0 ? (
+                                <div className="mt-3 grid gap-2">
+                                    {taskItems.slice(0, 5).map((task) => (
+                                        <TaskRow key={task.key} task={task} onNavigate={handleNavigate} />
+                                    ))}
+                                </div>
+                            ) : null}
+                        </SectionShell>
+
+                        <SectionShell
+                            title="캘린더"
+                            action={<CalendarActionButton onClick={() => navigate(ROUTE.BOARD)} />}
+                        >
+                            <CalendarPreview
+                                items={calendarItems}
+                                isLoading={deadlinesQuery.isPending || schedulesQuery.isPending}
+                                onOpen={() => navigate(ROUTE.BOARD)}
+                            />
                         </SectionShell>
 
                         <SectionShell title="다음 달 근무표" description={formatMonth(nextYearMonth.year, nextYearMonth.month)}>
@@ -1110,17 +1334,15 @@ function HomePage() {
                         title="이번 달 근무표"
                         description={monthlyScheduleDescription}
                         action={
-                            <div className="flex items-center gap-2">
-                                <MonthlySortSelect value={monthlySortOption} onChange={setMonthlySortOption} />
-                                <HomeButton variant="plain" onClick={() => navigate(monthlyOpenPath)}>
-                                    근무표 편집하기
-                                </HomeButton>
-                            </div>
+                            <HomeButton variant="plain" onClick={() => navigate(monthlyOpenPath)}>
+                                근무표 편집하기
+                            </HomeButton>
                         }
                         className="col-span-2"
                     >
                         <div className="mb-4 flex min-w-0 items-center justify-between gap-4">
                             <ScheduleTeamTabs teams={shiftTeams} selectedTeamId={monthlyTeamId} onSelectTeam={setSelectedMonthlyTeamId} />
+                            <MonthlySortSelect value={monthlySortOption} onChange={setMonthlySortOption} />
                         </div>
                         <MonthlyScheduleTable
                             rows={monthlyRows}

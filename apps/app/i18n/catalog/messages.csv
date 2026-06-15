@@ -1186,7 +1186,7 @@ page.navigationBar.items.make,web,page.navigationBar.items.make,page.navigationB
 page.navigationBar.items.member,web,page.navigationBar.items.member,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무자 관리,Members,スタッフ管理,,2026-06-10
 page.navigationBar.items.request,web,page.navigationBar.items.request,page.navigationBar,navigationBar,text,imported,,,,,,,,,신청 근무,Shift requests,希望シフト,,2026-06-10
 page.navigationBar.items.wardAdmins,web,page.navigationBar.items.wardAdmins,page.navigationBar,navigationBar,text,imported,,,,,,,,,병동 관리자,Ward admins,病棟管理者,,2026-06-10
-page.navigationBar.items.wardInfoSettings,web,page.navigationBar.items.wardInfoSettings,page.navigationBar,navigationBar,description,imported,,,,,,,,,설정,Ward settings,病棟設定,,2026-06-10
+page.navigationBar.items.wardInfoSettings,web,page.navigationBar.items.wardInfoSettings,page.navigationBar,navigationBar,description,imported,,,,,,,,,병동 설정,Ward settings,病棟設定,,2026-06-10
 page.navigationBar.items.wardSettings,web,page.navigationBar.items.wardSettings,page.navigationBar,navigationBar,text,imported,,,,,,,,,근무 설정,Duty settings,勤務設定,,2026-06-10
 page.navigationBar.landingAria,web,page.navigationBar.landingAria,page.navigationBar,navigationBar,accessibility,imported,,,,,,,,,랜딩 페이지로 이동,Go to landing page,ランディングページへ移動,,2026-06-10
 page.navigationBar.sections.operations,web,page.navigationBar.sections.operations,page.navigationBar,navigationBar,text,imported,,,,,,,,,병동,Operations,勤務管理,,2026-06-10

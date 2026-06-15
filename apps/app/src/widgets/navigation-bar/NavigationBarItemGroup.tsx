@@ -38,19 +38,19 @@ const navigationIcons = {
     wardSettings: navigationImageIcon('ward-settings'),
     wardInfo: navigationImageIcon('ward-info'),
 } as const;
+const homeItem: TNavItem = {
+    path: ROUTE.HOME,
+    icon: {
+        kind: 'component',
+        Icon: HomeIcon,
+        SelectedIcon: HomeIconSelected,
+    },
+    text: '홈',
+};
 const sections: TNavSection[] = [
     {
         labelKey: 'page.navigationBar.sections.operations',
         items: [
-            {
-                path: ROUTE.HOME,
-                icon: {
-                    kind: 'component',
-                    Icon: HomeIcon,
-                    SelectedIcon: HomeIconSelected,
-                },
-                text: '홈',
-            },
             {
                 path: ROUTE.MAKE,
                 activePaths: [ROUTE.MAKE, ROUTE.DUTY],
@@ -180,6 +180,17 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
     return (
         <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}>
             <div>
+                <div className={cn(collapsed ? 'mb-4' : 'mb-5')}>
+                    <NavigationBarItem
+                        path={homeItem.path}
+                        activePaths={homeItem.activePaths}
+                        icon={homeItem.icon}
+                        text={homeItem.text ?? t(homeItem.textKey!)}
+                        collapsed={collapsed}
+                        disabled={homeItem.disabled}
+                        onNavigate={onItemNavigate}
+                    />
+                </div>
                 <WardIdentity collapsed={collapsed} ward={ward} />
                 {sections.map((section, sectionIndex) => (
                     <div

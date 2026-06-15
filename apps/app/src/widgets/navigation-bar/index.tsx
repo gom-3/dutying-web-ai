@@ -84,8 +84,8 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
             <div className={cn('flex min-h-screen shrink-0 flex-col', isCollapsed ? 'w-[64px] px-2 py-3' : 'w-[216px] px-3 py-4')}>
                 <div className={cn('flex min-h-11 items-center', isCollapsed ? 'flex-col gap-2' : 'justify-between')}>
                     <Link
-                        to={ROUTE.ROOT}
-                        aria-label={t('page.navigationBar.landingAria')}
+                        to={ROUTE.HOME}
+                        aria-label={t('page.navigationBar.home')}
                         className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                         {isCollapsed ? (
