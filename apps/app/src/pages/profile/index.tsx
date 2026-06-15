@@ -127,8 +127,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         draftName.trim() !== (accountMe?.name ?? '').trim() ||
         draftPhoneNum !== normalizePhone(accountMe?.phoneNum ?? '');
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage || draftServiceRegion !== savedServiceRegion;
-    const hasUnsavedChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
-    const isSaveDisabled = isProfileImageLoading || !hasUnsavedChanges;
+    const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
+    const hasUnsavedChanges = hasProfileChanges || isPreferenceDirty;
+    const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges;
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
             return validateName(value, {
@@ -192,30 +193,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         setWriteNurse({...writeNurse, [key]: value});
     };
-    const save = async () => {
-        let isSaved = false;
-
-        if (writeNurse) {
-            if (!validateForm()) return;
-
-            const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
-
-            isSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
-        } else {
-            const {isValid, name, phoneNum} = validateAccountForm();
-
-            if (!isValid) return;
-
-            isSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
-        }
-
-        if (isSaved) {
-            setHasEditedPhoneNum(false);
-            resetProfileImage();
-        }
-    };
     const savePreferences = async () => {
-        if (!isPreferenceDirty || isSavingPreferences) return;
+        if (!isPreferenceDirty || isSavingPreferences) return true;
 
         try {
             setIsSavingPreferences(true);
@@ -227,14 +206,44 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
             if (!isSaved) {
                 toast.error(t('page.profile.preferencesFailed'));
-                return;
+                return false;
             }
 
             setStoredServiceRegion(draftServiceRegion);
             await i18n.changeLanguage(draftPreferredLanguage);
             toast.success(t('page.profile.preferencesSaved'));
+
+            return true;
         } finally {
             setIsSavingPreferences(false);
+        }
+    };
+    const save = async () => {
+        if (hasProfileChanges) {
+            let isProfileSaved = false;
+
+            if (writeNurse) {
+                if (!validateForm()) return;
+
+                const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
+
+                isProfileSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
+            } else {
+                const {isValid, name, phoneNum} = validateAccountForm();
+
+                if (!isValid) return;
+
+                isProfileSaved = await handleEditAccountBasic(name, currentProfileImage, phoneNum);
+            }
+
+            if (!isProfileSaved) return;
+
+            setHasEditedPhoneNum(false);
+            resetProfileImage();
+        }
+
+        if (isPreferenceDirty) {
+            await savePreferences();
         }
     };
 
@@ -632,14 +641,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 ))}
                             </select>
                         </div>
-                        <Button
-                            type="button"
-                            onClick={() => void savePreferences()}
-                            disabled={!isPreferenceDirty || isSavingPreferences}
-                            className={cn('h-11 rounded-[10px] px-5 text-sm shadow-none', isModalLayout ? 'w-full sm:w-fit' : 'w-fit')}
-                        >
-                            {isSavingPreferences ? t('page.profile.savingPreferences') : t('page.profile.savePreferences')}
-                        </Button>
                     </div>
                 </Card>
                 {isModalLayout ? null : accountActionButtons}

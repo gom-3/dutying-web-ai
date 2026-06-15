@@ -54,15 +54,17 @@ describe('NavigationBar', () => {
         useNavigationBarFoldStore.getState().reset();
     });
 
-    it('홈과 근무표 만들기 메뉴를 각각 노출한다', () => {
+    it('홈을 병동 섹션 밖 상단에 두고 근무표 만들기 메뉴를 노출한다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
             </MemoryRouter>,
         );
 
-        expect(screen.getByText('병동')).toBeInTheDocument();
-        expect(screen.getAllByRole('button', {name: '홈'})).toHaveLength(1);
+        const homeButton = screen.getByRole('button', {name: '홈'});
+        const wardSectionLabel = screen.getByText('병동');
+
+        expect(homeButton.compareDocumentPosition(wardSectionLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(screen.getAllByRole('button', {name: '근무표 만들기'})).toHaveLength(1);
         expect(screen.queryByRole('button', {name: '근무표'})).not.toBeInTheDocument();
     });
@@ -237,16 +239,16 @@ describe('NavigationBar', () => {
                             </div>
                         }
                     />
-                    <Route path={ROUTE.ROOT} element={<div>landing main page</div>} />
+                    <Route path={ROUTE.HOME} element={<div>home page</div>} />
                 </Routes>
             </MemoryRouter>,
         );
 
         expect(screen.getByText('make page')).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('link', {name: '랜딩 페이지로 이동'}));
+        await userEvent.click(screen.getByRole('link', {name: '근무표'}));
 
-        expect(await screen.findByText('landing main page')).toBeInTheDocument();
+        expect(await screen.findByText('home page')).toBeInTheDocument();
     });
 
     it('설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {
@@ -277,7 +279,7 @@ describe('NavigationBar', () => {
 
         expect(screen.getByText('make page')).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('button', {name: '설정'}));
+        await userEvent.click(screen.getByRole('button', {name: '병동 설정'}));
 
         expect(await screen.findByText('ward info settings page')).toBeInTheDocument();
     });

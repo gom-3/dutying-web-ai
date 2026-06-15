@@ -109,7 +109,7 @@ describe('ProfilePage account actions', () => {
         });
     });
 
-    it('saves preferred language and service region independently', async () => {
+    it('saves preferred language and service region with the main save button', async () => {
         render(
             <MemoryRouter>
                 <ProfilePage />
@@ -118,7 +118,9 @@ describe('ProfilePage account actions', () => {
 
         await userEvent.selectOptions(screen.getByLabelText('화면 언어'), 'ja');
         await userEvent.selectOptions(screen.getByLabelText('서비스 지역'), 'JP');
-        await userEvent.click(screen.getByRole('button', {name: '언어 설정 저장'}));
+        expect(screen.queryByRole('button', {name: '언어 설정 저장'})).not.toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
 
         await waitFor(() => {
             expect(mockUpdateAccountPreferences).toHaveBeenCalledWith({
@@ -126,6 +128,7 @@ describe('ProfilePage account actions', () => {
                 serviceRegion: 'JP',
             });
         });
+        expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();
     });
 
     it('로그아웃 버튼을 누르면 확인 팝업을 먼저 띄운다', async () => {
