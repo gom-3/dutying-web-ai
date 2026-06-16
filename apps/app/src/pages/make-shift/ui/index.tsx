@@ -1,7 +1,9 @@
 import {cn} from '@dutying/utils/style';
+import {useIsMutating} from '@tanstack/react-query';
 import {ArrowRight, CalendarPlus} from 'lucide-react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
+import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
@@ -10,6 +12,7 @@ import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-m
 import {loadDraftStep} from '../model/make-shift-progress-storage';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
+import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
@@ -45,10 +48,18 @@ export const MakeShiftPageView = () => {
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const wardId = useMakeShiftStore((s) => s.wardId);
+    const stepNavigationBusy = useMakeShiftStore((s) => s.stepNavigationBusy);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
+    const nurseSaveStatus = useEditNurseStore((s) => s.nurseSaveStatus);
     const isOverview = phase === 'overview';
     const makeMonthAllowed = isMakeShiftMonthAllowed(year, month);
+    const pendingConstraintRuleSaves = useIsMutating({
+        mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
+    });
+    const isSavingConstraintRules = currentStep === 2 && pendingConstraintRuleSaves > 0;
+    const isSavingWorkers = currentStep === 1 && nurseSaveStatus === 'saving';
+    const isCurrentStepNavigationBusy = Boolean(stepNavigationBusy[currentStep]) || isSavingConstraintRules || isSavingWorkers;
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
     const currentShiftTeamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
@@ -219,6 +230,7 @@ export const MakeShiftPageView = () => {
                             <MakeShiftStepper
                                 currentStep={currentStep}
                                 maxReachedStep={visibleMaxReachedStep}
+                                navigationDisabled={isCurrentStepNavigationBusy}
                                 onClickStep={useCase.goToStep}
                             />
 
@@ -227,6 +239,7 @@ export const MakeShiftPageView = () => {
                                     currentStep={currentStep}
                                     canPrev={canPrev}
                                     canNext={canNext}
+                                    nextBusy={isCurrentStepNavigationBusy}
                                     onPrev={useCase.prev}
                                     onNext={useCase.next}
                                 />

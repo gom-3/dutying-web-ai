@@ -126,6 +126,7 @@ export function AiAutofill() {
     const draftRevision = useShiftEditorStore((s) => s.draftRevision);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
+    const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     /** true: AI·기타로 채운 표 포함 전체 표시. false: 고정 근무 칸만 표시. */
     const [autoFillEnabled, setAutoFillEnabled] = useState(true);
     const [showFaults, setShowFaults] = useState(true);
@@ -172,6 +173,14 @@ export function AiAutofill() {
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+    const isStepNavigationBusy =
+        isWorking || isSavingSnapshot || isAiGenerating || loadingSnapshotId !== null || deletingSnapshotId !== null;
+
+    useEffect(() => {
+        setStepNavigationBusy(5, isStepNavigationBusy);
+
+        return () => setStepNavigationBusy(5, false);
+    }, [isStepNavigationBusy, setStepNavigationBusy]);
 
     // 비동기 실시간 검증 활성화
     useAsyncScheduleValidation({

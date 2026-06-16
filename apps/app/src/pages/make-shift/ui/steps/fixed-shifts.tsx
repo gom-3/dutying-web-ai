@@ -44,7 +44,14 @@ export function FixedShifts() {
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const setEditorMode = useShiftEditorStore((s) => s.setEditorMode);
     const editorMode = useShiftEditorStore((s) => s.editorMode);
+    const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        setStepNavigationBusy(4, isSaving);
+
+        return () => setStepNavigationBusy(4, false);
+    }, [isSaving, setStepNavigationBusy]);
 
     useEffect(() => {
         if (editorMode !== 'fixed') {

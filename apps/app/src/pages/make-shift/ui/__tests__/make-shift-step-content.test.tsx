@@ -56,4 +56,10 @@ describe('MakeShiftStepContent layout', () => {
         expect(content).not.toHaveClass('min-h-0');
         expect(content).not.toHaveClass('flex-1');
     });
+
+    it('keeps the next button disabled while the current step is saving', () => {
+        render(<MakeShiftStepContent currentStep={1} canPrev={false} canNext nextBusy onPrev={vi.fn()} onNext={vi.fn()} />);
+
+        expect(screen.getByRole('button', {name: /page\.makeShift\.navigation\.saving/})).toBeDisabled();
+    });
 });

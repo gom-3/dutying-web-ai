@@ -778,6 +778,7 @@ export const ko = {
                     resetDefaults: '권장 조건 {{count}}개로 초기화했어요.',
                     imported: '{{teamName}} 제약조건을 그대로 불러왔어요.',
                     importFailed: '제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+                    saveFailed: '제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
                     recommendedDeleted: '권장 조건을 삭제했어요.',
                     importantUnmarked: '중요 표시를 해제했어요.',
                 },

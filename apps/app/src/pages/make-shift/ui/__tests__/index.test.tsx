@@ -1,9 +1,14 @@
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {loadDraftStep} from '../../model/make-shift-progress-storage';
 import {MakeShiftPageView} from '../index';
+
+const queryMockState = vi.hoisted(() => ({
+    pendingMutations: 0,
+}));
 
 type TMockMakeShiftState = {
     phase: 'overview' | 'stepping';
@@ -18,6 +23,7 @@ type TMockMakeShiftState = {
     shiftTeamsStatus: 'idle' | 'pending' | 'success' | 'error';
     currentShiftTeamId: number | null;
     wardId: number | null;
+    stepNavigationBusy: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, boolean>>;
 };
 
 const mockUseCase = {
@@ -29,6 +35,15 @@ const mockUseCase = {
 };
 
 let makeShiftState: TMockMakeShiftState;
+
+vi.mock('@tanstack/react-query', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+
+    return {
+        ...actual,
+        useIsMutating: () => queryMockState.pendingMutations,
+    };
+});
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
@@ -55,7 +70,17 @@ vi.mock('../make-shift-header', () => ({
 }));
 
 vi.mock('../make-shift-stepper', () => ({
-    MakeShiftStepper: () => <div data-testid="make-shift-stepper" />,
+    MakeShiftStepper: ({
+        navigationDisabled,
+        onClickStep,
+    }: {
+        navigationDisabled?: boolean;
+        onClickStep: (step: 1 | 2 | 3 | 4 | 5 | 6) => void;
+    }) => (
+        <button type="button" data-testid="make-shift-stepper" disabled={navigationDisabled} onClick={() => onClickStep(5)}>
+            stepper
+        </button>
+    ),
 }));
 
 vi.mock('../make-shift-step-content', () => ({
@@ -97,6 +122,8 @@ describe('MakeShiftPageView layout', () => {
         mockUseCase.goToStep.mockClear();
         mockUseCase.prev.mockClear();
         mockUseCase.next.mockClear();
+        queryMockState.pendingMutations = 0;
+        useEditNurseStore.getState().reset();
 
         makeShiftState = {
             phase: 'stepping',
@@ -111,6 +138,7 @@ describe('MakeShiftPageView layout', () => {
             shiftTeamsStatus: 'success',
             currentShiftTeamId: 1,
             wardId: 1,
+            stepNavigationBusy: {},
         };
     });
 
@@ -219,5 +247,50 @@ describe('MakeShiftPageView layout', () => {
         await user.click(screen.getByRole('button', {name: 'page.makeShift.workers.goMemberManagement'}));
 
         expect(screen.getByTestId('location-path')).toHaveTextContent(ROUTE.MEMBER);
+    });
+
+    it('disables progress navigation while constraint rules are saving', async () => {
+        const user = userEvent.setup();
+
+        queryMockState.pendingMutations = 1;
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 2,
+            maxReachedStep: 5,
+        };
+
+        renderMakeShiftPageView();
+
+        const stepper = screen.getByTestId('make-shift-stepper');
+
+        expect(stepper).toBeDisabled();
+        await user.click(stepper);
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+    });
+
+    it('disables progress navigation while worker changes are saving', () => {
+        useEditNurseStore.getState().beginSavingNurse();
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 1,
+            maxReachedStep: 5,
+        };
+
+        renderMakeShiftPageView();
+
+        expect(screen.getByTestId('make-shift-stepper')).toBeDisabled();
+    });
+
+    it('disables progress navigation when the current step reports a busy transition', () => {
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 5,
+            maxReachedStep: 5,
+            stepNavigationBusy: {5: true},
+        };
+
+        renderMakeShiftPageView();
+
+        expect(screen.getByTestId('make-shift-stepper')).toBeDisabled();
     });
 });

@@ -781,6 +781,7 @@ export const en: TLocale = {
                     resetDefaults: 'Reset to {{count}} recommended rules.',
                     imported: 'Imported constraints from {{teamName}}.',
                     importFailed: 'Could not import constraints. Please try again shortly.',
+                    saveFailed: 'Could not save constraints. Please try again shortly.',
                     recommendedDeleted: 'Recommended rule deleted.',
                     importantUnmarked: 'Important mark removed.',
                 },

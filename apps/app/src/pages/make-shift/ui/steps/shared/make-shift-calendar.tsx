@@ -247,14 +247,32 @@ type TShiftTypeDropdownState = {
     position: TShiftTypeDropdownPosition;
 };
 
-function getViolationColSpan(violation: TViolation): {startCol: number; span: number} | null {
-    if (violation.cells.length === 0) return null;
+function getViolationColSpans(violation: TViolation, rowIndex: number): {startCol: number; span: number}[] {
+    if (violation.cells.length === 0) return [];
 
-    const cols = violation.cells.map((cell) => cell.col);
-    const startCol = Math.min(...cols);
-    const endCol = Math.max(...cols);
+    const cols = [...new Set(violation.cells.filter((cell) => cell.row === rowIndex).map((cell) => cell.col))].sort((a, b) => a - b);
 
-    return {startCol, span: endCol - startCol + 1};
+    if (cols.length === 0) return [];
+
+    const spans: {startCol: number; span: number}[] = [];
+    let startCol = cols[0]!;
+    let endCol = cols[0]!;
+
+    for (const col of cols.slice(1)) {
+        if (col === endCol + 1) {
+            endCol = col;
+
+            continue;
+        }
+
+        spans.push({startCol, span: endCol - startCol + 1});
+        startCol = col;
+        endCol = col;
+    }
+
+    spans.push({startCol, span: endCol - startCol + 1});
+
+    return spans;
 }
 
 function sortViolationsForDisplay(violations: TViolation[]): TViolation[] {
@@ -1370,11 +1388,13 @@ function CalendarRowLeft({
         for (const [key, v] of violations) {
             if (!key.startsWith(rowViolationPrefix)) continue;
 
-            const spanInfo = getViolationColSpan(v);
+            const spanInfos = getViolationColSpans(v, rowIndex);
 
-            if (!spanInfo) continue;
+            if (spanInfos.length === 0) continue;
 
-            list.push({...spanInfo, violation: v});
+            for (const spanInfo of spanInfos) {
+                list.push({...spanInfo, violation: v});
+            }
         }
 
         list.sort((a, b) => {

@@ -17,6 +17,7 @@ type TMakeShiftStepContentProps = {
     currentStep: TMakeShiftStep;
     canPrev: boolean;
     canNext: boolean;
+    nextBusy?: boolean;
     onPrev: () => void;
     onNext: () => void;
 };
@@ -48,10 +49,11 @@ function StepIntroDescription({currentStep, description}: {currentStep: TMakeShi
     return <p className={`${MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS} whitespace-pre-line`}>{description}</p>;
 }
 
-export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onNext}: TMakeShiftStepContentProps) {
+export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = false, onPrev, onNext}: TMakeShiftStepContentProps) {
     const {t} = useTypedTranslation();
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const stepConfig = MAKE_SHIFT_STEP_CONFIG[currentStep];
+    const isNextButtonBusy = transitioning === 'next' || nextBusy;
 
     if (!stepConfig) {
         return (
@@ -118,11 +120,15 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, onPrev, onN
                         size="md"
                         type="button"
                         onClick={() => runTransition('next', handleNext)}
-                        disabled={!canNext || transitioning !== null}
+                        disabled={!canNext || transitioning !== null || nextBusy}
                         className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                     >
-                        {transitioning === 'next' ? <BouncingDots className="w-5 shrink-0 text-white" /> : null}
-                        {transitioning === 'next' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.next')}
+                        {isNextButtonBusy ? <BouncingDots className="w-5 shrink-0 text-white" /> : null}
+                        {nextBusy
+                            ? t('page.makeShift.navigation.saving')
+                            : transitioning === 'next'
+                              ? t('page.makeShift.navigation.moving')
+                              : t('page.makeShift.navigation.next')}
                     </Button>
                 </div>
             </aside>

@@ -1,5 +1,5 @@
-import {useQuery, useQueryClient} from '@tanstack/react-query';
-import {ChevronDown, Plus, RotateCcw, X} from 'lucide-react';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {ChevronDown, Plus, X} from 'lucide-react';
 import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -9,22 +9,31 @@ import useAuthStore from '@/features/auth/model/store';
 import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {loadConstraintRulesDraft, saveConstraintRulesDraft} from '../../model/constraint-rules-draft-storage';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {useMakeShiftStore} from '../../model/make-shift-store';
 import {
     getShiftConstraintRuleCandidates,
     getShiftConstraintRules,
+    putShiftConstraintRules,
     shiftConstraintRuleQueryKeys,
     type TShiftConstraintOption,
     type TShiftConstraintOptions,
     type TShiftConstraintRule,
     type TShiftConstraintRuleDraft,
+    type TShiftConstraintRulesResponse,
     type TShiftConstraintSlot,
     type TShiftConstraintTemplate,
 } from '../../model/shift-constraint-rules';
 
-type TSelectOption = {value: string; label: string; kind?: 'duty'; shortName?: string; name?: string; color?: string};
+type TSelectOption = {
+    value: string;
+    label: string;
+    kind?: 'duty';
+    shortName?: string;
+    name?: string;
+    color?: string;
+    raw?: TShiftConstraintOption;
+};
 type TTemplateCategory = string;
 type TTypedT = ReturnType<typeof useTypedTranslation>['t'];
 type TControlDef = {
@@ -146,15 +155,17 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
     );
 }
 
-const RECOMMENDED_DEFAULT_RULE_IDS = new Set([
-    'IMPORTANT_MAX_WORK_STREAK',
-    'IMPORTANT_MAX_SAME_DUTY_STREAK',
-    'IMPORTANT_MIN_NIGHT_INTERVAL',
-    'IMPORTANT_MAX_NIGHT_STREAK',
-    'IMPORTANT_OFF_AFTER_NIGHT',
-    'IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF',
-    'IMPORTANT_FORBIDDEN_DUTY_PATTERNS',
-]);
+const ALL_CONSTRAINT_TARGET_OPTION: TShiftConstraintOption = {type: 'ALL'};
+const RECOMMENDED_DEFAULT_RULE_CODES = [
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+] as const;
+const RECOMMENDED_DEFAULT_RULE_IDS = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
 
 function hasFinalConsonant(value: unknown) {
     const trimmed = String(value ?? '').trim();
@@ -348,7 +359,7 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         ],
     },
 ];
-const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, string>> = {
+const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> = {
     IMPORTANT_MAX_WORK_STREAK: {days: '3'},
     IMPORTANT_MAX_SAME_DUTY_STREAK: {days: '3'},
     IMPORTANT_MIN_NIGHT_INTERVAL: {days: '3'},
@@ -356,16 +367,18 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, string>> = 
     IMPORTANT_OFF_AFTER_NIGHT: {days: '1'},
     IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF: {},
     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {},
-    CORE_MAX_CONTINUOUS_WORK: {days: '3', maxDays: '3', maxContinuousWorkDays: '3', count: '3'},
-    CORE_MAX_CONTINUOUS_NIGHT: {count: '2'},
-    CORE_MIN_CONTINUOUS_NIGHT: {count: '2'},
-    CORE_MIN_OFF_AFTER_NIGHT: {count: '1'},
+    CORE_MAX_CONTINUOUS_WORK: {target: ALL_CONSTRAINT_TARGET_OPTION, days: 5, maxDays: 5, maxContinuousWorkDays: 5, count: 5},
+    CORE_MIN_NIGHT_INTERVAL: {target: ALL_CONSTRAINT_TARGET_OPTION, days: 5, minDays: 5, intervalDays: 5, count: 5},
+    CORE_MAX_CONTINUOUS_NIGHT: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 3},
+    CORE_MIN_CONTINUOUS_NIGHT: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 2},
+    CORE_MIN_OFF_AFTER_NIGHT: {target: ALL_CONSTRAINT_TARGET_OPTION, count: 2},
     CORE_MAX_SAME_DUTY_STREAK: {days: '3', maxDays: '3'},
-    CORE_MIN_NIGHT_INTERVAL: {days: '3', minDays: '3', intervalDays: '3', count: '3'},
     CORE_MAX_NIGHT_STREAK: {days: '2', maxDays: '2'},
     CORE_OFF_AFTER_NIGHT: {days: '1', minOffDays: '1'},
-    CORE_NO_NIGHT_BEFORE_REQUEST_OFF: {},
-    CORE_FORBIDDEN_DUTY_PATTERNS: {},
+    CORE_EXCLUDE_CERTAIN_WORK_TYPES: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    CORE_NO_NIGHT_BEFORE_REQUEST_OFF: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    CORE_FORBIDDEN_DUTY_PATTERNS: {target: ALL_CONSTRAINT_TARGET_OPTION},
     MIN_STAFF_BY_SHIFT: {count: '1'},
     MAX_STAFF_BY_SHIFT: {count: '1'},
     MIN_STAFF_BY_DATE_SHIFT: {count: '1'},
@@ -438,8 +451,17 @@ function isRecommendedTemplateCode(templateCode: string, category?: string) {
     );
 }
 
-function isTemplateSelectableAsSoft(template: TShiftConstraintTemplate) {
-    return template.severity === 'SOFT' || template.allowedSeverities.includes('SOFT');
+function isRecommendedDefaultRuleCode(templateCode: string) {
+    return RECOMMENDED_DEFAULT_RULE_IDS.has(templateCode);
+}
+
+function isTemplateSelectable(template: TShiftConstraintTemplate) {
+    return (
+        template.severity === 'HARD' ||
+        template.severity === 'SOFT' ||
+        template.allowedSeverities.includes('HARD') ||
+        template.allowedSeverities.includes('SOFT')
+    );
 }
 
 function getOptionMapKey(optionGroup?: string) {
@@ -598,7 +620,7 @@ function createLocalizedSoftRuleTemplate(definition: TSoftRuleTemplateDefinition
 function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TTypedT) {
     const legacyTemplates = createLegacySoftRuleTemplates(t);
 
-    return templates.filter(isTemplateSelectableAsSoft).map<TSoftRuleTemplate>((template) => {
+    return templates.filter(isTemplateSelectable).map<TSoftRuleTemplate>((template) => {
         const controls = template.slots.map(createControlFromSlot);
         const legacyTemplate = legacyTemplates.find((item) => item.id === template.templateCode);
         const sentence = canUseLegacySentence(legacyTemplate, controls)
@@ -631,14 +653,22 @@ function createClientId(rule: {shiftConstraintRuleId?: number; templateCode: str
 function fromServerRules(rules: Omit<TShiftConstraintRuleDraft, 'clientId'>[]) {
     return rules.map((rule) => ({
         ...rule,
-        isImportant: rule.isImportant ?? isRecommendedTemplateCode(rule.templateCode, rule.category),
+        isImportant: rule.severity === 'HARD',
         clientId: createClientId(rule),
     }));
 }
 
-function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string, TSelectOption[]> = {}) {
+function createRulesFromServer(serverRules: TShiftConstraintRule[]) {
+    return fromServerRules(serverRules);
+}
+
+function getSelectOptionParamValue(option: TSelectOption | undefined) {
+    return option?.raw ?? option?.value ?? option?.label ?? '';
+}
+
+function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string, TSelectOption[]> = {}): Record<string, unknown> {
     const configuredDefaults = DEFAULT_PARAMS_BY_TEMPLATE_CODE[template.id] ?? {};
-    const params: Record<string, string> = {};
+    const params: Record<string, unknown> = {};
 
     template.controls.forEach((control) => {
         if (configuredDefaults[control.key] != null) {
@@ -648,56 +678,53 @@ function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string,
         }
 
         if (control.kind === 'number') {
-            params[control.key] = String(control.values?.[0] ?? control.min ?? 1);
+            params[control.key] = control.values?.[0] ?? control.min ?? 1;
 
             return;
         }
 
-        params[control.key] = optionMap[control.optionsKey ?? '']?.[0]?.label ?? '';
+        params[control.key] = getSelectOptionParamValue(optionMap[control.optionsKey ?? '']?.[0]);
     });
 
     return params;
 }
 
-function createRecommendedDefaultRules(templates: TSoftRuleTemplate[], optionMap: Record<string, TSelectOption[]> = {}) {
-    return templates
-        .filter((template) => template.isRecommended)
-        .map<TShiftConstraintRuleDraft>((template, index) => {
-            const params = getDefaultParams(template, optionMap);
-
-            return {
-                clientId: `recommended-${template.id}`,
-                templateCode: template.id,
-                category: template.category,
-                severity: 'SOFT',
-                sortOrder: index + 1,
-                params,
-                selected: true,
-                isImportant: true,
-                displayText: template.buildText(params),
-                isValid: true,
-                invalidReason: null,
-            };
-        });
+function toSavedRule(rule: TShiftConstraintRuleDraft, index: number) {
+    return {
+        shiftConstraintRuleId: rule.shiftConstraintRuleId,
+        templateCode: rule.templateCode,
+        severity: rule.severity,
+        sortOrder: index + 1,
+        params: rule.params,
+        selected: rule.selected !== false,
+        isImportant: rule.severity === 'HARD',
+    };
 }
 
-function createVisibleSoftRules(
-    serverRules: TShiftConstraintRule[],
-    templates: TSoftRuleTemplate[],
-    optionMap: Record<string, TSelectOption[]> = {},
-) {
-    const defaults = createRecommendedDefaultRules(templates, optionMap);
-    const loadedRules = fromServerRules(serverRules);
-    const hiddenTemplateCodes = new Set(loadedRules.filter((rule) => rule.selected === false).map((rule) => rule.templateCode));
-    const selectedRules = loadedRules.filter((rule) => rule.selected !== false);
-    const selectedTemplateCodes = new Set(selectedRules.map((rule) => rule.templateCode));
-    const visibleDefaults = defaults.filter(
-        (rule) => !selectedTemplateCodes.has(rule.templateCode) && !hiddenTemplateCodes.has(rule.templateCode),
-    );
-    const visibleServerRules = selectedRules.filter((rule) => rule.severity === 'SOFT');
-    const hiddenServerRules = loadedRules.filter((rule) => rule.selected === false);
-
-    return [...visibleDefaults, ...visibleServerRules, ...hiddenServerRules].map((rule, index) => ({...rule, sortOrder: index + 1}));
+function toRulesQueryData(
+    wardId: number,
+    shiftTeamId: number,
+    rules: TShiftConstraintRuleDraft[],
+    previous?: TShiftConstraintRulesResponse,
+): TShiftConstraintRulesResponse {
+    return {
+        schemaVersion: previous?.schemaVersion ?? 1,
+        wardId,
+        shiftTeamId,
+        rules: rules.map((rule, index) => ({
+            shiftConstraintRuleId: rule.shiftConstraintRuleId,
+            templateCode: rule.templateCode,
+            category: rule.category,
+            severity: rule.severity,
+            sortOrder: index + 1,
+            params: rule.params,
+            selected: rule.selected !== false,
+            isImportant: rule.severity === 'HARD',
+            displayText: rule.displayText,
+            isValid: rule.isValid,
+            invalidReason: rule.invalidReason,
+        })),
+    };
 }
 
 function getOptionKey(option: TShiftConstraintOption) {
@@ -879,6 +906,7 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
         return {
             value: getCandidateOptionValue(option),
             label,
+            raw: option,
         };
     }
 
@@ -892,6 +920,7 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
         shortName,
         name,
         color: shiftType?.color,
+        raw: option,
     };
 }
 
@@ -973,17 +1002,33 @@ function getOptionsForControl(
 
     if (controlIndex <= 0) return options;
 
-    const priorNurseValues = new Set(
+    const priorNurseLabels = new Set(
         template.controls
             .slice(0, controlIndex)
             .filter((item) => item.optionsKey === 'nurse')
-            .map((item) => params[item.key])
+            .map((item) => {
+                const value = params[item.key];
+                const selectedOption = options.find((option) => doesSelectOptionMatchValue(option, value));
+
+                return selectedOption?.label ?? stringifyRuleParamValue(value);
+            })
             .filter(Boolean),
     );
 
-    if (!priorNurseValues.size) return options;
+    if (!priorNurseLabels.size) return options;
 
-    return options.filter((option) => !priorNurseValues.has(option.label) && !priorNurseValues.has(option.value));
+    return options.filter((option) => !priorNurseLabels.has(option.label));
+}
+
+function doesSelectOptionMatchValue(option: TSelectOption, value: unknown) {
+    if (isConstraintOption(value) && option.raw) {
+        return getCandidateOptionValue(option.raw) === getCandidateOptionValue(value) && option.raw.type === value.type;
+    }
+
+    const stringValue = stringifyRuleParamValue(value);
+    const candidates = [option.label, option.value, option.shortName, option.name].filter(Boolean).map(String);
+
+    return candidates.includes(stringValue);
 }
 
 function stringifyRuleParamValue(value: unknown): string {
@@ -1013,11 +1058,7 @@ function getControlParamString(control: TControlDef, value: unknown, optionMap: 
     if (control.kind === 'number') return stringValue;
 
     const options = optionMap[control.optionsKey ?? ''] ?? [];
-    const matchedOption = options.find((option) => {
-        const candidates = [option.label, option.value, option.shortName, option.name].filter(Boolean).map(String);
-
-        return candidates.includes(stringValue);
-    });
+    const matchedOption = options.find((option) => doesSelectOptionMatchValue(option, value));
 
     return matchedOption?.label ?? stringValue;
 }
@@ -1036,7 +1077,7 @@ function normalizeSoftRuleParams(
         normalized[control.key] = getControlParamString(control, params[control.key], optionMap);
     });
 
-    return normalizeCombinationParams(template, normalized, optionMap);
+    return normalized;
 }
 
 function getControlDisplayValue(
@@ -1056,14 +1097,14 @@ function getControlDisplayValue(
 
     if (!value) return options[0]?.label ?? '';
 
-    return options.find((option) => option.label === value || option.value === value)?.label ?? value;
+    return options.find((option) => doesSelectOptionMatchValue(option, value))?.label ?? value;
 }
 
 function normalizeCombinationParams(
     template: TSoftRuleTemplate,
-    params: Record<string, string>,
+    params: Record<string, unknown>,
     optionMap: Record<string, TSelectOption[]>,
-) {
+): Record<string, unknown> {
     if (!template.category.includes('COMBINATION')) return params;
 
     const nurseControls = template.controls.filter((control) => control.optionsKey === 'nurse');
@@ -1079,11 +1120,11 @@ function normalizeCombinationParams(
 
         if (!value) return;
 
-        const selectedOption = nurseOptions.find((option) => option.label === value || option.value === value);
-        const selectedLabel = selectedOption?.label ?? value;
+        const selectedOption = nurseOptions.find((option) => doesSelectOptionMatchValue(option, value));
+        const selectedLabel = selectedOption?.label ?? stringifyRuleParamValue(value);
 
         if (!selectedLabels.has(selectedLabel)) {
-            nextParams[control.key] = selectedLabel;
+            nextParams[control.key] = selectedOption ? getSelectOptionParamValue(selectedOption) : value;
             selectedLabels.add(selectedLabel);
 
             return;
@@ -1093,7 +1134,7 @@ function normalizeCombinationParams(
 
         if (!replacement) return;
 
-        nextParams[control.key] = replacement.label;
+        nextParams[control.key] = getSelectOptionParamValue(replacement);
         selectedLabels.add(replacement.label);
     });
 
@@ -1104,7 +1145,7 @@ type TInlineDropdownProps = {
     value: string;
     options: TSelectOption[];
     minWidth?: number;
-    onChange: (value: string) => void;
+    onChange: (option: TSelectOption) => void;
 };
 
 function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdownProps) {
@@ -1211,7 +1252,7 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                                           isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1'
                                       }`}
                                       onClick={() => {
-                                          onChange(option.label);
+                                          onChange(option);
                                           setOpen(false);
                                       }}
                                   >
@@ -1231,7 +1272,7 @@ type TSoftSentenceProps = {
     template: TSoftRuleTemplate;
     params: Record<string, unknown>;
     optionMap: Record<string, TSelectOption[]>;
-    onParamChange: (key: string, value: string) => void;
+    onParamChange: (key: string, value: unknown) => void;
 };
 
 function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenceProps) {
@@ -1291,7 +1332,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                             value={String(current)}
                             options={values.map((v) => ({value: String(v), label: String(v)}))}
                             minWidth={58}
-                            onChange={(nextValue) => onParamChange(control.key, String(Number(nextValue)))}
+                            onChange={(nextOption) => onParamChange(control.key, Number(nextOption.value))}
                         />
                     );
                 }
@@ -1305,7 +1346,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                         value={selected}
                         options={options}
                         minWidth={control.optionsKey === 'date' ? 88 : control.optionsKey === 'target' ? 104 : 72}
-                        onChange={(nextValue) => onParamChange(control.key, nextValue)}
+                        onChange={(nextOption) => onParamChange(control.key, getSelectOptionParamValue(nextOption))}
                     />
                 );
             })}
@@ -1330,7 +1371,7 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
                 value={String(numberValue)}
                 options={values.map((v) => ({value: String(v), label: String(v)}))}
                 minWidth={58}
-                onChange={(nextValue) => onChange(Number(nextValue))}
+                onChange={(nextOption) => onChange(Number(nextOption.value))}
             />
         );
     }
@@ -1345,8 +1386,8 @@ function SlotControl({slot, value, options, onChange}: TSlotControlProps) {
             value={selected}
             options={optionList.map((option) => ({value: getOptionKey(option), label: getValueLabel(option)}))}
             minWidth={104}
-            onChange={(nextValue) => {
-                const next = optionList.find((option) => getValueLabel(option) === nextValue);
+            onChange={(nextOption) => {
+                const next = optionList.find((option) => getValueLabel(option) === nextOption.label);
 
                 if (next) onChange(next);
             }}
@@ -1366,7 +1407,7 @@ type TRuleRowProps = {
     onDelete: () => void;
     onToggleImportant: (next: boolean) => void;
     onParamChange: (key: string, value: unknown) => void;
-    onSoftParamChange: (template: TSoftRuleTemplate, key: string, value: string) => void;
+    onSoftParamChange: (template: TSoftRuleTemplate, key: string, value: unknown) => void;
 };
 
 function ImportantToggle({
@@ -1643,7 +1684,7 @@ type TSoftModalProps = {
     templates: TSoftRuleTemplate[];
     optionMap: Record<string, TSelectOption[]>;
     onClose: () => void;
-    onAdd: (template: TSoftRuleTemplate, params: Record<string, string>) => void;
+    onAdd: (template: TSoftRuleTemplate, params: Record<string, unknown>) => void;
 };
 
 function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
@@ -1655,12 +1696,12 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
         return recommendedTemplates.length ? [RECOMMENDED_MODAL_CATEGORY, ...normalCategories] : normalCategories;
     }, [recommendedTemplates.length, templates]);
     const [selectedCategory, setSelectedCategory] = useState<TModalCategory>(RECOMMENDED_MODAL_CATEGORY);
-    const [draftParams, setDraftParams] = useState<Record<string, Record<string, string>>>({});
+    const [draftParams, setDraftParams] = useState<Record<string, Record<string, unknown>>>({});
 
     useEffect(() => {
         if (!open) return;
 
-        const next: Record<string, Record<string, string>> = {};
+        const next: Record<string, Record<string, unknown>> = {};
 
         templates.forEach((template) => {
             const params = getDefaultParams(template, optionMap);
@@ -1848,6 +1889,7 @@ export function Constraints({
     const [highlightedRuleId, setHighlightedRuleId] = useState<string | null>(null);
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
+    const saveRulesRequestSeqRef = useRef(0);
     const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1);
     const candidatesQuery = useQuery({
         queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
@@ -1871,11 +1913,7 @@ export function Constraints({
         enabled: wardId !== null && wardId !== undefined,
     });
     const templates = candidatesQuery.data?.templates ?? [];
-    const softTemplates = useMemo(() => {
-        if (templates.length) return createSoftRuleTemplates(templates, t);
-
-        return createLegacySoftRuleTemplates(t);
-    }, [t, templates]);
+    const softTemplates = useMemo(() => createSoftRuleTemplates(templates, t), [t, templates]);
     const templateByCode = useMemo(() => new Map(templates.map((template) => [template.templateCode, template] as const)), [templates]);
     const softTemplateByCode = useMemo(() => new Map(softTemplates.map((template) => [template.id, template] as const)), [softTemplates]);
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
@@ -1884,7 +1922,7 @@ export function Constraints({
     const skillConfig = useMemo(() => getWardSkillSettings(wardId)?.config ?? DEFAULT_SKILL_LEVEL_CONFIG, [wardId]);
     const optionMap = useMemo(() => {
         const dutyOptions = uniqueByValue([
-            {value: 'ALL_DUTY', label: t('page.makeShift.constraints.option.all')},
+            {value: 'ALL_DUTY', label: t('page.makeShift.constraints.option.all'), raw: {type: 'ALL'}},
             ...shiftTypes
                 .filter((shiftType) => shiftType.wardShiftTypeId != null && (shiftType.shortName ?? shiftType.name))
                 .map((shiftType) => ({
@@ -1894,22 +1932,27 @@ export function Constraints({
                     shortName: shiftType.shortName ?? shiftType.name,
                     name: shiftType.name,
                     color: shiftType.color,
+                    raw: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: shiftType.wardShiftTypeId},
                 })),
         ]);
-        const dateOptions = [{value: 'ALL_DATE', label: t('page.makeShift.constraints.option.allDays')}].concat(
+        const dateOptions = [{value: 'ALL_DATE', label: t('page.makeShift.constraints.option.allDays'), raw: {type: 'ALL'}}].concat(
             Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
                 value: String(idx + 1),
                 label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
+                raw: {type: 'DAY_OF_MONTH', day: idx + 1},
             })),
         );
         const nurseOptions = nurses
             .filter((nurse) => nurse.nurseId != null && nurse.name)
-            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name)}));
+            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name), raw: {type: 'NURSE', nurseId: nurse.nurseId}}));
         const preceptorOptions = nurses
             .filter((nurse) => nurse.nurseId != null && nurse.name && nurse.isPreceptor)
-            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name)}));
+            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name), raw: {type: 'NURSE', nurseId: nurse.nurseId}}));
         const fallbackOptionMap = {
-            target: [{value: 'ALL', label: t('page.makeShift.constraints.option.allPeople')}, ...nurseOptions],
+            target: [
+                {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
+                ...nurseOptions,
+            ],
             duty: dutyOptions,
             date: dateOptions,
             nurse: nurseOptions,
@@ -1919,34 +1962,93 @@ export function Constraints({
                 const level = skillConfig.levelCount - index;
                 const label = skillConfig.levelLabels?.[level] ?? `LV. ${level}`;
 
-                return {value: String(level), label};
+                return {value: String(level), label, raw: {type: 'PROFICIENCY_AT_LEAST', level}};
             }),
             dutyStrict: dutyOptions.filter((option) => option.value !== 'ALL_DUTY'),
         } as Record<string, TSelectOption[]>;
 
         return mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t);
     }, [nurses, options, shiftTypes, skillConfig, t, year, month]);
-    const shouldUseRulesDraft = variant === 'flow' && wardId != null && currentShiftTeamId != null;
-    const persistRulesDraft = useCallback(
-        (nextRules: TShiftConstraintRuleDraft[]) => {
-            if (!shouldUseRulesDraft || wardId == null || currentShiftTeamId == null) return;
+    const {mutate: mutateSaveRules} = useMutation({
+        mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
+        mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
+            if (wardId == null || currentShiftTeamId == null) {
+                throw new Error('Cannot save shift constraint rules without a ward and shift team.');
+            }
 
-            saveConstraintRulesDraft(wardId, currentShiftTeamId, year, month, nextRules);
+            return putShiftConstraintRules(wardId, currentShiftTeamId, {
+                rules: rules.map(toSavedRule),
+            });
         },
-        [currentShiftTeamId, month, shouldUseRulesDraft, wardId, year],
+        onMutate: async ({rules}) => {
+            if (wardId == null || currentShiftTeamId == null) return {previousRules: undefined};
+
+            await queryClient.cancelQueries({queryKey: rulesQueryKey});
+
+            const previousRules = queryClient.getQueryData<TShiftConstraintRulesResponse>(rulesQueryKey);
+
+            queryClient.setQueryData(rulesQueryKey, toRulesQueryData(wardId, currentShiftTeamId, rules, previousRules));
+
+            return {previousRules};
+        },
+        onSuccess: (response, variables) => {
+            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
+
+            queryClient.setQueryData(rulesQueryKey, response);
+
+            const savedRules = createRulesFromServer(response.rules);
+
+            rulesRef.current = savedRules;
+            setRules(savedRules);
+
+            if (wardId != null && currentShiftTeamId != null) {
+                void queryClient.invalidateQueries({
+                    queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace'],
+                });
+            }
+        },
+        onError: (_error, variables, context) => {
+            if (variables.requestId !== saveRulesRequestSeqRef.current) return;
+
+            if (context?.previousRules) {
+                queryClient.setQueryData(rulesQueryKey, context.previousRules);
+
+                const previousRules = createRulesFromServer(context.previousRules.rules);
+
+                rulesRef.current = previousRules;
+                setRules(previousRules);
+            } else {
+                void queryClient.invalidateQueries({queryKey: rulesQueryKey});
+                rulesRef.current = [];
+                setRules([]);
+            }
+
+            toast.error(t('page.makeShift.constraints.toast.saveFailed'));
+        },
+    });
+    const persistRules = useCallback(
+        (nextRules: TShiftConstraintRuleDraft[]) => {
+            if (wardId == null || currentShiftTeamId == null) return;
+
+            const requestId = saveRulesRequestSeqRef.current + 1;
+
+            saveRulesRequestSeqRef.current = requestId;
+            mutateSaveRules({rules: nextRules, requestId});
+        },
+        [currentShiftTeamId, mutateSaveRules, wardId],
     );
     const replaceRules = useCallback(
-        (nextRules: TShiftConstraintRuleDraft[], options: {persist?: boolean} = {}) => {
+        (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
             const normalizedRules = nextRules.map((rule, index) => ({...rule, sortOrder: index + 1}));
 
             rulesRef.current = normalizedRules;
             setRules(normalizedRules);
 
-            if (options.persist !== false) {
-                persistRulesDraft(normalizedRules);
+            if (options.sync !== false) {
+                persistRules(normalizedRules);
             }
         },
-        [persistRulesDraft],
+        [persistRules],
     );
     const updateRules = useCallback(
         (updater: TRulesUpdate) => {
@@ -1958,25 +2060,8 @@ export function Constraints({
     useEffect(() => {
         if (!rulesQuery.data || candidatesQuery.isPending) return;
 
-        const serverRules = createVisibleSoftRules(rulesQuery.data.rules, softTemplates, optionMap);
-        const draftRules =
-            shouldUseRulesDraft && wardId != null && currentShiftTeamId != null
-                ? loadConstraintRulesDraft(wardId, currentShiftTeamId, year, month)
-                : null;
-
-        replaceRules(draftRules ?? serverRules, {persist: false});
-    }, [
-        candidatesQuery.isPending,
-        currentShiftTeamId,
-        month,
-        optionMap,
-        replaceRules,
-        rulesQuery.data,
-        shouldUseRulesDraft,
-        softTemplates,
-        wardId,
-        year,
-    ]);
+        replaceRules(createRulesFromServer(rulesQuery.data.rules), {sync: false});
+    }, [candidatesQuery.isPending, replaceRules, rulesQuery.data]);
 
     useEffect(() => {
         rulesRef.current = rules;
@@ -2006,7 +2091,7 @@ export function Constraints({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
-    const softRules = rules.filter((rule) => rule.severity === 'SOFT' && rule.selected !== false);
+    const softRules = rules.filter((rule) => (rule.severity === 'SOFT' || rule.severity === 'HARD') && rule.selected !== false);
     const isLoading = candidatesQuery.isPending || rulesQuery.isPending;
     const isLoadError = rulesQuery.isError;
     const softRuleViewModels = useMemo(
@@ -2016,33 +2101,35 @@ export function Constraints({
                 template: templateByCode.get(rule.templateCode),
                 softTemplate: softTemplateByCode.get(rule.templateCode),
                 highlighted: highlightedRuleId === rule.clientId,
-                isImportant: Boolean(rule.isImportant),
+                isImportant: rule.severity === 'HARD',
                 isRecommended: isRecommendedTemplateCode(rule.templateCode, rule.category),
             })),
         [highlightedRuleId, softRules, softTemplateByCode, templateByCode],
     );
-    const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, string>) => {
+    const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, unknown>) => {
+        const normalizedParams = normalizeCombinationParams(template, params, optionMap);
+        const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
+        const isRecommended = Boolean(template.isRecommended);
         const nextRule: TShiftConstraintRuleDraft = {
             clientId: createClientId({templateCode: template.id}),
             templateCode: template.id,
             category: template.category,
-            severity: 'SOFT',
+            severity: isRecommended ? 'HARD' : 'SOFT',
             sortOrder: softRules.length + 1,
-            params,
+            params: normalizedParams,
             selected: true,
-            isImportant: Boolean(template.isRecommended),
-            displayText: template.buildText(params),
+            isImportant: isRecommended,
+            displayText: template.buildText(displayParams),
             isValid: true,
             invalidReason: null,
         };
 
         updateRules((prev) => {
-            const hard = prev.filter((r) => r.severity === 'HARD');
-            const soft = prev.filter((r) => r.severity === 'SOFT' && r.selected !== false);
+            const selected = prev.filter((r) => r.selected !== false);
             const hidden = prev.filter((r) => r.selected === false && r.templateCode !== nextRule.templateCode);
-            const nextSoft = [...soft, nextRule].map((r, idx) => ({...r, sortOrder: idx + 1}));
+            const nextSelected = [...selected, nextRule].map((r, idx) => ({...r, sortOrder: idx + 1}));
 
-            return [...hard, ...nextSoft, ...hidden];
+            return [...nextSelected, ...hidden];
         });
         setHighlightedRuleId(nextRule.clientId);
         setSoftModalOpen(false);
@@ -2052,13 +2139,6 @@ export function Constraints({
             setHighlightedRuleId((current) => (current === nextRule.clientId ? null : current));
         }, 1800);
     };
-    const resetRulesToImportantDefaults = useCallback(() => {
-        const defaults = createRecommendedDefaultRules(softTemplates, optionMap);
-
-        replaceRules(defaults);
-        setHighlightedRuleId(null);
-        toast.success(t('page.makeShift.constraints.toast.resetDefaults', {count: defaults.length}));
-    }, [optionMap, replaceRules, softTemplates, t]);
     const importRulesFromTeam = useCallback(
         async (sourceShiftTeamId: number) => {
             if (!wardId || currentShiftTeamId == null || importingShiftTeamId !== null) return;
@@ -2072,7 +2152,12 @@ export function Constraints({
                     queryKey: shiftConstraintRuleQueryKeys.rules(wardId, sourceShiftTeamId),
                     queryFn: () => getShiftConstraintRules(wardId, sourceShiftTeamId),
                 });
-                const next = createVisibleSoftRules(response.rules, softTemplates, optionMap);
+                const next = createRulesFromServer(response.rules).map((rule, index) => ({
+                    ...rule,
+                    shiftConstraintRuleId: undefined,
+                    clientId: createClientId({templateCode: rule.templateCode}),
+                    sortOrder: index + 1,
+                }));
 
                 replaceRules(next);
                 setHighlightedRuleId(null);
@@ -2087,7 +2172,7 @@ export function Constraints({
                 setImportingShiftTeamId(null);
             }
         },
-        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, optionMap, queryClient, replaceRules, softTemplates, t, wardId],
+        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, queryClient, replaceRules, t, wardId],
     );
     const updateRuleParam = useCallback(
         (clientId: string, key: string, value: unknown) => {
@@ -2098,18 +2183,18 @@ export function Constraints({
         [updateRules],
     );
     const updateSoftRuleParamByClientId = useCallback(
-        (clientId: string, template: TSoftRuleTemplate, key: string, value: string) => {
+        (clientId: string, template: TSoftRuleTemplate, key: string, value: unknown) => {
             updateRules((prev) =>
                 prev.map((item) => {
                     if (item.clientId !== clientId) return item;
 
-                    const currentParams = normalizeSoftRuleParams(template, item.params, optionMap);
-                    const nextParams = normalizeCombinationParams(template, {...currentParams, [key]: value}, optionMap);
+                    const nextParams = normalizeCombinationParams(template, {...item.params, [key]: value}, optionMap);
+                    const displayParams = normalizeSoftRuleParams(template, nextParams, optionMap);
 
                     return {
                         ...item,
                         params: nextParams,
-                        displayText: template.buildText(nextParams),
+                        displayText: template.buildText(displayParams),
                     };
                 }),
             );
@@ -2118,13 +2203,15 @@ export function Constraints({
     );
     const setRuleImportant = useCallback(
         (clientId: string, isImportant: boolean) => {
-            updateRules((prev) => prev.map((item) => (item.clientId === clientId ? {...item, isImportant} : item)));
+            updateRules((prev) =>
+                prev.map((item) => (item.clientId === clientId ? {...item, severity: isImportant ? 'HARD' : 'SOFT', isImportant} : item)),
+            );
         },
         [updateRules],
     );
     const toggleRuleImportant = useCallback(
         (rule: TShiftConstraintRuleDraft, nextImportant: boolean) => {
-            if (!nextImportant && isRecommendedTemplateCode(rule.templateCode, rule.category)) {
+            if (!nextImportant && isRecommendedDefaultRuleCode(rule.templateCode)) {
                 setRecommendedWarning({rule, action: 'unmark'});
 
                 return;
@@ -2136,7 +2223,7 @@ export function Constraints({
     );
     const removeRule = useCallback(
         (rule: TShiftConstraintRuleDraft) => {
-            if (isRecommendedTemplateCode(rule.templateCode, rule.category)) {
+            if (isRecommendedDefaultRuleCode(rule.templateCode)) {
                 setRecommendedWarning({rule, action: 'delete'});
 
                 return;
@@ -2150,11 +2237,7 @@ export function Constraints({
         if (!recommendedWarning) return;
 
         if (recommendedWarning.action === 'delete') {
-            updateRules((prev) =>
-                prev.map((item) =>
-                    item.clientId === recommendedWarning.rule.clientId ? {...item, selected: false, isImportant: false} : item,
-                ),
-            );
+            updateRules((prev) => prev.filter((item) => item.clientId !== recommendedWarning.rule.clientId));
             toast.success(t('page.makeShift.constraints.toast.recommendedDeleted'));
         } else {
             setRuleImportant(recommendedWarning.rule.clientId, false);
@@ -2224,37 +2307,35 @@ export function Constraints({
                                     <Plus className="size-4" />
                                     {t('page.makeShift.constraints.action.add')}
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={resetRulesToImportantDefaults}
-                                    className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full bg-[#F8F9FB] px-4 font-apple text-[13px] font-bold text-gray-4 transition-colors hover:bg-[#EEF0F4] hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
-                                >
-                                    <RotateCcw className="size-4" />
-                                    {t('page.makeShift.constraints.action.reset')}
-                                </button>
                             </>
                         }
                     >
                         <div className="space-y-2.5">
-                            {softRuleViewModels.map(({rule, template, softTemplate, highlighted, isImportant, isRecommended}) => (
-                                <RuleRow
-                                    key={rule.clientId}
-                                    rule={rule}
-                                    template={template}
-                                    softTemplate={softTemplate}
-                                    options={options}
-                                    optionMap={optionMap}
-                                    highlighted={highlighted}
-                                    isImportant={isImportant}
-                                    isRecommended={isRecommended}
-                                    onDelete={() => removeRule(rule)}
-                                    onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
-                                    onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
-                                    onSoftParamChange={(softTemplate, key, value) =>
-                                        updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
-                                    }
-                                />
-                            ))}
+                            {softRuleViewModels.length ? (
+                                softRuleViewModels.map(({rule, template, softTemplate, highlighted, isImportant, isRecommended}) => (
+                                    <RuleRow
+                                        key={rule.clientId}
+                                        rule={rule}
+                                        template={template}
+                                        softTemplate={softTemplate}
+                                        options={options}
+                                        optionMap={optionMap}
+                                        highlighted={highlighted}
+                                        isImportant={isImportant}
+                                        isRecommended={isRecommended}
+                                        onDelete={() => removeRule(rule)}
+                                        onToggleImportant={(nextImportant) => toggleRuleImportant(rule, nextImportant)}
+                                        onParamChange={(key, value) => updateRuleParam(rule.clientId, key, value)}
+                                        onSoftParamChange={(softTemplate, key, value) =>
+                                            updateSoftRuleParamByClientId(rule.clientId, softTemplate, key, value)
+                                        }
+                                    />
+                                ))
+                            ) : (
+                                <div className="rounded-[10px] bg-white px-4 py-5 text-center font-apple text-[13px] font-medium text-gray-4">
+                                    {t('page.makeShift.constraints.empty')}
+                                </div>
+                            )}
                         </div>
                     </Section>
                 </div>

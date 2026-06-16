@@ -111,8 +111,8 @@ const MakeShiftPage = () => {
     });
 
     useMakeShiftBootstrap(wardId, {
-        confirmInitialSchedule: onboardingInitialScheduleTarget,
-        confirmInitialSchedules: onboardingInitialScheduleTargets,
+        initialScheduleTarget: onboardingInitialScheduleTarget,
+        initialScheduleTargets: onboardingInitialScheduleTargets,
     });
 
     useEffect(() => {

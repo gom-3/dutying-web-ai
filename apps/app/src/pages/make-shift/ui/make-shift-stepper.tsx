@@ -76,10 +76,12 @@ function StepCheckIcon() {
 export function MakeShiftStepper({
     currentStep,
     maxReachedStep,
+    navigationDisabled = false,
     onClickStep,
 }: {
     currentStep: TMakeShiftStep;
     maxReachedStep: TMakeShiftStep;
+    navigationDisabled?: boolean;
     onClickStep: (step: TMakeShiftStep) => void;
 }) {
     const {t} = useTypedTranslation();
@@ -112,7 +114,7 @@ export function MakeShiftStepper({
                         const state = getStepState(step, currentStep, maxReachedStep);
                         const isFinalConfirmedStep = step === 6 && state === 'current';
                         const isStepHidden = step === 6 && !showConfirmedStep;
-                        const clickable = !isConfirmedStep && step !== currentStep && state !== 'locked';
+                        const clickable = !navigationDisabled && !isConfirmedStep && step !== currentStep && state !== 'locked';
                         const showRightConnector = step !== 6 && (step !== 5 || showConfirmedStep);
 
                         return (
@@ -129,10 +131,11 @@ export function MakeShiftStepper({
                                 {!isConfirmedStep && showRightConnector && <StepConnector side="right" active={step < currentStep} />}
                                 <button
                                     type="button"
-                                    disabled={state === 'locked' || isConfirmedStep}
+                                    disabled={navigationDisabled || state === 'locked' || isConfirmedStep}
                                     onClick={() => clickable && onClickStep(step)}
                                     data-step={step}
                                     data-step-state={state}
+                                    aria-busy={navigationDisabled ? true : undefined}
                                     aria-current={state === 'current' ? 'step' : undefined}
                                     className={cn(
                                         'group relative z-10 flex w-full min-w-0 flex-col items-center gap-2.5 px-1 text-center transition-[color,opacity,filter] duration-200 ease-out',
