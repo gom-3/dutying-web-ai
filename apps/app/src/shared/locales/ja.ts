@@ -1393,6 +1393,7 @@ export const ja: TLocale = {
                     resetDefaults: '推奨条件{{count}}件に初期化しました。',
                     imported: '{{teamName}}の制約条件を読み込みました。',
                     importFailed: '制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。',
+                    saveFailed: '制約条件を保存できませんでした。しばらくしてからもう一度お試しください。',
                     recommendedDeleted: '推奨条件を削除しました。',
                     importantUnmarked: '重要表示を解除しました。',
                 },

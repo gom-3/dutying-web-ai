@@ -1089,6 +1089,7 @@ export const ko = {
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
                     "importFailed": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
                     "resetDefaults": "권장 조건 {{count}}개로 초기화했어요."
                 },
@@ -3432,6 +3433,7 @@ export const en: TLocale = {
                     "importantUnmarked": "Important mark removed.",
                     "imported": "Imported constraints from {{teamName}}.",
                     "importFailed": "Could not import constraints. Please try again shortly.",
+                    "saveFailed": "Could not save constraints. Please try again shortly.",
                     "recommendedDeleted": "Recommended rule deleted.",
                     "resetDefaults": "Reset to {{count}} recommended rules."
                 },
@@ -5773,6 +5775,7 @@ export const ja: TLocale = {
                     "importantUnmarked": "重要表示を解除しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
                     "importFailed": "制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。",
+                    "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
                     "recommendedDeleted": "推奨条件を削除しました。",
                     "resetDefaults": "推奨条件{{count}}件に初期化しました。"
                 },

@@ -3,8 +3,8 @@ import {useSearchParams} from 'react-router';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
-import {getShiftWorkflowStatus, getShiftWorkflowStep} from '@/shared/lib/shift-workflow-status';
-import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep} from './make-shift-progress-storage';
+import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
+import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
@@ -15,39 +15,55 @@ function parsePositiveInt(raw: string | null): number | null {
     return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-type TConfirmInitialScheduleTarget = {
+type TInitialScheduleTarget = {
     year: number;
     month: number;
     shiftTeamId?: number;
 };
 
 type TUseMakeShiftBootstrapOptions = {
-    confirmInitialSchedule?: TConfirmInitialScheduleTarget | null;
-    confirmInitialSchedules?: TConfirmInitialScheduleTarget[] | null;
+    initialScheduleTarget?: TInitialScheduleTarget | null;
+    initialScheduleTargets?: TInitialScheduleTarget[] | null;
 };
 
-const getInitialScheduleTargetsKey = (targets: TConfirmInitialScheduleTarget[]) =>
+const getInitialScheduleTargetsKey = (targets: TInitialScheduleTarget[]) =>
     targets.map((target) => `${target.year}:${target.month}:${target.shiftTeamId ?? '*'}`).join('|');
+
+function isInitialScheduleTarget(
+    targets: TInitialScheduleTarget[],
+    year: number,
+    month: number,
+    shiftTeamId: number | null,
+): boolean {
+    if (shiftTeamId === null) return false;
+
+    return targets.some(
+        (target) =>
+            target.year === year &&
+            target.month === month &&
+            (target.shiftTeamId === undefined || target.shiftTeamId === shiftTeamId),
+    );
+}
 
 export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeShiftBootstrapOptions = {}) {
     const [searchParams] = useSearchParams();
-    const {confirmInitialSchedule = null, confirmInitialSchedules = null} = options;
-    const confirmInitialScheduleTargets = useMemo(() => {
-        if (confirmInitialSchedules && confirmInitialSchedules.length > 0) {
-            return confirmInitialSchedules;
+    const {initialScheduleTarget = null, initialScheduleTargets = null} = options;
+    const onboardingScheduleTargets = useMemo(() => {
+        if (initialScheduleTargets && initialScheduleTargets.length > 0) {
+            return initialScheduleTargets;
         }
 
-        return confirmInitialSchedule ? [confirmInitialSchedule] : [];
-    }, [confirmInitialSchedule, confirmInitialSchedules]);
-    const primaryConfirmInitialSchedule = confirmInitialScheduleTargets[0] ?? null;
-    const confirmInitialScheduleTargetsKey = getInitialScheduleTargetsKey(confirmInitialScheduleTargets);
-    const confirmInitialScheduleTargetsRef = useRef(confirmInitialScheduleTargets);
+        return initialScheduleTarget ? [initialScheduleTarget] : [];
+    }, [initialScheduleTarget, initialScheduleTargets]);
+    const primaryOnboardingScheduleTarget = onboardingScheduleTargets[0] ?? null;
+    const onboardingScheduleTargetsKey = getInitialScheduleTargetsKey(onboardingScheduleTargets);
+    const onboardingScheduleTargetsRef = useRef(onboardingScheduleTargets);
     const editor = useShiftEditorCommands();
     const editorRef = useRef(editor);
     const initializedWardIdRef = useRef<number | null>(null);
     const initialQueryShiftTeamIdRef = useRef<number | null>(null);
 
-    confirmInitialScheduleTargetsRef.current = confirmInitialScheduleTargets;
+    onboardingScheduleTargetsRef.current = onboardingScheduleTargets;
     editorRef.current = editor;
 
     const setShiftStatus = useMakeShiftStore((s) => s.setShiftStatus);
@@ -79,14 +95,14 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         const hasExplicitYearMonth = searchParams.has('year') || searchParams.has('month');
 
-        if (primaryConfirmInitialSchedule) {
-            setYearMonth({year: primaryConfirmInitialSchedule.year, month: primaryConfirmInitialSchedule.month});
+        if (primaryOnboardingScheduleTarget) {
+            setYearMonth({year: primaryOnboardingScheduleTarget.year, month: primaryOnboardingScheduleTarget.month});
         } else if (!hasExplicitYearMonth) {
             setYearMonth(getCalendarYearMonthNow());
         }
 
         setHydrated();
-    }, [isHydrated, primaryConfirmInitialSchedule, wardId, setHydrated, searchParams, setYearMonth]);
+    }, [isHydrated, primaryOnboardingScheduleTarget, wardId, setHydrated, searchParams, setYearMonth]);
 
     useEffect(() => {
         if (!wardId || !isHydrated || !currentShiftTeamId) return;
@@ -129,9 +145,9 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         const queryYear = parsePositiveInt(searchParams.get('year'));
         const queryMonth = parsePositiveInt(searchParams.get('month'));
         const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
-        const targetYear = primaryConfirmInitialSchedule?.year ?? queryYear;
-        const targetMonth = primaryConfirmInitialSchedule?.month ?? queryMonth;
-        const targetShiftTeamId = primaryConfirmInitialSchedule?.shiftTeamId ?? queryShiftTeamId;
+        const targetYear = primaryOnboardingScheduleTarget?.year ?? queryYear;
+        const targetMonth = primaryOnboardingScheduleTarget?.month ?? queryMonth;
+        const targetShiftTeamId = primaryOnboardingScheduleTarget?.shiftTeamId ?? queryShiftTeamId;
 
         if (targetYear !== null || targetMonth !== null) {
             const hasValidTargetMonth = targetMonth !== null && targetMonth >= 1 && targetMonth <= 12;
@@ -142,7 +158,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         }
 
         initialQueryShiftTeamIdRef.current = targetShiftTeamId;
-    }, [primaryConfirmInitialSchedule, searchParams, setYearMonth, wardId]);
+    }, [primaryOnboardingScheduleTarget, searchParams, setYearMonth, wardId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -206,40 +222,6 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     }, [setCurrentShiftTeamId, shiftTeams, wardId]);
 
     useEffect(() => {
-        const targets = confirmInitialScheduleTargetsRef.current;
-
-        if (!wardId || targets.length === 0 || shiftTeams.length === 0) return;
-
-        const availableShiftTeamIds = new Set(shiftTeams.map((team) => team.shiftTeamId));
-
-        let shouldRefreshCurrentTeamProgress = false;
-
-        targets.forEach((target) => {
-            if (typeof target.shiftTeamId !== 'number' || !availableShiftTeamIds.has(target.shiftTeamId)) {
-                return;
-            }
-
-            saveDraftStep(wardId, target.shiftTeamId, target.year, target.month, 6);
-            bumpMaxReachedStep(wardId, target.shiftTeamId, target.year, target.month, 6);
-
-            const state = useMakeShiftStore.getState();
-
-            if (
-                state.currentShiftTeamId === target.shiftTeamId &&
-                state.year === target.year &&
-                state.month === target.month &&
-                state.maxReachedStep !== 6
-            ) {
-                shouldRefreshCurrentTeamProgress = true;
-            }
-        });
-
-        if (shouldRefreshCurrentTeamProgress) {
-            setCurrentShiftTeamId(useMakeShiftStore.getState().currentShiftTeamId);
-        }
-    }, [confirmInitialScheduleTargetsKey, setCurrentShiftTeamId, shiftTeams, wardId]);
-
-    useEffect(() => {
         let cancelled = false;
 
         const run = async () => {
@@ -256,35 +238,67 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
             setShiftFullyAssigned(false);
 
             try {
-                const shift = await WardAPI.getShift(wardId, currentShiftTeamId, year, month);
+                const [shift, workspace] = await Promise.all([
+                    WardAPI.getShift(wardId, currentShiftTeamId, year, month),
+                    WardAPI.getWorkspaceSchedule(wardId, currentShiftTeamId, year, month).catch(() => null),
+                ]);
 
                 if (cancelled) return;
 
-                const workflowStatus = getShiftWorkflowStatus(shift);
-                const workflowStep = getShiftWorkflowStep(shift);
+                const workspaceWorkflowStep = getShiftWorkflowStep(workspace);
+                const shiftWorkflowStep = getShiftWorkflowStep(shift);
+                const workflowStep = workspaceWorkflowStep ?? shiftWorkflowStep;
+                const serverWorkflowStatus =
+                    getShiftWorkflowStatus(workspace) ??
+                    getWorkflowStatusFromStep(workspaceWorkflowStep) ??
+                    getShiftWorkflowStatus(shift) ??
+                    getWorkflowStatusFromStep(shiftWorkflowStep);
+                const workflowStatus = serverWorkflowStatus;
+                const savedStep = loadDraftStep(wardId, currentShiftTeamId, year, month);
+                const hasAssignments = !isDutyShiftWithoutAssignments(shift);
+                const isOnboardingInitialSchedule = isInitialScheduleTarget(
+                    onboardingScheduleTargetsRef.current,
+                    year,
+                    month,
+                    currentShiftTeamId,
+                );
+                const shouldTreatAsConfirmed =
+                    workflowStatus === 'CONFIRMED' ||
+                    (isOnboardingInitialSchedule && hasAssignments) ||
+                    (savedStep === 6 && hasAssignments && workflowStatus !== 'IN_PROGRESS');
                 const nextShiftExists =
-                    workflowStatus === 'NOT_STARTED'
+                    shouldTreatAsConfirmed
+                        ? true
+                        : workflowStatus === 'NOT_STARTED'
                         ? false
                         : workflowStatus === 'IN_PROGRESS' || workflowStatus === 'CONFIRMED'
                           ? true
-                          : !isDutyShiftWithoutAssignments(shift);
+                          : hasAssignments;
                 const nextShiftFullyAssigned =
-                    workflowStatus === 'CONFIRMED'
+                    shouldTreatAsConfirmed
                         ? true
                         : workflowStatus === 'NOT_STARTED' || workflowStatus === 'IN_PROGRESS'
                           ? false
                           : isDutyShiftFullyAssigned(shift);
 
-                if (workflowStatus === 'NOT_STARTED') {
+                let shouldRefreshProgress = false;
+
+                if (shouldTreatAsConfirmed) {
+                    saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
+                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+                } else if (workflowStatus === 'NOT_STARTED') {
                     clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
+                    shouldRefreshProgress = true;
                 } else if (workflowStatus === 'IN_PROGRESS' && workflowStep !== null) {
                     const safeWorkflowStep = Math.min(workflowStep, 5) as 1 | 2 | 3 | 4 | 5;
 
                     saveDraftStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
-                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
-                } else if (workflowStatus === 'CONFIRMED') {
-                    saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
-                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+                    saveMaxReachedStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
+                    shouldRefreshProgress = true;
+                }
+
+                if (shouldRefreshProgress) {
+                    setCurrentShiftTeamId(currentShiftTeamId);
                 }
 
                 setShiftExists(nextShiftExists);
@@ -303,20 +317,24 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         return () => {
             cancelled = true;
         };
-    }, [currentShiftTeamId, month, reloadToken, setShiftExists, setShiftFullyAssigned, setShiftStatus, wardId, year]);
+    }, [
+        currentShiftTeamId,
+        month,
+        onboardingScheduleTargetsKey,
+        reloadToken,
+        setCurrentShiftTeamId,
+        setShiftExists,
+        setShiftFullyAssigned,
+        setShiftStatus,
+        wardId,
+        year,
+    ]);
 
     useEffect(() => {
         if (shiftStatus !== 'success' || !currentShiftTeamId) return;
 
         const saved = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
-        const isConfirmInitialScheduleTarget = confirmInitialScheduleTargetsRef.current.some(
-            (target) =>
-                target.year === year &&
-                target.month === month &&
-                (target.shiftTeamId === undefined || target.shiftTeamId === currentShiftTeamId),
-        );
-
-        const shouldOpenConfirmedStep = shiftExists && (shiftFullyAssigned || saved === 6 || isConfirmInitialScheduleTarget);
+        const shouldOpenConfirmedStep = shiftExists && shiftFullyAssigned;
 
         if (shouldOpenConfirmedStep) {
             const state = useMakeShiftStore.getState();
@@ -328,12 +346,11 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
             return;
         }
 
-        if (saved === 6 && !shiftExists && !shiftFullyAssigned && wardId) {
+        if (saved === 6 && !shiftFullyAssigned && wardId) {
             clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
             setCurrentShiftTeamId(currentShiftTeamId);
         }
     }, [
-        confirmInitialScheduleTargetsKey,
         confirmSchedule,
         currentShiftTeamId,
         month,

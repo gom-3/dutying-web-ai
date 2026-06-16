@@ -35,9 +35,54 @@ vi.mock('@/shared/api', () => ({
 }));
 
 const wardApiMocks = vi.mocked(WardAPI);
+const recommendedTemplateCodes = [
+    'CORE_MAX_CONTINUOUS_WORK',
+    'CORE_MIN_NIGHT_INTERVAL',
+    'CORE_MAX_CONTINUOUS_NIGHT',
+    'CORE_MIN_CONTINUOUS_NIGHT',
+    'CORE_MIN_OFF_AFTER_NIGHT',
+    'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
+    'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+];
+const recommendedDefaultParamsByTemplateCode: Record<string, Record<string, unknown>> = {
+    CORE_MAX_CONTINUOUS_WORK: {target: {type: 'ALL'}, count: 5},
+    CORE_MIN_NIGHT_INTERVAL: {target: {type: 'ALL'}, count: 5},
+    CORE_MAX_CONTINUOUS_NIGHT: {target: {type: 'ALL'}, count: 3},
+    CORE_MIN_CONTINUOUS_NIGHT: {target: {type: 'ALL'}, count: 2},
+    CORE_MIN_OFF_AFTER_NIGHT: {target: {type: 'ALL'}, count: 2},
+    CORE_EXCLUDE_CERTAIN_WORK_TYPES: {target: {type: 'ALL'}},
+    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {target: {type: 'ALL'}},
+};
+const recommendedTemplates = recommendedTemplateCodes.map((templateCode, index) => ({
+    templateCode,
+    category: 'CORE',
+    displayTemplate: index === 0 ? '연속 근무는 {count}일 이하로 배정해요' : `${templateCode} {count}`,
+    severity: 'HARD' as const,
+    allowedSeverities: ['HARD' as const, 'SOFT' as const],
+    supportedInGenerator: true,
+    supportedInValidator: true,
+    slots:
+        templateCode === 'CORE_EXCLUDE_CERTAIN_WORK_TYPES' || templateCode === 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF'
+            ? [{key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'}]
+            : [
+                  {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
+                  {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 7},
+              ],
+}));
+const recommendedServerRules = recommendedTemplateCodes.map((templateCode, index) => ({
+    shiftConstraintRuleId: index + 1,
+    templateCode,
+    category: 'CORE',
+    severity: 'HARD' as const,
+    sortOrder: index + 1,
+    params: recommendedDefaultParamsByTemplateCode[templateCode],
+    selected: true,
+    isImportant: true,
+}));
 
 describe('Constraints', () => {
     beforeEach(() => {
+        vi.clearAllMocks();
         wardApiMocks.getShiftConstraintRules.mockResolvedValue({
             schemaVersion: 1,
             wardId: 1,
@@ -62,12 +107,14 @@ describe('Constraints', () => {
             wardId: 1,
             shiftTeamId: 10,
             options: {
+                targets: [{type: 'ALL', label: '전체'}],
                 nurses: [
                     {type: 'NURSE', nurseId: 1, label: 'Nurse A', name: 'Nurse A'},
                     {type: 'NURSE', nurseId: 2, label: 'Nurse B', name: 'Nurse B'},
                 ],
             },
             templates: [
+                ...recommendedTemplates,
                 {
                     templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
                     category: 'COMBINATION',
@@ -90,6 +137,81 @@ describe('Constraints', () => {
         wardApiMocks.getShiftTypes.mockResolvedValue([]);
     });
 
+    it('keeps the rule list empty when the server has no saved rules', async () => {
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        expect(await screen.findByText('제약조건을 추가하면 여기에 보여요.')).toBeInTheDocument();
+
+        expect(screen.queryByText((content) => content.includes('연속 근무는'))).not.toBeInTheDocument();
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+    });
+
+    it('asks for confirmation before deleting or unmarking one of the seven recommended rules', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: recommendedServerRules,
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        expect(await screen.findByText((content) => content.includes('연속 근무는'))).toBeInTheDocument();
+
+        await userEvent.click(screen.getAllByRole('button', {name: '제약 조건 삭제'})[0]!);
+        expect(screen.getByText('권장 조건을 삭제할까요?')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('button', {name: '유지하기'}));
+        await userEvent.click(screen.getAllByRole('checkbox', {name: '중요 표시 해제'})[0]!);
+
+        expect(screen.getByText('중요 표시를 뺄까요?')).toBeInTheDocument();
+    });
+
+    it('saves important toggles as severity changes', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 1,
+                    templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
+                    category: 'COMBINATION',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {
+                        nurseA: {type: 'NURSE', nurseId: 1, label: 'Nurse A'},
+                        nurseB: {type: 'NURSE', nurseId: 2, label: 'Nurse B'},
+                    },
+                    selected: true,
+                    isImportant: true,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        expect(await screen.findByRole('button', {name: 'Nurse A'})).toBeInTheDocument();
+
+        await userEvent.click(screen.getAllByRole('checkbox', {name: '중요 표시 해제'})[0]!);
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({
+                            templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
+                            severity: 'SOFT',
+                            isImportant: false,
+                        }),
+                    ]),
+                }),
+            );
+        });
+    });
+
     it('shows all nurses for the first worker-combination dropdown and excludes that nurse from the next dropdown', async () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
@@ -102,6 +224,7 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
+        await userEvent.click(screen.getByRole('button', {name: '근무자 조합'}));
         await userEvent.click(screen.getByRole('button', {name: 'Nurse A'}));
 
         let listbox = await screen.findByRole('listbox');
@@ -130,6 +253,7 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
+        await userEvent.click(screen.getByRole('button', {name: '근무자 조합'}));
         await userEvent.click(document.querySelector<HTMLButtonElement>('button[title="추가"]')!);
 
         await waitFor(() => {
@@ -141,6 +265,10 @@ describe('Constraints', () => {
                         expect.objectContaining({
                             templateCode: 'SOFT_NO_SAME_DUTY_PAIR',
                             severity: 'SOFT',
+                            params: expect.objectContaining({
+                                nurseA: expect.objectContaining({type: 'NURSE', nurseId: 1}),
+                                nurseB: expect.objectContaining({type: 'NURSE', nurseId: 2}),
+                            }),
                             selected: true,
                         }),
                     ]),

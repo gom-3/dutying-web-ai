@@ -42,6 +42,8 @@ export const shiftConstraintRuleQueryKeys = {
     candidates: (wardId: number, shiftTeamId: number) =>
         [...shiftConstraintRuleQueryKeys.all(), 'candidates', wardId, shiftTeamId] as const,
     rules: (wardId: number, shiftTeamId: number) => [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId] as const,
+    save: (wardId: number | null | undefined, shiftTeamId: number | null | undefined) =>
+        [...shiftConstraintRuleQueryKeys.all(), 'save', wardId, shiftTeamId] as const,
 };
 
 export const getShiftConstraintRuleCandidates = async (

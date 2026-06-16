@@ -54,7 +54,7 @@ export function useMakeShiftUseCase() {
         const s = syncEditorPersistenceKey();
         const persisted = editor.getPersisted();
         const saved = s.wardId && s.currentShiftTeamId ? loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) : null;
-        const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : (saved ?? 1);
+        const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : saved === 6 ? 1 : (saved ?? 1);
 
         startFromStep({step, openRestoreDraftModal: step === 6 ? false : persisted !== null});
     }, [editor, startFromStep, syncEditorPersistenceKey]);

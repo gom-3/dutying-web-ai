@@ -523,6 +523,61 @@ describe('MakeShiftCalendar', () => {
         expect(trigger).not.toHaveClass('bg-main-4/70');
     });
 
+    it('draws separate violation highlights for non-contiguous affected cells', () => {
+        const days = Array.from({length: 9}, (_, index) => ({day: index + 1, dayType: 'workday' as const}));
+        const baseShiftNurse = shift.divisionShiftNurses[1]![0]!;
+        const sparseShift: TShift = {
+            ...shift,
+            days,
+            divisionShiftNurses: [
+                [],
+                [
+                    {
+                        ...baseShiftNurse,
+                        wardShiftList: Array.from({length: 9}, () => 10),
+                        wardReqShiftList: Array.from({length: 9}, () => null),
+                    },
+                ],
+            ],
+        };
+        const sparseDoc: TDutyDoc = {
+            ...doc,
+            columns: days.map((day) => `2026-05-${String(day.day).padStart(2, '0')}`),
+            rows: [{...doc.rows[0]!, cells: Array.from({length: 9}, () => 'D')}],
+        };
+        const violation: TViolation = {
+            ruleId: '1591',
+            templateCode: 'NURSE_FORBID_WEEKEND',
+            message: 'Kim님은 주말이나 공휴일 근무를 할 수 없어요.',
+            level: 'error',
+            cells: [
+                {row: 0, col: 4},
+                {row: 0, col: 8},
+            ],
+            scope: 'nurse',
+            period: {
+                startDate: '2026-05-05',
+                endDate: '2026-05-09',
+                dates: ['2026-05-05', '2026-05-09'],
+            },
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={sparseShift}
+                doc={sparseDoc}
+                violationMap={new Map([['2,4-weekend', violation]])}
+                showFaults
+                readonly
+            />,
+        );
+
+        const highlights = Array.from(document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation'));
+
+        expect(highlights).toHaveLength(2);
+        expect(highlights.map((highlight) => highlight.style.gridColumn)).toEqual(['5 / span 1', '9 / span 1']);
+    });
+
     it('selects a range by dragging across day cells', () => {
         act(() => {
             useShiftEditorStore.getState().setDoc(doc);

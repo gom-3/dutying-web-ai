@@ -63,14 +63,14 @@ describe('make-shift-store', () => {
         });
     });
 
-    it('restores the confirmed step without opening the draft restore modal', () => {
+    it('does not restore the confirmed step from local progress alone', () => {
         useMakeShiftStore.getState().startFromStep({step: 6, openRestoreDraftModal: true});
 
         expect(useMakeShiftStore.getState()).toMatchObject({
             phase: 'stepping',
-            currentStep: 6,
-            maxReachedStep: 6,
-            restoreDraftModalOpen: false,
+            currentStep: 1,
+            maxReachedStep: 1,
+            restoreDraftModalOpen: true,
         });
     });
 
