@@ -242,6 +242,112 @@ describe('MakeShiftCalendar', () => {
         expect(popoverContent.queryByText('Kim · D')).not.toBeInTheDocument();
         expect(popoverContent.queryByText('Lee · 미배정')).not.toBeInTheDocument();
         expect(popoverContent.queryByText('수정 가능')).not.toBeInTheDocument();
+
+        const staffingRow = popoverContent.getByText('D 근무 인원이 부족해요.').closest<HTMLElement>('[data-violation-row="true"]');
+
+        expect(staffingRow).not.toBeNull();
+        expect(document.querySelector('[data-active-violation="true"]')).not.toBeInTheDocument();
+
+        act(() => {
+            fireEvent.pointerEnter(staffingRow!);
+        });
+
+        const activeViolation = document.querySelector<HTMLElement>('.make-shift-calendar__violation[data-active-violation="true"]');
+        const dimmedViolation = document.querySelector<HTMLElement>('.make-shift-calendar__violation[data-dimmed-violation="true"]');
+
+        expect(staffingRow).toHaveAttribute('data-active-violation-row', 'true');
+        expect(activeViolation).toBeInTheDocument();
+        expect(activeViolation).toHaveAttribute('data-violation-level', 'error');
+        expect(activeViolation?.style.zIndex).toBe('48');
+        expect(trigger).toHaveAttribute('data-active-violation-cell', 'true');
+        expect(trigger!.querySelector('[data-active-violation-shift-badge="true"]')).toBeInTheDocument();
+        expect(dimmedViolation).toBeInTheDocument();
+        expect(dimmedViolation).toHaveAttribute('data-violation-level', 'warning');
+        expect(dimmedViolation?.style.opacity).toBe('0.18');
+        expect(trigger!.querySelector('[data-active-violation-marker="true"]')).toBeInTheDocument();
+        expect((trigger!.querySelector('[data-active-violation-marker="true"]') as HTMLElement | null)?.style.zIndex).toBe('58');
+        expect(trigger!.querySelector('[data-dimmed-violation-marker="true"]')).not.toBeInTheDocument();
+
+        act(() => {
+            fireEvent.pointerLeave(staffingRow!);
+        });
+
+        expect(document.querySelector('[data-active-violation="true"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-dimmed-violation="true"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-active-violation-marker="true"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-active-violation-cell="true"]')).not.toBeInTheDocument();
+    });
+
+    it('focuses only the hovered violation instance when identical messages appear on different cells', async () => {
+        const user = userEvent.setup();
+        const message = 'Kim님은 N 다음날 D 근무를 할 수 없어요.';
+        const firstViolation: TViolation = {
+            ruleId: 'same-rule',
+            message,
+            level: 'error',
+            cells: [{row: 0, col: 0}],
+            scope: 'nurse',
+            period: {startDate: '2026-05-01', endDate: '2026-05-01', dates: ['2026-05-01']},
+        };
+        const secondViolation: TViolation = {
+            ruleId: 'same-rule',
+            message,
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+            period: {startDate: '2026-05-02', endDate: '2026-05-02', dates: ['2026-05-02']},
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={
+                    new Map([
+                        ['2,0-first-same-message', firstViolation],
+                        ['2,1-second-same-message', secondViolation],
+                    ])
+                }
+                showFaults
+                readonly
+            />,
+        );
+
+        const firstTrigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+        const secondTrigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(firstTrigger).not.toBeNull();
+        expect(secondTrigger).not.toBeNull();
+
+        await act(async () => {
+            await user.click(firstTrigger!);
+        });
+
+        const popover = screen.getByRole('dialog', {name: '제약조건 위반 1개'});
+        const popoverContent = within(popover);
+        const row = popoverContent.getByText('N 다음날 D 근무를 할 수 없어요.').closest<HTMLElement>('[data-violation-row="true"]');
+
+        expect(row).not.toBeNull();
+
+        act(() => {
+            fireEvent.pointerEnter(row!);
+        });
+
+        const activeViolations = Array.from(
+            document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation[data-active-violation="true"]'),
+        );
+        const dimmedViolations = Array.from(
+            document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation[data-dimmed-violation="true"]'),
+        );
+
+        expect(activeViolations).toHaveLength(1);
+        expect(activeViolations[0]?.style.gridColumn).toBe('1 / span 1');
+        expect(dimmedViolations).toHaveLength(1);
+        expect(dimmedViolations[0]?.style.gridColumn).toBe('2 / span 1');
+        expect(firstTrigger).toHaveAttribute('data-active-violation-cell', 'true');
+        expect(firstTrigger!.querySelector('[data-active-violation-shift-badge="true"]')).toBeInTheDocument();
+        expect(secondTrigger).not.toHaveAttribute('data-active-violation-cell', 'true');
+        expect(secondTrigger).toHaveAttribute('data-dimmed-violation-cell', 'true');
     });
 
     it('counts duplicate date violations once in the header popover', async () => {
@@ -290,6 +396,125 @@ describe('MakeShiftCalendar', () => {
         expect(popoverContent.getAllByText('D 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(popoverContent.getAllByText('E 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(screen.queryByRole('dialog', {name: '제약조건 위반 20개'})).not.toBeInTheDocument();
+    });
+
+    it('shows N interval violations as one concise issue without repeated N labels', async () => {
+        const user = userEvent.setup();
+        const firstNightIntervalViolation: TViolation = {
+            ruleId: 'night-interval-prev',
+            violationId: 'night-interval-prev',
+            templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+            message: 'Kim님은 N 근무 간격이 짧아요. 최소 3일을 띄워 주세요. 앞N',
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+            period: {startDate: '2026-05-01', endDate: '2026-05-02', dates: ['2026-05-01', '2026-05-02']},
+        };
+        const secondNightIntervalViolation: TViolation = {
+            ruleId: 'night-interval-current',
+            violationId: 'night-interval-current',
+            templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+            message: 'Kim님은 N 근무 간격이 짧아요. 최소 3일을 띄워 주세요. N',
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+            period: {startDate: '2026-05-01', endDate: '2026-05-02', dates: ['2026-05-01', '2026-05-02']},
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={
+                    new Map([
+                        ['2,1-night-interval-prev', firstNightIntervalViolation],
+                        ['2,1-night-interval-current', secondNightIntervalViolation],
+                    ])
+                }
+                showFaults
+                readonly
+            />,
+        );
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+        expect(trigger).toHaveAttribute('data-violation-count', '1');
+
+        await act(async () => {
+            await user.click(trigger!);
+        });
+
+        const popover = screen.getByRole('dialog', {name: '제약조건 위반 1개'});
+        const popoverContent = within(popover);
+
+        expect(popoverContent.getByText('N 근무 사이를 3일 이상 띄워야 해요.')).toBeInTheDocument();
+        expect(popoverContent.getByText('5/1 N ↔ 5/2 N')).toBeInTheDocument();
+        expect(popoverContent.queryByText(/앞N/)).not.toBeInTheDocument();
+        expect(popoverContent.queryByText(/N 근무 간격이 짧아요/)).not.toBeInTheDocument();
+    });
+
+    it('renders close N assignments with the standard violation highlight only', () => {
+        const days = Array.from({length: 4}, (_, index) => ({day: index + 1, dayType: 'workday' as const}));
+        const nightShiftType = {
+            wardShiftTypeId: 11,
+            name: 'Night',
+            shortName: 'N',
+            startTime: '22:00',
+            endTime: '07:00',
+            color: '#6B46C1',
+            isDefault: true,
+            isOff: false,
+            isCounted: true,
+            classification: 'NIGHT',
+        } satisfies TShift['wardShiftTypes'][number];
+        const intervalShift: TShift = {
+            ...shift,
+            days,
+            wardShiftTypes: [...shift.wardShiftTypes, nightShiftType],
+            divisionShiftNurses: [
+                [],
+                [
+                    {
+                        ...shift.divisionShiftNurses[1]![0]!,
+                        wardShiftList: [11, null, 11, null],
+                        wardReqShiftList: Array.from({length: 4}, () => null),
+                    },
+                ],
+            ],
+        };
+        const intervalDoc: TDutyDoc = {
+            ...doc,
+            columns: days.map((day) => `2026-05-${String(day.day).padStart(2, '0')}`),
+            rows: [{...doc.rows[0]!, cells: ['N', null, 'N', null]}],
+        };
+        const violation: TViolation = {
+            ruleId: 'night-interval',
+            templateCode: 'CORE_MIN_NIGHT_INTERVAL',
+            message: 'Kim님은 N 근무 사이를 3일 이상 띄워야 해요.',
+            level: 'error',
+            cells: [
+                {row: 0, col: 0},
+                {row: 0, col: 2},
+            ],
+            scope: 'nurse',
+            period: {startDate: '2026-05-01', endDate: '2026-05-03', dates: ['2026-05-01', '2026-05-03']},
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={intervalShift}
+                doc={intervalDoc}
+                violationMap={new Map([['2,0-night-interval', violation]])}
+                showFaults
+                readonly
+            />,
+        );
+
+        const highlights = Array.from(document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation'));
+
+        expect(document.querySelector('[data-night-interval-bridge="true"]')).not.toBeInTheDocument();
+        expect(highlights.map((highlight) => highlight.style.gridColumn)).toEqual(['1 / span 1', '3 / span 1']);
     });
 
     it('opens a shift type dropdown on editable cell double click and writes the selected type', async () => {

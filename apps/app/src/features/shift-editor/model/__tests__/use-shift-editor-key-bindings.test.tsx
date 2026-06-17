@@ -168,6 +168,22 @@ describe('useShiftEditorKeyBindings', () => {
         });
     });
 
+    it('blocks keyboard and paste edits while disabled', async () => {
+        const {result} = renderHook(() => useShiftEditorKeyBindings({disabled: true}));
+        const keyEvent = createKeyboardEvent('d');
+        const pasteEvent = createPasteEvent('D');
+
+        await result.current.onKeyDown(keyEvent);
+        result.current.onPasteCapture(pasteEvent);
+
+        expect(keyEvent.preventDefault).not.toHaveBeenCalled();
+        expect(pasteEvent.preventDefault).toHaveBeenCalled();
+        expect(commands.setSelectionValue).not.toHaveBeenCalled();
+        expect(commands.moveSelection).not.toHaveBeenCalled();
+        expect(commands.clearSelectionCells).not.toHaveBeenCalled();
+        expect(commands.paste).not.toHaveBeenCalled();
+    });
+
     it('runs beforeHandlers before built-in bindings and stops when handled', async () => {
         const beforeHandler = vi.fn(() => true);
         const {result} = renderHook(() =>

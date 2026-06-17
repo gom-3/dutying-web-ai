@@ -1,5 +1,128 @@
-import {describe, expect, it, vi} from 'vitest';
-import {focusEditorWithoutScrolling} from '../use-duty-editor-step';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import React, {type ReactNode} from 'react';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
+import {type TShift} from '@/entities';
+import {useShiftEditorStore} from '@/features/shift-editor/model';
+import {useMakeShiftStore} from '@/pages/make-shift/model/make-shift-store';
+import {act, renderHook, waitFor} from '@/shared/util/test-utils';
+import {focusEditorWithoutScrolling, useDutyEditorStep} from '../use-duty-editor-step';
+
+const wardApiMocks = vi.hoisted(() => ({
+    getShift: vi.fn(),
+    getWorkspaceSchedule: vi.fn(),
+}));
+
+vi.mock('@/features/auth', () => ({
+    default: () => ({
+        state: {wardId: 1},
+    }),
+}));
+
+vi.mock('@/shared/api', () => ({
+    WardAPI: wardApiMocks,
+}));
+
+vi.mock('@/shared/api/ward', () => ({
+    default: wardApiMocks,
+}));
+
+vi.mock('@/shared/hook/use-typed-translation', () => ({
+    useTypedTranslation: () => ({t: (key: string) => key}),
+}));
+
+function createQueryWrapper() {
+    const queryClient = new QueryClient({
+        defaultOptions: {
+            queries: {
+                gcTime: 0,
+                retry: false,
+            },
+        },
+    });
+
+    return function TestQueryWrapper({children}: {children: ReactNode}) {
+        return React.createElement(QueryClientProvider, {client: queryClient}, children);
+    };
+}
+
+function createDeferred<T>() {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((res, rej) => {
+        resolve = res;
+        reject = rej;
+    });
+
+    return {promise, resolve, reject};
+}
+
+function makeShift(): TShift {
+    return {
+        lastDays: [],
+        days: [{day: 1, dayType: 'workday'}],
+        wardShiftTypes: [
+            {
+                wardShiftTypeId: 10,
+                name: 'Day',
+                shortName: 'D',
+                startTime: '07:00',
+                endTime: '15:00',
+                color: '#4B7BEC',
+                isDefault: true,
+                isOff: false,
+                isCounted: true,
+                classification: 'DAY',
+            },
+        ],
+        divisionShiftNurses: [
+            [
+                {
+                    shiftNurse: {
+                        shiftNurseId: 2,
+                        name: 'Kim',
+                        carried: 0,
+                        divisionNum: 0,
+                        priority: 0,
+                        isWorker: true,
+                        nurseId: 100,
+                    },
+                    lastWardShiftList: [],
+                    lastWardReqShiftList: [],
+                    wardShiftList: [10],
+                    wardReqShiftList: [null],
+                },
+            ],
+        ],
+    };
+}
+
+function makeWorkspaceSchedule() {
+    return {
+        wardId: 1,
+        shiftTeamId: 10,
+        year: 2026,
+        month: 5,
+        days: ['2026-05-01'],
+        shiftTypes: [],
+        rows: [],
+        rowOrder: [],
+        cells: [],
+        wardShiftBase: [
+            {
+                shiftNurseId: 2,
+                nurseId: 100,
+                date: '2026-05-01',
+                wardShiftTypeId: 10,
+                shiftCode: 'D',
+                fixed: true,
+            },
+        ],
+        requestShifts: [],
+        rules: [],
+        rulesHash: 'rules-v1',
+        latestSnapshot: null,
+    };
+}
 
 describe('focusEditorWithoutScrolling', () => {
     it('focuses the editor without letting the browser adjust scroll position', () => {
@@ -9,5 +132,55 @@ describe('focusEditorWithoutScrolling', () => {
         focusEditorWithoutScrolling(editor);
 
         expect(focus).toHaveBeenCalledWith({preventScroll: true});
+    });
+});
+
+describe('useDutyEditorStep', () => {
+    beforeEach(() => {
+        window.localStorage.clear();
+        wardApiMocks.getShift.mockReset();
+        wardApiMocks.getWorkspaceSchedule.mockReset();
+        useShiftEditorStore.getState().reset();
+        useMakeShiftStore.setState({
+            year: 2026,
+            month: 5,
+            currentShiftTeamId: 10,
+        });
+    });
+
+    afterEach(() => {
+        window.localStorage.clear();
+        useShiftEditorStore.getState().reset();
+    });
+
+    it('waits for workspace fixed cells before hydrating the editor document', async () => {
+        const workspace = createDeferred<ReturnType<typeof makeWorkspaceSchedule>>();
+
+        wardApiMocks.getShift.mockResolvedValue(makeShift());
+        wardApiMocks.getWorkspaceSchedule.mockReturnValue(workspace.promise);
+
+        const {result} = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(result.current.dutyQuery.data).toBeDefined();
+        });
+
+        expect(result.current.isHydratingEditor).toBe(true);
+        expect(useShiftEditorStore.getState().doc.columns).toEqual([]);
+
+        await act(async () => {
+            workspace.resolve(makeWorkspaceSchedule());
+            await workspace.promise;
+        });
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'2|2026-05-01': true});
+        });
+
+        expect(result.current.isHydratingEditor).toBe(false);
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().rulesHash).toBe('rules-v1');
+        });
     });
 });

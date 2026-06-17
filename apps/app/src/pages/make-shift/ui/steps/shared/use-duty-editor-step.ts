@@ -85,13 +85,18 @@ function deriveRequestCells(
 type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
     hydratePreviousLastShifts?: boolean;
+    editorInputDisabled?: boolean;
 };
 
 export function focusEditorWithoutScrolling(editor: HTMLDivElement | null) {
     editor?.focus({preventScroll: true});
 }
 
-export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts = false}: TUseDutyEditorStepOptions = {}) {
+export function useDutyEditorStep({
+    onContextChanged,
+    hydratePreviousLastShifts = false,
+    editorInputDisabled = false,
+}: TUseDutyEditorStepOptions = {}) {
     const {
         state: {wardId},
     } = useAuth();
@@ -120,6 +125,8 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
             ? previousDutyQuery.data
             : null;
     const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
+    const isHydratingWorkspace = enabled && workspaceQuery.isLoading && workspaceQuery.data === undefined;
+    const isHydratingEditor = isHydratingLastShifts || isHydratingWorkspace;
 
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
 
@@ -127,7 +134,7 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
     const workKeyMap = useMemo(() => buildWorkKeyMap(dutyQuery.data), [dutyQuery.data]);
-    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap});
+    const {onKeyDown, onPasteCapture} = useShiftEditorKeyBindings({workKeyMap, disabled: editorInputDisabled});
     const {violationMap, teamViolations} = useViolationMap(editorDoc);
     const hydratedContextKeyRef = useRef<string | null>(null);
     const initialHydrationDoneRef = useRef(false);
@@ -141,7 +148,7 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
     }, [workspaceQuery.data?.rulesHash, setRulesHash]);
 
     useEffect(() => {
-        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isHydratingLastShifts) return;
+        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isHydratingEditor) return;
 
         const nextPersistenceKey = getShiftEditorDraftStorageKey({wardId, shiftTeamId: currentShiftTeamId, year, month});
         const currentPersistenceKey = commands.getCurrentPersistenceKey();
@@ -216,6 +223,10 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
             commands.init(nextDoc);
         }
 
+        if (workspaceQuery.data?.rulesHash) {
+            setRulesHash(workspaceQuery.data.rulesHash);
+        }
+
         if (hasContextChanged) onContextChanged?.();
 
         hydratedContextKeyRef.current = currentContextKey;
@@ -227,10 +238,11 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
         currentShiftTeamId,
         dutyQuery.data,
         workspaceQuery.data,
-        isHydratingLastShifts,
+        isHydratingEditor,
         month,
         onContextChanged,
         previousConfirmedShift,
+        setRulesHash,
         wardId,
         year,
         editorDoc.columns.length,
@@ -250,5 +262,6 @@ export function useDutyEditorStep({onContextChanged, hydratePreviousLastShifts =
         teamViolations,
         focusEditor,
         isHydratingLastShifts,
+        isHydratingEditor,
     };
 }

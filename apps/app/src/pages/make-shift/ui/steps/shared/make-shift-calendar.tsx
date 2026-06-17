@@ -217,6 +217,23 @@ const KOREAN_NURSE_SUBJECT_PATTERN = /^[^\s:]+\uB2D8\uC740\s+/;
 const LEGACY_OFF_AFTER_NIGHT_PATTERN =
     /^\uC57C\uAC04 \uD6C4 \uD734\uBB34\uAC00 (\d+)\uC77C\uC774\uC5D0\uC694\.?\s*(\d+)\uC77C \uD544\uC694\uD574\uC694\.?$/;
 const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
+const MIN_NIGHT_INTERVAL_TEMPLATE_PATTERN = /MIN_(?:NIGHT|N)_INTERVAL/i;
+const MIN_NIGHT_INTERVAL_RULE_PATTERN = /minNightInterval|MIN_(?:NIGHT|N)_INTERVAL/i;
+const MIN_NIGHT_INTERVAL_MESSAGE_PATTERNS = [
+    /N\s*\uADFC\uBB34\s*\uAC04\uACA9/,
+    /N\s*\uADFC\uBB34\s*\uC0AC\uC774/,
+    /\uB098\uC774\uD2B8\s*\uAC04\uACA9/,
+    /between\s+N\s+shifts/i,
+    /N\s*\u52E4\u52D9.*\u9593\u9694/,
+    /\u591C\u52E4.*\u9593\u9694/,
+];
+const MIN_NIGHT_INTERVAL_EXPECTED_PATTERNS = [
+    /(?:\uCD5C\uC18C\s*)?(\d+)\s*\uC77C(?:\s*\uC774\uC0C1)?/,
+    /at\s+least\s+(\d+)/i,
+    /(\d+)\s*day/i,
+    /\u6700\u4F4E\s*(\d+)\s*\u65E5/,
+    /(\d+)\s*\u65E5/,
+];
 const VIOLATION_POPOVER_WIDTH = 360;
 const VIOLATION_POPOVER_VIEWPORT_PADDING = 8;
 const VIOLATION_POPOVER_MAX_ESTIMATED_HEIGHT = 360;
@@ -245,6 +262,13 @@ type TShiftTypeDropdownState = {
     colIndex: number;
     currentValue: TCellValue;
     position: TShiftTypeDropdownPosition;
+};
+
+type TViolationReasonPopoverProps = {
+    popover: TViolationPopover | null;
+    activeViolationKey: string | null;
+    onActiveViolationChange: (violationKey: string | null) => void;
+    onClose: () => void;
 };
 
 function getViolationColSpans(violation: TViolation, rowIndex: number): {startCol: number; span: number}[] {
@@ -305,6 +329,41 @@ function normalizeViolationTitle(title: string): string {
     return titleKey ? i18n.t(titleKey) : title;
 }
 
+function isMinNightIntervalViolation(violation: TViolation, message: string): boolean {
+    if (MIN_NIGHT_INTERVAL_RULE_PATTERN.test(violation.ruleId)) return true;
+
+    if (violation.templateCode && MIN_NIGHT_INTERVAL_TEMPLATE_PATTERN.test(violation.templateCode)) return true;
+
+    return MIN_NIGHT_INTERVAL_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+function getMinNightIntervalExpectedDays(message: string): string | null {
+    for (const pattern of MIN_NIGHT_INTERVAL_EXPECTED_PATTERNS) {
+        const match = message.match(pattern);
+
+        if (match?.[1]) return match[1];
+    }
+
+    return null;
+}
+
+function formatMinNightIntervalSentence(violation: TViolation, message: string): string | null {
+    if (!isMinNightIntervalViolation(violation, message)) return null;
+
+    const expectedDays = getMinNightIntervalExpectedDays(message);
+    const language = i18n.resolvedLanguage ?? i18n.language;
+
+    if (language.startsWith('en')) {
+        return expectedDays ? `Keep at least ${expectedDays} day(s) between N shifts.` : 'Keep enough space between N shifts.';
+    }
+
+    if (language.startsWith('ja')) {
+        return expectedDays ? `N勤務の間隔を${expectedDays}日以上空けてください。` : 'N勤務の間隔を空けてください。';
+    }
+
+    return expectedDays ? `N 근무 사이를 ${expectedDays}일 이상 띄워야 해요.` : 'N 근무 사이를 충분히 띄워 주세요.';
+}
+
 function getViolationProblemSentence(violation: TViolation): string {
     const [rawTitle, ...detailParts] = violation.message.split(': ');
     const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
@@ -322,6 +381,10 @@ function getViolationProblemSentence(violation: TViolation): string {
         });
     }
 
+    const minNightIntervalSentence = formatMinNightIntervalSentence(violation, withoutName);
+
+    if (minNightIntervalSentence) return minNightIntervalSentence;
+
     return withoutName;
 }
 
@@ -331,12 +394,36 @@ function getViolationDisplayKey(violation: TViolation): string {
     return `${violation.level}:${problemSentence}`;
 }
 
+function getViolationInstanceKey(violation: TViolation): string {
+    const cellKey = violation.cells
+        .map((cell) => `${cell.row}:${cell.col}`)
+        .sort()
+        .join(',');
+    const periodKey = [violation.period?.startDate ?? '', violation.period?.endDate ?? '', ...(violation.period?.dates ?? [])]
+        .filter(Boolean)
+        .sort()
+        .join(',');
+    const affectedCellKey = (violation.affectedCells ?? [])
+        .map((cell) => cell.cellKey ?? `${cell.shiftNurseId ?? ''}:${cell.date}:${cell.shiftCode ?? ''}:${cell.wardShiftTypeId ?? ''}`)
+        .sort()
+        .join(',');
+
+    return [
+        getViolationDisplayKey(violation),
+        violation.scope ?? '',
+        violation.templateCode ?? '',
+        cellKey,
+        periodKey,
+        affectedCellKey,
+    ].join('|');
+}
+
 function getUniqueViolationsForDisplay(violations: TViolation[]): TViolation[] {
     const seen = new Set<string>();
     const uniqueViolations: TViolation[] = [];
 
     for (const violation of violations) {
-        const key = getViolationDisplayKey(violation);
+        const key = getViolationInstanceKey(violation);
 
         if (seen.has(key)) continue;
 
@@ -347,7 +434,15 @@ function getUniqueViolationsForDisplay(violations: TViolation[]): TViolation[] {
     return uniqueViolations;
 }
 
-function ViolationMarker({violations, placement = 'cell'}: {violations: TViolation[]; placement?: 'header' | 'cell'}) {
+function ViolationMarker({
+    violations,
+    placement = 'cell',
+    activeViolationKey,
+}: {
+    violations: TViolation[];
+    placement?: 'header' | 'cell';
+    activeViolationKey?: string | null;
+}) {
     const displayViolations = getUniqueViolationsForDisplay(violations);
     const level = getPrimaryViolationLevel(displayViolations);
 
@@ -355,6 +450,11 @@ function ViolationMarker({violations, placement = 'cell'}: {violations: TViolati
 
     const tone = VIOLATION_TONE[level];
     const label = displayViolations.length > 1 ? (displayViolations.length > 9 ? '9+' : String(displayViolations.length)) : '';
+    const hasActiveViolation =
+        activeViolationKey !== null &&
+        activeViolationKey !== undefined &&
+        displayViolations.some((violation) => getViolationInstanceKey(violation) === activeViolationKey);
+    const isDimmed = activeViolationKey !== null && activeViolationKey !== undefined && !hasActiveViolation;
     const positionClass =
         placement === 'header'
             ? label
@@ -367,12 +467,21 @@ function ViolationMarker({violations, placement = 'cell'}: {violations: TViolati
     return (
         <span
             aria-hidden
+            data-active-violation-marker={hasActiveViolation ? 'true' : undefined}
+            data-dimmed-violation-marker={isDimmed ? 'true' : undefined}
             className={cn(
-                'make-shift-calendar__violation-marker pointer-events-none absolute z-[30] grid place-items-center rounded-full font-poppins font-bold',
+                'make-shift-calendar__violation-marker pointer-events-none absolute z-[30] grid place-items-center rounded-full font-poppins font-bold transition-[filter,opacity,transform] duration-150 ease-out',
                 positionClass,
                 level === 'warning' && !label && 'opacity-75',
+                hasActiveViolation && 'z-[58] scale-110 drop-shadow-[0_4px_6px_rgba(15,23,42,0.2)]',
             )}
-            style={{backgroundColor: tone.markerBg, color: tone.markerText}}
+            style={{
+                zIndex: hasActiveViolation ? 58 : undefined,
+                backgroundColor: tone.markerBg,
+                color: tone.markerText,
+                opacity: isDimmed ? 0.28 : undefined,
+                filter: isDimmed ? 'saturate(0.35)' : undefined,
+            }}
         >
             {label}
         </span>
@@ -449,6 +558,10 @@ function getViolationPeriodLabel(violation: TViolation): string | null {
 
     if (dates.length === 0) return null;
 
+    if (isMinNightIntervalViolation(violation, violation.message) && dates.length >= 2) {
+        return `${formatCompactDate(dates[0]!)} N ↔ ${formatCompactDate(dates[dates.length - 1]!)} N`;
+    }
+
     if (dates.length === 1) return formatCompactDate(dates[0]!);
 
     const startDate = violation.period?.startDate ?? dates[0]!;
@@ -504,7 +617,7 @@ function hasDateContext(value: string | undefined): boolean {
     return KOREAN_DAY_CONTEXT_PATTERN.test(value);
 }
 
-function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover | null; onClose: () => void}) {
+function ViolationReasonPopover({popover, activeViolationKey, onActiveViolationChange, onClose}: TViolationReasonPopoverProps) {
     useEffect(() => {
         if (!popover) return;
 
@@ -568,12 +681,34 @@ function ViolationReasonPopover({popover, onClose}: {popover: TViolationPopover 
                     const tone = VIOLATION_TONE[violation.level];
                     const levelLabel = getViolationLevelLabel(violation.level);
                     const metaLabel = getViolationMetaLabel(violation, {hideSingleDate: headerHasDateContext});
+                    const violationKey = getViolationInstanceKey(violation);
+                    const isActive = activeViolationKey === violationKey;
 
                     return (
                         <div
-                            key={violation.violationId ?? `${violation.ruleId}-${index}`}
-                            className={cn('flex min-w-0 gap-2.5 px-3.5 py-3', index > 0 && 'border-t border-gray-7')}
+                            key={`${getViolationInstanceKey(violation)}-${index}`}
+                            data-violation-row="true"
+                            data-active-violation-row={isActive || undefined}
+                            tabIndex={0}
+                            onPointerEnter={() => onActiveViolationChange(violationKey)}
+                            onPointerLeave={() => onActiveViolationChange(null)}
+                            onFocus={() => onActiveViolationChange(violationKey)}
+                            onBlur={() => onActiveViolationChange(null)}
+                            onClick={() => onActiveViolationChange(violationKey)}
+                            className={cn(
+                                'relative flex min-w-0 cursor-pointer gap-2.5 px-3.5 py-3 transition-colors outline-none',
+                                'hover:bg-gray-7 focus-visible:bg-gray-7 focus-visible:ring-2 focus-visible:ring-main-1/35 focus-visible:ring-inset',
+                                index > 0 && 'border-t border-gray-7',
+                                isActive && (violation.level === 'error' ? 'bg-red/5' : 'bg-[#FFF8E8]'),
+                            )}
                         >
+                            {isActive && (
+                                <span
+                                    aria-hidden
+                                    className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full"
+                                    style={{backgroundColor: tone.markerBg}}
+                                />
+                            )}
                             <span
                                 aria-hidden
                                 className="mt-[7px] size-1.5 shrink-0 rounded-full"
@@ -774,8 +909,12 @@ export function MakeShiftCalendar({
     const didClearInitialSelection = useRef(false);
     const dragSelectionRef = useRef<{from: TCellPos; pointerId: number} | null>(null);
     const [violationPopover, setViolationPopover] = useState<TViolationPopover | null>(null);
+    const [activeViolationKey, setActiveViolationKey] = useState<string | null>(null);
     const [shiftTypeDropdown, setShiftTypeDropdown] = useState<TShiftTypeDropdownState | null>(null);
-    const closeViolationPopover = useCallback(() => setViolationPopover(null), []);
+    const closeViolationPopover = useCallback(() => {
+        setViolationPopover(null);
+        setActiveViolationKey(null);
+    }, []);
     const closeShiftTypeDropdown = useCallback(() => setShiftTypeDropdown(null), []);
     const showViolationPopover = useCallback((target: HTMLElement, violations: TViolation[], title: string) => {
         const displayViolations = getUniqueViolationsForDisplay(violations);
@@ -795,6 +934,7 @@ export function MakeShiftCalendar({
         const placement = spaceBelow < estimatedHeight && spaceAbove > spaceBelow ? 'top' : 'bottom';
         const preferredBottomTop = rect.bottom + 10;
 
+        setActiveViolationKey(null);
         setViolationPopover({
             title,
             violations: sortViolationsForDisplay(displayViolations),
@@ -1072,6 +1212,12 @@ export function MakeShiftCalendar({
                             const hasDayViolations = dayViolations.length > 0;
                             const dayViolationLevel = hasDayViolations ? getPrimaryViolationLevel(dayViolations) : null;
                             const dayViolationTone = dayViolationLevel ? VIOLATION_TONE[dayViolationLevel] : null;
+                            const activeDayViolation =
+                                activeViolationKey !== null
+                                    ? dayViolations.find((violation) => getViolationInstanceKey(violation) === activeViolationKey)
+                                    : undefined;
+                            const activeDayViolationTone = activeDayViolation ? VIOLATION_TONE[activeDayViolation.level] : null;
+                            const isDayViolationDimmed = activeViolationKey !== null && hasDayViolations && !activeDayViolation;
                             const isColumnSelected =
                                 !readonly && selectionRect !== null && j >= selectionRect.left && j <= selectionRect.right;
                             const normalizedDayType = normalizeDayType(d.dayType);
@@ -1085,6 +1231,8 @@ export function MakeShiftCalendar({
                                     data-day-type={normalizedDayType}
                                     data-selected-column={isColumnSelected || undefined}
                                     data-violation-trigger={hasDayViolations ? 'true' : undefined}
+                                    data-active-violation={activeDayViolation ? 'true' : undefined}
+                                    data-dimmed-violation={isDayViolationDimmed ? 'true' : undefined}
                                     title={formatViolationTitle(dayViolations)}
                                     onClick={(event) => {
                                         if (!hasDayViolations) return;
@@ -1098,19 +1246,32 @@ export function MakeShiftCalendar({
                                     className={cn(
                                         'make-shift-calendar__day-header-cell',
                                         'relative min-w-0 rounded-full text-center font-poppins tabular-nums',
-                                        'text-[12px] leading-5 font-semibold',
+                                        'text-[12px] leading-5 font-semibold transition-[box-shadow,transform,background-color] duration-150 ease-out',
                                         hasDayViolations ? 'cursor-pointer' : 'cursor-default',
                                         getDayHeaderTextClass(d.dayType),
                                         isColumnSelected && getSelectedDayHeaderClass(d.dayType),
+                                        activeDayViolation && 'z-[48] bg-white',
                                     )}
                                     style={{
-                                        boxShadow: dayViolationTone
-                                            ? `inset 0 -${dayViolationLevel === 'warning' ? '1px' : '2px'} 0 ${dayViolationTone.rail}`
-                                            : undefined,
+                                        zIndex: activeDayViolation ? 48 : undefined,
+                                        transform: activeDayViolation ? 'translateY(-1px)' : undefined,
+                                        boxShadow: activeDayViolationTone
+                                            ? `0 8px 18px rgba(15,23,42,0.18), 0 0 0 2px ${activeDayViolationTone.border}, inset 0 -2px 0 ${activeDayViolationTone.rail}`
+                                            : isDayViolationDimmed
+                                              ? 'inset 0 -1px 0 rgba(148,163,184,0.24)'
+                                              : dayViolationTone
+                                                ? `inset 0 -${dayViolationLevel === 'warning' ? '1px' : '2px'} 0 ${dayViolationTone.rail}`
+                                                : undefined,
                                     }}
                                 >
                                     {d.day}
-                                    {hasDayViolations && <ViolationMarker violations={dayViolations} placement="header" />}
+                                    {hasDayViolations && (
+                                        <ViolationMarker
+                                            violations={dayViolations}
+                                            placement="header"
+                                            activeViolationKey={activeViolationKey}
+                                        />
+                                    )}
                                 </button>
                             );
                         })}
@@ -1212,6 +1373,7 @@ export function MakeShiftCalendar({
                                                 wardReqShiftList={row.wardReqShiftList}
                                                 violations={violationMap}
                                                 showFaults={showFaults}
+                                                activeViolationKey={activeViolationKey}
                                                 separateWeekendColor={separateWeekendColor}
                                                 simplified={isSimplified}
                                                 showSkillColumn={showSkillColumn}
@@ -1278,7 +1440,12 @@ export function MakeShiftCalendar({
                 onSelect={handleShiftTypeDropdownSelect}
                 onReposition={repositionShiftTypeDropdown}
             />
-            <ViolationReasonPopover popover={violationPopover} onClose={closeViolationPopover} />
+            <ViolationReasonPopover
+                popover={violationPopover}
+                activeViolationKey={activeViolationKey}
+                onActiveViolationChange={setActiveViolationKey}
+                onClose={closeViolationPopover}
+            />
         </div>
     );
 }
@@ -1312,6 +1479,7 @@ type TCalendarRowLeftProps = {
     wardReqShiftList: (number | null)[];
     violations: TViolationMap;
     showFaults: boolean;
+    activeViolationKey: string | null;
     separateWeekendColor: boolean;
     simplified: boolean;
     showSkillColumn: boolean;
@@ -1346,6 +1514,7 @@ function CalendarRowLeft({
     wardReqShiftList,
     violations,
     showFaults,
+    activeViolationKey,
     separateWeekendColor,
     simplified,
     showSkillColumn,
@@ -1384,6 +1553,7 @@ function CalendarRowLeft({
     }, [violations, rowIndex, rowViolationPrefix]);
     const violationSpanList = useMemo(() => {
         const list: {startCol: number; span: number; violation: TViolation}[] = [];
+        const seen = new Set<string>();
 
         for (const [key, v] of violations) {
             if (!key.startsWith(rowViolationPrefix)) continue;
@@ -1393,6 +1563,11 @@ function CalendarRowLeft({
             if (spanInfos.length === 0) continue;
 
             for (const spanInfo of spanInfos) {
+                const spanKey = `${getViolationInstanceKey(v)}:${spanInfo.startCol}:${spanInfo.span}`;
+
+                if (seen.has(spanKey)) continue;
+
+                seen.add(spanKey);
                 list.push({...spanInfo, violation: v});
             }
         }
@@ -1553,6 +1728,11 @@ function CalendarRowLeft({
                         const cellViolations = getUniqueViolationsForDisplay(cellViolationList ?? []);
                         const hasCellViolations = cellViolations.length > 0;
                         const cellViolationTitle = formatViolationTitle(cellViolations);
+                        const activeCellViolation =
+                            activeViolationKey !== null
+                                ? cellViolations.find((violation) => getViolationInstanceKey(violation) === activeViolationKey)
+                                : undefined;
+                        const isCellViolationDimmed = activeViolationKey !== null && hasCellViolations && !activeCellViolation;
                         const normalizedDayType = normalizeDayType(day.dayType);
                         const weekendBg = isSaturday(day.dayType)
                             ? separateWeekendColor
@@ -1581,6 +1761,8 @@ function CalendarRowLeft({
                                 data-selected={isSelected || undefined}
                                 data-violation-trigger={hasCellViolations ? 'true' : undefined}
                                 data-violation-count={hasCellViolations ? cellViolations.length : undefined}
+                                data-active-violation-cell={activeCellViolation ? 'true' : undefined}
+                                data-dimmed-violation-cell={isCellViolationDimmed ? 'true' : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);
@@ -1606,11 +1788,17 @@ function CalendarRowLeft({
                                     onCellDoubleClick(event.currentTarget, rowIndex, j, cells[j] ?? null);
                                 }}
                                 title={cellViolationTitle}
-                                style={{gridRow: 1, gridColumn: j + 1, paddingInline: DAY_CELL_PADDING_X}}
+                                style={{
+                                    gridRow: 1,
+                                    gridColumn: j + 1,
+                                    zIndex: activeCellViolation ? 50 : undefined,
+                                    paddingInline: DAY_CELL_PADDING_X,
+                                }}
                                 className={cn(
                                     'make-shift-calendar__day-cell',
                                     'group relative z-[10] flex h-full min-w-0 items-center justify-center',
                                     hasCellViolations || !readonly ? 'cursor-pointer' : 'cursor-default',
+                                    activeCellViolation && 'z-[50]',
                                     weekendBg,
                                 )}
                             >
@@ -1621,8 +1809,18 @@ function CalendarRowLeft({
                                         aria-hidden
                                     />
                                 )}
-                                {hasCellViolations && <ViolationMarker violations={cellViolations} />}
-                                <span className={SHIFT_BADGE_CELL_WRAP}>
+                                {hasCellViolations && (
+                                    <ViolationMarker violations={cellViolations} activeViolationKey={activeViolationKey} />
+                                )}
+                                <span
+                                    data-active-violation-shift-badge={activeCellViolation ? 'true' : undefined}
+                                    className={cn(
+                                        SHIFT_BADGE_CELL_WRAP,
+                                        'transition-[filter,transform] duration-150 ease-out',
+                                        activeCellViolation &&
+                                            'z-[56] -translate-y-[1px] scale-[1.04] drop-shadow-[0_6px_8px_rgba(15,23,42,0.18)]',
+                                    )}
+                                >
                                     <ShiftBadge
                                         shiftType={shiftType}
                                         isOnlyRequest={shiftType === null && reqType !== null}
@@ -1636,28 +1834,44 @@ function CalendarRowLeft({
                         violationSpanList.map(({startCol, span, violation: v}) => {
                             const tone = VIOLATION_TONE[v.level];
                             const isHard = v.level === 'error';
+                            const isActive = activeViolationKey === getViolationInstanceKey(v);
+                            const isDimmed = activeViolationKey !== null && !isActive;
                             const zByLevel = v.level === 'error' ? 'z-[6]' : 'z-[5]';
 
                             return (
                                 <span
-                                    key={`vio-${v.ruleId}-${startCol}`}
+                                    key={`vio-${getViolationInstanceKey(v)}-${startCol}`}
                                     aria-label={v.message}
                                     title={v.message}
                                     data-violation-level={v.level}
+                                    data-active-violation={isActive ? 'true' : undefined}
+                                    data-dimmed-violation={isDimmed ? 'true' : undefined}
                                     style={{
                                         gridRow: 1,
                                         gridColumn: `${startCol + 1} / span ${span}`,
-                                        borderColor: isHard ? tone.border : 'transparent',
-                                        borderWidth: isHard ? '1.5px' : 0,
-                                        backgroundColor: tone.surface,
+                                        zIndex: isActive ? 48 : undefined,
+                                        transform: isActive ? 'translateY(-1px)' : undefined,
+                                        opacity: isDimmed ? 0.18 : undefined,
+                                        filter: isDimmed ? 'saturate(0.35)' : undefined,
+                                        borderColor: isActive || isHard ? tone.border : 'transparent',
+                                        borderWidth: isActive ? '1.5px' : isHard ? '1.5px' : 0,
+                                        backgroundColor: isActive
+                                            ? v.level === 'error'
+                                                ? 'rgba(217,45,32,0.13)'
+                                                : 'rgba(245,158,11,0.13)'
+                                            : tone.surface,
                                         margin: VIOLATION_INSET,
-                                        boxShadow: isHard ? `inset 0 0 0 1px ${tone.border}` : `inset 0 -1px 0 ${tone.rail}`,
+                                        boxShadow: isActive
+                                            ? `0 5px 12px rgba(15,23,42,0.14), inset 0 0 0 1px ${tone.border}`
+                                            : isHard
+                                              ? `inset 0 0 0 1px ${tone.border}`
+                                              : `inset 0 -1px 0 ${tone.rail}`,
                                     }}
                                     className={cn(
                                         'make-shift-calendar__violation',
                                         `make-shift-calendar__violation--${v.level}`,
-                                        'pointer-events-none rounded-[clamp(5px,0.55cqw,8px)]',
-                                        zByLevel,
+                                        'pointer-events-none rounded-[clamp(5px,0.55cqw,8px)] transition-[box-shadow,filter,opacity,transform,background-color,border-color] duration-150 ease-out',
+                                        isActive ? 'z-[48]' : zByLevel,
                                     )}
                                 />
                             );

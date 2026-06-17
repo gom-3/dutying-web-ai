@@ -133,7 +133,6 @@ const formatShortMonthDay = (dateKey: string) => {
 };
 const getDayDiff = (dateKey: string, todayKey: string) =>
     Math.round((parseDateKey(dateKey).getTime() - parseDateKey(todayKey).getTime()) / DAY_MS);
-const getShiftTeamNameList = (teams: TShiftTeam[]) => teams.map((team) => team.name).join(', ');
 const buildMakePath = ({year, month, shiftTeamId}: {year: number; month: number; shiftTeamId?: number}) => {
     const params = new URLSearchParams({year: String(year), month: String(month)});
 
@@ -748,6 +747,39 @@ function QueueButton({label, value, onClick}: {label: string; value: number; onC
     );
 }
 
+function NextScheduleTaskRow({
+    item,
+    year,
+    month,
+    onNavigate,
+}: {
+    item: TScheduleStatusItem;
+    year: number;
+    month: number;
+    onNavigate: (path: string) => void;
+}) {
+    return (
+        <button
+            type="button"
+            className="flex min-h-[44px] w-full cursor-pointer items-center justify-between gap-3 rounded-[8px] bg-[#F6F7F9] p-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
+            onClick={() =>
+                onNavigate(
+                    buildMakePath({
+                        year,
+                        month,
+                        shiftTeamId: item.team.shiftTeamId,
+                    }),
+                )
+            }
+        >
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[14px] font-bold text-sub-1">{item.team.name} 다음 달({month}월) 근무표</span>
+            </span>
+            <span className={cn('shrink-0', getScheduleStatusClassName(item.status))}>{getScheduleStatusLabel(item.status)}</span>
+        </button>
+    );
+}
+
 function TaskRow({task, onNavigate}: {task: TTaskItem; onNavigate: (path: string) => void}) {
     return (
         <button
@@ -1077,7 +1109,6 @@ function HomePage() {
     const waitingNurseCount = waitingNursesQuery.data?.length ?? 0;
     const pendingRequestCount = pendingRequestsQuery.data?.totalPendingCount ?? 0;
     const unreadChatCount = chatUnreadQuery.data?.unreadCount ?? 0;
-    const nextEmptyTeams = nextScheduleStatusItems.filter((item) => item.status === 'empty');
     const todayAssignedCount = todayDuties.reduce((total, duty) => total + duty.assignedCount, 0);
     const taskItems = useMemo<TTaskItem[]>(() => {
         const tasks: TTaskItem[] = [];
@@ -1126,21 +1157,6 @@ function HomePage() {
             });
         }
 
-        if (nextEmptyTeams.length > 0) {
-            tasks.push({
-                key: 'next-empty',
-                tone: 'warning',
-                title: `${nextYearMonth.month}월 근무표를 만들 팀 ${nextEmptyTeams.length}팀`,
-                description: getShiftTeamNameList(nextEmptyTeams.map((item) => item.team)),
-                actionLabel: '작성',
-                path: buildMakePath({
-                    year: nextYearMonth.year,
-                    month: nextYearMonth.month,
-                    shiftTeamId: nextEmptyTeams[0]?.team.shiftTeamId,
-                }),
-            });
-        }
-
         if (unreadChatCount > 0) {
             tasks.push({
                 key: 'unread-chat',
@@ -1156,9 +1172,6 @@ function HomePage() {
     }, [
         deadlineBuckets.overdue,
         deadlineBuckets.today,
-        nextEmptyTeams,
-        nextYearMonth.month,
-        nextYearMonth.year,
         pendingRequestCount,
         unreadChatCount,
         waitingNurseCount,
@@ -1259,10 +1272,7 @@ function HomePage() {
                 </header>
 
                 <main className="grid grid-cols-[minmax(0,1fr)_360px] gap-5">
-                    <SectionShell
-                        title="오늘의 근무"
-                        description="팀별 근무자를 바로 볼 수 있어요."
-                    >
+                    <SectionShell title="오늘의 근무">
                         <TeamFilter teams={shiftTeams} selectedTeamId={selectedTodayTeamId} onSelectTeam={setSelectedTodayTeamId} />
                         <div className="mt-4">
                             <TodayDutyOverview duties={visibleTodayDuties} />
@@ -1270,11 +1280,24 @@ function HomePage() {
                     </SectionShell>
 
                     <aside className="flex min-w-0 flex-col gap-5">
-                        <SectionShell title="해야 할 일" description={taskItems.length > 0 ? `지금 확인할 일 ${taskItems.length}개` : undefined}>
+                        <SectionShell title="해야 할 일">
                             <div className="grid grid-cols-2 gap-2">
                                 <QueueButton label="대기 중인 신청 근무" value={pendingRequestCount} onClick={() => navigate(ROUTE.REQUEST)} />
                                 <QueueButton label="입장 대기" value={waitingNurseCount} onClick={() => navigate(ROUTE.MEMBER)} />
                             </div>
+                            {nextScheduleStatusItems.length > 0 ? (
+                                <div className="mt-3 grid gap-2" aria-label="다음 달 근무표 진행 상태">
+                                    {nextScheduleStatusItems.slice(0, 4).map((item) => (
+                                        <NextScheduleTaskRow
+                                            key={item.team.shiftTeamId}
+                                            item={item}
+                                            year={nextYearMonth.year}
+                                            month={nextYearMonth.month}
+                                            onNavigate={handleNavigate}
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
                             {waitingNursesQuery.isPending || pendingRequestsQuery.isPending || deadlinesQuery.isPending ? (
                                 <div className="mt-3 rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">확인하고 있어요</div>
                             ) : null}
@@ -1296,37 +1319,6 @@ function HomePage() {
                                 isLoading={deadlinesQuery.isPending || schedulesQuery.isPending}
                                 onOpen={() => navigate(ROUTE.BOARD)}
                             />
-                        </SectionShell>
-
-                        <SectionShell title="다음 달 근무표" description={formatMonth(nextYearMonth.year, nextYearMonth.month)}>
-                            <div className="grid gap-2">
-                                {nextScheduleStatusItems.length > 0 ? (
-                                    nextScheduleStatusItems.slice(0, 4).map((item) => (
-                                        <button
-                                            key={item.team.shiftTeamId}
-                                            type="button"
-                                            className="flex min-h-[44px] cursor-pointer items-center justify-between gap-3 rounded-[8px] bg-[#F6F7F9] px-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
-                                            onClick={() =>
-                                                navigate(
-                                                    buildMakePath({
-                                                        year: nextYearMonth.year,
-                                                        month: nextYearMonth.month,
-                                                        shiftTeamId: item.team.shiftTeamId,
-                                                    }),
-                                                )
-                                            }
-                                        >
-                                            <span className="truncate text-[13px] font-bold text-sub-1">{item.team.name}</span>
-                                            <span className={getScheduleStatusClassName(item.status)}>{getScheduleStatusLabel(item.status)}</span>
-                                        </button>
-                                    ))
-                                ) : (
-                                    <div className="rounded-[8px] bg-[#F6F7F9] px-4 py-5">
-                                        <p className="text-[14px] font-bold text-sub-1">팀을 추가하면 준비할 수 있어요</p>
-                                        <p className="mt-1 text-[12px] font-semibold text-gray-3">근무자 관리에서 간호 팀을 추가해요.</p>
-                                    </div>
-                                )}
-                            </div>
                         </SectionShell>
                     </aside>
 

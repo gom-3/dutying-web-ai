@@ -65,7 +65,7 @@ export function FixedShifts() {
 
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
-    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingLastShifts} = useDutyEditorStep({
+    const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingEditor} = useDutyEditorStep({
         hydratePreviousLastShifts: true,
     });
     const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
@@ -98,7 +98,7 @@ export function FixedShifts() {
         !canNext ||
         isSaving ||
         dutyQuery.isLoading ||
-        isHydratingLastShifts ||
+        isHydratingEditor ||
         dutyQuery.isError ||
         dutyQuery.data === undefined;
     /**
@@ -166,7 +166,7 @@ export function FixedShifts() {
                 </div>
             </div>
 
-            {(dutyQuery.isLoading || isHydratingLastShifts) && (
+            {(dutyQuery.isLoading || isHydratingEditor) && (
                 <PageState
                     tone="loading"
                     loadingColor="purple"
@@ -182,7 +182,7 @@ export function FixedShifts() {
                     action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                 />
             )}
-            {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && dutyQuery.data && (
                 <div className="fixed-shifts-calendar-wrap w-full min-w-0">
                     <MakeShiftCalendar
                         shift={dutyQuery.data}
@@ -197,7 +197,7 @@ export function FixedShifts() {
                     />
                 </div>
             )}
-            {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && !dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (
                 <PageState tone="empty" title={t('page.makeShift.fixedShifts.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>
