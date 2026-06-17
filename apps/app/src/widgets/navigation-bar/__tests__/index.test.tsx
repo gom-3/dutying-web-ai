@@ -54,17 +54,37 @@ describe('NavigationBar', () => {
         useNavigationBarFoldStore.getState().reset();
     });
 
-    it('홈을 병동 섹션 밖 상단에 두고 근무표 만들기 메뉴를 노출한다', () => {
+    it('홈을 병원/병동명 바로 아래에 두고 근무표 만들기 메뉴를 노출한다', () => {
+        mockUseEditWard.mockReturnValueOnce({
+            state: {
+                ward: {
+                    hospitalName: '듀팅병원',
+                    name: '중환자실',
+                    code: 'ABC123',
+                    shiftTeams: [],
+                },
+                watingNurses: [],
+            },
+        });
+
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
             </MemoryRouter>,
         );
 
+        const wardName = screen.getByText('중환자실');
+        const hospitalName = screen.getByText('듀팅병원');
         const homeButton = screen.getByRole('button', {name: '홈'});
         const wardSectionLabel = screen.getByText('병동');
 
+        expect(wardName.compareDocumentPosition(homeButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect(homeButton.compareDocumentPosition(wardSectionLabel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(hospitalName.closest('.px-2')).not.toContainElement(homeButton);
+        expect(homeButton).toHaveClass('justify-start', 'gap-3');
+        expect(homeButton).not.toHaveClass('border');
+        expect(homeButton).not.toHaveClass('bg-white');
+        expect(screen.getByText('홈')).toHaveClass('flex-1', 'text-left');
         expect(screen.getAllByRole('button', {name: '근무표 만들기'})).toHaveLength(1);
         expect(screen.queryByRole('button', {name: '근무표'})).not.toBeInTheDocument();
     });

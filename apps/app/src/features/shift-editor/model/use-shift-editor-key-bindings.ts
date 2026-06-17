@@ -6,6 +6,10 @@ import {useShiftEditorCommands} from './use-shift-editor-commands';
 
 export type TShiftEditorKeyBindingsOptions = {
     /**
+     * Ignore spreadsheet-style keyboard and paste edits while an async writer owns the document.
+     */
+    disabled?: boolean;
+    /**
      * 사용자별 근무 키 매핑 주입.
      * 예) { d: "D", e: "E", n: "N", o: "O" }
      */
@@ -86,10 +90,15 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
 
         return normalized;
     }, [opts.workKeyMap]);
+    const disabled = opts.disabled ?? false;
     const allowUnmodifiedClipboardShortcuts = opts.allowUnmodifiedClipboardShortcuts ?? false;
     const beforeHandlers = opts.beforeHandlers ?? [];
     const onKeyDown = useCallback(
         async (e: React.KeyboardEvent) => {
+            if (disabled) {
+                return;
+            }
+
             // react 이벤트 -> native로 변환해서 공통 로직 사용
             const native = e.nativeEvent as KeyboardEvent;
 
@@ -225,10 +234,16 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
             // eslint용: doc 참조 (keybinding은 bounds가 필요할 때 확장 대비)
             void doc;
         },
-        [allowUnmodifiedClipboardShortcuts, beforeHandlers, commands, doc, workKeyMap],
+        [allowUnmodifiedClipboardShortcuts, beforeHandlers, commands, disabled, doc, workKeyMap],
     );
     const onPaste = useCallback(
         (e: React.ClipboardEvent) => {
+            if (disabled) {
+                e.preventDefault();
+
+                return;
+            }
+
             const text = e.clipboardData.getData('text');
 
             if (!text) return;
@@ -236,7 +251,7 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
             e.preventDefault();
             commands.paste(tsvToPayload(text));
         },
-        [commands],
+        [commands, disabled],
     );
 
     /** 포커스가 에디터 자식(일자 셀 버튼 등)에 있어도 먼저 가로채기 위해 컨테이너에 연결한다. */

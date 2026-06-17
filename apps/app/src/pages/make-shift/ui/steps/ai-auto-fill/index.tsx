@@ -166,8 +166,12 @@ export function AiAutofill() {
         violationMap,
         teamViolations,
         focusEditor,
-        isHydratingLastShifts,
-    } = useDutyEditorStep({onContextChanged: resetAiStatus, hydratePreviousLastShifts: true});
+        isHydratingEditor,
+    } = useDutyEditorStep({
+        onContextChanged: resetAiStatus,
+        hydratePreviousLastShifts: true,
+        editorInputDisabled: isAiGenerating,
+    });
     const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -229,7 +233,7 @@ export function AiAutofill() {
         !isSavingSnapshot &&
         !isAiGenerating &&
         !dutyQuery.isLoading &&
-        !isHydratingLastShifts &&
+        !isHydratingEditor &&
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
         canConfirmAiAutofill(aiStatus);
@@ -651,7 +655,7 @@ export function AiAutofill() {
                     isSavingSnapshot={isSavingSnapshot}
                 />
 
-                {(dutyQuery.isLoading || isHydratingLastShifts) && (
+                {(dutyQuery.isLoading || isHydratingEditor) && (
                     <PageState
                         tone="loading"
                         loadingColor="purple"
@@ -667,20 +671,21 @@ export function AiAutofill() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && dutyQuery.data && (
                     <MakeShiftCalendar
                         shift={dutyQuery.data}
                         doc={calendarDoc}
                         violationMap={violationMap}
                         teamViolations={teamViolations}
                         showFaults={showFaults}
-                        onCellClick={focusEditor}
-                        editableLastShifts
+                        onCellClick={isAiGenerating ? undefined : focusEditor}
+                        readonly={isAiGenerating}
+                        editableLastShifts={!isAiGenerating}
                         isShimmering={isAiGenerating}
                         skillColumn={skillColumn}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingLastShifts && !dutyQuery.isError && !dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
                 )}
             </div>

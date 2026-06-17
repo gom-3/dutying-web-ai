@@ -107,6 +107,7 @@ type TNavigationBarItemGroupsProps = {
 
 type TWardIdentityProps = {
     collapsed: boolean;
+    onItemNavigate?: () => void;
     ward?: {
         hospitalName?: string;
         name?: string;
@@ -114,7 +115,7 @@ type TWardIdentityProps = {
     };
 };
 
-const WardIdentity = ({collapsed, ward}: TWardIdentityProps) => {
+const WardIdentity = ({collapsed, onItemNavigate, ward}: TWardIdentityProps) => {
     const {t} = useTypedTranslation();
     const {supportingName, primaryName} = getWardDisplayIdentity(ward);
     const wardTitle = getWardDisplayTitle(ward);
@@ -164,6 +165,16 @@ const WardIdentity = ({collapsed, ward}: TWardIdentityProps) => {
                         </div>
                     )}
                 </div>
+                <div className="mt-3">
+                    <NavigationBarItem
+                        path={homeItem.path}
+                        activePaths={homeItem.activePaths}
+                        icon={homeItem.icon}
+                        text={homeItem.text ?? t(homeItem.textKey!)}
+                        disabled={homeItem.disabled}
+                        onNavigate={onItemNavigate}
+                    />
+                </div>
             </div>
             <WardCodeGuideModal open={isGuideOpen} wardCode={wardCode} wardTitle={wardTitle} onClose={() => setIsGuideOpen(false)} />
         </>
@@ -180,18 +191,20 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
     return (
         <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}>
             <div>
-                <div className={cn(collapsed ? 'mb-4' : 'mb-5')}>
-                    <NavigationBarItem
-                        path={homeItem.path}
-                        activePaths={homeItem.activePaths}
-                        icon={homeItem.icon}
-                        text={homeItem.text ?? t(homeItem.textKey!)}
-                        collapsed={collapsed}
-                        disabled={homeItem.disabled}
-                        onNavigate={onItemNavigate}
-                    />
-                </div>
-                <WardIdentity collapsed={collapsed} ward={ward} />
+                {collapsed ? (
+                    <div className="mb-4">
+                        <NavigationBarItem
+                            path={homeItem.path}
+                            activePaths={homeItem.activePaths}
+                            icon={homeItem.icon}
+                            text={homeItem.text ?? t(homeItem.textKey!)}
+                            collapsed={collapsed}
+                            disabled={homeItem.disabled}
+                            onNavigate={onItemNavigate}
+                        />
+                    </div>
+                ) : null}
+                <WardIdentity collapsed={collapsed} onItemNavigate={onItemNavigate} ward={ward} />
                 {sections.map((section, sectionIndex) => (
                     <div
                         key={section.labelKey}
