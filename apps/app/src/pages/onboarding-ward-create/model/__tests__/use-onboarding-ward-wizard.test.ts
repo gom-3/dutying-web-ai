@@ -246,6 +246,45 @@ describe('useOnboardingWardWizard upload flow', () => {
         ]);
     });
 
+    it('does not leave schedule input when a row has shifts but no nurse name', async () => {
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '테스트 병원', wardName: '테스트 병동'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const teamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 5,
+                rows: [{id: 'row-1', nurseId: null, name: '', shifts: {'1': 'D'}}],
+            });
+        });
+
+        mockSaveOnboardingWardDraft.mockClear();
+        mockGetOnboardingWardDraft.mockClear();
+        mockPreviewOnboardingScheduleInput.mockClear();
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        expect(result.current.canGoNext).toBe(false);
+        expect(result.current.currentStepValidation.issues).toEqual([
+            {code: 'schedule-row-missing-nurse-name', step: 2, targetId: 'row-1'},
+        ]);
+        expect(result.current.draft.currentStep).toBe(2);
+        expect(mockPreviewOnboardingScheduleInput).not.toHaveBeenCalled();
+        expect(mockSaveOnboardingWardDraft).not.toHaveBeenCalled();
+        expect(mockGetOnboardingWardDraft).not.toHaveBeenCalled();
+    });
+
     it('previews and persists every schedule month for a team', async () => {
         let savedDraftPayload: unknown = null;
 
@@ -438,9 +477,12 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.uploadedFileName).toBe('march-duty.xlsx');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O']);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '이브닝', '나이트', '오프']);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual(DEFAULT_SHIFT_TYPE_COLORS.slice(0, 4));
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'O']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.name)).toEqual(['데이', '오프']);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.color)).toEqual([
+            DEFAULT_SHIFT_TYPE_COLORS[0],
+            DEFAULT_SHIFT_TYPE_COLORS[3],
+        ]);
         expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀']);
         expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['신규 간호사']);
         expect(result.current.draft.nurses[0]?.initialShifts).toEqual([{date: '2025-03-01', shiftShortName: 'D'}]);
@@ -570,7 +612,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             result.current.updateScheduleInput(teamId, {
                 year: 2026,
                 month: 6,
-                rows: [{...nurseARow!, name: ''}, nurseBRow!],
+                rows: [{...nurseARow!, name: '', shifts: {}}, nurseBRow!],
             });
         });
 

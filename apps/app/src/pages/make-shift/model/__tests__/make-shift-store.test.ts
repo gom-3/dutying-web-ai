@@ -1,5 +1,6 @@
 import {beforeEach, describe, expect, it} from 'vitest';
 import {type TNurse, type TShiftTeam} from '@/entities';
+import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {canGoNext, useMakeShiftStore} from '../make-shift-store';
 
 const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'isWorker'>): TNurse => ({
@@ -40,6 +41,8 @@ describe('make-shift-store', () => {
             wardId: 1,
             year: 2026,
             month: 6,
+            shiftTeams: [createShiftTeam({shiftTeamId: 10, nurses: []})],
+            shiftTeamsStatus: 'success',
             currentShiftTeamId: 10,
             shiftStatus: 'success',
             shiftExists: true,
@@ -47,6 +50,38 @@ describe('make-shift-store', () => {
             confirmedShiftSnapshot: null,
             workerConfirmationStatus: 'idle',
             workerConfirmationCount: 0,
+        });
+    });
+
+    it('clears selected team and schedule state when the ward changes', () => {
+        useMakeShiftStore.setState({
+            phase: 'stepping',
+            currentStep: 4,
+            maxReachedStep: 4,
+            restoreDraftModalOpen: true,
+            currentShiftTeamId: 10,
+            shiftTeams: [createShiftTeam({shiftTeamId: 10, nurses: []})],
+            shiftTeamsStatus: 'success',
+            shiftStatus: 'success',
+            shiftExists: true,
+            shiftFullyAssigned: true,
+        });
+
+        useMakeShiftStore.getState().setWardId(413);
+
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            wardId: 413,
+            phase: 'overview',
+            currentStep: 1,
+            maxReachedStep: 1,
+            restoreDraftModalOpen: false,
+            currentShiftTeamId: null,
+            shiftTeams: [],
+            shiftTeamsStatus: 'idle',
+            shiftStatus: 'idle',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+            confirmedShiftSnapshot: null,
         });
     });
 
@@ -71,6 +106,30 @@ describe('make-shift-store', () => {
             currentStep: 1,
             maxReachedStep: 1,
             restoreDraftModalOpen: true,
+        });
+    });
+
+    it('keeps a selected confirmed step while the server revalidates the same team', () => {
+        saveDraftStep(1, 10, 2026, 6, 6);
+        saveMaxReachedStep(1, 10, 2026, 6, 6);
+        useMakeShiftStore.setState({
+            phase: 'stepping',
+            currentStep: 6,
+            maxReachedStep: 6,
+            currentShiftTeamId: 10,
+            shiftStatus: 'pending',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+        });
+
+        useMakeShiftStore.getState().setCurrentShiftTeamId(10);
+
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            phase: 'stepping',
+            currentStep: 6,
+            maxReachedStep: 6,
+            currentShiftTeamId: 10,
+            shiftFullyAssigned: false,
         });
     });
 

@@ -5,7 +5,7 @@ import WardAPI from '@/shared/api/ward';
 import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
-import {clearPersistedStep, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
+import {clearPersistedStep, isMakeShiftTeamReadyForWard, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -74,6 +74,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const setYearMonth = useMakeShiftStore((s) => s.setYearMonth);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
@@ -85,6 +86,12 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
+    const isCurrentShiftTeamReady = isMakeShiftTeamReadyForWard(
+        {wardId: storeWardId, shiftTeams, shiftTeamsStatus},
+        wardId,
+        currentShiftTeamId,
+    );
 
     useEffect(() => {
         setWardId(wardId);
@@ -105,7 +112,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     }, [isHydrated, primaryOnboardingScheduleTarget, wardId, setHydrated, searchParams, setYearMonth]);
 
     useEffect(() => {
-        if (!wardId || !isHydrated || !currentShiftTeamId) return;
+        if (!wardId || !isHydrated || !currentShiftTeamId || !isCurrentShiftTeamReady) return;
 
         const st = useMakeShiftStore.getState();
         const fromComposite = loadDraftStep(wardId, currentShiftTeamId, st.year, st.month);
@@ -127,7 +134,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         bumpMaxReachedStep(wardId, currentShiftTeamId, st.year, st.month, fromLegacy);
         clearPersistedStep();
         setCurrentShiftTeamId(currentShiftTeamId);
-    }, [currentShiftTeamId, isHydrated, month, searchParams, setCurrentShiftTeamId, wardId, year]);
+    }, [currentShiftTeamId, isCurrentShiftTeamReady, isHydrated, month, searchParams, setCurrentShiftTeamId, wardId, year]);
 
     useEffect(() => {
         if (!wardId) {
@@ -209,7 +216,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     ]);
 
     useEffect(() => {
-        if (!wardId) return;
+        if (!wardId || storeWardId !== wardId || shiftTeamsStatus !== 'success') return;
 
         const firstTeamId = shiftTeams[0]?.shiftTeamId ?? null;
         const prevSelectedId = useMakeShiftStore.getState().currentShiftTeamId;
@@ -219,13 +226,13 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         const nextTeamId = hasQuerySelected ? queryShiftTeamId : hasPrevSelected ? prevSelectedId : firstTeamId;
 
         setCurrentShiftTeamId(nextTeamId);
-    }, [setCurrentShiftTeamId, shiftTeams, wardId]);
+    }, [setCurrentShiftTeamId, shiftTeams, shiftTeamsStatus, storeWardId, wardId]);
 
     useEffect(() => {
         let cancelled = false;
 
         const run = async () => {
-            if (!wardId || !currentShiftTeamId) {
+            if (!wardId || !currentShiftTeamId || !isCurrentShiftTeamReady) {
                 setShiftStatus('idle');
                 setShiftExists(false);
                 setShiftFullyAssigned(false);
@@ -247,13 +254,14 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
                 const workspaceWorkflowStep = getShiftWorkflowStep(workspace);
                 const shiftWorkflowStep = getShiftWorkflowStep(shift);
+                const workspaceWorkflowStatus = getShiftWorkflowStatus(workspace);
+                const shiftWorkflowStatus = getShiftWorkflowStatus(shift);
                 const workflowStep = workspaceWorkflowStep ?? shiftWorkflowStep;
-                const serverWorkflowStatus =
-                    getShiftWorkflowStatus(workspace) ??
+                const workflowStatus =
+                    workspaceWorkflowStatus ??
+                    shiftWorkflowStatus ??
                     getWorkflowStatusFromStep(workspaceWorkflowStep) ??
-                    getShiftWorkflowStatus(shift) ??
                     getWorkflowStatusFromStep(shiftWorkflowStep);
-                const workflowStatus = serverWorkflowStatus;
                 const savedStep = loadDraftStep(wardId, currentShiftTeamId, year, month);
                 const hasAssignments = !isDutyShiftWithoutAssignments(shift);
                 const isOnboardingInitialSchedule = isInitialScheduleTarget(
@@ -319,6 +327,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         };
     }, [
         currentShiftTeamId,
+        isCurrentShiftTeamReady,
         month,
         onboardingScheduleTargetsKey,
         reloadToken,
@@ -366,7 +375,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         let cancelled = false;
 
         const run = async () => {
-            if (!wardId || !currentShiftTeamId) {
+            if (!wardId || !currentShiftTeamId || !isCurrentShiftTeamReady) {
                 editorRef.current.setDutyValidationInput(null);
 
                 return;
@@ -388,5 +397,5 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         return () => {
             cancelled = true;
         };
-    }, [currentShiftTeamId, reloadToken, shiftStatus, wardId]);
+    }, [currentShiftTeamId, isCurrentShiftTeamReady, reloadToken, shiftStatus, wardId]);
 }

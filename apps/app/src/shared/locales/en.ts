@@ -74,8 +74,8 @@ export const en: TLocale = {
                 wardLoadFailedTitle: 'Could not load ward information',
                 retryDescription: 'Please try again in a moment.',
                 retry: 'Try again',
-                noWardTitle: 'Connect to a ward to use the board',
-                noWardDescription: 'The board is available after ward connection.',
+                noWardTitle: 'Link a ward to use the board',
+                noWardDescription: 'You can use the board after linking a ward.',
             },
             date: {
                 monthDay: '{{month}}/{{day}}',
@@ -490,7 +490,7 @@ export const en: TLocale = {
                     nameRequired: 'Enter a name.',
                     nameInvalid: "Use up to 20 characters: Korean, English, Japanese, spaces, '-', and '·'.",
                     phoneRequired: 'Enter a phone number.',
-                    phoneInvalid: 'Enter an 11-digit phone number.',
+                    phoneInvalid: 'Enter a valid phone number for the selected language or region.',
                     phoneDuplicate: 'This phone number is already in use. Enter another number.',
                 },
             },
@@ -507,13 +507,13 @@ export const en: TLocale = {
             profileSection: 'Profile',
             basicInfoTitle: 'Basic information',
             basicInfoDescription: 'Manage the information used for your account.',
-            preferencesTitle: 'Language and service region',
-            preferencesDescription: 'Choose the UI language and request region.',
+            preferencesTitle: 'Language',
+            preferencesDescription: 'Choose the language shown in the app.',
             languageLabel: 'Display language',
             serviceRegionLabel: 'Service region',
             language: {
-                ko: '한국어',
-                ja: '日本語',
+                ko: '한국어 (Korean)',
+                ja: '日本語 (Japanese)',
                 en: 'English',
             },
             serviceRegion: {
@@ -542,7 +542,7 @@ export const en: TLocale = {
                 nameRequired: 'Enter your name.',
                 nameInvalid: "Use up to 20 Korean, English, or Japanese characters, spaces, '-', or '·'.",
                 phoneRequired: 'Enter your phone number.',
-                phoneInvalid: 'Enter numbers only, such as 01012341234.',
+                phoneInvalid: 'Enter a valid phone number for the selected language or region.',
             },
             confirm: {
                 deleteTitle: 'Delete account?',
@@ -709,8 +709,8 @@ export const en: TLocale = {
                     strong: 'Hard constraints',
                     weak: 'Soft constraints',
                 },
-                info: 'You can drag to reorder by your preferred priority.',
-                infoTooltipAria: 'About constraint priority',
+                info: 'Mark must-follow constraints as Important.',
+                infoTooltipAria: 'About Important constraints',
                 count: '{{count}}',
                 empty: 'No constraints to show.',
                 dragHandleAria: 'Drag to reorder',
@@ -734,10 +734,10 @@ export const en: TLocale = {
                     dayLabel: 'Day {{day}}',
                 },
                 important: {
-                    label: 'Key',
-                    ariaRemove: 'Remove important mark',
-                    ariaMark: 'Mark as important',
-                    recommendedTitle: 'Recommended important rule',
+                    label: 'Important',
+                    ariaRemove: 'Remove Important mark',
+                    ariaMark: 'Mark as Important',
+                    recommendedTitle: 'Recommended Important constraint',
                 },
                 ruleAction: {
                     deleteAria: 'Delete constraint',
@@ -756,33 +756,33 @@ export const en: TLocale = {
                 },
                 modal: {
                     title: 'Add constraint',
-                    description: 'Some rules may not be applied depending on schedule conditions.',
+                    description: 'Some constraints may not be applied depending on the schedule.',
                     close: 'Close',
                     addAria: 'Add constraint',
                     addTitle: 'Add',
                 },
                 warning: {
-                    deleteTitle: 'Delete this recommended rule?',
-                    unmarkTitle: 'Remove the important mark?',
-                    description: 'This is recommended as an important default rule for a stable schedule.',
+                    deleteTitle: 'Delete this recommended constraint?',
+                    unmarkTitle: 'Remove the Important mark?',
+                    description: 'This default Important constraint helps keep the schedule stable.',
                     deleteDescription: 'Do you still want to remove it from the list?',
-                    unmarkDescription: 'Do you still want to remove the important mark?',
+                    unmarkDescription: 'Do you still want to remove the Important mark?',
                     keep: 'Keep',
                     deleteConfirm: 'Delete',
                     unmarkConfirm: 'Remove mark',
                 },
                 action: {
-                    add: 'Add rule',
+                    add: 'Add constraint',
                     reset: 'Reset',
                 },
                 toast: {
                     duplicatesRemoved: 'Cleaned up {{count}} duplicate constraints.',
                     added: 'Constraint added.',
-                    resetDefaults: 'Reset to {{count}} recommended rules.',
+                    resetDefaults: 'Reset to {{count}} recommended constraints.',
                     imported: 'Imported constraints from {{teamName}}.',
                     importFailed: 'Could not import constraints. Please try again shortly.',
                     saveFailed: 'Could not save constraints. Please try again shortly.',
-                    recommendedDeleted: 'Recommended rule deleted.',
+                    recommendedDeleted: 'Recommended constraint deleted.',
                     importantUnmarked: 'Important mark removed.',
                 },
                 state: {
@@ -792,91 +792,91 @@ export const en: TLocale = {
                 },
                 templates: {
                     IMPORTANT_MAX_WORK_STREAK: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'Consecutive work is allowed up to {days} days',
                     },
                     IMPORTANT_MAX_SAME_DUTY_STREAK: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'The same shift can be assigned up to {days} days in a row',
                     },
                     IMPORTANT_MIN_NIGHT_INTERVAL: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'N shifts need at least {days} days between assignments',
                     },
                     IMPORTANT_MAX_NIGHT_STREAK: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'N shifts can be assigned up to {days} days in a row',
                     },
                     IMPORTANT_OFF_AFTER_NIGHT: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'After an N shift, assign at least {days} OFF day',
                     },
                     IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'Avoid N shifts on the day before a requested OFF',
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
-                        label: 'Important default',
+                        label: 'Default Important constraint',
                         sentence: 'Avoid ND / ED / NE / NOD shift patterns',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
-                        label: 'Staffing rule',
+                        label: 'Staffing constraint',
                         sentence: '{duty} shifts need at least {count} people',
                     },
                     SOFT_MAX_STAFF_BY_DUTY: {
-                        label: 'Staffing rule',
+                        label: 'Staffing constraint',
                         sentence: '{duty} shifts can have at most {count} people',
                     },
                     SOFT_MIN_STAFF_BY_DATE_DUTY: {
-                        label: 'Staffing rule',
+                        label: 'Staffing constraint',
                         sentence: 'On {date}, {duty} shifts need at least {count} people',
                     },
                     SOFT_MIN_STAFF_WEEKEND_HOLIDAY: {
-                        label: 'Staffing rule',
+                        label: 'Staffing constraint',
                         sentence: 'On weekends and holidays, {duty} shifts need at least {count} people',
                     },
                     SOFT_NO_N_TO_D: {
-                        label: 'Forbidden pattern rule',
+                        label: 'Forbidden pattern constraint',
                         sentence: 'Avoid D the day after N for {target}',
                     },
                     SOFT_NO_N_TO_E: {
-                        label: 'Forbidden pattern rule',
+                        label: 'Forbidden pattern constraint',
                         sentence: 'Avoid E the day after N for {target}',
                     },
                     SOFT_NO_E_TO_D: {
-                        label: 'Forbidden pattern rule',
+                        label: 'Forbidden pattern constraint',
                         sentence: 'Avoid D the day after E for {target}',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
-                        label: 'Forbidden pattern rule',
+                        label: 'Forbidden pattern constraint',
                         sentence: '{target} can work N up to {count} times consecutively',
                     },
                     SOFT_MAX_CONSECUTIVE_WORK: {
-                        label: 'Work/rest rule',
+                        label: 'Work/rest constraint',
                         sentence: '{target} can work up to {days} consecutive days in a month',
                     },
                     SOFT_NEED_OFF_AFTER_CONSECUTIVE: {
-                        label: 'Work/rest rule',
+                        label: 'Work/rest constraint',
                         sentence: '{target} needs OFF after {days} consecutive work days',
                     },
                     SOFT_NEED_OFF_AFTER_N: {
-                        label: 'Work/rest rule',
+                        label: 'Work/rest constraint',
                         sentence: '{target} needs at least {days} OFF day after an N shift',
                     },
                     SOFT_MIN_MONTHLY_OFF: {
-                        label: 'Work/rest rule',
+                        label: 'Work/rest constraint',
                         sentence: '{target} needs at least {days} OFF days per month',
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
-                        label: 'Person-specific rule',
+                        label: 'Person-specific constraint',
                         sentence: 'Avoid weekend shifts for {nurse}',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
-                        label: 'New nurse / skill rule',
+                        label: 'New nurse / skill constraint',
                         sentence: 'Avoid solo N shifts for {nurse} as a new nurse',
                     },
                     SOFT_MIN_SKILL_IN_DUTY: {
-                        label: 'New nurse / skill rule',
+                        label: 'New nurse / skill constraint',
                         sentence: '{duty} shifts need at least {count} nurses at {level} or higher',
                     },
                     SOFT_NO_SAME_DUTY_PAIR: {
@@ -952,6 +952,9 @@ export const en: TLocale = {
                 fixedOnly: 'Fixed only',
                 showingFaults: 'Showing errors',
                 hidingFaults: 'Errors hidden',
+                validationStatus: {
+                    checking: 'Checking constraints',
+                },
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',
                 loading: 'Loading the duty schedule',
                 error: 'Failed to load the duty schedule',
@@ -970,8 +973,7 @@ export const en: TLocale = {
                 },
                 lastShiftBlankDialog: {
                     title: 'Review previous shifts?',
-                    description:
-                        'Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.\nIf this is the first schedule, you can confirm as-is.',
+                    description: 'Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.',
                     confirm: 'Confirm as-is',
                     cancel: 'Review input',
                 },
@@ -1381,7 +1383,7 @@ export const en: TLocale = {
                 emptyTeamNurses: 'Some teams have no nurses. Add a nurse or delete the team.',
                 emptyTeam: 'Add a team before creating the ward.',
                 invalidNurseName: 'Check the nurse names.',
-                duplicateShiftType: 'There is a duplicate shift name or abbreviation.',
+                duplicateShiftType: 'Abbreviation first letters must be unique.',
                 invalidShiftTime: 'Check the shift times.',
                 invalidShiftType: 'Check the shift type information.',
                 default: 'Check the entered information.',
@@ -1488,10 +1490,11 @@ export const en: TLocale = {
                 deleteAria: 'Delete {{shiftName}}',
                 validation: {
                     nameRequired: 'Enter a shift name.',
-                    nameDuplicate: 'Duplicate shift names are not allowed.',
+                    nameDuplicate: 'Use a different shift name.',
                     shortNameRequired: 'Enter an abbreviation.',
-                    shortNameDuplicate: 'Use a different abbreviation.',
-                    shortNameLength: 'Use up to 2 characters without spaces.',
+                    shortNameDuplicate: 'Use a different first letter.',
+                    shortNameFirstKey: 'Start with a letter, number, or symbol like -, ., _.',
+                    shortNameLength: 'Use up to 3 characters without spaces.',
                     timeRequired: 'Enter the time.',
                     timeFormat: 'Use the 00:00 time format.',
                     timeOrder: 'End time must be later than start time.',
@@ -1801,7 +1804,7 @@ export const en: TLocale = {
             title: 'Duty management',
             description: {
                 shiftTypes: 'Manage shift types.',
-                constraints: 'Manage duty rules.',
+                constraints: 'Manage scheduling constraints.',
             },
             tabs: {
                 shiftTypes: 'Shift types',
@@ -1834,13 +1837,15 @@ export const en: TLocale = {
                     nameRequired: 'Enter a shift name.',
                     nameDuplicate: 'Use a different shift name.',
                     shortNameRequired: 'Enter an abbreviation.',
-                    shortNameDuplicate: 'Use a different abbreviation.',
-                    shortNameLength: 'Use up to 2 characters without spaces.',
+                    shortNameDuplicate: 'Use a different first letter.',
+                    shortNameFirstKey: 'Start with a letter, number, or symbol like -, ., _.',
+                    shortNameLength: 'Use up to 3 characters without spaces.',
                     timeRequired: 'Enter the time.',
                     timeFormat: 'Use the 00:00 time format.',
                     timeSame: 'Use different start and end times.',
                 },
                 toast: {
+                    saveSuccess: 'Saved duty settings.',
                     addFailed: 'Could not add the shift type.',
                     updateFailed: 'Could not update the shift type.',
                     notFound: 'This shift type was already deleted or cannot be found in the latest list.',
@@ -1904,7 +1909,7 @@ export const en: TLocale = {
             wardCodeLabel: '{{wardTitle}} ward code',
             copyAria: 'Copy ward code',
             participationGuideAria: 'Show how to enter the Dutying ward code',
-            participationGuide: 'In the Dutying app, tap Join ward and enter the Dutying ward code.',
+            participationGuide: 'In the Dutying app, tap Join ward\nand enter the Dutying ward code.',
             toast: {
                 copySuccess: 'Copied the ward code.',
                 copyFailed: 'Could not copy the ward code.',
@@ -1912,7 +1917,8 @@ export const en: TLocale = {
             benefits: {
                 appApply: {
                     title: 'Nurses can request shifts in the app',
-                    description: 'When nurses send off-day and shift requests in the Dutying app, head nurses can review them in one place.',
+                    description:
+                        'When nurses send off-day and shift requests in the Dutying app,\nhead nurses can review them in one place.',
                 },
                 scheduleShare: {
                     title: 'Share confirmed schedules instantly',
@@ -2004,9 +2010,11 @@ export const en: TLocale = {
                 expiredModal: {
                     badge: 'Trial ended',
                     title: 'Your trial time has ended',
-                    description: 'Sign up now to continue into the official account setup flow. Trial account conversion is still being prepared, so we will guide you through sign-up after login for now.',
+                    description:
+                        'Sign up now to continue into the official account setup flow. Trial account conversion is still being prepared, so we will guide you through sign-up after login for now.',
                     nextStepTitle: 'Available next step',
-                    nextStepDescription: 'After signing up or logging in, you can connect to a ward. Trial data migration will follow after the DUT-948 integration.',
+                    nextStepDescription:
+                        'After signing up or logging in, you can connect to a ward. Trial data migration will follow after the DUT-948 integration.',
                     primaryAction: 'Sign up and continue',
                 },
             },
@@ -2020,7 +2028,7 @@ export const en: TLocale = {
             workNamePlaceholder: 'Enter a work name.',
             leaveNamePlaceholder: 'Enter a leave name.',
             shortName: 'Abbr.',
-            shortNameHint: '* Keep the default D, E, N, O abbreviations unchanged',
+            shortNameHint: '* The abbreviation you enter is shown in schedule cells.',
             workTime: 'Work time',
             backgroundColor: 'Background color',
             delete: 'Delete',
@@ -2028,6 +2036,7 @@ export const en: TLocale = {
             validation: {
                 nameRequired: 'Enter a shift name.',
                 timeRequired: 'Enter shift times.',
+                shortNameFirstKey: 'Start with a letter, number, or symbol like -, ., _.',
                 shortNameRequired: 'Enter a shift abbreviation.',
             },
         },
@@ -2128,7 +2137,7 @@ export const en: TLocale = {
                 monthLabel: '{{month}}',
                 defaultOffDays: 'Default OFF {{count}}d',
                 editSettings: 'Edit settings',
-                shiftName: 'Name',
+                shiftName: 'Code',
                 shortName: 'Code',
                 workTime: 'Hours',
                 color: 'Color',
@@ -2241,8 +2250,7 @@ export const en: TLocale = {
                 minMonthlyOff: '{{nurseName}} has {{actual}} monthly OFF days. Minimum required: {{expected}}.',
                 nurseForbidWeekend: '{{nurseName}} cannot work on weekends or holidays.',
                 notAloneNight: '{{nurseName}} cannot work an N shift alone.',
-                minProficiencyStaffByShift:
-                    '{{shift}} has {{actual}} nurse(s) at LV{{level}} or higher. Minimum required: {{expected}}.',
+                minProficiencyStaffByShift: '{{shift}} has {{actual}} nurse(s) at LV{{level}} or higher. Minimum required: {{expected}}.',
                 pairPreferSameShift: '{{nurseAName}} and {{nurseBName}} are recommended to work the same shift.',
                 pairForbidSameShift: '{{nurseAName}} and {{nurseBName}} cannot work the same shift.',
                 nightBeforeRequestedOff: '{{nurseName}} is assigned an N shift before a requested OFF day.',

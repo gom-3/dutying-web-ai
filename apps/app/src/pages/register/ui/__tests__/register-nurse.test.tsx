@@ -4,7 +4,13 @@ import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import RegisterNurse from '../register-nurse';
 
 const mocks = vi.hoisted(() => ({
-    accountMe: null as {name?: string; status?: string; profileImgUrl?: string | null} | null,
+    accountMe: null as {
+        name?: string;
+        status?: string;
+        profileImgUrl?: string | null;
+        preferredLanguage?: 'ko' | 'ja' | 'en';
+        serviceRegion?: 'KR' | 'JP' | 'EN';
+    } | null,
     profileImg: {defaultProfileImgId: 1},
     registerAccountProfile: vi.fn(),
     setPhotoImage: vi.fn(),
@@ -92,6 +98,36 @@ describe('RegisterNurse', () => {
                 expect.objectContaining({
                     name: '홍길동',
                     phoneNum: '01098765432',
+                    profileImg: {defaultProfileImgId: 1},
+                }),
+            );
+        });
+    });
+
+    it('submits an English-region international phone number', async () => {
+        const user = userEvent.setup();
+
+        mocks.accountMe = {
+            preferredLanguage: 'en',
+            serviceRegion: 'EN',
+        };
+
+        const {container} = render(<RegisterNurse />);
+        const nameInput = container.querySelector('#name') as HTMLInputElement;
+        const phoneInput = container.querySelector('#phone-num') as HTMLInputElement;
+
+        await user.type(nameInput, 'Alex Kim');
+        await user.type(phoneInput, '+1 (415) 555-0132');
+
+        const buttons = screen.getAllByRole('button');
+
+        await user.click(buttons[buttons.length - 1]);
+
+        await waitFor(() => {
+            expect(mocks.registerAccountProfile).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: 'Alex Kim',
+                    phoneNum: '+1 (415) 555-0132',
                     profileImg: {defaultProfileImgId: 1},
                 }),
             );

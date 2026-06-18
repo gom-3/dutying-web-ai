@@ -19,6 +19,12 @@ const sortByWardShiftTypeId = <T extends Pick<TNurseShiftType, 'nurseShiftTypeId
 
         return aId - bId;
     });
+const normalizeShiftTypeKey = (value?: string | null) => value?.trim().toLocaleUpperCase() ?? '';
+const setIfAbsent = <T>(map: Map<string, T>, key: string, value: T) => {
+    if (!key || map.has(key)) return;
+
+    map.set(key, value);
+};
 
 export const resolveNurseShiftTypeOptions = (
     nurseShiftTypes: TNurseShiftType[],
@@ -32,7 +38,7 @@ export const resolveNurseShiftTypeOptions = (
     }
 
     const nurseShiftTypeByWardShiftTypeId = new Map<number, TNurseShiftType>();
-    const legacyNurseShiftTypeByName = new Map<string, TNurseShiftType>();
+    const legacyNurseShiftTypeByCode = new Map<string, TNurseShiftType>();
 
     nurseShiftTypes.forEach((shiftType) => {
         if (typeof shiftType.wardShiftTypeId === 'number') {
@@ -41,22 +47,24 @@ export const resolveNurseShiftTypeOptions = (
             return;
         }
 
-        if (!legacyNurseShiftTypeByName.has(shiftType.name)) {
-            legacyNurseShiftTypeByName.set(shiftType.name, shiftType);
-        }
+        setIfAbsent(legacyNurseShiftTypeByCode, normalizeShiftTypeKey(shiftType.shortName), shiftType);
+        setIfAbsent(legacyNurseShiftTypeByCode, normalizeShiftTypeKey(shiftType.name), shiftType);
     });
 
     return [...wardShiftTypes]
         .sort((a, b) => a.wardShiftTypeId - b.wardShiftTypeId)
         .map((wardShiftType) => {
             const matched =
-                nurseShiftTypeByWardShiftTypeId.get(wardShiftType.wardShiftTypeId) ?? legacyNurseShiftTypeByName.get(wardShiftType.name);
+                nurseShiftTypeByWardShiftTypeId.get(wardShiftType.wardShiftTypeId) ??
+                legacyNurseShiftTypeByCode.get(normalizeShiftTypeKey(wardShiftType.shortName)) ??
+                legacyNurseShiftTypeByCode.get(normalizeShiftTypeKey(wardShiftType.name));
+            const shortName = wardShiftType.shortName || wardShiftType.name;
 
             return {
                 nurseShiftTypeId: matched?.nurseShiftTypeId ?? wardShiftType.wardShiftTypeId,
                 wardShiftTypeId: wardShiftType.wardShiftTypeId,
-                name: wardShiftType.name,
-                shortName: wardShiftType.shortName,
+                name: shortName,
+                shortName,
                 isPossible: matched?.isPossible ?? true,
                 isPreferred: matched?.isPreferred ?? false,
                 apiShiftTypeId: matched?.nurseShiftTypeId ?? wardShiftType.wardShiftTypeId,

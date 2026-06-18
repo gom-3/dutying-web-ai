@@ -11,6 +11,7 @@ const translations: Record<string, string> = {
     'page.request.panel.emptyTitleReadonly': '아직 반영된 신청 근무가 없어요',
     'page.request.panel.emptyDescriptionReadonly': '반영된 신청이 생기면 이 패널에서 바로 확인할 수 있어요.',
     'page.request.panel.editTitle': 'Review requests',
+    'page.request.panel.emptyTitleEdit': '간호사가 보낸\n신청근무 요청이 없어요',
     'page.request.panel.sortByDate': 'By date',
     'page.request.panel.sortByNurse': 'By nurse',
     'page.request.panel.sortByRequestOrder': 'By request',
@@ -85,6 +86,31 @@ describe('RequestDutyRequestPanel', () => {
 
         expect(screen.getByText('아직 반영된 신청 근무가 없어요')).toBeInTheDocument();
         expect(screen.getByText('반영된 신청이 생기면 이 패널에서 바로 확인할 수 있어요.')).toBeInTheDocument();
+    });
+
+    it('edit mode empty title keeps the requested line break', () => {
+        render(
+            <RequestDutyRequestPanel
+                year={2026}
+                month={6}
+                days={[]}
+                dutyRequestList={[]}
+                dutyRequestStatus="success"
+                wardShiftTypeMap={new Map()}
+                canEdit
+                updatingRequestId={null}
+                shiftNurseIdByNurseId={new Map()}
+                changeFocus={vi.fn()}
+                acceptRequest={vi.fn().mockResolvedValue(true)}
+                acceptRequests={vi.fn().mockResolvedValue(true)}
+                retry={vi.fn()}
+                onAcceptAnalytics={vi.fn()}
+            />,
+        );
+
+        const heading = screen.getByRole('heading', {name: /간호사가 보낸\s+신청근무 요청이 없어요/});
+
+        expect(heading).toHaveTextContent('간호사가 보낸\n신청근무 요청이 없어요', {normalizeWhitespace: false});
     });
 
     it('shows a toast after accepting or rejecting a request', async () => {

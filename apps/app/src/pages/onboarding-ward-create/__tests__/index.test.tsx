@@ -295,7 +295,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
-        expect(screen.getByText('근무명')).toBeInTheDocument();
+        expect(screen.getByText('약자')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '다음'}));
 
@@ -758,19 +758,19 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
     });
 
-    it('disables next in step 3 when shift names are duplicated', async () => {
+    it('disables next in step 3 when shift abbreviations are duplicated', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
 
         await moveToShiftTypeStep(user);
 
-        const shiftNameInputs = screen.getAllByPlaceholderText('근무명');
+        const shiftShortNameInputs = screen.getAllByPlaceholderText('-');
 
-        await user.clear(shiftNameInputs[1] as HTMLInputElement);
-        await user.type(shiftNameInputs[1] as HTMLInputElement, '데이');
+        await user.clear(shiftShortNameInputs[1] as HTMLInputElement);
+        await user.type(shiftShortNameInputs[1] as HTMLInputElement, 'D');
 
-        expect(screen.getAllByText('중복된 근무명은 사용할 수 없어요.')).toHaveLength(2);
+        expect(screen.getAllByText('약자의 첫 글자가 겹치지 않게 입력해 주세요.')).toHaveLength(2);
         expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
     });
 
@@ -789,7 +789,25 @@ describe('OnboardingWardCreatePage', () => {
         expect(dayStartTimeInput).toHaveValue('12:00');
     });
 
-    it('disables next in step 3 when shift time order is invalid', async () => {
+    it('keeps next enabled in step 3 when shift time crosses midnight', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const dayStartTimeInput = screen.getAllByDisplayValue('07:00')[0] as HTMLInputElement;
+        const dayEndTimeInput = screen.getAllByDisplayValue('15:00')[0] as HTMLInputElement;
+
+        await user.clear(dayStartTimeInput);
+        await user.type(dayStartTimeInput, '1630');
+        await user.clear(dayEndTimeInput);
+        await user.type(dayEndTimeInput, '0030');
+
+        expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'false');
+    });
+
+    it('disables next in step 3 when shift start and end times are the same', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
@@ -802,9 +820,8 @@ describe('OnboardingWardCreatePage', () => {
         await user.clear(dayStartTimeInput);
         await user.type(dayStartTimeInput, '1200');
         await user.clear(dayEndTimeInput);
-        await user.type(dayEndTimeInput, '1100');
+        await user.type(dayEndTimeInput, '1200');
 
-        expect(screen.getByText('퇴근 시간은 출근 시간보다 늦어야 해요.')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
     });
 
@@ -821,11 +838,11 @@ describe('OnboardingWardCreatePage', () => {
             await user.click(addShiftButton);
         }
 
-        expect(screen.getAllByPlaceholderText('근무명')).toHaveLength(10);
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(10);
 
         await user.click(addShiftButton);
 
-        expect(screen.getAllByPlaceholderText('근무명')).toHaveLength(10);
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(10);
     });
 
     it('removes empty teams before completion instead of blocking submit', async () => {
@@ -956,7 +973,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await user.click(nextButton);
 
-        expect(screen.getByText('근무명')).toBeInTheDocument();
+        expect(screen.getByText('약자')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
         expect(toastError).not.toHaveBeenCalled();
 
@@ -976,7 +993,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByRole('button', {name: '건너뛰기'})).toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '건너뛰기'}));
 
-        expect(screen.getByText('근무명')).toBeInTheDocument();
+        expect(screen.getByText('약자')).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '건너뛰기'})).not.toBeInTheDocument();
     });
 
@@ -1012,7 +1029,7 @@ describe('OnboardingWardCreatePage', () => {
         });
     });
 
-    it('shows toast and auto navigates to make after ward creation succeeds', async () => {
+    it('shows toast and auto navigates to home after ward creation succeeds', async () => {
         const user = userEvent.setup();
 
         let resolveCreateWard!: () => void;
@@ -1059,7 +1076,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.queryByTestId('ward-create-success')).not.toBeInTheDocument();
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/make', {
+                expect(mockNavigate).toHaveBeenCalledWith('/home', {
                     replace: true,
                     state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
                 });
@@ -1088,7 +1105,7 @@ describe('OnboardingWardCreatePage', () => {
 
         await waitFor(
             () => {
-                expect(mockNavigate).toHaveBeenCalledWith('/make', {
+                expect(mockNavigate).toHaveBeenCalledWith('/home', {
                     replace: true,
                     state: {onboardingWardCreated: true, onboardingInitialSchedule: null},
                 });

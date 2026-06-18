@@ -1,5 +1,6 @@
 import type {TSnapshotCellDTO, TSnapshotRowOrderDTO, TWardShiftsDTO} from '@dutying/api/ward';
 import type {TShift, TWardShiftType} from '@/entities';
+import {getShiftShortNameEntryKey} from '@/shared/lib/shift-short-name';
 import type {TCellValue, TDutyDoc, TWorkKeyMap} from './types';
 
 type TWardShiftTypeMaps = {
@@ -272,13 +273,9 @@ export function buildWorkKeyMap(shift?: TShift): TWorkKeyMap {
 
     return shift.wardShiftTypes.reduce<TWorkKeyMap>((acc, shiftType) => {
         const normalizedShortName = shiftType.shortName.trim();
-        const keySource = Array.from(normalizedShortName)[0];
+        const key = getShiftShortNameEntryKey(normalizedShortName);
 
-        if (!keySource) return acc;
-
-        const key = keySource.toLowerCase();
-
-        if (acc[key] !== undefined) return acc;
+        if (!key || acc[key] !== undefined) return acc;
 
         acc[key] = normalizedShortName;
 

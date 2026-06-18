@@ -123,6 +123,8 @@ const WardCodeGuideModal = ({open, wardCode, wardTitle, onClose}: TWardCodeGuide
     const [showParticipationGuide, setShowParticipationGuide] = useState(false);
     const titleId = useId();
     const descriptionId = useId();
+    const title = t('widget.wardCodeGuide.title');
+    const dialogLabel = title.replace(/\s+/g, ' ').trim();
     const copyableWardCode = wardCode.trim();
     const canCopyWardCode = copyableWardCode.length > 0 && copyableWardCode !== '-';
     const handleCopyWardCode = async () => {
@@ -146,15 +148,15 @@ const WardCodeGuideModal = ({open, wardCode, wardTitle, onClose}: TWardCodeGuide
             <div
                 role="dialog"
                 aria-modal="true"
-                aria-labelledby={titleId}
+                aria-label={dialogLabel}
                 aria-describedby={descriptionId}
                 className="w-full max-w-[38rem] rounded-[28px] bg-white p-7 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
                 onClick={(event) => event.stopPropagation()}
             >
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h2 id={titleId} className="font-apple text-[28px] leading-[36px] font-bold text-[#191F28]">
-                            {t('widget.wardCodeGuide.title')}
+                        <h2 id={titleId} className="font-apple text-[28px] leading-[36px] font-bold whitespace-pre-line text-[#191F28]">
+                            {title}
                         </h2>
                     </div>
                     <button
@@ -166,7 +168,7 @@ const WardCodeGuideModal = ({open, wardCode, wardTitle, onClose}: TWardCodeGuide
                         <X className="size-5" aria-hidden="true" />
                     </button>
                 </div>
-                <p id={descriptionId} className="mt-3 max-w-[34rem] font-apple text-[16px] leading-7 text-[#4E5968]">
+                <p id={descriptionId} className="mt-3 max-w-[34rem] font-apple text-[16px] leading-7 whitespace-pre-line text-[#4E5968]">
                     {t('widget.wardCodeGuide.description')}
                 </p>
                 <div className="mt-5">
@@ -200,7 +202,7 @@ const WardCodeGuideModal = ({open, wardCode, wardTitle, onClose}: TWardCodeGuide
                         >
                             <Info className="size-4.5" aria-hidden="true" />
                             {showParticipationGuide ? (
-                                <span className="absolute top-11 right-0 z-10 w-[18rem] rounded-[14px] bg-[#191F28] px-4 py-3 text-left font-apple text-[13px] leading-5 font-medium text-white shadow-[0_12px_30px_rgba(15,23,42,0.24)]">
+                                <span className="absolute top-11 right-0 z-10 w-[18rem] rounded-[14px] bg-[#191F28] px-4 py-3 text-left font-apple text-[13px] leading-5 font-medium whitespace-pre-line text-white shadow-[0_12px_30px_rgba(15,23,42,0.24)]">
                                     {t('widget.wardCodeGuide.participationGuide')}
                                 </span>
                             ) : null}
@@ -217,10 +219,10 @@ const WardCodeGuideModal = ({open, wardCode, wardTitle, onClose}: TWardCodeGuide
                                     <Icon className={benefit.iconClassName ?? 'size-6'} strokeWidth={2.2} aria-hidden="true" />
                                 </div>
                                 <div className="min-w-0">
-                                    <p className="font-apple text-[15px] leading-5 font-bold text-[#333D4B]">
+                                    <p className="font-apple text-[15px] leading-5 font-bold whitespace-pre-line text-[#333D4B]">
                                         {t(benefit.titleKey)}
                                     </p>
-                                    <p className="mt-1 font-apple text-[13px] leading-5 text-[#6B7684]">
+                                    <p className="mt-1 font-apple text-[13px] leading-5 whitespace-pre-line text-[#6B7684]">
                                         {t(benefit.descriptionKey)}
                                     </p>
                                 </div>

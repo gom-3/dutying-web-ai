@@ -109,15 +109,59 @@ describe('ProfilePage account actions', () => {
         });
     });
 
-    it('saves preferred language and service region with the main save button', async () => {
+    it('accepts an international phone number for a Japanese profile', async () => {
+        mockedUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    accountId: 7,
+                    wardId: null,
+                    nurseId: null,
+                    email: 'user@example.com',
+                    name: 'Yamada',
+                    phoneNum: '',
+                    profileImgUrl: '',
+                    status: 'WARD_SELECT_PENDING',
+                    preferredLanguage: 'ja',
+                    serviceRegion: 'JP',
+                },
+                accountMeStatus: 'success',
+                _loaded: true,
+            },
+            actions: {
+                handleGetAccountMe: vi.fn(),
+                handleLogout: mockHandleLogout,
+            },
+        } as never);
+
+        const {container} = render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+        const phoneInput = container.querySelector('#phoneNum') as HTMLInputElement;
+
+        await userEvent.clear(phoneInput);
+        await userEvent.type(phoneInput, '+81 90-1234-5678');
+
+        const buttons = screen.getAllByRole('button');
+
+        await userEvent.click(buttons[buttons.length - 1]);
+
+        await waitFor(() => {
+            expect(mockHandleEditAccountBasic).toHaveBeenCalledWith('Yamada', {}, '+81 90-1234-5678');
+        });
+    });
+
+    it('saves preferred language with the main save button', async () => {
         render(
             <MemoryRouter>
                 <ProfilePage />
             </MemoryRouter>,
         );
 
-        await userEvent.selectOptions(screen.getByLabelText('화면 언어'), 'ja');
-        await userEvent.selectOptions(screen.getByLabelText('서비스 지역'), 'JP');
+        expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+        await userEvent.click(screen.getByRole('button', {expanded: false}));
+        await userEvent.click(screen.getAllByRole('option')[1]);
         expect(screen.queryByRole('button', {name: '언어 설정 저장'})).not.toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));

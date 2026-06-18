@@ -70,7 +70,7 @@ function TitleLines({children, highlights}: {children: string; highlights?: read
     return (
         <>
             {lines.map((line, index) => (
-                <span key={`${line}-${index}`} className="block">
+                <span key={`${line}-${index}`} className="block break-keep">
                     <HighlightedText text={line} highlights={highlights} />
                 </span>
             ))}
@@ -85,6 +85,7 @@ function SectionHeader({step, aside}: ISectionHeaderProps) {
     const title = t(label.titleKey);
     const titleHighlights = label.titleHighlightKeys?.map((key) => t(key));
     const description = t(label.descriptionKey);
+    const headerClassName = isIdentityStep ? 'mb-6 max-w-[480px] space-y-2' : step === 2 ? 'mb-10 max-w-[720px]' : 'mb-10 max-w-[541px]';
     const renderedTitle = (
         <>
             <span className="sr-only">{title}</span>
@@ -97,7 +98,7 @@ function SectionHeader({step, aside}: ISectionHeaderProps) {
     if (!aside) {
         return (
             <BaseSectionHeader
-                className={isIdentityStep ? 'mb-6 max-w-[480px] space-y-2' : 'mb-10 max-w-[541px]'}
+                className={headerClassName}
                 title={renderedTitle}
                 description={description}
                 descriptionClassName={isIdentityStep ? 'text-sm leading-5 whitespace-normal' : 'whitespace-normal sm:whitespace-nowrap'}

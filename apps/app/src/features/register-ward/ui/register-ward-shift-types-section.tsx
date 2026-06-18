@@ -41,8 +41,8 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-[17px] font-semibold text-sub-1">{shiftType.name}</h3>
-                                    <span className="rounded-[8px] bg-white px-2 py-1 font-poppins text-xs font-semibold text-sub-2">
+                                    <h3 className="truncate font-apple text-[17px] font-semibold text-sub-1">{shiftType.name}</h3>
+                                    <span className="rounded-[8px] bg-white px-2 py-0.5 font-poppins text-xs font-semibold text-gray-3">
                                         {shiftType.shortName}
                                     </span>
                                 </div>

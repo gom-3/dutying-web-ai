@@ -4,7 +4,6 @@ import type {TOnboardingUploadedTeamSchedule} from './draft';
 const NAME_COLUMN_INDEX = 1;
 const TEAM_COLUMN_INDEX = 2;
 const FIRST_DAY_COLUMN_INDEX = 3;
-const DEFAULT_TEAM_NAME = '\uAC04\uD638\uC0AC 1\uD300';
 const EXCEL_READ_ERROR_MESSAGE = '\uC5D1\uC140 \uD30C\uC77C\uC744 \uC77D\uC9C0 \uBABB\uD588\uC5B4\uC694.';
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month, 0).getDate();
@@ -81,7 +80,7 @@ export const parseOnboardingScheduleTemplate = async (
     for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber += 1) {
         const row = worksheet.getRow(rowNumber);
         const name = getCellText(row.getCell(NAME_COLUMN_INDEX)).trim();
-        const teamName = getCellText(row.getCell(TEAM_COLUMN_INDEX)).trim() || DEFAULT_TEAM_NAME;
+        const teamName = getCellText(row.getCell(TEAM_COLUMN_INDEX)).trim();
         const shifts = Object.fromEntries(
             Array.from({length: dayCount}, (_, index) => {
                 const day = index + 1;

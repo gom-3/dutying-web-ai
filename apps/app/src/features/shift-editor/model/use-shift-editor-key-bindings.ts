@@ -215,7 +215,7 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
             }
 
             // 사용자 근무 키 입력 (modifier 없이)
-            if (!mod && !native.altKey && !native.shiftKey && key.length === 1) {
+            if (!mod && !native.altKey && key.length === 1) {
                 const value = workKeyMap[key];
 
                 if (value !== undefined) {

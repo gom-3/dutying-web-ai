@@ -122,4 +122,48 @@ describe('violationsFromSpringValidation', () => {
             ],
         });
     });
+
+    it('preserves display context cells separately from violating cells', () => {
+        const validation: TValidationRes = {
+            draftRevision: 1,
+            rulesHash: 'hash',
+            summary: {valid: false, hardCount: 1, softCount: 0, totalCount: 1},
+            violations: [
+                {
+                    violationId: 'v-3',
+                    ruleId: 9003,
+                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    severity: 'HARD',
+                    message: '7일 연속 근무입니다. 최대 5일까지 가능해요.',
+                    period: {startDate: '2026-05-06', endDate: '2026-05-07'},
+                    affectedCells: [
+                        {cellKey: '8753:2026-05-06', shiftNurseId: 8753, date: '2026-05-06', wardShiftTypeId: 101},
+                        {cellKey: '8753:2026-05-07', shiftNurseId: 8753, date: '2026-05-07', wardShiftTypeId: 101},
+                    ],
+                    displayContext: {
+                        period: {startDate: '2026-05-01', endDate: '2026-05-07'},
+                        affectedCells: Array.from({length: 7}, (_, index) => {
+                            const date = `2026-05-0${index + 1}`;
+
+                            return {cellKey: `8753:${date}`, shiftNurseId: 8753, date, wardShiftTypeId: 101};
+                        }),
+                    },
+                    fixable: true,
+                },
+            ],
+        };
+        const extendedDoc: TDutyDoc = {
+            ...doc,
+            columns: Array.from({length: 7}, (_, i) => `2026-05-0${i + 1}`),
+            rows: [{...doc.rows[0]!, cells: Array.from({length: 7}, () => 'D')}],
+        };
+        const violations = violationsFromSpringValidation(validation, extendedDoc);
+
+        expect(violations[0]?.cells).toEqual([
+            {row: 0, col: 5},
+            {row: 0, col: 6},
+        ]);
+        expect(violations[0]?.displayContext?.cells).toEqual(Array.from({length: 7}, (_, col) => ({row: 0, col})));
+        expect(violations[0]?.displayContext?.period).toEqual({startDate: '2026-05-01', endDate: '2026-05-07'});
+    });
 });

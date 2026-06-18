@@ -68,18 +68,19 @@ export const ko = {
             "delete": "삭제",
             "editTitle": "근무•휴가 수정하기",
             "leave": "휴가",
-            "leaveNamePlaceholder": "휴가 명을 작성해 주세요.",
+            "leaveNamePlaceholder": "휴가명을 입력해 주세요.",
             "name": "근무명",
             "save": "저장",
             "shortName": "약자",
-            "shortNameHint": "* 기본 근무 유형인 D, E, N, O의 약자는 그대로 유지해 주세요",
+            "shortNameHint": "* 근무표 칸에는 입력한 약자가 그대로 표시돼요.",
             "validation": {
-                "nameRequired": "근무 이름을 입력해 주세요.",
+                "nameRequired": "근무명을 입력해 주세요.",
+                "shortNameFirstKey": "첫 글자는 영문, 숫자, 기호(- . _ 등)로 입력해 주세요.",
                 "shortNameRequired": "근무 약자를 입력해 주세요.",
                 "timeRequired": "근무 시간을 입력해 주세요."
             },
             "work": "근무",
-            "workNamePlaceholder": "근무 명을 작성해 주세요.",
+            "workNamePlaceholder": "근무명을 입력해 주세요.",
             "workTime": "근무 시간"
         },
         "editShiftTeam": {
@@ -136,7 +137,7 @@ export const ko = {
                     "category": "유형",
                     "color": "색상",
                     "edit": "수정",
-                    "name": "근무 명",
+                    "name": "근무명",
                     "shortName": "약자",
                     "workTime": "근무 시간"
                 },
@@ -150,7 +151,7 @@ export const ko = {
                 "work": "근무"
             },
             "validation": {
-                "nameRequired": "근무 이름을 입력해 주세요.",
+                "nameRequired": "근무명을 입력해 주세요.",
                 "shortNameRequired": "{{name}} 근무의 근무 약자를 입력해 주세요.",
                 "timeRequired": "{{name}} 근무의 근무 시간을 입력해 주세요."
             }
@@ -179,7 +180,7 @@ export const ko = {
                 "leave": "휴가",
                 "monthLabel": "{{month}}월",
                 "notApplied": "근무표 미적용",
-                "shiftName": "근무 명",
+                "shiftName": "약자",
                 "shiftTypeColorStyle": "근무 유형 표시 스타일",
                 "shortName": "약자",
                 "text": "글자",
@@ -290,7 +291,8 @@ export const ko = {
                     "maxContinuousWork": "근무는 연속 {{count}}일까지 배정할 수 있어요.",
                     "minContinuousNight": "나이트 근무는 최소 {{count}}일 이상 배정해 주세요.",
                     "minNightInterval": "N 근무 사이를 {{count}}일 이상 띄워야 해요.",
-                    "minOffAssignAfterNight": "나이트 근무 후에는 OFF를 {{count}}일 이상 권장해요."
+                    "minOffAssignAfterNight": "나이트 근무 후에는 OFF를 {{count}}일 이상 권장해요.",
+                    "minNightIntervalFallback": "N 근무 사이를 충분히 띄워 주세요."
                 },
                 "maxConsecutiveNight": "{{nurseName}}님은 N 근무가 {{actual}}회 연속이에요. 최대 {{expected}}회까지 가능해요.",
                 "maxConsecutiveWork": "{{nurseName}}님은 근무가 {{actual}}일 연속이에요. 최대 {{expected}}일까지 가능해요.",
@@ -515,6 +517,29 @@ export const ko = {
             "viewRangeDescription": "다음 달까지의 근무표만 생성 및 조회할 수 있어요.",
             "viewRangeTitle": "이 기간의 근무표는 볼 수 없어요",
             "wardCodeChecking": "확인 중"
+        },
+        "dutying": {
+            "comingSoon": "준비 중",
+            "description": "듀팅 서비스 이용에 필요한 안내와 정책을 확인해요.",
+            "items": {
+                "contact": {
+                    "description": "궁금한 점이나 도움이 필요한 내용을 남겨요.",
+                    "title": "문의하기"
+                },
+                "notice": {
+                    "description": "업데이트와 서비스 안내를 확인해요.",
+                    "title": "공지사항"
+                },
+                "privacy": {
+                    "description": "개인정보 처리 기준을 확인해요.",
+                    "title": "개인정보 처리방침"
+                },
+                "terms": {
+                    "description": "서비스 이용 조건을 확인해요.",
+                    "title": "이용약관"
+                }
+            },
+            "title": "듀팅"
         },
         "error": {
             "documentTitle": "{{title}} | 듀팅",
@@ -785,6 +810,9 @@ export const ko = {
                 "fixedOnly": "고정만 보기",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
+                "validationStatus": {
+                    "checking": "제약조건 검토 중"
+                },
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
                 "loading": "근무표를 불러오는 중이에요",
                 "previous": "이전 단계",
@@ -853,7 +881,7 @@ export const ko = {
                 "viewAll": "전체 보기",
                 "lastShiftBlankDialog": {
                     "title": "전달근무를 확인했나요?",
-                    "description": "전달근무에 빈칸이 있어요. 이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.\n이번이 첫 근무표라면 그대로 확정해도 괜찮아요.",
+                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
                     "confirm": "그대로 확정",
                     "cancel": "입력 확인"
                 }
@@ -1108,11 +1136,11 @@ export const ko = {
             "fixedShifts": {
                 "empty": "이번 달 근무표가 아직 없어요",
                 "error": "고정 근무 데이터를 불러오지 못했어요",
-                "hint": "가급적 비워두고, 자동 채우기 전에 꼭 고정해야 할 근무만 입력해 주세요.",
+                "hint": "연수·교육·공가처럼 이미 정해진 일정이나 반드시 지켜야 할 배치만 고정해 주세요.",
                 "loading": "근무표를 불러오는 중이에요",
                 "lockedToast": "고정 근무는 고정근무 탭에서만 수정할 수 있어요",
                 "saveFailed": "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-                "title": "고정 근무를 선택해 주세요"
+                "title": "고정할 일정만 입력해 주세요"
             },
             "monthRangeDescription": "듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.",
             "monthRangeTitle": "이 기간에는 근무표를 만들 수 없어요",
@@ -1570,11 +1598,12 @@ export const ko = {
             "ariaLabel": "주요 메뉴",
             "expandAria": "사이드바 펼치기",
             "foldAria": "사이드바 접기",
-            "home": "근무표",
+            "home": "홈",
             "items": {
                 "account": "마이페이지",
                 "board": "게시판",
-                "make": "근무표",
+                "dutying": "듀팅",
+                "make": "근무표 만들기",
                 "member": "근무자 관리",
                 "request": "신청 근무",
                 "wardAdmins": "병동 관리자",
@@ -1628,10 +1657,11 @@ export const ko = {
             "backToWardSelect": "병동 선택으로",
             "blocked": {
                 "default": "입력 정보를 확인해 주세요.",
-                "duplicateShiftType": "중복된 근무명 또는 약자가 있어요.",
+                "duplicateShiftType": "약자의 첫 글자가 중복돼요.",
                 "emptyTeam": "팀을 추가하면 병동을 만들 수 있어요.",
                 "emptyTeamNurses": "간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.",
                 "invalidNurseName": "간호사 이름을 확인해 주세요.",
+                "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
@@ -1644,6 +1674,15 @@ export const ko = {
                 "newTeam": "새 팀",
                 "selectedTeam": "선택한 팀",
                 "wardName": "듀팅 병동"
+            },
+            "defaults": {
+                "newNurseName": "신규 간호사 {{index}}",
+                "sampleNurse": {
+                    "first": "홍길동",
+                    "second": "김하늘",
+                    "skilled": "이서윤",
+                    "off": "박연우"
+                }
             },
             "identity": {
                 "hospitalName": "병원명",
@@ -1724,13 +1763,14 @@ export const ko = {
                 "shortName": "약자",
                 "type": "유형",
                 "validation": {
-                    "nameDuplicate": "중복된 근무명은 사용할 수 없어요.",
+                    "nameDuplicate": "다른 근무명을 입력해 주세요.",
                     "nameRequired": "근무명을 입력해 주세요.",
-                    "shortNameDuplicate": "다른 약자를 입력해 주세요.",
-                    "shortNameLength": "공백 없이 2글자까지 입력해 주세요.",
+                    "shortNameDuplicate": "약자의 첫 글자가 겹치지 않게 입력해 주세요.",
+                    "shortNameFirstKey": "첫 글자는 영문, 숫자, 기호(- . _ 등)로 입력해 주세요.",
+                    "shortNameLength": "공백 없이 3글자까지 입력해 주세요.",
                     "shortNameRequired": "약자를 입력해 주세요.",
                     "timeFormat": "시간은 00:00 형식으로 입력해 주세요.",
-                    "timeOrder": "퇴근 시간은 출근 시간보다 늦어야 해요.",
+                    "timeOrder": "시작/종료 시간을 다르게 입력해 주세요.",
                     "timeRequired": "시간을 입력해 주세요."
                 },
                 "work": "근무",
@@ -1814,6 +1854,16 @@ export const ko = {
                 "fileSupport": ".xlsx, .xls 파일을 지원해요.",
                 "submitting": "업로드 중",
                 "submit": "파일 적용"
+            },
+            "progress": {
+                "ariaLabel": "병동 생성 진행률",
+                "completeTitle": "병동 생성이 완료됐어요",
+                "finalCheck": "거의 다 됐어요. 마지막 확인 중이에요.",
+                "inputWardInfo": "입력한 병동 정보를 정리하고 있어요.",
+                "navigateDuty": "근무표 화면으로 이동하고 있어요.",
+                "nurses": "간호사 정보를 연결하고 있어요.",
+                "settingTitle": "병동을 세팅하고 있어요",
+                "shiftTypesAndTeams": "근무 유형과 팀을 세팅하고 있어요."
             }
         },
         "profile": {
@@ -1833,10 +1883,10 @@ export const ko = {
             "imageFailed": "프로필 이미지를 처리하지 못했어요.",
             "language": {
                 "en": "English",
-                "ja": "日本語",
-                "ko": "한국어"
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)"
             },
-            "languageLabel": "화면 언어",
+            "languageLabel": "화면 언어 / Language",
             "loadingDescription": "내 계정과 병동 정보를 순서대로 확인하고 있어요.",
             "loadingTitle": "프로필 정보를 준비하고 있어요",
             "logout": "로그아웃",
@@ -1845,10 +1895,10 @@ export const ko = {
             "namePlaceholder": "이름을 입력하세요",
             "phoneNum": "전화번호",
             "phoneNumPlaceholder": "전화번호를 입력하세요",
-            "preferencesDescription": "화면 언어와 서버 요청 지역을 선택해요.",
+            "preferencesDescription": "화면에 표시할 언어를 선택해요.",
             "preferencesFailed": "언어 설정을 저장하지 못했어요.",
             "preferencesSaved": "언어와 서비스 지역을 저장했어요.",
-            "preferencesTitle": "언어와 서비스 지역",
+            "preferencesTitle": "언어 / Language",
             "profileSection": "프로필",
             "quitWard": "병동 나가기",
             "randomAvatar": "랜덤 아바타",
@@ -1870,7 +1920,7 @@ export const ko = {
             "validation": {
                 "nameInvalid": "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
                 "nameRequired": "이름을 입력해 주세요.",
-                "phoneInvalid": "전화번호는 01012341234처럼 숫자만 입력해 주세요.",
+                "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.",
                 "phoneRequired": "전화번호를 입력해 주세요."
             }
         },
@@ -1920,7 +1970,7 @@ export const ko = {
                     "nameInvalid": "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
                     "nameRequired": "이름을 입력해 주세요.",
                     "phoneDuplicate": "이미 사용 중인 연락처예요. 다른 번호를 입력해 주세요.",
-                    "phoneInvalid": "연락처는 숫자 11자리로 입력해 주세요.",
+                    "phoneInvalid": "국가번호를 포함하거나 지역 형식에 맞는 연락처를 입력해 주세요.",
                     "phoneRequired": "연락처를 입력해 주세요."
                 }
             },
@@ -2061,7 +2111,7 @@ export const ko = {
                 "editTitle": "근무 신청",
                 "emptyDescriptionEdit": "",
                 "emptyDescriptionReadonly": "반영된 신청이 생기면 이 패널에서 바로 확인할 수 있어요.",
-                "emptyTitleEdit": "간호사가 보낸 신청근무 요청이 없어요",
+                "emptyTitleEdit": "간호사가 보낸\n신청근무 요청이 없어요",
                 "emptyTitleReadonly": "아직 반영된 신청 근무가 없어요",
                 "errorTitleEdit": "신청 내역을 불러오지 못했어요",
                 "errorTitleReadonly": "반영된 신청 근무를 불러오지 못했어요",
@@ -2242,13 +2292,15 @@ export const ko = {
                     "addFailed": "근무 유형을 추가하지 못했어요.",
                     "deleteFailed": "근무 유형을 삭제하지 못했어요.",
                     "notFound": "이미 삭제했거나 최신 목록에서 찾을 수 없는 근무 유형이에요.",
+                    "saveSuccess": "근무 설정을 저장했어요.",
                     "updateFailed": "근무 유형을 수정하지 못했어요."
                 },
                 "validation": {
                     "nameDuplicate": "다른 근무명을 입력해 주세요.",
                     "nameRequired": "근무명을 입력해 주세요.",
-                    "shortNameDuplicate": "다른 약자를 입력해 주세요.",
-                    "shortNameLength": "공백 없이 2글자까지 입력해 주세요.",
+                    "shortNameDuplicate": "약자의 첫 글자가 겹치지 않게 입력해 주세요.",
+                    "shortNameFirstKey": "첫 글자는 영문, 숫자, 기호(- . _ 등)로 입력해 주세요.",
+                    "shortNameLength": "공백 없이 3글자까지 입력해 주세요.",
                     "shortNameRequired": "약자를 입력해 주세요.",
                     "timeFormat": "시간은 00:00 형식으로 입력해 주세요.",
                     "timeRequired": "시간을 입력해 주세요.",
@@ -2263,6 +2315,106 @@ export const ko = {
             "type": {
                 "leave": "휴무",
                 "work": "근무"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "종일",
+                "deadlineMeta": "마감 · {{date}}",
+                "empty": "가까운 일정 없음",
+                "loading": "캘린더 확인 중",
+                "openAll": "캘린더 전체 보기",
+                "overdue": "지남",
+                "scheduleDateMeta": "일정 · {{date}} · {{time}}",
+                "scheduleMeta": "일정 · {{time}}",
+                "timeUnknown": "시간 미정",
+                "today": "오늘"
+            },
+            "emptyTeams": {
+                "description": "근무자 관리에서 간호 팀을 추가해요.",
+                "title": "팀을 추가하면 볼 수 있어요"
+            },
+            "fallback": {
+                "manager": "관리자",
+                "selectedTeam": "선택한 팀",
+                "ward": "병동"
+            },
+            "filter": {
+                "all": "전체"
+            },
+            "header": {
+                "createNextMonth": "다음 달 근무표 만들기",
+                "todayAssigned": "{{managerName}} · 오늘 근무 {{count}}명"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}일 {{shift}}",
+                "descriptionAll": "{{month}} · 전체",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "근무표 편집하기",
+                "emptyAllTitle": "이번 달 근무표가 비어 있어요",
+                "emptyDescription": "근무표 만들기에서 확인할 수 있어요.",
+                "emptyTeamTitle": "{{teamName}} 근무표가 비어 있어요",
+                "emptyTeamsTitle": "팀을 추가하면 근무표를 볼 수 있어요",
+                "nameHeader": "이름"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 다음 달 근무표"
+            },
+            "queue": {
+                "pendingRequests": "대기 중인 신청 근무",
+                "waitingNurses": "입장 대기"
+            },
+            "sections": {
+                "calendar": "캘린더",
+                "monthly": "이번 달 근무표",
+                "tasks": "해야 할 일",
+                "todayDuty": "오늘의 근무"
+            },
+            "skeleton": {
+                "loadingAria": "홈을 불러오고 있어요"
+            },
+            "sort": {
+                "default": "기본",
+                "label": "근무표 정렬 기준",
+                "nameAsc": "이름순",
+                "openAria": "근무표 정렬 기준 열기",
+                "todayShift": "오늘 근무순"
+            },
+            "state": {
+                "errorDescription": "잠시 후 다시 시도해요.",
+                "errorTitle": "홈을 불러오지 못했어요",
+                "noWardDescription": "병동을 연결하면 홈을 볼 수 있어요.",
+                "noWardTitle": "병동을 연결해야 해요",
+                "retry": "다시 시도하기"
+            },
+            "status": {
+                "checking": "확인 중",
+                "complete": "확정",
+                "draft": "진행 중",
+                "empty": "작성 전",
+                "error": "다시 확인"
+            },
+            "tasks": {
+                "checking": "확인하고 있어요",
+                "nextScheduleAria": "다음 달 근무표 진행 상태",
+                "overdueAction": "마감",
+                "overdueFallback": "가장 지난 마감부터 확인해요",
+                "overdueTitle": "지난 마감 {{count}}건",
+                "pendingRequestsAction": "신청",
+                "pendingRequestsDescription": "근무표에 반영할지 정해요",
+                "pendingRequestsTitle": "대기 중인 신청 근무 {{count}}건",
+                "todayAction": "오늘",
+                "todayFallback": "오늘까지 처리할 게시글이에요",
+                "todayTitle": "오늘 마감 {{count}}건",
+                "unreadChatAction": "톡",
+                "unreadChatDescription": "최근 대화를 확인해요",
+                "unreadChatTitle": "읽지 않은 병동톡 {{count}}개",
+                "waitingNursesAction": "멤버",
+                "waitingNursesDescription": "병동에 추가할 구성원을 확인해요",
+                "waitingNursesTitle": "입장 대기 {{count}}명"
+            },
+            "today": {
+                "emptyShift": "오늘 근무가 비어 있어요"
             }
         }
     },
@@ -2312,7 +2464,7 @@ export const ko = {
         "wardCodeGuide": {
             "benefits": {
                 "appApply": {
-                    "description": "간호사가 듀팅 앱에서 휴무 신청과 신청근무 요청을 보내면 수간호사는 한 화면에서 확인해요.",
+                    "description": "간호사가 듀팅 앱에서 휴무 신청과 신청근무 요청을 보내면\n수간호사는 한 화면에서 확인해요.",
                     "title": "간호사가 앱에서 바로 신청해요"
                 },
                 "board": {
@@ -2331,7 +2483,7 @@ export const ko = {
             "closeAria": "병동코드 안내 닫기",
             "copyAria": "병동 코드 복사",
             "description": "간호사가 듀팅 앱에서 이 코드를 입력하면 병동에 연동돼요.",
-            "participationGuide": "듀팅 앱에서 병동 참여를 누르고 듀팅 병동코드를 입력하면 돼요.",
+            "participationGuide": "듀팅 앱에서 병동 참여를 누르고\n듀팅 병동코드를 입력하면 돼요.",
             "participationGuideAria": "듀팅 병동코드 입력 방법 보기",
             "title": "소속 간호사에게 병동코드를 알려주세요",
             "toast": {
@@ -2416,9 +2568,10 @@ export const en: TLocale = {
             "name": "Shift name",
             "save": "Save",
             "shortName": "Abbr.",
-            "shortNameHint": "* Keep the default D, E, N, O abbreviations unchanged",
+            "shortNameHint": "* The abbreviation you enter is shown in schedule cells.",
             "validation": {
                 "nameRequired": "Enter a shift name.",
+                "shortNameFirstKey": "Start with a letter, number, or symbol like -, ., _.",
                 "shortNameRequired": "Enter a shift abbreviation.",
                 "timeRequired": "Enter shift times."
             },
@@ -2523,7 +2676,7 @@ export const en: TLocale = {
                 "leave": "Leave",
                 "monthLabel": "{{month}}",
                 "notApplied": "Off",
-                "shiftName": "Name",
+                "shiftName": "Code",
                 "shiftTypeColorStyle": "Shift color style",
                 "shortName": "Code",
                 "text": "Text",
@@ -2634,7 +2787,8 @@ export const en: TLocale = {
                     "maxContinuousWork": "Work can be assigned for up to {{count}} consecutive days.",
                     "minContinuousNight": "Assign night shifts for at least {{count}} consecutive days.",
                     "minNightInterval": "Keep at least {{count}} days between night shifts.",
-                    "minOffAssignAfterNight": "Recommend at least {{count}} OFF day(s) after a night shift."
+                    "minOffAssignAfterNight": "Recommend at least {{count}} OFF day(s) after a night shift.",
+                    "minNightIntervalFallback": "Keep enough space between night shifts."
                 },
                 "maxConsecutiveNight": "{{nurseName}} has {{actual}} consecutive N shifts. Maximum: {{expected}}.",
                 "maxConsecutiveWork": "{{nurseName}} has {{actual}} consecutive work days. Maximum: {{expected}}.",
@@ -2801,8 +2955,8 @@ export const en: TLocale = {
             "state": {
                 "loadingDescription": "Checking ward information.",
                 "loadingTitle": "Preparing board",
-                "noWardDescription": "The board is available after ward connection.",
-                "noWardTitle": "Connect to a ward to use the board",
+                "noWardDescription": "You can use the board after linking a ward.",
+                "noWardTitle": "Link a ward to use the board",
                 "retry": "Try again",
                 "retryDescription": "Please try again in a moment.",
                 "wardLoadFailedTitle": "Could not load ward information"
@@ -2859,6 +3013,29 @@ export const en: TLocale = {
             "viewRangeDescription": "You can only create and view schedules through the next month.",
             "viewRangeTitle": "This period is not available",
             "wardCodeChecking": "Checking"
+        },
+        "dutying": {
+            "comingSoon": "Coming soon",
+            "description": "Find service information and policies for Dutying.",
+            "items": {
+                "contact": {
+                    "description": "Ask questions or leave a support request.",
+                    "title": "Contact us"
+                },
+                "notice": {
+                    "description": "Check updates and service announcements.",
+                    "title": "Notices"
+                },
+                "privacy": {
+                    "description": "Review how personal information is handled.",
+                    "title": "Privacy Policy"
+                },
+                "terms": {
+                    "description": "Review the terms for using the service.",
+                    "title": "Terms of Service"
+                }
+            },
+            "title": "Dutying"
         },
         "error": {
             "documentTitle": "{{title}} | Dutying",
@@ -3129,6 +3306,9 @@ export const en: TLocale = {
                 "fixedOnly": "Fixed only",
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
+                "validationStatus": {
+                    "checking": "Checking constraints"
+                },
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
                 "loading": "Loading the duty schedule",
                 "previous": "Previous step",
@@ -3197,7 +3377,7 @@ export const en: TLocale = {
                 "viewAll": "View all",
                 "lastShiftBlankDialog": {
                     "title": "Review previous shifts?",
-                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.\nIf this is the first schedule, you can confirm as-is.",
+                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.",
                     "confirm": "Confirm as-is",
                     "cancel": "Review input"
                 }
@@ -3236,7 +3416,7 @@ export const en: TLocale = {
             },
             "constraints": {
                 "action": {
-                    "add": "Add rule",
+                    "add": "Add constraint",
                     "reset": "Reset"
                 },
                 "category": {
@@ -3266,19 +3446,19 @@ export const en: TLocale = {
                     "title": "Import constraints from another team"
                 },
                 "important": {
-                    "ariaMark": "Mark as important",
-                    "ariaRemove": "Remove important mark",
-                    "label": "Key",
-                    "recommendedTitle": "Recommended important rule"
+                    "ariaMark": "Mark as Important",
+                    "ariaRemove": "Remove Important mark",
+                    "label": "Important",
+                    "recommendedTitle": "Recommended Important constraint"
                 },
-                "info": "You can drag to reorder by your preferred priority.",
-                "infoTooltipAria": "About constraint priority",
+                "info": "Mark must-follow constraints as Important.",
+                "infoTooltipAria": "About Important constraints",
                 "listTitle": "Constraints",
                 "modal": {
                     "addAria": "Add constraint",
                     "addTitle": "Add",
                     "close": "Close",
-                    "description": "Some rules may not be applied depending on schedule conditions.",
+                    "description": "Some constraints may not be applied depending on the schedule.",
                     "title": "Add constraint"
                 },
                 "option": {
@@ -3331,87 +3511,87 @@ export const en: TLocale = {
                 },
                 "templates": {
                     "IMPORTANT_FORBIDDEN_DUTY_PATTERNS": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "Avoid ND / ED / NE / NOD shift patterns"
                     },
                     "IMPORTANT_MAX_NIGHT_STREAK": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "N shifts can be assigned up to {days} days in a row"
                     },
                     "IMPORTANT_MAX_SAME_DUTY_STREAK": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "The same shift can be assigned up to {days} days in a row"
                     },
                     "IMPORTANT_MAX_WORK_STREAK": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "Consecutive work is allowed up to {days} days"
                     },
                     "IMPORTANT_MIN_NIGHT_INTERVAL": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "N shifts need at least {days} days between assignments"
                     },
                     "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "Avoid N shifts on the day before a requested OFF"
                     },
                     "IMPORTANT_OFF_AFTER_NIGHT": {
-                        "label": "Important default",
+                        "label": "Default Important constraint",
                         "sentence": "After an N shift, assign at least {days} OFF day"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
-                        "label": "Forbidden pattern rule",
+                        "label": "Forbidden pattern constraint",
                         "sentence": "{target} can work N up to {count} times consecutively"
                     },
                     "SOFT_MAX_CONSECUTIVE_WORK": {
-                        "label": "Work/rest rule",
+                        "label": "Work/rest constraint",
                         "sentence": "{target} can work up to {days} consecutive days in a month"
                     },
                     "SOFT_MAX_STAFF_BY_DUTY": {
-                        "label": "Staffing rule",
+                        "label": "Staffing constraint",
                         "sentence": "{duty} shifts can have at most {count} people"
                     },
                     "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "Work/rest rule",
+                        "label": "Work/rest constraint",
                         "sentence": "{target} needs at least {days} OFF days per month"
                     },
                     "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "New nurse / skill rule",
+                        "label": "New nurse / skill constraint",
                         "sentence": "{duty} shifts need at least {count} nurses at {level} or higher"
                     },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
-                        "label": "Staffing rule",
+                        "label": "Staffing constraint",
                         "sentence": "On {date}, {duty} shifts need at least {count} people"
                     },
                     "SOFT_MIN_STAFF_BY_DUTY": {
-                        "label": "Staffing rule",
+                        "label": "Staffing constraint",
                         "sentence": "{duty} shifts need at least {count} people"
                     },
                     "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
-                        "label": "Staffing rule",
+                        "label": "Staffing constraint",
                         "sentence": "On weekends and holidays, {duty} shifts need at least {count} people"
                     },
                     "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
-                        "label": "Work/rest rule",
+                        "label": "Work/rest constraint",
                         "sentence": "{target} needs OFF after {days} consecutive work days"
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
-                        "label": "Work/rest rule",
+                        "label": "Work/rest constraint",
                         "sentence": "{target} needs at least {days} OFF day after an N shift"
                     },
                     "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "New nurse / skill rule",
+                        "label": "New nurse / skill constraint",
                         "sentence": "Avoid solo N shifts for {nurse} as a new nurse"
                     },
                     "SOFT_NO_E_TO_D": {
-                        "label": "Forbidden pattern rule",
+                        "label": "Forbidden pattern constraint",
                         "sentence": "Avoid D the day after E for {target}"
                     },
                     "SOFT_NO_N_TO_D": {
-                        "label": "Forbidden pattern rule",
+                        "label": "Forbidden pattern constraint",
                         "sentence": "Avoid D the day after N for {target}"
                     },
                     "SOFT_NO_N_TO_E": {
-                        "label": "Forbidden pattern rule",
+                        "label": "Forbidden pattern constraint",
                         "sentence": "Avoid E the day after N for {target}"
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
@@ -3419,7 +3599,7 @@ export const en: TLocale = {
                         "sentence": "Avoid assigning {nurseA} and {nurseB} to the same shift"
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
-                        "label": "Person-specific rule",
+                        "label": "Person-specific constraint",
                         "sentence": "Avoid weekend shifts for {nurse}"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
@@ -3434,29 +3614,29 @@ export const en: TLocale = {
                     "imported": "Imported constraints from {{teamName}}.",
                     "importFailed": "Could not import constraints. Please try again shortly.",
                     "saveFailed": "Could not save constraints. Please try again shortly.",
-                    "recommendedDeleted": "Recommended rule deleted.",
-                    "resetDefaults": "Reset to {{count}} recommended rules."
+                    "recommendedDeleted": "Recommended constraint deleted.",
+                    "resetDefaults": "Reset to {{count}} recommended constraints."
                 },
                 "violationCount": "{{count}}",
                 "warning": {
                     "deleteConfirm": "Delete",
                     "deleteDescription": "Do you still want to remove it from the list?",
-                    "deleteTitle": "Delete this recommended rule?",
-                    "description": "This is recommended as an important default rule for a stable schedule.",
+                    "deleteTitle": "Delete this recommended constraint?",
+                    "description": "This default Important constraint helps keep the schedule stable.",
                     "keep": "Keep",
                     "unmarkConfirm": "Remove mark",
-                    "unmarkDescription": "Do you still want to remove the important mark?",
-                    "unmarkTitle": "Remove the important mark?"
+                    "unmarkDescription": "Do you still want to remove the Important mark?",
+                    "unmarkTitle": "Remove the Important mark?"
                 }
             },
             "fixedShifts": {
                 "empty": "No schedule exists for this month yet",
                 "error": "Failed to load fixed shift data",
-                "hint": "Select only shifts that should not change. The rest will be filled in the next step.",
+                "hint": "Fix only already-set items like training, education, or official leave, plus assignments that must not change.",
                 "loading": "Loading the duty schedule",
                 "lockedToast": "Fixed shifts can only be edited from the Fixed Shifts tab",
                 "saveFailed": "Failed to save. Please try again shortly.",
-                "title": "Select fixed shifts"
+                "title": "Enter only items that should stay fixed"
             },
             "monthRangeDescription": "On Dutying, you can only create schedules for this month and the next month.",
             "monthRangeTitle": "You can’t create a schedule for this period",
@@ -3914,11 +4094,12 @@ export const en: TLocale = {
             "ariaLabel": "Primary navigation",
             "expandAria": "Expand sidebar",
             "foldAria": "Collapse sidebar",
-            "home": "Schedule",
+            "home": "Home",
             "items": {
                 "account": "Account",
                 "board": "Board",
-                "make": "Schedule",
+                "dutying": "Dutying",
+                "make": "Create schedule",
                 "member": "Members",
                 "request": "Shift requests",
                 "wardAdmins": "Ward admins",
@@ -3972,10 +4153,11 @@ export const en: TLocale = {
             "backToWardSelect": "Back to ward selection",
             "blocked": {
                 "default": "Check the entered information.",
-                "duplicateShiftType": "There is a duplicate shift name or abbreviation.",
+                "duplicateShiftType": "Abbreviation first letters must be unique.",
                 "emptyTeam": "Add a team before creating the ward.",
                 "emptyTeamNurses": "Some teams have no nurses. Add a nurse or delete the team.",
                 "invalidNurseName": "Check the nurse names.",
+                "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
                 "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
@@ -3988,6 +4170,15 @@ export const en: TLocale = {
                 "newTeam": "New team",
                 "selectedTeam": "Selected team",
                 "wardName": "Dutying ward"
+            },
+            "defaults": {
+                "newNurseName": "New nurse {{index}}",
+                "sampleNurse": {
+                    "first": "Alex Kim",
+                    "second": "Jamie Lee",
+                    "skilled": "Morgan Park",
+                    "off": "Taylor Choi"
+                }
             },
             "identity": {
                 "hospitalName": "Hospital name",
@@ -4068,13 +4259,14 @@ export const en: TLocale = {
                 "shortName": "Abbr.",
                 "type": "Type",
                 "validation": {
-                    "nameDuplicate": "Duplicate shift names are not allowed.",
+                    "nameDuplicate": "Use a different shift name.",
                     "nameRequired": "Enter a shift name.",
-                    "shortNameDuplicate": "Use a different abbreviation.",
-                    "shortNameLength": "Use up to 2 characters without spaces.",
+                    "shortNameDuplicate": "Use a different first letter.",
+                    "shortNameFirstKey": "Start with a letter, number, or symbol like -, ., _.",
+                    "shortNameLength": "Use up to 3 characters without spaces.",
                     "shortNameRequired": "Enter an abbreviation.",
                     "timeFormat": "Use the 00:00 time format.",
-                    "timeOrder": "End time must be later than start time.",
+                    "timeOrder": "Use different start and end times.",
                     "timeRequired": "Enter the time."
                 },
                 "work": "Work",
@@ -4158,6 +4350,16 @@ export const en: TLocale = {
                 "fileSupport": "Supports .xlsx and .xls files.",
                 "submitting": "Uploading",
                 "submit": "Apply file"
+            },
+            "progress": {
+                "ariaLabel": "Ward creation progress",
+                "completeTitle": "Ward creation is complete",
+                "finalCheck": "Almost done. Finishing the final check.",
+                "inputWardInfo": "Organizing the ward information you entered.",
+                "navigateDuty": "Moving to the schedule screen.",
+                "nurses": "Connecting nurse information.",
+                "settingTitle": "Setting up the ward",
+                "shiftTypesAndTeams": "Setting up shift types and teams."
             }
         },
         "profile": {
@@ -4177,8 +4379,8 @@ export const en: TLocale = {
             "imageFailed": "Could not process the profile image.",
             "language": {
                 "en": "English",
-                "ja": "日本語",
-                "ko": "한국어"
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)"
             },
             "languageLabel": "Display language",
             "loadingDescription": "Checking your account and ward information.",
@@ -4189,10 +4391,10 @@ export const en: TLocale = {
             "namePlaceholder": "Enter your name",
             "phoneNum": "Phone number",
             "phoneNumPlaceholder": "Enter your phone number",
-            "preferencesDescription": "Choose the UI language and request region.",
+            "preferencesDescription": "Choose the language shown in the app.",
             "preferencesFailed": "Could not save language settings.",
             "preferencesSaved": "Language and service region saved.",
-            "preferencesTitle": "Language and service region",
+            "preferencesTitle": "Language",
             "profileSection": "Profile",
             "quitWard": "Leave ward",
             "randomAvatar": "Random avatar",
@@ -4214,7 +4416,7 @@ export const en: TLocale = {
             "validation": {
                 "nameInvalid": "Use up to 20 Korean, English, or Japanese characters, spaces, '-', or '·'.",
                 "nameRequired": "Enter your name.",
-                "phoneInvalid": "Enter numbers only, such as 01012341234.",
+                "phoneInvalid": "Enter a valid phone number for the selected language or region.",
                 "phoneRequired": "Enter your phone number."
             }
         },
@@ -4264,7 +4466,7 @@ export const en: TLocale = {
                     "nameInvalid": "Use up to 20 characters: Korean, English, Japanese, spaces, '-', and '·'.",
                     "nameRequired": "Enter a name.",
                     "phoneDuplicate": "This phone number is already in use. Enter another number.",
-                    "phoneInvalid": "Enter an 11-digit phone number.",
+                    "phoneInvalid": "Enter a valid phone number for the selected language or region.",
                     "phoneRequired": "Enter a phone number."
                 }
             },
@@ -4561,7 +4763,7 @@ export const en: TLocale = {
                 "teamLabel": "Team"
             },
             "description": {
-                "constraints": "Manage duty rules.",
+                "constraints": "Manage scheduling constraints.",
                 "shiftTypes": "Manage shift types."
             },
             "shiftTypes": {
@@ -4586,13 +4788,15 @@ export const en: TLocale = {
                     "addFailed": "Could not add the shift type.",
                     "deleteFailed": "Could not delete the shift type.",
                     "notFound": "This shift type was already deleted or cannot be found in the latest list.",
+                    "saveSuccess": "Saved duty settings.",
                     "updateFailed": "Could not update the shift type."
                 },
                 "validation": {
                     "nameDuplicate": "Use a different shift name.",
                     "nameRequired": "Enter a shift name.",
-                    "shortNameDuplicate": "Use a different abbreviation.",
-                    "shortNameLength": "Use up to 2 characters without spaces.",
+                    "shortNameDuplicate": "Use a different first letter.",
+                    "shortNameFirstKey": "Start with a letter, number, or symbol like -, ., _.",
+                    "shortNameLength": "Use up to 3 characters without spaces.",
                     "shortNameRequired": "Enter an abbreviation.",
                     "timeFormat": "Use the 00:00 time format.",
                     "timeRequired": "Enter the time.",
@@ -4607,6 +4811,106 @@ export const en: TLocale = {
             "type": {
                 "leave": "Leave",
                 "work": "Work"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "All day",
+                "deadlineMeta": "Deadline · {{date}}",
+                "empty": "No nearby events",
+                "loading": "Checking calendar",
+                "openAll": "View full calendar",
+                "overdue": "Overdue",
+                "scheduleDateMeta": "Event · {{date}} · {{time}}",
+                "scheduleMeta": "Event · {{time}}",
+                "timeUnknown": "Time TBD",
+                "today": "Today"
+            },
+            "emptyTeams": {
+                "description": "Add nursing teams from Member Management.",
+                "title": "Add a team to view this"
+            },
+            "fallback": {
+                "manager": "Admin",
+                "selectedTeam": "Selected team",
+                "ward": "Ward"
+            },
+            "filter": {
+                "all": "All"
+            },
+            "header": {
+                "createNextMonth": "Create next month schedule",
+                "todayAssigned": "{{managerName}} · {{count}} working today"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} day {{day}} {{shift}}",
+                "descriptionAll": "{{month}} · All",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "Edit schedule",
+                "emptyAllTitle": "This month schedule is empty",
+                "emptyDescription": "You can check it in Create schedule.",
+                "emptyTeamTitle": "{{teamName}} schedule is empty",
+                "emptyTeamsTitle": "Add a team to view schedules",
+                "nameHeader": "Name"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} next month schedule"
+            },
+            "queue": {
+                "pendingRequests": "Pending shift requests",
+                "waitingNurses": "Waiting to join"
+            },
+            "sections": {
+                "calendar": "Calendar",
+                "monthly": "This month schedule",
+                "tasks": "To do",
+                "todayDuty": "Today shifts"
+            },
+            "skeleton": {
+                "loadingAria": "Loading home"
+            },
+            "sort": {
+                "default": "Default",
+                "label": "Schedule sort order",
+                "nameAsc": "Name",
+                "openAria": "Open schedule sort order",
+                "todayShift": "Today shift"
+            },
+            "state": {
+                "errorDescription": "Please try again shortly.",
+                "errorTitle": "Could not load home",
+                "noWardDescription": "Connect a ward to view home.",
+                "noWardTitle": "Connect a ward first",
+                "retry": "Try again"
+            },
+            "status": {
+                "checking": "Checking",
+                "complete": "Confirmed",
+                "draft": "In progress",
+                "empty": "Not started",
+                "error": "Check again"
+            },
+            "tasks": {
+                "checking": "Checking",
+                "nextScheduleAria": "Next month schedule progress",
+                "overdueAction": "Deadline",
+                "overdueFallback": "Start with the oldest overdue item",
+                "overdueTitle": "{{count}} overdue deadlines",
+                "pendingRequestsAction": "Requests",
+                "pendingRequestsDescription": "Decide whether to apply them to the schedule",
+                "pendingRequestsTitle": "{{count}} pending shift requests",
+                "todayAction": "Today",
+                "todayFallback": "This post is due today",
+                "todayTitle": "{{count}} due today",
+                "unreadChatAction": "Chat",
+                "unreadChatDescription": "Check recent conversations",
+                "unreadChatTitle": "{{count}} unread ward chat messages",
+                "waitingNursesAction": "Members",
+                "waitingNursesDescription": "Review members to add to the ward",
+                "waitingNursesTitle": "{{count}} waiting to join"
+            },
+            "today": {
+                "emptyShift": "No shifts today"
             }
         }
     },
@@ -4656,7 +4960,7 @@ export const en: TLocale = {
         "wardCodeGuide": {
             "benefits": {
                 "appApply": {
-                    "description": "When nurses send off-day and shift requests in the Dutying app, head nurses can review them in one place.",
+                    "description": "When nurses send off-day and shift requests in the Dutying app,\nhead nurses can review them in one place.",
                     "title": "Nurses can request shifts in the app"
                 },
                 "board": {
@@ -4675,7 +4979,7 @@ export const en: TLocale = {
             "closeAria": "Close ward code guide",
             "copyAria": "Copy ward code",
             "description": "Nurses can connect to the ward by entering this code in the Dutying app.",
-            "participationGuide": "In the Dutying app, tap Join ward and enter the Dutying ward code.",
+            "participationGuide": "In the Dutying app, tap Join ward\nand enter the Dutying ward code.",
             "participationGuideAria": "Show how to enter the Dutying ward code",
             "title": "Share the ward code with your nurses",
             "toast": {
@@ -4750,17 +5054,18 @@ export const ja: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "背景色",
-            "createTitle": "勤務・休暇を追加",
+            "createTitle": "勤務・休みを追加",
             "delete": "削除",
-            "editTitle": "勤務・休暇を修正",
-            "leave": "休暇",
-            "leaveNamePlaceholder": "休暇名を入力してください。",
+            "editTitle": "勤務・休みを編集",
+            "leave": "休み",
+            "leaveNamePlaceholder": "休み名を入力してください。",
             "name": "勤務名",
             "save": "保存",
             "shortName": "略称",
-            "shortNameHint": "* 基本勤務タイプD、E、N、Oの略称はそのまま維持してください",
+            "shortNameHint": "* 入力した略称が勤務表のセルにそのまま表示されます。",
             "validation": {
                 "nameRequired": "勤務名を入力してください。",
+                "shortNameFirstKey": "最初の文字は英字、数字、記号（- . _ など）で入力してください。",
                 "shortNameRequired": "勤務略称を入力してください。",
                 "timeRequired": "勤務時間を入力してください。"
             },
@@ -4777,15 +5082,15 @@ export const ja: TLocale = {
             "disconnectSuccess": "連携を解除しました。",
             "moveNurseFailed": "看護師を移動できませんでした。",
             "newNursePrefix": "新規看護師",
-            "updateNurseFailed": "看護師情報を修正できませんでした。",
-            "updateNurseShiftFailed": "可能な勤務タイプを保存できませんでした。"
+            "updateNurseFailed": "看護師情報を更新できませんでした。",
+            "updateNurseShiftFailed": "設定可能な勤務区分を保存できませんでした。"
         },
         "editWard": {
             "approveWaitingNurseFailed": "チームを追加できませんでした。",
             "approveWaitingNurseSuccess": "選択したチームに看護師を追加しました。",
             "connectWaitingNurseFailed": "既存の看護師アカウントに連携できませんでした。",
             "connectWaitingNurseSuccess": "既存の看護師アカウントと連携しました。",
-            "editSettingFailed": "勤務設定を修正できませんでした。",
+            "editSettingFailed": "勤務設定を更新できませんでした。",
             "rejectWaitingNurseSuccess": "連携待ちリクエストを拒否しました。",
             "rejectWaitingNurseFailed": "連携待ちリクエストを拒否できませんでした。"
         },
@@ -4816,23 +5121,23 @@ export const ja: TLocale = {
             },
             "shiftTypes": {
                 "add": "追加",
-                "addAction": "勤務・休暇を追加",
+                "addAction": "勤務・休みを追加",
                 "colorLabel": "色",
                 "column": {
-                    "category": "タイプ",
+                    "category": "区分",
                     "color": "色",
-                    "edit": "修正",
+                    "edit": "編集",
                     "name": "勤務名",
                     "shortName": "略称",
                     "workTime": "勤務時間"
                 },
-                "description": "基本勤務は先に入力されています。病棟の基準に合わせて修正してください。",
-                "editAria": "{{name}}を修正",
-                "leave": "休暇",
-                "noTimeLeave": "勤務時間のない休暇タイプです。",
+                "description": "基本勤務は先に入力されています。病棟の基準に合わせて調整してください。",
+                "editAria": "{{name}}を編集",
+                "leave": "休み",
+                "noTimeLeave": "勤務時間のない休み区分です。",
                 "shortNameLabel": "略称",
-                "title": "勤務タイプ",
-                "typeLabel": "タイプ",
+                "title": "勤務区分",
+                "typeLabel": "区分",
                 "work": "勤務"
             },
             "validation": {
@@ -4854,22 +5159,22 @@ export const ja: TLocale = {
                 "previousShift": "前月勤務"
             },
             "editWard": {
-                "addShiftType": "勤務/休暇を追加",
+                "addShiftType": "勤務/休みを追加",
                 "applied": "適用",
                 "background": "背景",
                 "color": "色",
                 "count": "集計",
-                "defaultOffDays": "基本OFF {{count}}日",
-                "edit": "修正",
-                "editSettings": "設定編集",
-                "leave": "休暇",
+                "defaultOffDays": "基本休み {{count}}日",
+                "edit": "編集",
+                "editSettings": "設定を編集",
+                "leave": "休み",
                 "monthLabel": "{{month}}月",
                 "notApplied": "未適用",
-                "shiftName": "勤務名",
-                "shiftTypeColorStyle": "勤務タイプ表示",
+                "shiftName": "略称",
+                "shiftTypeColorStyle": "勤務区分表示",
                 "shortName": "略称",
                 "text": "文字",
-                "type": "タイプ",
+                "type": "区分",
                 "weekendColor": "土日背景色",
                 "work": "勤務",
                 "workTime": "勤務時間"
@@ -4917,7 +5222,7 @@ export const ja: TLocale = {
                 "phoneNumberDescription": "* 緊急連絡先",
                 "save": "保存",
                 "title": "看護師別管理",
-                "worker": "勤務者"
+                "worker": "看護師"
             },
             "panel": {
                 "expand": "開く",
@@ -4927,25 +5232,25 @@ export const ja: TLocale = {
                 "histories": "履歴",
                 "history": {
                     "defaultLabel": "編集履歴",
-                    "editedCells": "{{source}}入力で{{count}}個のセルを修正しました",
+                    "editedCells": "{{source}}入力で{{count}}個のセルを編集しました",
                     "empty": "編集すると履歴がここに表示されます。",
-                    "reordered": "スタッフの順序を変更しました",
+                    "reordered": "看護師の順序を変更しました",
                     "sourceAi": "AI",
                     "sourceSystem": "システム",
                     "sourceUser": "手動"
                 }
             },
             "requestLayer": {
-                "pending": "希望勤務{{name}}はまだ反映されていません。"
+                "pending": "勤務希望{{name}}はまだ反映されていません。"
             },
             "toolbar": {
                 "autofill": "自動入力",
                 "createNextMonth": "翌月の勤務表を作成",
-                "edit": "修正",
+                "edit": "編集",
                 "layers": {
-                    "check": "希望勤務を反映",
+                    "check": "勤務希望を反映",
                     "fault": "誤った勤務",
-                    "slash": "希望勤務を未反映"
+                    "slash": "勤務希望を未反映"
                 },
                 "notReady": "まだ準備中の機能です。",
                 "publish": "公開",
@@ -4959,34 +5264,35 @@ export const ja: TLocale = {
                 "settings": {
                     "constraint": "制約条件",
                     "designTheme": "デザインテーマ",
-                    "shiftType": "勤務タイプ"
+                    "shiftType": "勤務区分"
                 },
-                "shiftInfoTitle": "勤務タイプを見る"
+                "shiftInfoTitle": "勤務区分を見る"
             },
             "validation": {
                 "forbidNextShift": "{{nurseName}}さんは{{prevShift}}の翌日に{{nextShift}}勤務はできません。",
                 "l1ConsecutiveWork": "連続勤務が{{actual}}日で、{{expected}}日の上限を超えています。",
                 "l2MaxConsecutiveSameShift": "{{shift}}勤務が連続{{actual}}日で、{{expected}}日の上限を超えています。",
-                "l2MinOffAfterNight": "夜勤後のOFFが{{actual}}日で、必要な{{expected}}日を下回っています。",
+                "l2MinOffAfterNight": "夜勤後の休みが{{actual}}日で、必要な{{expected}}日を下回っています。",
                 "l3MinStaffShortage": "{{shift}}勤務の人数が不足しています。",
                 "legacy": {
                     "excludeCertainWorkTypes": "ND/ED/NE/NODの勤務パターンは避けてください。",
-                    "excludeNightBeforeReqOff": "希望OFFの前日は夜勤を避けてください。",
+                    "excludeNightBeforeReqOff": "休み希望の前日は夜勤を避けてください。",
                     "maxContinuousNight": "夜勤は連続{{count}}日まで割り当てられます。",
                     "maxContinuousWork": "勤務は連続{{count}}日まで割り当てられます。",
                     "minContinuousNight": "夜勤は最低{{count}}日以上連続で割り当ててください。",
                     "minNightInterval": "夜勤の間隔は最低{{count}}日以上空けてください。",
-                    "minOffAssignAfterNight": "夜勤後はOFFを{{count}}日以上入れることを推奨します。"
+                    "minOffAssignAfterNight": "夜勤後は休みを{{count}}日以上入れることを推奨します。",
+                    "minNightIntervalFallback": "夜勤の間隔を空けてください。"
                 },
                 "maxConsecutiveNight": "{{nurseName}}さんはN勤務が連続{{actual}}回です。最大{{expected}}回までです。",
                 "maxConsecutiveWork": "{{nurseName}}さんは勤務が連続{{actual}}日です。最大{{expected}}日までです。",
                 "maxStaffByShift": "{{shift}}勤務の人数は{{actual}}人です。最大{{expected}}人までです。",
-                "minMonthlyOff": "{{nurseName}}さんの月間OFFは{{actual}}日です。最低{{expected}}日必要です。",
+                "minMonthlyOff": "{{nurseName}}さんの月間休みは{{actual}}日です。最低{{expected}}日必要です。",
                 "minNightInterval": "{{nurseName}}さんはN勤務の間隔が短いです。最低{{expected}}日空けてください。",
-                "minOffAfterNight": "{{nurseName}}さんはN勤務後のOFFが不足しています。最低{{expected}}日必要です。",
+                "minOffAfterNight": "{{nurseName}}さんはN勤務後の休みが不足しています。最低{{expected}}日必要です。",
                 "minProficiencyStaffByShift": "{{shift}}勤務のLV{{level}}以上の看護師は{{actual}}人です。最低{{expected}}人必要です。",
                 "minStaffByShift": "{{shift}}勤務の人数は{{actual}}人です。最低{{expected}}人必要です。",
-                "nightBeforeRequestedOff": "{{nurseName}}さんは希望OFFの前日にN勤務が割り当てられています。",
+                "nightBeforeRequestedOff": "{{nurseName}}さんは休み希望の前日にN勤務が割り当てられています。",
                 "notAloneNight": "{{nurseName}}さんは単独でN勤務を行えません。",
                 "nurseForbidWeekend": "{{nurseName}}さんは週末または祝日に勤務できません。",
                 "pairForbidSameShift": "{{nurseAName}}さんと{{nurseBName}}さんは同じ勤務にできません。",
@@ -5022,7 +5328,7 @@ export const ja: TLocale = {
                 "removeNamed": "{{name}}を削除",
                 "reply": "返信",
                 "submit": "登録",
-                "update": "修正",
+                "update": "編集",
                 "write": "投稿"
             },
             "composer": {
@@ -5112,14 +5418,14 @@ export const ja: TLocale = {
                 "datePickerHeader": "予定 {{label}}",
                 "dateTime": "日付と時間",
                 "dayAria": "{{date}} 予定{{count}}件{{selectedSuffix}}",
-                "editAria": "病棟予定を修正",
+                "editAria": "病棟予定を編集",
                 "endDate": "終了日",
                 "endTime": "終了",
                 "memo": "メモ",
                 "memoPlaceholder": "必要な内容を入力してください",
                 "modalAria": "病棟 {{title}}",
                 "modalCreate": "予定を登録",
-                "modalEdit": "予定を修正",
+                "modalEdit": "予定を編集",
                 "modalView": "予定を見る",
                 "monthEventsTitle": "今月の予定",
                 "noMemo": "メモなし",
@@ -5143,8 +5449,8 @@ export const ja: TLocale = {
             "state": {
                 "loadingDescription": "病棟情報を確認しています。",
                 "loadingTitle": "掲示板を準備しています",
-                "noWardDescription": "病棟接続後に掲示板を利用できます。",
-                "noWardTitle": "病棟に接続すると掲示板を利用できます",
+                "noWardDescription": "病棟連携後に掲示板を利用できます。",
+                "noWardTitle": "病棟と連携すると掲示板を利用できます",
                 "retry": "再試行",
                 "retryDescription": "しばらくしてからもう一度お試しください。",
                 "wardLoadFailedTitle": "病棟情報を読み込めませんでした"
@@ -5177,7 +5483,7 @@ export const ja: TLocale = {
             "createCurrentMonth": "今月の勤務表を作成",
             "createNextMonth": "翌月の勤務表を作成",
             "createShiftFlow": "勤務表を作成",
-            "editShift": "勤務表を修正",
+            "editShift": "勤務表を編集",
             "emptyDescription": "{{month}}月勤務表作成画面へ移動して開始できます。",
             "emptyScheduleDescription": "自動生成フローで勤務表を作成できます。",
             "emptyScheduleTitle": "{{teamName}} · {{month}}月勤務表はまだありません",
@@ -5201,6 +5507,29 @@ export const ja: TLocale = {
             "viewRangeDescription": "翌月までの勤務表のみ作成・閲覧できます。",
             "viewRangeTitle": "この期間の勤務表は表示できません",
             "wardCodeChecking": "確認中"
+        },
+        "dutying": {
+            "comingSoon": "準備中",
+            "description": "Dutyingサービスの利用に必要な案内とポリシーを確認できます。",
+            "items": {
+                "contact": {
+                    "description": "質問やサポートが必要な内容を送れます。",
+                    "title": "お問い合わせ"
+                },
+                "notice": {
+                    "description": "アップデートとサービス案内を確認できます。",
+                    "title": "お知らせ"
+                },
+                "privacy": {
+                    "description": "個人情報の取り扱い基準を確認できます。",
+                    "title": "プライバシーポリシー"
+                },
+                "terms": {
+                    "description": "サービス利用条件を確認できます。",
+                    "title": "利用規約"
+                }
+            },
+            "title": "Dutying"
         },
         "error": {
             "documentTitle": "{{title}} | Dutying",
@@ -5268,7 +5597,7 @@ export const ja: TLocale = {
                     "title": "空の勤務表を\n一から埋める必要はありません"
                 },
                 "integration": {
-                    "description": "希望勤務をアプリから送れます。\n勤務表が確定するとアプリへすぐ届きます。",
+                    "description": "勤務希望をアプリから送れます。\n勤務表が確定するとアプリへすぐ届きます。",
                     "highlight": "連携",
                     "label": "連携",
                     "title": "看護師と病棟を\n連携できます"
@@ -5324,7 +5653,7 @@ export const ja: TLocale = {
                     "title": "勤務予定の確認"
                 },
                 "ward": {
-                    "description": "病棟とつながり、希望勤務や休み希望を簡単に送れます。",
+                    "description": "病棟とつながり、勤務希望や休み希望を簡単に送れます。",
                     "title": "病棟連携"
                 }
             },
@@ -5335,12 +5664,12 @@ export const ja: TLocale = {
                 "communityAria": "キャリア、臨床、悩みまでDutyingで共有できます",
                 "communityLine1": "キャリア、臨床、悩みも",
                 "communityLine2": "Dutyingで共有",
-                "description": "勤務確認から希望勤務・休み希望、病棟のお知らせまでアプリでまとめて確認できます。",
+                "description": "勤務確認から勤務希望・休み希望、病棟のお知らせまでアプリでまとめて確認できます。",
                 "downloadEyebrow": "Dutyingアプリをダウンロード",
                 "downloadTitleLine1": "自分の勤務と病棟のお知らせを",
                 "downloadTitleLine2": "アプリで見逃さない",
-                "requestAria": "希望勤務と休み希望をもっと簡単に送れます",
-                "requestLine1": "希望勤務と休み希望を",
+                "requestAria": "勤務希望と休み希望をもっと簡単に送れます",
+                "requestLine1": "勤務希望と休み希望を",
                 "requestLine2": "もっと簡単に送信",
                 "scheduleAria": "自分の勤務予定をDutyingですぐ確認できます",
                 "scheduleLine1": "自分の勤務予定を",
@@ -5452,94 +5781,97 @@ export const ja: TLocale = {
         },
         "makeShift": {
             "aiRefill": {
-                "action": "Refill",
-                "cannotAutofillYet": "Schedule data is still loading. Please try again shortly.",
-                "confirm": "Confirm schedule",
+                "action": "再入力",
+                "cannotAutofillYet": "勤務表データを読み込み中です。少し待ってからもう一度お試しください。",
+                "confirm": "勤務表を確定",
                 "description": {
-                    "error": "The AI request failed. The current schedule stays as-is, and you can retry immediately.",
-                    "idle": "You can start AI autofill with the conditions from the previous steps.",
-                    "loading": "While waiting for the response, confirm and retry are temporarily disabled.",
-                    "success": "The AI result has been applied. Review it, edit it, or confirm it right away."
+                    "error": "AIリクエストを完了できませんでした。現在の勤務表はそのまま保持され、すぐに再試行できます。",
+                    "idle": "前のステップで整理した条件を使って、AI自動入力を開始できます。",
+                    "loading": "応答を待っている間は、確定と再リクエストを一時的に無効にします。",
+                    "success": "AIの結果を勤務表に反映しました。確認して手動で編集するか、そのまま確定できます。"
                 },
                 "draft": {
-                    "none": "You are viewing the base schedule without any saved edits yet.",
-                    "saved": "Your current edits are preserved and autosaved."
+                    "none": "まだ保存された編集内容はなく、基本の勤務表を表示しています。",
+                    "saved": "現在の編集内容は保持され、自動保存されます。"
                 },
-                "empty": "Could not load schedule data",
-                "error": "Failed to load the duty schedule",
-                "firstFill": "Autofill",
-                "fixedOnly": "Fixed only",
-                "generating": "Filling...",
-                "hidingFaults": "Errors hidden",
-                "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
-                "loading": "Loading the duty schedule",
-                "previous": "Previous step",
-                "progressToast": "Filling schedule",
-                "publishSuccess": "Schedule confirmed and published.",
+                "empty": "勤務表データを読み込めませんでした",
+                "error": "勤務表を読み込めませんでした",
+                "firstFill": "自動入力",
+                "fixedOnly": "固定のみ表示",
+                "generating": "入力中...",
+                "hidingFaults": "エラー非表示",
+                "validationStatus": {
+                    "checking": "制約条件を確認中"
+                },
+                "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
+                "loading": "勤務表を読み込み中です",
+                "previous": "前のステップ",
+                "progressToast": "勤務表を入力中",
+                "publishSuccess": "勤務表を確定して公開しました。",
                 "requestFailed": "AI自動入力を完了できませんでした。",
-                "resetAction": "Reset",
-                "retry": "Retry",
-                "saveFailed": "Failed to save. Please try again shortly.",
-                "saveSnapshot": "Save draft",
-                "saveSnapshotFailed": "Failed to save draft.",
-                "saveSnapshotSuccess": "Draft saved.",
-                "savingSnapshot": "Saving draft…",
-                "showingFaults": "Showing errors",
+                "resetAction": "リセット",
+                "retry": "再試行",
+                "saveFailed": "保存できませんでした。少し待ってからもう一度お試しください。",
+                "saveSnapshot": "一時保存",
+                "saveSnapshotFailed": "一時保存できませんでした。",
+                "saveSnapshotSuccess": "一時保存しました。",
+                "savingSnapshot": "一時保存中…",
+                "showingFaults": "エラー表示中",
                 "snapshotLimitDialog": {
-                    "cancel": "Cancel",
-                    "confirm": "Delete and save",
-                    "description": "To save a new history item, delete the oldest one, \"{{title}}\". Delete it and save?",
-                    "title": "History stores up to 10 items"
+                    "cancel": "キャンセル",
+                    "confirm": "削除して保存",
+                    "description": "新しい履歴を保存するには、最も古い履歴「{{title}}」を削除する必要があります。削除して保存しますか？",
+                    "title": "履歴は10件まで保存できます"
                 },
-                "snapshotLimitReached": "History can store up to 10 items.",
+                "snapshotLimitReached": "履歴は最大10件まで保存できます。",
                 "snapshotSidebar": {
-                    "close": "Close drafts",
-                    "defaultTitle": "Autofill draft",
-                    "delete": "Delete history",
-                    "deleteCancel": "Cancel",
-                    "deleteConfirm": "Delete",
-                    "deleteDescription": "Delete \"{{title}}\". Deleted history cannot be restored.",
-                    "deleteFailed": "Could not delete history.",
-                    "deleteSuccess": "History deleted.",
-                    "deleteTitle": "Delete history?",
-                    "description": "Autofill result records",
-                    "empty": "No saved drafts yet.",
-                    "emptyCells": "Empty {{count}}",
-                    "error": "Could not load saved versions.",
-                    "filledCells": "Filled {{count}}",
-                    "hardViolations": "Important {{count}}",
-                    "loadCancel": "Cancel",
-                    "loadConfirm": "Load",
-                    "loadDescription": "Replace the current schedule with \"{{title}}\".\nAny edits on this screen will be lost.",
-                    "loadFailed": "Could not load saved version.",
-                    "loading": "Loading saved versions…",
-                    "loadSuccess": "Loaded {{title}} saved version.",
-                    "loadTitle": "Load this saved version?",
-                    "renameFailed": "Could not update history title.",
-                    "renameSuccess": "History title updated.",
-                    "renameTitleAria": "History title",
-                    "restore": "Restore",
-                    "savedCount": "{{count}} drafts",
-                    "selectedHistory": "Selected history",
-                    "softViolations": "General {{count}}",
-                    "title": "History",
+                    "close": "保存版を閉じる",
+                    "defaultTitle": "自動入力の保存版",
+                    "delete": "履歴を削除",
+                    "deleteCancel": "キャンセル",
+                    "deleteConfirm": "削除",
+                    "deleteDescription": "「{{title}}」の履歴を削除します。削除した履歴は復元できません。",
+                    "deleteFailed": "履歴を削除できませんでした。",
+                    "deleteSuccess": "履歴を削除しました。",
+                    "deleteTitle": "履歴を削除しますか？",
+                    "description": "自動入力結果の履歴",
+                    "empty": "まだ一時保存した勤務表はありません。",
+                    "emptyCells": "空欄 {{count}}件",
+                    "error": "保存版の一覧を読み込めませんでした。",
+                    "filledCells": "割り当て {{count}}件",
+                    "hardViolations": "重要違反 {{count}}件",
+                    "loadCancel": "キャンセル",
+                    "loadConfirm": "読み込む",
+                    "loadDescription": "現在の勤務表を「{{title}}」の保存版に置き換えます。\n読み込むと、現在画面で編集中の内容は失われます。",
+                    "loadFailed": "保存版を読み込めませんでした。",
+                    "loading": "保存版を読み込み中…",
+                    "loadSuccess": "{{title}}の保存版を読み込みました。",
+                    "loadTitle": "この保存版を読み込みますか？",
+                    "renameFailed": "履歴タイトルを変更できませんでした。",
+                    "renameSuccess": "履歴タイトルを変更しました。",
+                    "renameTitleAria": "履歴タイトル",
+                    "restore": "読み込む",
+                    "savedCount": "保存版 {{count}}件",
+                    "selectedHistory": "選択した履歴",
+                    "softViolations": "通常違反 {{count}}件",
+                    "title": "履歴",
                     "todayAt": "今日 {{time}}",
-                    "toggleDetails": "Show details",
-                    "totalViolations": "Total {{count}}"
+                    "toggleDetails": "詳細を表示",
+                    "totalViolations": "合計 {{count}}件"
                 },
                 "title": {
-                    "error": "Fill failed",
-                    "idle": "Autofill ready",
-                    "loading": "Calculating schedule",
-                    "success": "Fill complete"
+                    "error": "入力中断",
+                    "idle": "自動入力の準備完了",
+                    "loading": "勤務表を計算中",
+                    "success": "入力完了"
                 },
-                "toolbarHint": "Fill empty cells based on the rules and requested shifts.",
-                "toolbarSubTitle": "Use AI Autofill to fill empty cells in one go.",
-                "toolbarTitle": "Fill and confirm the schedule",
-                "viewAll": "View all",
+                "toolbarHint": "条件と勤務希望に基づいて空欄を埋めます。",
+                "toolbarSubTitle": "AI自動入力で空欄をまとめて埋めてみましょう。",
+                "toolbarTitle": "勤務表を入力して確定してください",
+                "viewAll": "すべて表示",
                 "lastShiftBlankDialog": {
                     "title": "前月勤務を確認しましたか？",
-                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。\n初回の勤務表であれば、そのまま確定しても問題ありません。",
+                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。",
                     "confirm": "そのまま確定",
                     "cancel": "入力を確認"
                 }
@@ -5552,7 +5884,7 @@ export const ja: TLocale = {
                 "name": "名前",
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
-                "shiftTypeDropdownAria": "勤務タイプを選択",
+                "shiftTypeDropdownAria": "勤務区分を選択",
                 "violationDialogAria": "制約の問題 {{count}}件",
                 "violationLevel": {
                     "error": "重要",
@@ -5565,26 +5897,26 @@ export const ja: TLocale = {
                 }
             },
             "confirmedShifts": {
-                "editAction": "Edit",
-                "empty": "No confirmed schedule yet",
-                "error": "Failed to load the confirmed schedule",
-                "fallbackTeamName": "Selected team",
-                "hint": "Nurses connected to this ward can see the confirmed schedule in the app right away!",
-                "imageAction": "Download image",
-                "imageActionLoading": "Downloading image",
-                "loading": "Loading the confirmed schedule",
-                "title": "{{teamName}}'s {{month}} schedule",
-                "wardCodeGuideAction": "Open ward code guide"
+                "editAction": "編集する",
+                "empty": "確定済みの勤務表はまだありません",
+                "error": "確定勤務表を読み込めませんでした",
+                "fallbackTeamName": "選択したチーム",
+                "hint": "病棟と連携している看護師は、アプリで確定勤務表をすぐに確認できます！",
+                "imageAction": "画像をダウンロード",
+                "imageActionLoading": "画像をダウンロード中",
+                "loading": "確定勤務表を読み込み中です",
+                "title": "{{teamName}}の{{month}}月勤務表です",
+                "wardCodeGuideAction": "病棟コード案内を見る"
             },
             "constraints": {
                 "action": {
-                    "add": "条件を追加",
+                    "add": "制約条件を追加",
                     "reset": "初期化"
                 },
                 "category": {
-                    "combination": "スタッフ組み合わせ",
+                    "combination": "看護師の組み合わせ",
                     "forbidden": "禁止パターン",
-                    "personal": "個人別制限",
+                    "personal": "看護師別制限",
                     "recommended": "推奨",
                     "skill": "習熟度",
                     "staffing": "人数",
@@ -5608,13 +5940,13 @@ export const ja: TLocale = {
                     "title": "別チームの制約条件を読み込む"
                 },
                 "important": {
-                    "ariaMark": "重要として表示",
-                    "ariaRemove": "重要表示を解除",
+                    "ariaMark": "重要マークを付ける",
+                    "ariaRemove": "重要マークを外す",
                     "label": "重要",
                     "recommendedTitle": "推奨の重要条件"
                 },
-                "info": "必ず守る条件は重要表示をオンにしてください",
-                "infoTooltipAria": "制約条件の重要表示について",
+                "info": "必ず守る条件には重要マークを付けてください",
+                "infoTooltipAria": "制約条件の重要マークについて",
                 "listTitle": "制約条件",
                 "modal": {
                     "addAria": "制約条件を追加",
@@ -5641,7 +5973,7 @@ export const ja: TLocale = {
                         "label": "ND / ED / NE / NOD勤務パターンを避ける"
                     },
                     "excludeNightBeforeReqOff": {
-                        "label": "希望OFF前日の夜勤を避ける"
+                        "label": "休み希望前日の夜勤を避ける"
                     },
                     "maxContinuousNight": {
                         "label": "連続夜勤"
@@ -5656,7 +5988,7 @@ export const ja: TLocale = {
                         "label": "夜勤間隔"
                     },
                     "minOffAssignAfterNight": {
-                        "label": "夜勤後のOFF割り当て"
+                        "label": "夜勤後の休み割り当て"
                     }
                 },
                 "ruleAction": {
@@ -5694,85 +6026,85 @@ export const ja: TLocale = {
                     },
                     "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
                         "label": "重要な基本条件",
-                        "sentence": "希望OFFの前日はN勤務を避けます"
+                        "sentence": "休み希望の前日はN勤務を避けます"
                     },
                     "IMPORTANT_OFF_AFTER_NIGHT": {
                         "label": "重要な基本条件",
-                        "sentence": "N勤務後は{days}日以上OFFが必要です"
+                        "sentence": "N勤務後は{days}日以上休みが必要です"
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
-                        "label": "禁止パターンルール",
+                        "label": "禁止パターン条件",
                         "sentence": "{target}はN勤務を連続{count}回までにします"
                     },
                     "SOFT_MAX_CONSECUTIVE_WORK": {
-                        "label": "連続勤務/休息ルール",
+                        "label": "連続勤務/休息条件",
                         "sentence": "{target}は1か月に連続{days}日まで勤務できます"
                     },
                     "SOFT_MAX_STAFF_BY_DUTY": {
-                        "label": "人数ルール",
+                        "label": "人数条件",
                         "sentence": "{duty}勤務は最大{count}人まで割り当てできます"
                     },
                     "SOFT_MIN_MONTHLY_OFF": {
-                        "label": "連続勤務/休息ルール",
-                        "sentence": "{target}は1か月に最低{days}日のOFFが必要です"
+                        "label": "連続勤務/休息条件",
+                        "sentence": "{target}は1か月に最低{days}日の休みが必要です"
                     },
                     "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "新人/経験/習熟度ルール",
+                        "label": "新人/経験/習熟度条件",
                         "sentence": "{duty}勤務には{level}以上の看護師が{count}人以上必要です"
                     },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
-                        "label": "人数ルール",
+                        "label": "人数条件",
                         "sentence": "{date}には{duty}勤務で最低{count}人が必要です"
                     },
                     "SOFT_MIN_STAFF_BY_DUTY": {
-                        "label": "人数ルール",
+                        "label": "人数条件",
                         "sentence": "{duty}勤務には最低{count}人が必要です"
                     },
                     "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
-                        "label": "人数ルール",
+                        "label": "人数条件",
                         "sentence": "週末/祝日は{duty}勤務で最低{count}人が必要です"
                     },
                     "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
-                        "label": "連続勤務/休息ルール",
-                        "sentence": "{target}は{days}日連続勤務後にOFFが必要です"
+                        "label": "連続勤務/休息条件",
+                        "sentence": "{target}は{days}日連続勤務後に休みが必要です"
                     },
                     "SOFT_NEED_OFF_AFTER_N": {
-                        "label": "連続勤務/休息ルール",
-                        "sentence": "{target}はN勤務後、最低{days}日のOFFが必要です"
+                        "label": "連続勤務/休息条件",
+                        "sentence": "{target}はN勤務後、最低{days}日の休みが必要です"
                     },
                     "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "新人/経験/習熟度ルール",
+                        "label": "新人/経験/習熟度条件",
                         "sentence": "{nurse}は新人として単独N勤務を避けます"
                     },
                     "SOFT_NO_E_TO_D": {
-                        "label": "禁止パターンルール",
+                        "label": "禁止パターン条件",
                         "sentence": "{target}はEの翌日のD勤務を避けます"
                     },
                     "SOFT_NO_N_TO_D": {
-                        "label": "禁止パターンルール",
+                        "label": "禁止パターン条件",
                         "sentence": "{target}はNの翌日のD勤務を避けます"
                     },
                     "SOFT_NO_N_TO_E": {
-                        "label": "禁止パターンルール",
+                        "label": "禁止パターン条件",
                         "sentence": "{target}はNの翌日のE勤務を避けます"
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
-                        "label": "スタッフ組み合わせ",
+                        "label": "看護師の組み合わせ",
                         "sentence": "{nurseA}と{nurseB}は同じ勤務を避けます"
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
-                        "label": "個人別勤務制限",
+                        "label": "看護師別勤務条件",
                         "sentence": "{nurse}は週末勤務を避けます"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
-                        "label": "スタッフ組み合わせ",
+                        "label": "看護師の組み合わせ",
                         "sentence": "{nurseA}は{nurseB}と同じ勤務が望ましいです"
                     }
                 },
                 "toast": {
                     "added": "制約条件を追加しました。",
                     "duplicatesRemoved": "重複する制約条件{{count}}件を整理しました。",
-                    "importantUnmarked": "重要表示を解除しました。",
+                    "importantUnmarked": "重要マークを外しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
                     "importFailed": "制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。",
                     "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
@@ -5786,19 +6118,19 @@ export const ja: TLocale = {
                     "deleteTitle": "推奨条件を削除しますか？",
                     "description": "この条件は安定した勤務表のために、基本の重要条件として推奨されています。",
                     "keep": "維持する",
-                    "unmarkConfirm": "重要表示を外す",
-                    "unmarkDescription": "それでも重要表示を解除しますか？",
-                    "unmarkTitle": "重要表示を外しますか？"
+                    "unmarkConfirm": "重要マークを外す",
+                    "unmarkDescription": "それでも重要マークを外しますか？",
+                    "unmarkTitle": "重要マークを外しますか？"
                 }
             },
             "fixedShifts": {
-                "empty": "No schedule exists for this month yet",
-                "error": "Failed to load fixed shift data",
-                "hint": "Select only shifts that should not change. The rest will be filled in the next step.",
-                "loading": "Loading the duty schedule",
-                "lockedToast": "Fixed shifts can only be edited from the Fixed Shifts tab",
-                "saveFailed": "Failed to save. Please try again shortly.",
-                "title": "Select fixed shifts"
+                "empty": "今月の勤務表はまだありません",
+                "error": "固定勤務データを読み込めませんでした",
+                "hint": "研修・教育・公休のようにすでに決まっている予定や必ず守る配置だけを固定してください。",
+                "loading": "勤務表を読み込み中です",
+                "lockedToast": "固定勤務は固定勤務タブでのみ編集できます",
+                "saveFailed": "保存できませんでした。少し待ってからもう一度お試しください。",
+                "title": "固定する予定だけ入力してください"
             },
             "monthRangeDescription": "Dutyingでは今月と来月の勤務表のみ作成できます。",
             "monthRangeTitle": "この期間の勤務表は作成できません",
@@ -5807,7 +6139,7 @@ export const ja: TLocale = {
                 "moving": "移動中...",
                 "next": "次へ",
                 "previous": "戻る",
-                "saving": "保存中...",
+                "saving": "保存中…",
                 "sequentialRequired": "前のステップから順番に進めてください。",
                 "workerRequired": "勤務表に含める看護師が1名以上必要です。"
             },
@@ -5842,45 +6174,45 @@ export const ja: TLocale = {
             },
             "requests": {
                 "action": {
-                    "accept": "Accept",
-                    "hold": "Hold",
-                    "reject": "Reject"
+                    "accept": "承認",
+                    "hold": "保留",
+                    "reject": "却下"
                 },
                 "badge": {
-                    "accepted": "Accepted requests",
-                    "pending": "Pending requests",
-                    "rejected": "Rejected requests"
+                    "accepted": "承認した申請",
+                    "pending": "待機中の申請",
+                    "rejected": "却下した申請"
                 },
-                "count": "{{count}}",
-                "descriptionHighlight": "locked into the schedule",
-                "descriptionLine": "Accept requests to reflect, and reject requests to exclude.",
-                "descriptionPrefix": "Accepted requests are",
-                "descriptionSuffix": ".",
-                "empty": "There is no requested shift schedule for this month yet",
-                "emptyAccepted": "No accepted requests.",
-                "emptyPending": "No requests to review.",
-                "emptyRejected": "No rejected requests.",
-                "error": "Failed to load requested shift data",
-                "itemLabel": "{{name}} / {{date}}",
-                "loading": "Loading requested shift data",
-                "lockedToast": "Requested shifts can only be edited from the Requests tab",
-                "panelTitle": "Requests to review",
+                "count": "{{count}}件",
+                "descriptionHighlight": "勤務表に固定",
+                "descriptionLine": "反映する申請は承認し、除外する申請は却下してください。",
+                "descriptionPrefix": "承認済みのスケジュールは",
+                "descriptionSuffix": "されます。",
+                "empty": "今月の勤務希望表はまだありません",
+                "emptyAccepted": "承認した申請があるとここに表示されます。",
+                "emptyPending": "確認が必要な申請があるとここに表示されます。",
+                "emptyRejected": "却下した申請があるとここに表示されます。",
+                "error": "勤務希望データを読み込めませんでした",
+                "itemLabel": "{{name}} / {{date}}日",
+                "loading": "勤務希望データを読み込み中です",
+                "lockedToast": "勤務希望は勤務希望タブでのみ編集できます",
+                "panelTitle": "確認する申請",
                 "section": {
-                    "accepted": "Accepted",
-                    "pending": "Pending",
-                    "rejected": "Rejected"
+                    "accepted": "承認済み",
+                    "pending": "待機中",
+                    "rejected": "却下済み"
                 },
                 "summary": {
-                    "accepted": "Accepted",
-                    "pending": "Pending",
-                    "rejected": "Rejected"
+                    "accepted": "承認",
+                    "pending": "待機",
+                    "rejected": "却下"
                 },
-                "summaryCountsAria": "Summary of accepted, pending, and rejected requests",
+                "summaryCountsAria": "承認、待機、却下申請件数の概要",
                 "table": {
-                    "name": "Name"
+                    "name": "名前"
                 },
-                "title": "Confirm requested shifts",
-                "updateFailed": "Could not update the request. Please try again."
+                "title": "勤務希望を確定してください",
+                "updateFailed": "申請状態を変更できませんでした。もう一度お試しください。"
             },
             "stepContent": {
                 "importantBadge": "重要",
@@ -5908,19 +6240,19 @@ export const ja: TLocale = {
                     "label": "固定シフト"
                 },
                 "requests": {
-                    "caption": "看護師から送られた希望シフトを承認または却下します",
-                    "label": "希望シフト確定"
+                    "caption": "看護師から送られた勤務希望を承認または却下します",
+                    "label": "勤務希望確定"
                 },
                 "workers": {
                     "caption": "勤務に入る看護師を確認します",
-                    "introDescription": "抜けているスタッフがいないか確認してください\n修正が必要な場合はスタッフ管理で変更できます",
+                    "introDescription": "抜けている看護師がいないか確認してください\n変更が必要な場合は看護師管理で編集できます",
                     "introTitle": "勤務に入る人数を確認してください",
-                    "label": "スタッフ確認"
+                    "label": "看護師確認"
                 }
             },
             "tutorial": {
                 "aiAutofill": {
-                    "info": "AI自動入力を複数回実行して、希望する勤務表に素早く近づけます。\n結果は管理者が必ず確認して修正してください。",
+                    "info": "AI自動入力を複数回実行して、希望する勤務表に素早く近づけます。\n結果は管理者が必ず確認して調整してください。",
                     "title": "AI自動入力"
                 },
                 "constraints": {
@@ -5932,8 +6264,8 @@ export const ja: TLocale = {
                     "title": "固定勤務を入力"
                 },
                 "requests": {
-                    "info": "残っている希望勤務リクエストを確認します。\n未処理のみ表示をオンにすると、まだ判断していないリクエストだけ確認できます。",
-                    "title": "希望勤務を確定"
+                    "info": "残っている勤務希望を確認します。\n未処理のみ表示をオンにすると、まだ判断していないリクエストだけ確認できます。",
+                    "title": "勤務希望を確定"
                 },
                 "stepper": {
                     "info": "進行バーを見ながら5つのステップを順番に進めます。",
@@ -5957,15 +6289,15 @@ export const ja: TLocale = {
                 },
                 "dragHandleAria": "ドラッグして順序を変更",
                 "emptyDescription": "勤務投入に設定された人数を先に確認してください。",
-                "emptyTitle": "勤務者を確定すると開始できます。",
-                "goMemberManagement": "スタッフ管理へ移動",
-                "noNurseDescription": "勤務表を作成するには、先に看護師を追加してください。スタッフ管理からすぐに開始できます。",
+                "emptyTitle": "看護師を確定すると開始できます。",
+                "goMemberManagement": "看護師管理へ移動",
+                "noNurseDescription": "勤務表を作成するには、先に看護師を追加してください。看護師管理からすぐに開始できます。",
                 "noNurseTitle": "{{teamName}}にはまだ看護師がいません",
                 "preceptorActive": "該当",
                 "sortByName": "五十音順",
                 "sortBySavedOrder": "任意順",
                 "sortBySkill": "熟練度順",
-                "sortListMenuAria": "勤務者の並び順を開く",
+                "sortListMenuAria": "看護師の並び順を開く",
                 "totalCount": "合計 {{count}}名"
             },
             "wardCodeLoading": "病棟コードを確認中"
@@ -6042,12 +6374,12 @@ export const ja: TLocale = {
                 }
             },
             "deleteTeam": "チームを削除",
-            "description": "チーム別スタッフと習熟度を一つの画面で管理できます。",
+            "description": "チーム別の看護師と習熟度を一つの画面で管理できます。",
             "detail": {
                 "cancel": "閉じる",
                 "canMakeDuty": "作成可能",
                 "cannotMakeDuty": "作成制限",
-                "close": "スタッフパネルを閉じる",
+                "close": "看護師パネルを閉じる",
                 "closeAction": "閉じる",
                 "connected": "連携済み",
                 "connection": "連携",
@@ -6060,14 +6392,14 @@ export const ja: TLocale = {
                 "employmentDateHint": "習熟度の自動配分基準として使用されます",
                 "emptyDescription": "左の一覧から人を選択すると詳細情報を編集できます。",
                 "emptyPinnedDescription": "看護師を選択すると詳細情報がここに固定表示されます。",
-                "emptyTitle": "スタッフを選択してください",
+                "emptyTitle": "看護師を選択してください",
                 "genderToggle": "性別を変更",
                 "isDutyManager": "勤務表作成",
                 "isWorker": "勤務投入",
                 "isWorkerOff": "対象外",
                 "isWorkerOn": "対象",
                 "memo": "メモ",
-                "memoHint": "スタッフの特記事項を入力してください",
+                "memoHint": "看護師の特記事項を入力してください",
                 "moveTargetTeam": "移動先チーム",
                 "moveTeam": "チーム移動",
                 "phone": "電話番号",
@@ -6115,14 +6447,14 @@ export const ja: TLocale = {
                 },
                 "idle": {
                     "description": "変更が発生すると保存ボタンが有効になります。",
-                    "title": "修正する項目を確認してください"
+                    "title": "編集する項目を確認してください"
                 },
                 "saving": {
                     "description": "入力内容を反映しています。保存が終わるまでしばらくお待ちください。",
                     "title": "保存中です"
                 },
                 "success": {
-                    "description": "看護師情報を反映しました。追加修正がなければ閉じても問題ありません。",
+                    "description": "看護師情報を反映しました。追加で編集する内容がなければ閉じても問題ありません。",
                     "title": "保存しました"
                 }
             },
@@ -6213,7 +6545,7 @@ export const ja: TLocale = {
                 "shiftTypes": "可能勤務"
             },
             "teamMenu": "チームメニューを開く",
-            "title": "スタッフ管理",
+            "title": "看護師管理",
             "toast": {
                 "copyWardCode": "病棟コードをコピーしました。",
                 "createTeam": "看護師{{teamNumber}}チームを追加しました。",
@@ -6221,7 +6553,7 @@ export const ja: TLocale = {
                 "maxNursesPerTeam": "1チームに追加できる看護師は最大{{count}}名です。",
                 "maxTeams": "チームは最大{{count}}個まで追加できます。",
                 "moveNurse": "{{nurseName}}を{{teamName}}チームへ移動しました。",
-                "saveNurseInfo": "スタッフ情報を保存しました。"
+                "saveNurseInfo": "看護師情報を保存しました。"
             },
             "tutorial": {
                 "add": {
@@ -6229,8 +6561,8 @@ export const ja: TLocale = {
                     "title": "看護師を追加する"
                 },
                 "edit": {
-                    "info": "右側パネルで名前、習熟度、可能勤務、役割・権限、メモをすぐ修正できます。",
-                    "title": "看護師情報を修正する"
+                    "info": "右側パネルで名前、習熟度、設定可能な勤務、役割・権限、メモをすぐ編集できます。",
+                    "title": "看護師情報を編集する"
                 },
                 "skill": {
                     "info": "習熟度機能を使うには、病院・病棟の基準に合わせて段階と色を設定してください。",
@@ -6256,13 +6588,14 @@ export const ja: TLocale = {
             "ariaLabel": "メインメニュー",
             "expandAria": "サイドバーを開く",
             "foldAria": "サイドバーを閉じる",
-            "home": "勤務表",
+            "home": "ホーム",
             "items": {
                 "account": "マイページ",
                 "board": "掲示板",
-                "make": "勤務表",
-                "member": "スタッフ管理",
-                "request": "希望シフト",
+                "dutying": "Dutying",
+                "make": "勤務表作成",
+                "member": "看護師管理",
+                "request": "勤務希望",
                 "wardAdmins": "病棟管理者",
                 "wardInfoSettings": "病棟設定",
                 "wardSettings": "勤務設定"
@@ -6280,13 +6613,13 @@ export const ja: TLocale = {
             "checkingPermission": "参加権限を確認しています。",
             "codeDigitAria": "病棟コード{{index}}文字目",
             "codeInputAria": "病棟コード入力",
-            "description": "病棟オーナーが共有した6桁のコードを入力すると、権限確認後すぐに参加できます。",
+            "description": "病棟のオーナーが共有した6桁のコードを入力すると、権限確認後すぐに参加できます。",
             "invalidCode": "存在しない病棟コードです。コードを確認してください。",
             "permission": {
                 "close": "閉じる",
                 "confirm": "確認",
-                "description": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。最高管理者（オーナー）が現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
-                "descriptionWithWard": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。{{hospitalName}} {{wardName}}の最高管理者（オーナー）が現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
+                "description": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。オーナーが現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
+                "descriptionWithWard": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。{{hospitalName}} {{wardName}}のオーナーが現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
                 "eyebrow": "管理者権限が必要です",
                 "title": "病棟管理者に依頼してください",
                 "titleWithWard": "{{hospitalName}} {{wardName}}の管理者に依頼してください"
@@ -6308,18 +6641,19 @@ export const ja: TLocale = {
                 "creating": "作成中...",
                 "next": "次へ",
                 "previous": "戻る",
-                "saving": "保存中...",
+                "saving": "保存中…",
                 "skip": "スキップ"
             },
             "backToWardSelect": "病棟選択へ",
             "blocked": {
                 "default": "入力情報を確認してください。",
-                "duplicateShiftType": "重複した勤務名または略称があります。",
+                "duplicateShiftType": "略称の最初の文字が重複しています。",
                 "emptyTeam": "チームを追加すると病棟を作成できます。",
                 "emptyTeamNurses": "看護師がいないチームがあります。看護師を追加するかチームを削除してください。",
                 "invalidNurseName": "看護師名を確認してください。",
+                "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "invalidShiftTime": "勤務時間を確認してください。",
-                "invalidShiftType": "勤務タイプ情報を確認してください。",
+                "invalidShiftType": "勤務区分情報を確認してください。",
                 "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
                 "missingHospitalName": "病院名を入力してください。",
                 "submitting": "病棟を作成しています。しばらくお待ちください。",
@@ -6330,6 +6664,15 @@ export const ja: TLocale = {
                 "newTeam": "新しいチーム",
                 "selectedTeam": "選択したチーム",
                 "wardName": "デューティング病棟"
+            },
+            "defaults": {
+                "newNurseName": "新規看護師 {{index}}",
+                "sampleNurse": {
+                    "first": "佐藤花子",
+                    "second": "田中美咲",
+                    "skilled": "高橋結衣",
+                    "off": "鈴木葵"
+                }
             },
             "identity": {
                 "hospitalName": "病院名",
@@ -6384,7 +6727,7 @@ export const ja: TLocale = {
                     "title": "病院名と病棟名を入力してください"
                 },
                 "nurse": {
-                    "description": "毎月チームごとに1つの勤務表を作成できます。いつでも修正・追加できます",
+                    "description": "毎月チームごとに1つの勤務表を作成できます",
                     "highlight": "看護師",
                     "title": "看護師を登録してください"
                 },
@@ -6394,13 +6737,13 @@ export const ja: TLocale = {
                     "title": "病棟と勤務表設定のため\n直近で使用した勤務表を入力してください"
                 },
                 "shiftType": {
-                    "description": "後からでも修正できます",
-                    "highlight": "勤務タイプ",
-                    "title": "病棟の勤務タイプを設定してください"
+                    "description": "後からでも編集できます",
+                    "highlight": "勤務区分",
+                    "title": "病棟の勤務区分を設定してください"
                 }
             },
             "shiftType": {
-                "add": "勤務タイプを追加",
+                "add": "勤務区分を追加",
                 "color": "色",
                 "colorOptionAria": "{{color}}を選択",
                 "colorSelectAria": "{{shiftName}}の色を選択",
@@ -6408,15 +6751,16 @@ export const ja: TLocale = {
                 "leave": "休み",
                 "name": "勤務名",
                 "shortName": "略称",
-                "type": "タイプ",
+                "type": "区分",
                 "validation": {
-                    "nameDuplicate": "重複した勤務名は使用できません。",
+                    "nameDuplicate": "別の勤務名を入力してください。",
                     "nameRequired": "勤務名を入力してください。",
-                    "shortNameDuplicate": "別の略称を入力してください。",
-                    "shortNameLength": "スペースなしで2文字まで入力してください。",
+                    "shortNameDuplicate": "略称の最初の文字が重ならないようにしてください。",
+                    "shortNameFirstKey": "最初の文字は英字、数字、記号（- . _ など）で入力してください。",
+                    "shortNameLength": "スペースなしで3文字まで入力してください。",
                     "shortNameRequired": "略称を入力してください。",
                     "timeFormat": "時間は00:00形式で入力してください。",
-                    "timeOrder": "退勤時間は出勤時間より後にしてください。",
+                    "timeOrder": "開始時間と終了時間は別にしてください。",
                     "timeRequired": "時間を入力してください。"
                 },
                 "work": "勤務",
@@ -6490,7 +6834,7 @@ export const ja: TLocale = {
                     "guideRow2": "勤務はD、E、N、O、または病棟で使う勤務略称で入力できます。",
                     "guideRow3": "空欄は休みとして扱われます。",
                     "guideRow4": "チーム名が空欄の場合は既定チームに割り当てられます。",
-                    "guideRow5": "アップロード後、画面で内容を確認して修正できます。",
+                    "guideRow5": "アップロード後、画面で内容を確認して編集できます。",
                     "fileName": "初期勤務表_{{year}}_{{month}}.xlsx"
                 },
                 "title": "勤務表ファイルをアップロード",
@@ -6500,6 +6844,16 @@ export const ja: TLocale = {
                 "fileSupport": ".xlsx、.xlsファイルに対応しています。",
                 "submitting": "アップロード中",
                 "submit": "ファイルを適用"
+            },
+            "progress": {
+                "ariaLabel": "病棟作成の進行率",
+                "completeTitle": "病棟作成が完了しました",
+                "finalCheck": "もうすぐ完了です。最後の確認中です。",
+                "inputWardInfo": "入力した病棟情報を整理しています。",
+                "navigateDuty": "勤務表画面へ移動しています。",
+                "nurses": "看護師情報を連携しています。",
+                "settingTitle": "病棟を設定しています",
+                "shiftTypesAndTeams": "勤務区分とチームを設定しています。"
             }
         },
         "profile": {
@@ -6519,10 +6873,10 @@ export const ja: TLocale = {
             "imageFailed": "プロフィール画像を処理できませんでした。",
             "language": {
                 "en": "English",
-                "ja": "日本語",
-                "ko": "한국어"
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)"
             },
-            "languageLabel": "画面言語",
+            "languageLabel": "画面言語 / Language",
             "loadingDescription": "アカウントと病棟情報を確認しています。",
             "loadingTitle": "プロフィールを準備しています",
             "logout": "ログアウト",
@@ -6531,10 +6885,10 @@ export const ja: TLocale = {
             "namePlaceholder": "名前を入力してください",
             "phoneNum": "電話番号",
             "phoneNumPlaceholder": "電話番号を入力してください",
-            "preferencesDescription": "画面言語とサーバーリクエスト地域を選択します。",
+            "preferencesDescription": "画面に表示する言語を選択します。",
             "preferencesFailed": "言語設定を保存できませんでした。",
             "preferencesSaved": "言語とサービス地域を保存しました。",
-            "preferencesTitle": "言語とサービス地域",
+            "preferencesTitle": "言語 / Language",
             "profileSection": "プロフィール",
             "quitWard": "病棟を退出",
             "randomAvatar": "ランダムアバター",
@@ -6542,7 +6896,7 @@ export const ja: TLocale = {
             "save": "変更を保存",
             "savedDescription": "最新情報が保存されています。",
             "savePreferences": "言語設定を保存",
-            "savingPreferences": "保存中...",
+            "savingPreferences": "保存中…",
             "serviceRegion": {
                 "EN": "グローバル / 英語圏",
                 "JP": "日本",
@@ -6556,12 +6910,12 @@ export const ja: TLocale = {
             "validation": {
                 "nameInvalid": "名前は20文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
                 "nameRequired": "名前を入力してください。",
-                "phoneInvalid": "電話番号は01012341234のように数字のみで入力してください。",
+                "phoneInvalid": "選択した言語または地域に合う電話番号を入力してください。",
                 "phoneRequired": "電話番号を入力してください。"
             }
         },
         "refresh": {
-            "loading": "Logging in..."
+            "loading": "ログイン中です…"
         },
         "register": {
             "createWard": {
@@ -6598,7 +6952,7 @@ export const ja: TLocale = {
                 "phoneNum": "連絡先",
                 "phoneNumPlaceholder": "連絡先を入力してください",
                 "randomAvatar": "ランダムアバター",
-                "saving": "保存中...",
+                "saving": "保存中…",
                 "submitting": "処理中...",
                 "title": "アカウント情報を入力してください",
                 "uploadPhoto": "写真をアップロード",
@@ -6606,7 +6960,7 @@ export const ja: TLocale = {
                     "nameInvalid": "名前は20文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
                     "nameRequired": "名前を入力してください。",
                     "phoneDuplicate": "すでに使用中の連絡先です。別の番号を入力してください。",
-                    "phoneInvalid": "連絡先は11桁の数字で入力してください。",
+                    "phoneInvalid": "選択した言語または地域に合う連絡先を入力してください。",
                     "phoneRequired": "連絡先を入力してください。"
                 }
             },
@@ -6640,27 +6994,27 @@ export const ja: TLocale = {
             "availability": {
                 "editable": {
                     "badgeLabel": "編集可能",
-                    "description": "現在のカレンダー範囲では希望シフトを編集できます。"
+                    "description": "現在のカレンダー範囲では勤務希望を編集できます。"
                 },
                 "editablePeriodLabel": "編集可能範囲: 先月から来月まで",
                 "lockedFuture": {
                     "badgeLabel": "作成待ち",
-                    "description": "希望シフトを作成できるのは来月分までです。まだ開いていない月は開始後に編集できます。",
-                    "validationMessage": "2か月先の希望シフトはまだ作成前です。"
+                    "description": "勤務希望を作成できるのは来月分までです。まだ開いていない月は開始後に編集できます。",
+                    "validationMessage": "2か月先の勤務希望はまだ作成前です。"
                 },
                 "lockedPast": {
                     "badgeLabel": "閲覧のみ",
                     "description": "この月は閲覧のみ可能です。提出済みの希望と現在の配置を確認できます。",
-                    "validationMessage": "2か月前の希望シフトは閲覧のみ可能です。"
+                    "validationMessage": "2か月前の勤務希望は閲覧のみ可能です。"
                 }
             },
             "calendar": {
-                "ariaLabel": "希望シフト表",
+                "ariaLabel": "勤務希望表",
                 "linkColumn": "連携",
                 "nameColumn": "名前",
-                "noNurseAction": "Go to Member Management",
-                "noNurseDescription": "Add nurses to this team from Member Management before reviewing requested shifts.",
-                "noNurseTitleSuffix": " has no nurses yet",
+                "noNurseAction": "看護師管理へ移動",
+                "noNurseDescription": "勤務希望を確認するには、先に看護師管理でチームの看護師を追加してください。",
+                "noNurseTitleSuffix": "にはまだ看護師がいません",
                 "reorderAria": "{{name}}の順序を変更",
                 "skillColumn": "熟練度",
                 "status": {
@@ -6672,7 +7026,7 @@ export const ja: TLocale = {
                     "accepted": "現在申請した勤務が反映されています。",
                     "editable": "名前を押すと該当日に移動して確認できます。",
                     "noFocus": "現在のチームに連携された看護師情報がないため、カレンダー位置へ直接移動できません。",
-                    "readonly": "修正できない月のため、希望勤務の位置のみ確認できます。",
+                    "readonly": "編集できない月のため、勤務希望の位置のみ確認できます。",
                     "rejected": "現在の勤務表では別の勤務で確定しています。"
                 }
             },
@@ -6687,8 +7041,8 @@ export const ja: TLocale = {
                     "message": "ND/ED/NE/NOD形式の勤務は避けることを推奨します。"
                 },
                 "excludeNightBeforeReqOff": {
-                    "label": "希望OFF前日の夜勤を避ける",
-                    "message": "希望OFFの前日は夜勤を避けることを推奨します。"
+                    "label": "休み希望前日の夜勤を避ける",
+                    "message": "休み希望の前日は夜勤を避けることを推奨します。"
                 },
                 "maxContinuousNight": {
                     "label": "連続夜勤",
@@ -6707,32 +7061,32 @@ export const ja: TLocale = {
                     "message": "夜勤間隔は最低{{count}}日以上空けてください。"
                 },
                 "minOffAssignAfterNight": {
-                    "label": "夜勤後のOFF割り当て",
-                    "message": "夜勤後はOFFを{{count}}日以上割り当てることを推奨します。"
+                    "label": "夜勤後の休み割り当て",
+                    "message": "夜勤後は休みを{{count}}日以上割り当てることを推奨します。"
                 }
             },
             "overview": {
-                "bootstrapErrorDescription": "Please verify your account information. If the issue continues, sign in again.",
-                "bootstrapErrorTitle": "Failed to load ward information",
-                "bootstrapLoadingDescription": "Checking your ward information and preparing the request shift page.",
-                "bootstrapLoadingTitle": "Checking account information",
-                "createNextMonth": "Create next month request shifts",
-                "emptyDescription": "Open next month request shift schedule first and start editing there.",
-                "emptyTitle": "There is no request shift schedule for this month yet",
-                "loadingDescription": "Loading the shift teams and request shift schedule in order.",
-                "loadingTitle": "Preparing the request shift page",
-                "noTeamsDescription": "Register a shift team first to manage requested shifts.",
-                "noTeamsTitle": "There are no registered teams yet",
-                "shiftErrorTitle": "Failed to load the request shift schedule",
-                "shiftLoadingDescription": "Organizing the selected team schedule and request list.",
-                "shiftLoadingTitle": "Loading the request shift schedule",
-                "teamsErrorTitle": "Failed to load shift teams"
+                "bootstrapErrorDescription": "アカウント情報をもう一度確認してください。問題が続く場合は再ログインしてください。",
+                "bootstrapErrorTitle": "病棟情報を読み込めませんでした",
+                "bootstrapLoadingDescription": "病棟情報を確認したあと、勤務希望画面を準備しています。",
+                "bootstrapLoadingTitle": "アカウント情報を確認しています",
+                "createNextMonth": "翌月の勤務希望を作成",
+                "emptyDescription": "翌月の勤務希望表を先に開いて作成できます。",
+                "emptyTitle": "今月の勤務希望表はまだありません",
+                "loadingDescription": "勤務チームと勤務希望表を順番に読み込んでいます。",
+                "loadingTitle": "勤務希望画面を準備しています",
+                "noTeamsDescription": "勤務希望を作成するには、先に勤務チームを登録してください。",
+                "noTeamsTitle": "まだ登録されたチームがありません",
+                "shiftErrorTitle": "勤務希望表を読み込めませんでした",
+                "shiftLoadingDescription": "選択したチームの勤務希望と申請履歴を整理しています。",
+                "shiftLoadingTitle": "勤務希望表を読み込み中です",
+                "teamsErrorTitle": "勤務チームを読み込めませんでした"
             },
             "panel": {
                 "accept": "承認",
                 "acceptAll": "待機{{count}}件を反映",
                 "acceptedState": "反映済み",
-                "acceptedToast": "{{nurseName}}さんの{{shiftType}}勤務希望を承認しました。",
+                "acceptedToast": "{{nurseName}}さんの{{shiftType}}の勤務希望を承認しました。",
                 "appliedCount": "反映 {{count}}",
                 "appliedLabel": "反映",
                 "changeToAccept": "反映に変更",
@@ -6747,22 +7101,22 @@ export const ja: TLocale = {
                 "editTitle": "勤務希望",
                 "emptyDescriptionEdit": "",
                 "emptyDescriptionReadonly": "反映済みの申請があると、このパネルですぐ確認できます。",
-                "emptyTitleEdit": "看護師からの希望シフト申請はありません",
-                "emptyTitleReadonly": "まだ反映済みの希望シフトはありません",
+                "emptyTitleEdit": "看護師からの\n勤務希望申請は\nありません",
+                "emptyTitleReadonly": "まだ反映済みの勤務希望はありません",
                 "errorTitleEdit": "申請履歴を読み込めませんでした",
-                "errorTitleReadonly": "反映済み希望シフトを読み込めませんでした",
+                "errorTitleReadonly": "反映済み勤務希望を読み込めませんでした",
                 "excludedCount": "除外 {{count}}",
                 "excludedLabel": "除外",
                 "groupDone": "確認完了",
                 "groupPendingCount": "{{count}}名確認必要",
                 "groupRequestCaseCount": "{{count}}件",
                 "groupRequestCount": "{{count}}名申請",
-                "loadingDescriptionEdit": "提出された希望シフトを確認しています。",
-                "loadingDescriptionReadonly": "反映済み希望シフトを整理しています。",
+                "loadingDescriptionEdit": "提出された勤務希望を確認しています。",
+                "loadingDescriptionReadonly": "反映済み勤務希望を整理しています。",
                 "loadingTitleEdit": "申請履歴を読み込み中です",
-                "loadingTitleReadonly": "反映済み希望シフトを読み込み中です",
+                "loadingTitleReadonly": "反映済み勤務希望を読み込み中です",
                 "monthShortLabel": "{{month}}月",
-                "notLinked": "表に連携された勤務者なし",
+                "notLinked": "表に連携された看護師なし",
                 "nurseDateLabel": "{{nurseName}} / {{date}}日",
                 "overlapBadge": "同じ勤務 {{count}}名",
                 "overlapSummary": "重複 {{count}}件",
@@ -6770,17 +7124,17 @@ export const ja: TLocale = {
                 "pendingEmptyDescription": "反映または除外していない申請だけがここに表示されます。",
                 "pendingEmptyTitle": "待機中の申請はありません",
                 "pendingLabel": "待機",
-                "readonlyTitle": "反映済み希望シフト",
+                "readonlyTitle": "反映済み勤務希望",
                 "reject": "却下",
                 "rejectAll": "待機{{count}}件を除外",
                 "rejectedState": "除外済み",
-                "rejectedToast": "{{nurseName}}さんの{{shiftType}}勤務希望を却下しました。",
+                "rejectedToast": "{{nurseName}}さんの{{shiftType}}の勤務希望を却下しました。",
                 "showLess": "閉じる",
                 "showMore": "{{count}}件もっと見る",
                 "showNext": "次へ",
                 "showPrevious": "前へ",
                 "sortByDate": "日付順",
-                "sortByNurse": "人別",
+                "sortByNurse": "看護師順",
                 "sortByPending": "待機",
                 "sortByRequestOrder": "申請順",
                 "sortOrder": "日付順",
@@ -6799,17 +7153,17 @@ export const ja: TLocale = {
                 }
             },
             "toolbar": {
-                "editAction": "Edit",
-                "editingDescription": "Changes are saved automatically. Finish with Save after syncing completes.",
-                "editTitle": "Please confirm requested shifts",
-                "noTeamsLabel": "No registered teams",
-                "readonlyDescription": "Press Edit to adjust the requested shifts right away.",
-                "readonlyTitle": "Confirmed requested shifts for {{month}}",
-                "saveAction": "Save",
-                "savedDescription": "Your latest changes have been saved.",
-                "saveError": "Failed to save the latest changes. Please try saving again.",
-                "savingAction": "Saving...",
-                "savingDescription": "Saving your latest changes."
+                "editAction": "編集する",
+                "editingDescription": "申請を押すと勤務表の位置へ移動します。変更内容は自動保存されます。",
+                "editTitle": "勤務希望を確定してください",
+                "noTeamsLabel": "チームを登録すると勤務希望を入力できます",
+                "readonlyDescription": "必要に応じて「編集する」から勤務希望を調整できます。",
+                "readonlyTitle": "{{month}}月の確定勤務希望",
+                "saveAction": "保存する",
+                "savedDescription": "最新の変更内容を保存しました。",
+                "saveError": "最新の変更内容を保存できませんでした。もう一度保存してください。",
+                "savingAction": "保存中…",
+                "savingDescription": "最新の変更内容を保存しています。"
             }
         },
         "state": {
@@ -6829,13 +7183,13 @@ export const ja: TLocale = {
                 "emailRequired": "メールアドレスを入力してください。",
                 "maxAdmins": "病棟管理者は最大{{count}}名まで追加できます。"
             },
-            "ownerOnlyDescription": "最高管理者のみ管理者権限を変更できます。",
+            "ownerOnlyDescription": "オーナーのみ管理者権限を変更できます。",
             "registeredTitle": "登録済み管理者",
             "removeActiveAria": "{{email}}の管理者を削除",
             "removeReservedAria": "{{email}}の予約管理者を削除",
             "role": {
                 "editor": "管理者",
-                "owner": "最高管理者"
+                "owner": "オーナー"
             },
             "state": {
                 "loadFailedTitle": "管理者一覧を読み込めませんでした",
@@ -6850,7 +7204,7 @@ export const ja: TLocale = {
                 "createFailed": "管理者を登録できませんでした。",
                 "createReserved": "管理者メールを予約しました。",
                 "duplicateEmail": "すでに登録されている管理者メールです。",
-                "ownerOnly": "最高管理者のみ変更できます。",
+                "ownerOnly": "オーナーのみ変更できます。",
                 "removeActive": "管理者を削除しました。",
                 "removeActiveFailed": "管理者を削除できませんでした。",
                 "removeReserved": "予約された管理者メールを削除しました。",
@@ -6863,7 +7217,7 @@ export const ja: TLocale = {
             "hospitalName": "病院名",
             "hospitalNamePlaceholder": "病院名を入力してください",
             "save": "変更を保存",
-            "saving": "保存中...",
+            "saving": "保存中…",
             "sectionTitle": "病棟情報",
             "state": {
                 "loadFailedTitle": "病棟情報を読み込めませんでした",
@@ -6903,38 +7257,40 @@ export const ja: TLocale = {
                 "teamLabel": "対象チーム"
             },
             "description": {
-                "constraints": "勤務ルールを管理します。",
-                "shiftTypes": "勤務タイプを管理します。"
+                "constraints": "勤務条件を管理します。",
+                "shiftTypes": "勤務区分を管理します。"
             },
             "shiftTypes": {
-                "add": "勤務タイプを追加",
+                "add": "勤務区分を追加",
                 "colorOptionAria": "{{color}}を選択",
                 "colorSelectAria": "{{name}}の色を選択",
                 "column": {
                     "color": "色",
                     "name": "勤務名",
                     "shortName": "略称",
-                    "type": "タイプ",
+                    "type": "区分",
                     "workTime": "勤務時間"
                 },
                 "deleteAria": "{{name}}を削除",
-                "editAria": "{{name}}の勤務タイプを編集",
-                "empty": "登録された勤務タイプがありません",
-                "error": "勤務タイプを読み込めませんでした",
-                "loading": "勤務タイプを読み込んでいます",
+                "editAria": "{{name}}の勤務区分を編集",
+                "empty": "登録された勤務区分がありません",
+                "error": "勤務区分を読み込めませんでした",
+                "loading": "勤務区分を読み込んでいます",
                 "newShiftName": "新しい勤務",
                 "save": "保存",
                 "toast": {
-                    "addFailed": "勤務タイプを追加できませんでした。",
-                    "deleteFailed": "勤務タイプを削除できませんでした。",
-                    "notFound": "すでに削除されたか、最新リストで見つからない勤務タイプです。",
-                    "updateFailed": "勤務タイプを修正できませんでした。"
+                    "addFailed": "勤務区分を追加できませんでした。",
+                    "deleteFailed": "勤務区分を削除できませんでした。",
+                    "notFound": "すでに削除されたか、最新リストで見つからない勤務区分です。",
+                    "saveSuccess": "勤務設定を保存しました。",
+                    "updateFailed": "勤務区分を更新できませんでした。"
                 },
                 "validation": {
                     "nameDuplicate": "別の勤務名を入力してください。",
                     "nameRequired": "勤務名を入力してください。",
-                    "shortNameDuplicate": "別の略称を入力してください。",
-                    "shortNameLength": "スペースなしで2文字まで入力してください。",
+                    "shortNameDuplicate": "略称の最初の文字が重ならないようにしてください。",
+                    "shortNameFirstKey": "最初の文字は英字、数字、記号（- . _ など）で入力してください。",
+                    "shortNameLength": "スペースなしで3文字まで入力してください。",
                     "shortNameRequired": "略称を入力してください。",
                     "timeFormat": "時間は00:00形式で入力してください。",
                     "timeRequired": "時間を入力してください。",
@@ -6943,12 +7299,112 @@ export const ja: TLocale = {
             },
             "tabs": {
                 "constraints": "制約条件",
-                "shiftTypes": "勤務タイプ"
+                "shiftTypes": "勤務区分"
             },
             "title": "勤務設定",
             "type": {
                 "leave": "休み",
                 "work": "勤務"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "終日",
+                "deadlineMeta": "締切・{{date}}",
+                "empty": "近い予定はありません",
+                "loading": "カレンダー確認中",
+                "openAll": "カレンダーをすべて見る",
+                "overdue": "経過",
+                "scheduleDateMeta": "予定・{{date}}・{{time}}",
+                "scheduleMeta": "予定・{{time}}",
+                "timeUnknown": "時間未定",
+                "today": "今日"
+            },
+            "emptyTeams": {
+                "description": "看護師管理で看護チームを追加してください。",
+                "title": "チームを追加すると表示できます"
+            },
+            "fallback": {
+                "manager": "管理者",
+                "selectedTeam": "選択したチーム",
+                "ward": "病棟"
+            },
+            "filter": {
+                "all": "すべて"
+            },
+            "header": {
+                "createNextMonth": "来月の勤務表を作成",
+                "todayAssigned": "{{managerName}}・本日の勤務 {{count}}名"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}日 {{shift}}",
+                "descriptionAll": "{{month}}・すべて",
+                "descriptionTeam": "{{month}}・{{teamName}}",
+                "edit": "勤務表を編集",
+                "emptyAllTitle": "今月の勤務表は空です",
+                "emptyDescription": "勤務表作成で確認できます。",
+                "emptyTeamTitle": "{{teamName}}の勤務表は空です",
+                "emptyTeamsTitle": "チームを追加すると勤務表を表示できます",
+                "nameHeader": "名前"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 来月の勤務表"
+            },
+            "queue": {
+                "pendingRequests": "確認待ちの勤務希望",
+                "waitingNurses": "入室待ち"
+            },
+            "sections": {
+                "calendar": "カレンダー",
+                "monthly": "今月の勤務表",
+                "tasks": "やること",
+                "todayDuty": "本日の勤務"
+            },
+            "skeleton": {
+                "loadingAria": "ホームを読み込み中"
+            },
+            "sort": {
+                "default": "標準",
+                "label": "勤務表の並び順",
+                "nameAsc": "名前順",
+                "openAria": "勤務表の並び順を開く",
+                "todayShift": "本日の勤務順"
+            },
+            "state": {
+                "errorDescription": "しばらくしてからもう一度お試しください。",
+                "errorTitle": "ホームを読み込めませんでした",
+                "noWardDescription": "病棟を連携するとホームを表示できます。",
+                "noWardTitle": "病棟の連携が必要です",
+                "retry": "再試行"
+            },
+            "status": {
+                "checking": "確認中",
+                "complete": "確定",
+                "draft": "進行中",
+                "empty": "未作成",
+                "error": "再確認"
+            },
+            "tasks": {
+                "checking": "確認中",
+                "nextScheduleAria": "来月の勤務表の進行状況",
+                "overdueAction": "締切",
+                "overdueFallback": "最も古い締切から確認してください",
+                "overdueTitle": "期限超過 {{count}}件",
+                "pendingRequestsAction": "申請",
+                "pendingRequestsDescription": "勤務表に反映するか決めてください",
+                "pendingRequestsTitle": "確認待ちの勤務希望 {{count}}件",
+                "todayAction": "今日",
+                "todayFallback": "今日までに対応する投稿です",
+                "todayTitle": "本日締切 {{count}}件",
+                "unreadChatAction": "チャット",
+                "unreadChatDescription": "最近の会話を確認してください",
+                "unreadChatTitle": "未読の病棟チャット {{count}}件",
+                "waitingNursesAction": "メンバー",
+                "waitingNursesDescription": "病棟に追加するメンバーを確認してください",
+                "waitingNursesTitle": "入室待ち {{count}}名"
+            },
+            "today": {
+                "emptyShift": "本日の勤務は空です"
             }
         }
     },
@@ -6964,8 +7420,8 @@ export const ja: TLocale = {
     },
     "widget": {
         "requestTutorial": {
-            "listInfo": "看護師が申請した勤務をここでまとめて確認できます。",
-            "listTitle": "右側で希望シフトを確認",
+            "listInfo": "看護師が申請した勤務希望をここでまとめて確認できます。",
+            "listTitle": "右側で勤務希望を確認",
             "pendingInfo": "残っている待機申請をここでまとめて確認できます。",
             "pendingTitle": "待機中の申請だけを表示できます"
         },
@@ -6975,13 +7431,13 @@ export const ja: TLocale = {
             "previous": "戻る"
         },
         "wardChat": {
-            "closeAria": "病棟トークを閉じる",
+            "closeAria": "病棟チャットを閉じる",
             "conversationStart": "会話の始まり",
             "deletedMessage": "削除されたメッセージです",
             "inputPlaceholder": "メッセージを入力",
             "loadOlder": "以前のメッセージ",
-            "openAria": "病棟トークを開く",
-            "openWithUnreadAria": "病棟トークを開く、未読メッセージ{{count}}件",
+            "openAria": "病棟チャットを開く",
+            "openWithUnreadAria": "病棟チャットを開く、未読メッセージ{{count}}件",
             "sendAria": "メッセージを送信",
             "state": {
                 "emptyDescription": "最初のメッセージを送ってみましょう。",
@@ -6989,8 +7445,8 @@ export const ja: TLocale = {
                 "loadFailed": "会話を読み込めませんでした。",
                 "retry": "再試行"
             },
-            "subtitle": "病棟メンバーチャット",
-            "title": "病棟トーク",
+            "subtitle": "病棟メンバーのチャット",
+            "title": "病棟チャット",
             "toast": {
                 "sendFailed": "メッセージを送信できませんでした。"
             }
@@ -6998,7 +7454,7 @@ export const ja: TLocale = {
         "wardCodeGuide": {
             "benefits": {
                 "appApply": {
-                    "description": "看護師がDutyingアプリで休み希望や勤務希望を送ると、管理者は一画面で確認できます。",
+                    "description": "看護師がDutyingアプリで休み希望や勤務希望を送ると、\n管理者は一画面で確認できます。",
                     "title": "看護師がアプリからすぐ申請できます"
                 },
                 "board": {
@@ -7017,7 +7473,7 @@ export const ja: TLocale = {
             "closeAria": "病棟コード案内を閉じる",
             "copyAria": "病棟コードをコピー",
             "description": "看護師がDutyingアプリでこのコードを入力すると、病棟に連携されます。",
-            "participationGuide": "Dutyingアプリで病棟参加をタップし、Dutying病棟コードを入力してください。",
+            "participationGuide": "Dutyingアプリで病棟参加をタップし、\nDutying病棟コードを入力してください。",
             "participationGuideAria": "Dutying病棟コードの入力方法を表示",
             "title": "所属看護師に病棟コードを共有してください",
             "toast": {

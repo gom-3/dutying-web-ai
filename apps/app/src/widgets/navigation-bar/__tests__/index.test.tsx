@@ -199,7 +199,7 @@ describe('NavigationBar', () => {
         expect(screen.queryByRole('button', {name: '듀팅 병동코드 복사하기'})).not.toBeInTheDocument();
     });
 
-    it('마이페이지 메뉴를 내비게이션 하단에 고정하고 하단 프로필 영역은 렌더링하지 않는다', () => {
+    it('마이페이지 메뉴를 설정 섹션 아래에 두고 듀팅 문구를 내비게이션 하단 중앙에 둔다', () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>
                 <NavigationBar />
@@ -207,9 +207,14 @@ describe('NavigationBar', () => {
         );
 
         const accountButton = screen.getByRole('button', {name: '마이페이지'});
+        const dutyingLink = screen.getByRole('link', {name: '듀팅'});
 
         expect(accountButton).toBeInTheDocument();
-        expect(accountButton.parentElement?.parentElement).toHaveClass('mt-auto');
+        expect(accountButton.parentElement?.parentElement).not.toHaveClass('mt-auto');
+        expect(dutyingLink.parentElement).toHaveClass('mt-auto');
+        expect(dutyingLink).toHaveClass('mx-auto', 'text-gray-4');
+        expect(screen.queryByRole('button', {name: '듀팅'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('link', {name: '문의하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
@@ -266,9 +271,42 @@ describe('NavigationBar', () => {
 
         expect(screen.getByText('make page')).toBeInTheDocument();
 
-        await userEvent.click(screen.getByRole('link', {name: '근무표'}));
+        await userEvent.click(screen.getByRole('link', {name: '홈'}));
 
         expect(await screen.findByText('home page')).toBeInTheDocument();
+    });
+
+    it('듀팅 메뉴를 클릭하면 서비스 정보 페이지로 이동한다', async () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route
+                        path={ROUTE.MAKE}
+                        element={
+                            <div className="flex">
+                                <NavigationBar />
+                                <div>make page</div>
+                            </div>
+                        }
+                    />
+                    <Route
+                        path={ROUTE.DUTYING}
+                        element={
+                            <div className="flex">
+                                <NavigationBar />
+                                <div>dutying page</div>
+                            </div>
+                        }
+                    />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('make page')).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole('link', {name: '듀팅'}));
+
+        expect(await screen.findByText('dutying page')).toBeInTheDocument();
     });
 
     it('설정 메뉴를 클릭하면 병동 설정 페이지로 이동한다', async () => {

@@ -26,6 +26,7 @@ import {getRequestShiftEditAvailability} from './model/utils';
 const useRequestShift = (activeEffect = false) => {
     const {t} = useTypedTranslation();
     const {
+        wardId: requestWardId,
         year,
         month,
         focus,
@@ -37,6 +38,7 @@ const useRequestShift = (activeEffect = false) => {
         changeStatus,
         updatingRequestId,
         setState,
+        setWardContext,
     } = useRequestShiftStore();
     const {
         state: {wardId, isAuth, _loaded, accountMeStatus},
@@ -59,27 +61,31 @@ const useRequestShift = (activeEffect = false) => {
         refetch: refetchShiftTeams,
     } = useQuery({
         ...shiftTeamsQueryOptions,
-        queryFn: async () => {
-            const res = await WardAPI.getShiftTeams(wardId!);
-
-            if (res.length === 0) {
-                setState('currentShiftTeamId', null);
-
-                return res;
-            }
-
-            if (currentShiftTeamId) {
-                if (res.every((shiftTeam) => shiftTeam.shiftTeamId !== currentShiftTeamId)) {
-                    setState('currentShiftTeamId', res[0].shiftTeamId);
-                }
-            } else {
-                setState('currentShiftTeamId', res[0].shiftTeamId);
-            }
-
-            return res;
-        },
+        queryFn: async () => WardAPI.getShiftTeams(wardId!),
         enabled: !!wardId,
     });
+    const isCurrentShiftTeamReady =
+        wardId !== null &&
+        requestWardId === wardId &&
+        currentShiftTeamId !== null &&
+        shiftTeamsStatus === 'success' &&
+        Boolean(shiftTeams?.some((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId));
+
+    useEffect(() => {
+        setWardContext(wardId);
+    }, [setWardContext, wardId]);
+
+    useEffect(() => {
+        if (wardId === null || requestWardId !== wardId || shiftTeamsStatus !== 'success') return;
+
+        const firstTeamId = shiftTeams?.[0]?.shiftTeamId ?? null;
+        const hasCurrentTeam = currentShiftTeamId !== null && Boolean(shiftTeams?.some((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId));
+        const nextShiftTeamId = hasCurrentTeam ? currentShiftTeamId : firstTeamId;
+
+        if (nextShiftTeamId !== currentShiftTeamId) {
+            setState('currentShiftTeamId', nextShiftTeamId);
+        }
+    }, [currentShiftTeamId, requestWardId, setState, shiftTeams, shiftTeamsStatus, wardId]);
     const teamPendingRequestCountQueries = useQueries({
         queries: (shiftTeams ?? []).map((shiftTeam) => ({
             queryKey: wardQueryKeys.requestList(wardId ?? 0, shiftTeam.shiftTeamId, year, month),
@@ -104,7 +110,7 @@ const useRequestShift = (activeEffect = false) => {
     } = useQuery({
         ...requestListQueryOptions,
         queryFn: async () => WardAPI.getRequestList(wardId!, currentShiftTeamId!, year, month),
-        enabled: wardId !== null && currentShiftTeamId !== null,
+        enabled: isCurrentShiftTeamReady,
     });
     const {
         data: requestShift,
@@ -130,7 +136,7 @@ const useRequestShift = (activeEffect = false) => {
 
             return res;
         },
-        enabled: wardId !== null && currentShiftTeamId !== null,
+        enabled: isCurrentShiftTeamReady,
     });
     const {changeRequestShift} = useRequestShiftChangeQueue({
         wardId,
@@ -275,12 +281,12 @@ const useRequestShift = (activeEffect = false) => {
 
         const retryTasks: Promise<unknown>[] = [refetchShiftTeams()];
 
-        if (currentShiftTeamId !== null) {
+        if (isCurrentShiftTeamReady) {
             retryTasks.push(refetchDutyRequestList(), refetchRequestShift());
         }
 
         await Promise.all(retryTasks);
-    }, [currentShiftTeamId, handleGetAccountMe, refetchDutyRequestList, refetchRequestShift, refetchShiftTeams, wardId]);
+    }, [handleGetAccountMe, isCurrentShiftTeamReady, refetchDutyRequestList, refetchRequestShift, refetchShiftTeams, wardId]);
 
     useEffect(() => {
         if (!activeEffect || !requestShift) return;
@@ -320,7 +326,9 @@ const useRequestShift = (activeEffect = false) => {
             wardShiftTypeMap,
             readonly,
             updatingRequestId,
-            currentShiftTeam: shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId) as TShiftTeam | null,
+            currentShiftTeam: isCurrentShiftTeamReady
+                ? (shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId) as TShiftTeam | null)
+                : null,
             shiftTeams,
             teamPendingRequestCountByTeamId,
             editAvailability,

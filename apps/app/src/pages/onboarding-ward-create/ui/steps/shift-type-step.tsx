@@ -1,6 +1,13 @@
 ﻿import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {
+    getShiftShortNameEntryKey,
+    hasInvalidShiftShortNameEntryKey,
+    hasInvalidShiftShortNameLengthInput,
+    normalizeShiftShortNameInput,
+    SHIFT_SHORT_NAME_MAX_LENGTH,
+} from '@/shared/lib/shift-short-name';
 import Card from '@/shared/ui/Card';
 import {Input} from '@/shared/ui/primitives/input';
 import {DEFAULT_SHIFT_TYPE_COLORS, type TOnboardingWardShiftType} from '../../model';
@@ -14,18 +21,12 @@ interface IShiftTypeStepProps {
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_72px_112px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_84px_112px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
-const normalizeShiftShortNameInput = (value: string) =>
-    Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
-const hasInvalidShiftShortNameInput = (value: string) =>
-    /\s/.test(value) || Array.from(value.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
-const getShiftShortNameDuplicateKey = (value: string) => Array.from(value.trim().toLocaleUpperCase())[0] ?? '';
 const parseShiftTimeToMinutes = (value: string) => {
     if (!SHIFT_TIME_FORMAT_REGEX.test(value)) return null;
 
@@ -105,28 +106,11 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
-    const duplicatedShiftNames = useMemo(() => {
-        const countByName = new Map<string, number>();
-
-        shiftTypes.forEach((shiftType) => {
-            const normalizedName = shiftType.name.trim().toLocaleLowerCase();
-
-            if (!normalizedName) return;
-
-            countByName.set(normalizedName, (countByName.get(normalizedName) ?? 0) + 1);
-        });
-
-        return new Set(
-            Array.from(countByName.entries())
-                .filter(([, count]) => count > 1)
-                .map(([name]) => name),
-        );
-    }, [shiftTypes]);
     const duplicatedShiftShortNameKeys = useMemo(() => {
         const countByShortNameKey = new Map<string, number>();
 
         shiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameDuplicateKey(shiftType.shortName);
+            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
 
             if (!normalizedShortNameKey) return;
 
@@ -139,15 +123,6 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                 .map(([shortNameKey]) => shortNameKey),
         );
     }, [shiftTypes]);
-    const getShiftNameError = (name: string) => {
-        const normalizedName = name.trim().toLocaleLowerCase();
-
-        if (!normalizedName) return t('page.onboardingWardCreate.shiftType.validation.nameRequired');
-
-        if (duplicatedShiftNames.has(normalizedName)) return t('page.onboardingWardCreate.shiftType.validation.nameDuplicate');
-
-        return null;
-    };
     const getShiftShortNameError = (shiftTypeId: string, shortName: string) => {
         if (shortNameErrorById[shiftTypeId]) return shortNameErrorById[shiftTypeId];
 
@@ -155,9 +130,18 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
 
         if (!normalizedShortName) return t('page.onboardingWardCreate.shiftType.validation.shortNameRequired');
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) {
+        if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
+            return t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey');
+        }
+
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameEntryKey(normalizedShortName))) {
             return t('page.onboardingWardCreate.shiftType.validation.shortNameDuplicate');
         }
+
+        return null;
+    };
+    const getShiftNameError = (name: string) => {
+        if (!name.trim()) return t('page.onboardingWardCreate.shiftType.validation.nameRequired');
 
         return null;
     };
@@ -174,10 +158,9 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
 
         if (startMinutes == null || endMinutes == null) return t('page.onboardingWardCreate.shiftType.validation.timeFormat');
 
-        const isEndEarlierThanStart = endMinutes < startMinutes;
         const isSameTime = endMinutes === startMinutes;
 
-        if (isSameTime || (isEndEarlierThanStart && shiftType.classification !== 'NIGHT')) {
+        if (isSameTime) {
             return t('page.onboardingWardCreate.shiftType.validation.timeOrder');
         }
 
@@ -190,10 +173,6 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
         const endMinutes = parseShiftTimeToMinutes(shiftType.endTime.trim());
 
         if (startMinutes == null || endMinutes == null || endMinutes === startMinutes) {
-            return '-';
-        }
-
-        if (endMinutes < startMinutes && shiftType.classification !== 'NIGHT') {
             return '-';
         }
 
@@ -241,7 +220,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             <div className="overflow-visible rounded-[16px] bg-white px-1 py-1">
                 {shiftTypes.map((shiftType) => (
                     <div key={shiftType.id} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-4 px-3 py-3`}>
-                        <div className="flex flex-col gap-1">
+                        <div className="flex flex-col items-center gap-1">
                             <Input
                                 value={shiftType.name}
                                 maxLength={SHIFT_NAME_MAX_LENGTH}
@@ -252,7 +231,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 aria-describedby={
                                     getShiftNameError(shiftType.name) ? `onboarding-shift-name-error-${shiftType.id}` : undefined
                                 }
-                                className={`mx-auto w-full text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                     getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                 }`}
                                 placeholder={t('page.onboardingWardCreate.shiftType.name')}
@@ -270,10 +249,15 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 onChange={(event) => {
                                     const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 
-                                    if (hasInvalidShiftShortNameInput(event.target.value)) {
+                                    if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
                                         setShortNameErrorById((prev) => ({
                                             ...prev,
                                             [shiftType.id]: t('page.onboardingWardCreate.shiftType.validation.shortNameLength'),
+                                        }));
+                                    } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
+                                        setShortNameErrorById((prev) => ({
+                                            ...prev,
+                                            [shiftType.id]: t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey'),
                                         }));
                                     } else {
                                         setShortNameErrorById((prev) => ({...prev, [shiftType.id]: ''}));
@@ -289,7 +273,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                         ? `onboarding-shift-short-name-error-${shiftType.id}`
                                         : undefined
                                 }
-                                className={`h-10 w-14 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                className={`h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
                                     getShiftShortNameError(shiftType.id, shiftType.shortName) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
                                 }`}
                                 placeholder="-"
@@ -396,7 +380,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                             <button
                                 type="button"
                                 aria-label={t('page.onboardingWardCreate.shiftType.colorSelectAria', {
-                                    shiftName: shiftType.name || t('page.onboardingWardCreate.shiftType.work'),
+                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
                                 })}
                                 className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
                                 onClick={() => setOpenedColorShiftTypeId((prev) => (prev === shiftType.id ? null : shiftType.id))}
@@ -433,7 +417,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                             <button
                                 type="button"
                                 aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
-                                    shiftName: shiftType.name || t('page.onboardingWardCreate.shiftType.work'),
+                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
                                 })}
                                 onClick={() => onDelete(shiftType.id)}
                                 className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"

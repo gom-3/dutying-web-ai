@@ -1,7 +1,11 @@
 import {cn} from '@dutying/utils/style';
+import type {AnimationItem} from 'lottie-web';
 import {AlertTriangle, Check, Eye, EyeOff, History, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
 import type {ReactNode} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import type {TAsyncScheduleValidationStatus} from '@/features/shift-editor';
+import constraintValidationDotsAnimation from '@/shared/assets/animation/constraint-validation-dots.json';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getAiAutofillActionLabel, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
@@ -25,6 +29,7 @@ type TAiAutofillToolbarProps = {
     isAiGenerating: boolean;
     aiStatus: TAiAutofillStatus;
     hasCompletedAiFill: boolean;
+    scheduleValidationStatus: TAsyncScheduleValidationStatus;
     onConfirm: () => void;
     isConfirming: boolean;
     canConfirm: boolean;
@@ -53,6 +58,7 @@ export function AiAutofillToolbar({
     isAiGenerating,
     aiStatus,
     hasCompletedAiFill,
+    scheduleValidationStatus,
     onConfirm,
     isConfirming,
     canConfirm,
@@ -61,11 +67,29 @@ export function AiAutofillToolbar({
 }: TAiAutofillToolbarProps) {
     const {t} = useTypedTranslation();
     const actionLabelKey = AI_ACTION_LABEL_KEYS[getAiAutofillActionLabel(aiStatus, hasCompletedAiFill)];
+    const isValidationChecking = scheduleValidationStatus === 'validating';
 
     return (
         <div className="ai-autofill-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3">
             <div className={`ai-autofill-toolbar__titles ${MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS}`}>
-                <h1 className={`ai-autofill-toolbar__title ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>{t('page.makeShift.aiRefill.toolbarTitle')}</h1>
+                <div className="ai-autofill-toolbar__title-row flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                    <h1 className={`ai-autofill-toolbar__title min-w-0 ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>
+                        {t('page.makeShift.aiRefill.toolbarTitle')}
+                    </h1>
+                    {isValidationChecking && (
+                        <span
+                            className={cn(
+                                'ai-autofill-toolbar__validation-status inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5',
+                                'font-apple text-[12px] leading-none font-semibold whitespace-nowrap',
+                                'text-gray-2 bg-gray-7',
+                            )}
+                            aria-live="polite"
+                        >
+                            <ValidationCheckingLottie />
+                            {t('page.makeShift.aiRefill.validationStatus.checking')}
+                        </span>
+                    )}
+                </div>
                 <p className={`ai-autofill-toolbar__subtitle ${MAKE_SHIFT_STEP_SUBTITLE_CLASS}`}>
                     {t('page.makeShift.aiRefill.toolbarSubTitle')}
                 </p>
@@ -207,6 +231,60 @@ export function AiAutofillToolbar({
                 </div>
             </div>
         </div>
+    );
+}
+
+function ValidationCheckingLottie() {
+    const containerRef = useRef<HTMLSpanElement | null>(null);
+    const animationRef = useRef<AnimationItem | null>(null);
+    const [isAnimationReady, setIsAnimationReady] = useState(false);
+
+    useEffect(() => {
+        let isDisposed = false;
+
+        if (!containerRef.current) return;
+
+        if (import.meta.env.MODE === 'test') return;
+
+        void import('lottie-web/build/player/lottie_light').then(({default: lottiePlayer}) => {
+            if (isDisposed || !containerRef.current) return;
+
+            const animation = lottiePlayer.loadAnimation({
+                container: containerRef.current,
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData: constraintValidationDotsAnimation,
+                rendererSettings: {
+                    preserveAspectRatio: 'xMidYMid meet',
+                },
+            });
+
+            animationRef.current = animation;
+            setIsAnimationReady(true);
+        });
+
+        return () => {
+            isDisposed = true;
+            animationRef.current?.destroy();
+            animationRef.current = null;
+        };
+    }, []);
+
+    return (
+        <span aria-hidden className="relative inline-block size-4 shrink-0 overflow-hidden">
+            <span
+                className={cn(
+                    'absolute inset-0 flex items-center justify-center gap-[2px] transition-opacity duration-150',
+                    isAnimationReady ? 'opacity-0' : 'opacity-100',
+                )}
+            >
+                <span className="size-1 rounded-full bg-current opacity-50" />
+                <span className="size-1 rounded-full bg-current opacity-75" />
+                <span className="size-1 rounded-full bg-current opacity-50" />
+            </span>
+            <span ref={containerRef} className="absolute inset-0 block size-full" />
+        </span>
     );
 }
 

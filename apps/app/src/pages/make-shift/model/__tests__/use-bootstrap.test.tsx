@@ -221,14 +221,36 @@ describe('useMakeShiftBootstrap', () => {
         });
     });
 
-    it('opens the confirmed step from the backend workspace step after returning to make without onboarding state', async () => {
-        wardApiMocks.getShift.mockResolvedValue({
-            ...makePartiallyAssignedShift(),
-            workflowStatus: 'NOT_STARTED',
-            workflowStep: null,
-        });
+    it('opens the confirmed step from the backend workspace step when no explicit workflow status is present', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makePartiallyAssignedShift());
         wardApiMocks.getWorkspaceSchedule.mockResolvedValue({
             currentStep: 6,
+        });
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentShiftTeamId: 10,
+                currentStep: 6,
+                maxReachedStep: 6,
+                shiftExists: true,
+                shiftFullyAssigned: true,
+            });
+        });
+    });
+
+    it('keeps an explicit confirmed workflow status ahead of an inferred workspace step', async () => {
+        wardApiMocks.getShift.mockResolvedValue({
+            ...makeEmptyShift(),
+            workflowStatus: 'CONFIRMED',
+            workflowStep: 6,
+        });
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue({
+            currentStep: 1,
         });
 
         renderHook(() => useMakeShiftBootstrap(1), {

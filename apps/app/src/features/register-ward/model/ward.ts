@@ -6,7 +6,7 @@ type TRegisterWardTranslator = ReturnType<typeof useTypedTranslation>['t'];
 
 export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
     {
-        name: '\uB370\uC774',
+        name: 'Day',
         shortName: 'D',
         startTime: '07:00',
         endTime: '15:00',
@@ -17,7 +17,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'DAY',
     },
     {
-        name: '\uC774\uBE0C\uB2DD',
+        name: 'Evening',
         shortName: 'E',
         startTime: '15:00',
         endTime: '23:00',
@@ -28,7 +28,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'EVENING',
     },
     {
-        name: '\uB098\uC774\uD2B8',
+        name: 'Night',
         shortName: 'N',
         startTime: '23:00',
         endTime: '07:00',
@@ -39,7 +39,7 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
         classification: 'NIGHT',
     },
     {
-        name: '\uC624\uD504',
+        name: 'Off',
         shortName: 'O',
         startTime: '',
         endTime: '',
@@ -52,26 +52,26 @@ export const DEFAULT_WARD_SHIFT_TYPES: TCreateWardDTO['wardShiftTypes'] = [
 ];
 
 const DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME = {
-    D: 'feature.registerWard.defaultShiftType.day',
-    E: 'feature.registerWard.defaultShiftType.evening',
-    N: 'feature.registerWard.defaultShiftType.night',
-    O: 'feature.registerWard.defaultShiftType.off',
+    D: 'day',
+    E: 'evening',
+    N: 'night',
+    O: 'off',
 } as const;
 
 export function createDefaultWardShiftTypes(t: TRegisterWardTranslator): TCreateWardDTO['wardShiftTypes'] {
     return DEFAULT_WARD_SHIFT_TYPES.map((shiftType) => ({
         ...shiftType,
-        name:
-            DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as keyof typeof DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME] !==
-            undefined
-                ? t(DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as keyof typeof DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME])
-                : shiftType.name,
+        name: t(
+            `feature.registerWard.defaultShiftType.${DEFAULT_SHIFT_TYPE_NAME_KEY_BY_SHORT_NAME[shiftType.shortName as 'D' | 'E' | 'N' | 'O']}`,
+        ),
     }));
 }
 
 export function getWardShiftValidationMessage(wardShiftTypes: TCreateWardDTO['wardShiftTypes']) {
     const invalidShiftType = wardShiftTypes.find((shiftType) => {
-        if (shiftType.name === '') return true;
+        if (shiftType.name === '') {
+            return true;
+        }
 
         if (!shiftType.isOff && (shiftType.startTime === '' || shiftType.endTime === '')) {
             return true;

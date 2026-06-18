@@ -399,6 +399,11 @@ export type TScheduleViolationPeriodDto = {
     dates?: string[];
 };
 
+export type TScheduleViolationDisplayContextDto = {
+    period?: TScheduleViolationPeriodDto | null;
+    affectedCells: TAffectedCellDto[];
+};
+
 export type TScheduleViolationDto = {
     violationId: string;
     ruleId: number;
@@ -407,6 +412,7 @@ export type TScheduleViolationDto = {
     message: string;
     period?: TScheduleViolationPeriodDto | null;
     affectedCells: TAffectedCellDto[];
+    displayContext?: TScheduleViolationDisplayContextDto | null;
     fixable: boolean;
 };
 
@@ -522,9 +528,7 @@ export interface IWardAPI {
     createOnboardingWardDraft: (draftDTO: TCreateOnboardingWardDraftDTO) => Promise<TWardResponse>;
     getCurrentOnboardingWardDraft: () => Promise<TOnboardingWardDraftResponse | null>;
     updateOnboardingWardDraft: (wardId: number, draftDTO: TUpdateOnboardingWardDraftDTO) => Promise<TOnboardingWardDraftResponse>;
-    previewOnboardingScheduleInput: (
-        previewDTO: TOnboardingScheduleInputPreviewDTO,
-    ) => Promise<TOnboardingScheduleInputPreviewResponse>;
+    previewOnboardingScheduleInput: (previewDTO: TOnboardingScheduleInputPreviewDTO) => Promise<TOnboardingScheduleInputPreviewResponse>;
     completeOnboardingWardDraft: (wardId: number, createWardDTO: TCreateWardDTO) => Promise<TWardResponse>;
     addMeToWaitingNurses: (wardId: number) => Promise<void>;
     connectWaitingNurses: (wardId: number, waitingNurseId: number, targetNurseId: number) => Promise<void>;
@@ -619,6 +623,7 @@ export type TCreateWardShiftTypeDTO = {
     isDefault: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    isActive?: boolean;
 };
 
 export type TCreateWardSeedNurseDTO = {

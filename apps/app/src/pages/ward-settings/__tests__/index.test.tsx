@@ -1,4 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {waitFor} from '@testing-library/react';
+import toast from 'react-hot-toast';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
 
@@ -6,6 +8,12 @@ const mockUseWardSettings = vi.fn();
 
 vi.mock('../model/ward-settings-hook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
+}));
+
+vi.mock('react-hot-toast', () => ({
+    default: {
+        success: vi.fn(),
+    },
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
@@ -37,8 +45,8 @@ type TMockValue = {
             wardShiftTypeId: number;
             name: string;
             shortName: string;
-            startTime: string;
-            endTime: string;
+            startTime: string | null;
+            endTime: string | null;
             color: string;
             isDefault: boolean;
             isOff: boolean;
@@ -115,6 +123,7 @@ function createValue(overrides?: {state?: Partial<TMockValue['state']>; actions?
 describe('WardSettingsPage', () => {
     beforeEach(() => {
         mockUseWardSettings.mockReset();
+        vi.mocked(toast.success).mockClear();
     });
 
     it('근무 유형 탭에서 피그마 컬럼과 행을 보여준다', () => {
@@ -123,11 +132,135 @@ describe('WardSettingsPage', () => {
         render(<WardSettingsPage />);
 
         expect(screen.getByText('근무 설정')).toBeInTheDocument();
-        expect(screen.getByText('근무명')).toBeInTheDocument();
         expect(screen.getByText('약자')).toBeInTheDocument();
         expect(screen.getByText('근무 시간')).toBeInTheDocument();
-        expect(screen.getByDisplayValue('데이')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('D')).toBeInTheDocument();
         expect(screen.getByText('8h')).toBeInTheDocument();
+    });
+
+    it('renders shift types with null times from the API without crashing', () => {
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: [
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: 'Archived',
+                            shortName: 'A',
+                            startTime: null,
+                            endTime: null,
+                            isDefault: false,
+                            isOff: false,
+                            classification: 'OTHER_WORK',
+                        },
+                    ],
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByDisplayValue('A')).toBeInTheDocument();
+        expect(screen.getByText('-')).toBeInTheDocument();
+    });
+
+    it('allows overnight shift times and preserves payload classifications on save', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: [
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 1,
+                            name: 'Day',
+                            shortName: 'D',
+                            startTime: '07:00',
+                            endTime: '15:00',
+                            classification: 'DAY',
+                        },
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: 'Late',
+                            shortName: 'L',
+                            startTime: '16:30',
+                            endTime: '00:30',
+                            isDefault: false,
+                            classification: 'OTHER_WORK',
+                        },
+                    ],
+                },
+                actions: {
+                    updateShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getAllByText('8h')).toHaveLength(2);
+
+        const buttons = screen.getAllByRole('button');
+        await user.click(buttons[buttons.length - 1]!);
+
+        await waitFor(() => {
+            expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({classification: 'DAY'}));
+            expect(updateShiftType).toHaveBeenCalledWith(
+                2,
+                expect.objectContaining({
+                    startTime: '16:30',
+                    endTime: '00:30',
+                    classification: 'NIGHT',
+                }),
+            );
+        });
+    });
+
+    it('shows a success toast after shift settings are saved', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                actions: {
+                    updateShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith('근무 설정을 저장했어요.');
+        });
+    });
+
+    it('does not show the success toast when saving a shift setting fails', async () => {
+        const user = userEvent.setup();
+        const updateShiftType = vi.fn().mockResolvedValue(false);
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                actions: {
+                    updateShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(updateShiftType).toHaveBeenCalled();
+        });
+        expect(toast.success).not.toHaveBeenCalled();
     });
 
     it('제약 조건 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
@@ -158,7 +291,7 @@ describe('WardSettingsPage', () => {
 
         await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
 
-        expect(screen.getByDisplayValue('새 근무')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('W')).toBeInTheDocument();
     });
 
     it('색상 버튼을 누르면 색상 팔레트를 연다', async () => {

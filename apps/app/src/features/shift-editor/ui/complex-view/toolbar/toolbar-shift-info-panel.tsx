@@ -27,9 +27,7 @@ export function ToolbarShiftInfoPanel({shift, open, onClose}: TToolbarShiftInfoP
                     {shift?.wardShiftTypes.map((shiftType, index) => (
                         <div key={index} className="flex shrink-0 items-center gap-[.3125rem]">
                             <ShiftBadge shiftType={shiftType} />
-                            <p className="font-apple text-[.875rem] text-sub-2">
-                                {shiftType.name}({shiftType.shortName})
-                            </p>
+                            <p className="font-poppins text-[.875rem] text-sub-2">{shiftType.shortName}</p>
                         </div>
                     ))}
                 </div>

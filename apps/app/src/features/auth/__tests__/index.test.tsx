@@ -1,6 +1,7 @@
 import {act, renderHook} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {AdminAPI, AuthAPI} from '@/shared/api';
+import {SERVICE_REGION_STORAGE_KEY} from '@/shared/i18n/locale';
 import useAuth from '../index';
 import useAuthStore from '../model/store';
 
@@ -14,16 +15,35 @@ const {
     mockGetLoginRedirectDecision,
     setAccessTokenMock,
     setAdminAccessTokenMock,
+    mockChangeLanguage,
+    mockI18n,
 } = vi.hoisted(() => ({
-    mockNavigate: vi.fn(),
-    mockResetRequestShiftState: vi.fn(),
-    mockSetLoading: vi.fn(),
-    mockInitTutorial: vi.fn(),
-    mockSendEvent: vi.fn(),
-    mockExecuteLoginRedirect: vi.fn(),
-    mockGetLoginRedirectDecision: vi.fn(() => ({type: 'none'})),
-    setAccessTokenMock: vi.fn(),
-    setAdminAccessTokenMock: vi.fn(),
+    ...(() => {
+        const mockI18n = {
+            language: 'en',
+            resolvedLanguage: 'en',
+            changeLanguage: vi.fn((language: string) => {
+                mockI18n.language = language;
+                mockI18n.resolvedLanguage = language;
+
+                return Promise.resolve(language);
+            }),
+        };
+
+        return {
+            mockNavigate: vi.fn(),
+            mockResetRequestShiftState: vi.fn(),
+            mockSetLoading: vi.fn(),
+            mockInitTutorial: vi.fn(),
+            mockSendEvent: vi.fn(),
+            mockExecuteLoginRedirect: vi.fn(),
+            mockGetLoginRedirectDecision: vi.fn(() => ({type: 'none'})),
+            setAccessTokenMock: vi.fn(),
+            setAdminAccessTokenMock: vi.fn(),
+            mockChangeLanguage: mockI18n.changeLanguage,
+            mockI18n,
+        };
+    })(),
 }));
 
 vi.mock('react-router', () => ({
@@ -65,6 +85,10 @@ vi.mock('@/shared/api/client', () => ({
     setAdminAccessToken: (...args: unknown[]) => setAdminAccessTokenMock(...args),
 }));
 
+vi.mock('@/i18n', () => ({
+    default: mockI18n,
+}));
+
 vi.mock('@/shared/api', () => ({
     AdminAPI: {
         getMe: vi.fn(),
@@ -86,6 +110,9 @@ describe('useAuth', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         localStorage.clear();
+        window.history.replaceState({}, '', '/request');
+        mockI18n.language = 'en';
+        mockI18n.resolvedLanguage = 'en';
         useAuthStore.setState({
             accountMe: {accountId: 9, wardId: 99, nurseId: 19} as never,
             accountMeStatus: 'success',
@@ -209,6 +236,54 @@ describe('useAuth', () => {
             wardId: 99,
             accountMeStatus: 'success',
         });
+    });
+
+    it('applies account locale preferences during bootstrap', async () => {
+        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+            accountId: 9,
+            nurseId: 19,
+            wardId: 99,
+            preferredLanguage: 'ja',
+            serviceRegion: 'JP',
+        } as never);
+
+        const {result} = renderHook(() => useAuth());
+
+        await act(async () => {
+            await result.current.actions.handleGetAccountMe();
+        });
+
+        expect(mockChangeLanguage).toHaveBeenCalledWith('ja');
+        expect(localStorage.getItem(SERVICE_REGION_STORAGE_KEY)).toBe('JP');
+        expect(useAuthStore.getState()).toMatchObject({
+            accountMe: {
+                preferredLanguage: 'ja',
+                serviceRegion: 'JP',
+            },
+            accountMeStatus: 'success',
+        });
+    });
+
+    it('keeps an explicit query language ahead of account locale preferences during bootstrap', async () => {
+        window.history.replaceState({}, '', '/request?lng=ko');
+        mockI18n.language = 'ko';
+        mockI18n.resolvedLanguage = 'ko';
+        vi.mocked(AdminAPI.getMe).mockResolvedValueOnce({
+            accountId: 9,
+            nurseId: 19,
+            wardId: 99,
+            preferredLanguage: 'ja',
+            serviceRegion: 'JP',
+        } as never);
+
+        const {result} = renderHook(() => useAuth());
+
+        await act(async () => {
+            await result.current.actions.handleGetAccountMe();
+        });
+
+        expect(mockChangeLanguage).not.toHaveBeenCalled();
+        expect(localStorage.getItem(SERVICE_REGION_STORAGE_KEY)).toBe('JP');
     });
 
     it('marks the demo session as expired during bootstrap instead of logging out', async () => {

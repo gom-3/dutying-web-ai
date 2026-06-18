@@ -14,6 +14,34 @@ describe('selection', () => {
         });
     });
 
+    it('keeps current-month wrapping separate from previous-shift columns', () => {
+        const boundsWithPreviousShifts = {...bounds, minCol: -2};
+        const selection: TSelection = {type: 'single', anchor: {row: 0, col: 2}};
+
+        expect(moveSelection(selection, 'right', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 1, col: 0},
+        });
+        expect(moveSelection({type: 'single', anchor: {row: 1, col: 0}}, 'left', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 0, col: 2},
+        });
+    });
+
+    it('keeps previous-shift wrapping separate from current-month columns', () => {
+        const boundsWithPreviousShifts = {...bounds, minCol: -2};
+        const selection: TSelection = {type: 'single', anchor: {row: 0, col: -1}};
+
+        expect(moveSelection(selection, 'right', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 1, col: -2},
+        });
+        expect(moveSelection({type: 'single', anchor: {row: 1, col: -2}}, 'left', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 0, col: -1},
+        });
+    });
+
     it('keeps the current cell when movement would leave the board', () => {
         const selection: TSelection = {type: 'single', anchor: {row: 0, col: 0}};
 
@@ -55,6 +83,19 @@ describe('selection', () => {
             type: 'range',
             from: {row: 1, col: 1},
             to: {row: 0, col: 1},
+        });
+    });
+
+    it('moves to column edges within the active column group', () => {
+        const boundsWithPreviousShifts = {...bounds, minCol: -2};
+
+        expect(moveSelectionToEdge({type: 'single', anchor: {row: 0, col: 1}}, 'left', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 0, col: 0},
+        });
+        expect(moveSelectionToEdge({type: 'single', anchor: {row: 0, col: -2}}, 'right', false, boundsWithPreviousShifts)).toEqual({
+            type: 'single',
+            anchor: {row: 0, col: -1},
         });
     });
 

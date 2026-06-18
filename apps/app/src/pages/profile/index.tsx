@@ -1,8 +1,9 @@
-﻿import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
+﻿import type {TPreferredLanguage} from '@dutying/domain';
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import imageCompression from 'browser-image-compression';
-import {type ChangeEvent, useEffect, useRef, useState} from 'react';
+import {ChevronDown, Languages, UserRound} from 'lucide-react';
+import {type ChangeEvent, useEffect, useId, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {useTranslation} from 'react-i18next';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
@@ -13,16 +14,19 @@ import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
 import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     getDefaultServiceRegionForLanguage,
-    getStoredServiceRegion,
     normalizePreferredLanguage,
-    normalizeServiceRegion,
     setStoredServiceRegion,
     SUPPORTED_LANGUAGES,
-    SUPPORTED_SERVICE_REGIONS,
 } from '@/shared/i18n/locale';
-import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {
+    CONTACT_PHONE_MAX_LENGTH,
+    isValidContactPhone,
+    normalizeContactPhoneForStorage,
+    sanitizeContactPhoneInput,
+} from '@/shared/lib/contact-phone';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -45,9 +49,7 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
-const SERVICE_REGION_OPTIONS = SUPPORTED_SERVICE_REGIONS;
 const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
-const normalizePhone = (value: string) => value.replace(/\D/g, '').slice(0, 11);
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const trimmed = value.trim();
 
@@ -59,17 +61,116 @@ const validateName = (value: string, messages: {required: string; invalid: strin
 
     return undefined;
 };
-const validatePhoneNum = (value: string, messages: {required: string; invalid: string}) => {
-    const digits = normalizePhone(value);
+const validatePhoneNum = (
+    value: string,
+    serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>,
+    messages: {required: string; invalid: string},
+) => {
+    const normalizedValue = normalizeContactPhoneForStorage(value);
 
-    if (!digits) return messages.required;
+    if (!normalizedValue) return messages.required;
 
-    if (!/^01([0|1|6|7|8|9])([0-9]{3,4})([0-9]{4})$/.test(digits)) {
+    if (!isValidContactPhone(normalizedValue, serviceRegion)) {
         return messages.invalid;
     }
 
     return undefined;
 };
+
+type TLanguageSelectProps = {
+    id: string;
+    labelId: string;
+    value: TPreferredLanguage;
+    options: readonly TPreferredLanguage[];
+    getOptionLabel: (language: TPreferredLanguage) => string;
+    onChange: (language: TPreferredLanguage) => void;
+    className?: string;
+    buttonClassName?: string;
+};
+
+function LanguageSelect({id, labelId, value, options, getOptionLabel, onChange, className, buttonClassName}: TLanguageSelectProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement | null>(null);
+    const selectedValueId = useId();
+    const selectedLabel = getOptionLabel(value);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const closeOnOutsideClick = (event: MouseEvent) => {
+            if (!rootRef.current?.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        const closeOnEscape = (event: globalThis.KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', closeOnOutsideClick);
+        document.addEventListener('keydown', closeOnEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', closeOnOutsideClick);
+            document.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [isOpen]);
+
+    return (
+        <div ref={rootRef} className={cn('relative', className)}>
+            <button
+                id={id}
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                aria-labelledby={`${labelId} ${selectedValueId}`}
+                className={cn(
+                    SELECT_FIELD_CLASS,
+                    'flex items-center justify-between gap-3 text-left focus-visible:outline-2 focus-visible:outline-main-1',
+                    isOpen && 'bg-white shadow-[0px_10px_28px_rgba(95,100,135,0.16)]',
+                    buttonClassName,
+                )}
+                onClick={() => setIsOpen((prev) => !prev)}
+            >
+                <span id={selectedValueId} className="min-w-0 truncate">
+                    {selectedLabel}
+                </span>
+                <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-180')} />
+            </button>
+            {isOpen ? (
+                <div
+                    role="listbox"
+                    aria-labelledby={labelId}
+                    className="absolute top-full right-0 left-0 z-30 mt-1 animate-in overflow-hidden rounded-[12px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
+                >
+                    {options.map((language) => {
+                        const isSelected = language === value;
+
+                        return (
+                            <button
+                                key={language}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                className={cn(
+                                    'flex w-full items-center px-4 py-2.5 text-left font-apple text-[15px] transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                    isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                )}
+                                onClick={() => {
+                                    onChange(language);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {getOptionLabel(language)}
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : null}
+        </div>
+    );
+}
 
 export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const {t} = useTypedTranslation();
@@ -83,7 +184,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const [draftName, setDraftName] = useState('');
     const [draftPhoneNum, setDraftPhoneNum] = useState('');
     const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
-    const [draftServiceRegion, setDraftServiceRegion] = useState<TServiceRegion>('KR');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<TProfileErrors>({});
@@ -108,9 +208,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             : getProfilePhoneNum(writeNurse, accountMe)
         : draftPhoneNum;
     const savedPreferredLanguage =
-        normalizePreferredLanguage(accountMe?.preferredLanguage) ?? normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
-    const savedServiceRegion =
-        normalizeServiceRegion(accountMe?.serviceRegion) ?? getStoredServiceRegion() ?? getDefaultServiceRegionForLanguage(savedPreferredLanguage);
+        normalizePreferredLanguage(accountMe?.preferredLanguage) ??
+        normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
+        'en';
+    const phoneValidationRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
@@ -125,8 +226,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const isAccountFormDirty =
         Boolean(profileImg) ||
         draftName.trim() !== (accountMe?.name ?? '').trim() ||
-        draftPhoneNum !== normalizePhone(accountMe?.phoneNum ?? '');
-    const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage || draftServiceRegion !== savedServiceRegion;
+        normalizeContactPhoneForStorage(draftPhoneNum) !== normalizeContactPhoneForStorage(accountMe?.phoneNum ?? '');
+    const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
     const hasUnsavedChanges = hasProfileChanges || isPreferenceDirty;
     const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges;
@@ -138,7 +239,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             });
         }
 
-        return validatePhoneNum(value, {
+        return validatePhoneNum(value, phoneValidationRegion, {
             required: validationMessages.phoneRequired,
             invalid: validationMessages.phoneInvalid,
         });
@@ -159,7 +260,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 required: validationMessages.nameRequired,
                 invalid: validationMessages.nameInvalid,
             }),
-            phoneNum: validatePhoneNum(phoneNum, {
+            phoneNum: validatePhoneNum(phoneNum, phoneValidationRegion, {
                 required: validationMessages.phoneRequired,
                 invalid: validationMessages.phoneInvalid,
             }),
@@ -177,7 +278,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 required: validationMessages.nameRequired,
                 invalid: validationMessages.nameInvalid,
             }),
-            phoneNum: validatePhoneNum(draftPhoneNum, {
+            phoneNum: validatePhoneNum(draftPhoneNum, phoneValidationRegion, {
                 required: validationMessages.phoneRequired,
                 invalid: validationMessages.phoneInvalid,
             }),
@@ -186,7 +287,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         setFieldErrors(nextErrors);
         setFieldTouched({name: true, phoneNum: true});
 
-        return {isValid: !nextErrors.name && !nextErrors.phoneNum, name: nextName, phoneNum: draftPhoneNum};
+        return {
+            isValid: !nextErrors.name && !nextErrors.phoneNum,
+            name: nextName,
+            phoneNum: normalizeContactPhoneForStorage(draftPhoneNum),
+        };
     };
     const handleChange = <T extends keyof TNurse>(key: T, value: TNurse[T]) => {
         if (!writeNurse) return;
@@ -199,17 +304,19 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         try {
             setIsSavingPreferences(true);
 
+            const nextServiceRegion = getDefaultServiceRegionForLanguage(draftPreferredLanguage);
             const isSaved = await updateAccountPreferences({
                 preferredLanguage: draftPreferredLanguage,
-                serviceRegion: draftServiceRegion,
+                serviceRegion: nextServiceRegion,
             });
 
             if (!isSaved) {
                 toast.error(t('page.profile.preferencesFailed'));
+
                 return false;
             }
 
-            setStoredServiceRegion(draftServiceRegion);
+            setStoredServiceRegion(nextServiceRegion);
             await i18n.changeLanguage(draftPreferredLanguage);
             toast.success(t('page.profile.preferencesSaved'));
 
@@ -225,7 +332,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             if (writeNurse) {
                 if (!validateForm()) return;
 
-                const phoneNum = hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe);
+                const phoneNum = normalizeContactPhoneForStorage(
+                    hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
+                );
 
                 isProfileSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
             } else {
@@ -252,7 +361,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
         setWriteNurse(null);
         setDraftName(accountMe?.name ?? '');
-        setDraftPhoneNum(normalizePhone(accountMe?.phoneNum ?? ''));
+        setDraftPhoneNum(normalizeContactPhoneForStorage(accountMe?.phoneNum ?? ''));
         setHasEditedPhoneNum(false);
         setFieldErrors({});
         setFieldTouched({});
@@ -284,8 +393,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
     useEffect(() => {
         setDraftPreferredLanguage(savedPreferredLanguage);
-        setDraftServiceRegion(savedServiceRegion);
-    }, [savedPreferredLanguage, savedServiceRegion]);
+    }, [savedPreferredLanguage]);
 
     const imageInputRef = useRef<HTMLInputElement>(null);
     const handleUploadImage = () => {
@@ -449,16 +557,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 return t('page.profile.language.en');
         }
     };
-    const getServiceRegionLabel = (region: TServiceRegion) => {
-        switch (region) {
-            case 'KR':
-                return t('page.profile.serviceRegion.KR');
-            case 'JP':
-                return t('page.profile.serviceRegion.JP');
-            case 'EN':
-                return t('page.profile.serviceRegion.EN');
-        }
-    };
 
     return (
         <div className={rootClassName}>
@@ -471,7 +569,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
 
             <div className={contentClassName}>
                 <Card className={profileSectionClassName}>
-                    {isModalLayout ? null : <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.profile.profileSection')}</p>}
+                    {isModalLayout ? null : (
+                        <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.profile.profileSection')}</p>
+                    )}
                     <div className={cn('flex items-center gap-4', isModalLayout ? '' : 'mt-4')}>
                         <div className={profileImageFrameClassName}>
                             <ProfileImage className="h-full w-full" name={displayName} profileImg={currentProfileImage} />
@@ -513,8 +613,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 <Card className={basicInfoSectionClassName}>
                     {isModalLayout ? null : (
                         <>
-                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">{t('page.profile.basicInfoTitle')}</h2>
-                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">{t('page.profile.basicInfoDescription')}</p>
+                            <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
+                                <UserRound aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                                <span>{t('page.profile.basicInfoTitle')}</span>
+                            </h2>
                         </>
                     )}
                     <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
@@ -562,7 +664,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                             </label>
                             <input
                                 id="phoneNum"
-                                inputMode="numeric"
+                                type="tel"
+                                inputMode="tel"
+                                maxLength={CONTACT_PHONE_MAX_LENGTH}
                                 className={cn(
                                     FIELD_CLASS,
                                     modalFieldClassName,
@@ -571,7 +675,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 placeholder={t('page.profile.phoneNumPlaceholder')}
                                 value={phoneInputValue}
                                 onChange={(e) => {
-                                    const nextValue = normalizePhone(e.target.value);
+                                    const nextValue = sanitizeContactPhoneInput(e.target.value);
 
                                     if (writeNurse) {
                                         setHasEditedPhoneNum(true);
@@ -600,46 +704,33 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 <Card className={basicInfoSectionClassName}>
                     {isModalLayout ? null : (
                         <>
-                            <h2 className="font-apple text-[20px] font-semibold text-sub-1">{t('page.profile.preferencesTitle')}</h2>
-                            <p className="mt-1 font-apple text-[13px] leading-5 text-[#8B95A1]">{t('page.profile.preferencesDescription')}</p>
+                            <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
+                                <Languages aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                                <span>{t('page.profile.preferencesTitle')}</span>
+                            </h2>
                         </>
                     )}
                     <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
                         <div className={fieldContainerClassName}>
-                            <label htmlFor="preferredLanguage" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
+                            <label
+                                id="preferredLanguage-label"
+                                htmlFor="preferredLanguage"
+                                className="sr-only"
+                            >
                                 {t('page.profile.languageLabel')}
                             </label>
-                            <select
+                            <LanguageSelect
                                 id="preferredLanguage"
-                                className={cn(SELECT_FIELD_CLASS, modalFieldClassName)}
+                                labelId="preferredLanguage-label"
+                                className="w-full"
+                                buttonClassName={modalFieldClassName}
                                 value={draftPreferredLanguage}
-                                onChange={(event) =>
-                                    setDraftPreferredLanguage(normalizePreferredLanguage(event.target.value) ?? savedPreferredLanguage)
+                                options={LANGUAGE_OPTIONS}
+                                getOptionLabel={getLanguageLabel}
+                                onChange={(language) =>
+                                    setDraftPreferredLanguage(normalizePreferredLanguage(language) ?? savedPreferredLanguage)
                                 }
-                            >
-                                {LANGUAGE_OPTIONS.map((language) => (
-                                    <option key={language} value={language}>
-                                        {getLanguageLabel(language)}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className={fieldContainerClassName}>
-                            <label htmlFor="serviceRegion" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
-                                {t('page.profile.serviceRegionLabel')}
-                            </label>
-                            <select
-                                id="serviceRegion"
-                                className={cn(SELECT_FIELD_CLASS, modalFieldClassName)}
-                                value={draftServiceRegion}
-                                onChange={(event) => setDraftServiceRegion(normalizeServiceRegion(event.target.value) ?? savedServiceRegion)}
-                            >
-                                {SERVICE_REGION_OPTIONS.map((region) => (
-                                    <option key={region} value={region}>
-                                        {getServiceRegionLabel(region)}
-                                    </option>
-                                ))}
-                            </select>
+                            />
                         </div>
                     </div>
                 </Card>

@@ -44,11 +44,14 @@ import {
     goNextStep as goNextStepDraft,
     goPreviousStep as goPreviousStepDraft,
     hasScheduleInputDraft,
+    isOnboardingShiftTypeActive,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
     normalizeNurseNameForRequest,
+    normalizeOnboardingShiftCode,
     prepareManualEntryDraft,
     saveSkillLevelConfig,
+    type TOnboardingDraftLabels,
     type TOnboardingNurseDraft,
     type TOnboardingConstraintDraft,
     type TOnboardingTeamScheduleDraft,
@@ -220,7 +223,7 @@ const toScheduleInputPreviewRequest = (
 };
 const toParsedShiftType = (shiftType: TOnboardingWardDraft['shiftTypes'][number]): TOnboardingParsedShiftType => ({
     name: shiftType.name,
-    shortName: shiftType.shortName,
+    shortName: normalizeOnboardingShiftCode(shiftType.shortName),
     startTime: shiftType.startTime,
     endTime: shiftType.endTime,
     color: shiftType.color,
@@ -230,16 +233,20 @@ const toParsedShiftType = (shiftType: TOnboardingWardDraft['shiftTypes'][number]
     source: shiftType.source,
 });
 const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewResponse): TOnboardingParsedShiftType[] =>
-    response.wardShiftTypes.map((shiftType) => ({
-        name: shiftType.name,
-        shortName: shiftType.shortName,
-        startTime: shiftType.startTime ?? undefined,
-        endTime: shiftType.endTime ?? undefined,
-        color: shiftType.color,
-        isDefault: shiftType.isDefault,
-        isOff: shiftType.isOff,
-        classification: shiftType.classification ?? undefined,
-    }));
+    response.wardShiftTypes.map((shiftType) => {
+        const shortName = normalizeOnboardingShiftCode(shiftType.shortName);
+
+        return {
+            name: shiftType.name?.trim() || shortName,
+            shortName,
+            startTime: shiftType.startTime ?? undefined,
+            endTime: shiftType.endTime ?? undefined,
+            color: shiftType.color,
+            isDefault: shiftType.isDefault,
+            isOff: shiftType.isOff,
+            classification: shiftType.classification ?? undefined,
+        };
+    });
 const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
 const mergeSchedulePreviewShiftTypes = (
     draft: TOnboardingWardDraft,
@@ -325,11 +332,15 @@ const applySchedulePreviewToDraft = (
     const draftWithShiftTypes = applyParsedWardData(draft, {
         shiftTypes: mergeSchedulePreviewShiftTypes(draft, response),
     });
-    const shiftIdByShortName = new Map(draftWithShiftTypes.shiftTypes.map((shiftType) => [shiftType.shortName, shiftType.id]));
+    const shiftIdByShortName = new Map(
+        draftWithShiftTypes.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => [shiftType.shortName, shiftType.id]),
+    );
     const possibleShiftTypeIds = response.wardShiftTypes
         .map((shiftType) => shiftIdByShortName.get(shiftType.shortName))
         .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
-    const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes.map((shiftType) => shiftType.id);
+    const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes
+        .filter(isOnboardingShiftTypeActive)
+        .map((shiftType) => shiftType.id);
     const defaultEmploymentDate = new Date().toISOString().slice(0, 10);
     const existingTeamNurses = draftWithShiftTypes.nurses.filter((nurse) => nurse.teamId === teamId);
     const existingNurseByName = new Map(existingTeamNurses.map((nurse) => [normalizeNurseMergeKey(nurse.name), nurse]));
@@ -585,8 +596,27 @@ function useOnboardingWardWizard() {
             completeOnboardingWardDraft,
         },
     } = useRegister();
+    const onboardingDraftLabels = useMemo<TOnboardingDraftLabels>(
+        () => ({
+            teamName: (index) => t('feature.registerWard.shiftTeams.teamName', {index}),
+            newNurseName: (index) => t('page.onboardingWardCreate.defaults.newNurseName', {index}),
+            sampleNurseNames: {
+                first: t('page.onboardingWardCreate.defaults.sampleNurse.first'),
+                second: t('page.onboardingWardCreate.defaults.sampleNurse.second'),
+                skilled: t('page.onboardingWardCreate.defaults.sampleNurse.skilled'),
+                off: t('page.onboardingWardCreate.defaults.sampleNurse.off'),
+            },
+            shiftNames: {
+                day: t('feature.registerWard.defaultShiftType.day'),
+                evening: t('feature.registerWard.defaultShiftType.evening'),
+                night: t('feature.registerWard.defaultShiftType.night'),
+                off: t('feature.registerWard.defaultShiftType.off'),
+            },
+        }),
+        [t],
+    );
     const draftTouchedRef = useRef(false);
-    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft());
+    const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
     const [showSkillModal, setShowSkillModal] = useState(false);
@@ -865,6 +895,10 @@ function useOnboardingWardWizard() {
         }
     };
     const goNextStep = async () => {
+        if (!canGoNext(draft)) {
+            return false;
+        }
+
         if (draft.currentStep === 1) {
             const isDraftReady = await ensureDraftWard();
 
@@ -936,7 +970,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        const {draft: nextDraft, addedTeamId} = addTeamDraft(draft);
+        const {draft: nextDraft, addedTeamId} = addTeamDraft(draft, onboardingDraftLabels);
 
         setDraft(nextDraft);
 
@@ -965,7 +999,7 @@ function useOnboardingWardWizard() {
             const targetTeamName =
                 draft.teams.find((team) => team.id === targetTeamId)?.name ?? t('page.onboardingWardCreate.fallback.selectedTeam');
 
-            setDraft((prev) => addNurseDraft(prev, targetTeamId));
+            setDraft((prev) => addNurseDraft(prev, targetTeamId, onboardingDraftLabels));
             toast.success(t('page.onboardingWardCreate.toast.addNurseToTeam', {teamName: targetTeamName}), {
                 position: 'bottom-center',
             });
@@ -973,7 +1007,7 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        const {draft: withTeamDraft, addedTeamId} = addTeamDraft(draft);
+        const {draft: withTeamDraft, addedTeamId} = addTeamDraft(draft, onboardingDraftLabels);
 
         if (!addedTeamId) {
             toast.error(t('page.onboardingWardCreate.toast.maxTeams', {count: MAX_ONBOARDING_TEAMS}));
@@ -984,7 +1018,7 @@ function useOnboardingWardWizard() {
         const addedTeamName =
             withTeamDraft.teams.find((team) => team.id === addedTeamId)?.name ?? t('page.onboardingWardCreate.fallback.newTeam');
 
-        setDraft(addNurseDraft(withTeamDraft, addedTeamId));
+        setDraft(addNurseDraft(withTeamDraft, addedTeamId, onboardingDraftLabels));
         setSelectedTeamId(addedTeamId);
         toast.success(t('page.onboardingWardCreate.toast.addTeamAndNurse', {teamName: addedTeamName}), {
             position: 'bottom-center',
@@ -1156,12 +1190,16 @@ function useOnboardingWardWizard() {
                     return parsedDraft;
                 }
 
-                const result = applyUploadedScheduleTemplateDraft(parsedDraft, {
-                    fileName: file.name,
-                    year: options.targetYear,
-                    month: options.targetMonth,
-                    teamSchedules: scheduleTemplate,
-                });
+                const result = applyUploadedScheduleTemplateDraft(
+                    parsedDraft,
+                    {
+                        fileName: file.name,
+                        year: options.targetYear,
+                        month: options.targetMonth,
+                        teamSchedules: scheduleTemplate,
+                    },
+                    onboardingDraftLabels,
+                );
 
                 nextActiveTeamId = result.activeTeamId;
 
@@ -1255,7 +1293,7 @@ function useOnboardingWardWizard() {
 
         if (draft.currentStep === 2 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
             markDraftTouched();
-            void saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft)));
+            void saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels)));
 
             return;
         }

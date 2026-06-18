@@ -1,9 +1,21 @@
 import type {TCellPos, TDirection, TSelection} from './types';
 
 type TSelectionBounds = {rowCount: number; colCount: number; minCol?: number};
+type TColumnGroup = {minCol: number; maxCol: number};
 
 function getMinCol(bounds: TSelectionBounds): number {
     return bounds.minCol ?? 0;
+}
+
+function getColumnGroup(col: number, bounds: TSelectionBounds): TColumnGroup {
+    const {colCount} = bounds;
+    const minCol = getMinCol(bounds);
+
+    if (minCol < 0 && col < 0) {
+        return {minCol, maxCol: -1};
+    }
+
+    return {minCol: 0, maxCol: colCount - 1};
 }
 
 function clampToBounds(pos: TCellPos, bounds: TSelectionBounds): TCellPos {
@@ -18,24 +30,25 @@ function clampToBounds(pos: TCellPos, bounds: TSelectionBounds): TCellPos {
 function moveCell(pos: TCellPos, dir: TDirection, bounds: TSelectionBounds): TCellPos {
     const {rowCount, colCount} = bounds;
     const minCol = getMinCol(bounds);
+    const group = getColumnGroup(pos.col, bounds);
     let {row, col} = pos;
 
     switch (dir) {
         case 'right':
             col++;
 
-            if (col >= colCount) {
+            if (col > group.maxCol) {
                 row++;
-                col = minCol;
+                col = group.minCol;
             }
 
             break;
         case 'left':
             col--;
 
-            if (col < minCol) {
+            if (col < group.minCol) {
                 row--;
-                col = colCount - 1;
+                col = group.maxCol;
             }
 
             break;
@@ -89,15 +102,15 @@ export function moveSelection(
 
 function moveToEdgePos(pos: TCellPos, dir: TDirection, bounds: TSelectionBounds): TCellPos {
     const {rowCount, colCount} = bounds;
-    const minCol = getMinCol(bounds);
+    const group = getColumnGroup(pos.col, bounds);
 
     if (rowCount <= 0 || colCount <= 0) return pos;
 
     switch (dir) {
         case 'left':
-            return {row: pos.row, col: minCol};
+            return {row: pos.row, col: group.minCol};
         case 'right':
-            return {row: pos.row, col: colCount - 1};
+            return {row: pos.row, col: group.maxCol};
         case 'up':
             return {row: 0, col: pos.col};
         case 'down':

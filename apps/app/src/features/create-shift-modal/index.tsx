@@ -3,6 +3,11 @@ import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {CancelIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {
+    hasInvalidShiftShortNameEntryKey,
+    normalizeShiftShortNameInput,
+    SHIFT_SHORT_NAME_MAX_LENGTH,
+} from '@/shared/lib/shift-short-name';
 import Button from '@/shared/ui/form-controls/Button';
 import TextField from '@/shared/ui/form-controls/TextField';
 import TimeInput from '@/shared/ui/form-controls/TimeInput';
@@ -28,17 +33,16 @@ const initialValue: TCreateShiftTypeDTO = {
     classification: 'OTHER_WORK',
 };
 
-const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
-const normalizeShiftShortNameInput = (value: string) =>
-    Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
-
 function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
     const {t} = useTypedTranslation();
     const [writeShift, setWriteShift] = useState(initialValue);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
     const modalRoot = document.querySelector('#modal-root');
     const handleSubmit = () => {
-        if (writeShift.name === '') {
+        const name = writeShift.name.trim();
+        const shortName = normalizeShiftShortNameInput(writeShift.shortName);
+
+        if (name === '') {
             setValidationMessage(t('feature.createShiftModal.validation.nameRequired'));
 
             return;
@@ -50,14 +54,20 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
             return;
         }
 
-        if (writeShift.shortName === '') {
+        if (shortName === '') {
             setValidationMessage(t('feature.createShiftModal.validation.shortNameRequired'));
 
             return;
         }
 
+        if (hasInvalidShiftShortNameEntryKey(shortName)) {
+            setValidationMessage(t('feature.createShiftModal.validation.shortNameFirstKey'));
+
+            return;
+        }
+
         setValidationMessage(null);
-        onSubmit(writeShift);
+        onSubmit({...writeShift, name, shortName});
         close();
     };
 
@@ -117,43 +127,45 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
                               {t('feature.createShiftModal.leave')}
                           </div>
                       </div>
-                      <div className="w-[50%]">
-                          <p className="mt-8.75 mb-[.625rem] font-apple text-base text-sub-3">
-                              {t('feature.createShiftModal.name')}
-                          </p>
-                          <TextField
-                              className="h-13.5 font-apple text-[1.5rem] font-medium text-sub-1"
-                              placeholder={
-                                  writeShift.isOff
-                                      ? t('feature.createShiftModal.leaveNamePlaceholder')
-                                      : t('feature.createShiftModal.workNamePlaceholder')
-                              }
-                              value={writeShift.name}
-                              onChange={(e) => {
-                                  setWriteShift({...writeShift, name: e.target.value});
-                                  setValidationMessage(null);
-                              }}
-                          />
-                      </div>
-                      <div className="">
-                          <div className="flex items-center gap-4">
-                              <p className="mt-7.5 mb-[.625rem] font-apple text-base text-sub-3">
-                                  {t('feature.createShiftModal.shortName')}
-                              </p>
-                              <p className="mt-7.5 mb-[.625rem] font-apple text-[.75rem] text-main-2">
-                                  {t('feature.createShiftModal.shortNameHint')}
-                              </p>
+                      <div className="flex gap-5">
+                          <div className="w-[50%]">
+                              <p className="mt-8.75 mb-[.625rem] font-apple text-base text-sub-3">{t('feature.createShiftModal.name')}</p>
+                              <TextField
+                                  className="h-13.5 font-apple text-[1.5rem] font-medium text-sub-1"
+                                  placeholder={
+                                      writeShift.isOff
+                                          ? t('feature.createShiftModal.leaveNamePlaceholder')
+                                          : t('feature.createShiftModal.workNamePlaceholder')
+                                  }
+                                  value={writeShift.name}
+                                  onChange={(e) => {
+                                      setWriteShift({...writeShift, name: e.target.value});
+                                      setValidationMessage(null);
+                                  }}
+                              />
                           </div>
-                          <TextField
-                              className="h-13.5 w-13.5 px-0 text-center font-apple text-[1.5rem] font-medium text-sub-1"
-                              value={writeShift.shortName}
-                              maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
-                              readOnly={writeShift.isDefault}
-                              onChange={(e) => {
-                                  setWriteShift({...writeShift, shortName: normalizeShiftShortNameInput(e.target.value)});
-                                  setValidationMessage(null);
-                              }}
-                          />
+                          <div>
+                              <div className="flex items-center gap-4">
+                                  <p className="mt-8.75 mb-[.625rem] font-apple text-base text-sub-3">
+                                      {t('feature.createShiftModal.shortName')}
+                                  </p>
+                                  <p className="mt-8.75 mb-[.625rem] font-apple text-[.75rem] text-main-2">
+                                      {t('feature.createShiftModal.shortNameHint')}
+                                  </p>
+                              </div>
+                              <TextField
+                                  className="h-13.5 w-18 px-0 text-center font-apple text-[1.5rem] font-medium text-sub-1"
+                                  value={writeShift.shortName}
+                                  maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
+                                  readOnly={writeShift.isDefault}
+                                  onChange={(e) => {
+                                      const shortName = normalizeShiftShortNameInput(e.target.value);
+
+                                      setWriteShift({...writeShift, shortName});
+                                      setValidationMessage(null);
+                                  }}
+                              />
+                          </div>
                       </div>
                       {!writeShift.isOff && (
                           <div className="w-[40%]">

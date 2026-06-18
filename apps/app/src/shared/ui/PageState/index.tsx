@@ -21,6 +21,7 @@ type TPageStateProps = {
     layout?: TPageStateLayout;
     loadingColor?: TPageStateLoadingColor;
     className?: string;
+    contentClassName?: string;
     titleClassName?: string;
     titlePlacement?: 'aboveIcon' | 'belowIcon';
     visual?: ReactNode;
@@ -64,6 +65,7 @@ function PageState({
     layout = 'panel',
     loadingColor = 'purple',
     className,
+    contentClassName,
     titleClassName,
     titlePlacement = 'belowIcon',
     visual,
@@ -106,7 +108,11 @@ function PageState({
     return (
         <div className={cn(containerClassName[layout], className)}>
             <div
-                className={cn('w-full max-w-[28rem] rounded-[20px] px-4 py-6 text-center sm:px-6 sm:py-7', cardClassName[tone])}
+                className={cn(
+                    'w-full max-w-[28rem] rounded-[20px] px-4 py-6 text-center sm:px-6 sm:py-7',
+                    cardClassName[tone],
+                    contentClassName,
+                )}
                 role={tone === 'error' ? 'alert' : 'status'}
                 aria-live={tone === 'error' ? 'assertive' : 'polite'}
             >
