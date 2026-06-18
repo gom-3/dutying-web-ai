@@ -1136,11 +1136,11 @@ export const ko = {
             "fixedShifts": {
                 "empty": "이번 달 근무표가 아직 없어요",
                 "error": "고정 근무 데이터를 불러오지 못했어요",
-                "hint": "연수·교육·공가처럼 이미 정해진 일정이나 반드시 지켜야 할 배치만 고정해 주세요.",
+                "hint": "연수·교육·공가처럼 이미 정해진 일정이나 반드시 지켜야 할 일정이 있다면 고정해 주세요.",
                 "loading": "근무표를 불러오는 중이에요",
                 "lockedToast": "고정 근무는 고정근무 탭에서만 수정할 수 있어요",
                 "saveFailed": "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
-                "title": "고정할 일정만 입력해 주세요"
+                "title": "고정할 일정을 입력해 주세요"
             },
             "monthRangeDescription": "듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.",
             "monthRangeTitle": "이 기간에는 근무표를 만들 수 없어요",
@@ -3632,11 +3632,11 @@ export const en: TLocale = {
             "fixedShifts": {
                 "empty": "No schedule exists for this month yet",
                 "error": "Failed to load fixed shift data",
-                "hint": "Fix only already-set items like training, education, or official leave, plus assignments that must not change.",
+                "hint": "If there are already-set items like training, education, or official leave, or any schedule that must be preserved, fix them here.",
                 "loading": "Loading the duty schedule",
                 "lockedToast": "Fixed shifts can only be edited from the Fixed Shifts tab",
                 "saveFailed": "Failed to save. Please try again shortly.",
-                "title": "Enter only items that should stay fixed"
+                "title": "Enter items that should stay fixed"
             },
             "monthRangeDescription": "On Dutying, you can only create schedules for this month and the next month.",
             "monthRangeTitle": "You can’t create a schedule for this period",
@@ -6126,11 +6126,11 @@ export const ja: TLocale = {
             "fixedShifts": {
                 "empty": "今月の勤務表はまだありません",
                 "error": "固定勤務データを読み込めませんでした",
-                "hint": "研修・教育・公休のようにすでに決まっている予定や必ず守る配置だけを固定してください。",
+                "hint": "研修・教育・公休のようにすでに決まっている予定や必ず守る予定がある場合は固定してください。",
                 "loading": "勤務表を読み込み中です",
                 "lockedToast": "固定勤務は固定勤務タブでのみ編集できます",
                 "saveFailed": "保存できませんでした。少し待ってからもう一度お試しください。",
-                "title": "固定する予定だけ入力してください"
+                "title": "固定する予定を入力してください"
             },
             "monthRangeDescription": "Dutyingでは今月と来月の勤務表のみ作成できます。",
             "monthRangeTitle": "この期間の勤務表は作成できません",
