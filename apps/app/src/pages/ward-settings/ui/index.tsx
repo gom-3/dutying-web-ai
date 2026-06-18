@@ -3,8 +3,16 @@ import {cn} from '@dutying/utils/style';
 import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
+import toast from 'react-hot-toast';
 import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/constraints';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {
+    getShiftShortNameEntryKey,
+    hasInvalidShiftShortNameEntryKey,
+    hasInvalidShiftShortNameLengthInput,
+    normalizeShiftShortNameInput,
+    SHIFT_SHORT_NAME_MAX_LENGTH,
+} from '@/shared/lib/shift-short-name';
 import PageState from '@/shared/ui/PageState';
 import {Input} from '@/shared/ui/primitives/input';
 import {formatShiftDuration} from '../model/utils';
@@ -35,13 +43,12 @@ const SHIFT_COLOR_OPTIONS = [
 ] as const;
 const COLOR_PICKER_WIDTH = 126;
 const COLOR_PICKER_VIEWPORT_PADDING = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_72px_112px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_84px_112px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 
 type TColorPickerPosition = {
@@ -59,30 +66,44 @@ function getColorPickerPosition(targetRect: DOMRect): TColorPickerPosition {
     };
 }
 
+function isOvernightShiftTime(startTime: string | null | undefined, endTime: string | null | undefined) {
+    const startMinutes = parseShiftTimeToMinutes(startTime?.trim() ?? '');
+    const endMinutes = parseShiftTimeToMinutes(endTime?.trim() ?? '');
+
+    return startMinutes != null && endMinutes != null && endMinutes < startMinutes;
+}
+
+function getShiftTypeClassification(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO['classification'] {
+    if (shiftType.isOff) {
+        return shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE';
+    }
+
+    if (isOvernightShiftTime(shiftType.startTime, shiftType.endTime)) {
+        return 'NIGHT';
+    }
+
+    if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {
+        return 'OTHER_WORK';
+    }
+
+    return shiftType.classification;
+}
+
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
+    const shortName = shiftType.shortName.trim().toLocaleUpperCase();
+    const name = shiftType.name.trim() || shortName;
+
     return {
-        name: shiftType.name,
-        shortName: shiftType.shortName,
-        startTime: shiftType.startTime,
-        endTime: shiftType.endTime,
+        name,
+        shortName,
+        startTime: shiftType.startTime ?? '',
+        endTime: shiftType.endTime ?? '',
         color: shiftType.color,
         isDefault: shiftType.isDefault,
         isOff: shiftType.isOff,
         isCounted: shiftType.isCounted,
-        classification: shiftType.isOff ? 'OTHER_LEAVE' : 'OTHER_WORK',
+        classification: getShiftTypeClassification(shiftType),
     };
-}
-
-function normalizeShiftShortNameInput(value: string) {
-    return Array.from(value.toLocaleUpperCase().replace(/\s/g, '')).slice(0, SHIFT_SHORT_NAME_MAX_LENGTH).join('');
-}
-
-function hasInvalidShiftShortNameInput(value: string) {
-    return /\s/.test(value) || Array.from(value.replace(/\s/g, '')).length > SHIFT_SHORT_NAME_MAX_LENGTH;
-}
-
-function getShiftShortNameDuplicateKey(value: string) {
-    return Array.from(value.trim().toLocaleUpperCase())[0] ?? '';
 }
 
 function parseShiftTimeToMinutes(value: string) {
@@ -199,9 +220,9 @@ function ShiftTypeTable({
 }: {
     shiftTypes: TWardSettingsShiftType[];
     status: TWardSettingsState['shiftTypesStatus'];
-    onCreate: (payload: TCreateShiftTypeDTO) => Promise<void>;
-    onUpdate: (shiftType: TWardSettingsShiftType) => Promise<void>;
-    onDelete: (shiftTypeId: number) => Promise<void>;
+    onCreate: (payload: TCreateShiftTypeDTO) => Promise<boolean | void>;
+    onUpdate: (shiftType: TWardSettingsShiftType) => Promise<boolean | void>;
+    onDelete: (shiftTypeId: number) => Promise<boolean | void>;
     onRetry: () => void;
 }) {
     const {t} = useTypedTranslation();
@@ -221,28 +242,11 @@ function ShiftTypeTable({
         setShowValidationHighlight(false);
     }, [shiftTypes]);
 
-    const duplicatedShiftNames = useMemo(() => {
-        const countByName = new Map<string, number>();
-
-        draftShiftTypes.forEach((shiftType) => {
-            const normalizedName = shiftType.name.trim().toLocaleLowerCase();
-
-            if (!normalizedName) return;
-
-            countByName.set(normalizedName, (countByName.get(normalizedName) ?? 0) + 1);
-        });
-
-        return new Set(
-            Array.from(countByName.entries())
-                .filter(([, count]) => count > 1)
-                .map(([name]) => name),
-        );
-    }, [draftShiftTypes]);
     const duplicatedShiftShortNameKeys = useMemo(() => {
         const countByShortNameKey = new Map<string, number>();
 
         draftShiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameDuplicateKey(shiftType.shortName);
+            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
 
             if (!normalizedShortNameKey) return;
 
@@ -303,15 +307,6 @@ function ShiftTypeTable({
     const patchDraft = (shiftTypeId: number, updater: Partial<TWardSettingsShiftType>) => {
         setDraftShiftTypes((prev) => prev.map((item) => (item.wardShiftTypeId === shiftTypeId ? {...item, ...updater} : item)));
     };
-    const getShiftNameError = (name: string) => {
-        const normalizedName = name.trim().toLocaleLowerCase();
-
-        if (!normalizedName) return t('page.wardSettings.shiftTypes.validation.nameRequired');
-
-        if (duplicatedShiftNames.has(normalizedName)) return t('page.wardSettings.shiftTypes.validation.nameDuplicate');
-
-        return null;
-    };
     const getShiftShortNameError = (shiftTypeId: number, shortName: string) => {
         if (shortNameErrorById[shiftTypeId]) return shortNameErrorById[shiftTypeId];
 
@@ -319,17 +314,26 @@ function ShiftTypeTable({
 
         if (!normalizedShortName) return t('page.wardSettings.shiftTypes.validation.shortNameRequired');
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameDuplicateKey(normalizedShortName))) {
+        if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
+            return t('page.wardSettings.shiftTypes.validation.shortNameFirstKey');
+        }
+
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameEntryKey(normalizedShortName))) {
             return t('page.wardSettings.shiftTypes.validation.shortNameDuplicate');
         }
+
+        return null;
+    };
+    const getShiftNameError = (name: string) => {
+        if (!name.trim()) return t('page.wardSettings.shiftTypes.validation.nameRequired');
 
         return null;
     };
     const getShiftTimeError = (shiftType: TWardSettingsShiftType) => {
         if (shiftType.isOff) return null;
 
-        const normalizedStartTime = shiftType.startTime.trim();
-        const normalizedEndTime = shiftType.endTime.trim();
+        const normalizedStartTime = shiftType.startTime?.trim() ?? '';
+        const normalizedEndTime = shiftType.endTime?.trim() ?? '';
 
         if (!normalizedStartTime || !normalizedEndTime) return t('page.wardSettings.shiftTypes.validation.timeRequired');
 
@@ -407,17 +411,25 @@ function ShiftTypeTable({
         }
 
         for (const shiftTypeId of deletedShiftTypeIds) {
-            await onDelete(shiftTypeId);
+            const saved = await onDelete(shiftTypeId);
+
+            if (saved === false) return;
         }
 
         for (const shiftType of draftShiftTypes) {
             if (shiftType.wardShiftTypeId < 0) {
-                await onCreate(toShiftTypeUpdateDTO(shiftType));
+                const saved = await onCreate(toShiftTypeUpdateDTO(shiftType));
+
+                if (saved === false) return;
                 continue;
             }
 
-            await onUpdate(shiftType);
+            const saved = await onUpdate(shiftType);
+
+            if (saved === false) return;
         }
+
+        toast.success(t('page.wardSettings.shiftTypes.toast.saveSuccess'));
     };
 
     if (status === 'pending') {
@@ -478,7 +490,7 @@ function ShiftTypeTable({
                     <div className="overflow-hidden rounded-[16px] bg-white px-1 py-1">
                         {draftShiftTypes.map((shiftType) => (
                             <div key={shiftType.wardShiftTypeId} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-4 px-3 py-3`}>
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col items-center gap-1">
                                     <Input
                                         data-shift-name-input={shiftType.wardShiftTypeId}
                                         value={shiftType.name}
@@ -493,7 +505,7 @@ function ShiftTypeTable({
                                                 : undefined
                                         }
                                         className={cn(
-                                            `mx-auto w-full text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
+                                            `h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
                                             showValidationHighlight && getShiftNameError(shiftType.name)
                                                 ? SHIFT_TYPE_INPUT_ERROR_CLASS
                                                 : '',
@@ -514,18 +526,27 @@ function ShiftTypeTable({
                                         onChange={(event) => {
                                             const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 
-                                            if (hasInvalidShiftShortNameInput(event.target.value)) {
+                                            if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
                                                 setShortNameErrorById((prev) => ({
                                                     ...prev,
                                                     [shiftType.wardShiftTypeId]: t(
                                                         'page.wardSettings.shiftTypes.validation.shortNameLength',
                                                     ),
                                                 }));
+                                            } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
+                                                setShortNameErrorById((prev) => ({
+                                                    ...prev,
+                                                    [shiftType.wardShiftTypeId]: t(
+                                                        'page.wardSettings.shiftTypes.validation.shortNameFirstKey',
+                                                    ),
+                                                }));
                                             } else {
                                                 setShortNameErrorById((prev) => ({...prev, [shiftType.wardShiftTypeId]: ''}));
                                             }
 
-                                            patchDraft(shiftType.wardShiftTypeId, {shortName: normalizedShortName});
+                                            patchDraft(shiftType.wardShiftTypeId, {
+                                                shortName: normalizedShortName,
+                                            });
                                         }}
                                         variant="foundation"
                                         fieldSize="lg"
@@ -540,7 +561,7 @@ function ShiftTypeTable({
                                                 : undefined
                                         }
                                         className={cn(
-                                            `h-10 w-14 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
+                                            `h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
                                             showValidationHighlight &&
                                                 getShiftShortNameError(shiftType.wardShiftTypeId, shiftType.shortName)
                                                 ? SHIFT_TYPE_INPUT_ERROR_CLASS
@@ -606,7 +627,7 @@ function ShiftTypeTable({
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     data-shift-start-input={shiftType.wardShiftTypeId}
-                                                    value={shiftType.isOff ? '-' : shiftType.startTime}
+                                                    value={shiftType.isOff ? '-' : (shiftType.startTime ?? '')}
                                                     disabled={shiftType.isOff}
                                                     onChange={(event) =>
                                                         patchDraft(shiftType.wardShiftTypeId, {
@@ -637,7 +658,7 @@ function ShiftTypeTable({
                                                 <span className="font-poppins text-[15px] text-gray-3">~</span>
                                                 <Input
                                                     data-shift-end-input={shiftType.wardShiftTypeId}
-                                                    value={shiftType.isOff ? '-' : shiftType.endTime}
+                                                    value={shiftType.isOff ? '-' : (shiftType.endTime ?? '')}
                                                     disabled={shiftType.isOff}
                                                     onChange={(event) =>
                                                         patchDraft(shiftType.wardShiftTypeId, {
@@ -684,7 +705,7 @@ function ShiftTypeTable({
                                     <button
                                         type="button"
                                         aria-label={t('page.wardSettings.shiftTypes.colorSelectAria', {
-                                            name: shiftType.name || t('page.wardSettings.type.work'),
+                                            name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
                                         })}
                                         className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
                                         onClick={(event) => handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)}
@@ -733,7 +754,7 @@ function ShiftTypeTable({
                                     <button
                                         type="button"
                                         aria-label={t('page.wardSettings.shiftTypes.deleteAria', {
-                                            name: shiftType.name || t('page.wardSettings.type.work'),
+                                            name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
                                         })}
                                         onClick={() => removeDraftShiftType(shiftType.wardShiftTypeId)}
                                         className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"

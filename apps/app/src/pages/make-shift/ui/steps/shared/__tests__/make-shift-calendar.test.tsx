@@ -1,7 +1,7 @@
 import {createEvent, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {act} from 'react';
-import {afterEach, beforeEach, describe, expect, it} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, type TViolation, useShiftEditorStore} from '@/features/shift-editor/model';
@@ -64,6 +64,7 @@ describe('MakeShiftCalendar', () => {
     });
 
     afterEach(() => {
+        vi.useRealTimers();
         useShiftEditorStore.getState().reset();
         useUIConfigStore.getState().reset();
     });
@@ -276,6 +277,55 @@ describe('MakeShiftCalendar', () => {
         expect(document.querySelector('[data-dimmed-violation="true"]')).not.toBeInTheDocument();
         expect(document.querySelector('[data-active-violation-marker="true"]')).not.toBeInTheDocument();
         expect(document.querySelector('[data-active-violation-cell="true"]')).not.toBeInTheDocument();
+    });
+
+    it('opens the violation popover after hovering a violation cell briefly', () => {
+        vi.useFakeTimers();
+
+        const violation: TViolation = {
+            ruleId: 'hover-rule',
+            message: 'Kim cannot work D after N.',
+            level: 'error',
+            cells: [{row: 0, col: 1}],
+            scope: 'nurse',
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map([['2,1-hover-rule', violation]])}
+                showFaults
+                readonly
+            />,
+        );
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+
+        fireEvent.pointerEnter(trigger!);
+        act(() => {
+            vi.advanceTimersByTime(449);
+        });
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        fireEvent.pointerLeave(trigger!);
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
+
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        fireEvent.pointerEnter(trigger!);
+        act(() => {
+            vi.advanceTimersByTime(450);
+        });
+
+        const popover = screen.getByRole('dialog');
+
+        expect(within(popover).getByText('Kim cannot work D after N.')).toBeInTheDocument();
     });
 
     it('focuses only the hovered violation instance when identical messages appear on different cells', async () => {
@@ -539,7 +589,7 @@ describe('MakeShiftCalendar', () => {
         expect(trigger!.querySelector('.outline-2')).not.toBeInTheDocument();
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /Day/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
@@ -564,11 +614,14 @@ describe('MakeShiftCalendar', () => {
         expect(await screen.findByRole('listbox', {name: '근무유형 선택'})).toBeInTheDocument();
         expect(trigger).not.toHaveClass('bg-main-4/70');
         expect(trigger!.querySelector('.make-shift-calendar__selection-bg')).toHaveClass('bg-main-4/70');
-        expect(trigger!.querySelector('.make-shift-calendar__row-last-shift-badge')).not.toHaveClass('outline-[1px]', 'outline-main-1');
-        expect(trigger!.querySelector('.outline-2')).not.toBeInTheDocument();
+        expect(trigger!.querySelector('.make-shift-calendar__row-last-shift-badge')).toHaveClass(
+            'ring-2',
+            'ring-inset',
+            'ring-main-1',
+        );
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /Day/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells?.[0]).toBe('D');
@@ -596,7 +649,7 @@ describe('MakeShiftCalendar', () => {
         expect(await screen.findByRole('listbox')).toBeInTheDocument();
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /Day/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells?.[0]).toBe('D');
@@ -801,6 +854,60 @@ describe('MakeShiftCalendar', () => {
 
         expect(highlights).toHaveLength(2);
         expect(highlights.map((highlight) => highlight.style.gridColumn)).toEqual(['5 / span 1', '9 / span 1']);
+    });
+
+    it('draws a weak context span behind the stronger overage span', () => {
+        const days = Array.from({length: 10}, (_, index) => ({day: index + 1, dayType: 'workday' as const}));
+        const baseShiftNurse = shift.divisionShiftNurses[1]![0]!;
+        const longRunShift: TShift = {
+            ...shift,
+            days,
+            divisionShiftNurses: [
+                [],
+                [
+                    {
+                        ...baseShiftNurse,
+                        wardShiftList: Array.from({length: 10}, () => 10),
+                        wardReqShiftList: Array.from({length: 10}, () => null),
+                    },
+                ],
+            ],
+        };
+        const longRunDoc: TDutyDoc = {
+            ...doc,
+            columns: days.map((day) => `2026-05-${String(day.day).padStart(2, '0')}`),
+            rows: [{...doc.rows[0]!, cells: Array.from({length: 10}, () => 'D')}],
+        };
+        const violation: TViolation = {
+            ruleId: '1592',
+            templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+            message: 'Kim님은 근무가 10일 연속이에요. 최대 5일까지 가능해요.',
+            level: 'error',
+            cells: Array.from({length: 5}, (_, index) => ({row: 0, col: index + 5})),
+            scope: 'nurse',
+            displayContext: {
+                cells: Array.from({length: 10}, (_, col) => ({row: 0, col})),
+            },
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={longRunShift}
+                doc={longRunDoc}
+                violationMap={new Map([['2,5-consecutive-work', violation]])}
+                showFaults
+                readonly
+            />,
+        );
+
+        const contextHighlights = Array.from(document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation-context'));
+        const strongHighlights = Array.from(document.querySelectorAll<HTMLElement>('.make-shift-calendar__violation'));
+
+        expect(contextHighlights).toHaveLength(1);
+        expect(contextHighlights[0]).toHaveAttribute('data-violation-context', 'true');
+        expect(contextHighlights[0]?.style.gridColumn).toBe('1 / span 10');
+        expect(strongHighlights).toHaveLength(1);
+        expect(strongHighlights[0]?.style.gridColumn).toBe('6 / span 5');
     });
 
     it('selects a range by dragging across day cells', () => {

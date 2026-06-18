@@ -1,5 +1,5 @@
+import type {TUpdateAccountPreferencesRequest} from '@dutying/api';
 import * as Sentry from '@sentry/react';
-import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 import {useQueryClient} from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {useNavigate} from 'react-router';
@@ -103,7 +103,7 @@ const useEditAccount = () => {
             setLoading(false);
         }
     };
-    const updateAccountPreferences = async (dto: {preferredLanguage: TPreferredLanguage; serviceRegion: TServiceRegion}) => {
+    const updateAccountPreferences = async (dto: TUpdateAccountPreferencesRequest) => {
         if (!accountMe) return false;
 
         try {
@@ -131,12 +131,14 @@ const useEditAccount = () => {
 
         try {
             setLoading(true);
+
             if (isWardAdmin) {
                 await AdminAPI.quitWard(accountMe.wardId);
             } else {
                 await WardAPI.quitWard(accountMe.wardId);
                 await AccountAPI.editAccountStatus(accountMe.accountId, 'WARD_SELECT_PENDING');
             }
+
             await handleGetAccountMe();
             navigate(ROUTE.REGISTER, {replace: true, state: {fromQuitWard: true}});
         } catch (e) {

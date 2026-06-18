@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import {useEffect, useMemo, useRef} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {type TShift} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -17,7 +17,7 @@ import {
     useViolationMap,
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {useMakeShiftStore} from '../../../model/make-shift-store';
+import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 
 function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;
@@ -103,7 +103,10 @@ export function useDutyEditorStep({
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
-    const enabled = wardId !== null && currentShiftTeamId !== null;
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
+    const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
+    const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
 
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
@@ -124,10 +127,6 @@ export function useDutyEditorStep({
         hydratePreviousLastShifts && previousDutyQuery.data && isDutyShiftFullyAssigned(previousDutyQuery.data)
             ? previousDutyQuery.data
             : null;
-    const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
-    const isHydratingWorkspace = enabled && workspaceQuery.isLoading && workspaceQuery.data === undefined;
-    const isHydratingEditor = isHydratingLastShifts || isHydratingWorkspace;
-
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
 
     const editorDoc = useShiftEditorStore((s) => s.doc);
@@ -139,7 +138,15 @@ export function useDutyEditorStep({
     const hydratedContextKeyRef = useRef<string | null>(null);
     const initialHydrationDoneRef = useRef(false);
     const lastHydratedDutyDataRef = useRef<typeof dutyQuery.data | null>(null);
+    const hydratedDraftRevisionRef = useRef<number | null>(null);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
+    const [hydratedEditorContextKey, setHydratedEditorContextKey] = useState<string | null>(null);
+    const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
+    const isHydratingWorkspace = enabled && workspaceQuery.isLoading && workspaceQuery.data === undefined;
+    const isWaitingForEditorSources = isHydratingLastShifts || isHydratingWorkspace;
+    const isAwaitingEditorHydration =
+        enabled && dutyQuery.data !== undefined && !isWaitingForEditorSources && hydratedEditorContextKey !== currentContextKey;
+    const isHydratingEditor = isWaitingForEditorSources || isAwaitingEditorHydration;
 
     useEffect(() => {
         if (workspaceQuery.data?.rulesHash) {
@@ -148,7 +155,7 @@ export function useDutyEditorStep({
     }, [workspaceQuery.data?.rulesHash, setRulesHash]);
 
     useEffect(() => {
-        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isHydratingEditor) return;
+        if (!dutyQuery.data || wardId === null || currentShiftTeamId === null || isWaitingForEditorSources) return;
 
         const nextPersistenceKey = getShiftEditorDraftStorageKey({wardId, shiftTeamId: currentShiftTeamId, year, month});
         const currentPersistenceKey = commands.getCurrentPersistenceKey();
@@ -160,8 +167,24 @@ export function useDutyEditorStep({
         const hasContextChanged = hydratedContextKeyRef.current !== currentContextKey;
         const hasDutyDataChanged = lastHydratedDutyDataRef.current !== dutyQuery.data;
         const isStoreEmpty = editorDoc.columns.length === 0;
+        const hasLocalChangesSinceHydration =
+            !hasContextChanged &&
+            initialHydrationDoneRef.current &&
+            hydratedDraftRevisionRef.current !== null &&
+            useShiftEditorStore.getState().draftRevision > hydratedDraftRevisionRef.current;
 
-        if (!hasContextChanged && !hasDutyDataChanged && !isStoreEmpty && initialHydrationDoneRef.current) return;
+        if (!hasContextChanged && hasDutyDataChanged && hasLocalChangesSinceHydration && !isStoreEmpty) {
+            lastHydratedDutyDataRef.current = dutyQuery.data;
+            setHydratedEditorContextKey(currentContextKey);
+
+            return;
+        }
+
+        if (!hasContextChanged && !hasDutyDataChanged && !isStoreEmpty && initialHydrationDoneRef.current) {
+            setHydratedEditorContextKey(currentContextKey);
+
+            return;
+        }
 
         const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
         const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
@@ -232,13 +255,15 @@ export function useDutyEditorStep({
         hydratedContextKeyRef.current = currentContextKey;
         lastHydratedDutyDataRef.current = dutyQuery.data;
         initialHydrationDoneRef.current = true;
+        hydratedDraftRevisionRef.current = useShiftEditorStore.getState().draftRevision;
+        setHydratedEditorContextKey(currentContextKey);
     }, [
         commands,
         currentContextKey,
         currentShiftTeamId,
         dutyQuery.data,
         workspaceQuery.data,
-        isHydratingEditor,
+        isWaitingForEditorSources,
         month,
         onContextChanged,
         previousConfirmedShift,

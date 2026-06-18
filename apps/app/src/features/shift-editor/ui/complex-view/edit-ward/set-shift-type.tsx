@@ -31,8 +31,7 @@ function SetShiftType() {
     return (
         <div className="relative h-fit w-179.25 rounded-[1.25rem]">
             <div className="mt-5 flex items-center text-center font-apple text-[.875rem] text-sub-2.5">
-                <p className="flex-2">{t('feature.shiftEditor.editWard.shiftName')}</p>
-                <p className="flex-1">{t('feature.shiftEditor.editWard.shortName')}</p>
+                <p className="flex-2">{t('feature.shiftEditor.editWard.shortName')}</p>
                 <p className="flex-3">{t('feature.shiftEditor.editWard.workTime')}</p>
                 <p className="flex-1">{t('feature.shiftEditor.editWard.color')}</p>
                 <p className="flex-1">{t('feature.shiftEditor.editWard.type')}</p>
@@ -46,8 +45,7 @@ function SetShiftType() {
                         index === ward.wardShiftTypes.length - 1 && 'border-none'
                     }`}
                 >
-                    <div className="flex flex-2 items-center justify-center font-apple text-[1.25rem]">{shiftType.name}</div>
-                    <div className="flex flex-1 items-center justify-center text-[1.25rem]">
+                    <div className="flex flex-2 items-center justify-center text-[1.25rem]">
                         <p className="h-8 w-8 rounded-[.3125rem] border-[.0313rem] border-sub-4.5 bg-main-bg p-0 text-center text-[1.25rem] text-sub-1">
                             {shiftType.shortName}
                         </p>

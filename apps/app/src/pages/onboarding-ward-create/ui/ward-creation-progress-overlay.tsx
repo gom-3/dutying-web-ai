@@ -1,6 +1,7 @@
 import {LoaderCircle} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {CheckmarkIcon} from 'react-hot-toast';
+import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const INITIAL_PROGRESS = 12;
 const FAST_PROGRESS_TARGET = 90;
@@ -21,24 +22,24 @@ const getSimulatedProgress = (elapsedMs: number) => {
 
     return FAST_PROGRESS_TARGET + (SLOW_PROGRESS_LIMIT - FAST_PROGRESS_TARGET) * easedSlowProgressRatio;
 };
-const getCreationProgressMessage = (progress: number, isComplete: boolean) => {
+const getCreationProgressMessageKey = (progress: number, isComplete: boolean): TI18nKey => {
     if (isComplete) {
-        return '근무표 화면으로 이동하고 있어요.';
+        return 'page.onboardingWardCreate.progress.navigateDuty';
     }
 
     if (progress < 45) {
-        return '입력한 병동 정보를 정리하고 있어요.';
+        return 'page.onboardingWardCreate.progress.inputWardInfo';
     }
 
     if (progress < 75) {
-        return '근무 유형과 팀을 세팅하고 있어요.';
+        return 'page.onboardingWardCreate.progress.shiftTypesAndTeams';
     }
 
     if (progress < 90) {
-        return '간호사 정보를 연결하고 있어요.';
+        return 'page.onboardingWardCreate.progress.nurses';
     }
 
-    return '거의 다 됐어요. 마지막 확인 중이에요.';
+    return 'page.onboardingWardCreate.progress.finalCheck';
 };
 
 type TWardCreationProgressOverlayProps = {
@@ -46,6 +47,7 @@ type TWardCreationProgressOverlayProps = {
 };
 
 function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayProps) {
+    const {t} = useTypedTranslation();
     const [progress, setProgress] = useState(() => (isComplete ? 100 : INITIAL_PROGRESS));
 
     useEffect(() => {
@@ -72,7 +74,7 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
     }, [isComplete]);
 
     const progressValue = Math.round(progress);
-    const message = getCreationProgressMessage(progressValue, isComplete);
+    const message = t(getCreationProgressMessageKey(progressValue, isComplete));
 
     return (
         <div
@@ -92,7 +94,9 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
                     )}
                 </div>
                 <p id="ward-creation-progress-title" className="mt-5 font-apple text-[24px] leading-[1.35] font-bold text-sub-1">
-                    {isComplete ? '병동 생성이 완료됐어요' : '병동을 세팅하고 있어요'}
+                    {isComplete
+                        ? t('page.onboardingWardCreate.progress.completeTitle')
+                        : t('page.onboardingWardCreate.progress.settingTitle')}
                 </p>
                 <div className="mt-7">
                     <div
@@ -100,7 +104,7 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-valuenow={progressValue}
-                        aria-label="병동 생성 진행률"
+                        aria-label={t('page.onboardingWardCreate.progress.ariaLabel')}
                         className="h-2 overflow-hidden rounded-full bg-[#ECE6FF]"
                     >
                         <div

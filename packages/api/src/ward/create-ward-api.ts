@@ -49,6 +49,7 @@ import type {
 import type {TNurseResponse} from '../nurse';
 
 const DUMMY_PHONE_NUM = '01000000000';
+const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 
 const toYearMonthQuery = (year: number, month: number) =>
     new URLSearchParams({
@@ -95,6 +96,51 @@ const normalizeBasePath = (basePath: string | undefined) => {
 };
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
+const parseShiftTimeToMinutes = (value: string | null | undefined): number | null => {
+    const normalizedValue = value?.trim();
+
+    if (!normalizedValue || !SHIFT_TIME_FORMAT_REGEX.test(normalizedValue)) return null;
+
+    const [hour, minute] = normalizedValue.split(':').map(Number);
+
+    if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+    return hour * 60 + minute;
+};
+const isOvernightShiftType = (shiftType: Pick<TCreateShiftTypeDTO, 'isOff' | 'startTime' | 'endTime'>) => {
+    if (shiftType.isOff) return false;
+
+    const startMinutes = parseShiftTimeToMinutes(shiftType.startTime);
+    const endMinutes = parseShiftTimeToMinutes(shiftType.endTime);
+
+    return startMinutes != null && endMinutes != null && endMinutes < startMinutes;
+};
+const normalizeShiftTypePayload = <T extends TCreateShiftTypeDTO | TCreateWardShiftTypeDTO>(shiftType: T): T => {
+    if (shiftType.isOff) {
+        return {
+            ...shiftType,
+            classification: shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE',
+        };
+    }
+
+    if (isOvernightShiftType(shiftType)) {
+        return {
+            ...shiftType,
+            classification: 'NIGHT',
+        };
+    }
+
+    if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {
+        return {
+            ...shiftType,
+            classification: 'OTHER_WORK',
+        };
+    }
+
+    return shiftType;
+};
 const toCreateWardShiftTeamRequest = (shiftTeam: TCreateWardDTO['shiftTeams'][number]) =>
     compactRequest({
         name: shiftTeam.name,
@@ -103,14 +149,20 @@ const toCreateWardShiftTeamRequest = (shiftTeam: TCreateWardDTO['shiftTeams'][nu
         constraintRules: shiftTeam.constraintRules,
     }) as TCreateWardRequest['shiftTeams'][number];
 
+const toCreateWardShiftTypeRequest = (shiftType: TCreateWardShiftTypeDTO): TCreateWardShiftTypeRequest => {
+    const normalizedShiftType = normalizeShiftTypePayload(shiftType);
+
+    return {
+        ...normalizedShiftType,
+        startTime: normalizedShiftType.isOff || normalizedShiftType.isActive === false ? null : normalizedShiftType.startTime,
+        endTime: normalizedShiftType.isOff || normalizedShiftType.isActive === false ? null : normalizedShiftType.endTime,
+    };
+};
+
 const toCreateWardRequest = (createWardDTO: TCreateWardDTO): TCreateWardRequest => ({
     name: createWardDTO.name,
     hospitalName: createWardDTO.hospitalName,
-    wardShiftTypes: createWardDTO.wardShiftTypes.map((shiftType) => ({
-        ...shiftType,
-        startTime: shiftType.isOff ? null : shiftType.startTime,
-        endTime: shiftType.isOff ? null : shiftType.endTime,
-    })),
+    wardShiftTypes: createWardDTO.wardShiftTypes.map(toCreateWardShiftTypeRequest),
     shiftTeams: createWardDTO.shiftTeams.map(toCreateWardShiftTeamRequest),
 });
 
@@ -203,16 +255,9 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                 )
             ).data,
         getShiftConstraintRules: async (wardId: number, shiftTeamId: number) =>
-            (
-                await client.get<TShiftConstraintRulesResponse>(
-                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`),
-                )
-            ).data,
-        updateShiftConstraintRules: async (
-            wardId: number,
-            shiftTeamId: number,
-            constraintRules: TUpdateShiftConstraintRulesDTO,
-        ) =>
+            (await client.get<TShiftConstraintRulesResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`)))
+                .data,
+        updateShiftConstraintRules: async (wardId: number, shiftTeamId: number, constraintRules: TUpdateShiftConstraintRulesDTO) =>
             (
                 await client.put<TShiftConstraintRulesResponse>(
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/shift-constraint-rules`),
@@ -359,11 +404,17 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             ),
         getShiftTypes: async (wardId: number) => (await client.get<TWardShiftTypeResponse[]>(wardPath(`/${wardId}/shift-types`))).data,
         createShiftType: async (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
-            (await client.post<TWardShiftTypeResponse>(wardPath(`/${wardId}/shift-types`), createShiftTypeDTO)).data,
+            (await client.post<TWardShiftTypeResponse>(wardPath(`/${wardId}/shift-types`), normalizeShiftTypePayload(createShiftTypeDTO)))
+                .data,
         deleteShiftType: async (wardId: number, shiftTypeId: number) =>
             (await client.delete<void>(wardPath(`/${wardId}/shift-types/${shiftTypeId}`))).data,
         updateShiftType: async (wardId: number, shiftTypeId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
-            (await client.put<TWardShiftTypeResponse>(wardPath(`/${wardId}/shift-types/${shiftTypeId}`), createShiftTypeDTO)).data,
+            (
+                await client.put<TWardShiftTypeResponse>(
+                    wardPath(`/${wardId}/shift-types/${shiftTypeId}`),
+                    normalizeShiftTypePayload(createShiftTypeDTO),
+                )
+            ).data,
         getWatingNurses: async (wardId: number) =>
             (await client.get<{nurses: TWaitingNurseResponse[]}>(wardPath(`/${wardId}/waiting-nurses/v2`))).data.nurses,
         addMeToWatingNurses: async (wardId: number) => (await client.post<void>(wardPath(`/${wardId}/waiting-nurses`))).data,

@@ -10,7 +10,7 @@ import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png'
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {getOnboardingInitialScheduleTargets, useOnboardingWardWizard} from './model';
+import {getOnboardingInitialScheduleTargets, isOnboardingShiftTypeActive, useOnboardingWardWizard} from './model';
 import HeaderLogo from './ui/header-logo';
 import OnboardingStepLayout from './ui/onboarding-step-layout';
 import SectionHeader from './ui/section-header';
@@ -23,22 +23,6 @@ import WardCreationProgressOverlay from './ui/ward-creation-progress-overlay';
 import WizardButton from './ui/wizard-button';
 
 const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
-const ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM = 'onboardingSchedule';
-
-function buildMakeRouteWithOnboardingSchedule(params: {year: number; month: number; shiftTeamId?: number}) {
-    const searchParams = new URLSearchParams({
-        onboardingWardCreated: '1',
-        [ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM]: '1',
-        year: String(params.year),
-        month: String(params.month),
-    });
-
-    if (typeof params.shiftTeamId === 'number') {
-        searchParams.set('shiftTeamId', String(params.shiftTeamId));
-    }
-
-    return `${ROUTE.MAKE}?${searchParams.toString()}`;
-}
 
 function OnboardingWardCreatePage() {
     const {t} = useTypedTranslation();
@@ -172,11 +156,15 @@ function OnboardingWardCreatePage() {
             return t('page.onboardingWardCreate.blocked.emptyTeam');
         }
 
+        if (codes.has('schedule-row-missing-nurse-name')) {
+            return t('page.onboardingWardCreate.blocked.scheduleMissingNurseName');
+        }
+
         if (codes.has('missing-nurse-name') || codes.has('invalid-nurse-name')) {
             return t('page.onboardingWardCreate.blocked.invalidNurseName');
         }
 
-        if (codes.has('duplicate-shift-name') || codes.has('duplicate-shift-short-name')) {
+        if (codes.has('duplicate-shift-short-name')) {
             return t('page.onboardingWardCreate.blocked.duplicateShiftType');
         }
 
@@ -184,7 +172,7 @@ function OnboardingWardCreatePage() {
             return t('page.onboardingWardCreate.blocked.invalidShiftTime');
         }
 
-        if (codes.has('missing-shift-name') || codes.has('missing-shift-short-name') || codes.has('empty-shift-types')) {
+        if (codes.has('missing-shift-short-name') || codes.has('invalid-shift-short-name') || codes.has('empty-shift-types')) {
             return t('page.onboardingWardCreate.blocked.invalidShiftType');
         }
 
@@ -232,7 +220,9 @@ function OnboardingWardCreatePage() {
                         className="pointer-events-none absolute -top-[17px] -left-[15px] z-20 h-[37px] w-[37px]"
                     />
                     <div className="relative z-10 space-y-1.5">
-                        <p className="font-apple text-[19px] font-semibold text-[#5E45C1]">{t('page.onboardingWardCreate.skillCta.title')}</p>
+                        <p className="font-apple text-[19px] font-semibold text-[#5E45C1]">
+                            {t('page.onboardingWardCreate.skillCta.title')}
+                        </p>
                         <p className="font-apple text-[16px] text-gray-3">{t('page.onboardingWardCreate.skillCta.description')}</p>
                     </div>
                     <span className="pointer-events-none absolute top-1/2 right-5 z-10 -translate-y-1/2 text-[#6A4AE1] transition-transform duration-200 group-hover:translate-x-0.5">
@@ -279,7 +269,6 @@ function OnboardingWardCreatePage() {
             createdWard,
         });
         const initialScheduleTarget = initialScheduleTargets[0] ?? null;
-        const makeRoute = initialScheduleTarget ? buildMakeRouteWithOnboardingSchedule(initialScheduleTarget) : ROUTE.MAKE;
         const navigationState =
             initialScheduleTargets.length > 0
                 ? {
@@ -292,7 +281,7 @@ function OnboardingWardCreatePage() {
                       onboardingInitialSchedule: null,
                   };
 
-        navigate(makeRoute, {
+        navigate(ROUTE.HOME, {
             replace: true,
             state: navigationState,
         });
@@ -356,7 +345,7 @@ function OnboardingWardCreatePage() {
             case 3:
                 return (
                     <ShiftTypeStep
-                        shiftTypes={draft.shiftTypes}
+                        shiftTypes={draft.shiftTypes.filter(isOnboardingShiftTypeActive)}
                         onChange={updateShiftType}
                         onAdd={addShiftType}
                         onDelete={deleteShiftType}

@@ -2,6 +2,7 @@ import {cn} from '@dutying/utils/style';
 import {useQueries, useQuery} from '@tanstack/react-query';
 import {CalendarDays, ChevronDown} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import {type TShift, type TShiftTeam, type TWardShiftClassification, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
@@ -13,13 +14,17 @@ import {type TWardBoardDeadline, type TWardBoardSchedule} from '@/shared/api/boa
 import {PersonIcon} from '@/shared/assets/svg';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {getShiftWorkflowStatus} from '@/shared/lib/shift-workflow-status';
 import PageState from '@/shared/ui/PageState';
+import {Skeleton} from '@/shared/ui/primitives/skeleton';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TASK_LOOKAHEAD_DAYS = 7;
 const CALENDAR_ITEM_LIMIT = 3;
-const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+const SUNDAY_INDEX = 0;
+const SATURDAY_INDEX = 6;
 const SHIFT_CLASSIFICATION_ORDER: Partial<Record<TWardShiftClassification, number>> = {
     DAY: 10,
     EVENING: 20,
@@ -80,7 +85,8 @@ type TCalendarItem = {
 
 type TMonthlyShiftCell = {
     day: number;
-    weekday: string;
+    dateKey: string;
+    weekdayIndex: number;
     isToday: boolean;
     shiftType: TWardShiftType | null;
 };
@@ -94,12 +100,19 @@ type TMonthlyShiftRow = {
     cells: TMonthlyShiftCell[];
 };
 
-const MONTHLY_SORT_OPTIONS: {value: TMonthlySortOption; label: string}[] = [
-    {value: 'default', label: '기본'},
-    {value: 'nameAsc', label: '이름순'},
-    {value: 'todayShift', label: '오늘 근무순'},
-];
+type THomeTranslator = ReturnType<typeof useTypedTranslation>['t'];
 
+const MONTHLY_SORT_OPTIONS: TMonthlySortOption[] = ['default', 'nameAsc', 'todayShift'];
+const getMonthlySortLabel = (value: TMonthlySortOption, t: THomeTranslator) => {
+    switch (value) {
+        case 'nameAsc':
+            return t('page.home.sort.nameAsc');
+        case 'todayShift':
+            return t('page.home.sort.todayShift');
+        case 'default':
+            return t('page.home.sort.default');
+    }
+};
 const pad2 = (value: number) => String(value).padStart(2, '0');
 const toDateKey = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 const parseDateKey = (dateKey: string) => {
@@ -119,17 +132,19 @@ const getMaxDateKey = (left: string, right: string) => (compareDateKey(left, rig
 const getNextYearMonth = (year: number, month: number) => (month === 12 ? {year: year + 1, month: 1} : {year, month: month + 1});
 const getMonthStartKey = (year: number, month: number) => toDateKey(new Date(year, month - 1, 1));
 const getMonthEndKey = (year: number, month: number) => toDateKey(new Date(year, month, 0));
-const formatMonth = (year: number, month: number) => `${year}년 ${month}월`;
-const formatDateWithWeekday = (date: Date) => `${date.getMonth() + 1}월 ${date.getDate()}일 ${WEEKDAYS[date.getDay()]}요일`;
-const formatMonthDay = (dateKey: string) => {
+const formatMonth = (year: number, month: number, locale: string) =>
+    new Intl.DateTimeFormat(locale, {year: 'numeric', month: 'long'}).format(new Date(year, month - 1, 1));
+const formatDateWithWeekday = (date: Date, locale: string) =>
+    new Intl.DateTimeFormat(locale, {month: 'long', day: 'numeric', weekday: 'long'}).format(date);
+const formatMonthDay = (dateKey: string, locale: string) => {
     const date = parseDateKey(dateKey);
 
-    return `${date.getMonth() + 1}월 ${date.getDate()}일`;
+    return new Intl.DateTimeFormat(locale, {month: 'long', day: 'numeric'}).format(date);
 };
-const formatShortMonthDay = (dateKey: string) => {
+const formatShortMonthDay = (dateKey: string, locale: string) => {
     const date = parseDateKey(dateKey);
 
-    return `${date.getMonth() + 1}/${date.getDate()}`;
+    return new Intl.DateTimeFormat(locale, {month: 'numeric', day: 'numeric'}).format(date);
 };
 const getDayDiff = (dateKey: string, todayKey: string) =>
     Math.round((parseDateKey(dateKey).getTime() - parseDateKey(todayKey).getTime()) / DAY_MS);
@@ -142,7 +157,6 @@ const buildMakePath = ({year, month, shiftTeamId}: {year: number; month: number;
 
     return `${ROUTE.MAKE}?${params.toString()}`;
 };
-
 const getDeadlineBuckets = (deadlines: TWardBoardDeadline[], todayKey: string) => ({
     overdue: deadlines.filter((deadline) => getDayDiff(deadline.deadlineDate, todayKey) < 0),
     today: deadlines.filter((deadline) => getDayDiff(deadline.deadlineDate, todayKey) === 0),
@@ -152,15 +166,16 @@ const getDeadlineBuckets = (deadlines: TWardBoardDeadline[], todayKey: string) =
         return diff > 0 && diff <= TASK_LOOKAHEAD_DAYS;
     }),
 });
-
 const readBooleanLike = (value: unknown) => {
     if (typeof value === 'boolean') return value;
+
     if (typeof value === 'number') return value === 1;
 
     if (typeof value === 'string') {
         const normalizedValue = value.trim().toLowerCase();
 
         if (normalizedValue === 'true' || normalizedValue === '1') return true;
+
         if (normalizedValue === 'false' || normalizedValue === '0') return false;
     }
 
@@ -189,17 +204,23 @@ const isScheduleOnDate = (schedule: TWardBoardSchedule, dateKey: string) => {
 const normalizeTimeInput = (value?: string | null) => (value ? value.slice(0, 5) : '');
 const getBoardScheduleAllDay = (schedule: TWardBoardSchedule) =>
     readBooleanLike(schedule.allDay ?? schedule.isAllDay ?? schedule.all_day ?? schedule.is_all_day) ?? false;
-const getBoardScheduleTimeLabel = (schedule: TWardBoardSchedule) => {
-    if (getBoardScheduleAllDay(schedule)) return '종일';
+const getBoardScheduleTimeLabel = (schedule: TWardBoardSchedule, t: THomeTranslator) => {
+    if (getBoardScheduleAllDay(schedule)) return t('page.home.calendar.allDay');
 
     const startTime = normalizeTimeInput(schedule.startTime ?? schedule.start_time);
     const endTime = normalizeTimeInput(schedule.endTime ?? schedule.end_time);
 
     if (startTime && endTime) return `${startTime}-${endTime}`;
 
-    return getFirstNonEmptyValue(startTime, endTime, '시간 미정');
+    return getFirstNonEmptyValue(startTime, endTime, t('page.home.calendar.timeUnknown'));
 };
-const getCalendarItems = (schedules: TWardBoardSchedule[], deadlines: TWardBoardDeadline[], todayKey: string): TCalendarItem[] => {
+const getCalendarItems = (
+    schedules: TWardBoardSchedule[],
+    deadlines: TWardBoardDeadline[],
+    todayKey: string,
+    t: THomeTranslator,
+    locale: string,
+): TCalendarItem[] => {
     const scheduleItems: TCalendarItem[] = schedules
         .filter((schedule) => !isBoardDeadlineSchedule(schedule))
         .flatMap((schedule): TCalendarItem[] => {
@@ -213,9 +234,9 @@ const getCalendarItems = (schedules: TWardBoardSchedule[], deadlines: TWardBoard
                     {
                         key: `schedule-today-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
                         tone: 'today',
-                        badge: '오늘',
+                        badge: t('page.home.calendar.today'),
                         title: schedule.title,
-                        meta: `일정 · ${getBoardScheduleTimeLabel(schedule)}`,
+                        meta: t('page.home.calendar.scheduleMeta', {time: getBoardScheduleTimeLabel(schedule, t)}),
                         sortOrder: 10,
                     },
                 ];
@@ -229,9 +250,12 @@ const getCalendarItems = (schedules: TWardBoardSchedule[], deadlines: TWardBoard
                 {
                     key: `schedule-upcoming-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
                     tone: 'quiet',
-                    badge: formatShortMonthDay(startDate),
+                    badge: formatShortMonthDay(startDate, locale),
                     title: schedule.title,
-                    meta: `일정 · ${formatMonthDay(startDate)} · ${getBoardScheduleTimeLabel(schedule)}`,
+                    meta: t('page.home.calendar.scheduleDateMeta', {
+                        date: formatMonthDay(startDate, locale),
+                        time: getBoardScheduleTimeLabel(schedule, t),
+                    }),
                     sortOrder: 50 + diff,
                 },
             ];
@@ -245,35 +269,38 @@ const getCalendarItems = (schedules: TWardBoardSchedule[], deadlines: TWardBoard
             {
                 key: `deadline-${deadline.postId}-${deadline.deadlineDate}`,
                 tone: diff < 0 ? 'danger' : 'warning',
-                badge: diff < 0 ? '지남' : diff === 0 ? '오늘' : `D-${diff}`,
+                badge: diff < 0 ? t('page.home.calendar.overdue') : diff === 0 ? t('page.home.calendar.today') : `D-${diff}`,
                 title: deadline.postTitle,
-                meta: `마감 · ${formatMonthDay(deadline.deadlineDate)}`,
+                meta: t('page.home.calendar.deadlineMeta', {date: formatMonthDay(deadline.deadlineDate, locale)}),
                 sortOrder: diff === 0 ? 20 : diff < 0 ? 25 + Math.abs(diff) : 30 + diff,
             },
         ];
     });
 
     return [...scheduleItems, ...deadlineItems]
-        .sort((left, right) => left.sortOrder - right.sortOrder || left.title.localeCompare(right.title, 'ko-KR'))
+        .sort((left, right) => left.sortOrder - right.sortOrder || left.title.localeCompare(right.title, locale))
         .slice(0, CALENDAR_ITEM_LIMIT);
 };
-
 const hasDutyShiftWorkerRows = (shift: TShift) =>
     Boolean(shift.days?.length) && (shift.divisionShiftNurses ?? []).some((division) => division.some((row) => row.shiftNurse.isWorker));
-
 const getScheduleStatus = (
     query: {isPending: boolean; isError: boolean; data?: TShift},
     options: {emptyAssignmentsAsDraft?: boolean} = {},
 ): {status: TScheduleStatus; shift: TShift | null} => {
     if (query.isPending) return {status: 'checking', shift: null};
+
     if (query.isError || !query.data) return {status: 'error', shift: null};
+
     const workflowStatus = getShiftWorkflowStatus(query.data);
 
     if (workflowStatus === 'NOT_STARTED') return {status: 'empty', shift: query.data};
+
     if (workflowStatus === 'IN_PROGRESS') return {status: 'draft', shift: query.data};
+
     if (workflowStatus === 'CONFIRMED') return {status: 'complete', shift: query.data};
 
     if (isDutyShiftFullyAssigned(query.data)) return {status: 'complete', shift: query.data};
+
     if (isDutyShiftWithoutAssignments(query.data)) {
         return {
             status: options.emptyAssignmentsAsDraft && hasDutyShiftWorkerRows(query.data) ? 'draft' : 'empty',
@@ -283,16 +310,20 @@ const getScheduleStatus = (
 
     return {status: 'draft', shift: query.data};
 };
-
-const getScheduleStatusLabel = (status: TScheduleStatus) => {
-    if (status === 'checking') return '확인 중';
-    if (status === 'error') return '다시 확인';
-    if (status === 'empty') return '작성 전';
-    if (status === 'draft') return '진행 중';
-
-    return '확정';
+const getScheduleStatusLabel = (status: TScheduleStatus, t: THomeTranslator) => {
+    switch (status) {
+        case 'checking':
+            return t('page.home.status.checking');
+        case 'error':
+            return t('page.home.status.error');
+        case 'empty':
+            return t('page.home.status.empty');
+        case 'draft':
+            return t('page.home.status.draft');
+        case 'complete':
+            return t('page.home.status.complete');
+    }
 };
-
 const getScheduleStatusClassName = (status: TScheduleStatus) =>
     cn(
         'inline-flex h-7 items-center rounded-[8px] px-2.5 text-[12px] font-semibold',
@@ -306,7 +337,6 @@ const getScheduleStatusClassName = (status: TScheduleStatus) =>
                   ? 'bg-[#FFF0F0] text-[#C74343]'
                   : 'bg-[#F1F3F5] text-gray-3',
     );
-
 const getTaskToneClassName = (tone: TTaskTone) =>
     cn(
         tone === 'danger'
@@ -315,9 +345,8 @@ const getTaskToneClassName = (tone: TTaskTone) =>
               ? 'bg-[#FFF6E8] text-[#A35F00]'
               : tone === 'info'
                 ? 'bg-[#EDF3FF] text-[#2457B7]'
-              : 'bg-[#F1F3F5] text-gray-3',
+                : 'bg-[#F1F3F5] text-gray-3',
     );
-
 const getCalendarToneClassName = (tone: TCalendarItemTone) =>
     cn(
         tone === 'today'
@@ -328,7 +357,6 @@ const getCalendarToneClassName = (tone: TCalendarItemTone) =>
                 ? 'bg-[#FFF0F0] text-[#C74343]'
                 : 'bg-[#F1F3F5] text-gray-3',
     );
-
 const getTodayTeamDuty = (item: TScheduleStatusItem, todayDay: number, actionPath: string): TTodayTeamDuty => {
     const baseDuty: TTodayTeamDuty = {
         teamId: item.team.shiftTeamId,
@@ -392,10 +420,8 @@ const getTodayTeamDuty = (item: TScheduleStatusItem, todayDay: number, actionPat
         groups: Array.from(groupsByShiftTypeId.values()).sort((left, right) => left.order - right.order),
     };
 };
-
 const getShiftTypeSortOrder = (shiftType: TWardShiftType | null) =>
     shiftType ? (SHIFT_CLASSIFICATION_ORDER[shiftType.classification] ?? 50) : 999;
-
 const getMonthlyShiftRows = (item: TScheduleStatusItem, todayKey: string, year: number, month: number): TMonthlyShiftRow[] => {
     const shift = item.shift;
 
@@ -414,24 +440,25 @@ const getMonthlyShiftRows = (item: TScheduleStatusItem, todayKey: string, year: 
             sourceIndex,
             cells: shift.days.map((day, index) => {
                 const date = new Date(year, month - 1, day.day);
+                const dateKey = toDateKey(date);
                 const shiftTypeId = row.wardShiftList?.[index] ?? null;
 
                 return {
                     day: day.day,
-                    weekday: WEEKDAYS[date.getDay()],
-                    isToday: toDateKey(date) === todayKey,
-                    shiftType: shiftTypeId === null ? null : shiftTypeById.get(shiftTypeId) ?? null,
+                    dateKey,
+                    weekdayIndex: date.getDay(),
+                    isToday: dateKey === todayKey,
+                    shiftType: shiftTypeId === null ? null : (shiftTypeById.get(shiftTypeId) ?? null),
                 };
             }),
         }));
 };
-
-const sortMonthlyShiftRows = (rows: TMonthlyShiftRow[], sortOption: TMonthlySortOption) => {
+const sortMonthlyShiftRows = (rows: TMonthlyShiftRow[], sortOption: TMonthlySortOption, locale: string) => {
     const sortedRows = [...rows];
 
     if (sortOption === 'nameAsc') {
         return sortedRows.sort(
-            (left, right) => left.nurseName.localeCompare(right.nurseName, 'ko-KR') || left.teamName.localeCompare(right.teamName, 'ko-KR'),
+            (left, right) => left.nurseName.localeCompare(right.nurseName, locale) || left.teamName.localeCompare(right.teamName, locale),
         );
     }
 
@@ -442,8 +469,8 @@ const sortMonthlyShiftRows = (rows: TMonthlyShiftRow[], sortOption: TMonthlySort
 
             return (
                 getShiftTypeSortOrder(leftToday) - getShiftTypeSortOrder(rightToday) ||
-                left.teamName.localeCompare(right.teamName, 'ko-KR') ||
-                left.nurseName.localeCompare(right.nurseName, 'ko-KR')
+                left.teamName.localeCompare(right.teamName, locale) ||
+                left.nurseName.localeCompare(right.nurseName, locale)
             );
         });
     }
@@ -456,7 +483,7 @@ function HomeButton({children, variant = 'primary', onClick}: {children: ReactNo
         <button
             type="button"
             className={cn(
-                'inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] px-4 font-apple text-[14px] font-semibold transition active:scale-[0.99] focus-visible:bg-main-light focus-visible:outline-none',
+                'inline-flex h-10 shrink-0 cursor-pointer items-center justify-center rounded-[8px] px-4 font-apple text-[14px] font-semibold transition focus-visible:bg-main-light focus-visible:outline-none active:scale-[0.99]',
                 variant === 'primary' ? 'bg-sub-1 text-white hover:bg-[#35363C]' : 'bg-[#F1F3F5] text-sub-1 hover:bg-[#E9ECEF]',
             )}
             onClick={onClick}
@@ -502,6 +529,8 @@ function TeamFilter({
     selectedTeamId: number | 'all';
     onSelectTeam: (teamId: number | 'all') => void;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex min-w-0 flex-wrap gap-2">
             <button
@@ -512,7 +541,7 @@ function TeamFilter({
                 )}
                 onClick={() => onSelectTeam('all')}
             >
-                전체
+                {t('page.home.filter.all')}
             </button>
             {teams.map((team) => (
                 <button
@@ -542,6 +571,8 @@ function ScheduleTeamTabs({
     selectedTeamId: TMonthlyTeamFilter;
     onSelectTeam: (teamId: TMonthlyTeamFilter) => void;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <div className="flex min-w-0 flex-wrap gap-2">
             <button
@@ -552,7 +583,7 @@ function ScheduleTeamTabs({
                 )}
                 onClick={() => onSelectTeam('all')}
             >
-                전체
+                {t('page.home.filter.all')}
             </button>
             {teams.map((team) => (
                 <button
@@ -573,16 +604,11 @@ function ScheduleTeamTabs({
     );
 }
 
-function MonthlySortSelect({
-    value,
-    onChange,
-}: {
-    value: TMonthlySortOption;
-    onChange: (value: TMonthlySortOption) => void;
-}) {
+function MonthlySortSelect({value, onChange}: {value: TMonthlySortOption; onChange: (value: TMonthlySortOption) => void}) {
+    const {t} = useTypedTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement | null>(null);
-    const selectedOption = MONTHLY_SORT_OPTIONS.find((option) => option.value === value) ?? MONTHLY_SORT_OPTIONS[0];
+    const selectedOption = MONTHLY_SORT_OPTIONS.includes(value) ? value : 'default';
 
     useEffect(() => {
         if (!isOpen) return;
@@ -613,28 +639,28 @@ function MonthlySortSelect({
                 type="button"
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
-                aria-label="근무표 정렬 기준 열기"
+                aria-label={t('page.home.sort.openAria')}
                 className={cn(
                     'flex h-8 min-w-[112px] items-center justify-between gap-3 rounded-[5px] bg-gray-6 px-3 font-apple text-[16px] text-gray-3 transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                     isOpen ? 'bg-white text-sub-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]' : 'hover:bg-gray-7',
                 )}
                 onClick={() => setIsOpen((prev) => !prev)}
             >
-                <span>{selectedOption.label}</span>
+                <span>{getMonthlySortLabel(selectedOption, t)}</span>
                 <ChevronDown aria-hidden="true" className={cn('h-4 w-4 shrink-0 transition-transform', isOpen && 'rotate-180')} />
             </button>
             {isOpen ? (
                 <div
                     role="listbox"
-                    aria-label="근무표 정렬 기준"
+                    aria-label={t('page.home.sort.label')}
                     className="absolute top-full right-0 z-20 mt-1 w-[150px] animate-in overflow-hidden rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 slide-in-from-top-1"
                 >
                     {MONTHLY_SORT_OPTIONS.map((option) => {
-                        const isSelected = option.value === value;
+                        const isSelected = option === value;
 
                         return (
                             <button
-                                key={option.value}
+                                key={option}
                                 type="button"
                                 role="option"
                                 aria-selected={isSelected}
@@ -643,11 +669,11 @@ function MonthlySortSelect({
                                     isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
                                 )}
                                 onClick={() => {
-                                    onChange(option.value);
+                                    onChange(option);
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
+                                {getMonthlySortLabel(option, t)}
                             </button>
                         );
                     })}
@@ -658,7 +684,8 @@ function MonthlySortSelect({
 }
 
 function TodayShiftLine({group}: {group: TTodayShiftGroup}) {
-    const shiftName = group.shiftType?.name ?? group.label;
+    const shiftShortName = group.shiftType?.shortName?.trim() ?? '';
+    const shiftName = shiftShortName.length > 0 ? shiftShortName : group.label;
 
     return (
         <div className="min-w-0 rounded-[8px] bg-white px-2.5 py-2">
@@ -688,6 +715,7 @@ function TodayShiftLine({group}: {group: TTodayShiftGroup}) {
 }
 
 function TodayTeamDutyLine({duty}: {duty: TTodayTeamDuty}) {
+    const {t} = useTypedTranslation();
     const filledGroups = duty.groups.filter((group) => group.names.length > 0);
     const hasSchedule = duty.status !== 'empty' && duty.status !== 'error' && duty.status !== 'checking';
 
@@ -708,7 +736,7 @@ function TodayTeamDutyLine({duty}: {duty: TTodayTeamDuty}) {
                 </div>
             ) : (
                 <div className="flex min-h-[72px] items-center justify-center px-4 text-center">
-                    <p className="text-[14px] font-bold text-gray-3">오늘 근무가 비어 있어요</p>
+                    <p className="text-[14px] font-bold text-gray-3">{t('page.home.today.emptyShift')}</p>
                 </div>
             )}
         </article>
@@ -716,11 +744,13 @@ function TodayTeamDutyLine({duty}: {duty: TTodayTeamDuty}) {
 }
 
 function TodayDutyOverview({duties}: {duties: TTodayTeamDuty[]}) {
+    const {t} = useTypedTranslation();
+
     if (duties.length === 0) {
         return (
             <div className="flex min-h-[180px] flex-col items-center justify-center rounded-[8px] bg-[#F6F7F9] px-5 text-center">
-                <p className="text-[15px] font-bold text-sub-1">팀을 추가하면 볼 수 있어요</p>
-                <p className="mt-1 text-[13px] font-semibold text-gray-3">근무자 관리에서 간호 팀을 추가해요.</p>
+                <p className="text-[15px] font-bold text-sub-1">{t('page.home.emptyTeams.title')}</p>
+                <p className="mt-1 text-[13px] font-semibold text-gray-3">{t('page.home.emptyTeams.description')}</p>
             </div>
         );
     }
@@ -758,6 +788,8 @@ function NextScheduleTaskRow({
     month: number;
     onNavigate: (path: string) => void;
 }) {
+    const {t} = useTypedTranslation();
+
     return (
         <button
             type="button"
@@ -773,9 +805,11 @@ function NextScheduleTaskRow({
             }
         >
             <span className="min-w-0 flex-1">
-                <span className="block truncate text-[14px] font-bold text-sub-1">{item.team.name} 다음 달({month}월) 근무표</span>
+                <span className="block truncate text-[14px] font-bold text-sub-1">
+                    {t('page.home.nextSchedule.title', {teamName: item.team.name})}
+                </span>
             </span>
-            <span className={cn('shrink-0', getScheduleStatusClassName(item.status))}>{getScheduleStatusLabel(item.status)}</span>
+            <span className={cn('shrink-0', getScheduleStatusClassName(item.status))}>{getScheduleStatusLabel(item.status, t)}</span>
         </button>
     );
 }
@@ -788,7 +822,9 @@ function TaskRow({task, onNavigate}: {task: TTaskItem; onNavigate: (path: string
             onClick={() => onNavigate(task.path)}
         >
             <div className="flex min-w-0 items-start justify-between gap-3">
-                <span className={cn('shrink-0 rounded-[8px] px-2 py-1 text-[11px] font-bold', getTaskToneClassName(task.tone))}>{task.actionLabel}</span>
+                <span className={cn('shrink-0 rounded-[8px] px-2 py-1 text-[11px] font-bold', getTaskToneClassName(task.tone))}>
+                    {task.actionLabel}
+                </span>
                 <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-bold text-sub-1">{task.title}</span>
                     <span className="mt-1 block truncate text-[12px] font-semibold text-gray-3">{task.description}</span>
@@ -799,11 +835,13 @@ function TaskRow({task, onNavigate}: {task: TTaskItem; onNavigate: (path: string
 }
 
 function CalendarActionButton({onClick}: {onClick: () => void}) {
+    const {t} = useTypedTranslation();
+
     return (
         <button
             type="button"
-            aria-label="캘린더 전체 보기"
-            title="캘린더 전체 보기"
+            aria-label={t('page.home.calendar.openAll')}
+            title={t('page.home.calendar.openAll')}
             className="inline-flex size-8 cursor-pointer items-center justify-center rounded-[8px] bg-[#F1F3F5] text-gray-3 transition hover:bg-[#E9ECEF] hover:text-sub-1 focus-visible:bg-main-light focus-visible:outline-none"
             onClick={onClick}
         >
@@ -812,17 +850,13 @@ function CalendarActionButton({onClick}: {onClick: () => void}) {
     );
 }
 
-function CalendarPreview({
-    items,
-    isLoading,
-    onOpen,
-}: {
-    items: TCalendarItem[];
-    isLoading: boolean;
-    onOpen: () => void;
-}) {
+function CalendarPreview({items, isLoading, onOpen}: {items: TCalendarItem[]; isLoading: boolean; onOpen: () => void}) {
+    const {t} = useTypedTranslation();
+
     if (isLoading) {
-        return <div className="rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">캘린더 확인 중</div>;
+        return (
+            <div className="rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">{t('page.home.calendar.loading')}</div>
+        );
     }
 
     if (items.length === 0) {
@@ -836,7 +870,7 @@ function CalendarPreview({
                     <CalendarDays aria-hidden="true" className="size-4" />
                 </span>
                 <span className="min-w-0">
-                    <span className="block truncate text-[14px] font-bold text-sub-1">가까운 일정 없음</span>
+                    <span className="block truncate text-[14px] font-bold text-sub-1">{t('page.home.calendar.empty')}</span>
                 </span>
             </button>
         );
@@ -872,6 +906,7 @@ function MonthlyScheduleTable({
     showTeamName,
     emptyTitle,
     emptyDescription,
+    locale,
     onOpen,
 }: {
     rows: TMonthlyShiftRow[];
@@ -879,8 +914,10 @@ function MonthlyScheduleTable({
     showTeamName: boolean;
     emptyTitle: string;
     emptyDescription: string;
+    locale: string;
     onOpen: () => void;
 }) {
+    const {t} = useTypedTranslation();
     const days = rows[0]?.cells ?? [];
     const dayGridTemplateColumns = `repeat(${days.length}, minmax(0, 1fr))`;
     const gridTemplateColumns = '96px minmax(0, 1fr)';
@@ -888,8 +925,8 @@ function MonthlyScheduleTable({
     if (!hasTeams) {
         return (
             <div className="flex min-h-[220px] flex-col items-center justify-center rounded-[8px] bg-[#F6F7F9] px-5 text-center">
-                <p className="text-[15px] font-bold text-sub-1">팀을 추가하면 근무표를 볼 수 있어요</p>
-                <p className="mt-1 text-[13px] font-semibold text-gray-3">근무자 관리에서 간호 팀을 추가해요.</p>
+                <p className="text-[15px] font-bold text-sub-1">{t('page.home.monthly.emptyTeamsTitle')}</p>
+                <p className="mt-1 text-[13px] font-semibold text-gray-3">{t('page.home.emptyTeams.description')}</p>
             </div>
         );
     }
@@ -909,8 +946,13 @@ function MonthlyScheduleTable({
 
     return (
         <div className="make-shift-calendar @container relative isolate flex w-full min-w-0 flex-col gap-2">
-            <div className="make-shift-calendar__header grid min-w-0 items-center py-1" style={{gridTemplateColumns, columnGap: '8px', paddingLeft: '4px'}}>
-                <div className="min-w-0 truncate text-center font-apple text-[12px] font-medium text-sub-3">이름</div>
+            <div
+                className="make-shift-calendar__header grid min-w-0 items-center py-1"
+                style={{gridTemplateColumns, columnGap: '8px', paddingLeft: '4px'}}
+            >
+                <div className="min-w-0 truncate text-center font-apple text-[12px] font-medium text-sub-3">
+                    {t('page.home.monthly.nameHeader')}
+                </div>
                 <div
                     className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
                     style={{gridTemplateColumns: dayGridTemplateColumns}}
@@ -920,10 +962,14 @@ function MonthlyScheduleTable({
                             key={cell.day}
                             className={cn(
                                 'relative min-w-0 rounded-full text-center font-poppins text-[12px] leading-5 font-semibold tabular-nums',
-                                cell.weekday === '토' ? 'text-blue' : cell.weekday === '일' ? 'text-red' : 'text-sub-3',
+                                cell.weekdayIndex === SATURDAY_INDEX
+                                    ? 'text-blue'
+                                    : cell.weekdayIndex === SUNDAY_INDEX
+                                      ? 'text-red'
+                                      : 'text-sub-3',
                                 cell.isToday && 'bg-main-1 text-white',
                             )}
-                            title={`${cell.day}일 ${cell.weekday}요일`}
+                            title={formatDateWithWeekday(parseDateKey(cell.dateKey), locale)}
                         >
                             {cell.day}
                         </div>
@@ -945,26 +991,40 @@ function MonthlyScheduleTable({
                             <span className="block max-w-full truncate text-[13px]">{row.nurseName}</span>
                             <span
                                 aria-hidden={!showTeamName}
-                                className={cn('mt-1 block max-w-full truncate text-[10px] font-bold text-gray-4', !showTeamName && 'invisible')}
+                                className={cn(
+                                    'mt-1 block max-w-full truncate text-[10px] font-bold text-gray-4',
+                                    !showTeamName && 'invisible',
+                                )}
                             >
                                 {row.teamName}
                             </span>
                         </div>
-                        <div className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0" style={{gridTemplateColumns: dayGridTemplateColumns}}>
+                        <div
+                            className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                            style={{gridTemplateColumns: dayGridTemplateColumns}}
+                        >
                             {row.cells.map((cell) => (
                                 <div
                                     key={`${row.shiftNurseId}-${cell.day}`}
                                     className={cn(
                                         'make-shift-calendar__day-cell group relative z-[10] flex h-full min-w-0 items-center justify-center',
-                                        cell.weekday === '토' ? 'bg-blue/5' : cell.weekday === '일' ? 'bg-red/5' : '',
+                                        cell.weekdayIndex === SATURDAY_INDEX
+                                            ? 'bg-blue/5'
+                                            : cell.weekdayIndex === SUNDAY_INDEX
+                                              ? 'bg-red/5'
+                                              : '',
                                         cell.isToday && 'bg-main-light',
                                     )}
-                                    title={`${row.nurseName} ${cell.day}일 ${cell.shiftType?.shortName ?? '-'}`}
+                                    title={t('page.home.monthly.cellTitle', {
+                                        nurseName: row.nurseName,
+                                        day: cell.day,
+                                        shift: cell.shiftType?.shortName ?? '-',
+                                    })}
                                 >
                                     <span className="make-shift-calendar__shift-badge-wrap relative z-[20] flex size-[24px] min-w-0 shrink-0 items-center justify-center">
                                         <ShiftBadge
                                             shiftType={cell.shiftType}
-                                            className="make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[.375rem] text-[12px] leading-none"
+                                            className="make-shift-calendar__shift-badge relative z-[20] !h-full min-h-0 !w-full min-w-0 rounded-[.375rem] text-[12px] leading-none"
                                         />
                                     </span>
                                 </div>
@@ -977,7 +1037,161 @@ function MonthlyScheduleTable({
     );
 }
 
+function HomePageSkeleton() {
+    const {t} = useTypedTranslation();
+
+    return (
+        <div
+            role="status"
+            aria-busy="true"
+            aria-label={t('page.home.skeleton.loadingAria')}
+            data-testid="home-page-skeleton"
+            className="min-h-screen w-full min-w-[1080px] bg-[#F6F7F9] px-8 py-6 font-apple"
+        >
+            <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
+                <header className="flex min-w-0 items-end justify-between gap-5">
+                    <div className="min-w-0">
+                        <Skeleton className="h-4 w-52 rounded-full bg-gray-6" />
+                        <Skeleton className="mt-3 h-10 w-72 rounded-full bg-gray-6" />
+                        <Skeleton className="mt-3 h-4 w-44 rounded-full bg-gray-6/80" />
+                    </div>
+                    <Skeleton className="h-10 w-40 shrink-0 rounded-[8px] bg-sub-4.5" />
+                </header>
+
+                <main className="grid grid-cols-[minmax(0,1fr)_360px] gap-5">
+                    <section className="min-w-0 rounded-[8px] bg-white p-5">
+                        <div className="flex min-w-0 items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <Skeleton className="h-7 w-32 rounded-full bg-gray-6" />
+                                <Skeleton className="mt-2 h-4 w-48 rounded-full bg-gray-6/80" />
+                            </div>
+                        </div>
+                        <div className="mt-5 flex min-w-0 flex-wrap gap-2">
+                            {Array.from({length: 4}, (_, index) => (
+                                <Skeleton
+                                    key={index}
+                                    className={cn('h-9 rounded-[8px]', index === 0 ? 'w-20 bg-sub-4.5' : 'w-24 bg-gray-6')}
+                                />
+                            ))}
+                        </div>
+                        <div className="mt-4 grid gap-3">
+                            {Array.from({length: 3}, (_, rowIndex) => (
+                                <div
+                                    key={rowIndex}
+                                    className="grid min-w-0 grid-cols-[108px_minmax(0,1fr)] gap-2 rounded-[8px] bg-[#F6F7F9] p-2.5"
+                                >
+                                    <div className="flex min-w-0 flex-col justify-center px-1.5 py-1">
+                                        <Skeleton className="h-5 w-16 rounded-full bg-gray-6" />
+                                        <Skeleton className="mt-2 h-4 w-10 rounded-full bg-gray-6/80" />
+                                    </div>
+                                    <div className="grid min-w-0 grid-cols-3 gap-1.5">
+                                        {Array.from({length: 3}, (_, cardIndex) => (
+                                            <div key={cardIndex} className="min-w-0 rounded-[8px] bg-white px-2.5 py-2">
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <Skeleton className="size-7 rounded-[7px] bg-main-4/80" />
+                                                    <Skeleton className="h-4 w-12 rounded-full bg-gray-6" />
+                                                </div>
+                                                <div className="mt-3 flex gap-1">
+                                                    <Skeleton className="h-6 w-10 rounded-[7px] bg-gray-6/80" />
+                                                    <Skeleton className="h-6 w-12 rounded-[7px] bg-gray-6/80" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <aside className="flex min-w-0 flex-col gap-5">
+                        <section className="min-w-0 rounded-[8px] bg-white p-5">
+                            <Skeleton className="h-7 w-24 rounded-full bg-gray-6" />
+                            <div className="mt-5 grid grid-cols-2 gap-2">
+                                <Skeleton className="h-[68px] rounded-[8px] bg-[#F1F3F5]" />
+                                <Skeleton className="h-[68px] rounded-[8px] bg-[#F1F3F5]" />
+                            </div>
+                            <div className="mt-3 grid gap-2">
+                                {Array.from({length: 3}, (_, index) => (
+                                    <Skeleton key={index} className="h-11 rounded-[8px] bg-[#F1F3F5]" />
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className="min-w-0 rounded-[8px] bg-white p-5">
+                            <div className="flex items-center justify-between gap-4">
+                                <Skeleton className="h-7 w-20 rounded-full bg-gray-6" />
+                                <Skeleton className="size-8 rounded-[8px] bg-[#F1F3F5]" />
+                            </div>
+                            <div className="mt-5 grid gap-2">
+                                {Array.from({length: 3}, (_, index) => (
+                                    <div key={index} className="rounded-[8px] bg-[#F6F7F9] p-3">
+                                        <div className="flex min-w-0 items-start gap-3">
+                                            <Skeleton className="h-6 w-10 shrink-0 rounded-[8px] bg-gray-6" />
+                                            <span className="min-w-0 flex-1">
+                                                <Skeleton className="h-4 w-9/12 rounded-full bg-gray-6" />
+                                                <Skeleton className="mt-2 h-3 w-7/12 rounded-full bg-gray-6/80" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    </aside>
+
+                    <section className="col-span-2 min-w-0 rounded-[8px] bg-white p-5">
+                        <div className="flex min-w-0 items-start justify-between gap-4">
+                            <div className="min-w-0">
+                                <Skeleton className="h-7 w-36 rounded-full bg-gray-6" />
+                                <Skeleton className="mt-2 h-4 w-44 rounded-full bg-gray-6/80" />
+                            </div>
+                            <Skeleton className="h-10 w-32 rounded-[8px] bg-[#F1F3F5]" />
+                        </div>
+                        <div className="mt-5 mb-4 flex min-w-0 items-center justify-between gap-4">
+                            <div className="flex min-w-0 gap-2">
+                                {Array.from({length: 4}, (_, index) => (
+                                    <Skeleton key={index} className="h-8 w-20 rounded-[8px] bg-gray-6" />
+                                ))}
+                            </div>
+                            <Skeleton className="h-8 w-28 rounded-[5px] bg-gray-6" />
+                        </div>
+                        <div className="grid gap-2">
+                            <div className="grid items-center gap-2 py-1" style={{gridTemplateColumns: '96px minmax(0, 1fr)'}}>
+                                <Skeleton className="mx-auto h-4 w-12 rounded-full bg-gray-6" />
+                                <div
+                                    className="grid min-w-0 gap-1 rounded-[12px] bg-gray-7 px-2 py-1"
+                                    style={{gridTemplateColumns: 'repeat(14, minmax(0, 1fr))'}}
+                                >
+                                    {Array.from({length: 14}, (_, index) => (
+                                        <Skeleton key={index} className="h-5 rounded-full bg-gray-6" />
+                                    ))}
+                                </div>
+                            </div>
+                            {Array.from({length: 5}, (_, rowIndex) => (
+                                <div
+                                    key={rowIndex}
+                                    className="grid h-[44px] items-stretch gap-2"
+                                    style={{gridTemplateColumns: '96px minmax(0, 1fr)'}}
+                                >
+                                    <Skeleton className="rounded-[8px] bg-gray-6" />
+                                    <div className="grid min-w-0 gap-1" style={{gridTemplateColumns: 'repeat(14, minmax(0, 1fr))'}}>
+                                        {Array.from({length: 14}, (_, cellIndex) => (
+                                            <Skeleton key={cellIndex} className="m-auto size-6 rounded-[6px] bg-gray-6/80" />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                </main>
+            </div>
+        </div>
+    );
+}
+
 function HomePage() {
+    const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const navigate = useNavigate();
     const {
         state: {wardId, accountMe},
@@ -1091,21 +1305,27 @@ function HomePage() {
         selectedTodayTeamId === 'all' ? todayDuties : todayDuties.filter((duty) => duty.teamId === selectedTodayTeamId);
     const monthlyTeamId = selectedMonthlyTeamId;
     const selectedMonthlyItem =
-        monthlyTeamId === 'all' ? null : currentScheduleStatusItems.find((item) => item.team.shiftTeamId === monthlyTeamId) ?? null;
+        monthlyTeamId === 'all' ? null : (currentScheduleStatusItems.find((item) => item.team.shiftTeamId === monthlyTeamId) ?? null);
     const monthlySourceItems =
-        monthlyTeamId === 'all' ? currentScheduleStatusItems : currentScheduleStatusItems.filter((item) => item.team.shiftTeamId === monthlyTeamId);
+        monthlyTeamId === 'all'
+            ? currentScheduleStatusItems
+            : currentScheduleStatusItems.filter((item) => item.team.shiftTeamId === monthlyTeamId);
     const monthlyRows = useMemo(
         () =>
             sortMonthlyShiftRows(
                 monthlySourceItems.flatMap((item) => getMonthlyShiftRows(item, todayKey, currentYearMonth.year, currentYearMonth.month)),
                 monthlySortOption,
+                locale,
             ),
-        [currentYearMonth.month, currentYearMonth.year, monthlySortOption, monthlySourceItems, todayKey],
+        [currentYearMonth.month, currentYearMonth.year, locale, monthlySortOption, monthlySourceItems, todayKey],
     );
     const deadlines = deadlinesQuery.data ?? [];
     const schedules = schedulesQuery.data ?? [];
     const deadlineBuckets = useMemo(() => getDeadlineBuckets(deadlines, todayKey), [deadlines, todayKey]);
-    const calendarItems = useMemo(() => getCalendarItems(schedules, deadlines, todayKey), [deadlines, schedules, todayKey]);
+    const calendarItems = useMemo(
+        () => getCalendarItems(schedules, deadlines, todayKey, t, locale),
+        [deadlines, locale, schedules, t, todayKey],
+    );
     const waitingNurseCount = waitingNursesQuery.data?.length ?? 0;
     const pendingRequestCount = pendingRequestsQuery.data?.totalPendingCount ?? 0;
     const unreadChatCount = chatUnreadQuery.data?.unreadCount ?? 0;
@@ -1117,9 +1337,9 @@ function HomePage() {
             tasks.push({
                 key: 'deadline-overdue',
                 tone: 'danger',
-                title: `지난 마감 ${deadlineBuckets.overdue.length}건`,
-                description: deadlineBuckets.overdue[0]?.postTitle ?? '가장 지난 마감부터 확인해요',
-                actionLabel: '마감',
+                title: t('page.home.tasks.overdueTitle', {count: deadlineBuckets.overdue.length}),
+                description: deadlineBuckets.overdue[0]?.postTitle ?? t('page.home.tasks.overdueFallback'),
+                actionLabel: t('page.home.tasks.overdueAction'),
                 path: ROUTE.BOARD,
             });
         }
@@ -1128,9 +1348,9 @@ function HomePage() {
             tasks.push({
                 key: 'deadline-today',
                 tone: 'warning',
-                title: `오늘 마감 ${deadlineBuckets.today.length}건`,
-                description: deadlineBuckets.today[0]?.postTitle ?? '오늘까지 처리할 게시글이에요',
-                actionLabel: '오늘',
+                title: t('page.home.tasks.todayTitle', {count: deadlineBuckets.today.length}),
+                description: deadlineBuckets.today[0]?.postTitle ?? t('page.home.tasks.todayFallback'),
+                actionLabel: t('page.home.tasks.todayAction'),
                 path: ROUTE.BOARD,
             });
         }
@@ -1139,9 +1359,9 @@ function HomePage() {
             tasks.push({
                 key: 'pending-requests',
                 tone: 'info',
-                title: `대기 중인 신청 근무 ${pendingRequestCount}건`,
-                description: '근무표에 반영할지 정해요',
-                actionLabel: '신청',
+                title: t('page.home.tasks.pendingRequestsTitle', {count: pendingRequestCount}),
+                description: t('page.home.tasks.pendingRequestsDescription'),
+                actionLabel: t('page.home.tasks.pendingRequestsAction'),
                 path: ROUTE.REQUEST,
             });
         }
@@ -1150,9 +1370,9 @@ function HomePage() {
             tasks.push({
                 key: 'waiting-nurses',
                 tone: 'info',
-                title: `입장 대기 ${waitingNurseCount}명`,
-                description: '병동에 추가할 구성원을 확인해요',
-                actionLabel: '멤버',
+                title: t('page.home.tasks.waitingNursesTitle', {count: waitingNurseCount}),
+                description: t('page.home.tasks.waitingNursesDescription'),
+                actionLabel: t('page.home.tasks.waitingNursesAction'),
                 path: ROUTE.MEMBER,
             });
         }
@@ -1161,21 +1381,15 @@ function HomePage() {
             tasks.push({
                 key: 'unread-chat',
                 tone: 'quiet',
-                title: `읽지 않은 병동톡 ${unreadChatCount}개`,
-                description: '최근 대화를 확인해요',
-                actionLabel: '톡',
+                title: t('page.home.tasks.unreadChatTitle', {count: unreadChatCount}),
+                description: t('page.home.tasks.unreadChatDescription'),
+                actionLabel: t('page.home.tasks.unreadChatAction'),
                 path: '#ward-chat',
             });
         }
 
         return tasks;
-    }, [
-        deadlineBuckets.overdue,
-        deadlineBuckets.today,
-        pendingRequestCount,
-        unreadChatCount,
-        waitingNurseCount,
-    ]);
+    }, [deadlineBuckets.overdue, deadlineBuckets.today, pendingRequestCount, t, unreadChatCount, waitingNurseCount]);
     const handleNavigate = (path: string) => {
         if (path === '#ward-chat') {
             window.dispatchEvent(new CustomEvent('dutying:open-ward-chat'));
@@ -1187,8 +1401,9 @@ function HomePage() {
     };
     const isBootstrapLoading = wardId !== null && (wardQuery.isPending || shiftTeamsQuery.isPending);
     const isBootstrapError = wardId !== null && (wardQuery.isError || shiftTeamsQuery.isError);
-    const wardTitle = wardQuery.data ? `${wardQuery.data.hospitalName} ${wardQuery.data.name}` : '병동';
-    const managerName = accountMe?.name?.trim() || '관리자';
+    const wardTitle = wardQuery.data ? `${wardQuery.data.hospitalName} ${wardQuery.data.name}` : t('page.home.fallback.ward');
+    const trimmedManagerName = accountMe?.name?.trim() ?? '';
+    const managerName = trimmedManagerName.length > 0 ? trimmedManagerName : t('page.home.fallback.manager');
     const monthlyOpenPath = buildMakePath({
         year: currentYearMonth.year,
         month: currentYearMonth.month,
@@ -1196,11 +1411,17 @@ function HomePage() {
     });
     const monthlyScheduleDescription =
         monthlyTeamId === 'all'
-            ? `${formatMonth(currentYearMonth.year, currentYearMonth.month)} · 전체`
+            ? t('page.home.monthly.descriptionAll', {month: formatMonth(currentYearMonth.year, currentYearMonth.month, locale)})
             : selectedMonthlyItem
-              ? `${formatMonth(currentYearMonth.year, currentYearMonth.month)} · ${selectedMonthlyItem.team.name}`
-              : formatMonth(currentYearMonth.year, currentYearMonth.month);
-    const monthlyEmptyTitle = monthlyTeamId === 'all' ? '이번 달 근무표가 비어 있어요' : `${selectedMonthlyItem?.team.name ?? '선택한 팀'} 근무표가 비어 있어요`;
+              ? t('page.home.monthly.descriptionTeam', {
+                    month: formatMonth(currentYearMonth.year, currentYearMonth.month, locale),
+                    teamName: selectedMonthlyItem.team.name,
+                })
+              : formatMonth(currentYearMonth.year, currentYearMonth.month, locale);
+    const monthlyEmptyTitle =
+        monthlyTeamId === 'all'
+            ? t('page.home.monthly.emptyAllTitle')
+            : t('page.home.monthly.emptyTeamTitle', {teamName: selectedMonthlyItem?.team.name ?? t('page.home.fallback.selectedTeam')});
 
     if (wardId === null) {
         return (
@@ -1208,19 +1429,15 @@ function HomePage() {
                 <PageState
                     tone="empty"
                     layout="screen"
-                    title="병동을 연결해야 해요"
-                    description="병동을 연결하면 홈을 볼 수 있어요."
+                    title={t('page.home.state.noWardTitle')}
+                    description={t('page.home.state.noWardDescription')}
                 />
             </div>
         );
     }
 
     if (isBootstrapLoading) {
-        return (
-            <div className="flex min-h-screen w-full bg-[#F6F7F9]">
-                <PageState tone="loading" layout="screen" title="홈을 불러오고 있어요" description="병동 정보를 확인하고 있어요." />
-            </div>
-        );
+        return <HomePageSkeleton />;
     }
 
     if (isBootstrapError) {
@@ -1229,10 +1446,10 @@ function HomePage() {
                 <PageState
                     tone="error"
                     layout="screen"
-                    title="홈을 불러오지 못했어요"
-                    description="잠시 후 다시 시도해요."
+                    title={t('page.home.state.errorTitle')}
+                    description={t('page.home.state.errorDescription')}
                     action={{
-                        label: '다시 시도하기',
+                        label: t('page.home.state.retry'),
                         onClick: () => {
                             void wardQuery.refetch();
                             void shiftTeamsQuery.refetch();
@@ -1249,9 +1466,11 @@ function HomePage() {
                 <header className="flex min-w-0 items-end justify-between gap-5">
                     <div className="min-w-0">
                         <p className="truncate text-[14px] font-bold text-gray-3">{wardTitle}</p>
-                        <h1 className="mt-1 truncate text-[32px] leading-[40px] font-bold text-sub-1">{formatDateWithWeekday(today)}</h1>
+                        <h1 className="mt-1 truncate text-[32px] leading-[40px] font-bold text-sub-1">
+                            {formatDateWithWeekday(today, locale)}
+                        </h1>
                         <p className="mt-1 text-[14px] font-semibold text-gray-3">
-                            {managerName} · 오늘 근무 {todayAssignedCount}명
+                            {t('page.home.header.todayAssigned', {managerName, count: todayAssignedCount})}
                         </p>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
@@ -1266,13 +1485,13 @@ function HomePage() {
                                 )
                             }
                         >
-                            다음 달 근무표 만들기
+                            {t('page.home.header.createNextMonth')}
                         </HomeButton>
                     </div>
                 </header>
 
                 <main className="grid grid-cols-[minmax(0,1fr)_360px] gap-5">
-                    <SectionShell title="오늘의 근무">
+                    <SectionShell title={t('page.home.sections.todayDuty')}>
                         <TeamFilter teams={shiftTeams} selectedTeamId={selectedTodayTeamId} onSelectTeam={setSelectedTodayTeamId} />
                         <div className="mt-4">
                             <TodayDutyOverview duties={visibleTodayDuties} />
@@ -1280,13 +1499,21 @@ function HomePage() {
                     </SectionShell>
 
                     <aside className="flex min-w-0 flex-col gap-5">
-                        <SectionShell title="해야 할 일">
+                        <SectionShell title={t('page.home.sections.tasks')}>
                             <div className="grid grid-cols-2 gap-2">
-                                <QueueButton label="대기 중인 신청 근무" value={pendingRequestCount} onClick={() => navigate(ROUTE.REQUEST)} />
-                                <QueueButton label="입장 대기" value={waitingNurseCount} onClick={() => navigate(ROUTE.MEMBER)} />
+                                <QueueButton
+                                    label={t('page.home.queue.pendingRequests')}
+                                    value={pendingRequestCount}
+                                    onClick={() => navigate(ROUTE.REQUEST)}
+                                />
+                                <QueueButton
+                                    label={t('page.home.queue.waitingNurses')}
+                                    value={waitingNurseCount}
+                                    onClick={() => navigate(ROUTE.MEMBER)}
+                                />
                             </div>
                             {nextScheduleStatusItems.length > 0 ? (
-                                <div className="mt-3 grid gap-2" aria-label="다음 달 근무표 진행 상태">
+                                <div className="mt-3 grid gap-2" aria-label={t('page.home.tasks.nextScheduleAria')}>
                                     {nextScheduleStatusItems.slice(0, 4).map((item) => (
                                         <NextScheduleTaskRow
                                             key={item.team.shiftTeamId}
@@ -1299,7 +1526,9 @@ function HomePage() {
                                 </div>
                             ) : null}
                             {waitingNursesQuery.isPending || pendingRequestsQuery.isPending || deadlinesQuery.isPending ? (
-                                <div className="mt-3 rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">확인하고 있어요</div>
+                                <div className="mt-3 rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">
+                                    {t('page.home.tasks.checking')}
+                                </div>
                             ) : null}
                             {taskItems.length > 0 ? (
                                 <div className="mt-3 grid gap-2">
@@ -1311,7 +1540,7 @@ function HomePage() {
                         </SectionShell>
 
                         <SectionShell
-                            title="캘린더"
+                            title={t('page.home.sections.calendar')}
                             action={<CalendarActionButton onClick={() => navigate(ROUTE.BOARD)} />}
                         >
                             <CalendarPreview
@@ -1323,11 +1552,11 @@ function HomePage() {
                     </aside>
 
                     <SectionShell
-                        title="이번 달 근무표"
+                        title={t('page.home.sections.monthly')}
                         description={monthlyScheduleDescription}
                         action={
                             <HomeButton variant="plain" onClick={() => navigate(monthlyOpenPath)}>
-                                근무표 편집하기
+                                {t('page.home.monthly.edit')}
                             </HomeButton>
                         }
                         className="col-span-2"
@@ -1341,7 +1570,8 @@ function HomePage() {
                             hasTeams={shiftTeams.length > 0}
                             showTeamName={monthlyTeamId === 'all'}
                             emptyTitle={monthlyEmptyTitle}
-                            emptyDescription="근무표 만들기에서 확인할 수 있어요."
+                            emptyDescription={t('page.home.monthly.emptyDescription')}
+                            locale={locale}
                             onOpen={() => navigate(monthlyOpenPath)}
                         />
                     </SectionShell>

@@ -20,7 +20,7 @@ import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
-import {useMakeShiftStore} from '../../../model/make-shift-store';
+import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
 import {
     MAX_SCHEDULE_SNAPSHOT_COUNT,
@@ -120,6 +120,14 @@ export function AiAutofill() {
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
+    const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
+    const isCurrentShiftTeamReady = isMakeShiftTeamReadyForWard(
+        {wardId: storeWardId, shiftTeams, shiftTeamsStatus},
+        wardId,
+        currentShiftTeamId,
+    );
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const history = useShiftEditorStore((s) => s.history);
@@ -150,7 +158,7 @@ export function AiAutofill() {
         shiftTeamId: currentShiftTeamId,
         year,
         month,
-        enabled: isSnapshotSidebarOpen,
+        enabled: isSnapshotSidebarOpen && isCurrentShiftTeamReady,
     });
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
     const openSnapshotSidebar = useCallback(() => {
@@ -177,6 +185,7 @@ export function AiAutofill() {
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+
     const isStepNavigationBusy =
         isWorking || isSavingSnapshot || isAiGenerating || loadingSnapshotId !== null || deletingSnapshotId !== null;
 
@@ -187,14 +196,16 @@ export function AiAutofill() {
     }, [isStepNavigationBusy, setStepNavigationBusy]);
 
     // 비동기 실시간 검증 활성화
-    useAsyncScheduleValidation({
+    const scheduleValidation = useAsyncScheduleValidation({
         wardId,
         shiftTeamId: currentShiftTeamId,
         year,
         month,
         originalShift: dutyQuery.data,
-        enabled: !isAiGenerating && !isWorking && !isSavingSnapshot,
+        enabled: isCurrentShiftTeamReady && !isAiGenerating && !isWorking && !isSavingSnapshot,
+        debounceMs: 1000,
     });
+    const isScheduleValidationChecking = scheduleValidation.status === 'validating';
 
     useEffect(() => {
         setHasCompletedAiFill(false);
@@ -236,9 +247,10 @@ export function AiAutofill() {
         !isHydratingEditor &&
         !dutyQuery.isError &&
         Boolean(dutyQuery.data) &&
+        !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
     const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
 
@@ -273,7 +285,7 @@ export function AiAutofill() {
         }
     };
     const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
 
         if (snapshotToDelete) {
             setDeletingSnapshotId(snapshotToDelete.snapshotId);
@@ -313,7 +325,7 @@ export function AiAutofill() {
         void queryClient.invalidateQueries({queryKey});
     };
     const handleSaveSnapshot = async () => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
 
         setIsSavingSnapshot(true);
 
@@ -346,7 +358,7 @@ export function AiAutofill() {
         }
     };
     const handleLoadSnapshot = async (snapshotId: number) => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data || loadingSnapshotId != null) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || loadingSnapshotId != null) return;
 
         setSnapshotLoadTarget(null);
         setLoadingSnapshotId(snapshotId);
@@ -402,7 +414,7 @@ export function AiAutofill() {
         setSnapshotLoadTarget(snapshot);
     };
     const confirmCurrentSchedule = async () => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
 
         setIsWorking(true);
 
@@ -439,7 +451,7 @@ export function AiAutofill() {
         }
     };
     const handleConfirm = () => {
-        if (!wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
 
         if (!lastShiftBlankWarningAcknowledged && hasBlankLastShiftCells(editorDoc)) {
             setLastShiftBlankWarningOpen(true);
@@ -455,7 +467,7 @@ export function AiAutofill() {
         void confirmCurrentSchedule();
     };
     const handleRenameSnapshot = async (snapshotId: number, title: string) => {
-        if (!wardId || !currentShiftTeamId) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId) return;
 
         const nextTitle = title.trim();
 
@@ -483,7 +495,7 @@ export function AiAutofill() {
         }
     };
     const handleConfirmDeleteSnapshot = async () => {
-        if (!wardId || !currentShiftTeamId || !snapshotDeleteTarget) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !snapshotDeleteTarget) return;
 
         const deletingSnapshot = snapshotDeleteTarget;
 
@@ -546,7 +558,7 @@ export function AiAutofill() {
     const handleAiFill = async () => {
         if (isAiGenerating) return;
 
-        if (wardId == null || currentShiftTeamId == null || !rulesHash || !dutyQuery.data) {
+        if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !dutyQuery.data) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
             return;
@@ -648,6 +660,7 @@ export function AiAutofill() {
                     isAiGenerating={isAiGenerating}
                     aiStatus={aiStatus}
                     hasCompletedAiFill={hasCompletedAiFill}
+                    scheduleValidationStatus={scheduleValidation.status}
                     onConfirm={handleConfirm}
                     isConfirming={isWorking}
                     canConfirm={canConfirm}

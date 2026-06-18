@@ -1,6 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {CircleUserRound} from 'lucide-react';
 import {useState} from 'react';
+import {Link} from 'react-router';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
@@ -45,7 +46,7 @@ const homeItem: TNavItem = {
         Icon: HomeIcon,
         SelectedIcon: HomeIconSelected,
     },
-    text: '홈',
+    textKey: 'page.navigationBar.home',
 };
 const sections: TNavSection[] = [
     {
@@ -55,7 +56,7 @@ const sections: TNavSection[] = [
                 path: ROUTE.MAKE,
                 activePaths: [ROUTE.MAKE, ROUTE.DUTY],
                 icon: navigationIcons.make,
-                text: '근무표 만들기',
+                textKey: 'page.navigationBar.items.make',
             },
             {
                 path: ROUTE.REQUEST,
@@ -228,23 +229,33 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                                     onNavigate={onItemNavigate}
                                 />
                             ))}
+                            {section.labelKey === 'page.navigationBar.sections.settings' ? (
+                                <>
+                                    <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto my-4 w-8' : 'my-4 w-full')} />
+                                    <NavigationBarItem
+                                        path={accountItem.path}
+                                        activePaths={accountItem.activePaths}
+                                        icon={accountItem.icon}
+                                        text={accountItem.text ?? t(accountItem.textKey!)}
+                                        collapsed={collapsed}
+                                        disabled={accountItem.disabled}
+                                        onNavigate={onItemNavigate}
+                                    />
+                                </>
+                            ) : null}
                         </div>
                     </div>
                 ))}
             </div>
             <div className={cn('mt-auto shrink-0', collapsed ? 'pt-4' : 'pt-5')}>
                 <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
-                <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
-                    <NavigationBarItem
-                        path={accountItem.path}
-                        activePaths={accountItem.activePaths}
-                        icon={accountItem.icon}
-                        text={accountItem.text ?? t(accountItem.textKey!)}
-                        collapsed={collapsed}
-                        disabled={accountItem.disabled}
-                        onNavigate={onItemNavigate}
-                    />
-                </div>
+                <Link
+                    to={ROUTE.DUTYING}
+                    className="mx-auto block w-fit rounded-[4px] px-1 py-1 text-center font-apple text-[12px] leading-4 font-medium text-gray-4 transition-colors hover:text-gray-3 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    onClick={onItemNavigate}
+                >
+                    {t('page.navigationBar.items.dutying')}
+                </Link>
             </div>
         </nav>
     );

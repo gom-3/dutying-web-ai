@@ -2,9 +2,10 @@ import {cn} from '@dutying/utils/style';
 import {yupResolver} from '@hookform/resolvers/yup';
 import imageCompression from 'browser-image-compression';
 import {Camera} from 'lucide-react';
-import {type ChangeEvent, useEffect, useRef} from 'react';
+import {type ChangeEvent, useEffect, useMemo, useRef} from 'react';
 import {useForm} from 'react-hook-form';
 import toast from 'react-hot-toast';
+import {useTranslation} from 'react-i18next';
 import * as yup from 'yup';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import {type TCreateAccountProfileDTO, useCreateAccount} from '@/features/account/model';
@@ -12,18 +13,21 @@ import useProfileImage from '@/features/file';
 import useRegister from '@/features/register';
 import {RandomIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getDefaultServiceRegionForLanguage, normalizePreferredLanguage, normalizeServiceRegion} from '@/shared/i18n/locale';
+import {
+    CONTACT_PHONE_MAX_LENGTH,
+    isValidContactPhone,
+    normalizeContactPhoneForStorage,
+    sanitizeContactPhoneInput,
+} from '@/shared/lib/contact-phone';
 
 const NURSE_NAME_MAX_LENGTH = 20;
-const PHONE_NUM_LENGTH = 11;
 const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]+$/u;
-const NURSE_NAME_INPUT_SANITIZE_REGEXP =
-    /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]/gu;
-const PHONE_NUM_INPUT_SANITIZE_REGEXP = /[^0-9]/g;
+const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]/gu;
 const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
-const sanitizePhoneNumInput = (rawValue: string) => rawValue.replace(PHONE_NUM_INPUT_SANITIZE_REGEXP, '').slice(0, PHONE_NUM_LENGTH);
 const getErrorTextValues = (value: unknown): string[] => {
     if (typeof value === 'string') return [value];
 
@@ -53,29 +57,30 @@ const isDuplicatePhoneNumError = (error: unknown) => {
 
     return code === 409 ? hasPhoneHint || hasAlreadyUsedHint : hasPhoneHint && hasAlreadyUsedHint;
 };
-const schema = yup
-    .object()
-    .shape({
-        name: yup
-            .string()
-            .transform((value) => value?.trim() ?? '')
-            .required()
-            .max(NURSE_NAME_MAX_LENGTH)
-            .matches(NURSE_NAME_ALLOWED_REGEXP),
-        phoneNum: yup
-            .string()
-            .transform((value) => sanitizePhoneNumInput(value ?? ''))
-            .required()
-            .length(PHONE_NUM_LENGTH),
-        profileImg: yup
-            .object()
-            .shape({
-                profileImgUrl: yup.string().optional(),
-                defaultProfileImgId: yup.number().optional(),
-            })
-            .required(),
-    })
-    .required();
+const createSchema = (serviceRegion: ReturnType<typeof getDefaultServiceRegionForLanguage>) =>
+    yup
+        .object()
+        .shape({
+            name: yup
+                .string()
+                .transform((value) => value?.trim() ?? '')
+                .required()
+                .max(NURSE_NAME_MAX_LENGTH)
+                .matches(NURSE_NAME_ALLOWED_REGEXP),
+            phoneNum: yup
+                .string()
+                .transform((value) => normalizeContactPhoneForStorage(value ?? ''))
+                .required()
+                .test('contact-phone', (value) => isValidContactPhone(value ?? '', serviceRegion)),
+            profileImg: yup
+                .object()
+                .shape({
+                    profileImgUrl: yup.string().optional(),
+                    defaultProfileImgId: yup.number().optional(),
+                })
+                .required(),
+        })
+        .required();
 
 interface IRegisterNurseProps {
     mode?: 'default' | 'social';
@@ -84,6 +89,19 @@ interface IRegisterNurseProps {
 
 function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const {
+        state: {accountMe},
+        actions: {registerAccountProfile},
+    } = useRegister();
+    const serviceRegion =
+        normalizeServiceRegion(accountMe?.serviceRegion) ??
+        getDefaultServiceRegionForLanguage(
+            normalizePreferredLanguage(accountMe?.preferredLanguage) ??
+                normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ??
+                'en',
+        );
+    const schema = useMemo(() => createSchema(serviceRegion), [serviceRegion]);
     const {
         formState: {errors},
         watch,
@@ -98,10 +116,6 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
     });
     const nameField = register('name');
     const phoneNumField = register('phoneNum');
-    const {
-        state: {accountMe},
-        actions: {registerAccountProfile},
-    } = useRegister();
     const isSocialMode = mode === 'social';
     const watchName = watch('name');
     const {profileImg, setRandomImage, setPhotoImage} = useProfileImage(
@@ -263,11 +277,11 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                         <input
                             id="phone-num"
                             type="tel"
-                            inputMode="numeric"
+                            inputMode="tel"
                             className={cn(FIELD_CLASS, phoneNumError && 'border-red bg-[#FFF7F8] focus-visible:bg-white')}
                             aria-invalid={Boolean(phoneNumError)}
                             aria-describedby={phoneNumError ? 'register-phone-num-error' : undefined}
-                            maxLength={PHONE_NUM_LENGTH}
+                            maxLength={CONTACT_PHONE_MAX_LENGTH}
                             placeholder={t('page.register.nurse.phoneNumPlaceholder')}
                             {...phoneNumField}
                             onChange={(event) => {
@@ -275,7 +289,7 @@ function RegisterNurse({mode = 'default', onCompleted}: IRegisterNurseProps) {
                                     clearErrors('phoneNum');
                                 }
 
-                                event.target.value = sanitizePhoneNumInput(event.target.value);
+                                event.target.value = sanitizeContactPhoneInput(event.target.value);
                                 void phoneNumField.onChange(event);
                             }}
                         />

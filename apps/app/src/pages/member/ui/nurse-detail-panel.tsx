@@ -160,7 +160,7 @@ function NurseDetailPanel({
                 {isPossible: shiftType.isPossible},
                 {
                     wardShiftTypeId: shiftType.wardShiftTypeId,
-                    name: shiftType.name,
+                    name: shiftType.shortName ?? shiftType.name,
                     shortName: shiftType.shortName ?? '',
                 },
             );
@@ -417,7 +417,7 @@ function NurseDetailPanel({
                                                               draft.push({
                                                                   nurseShiftTypeId: apiShiftTypeId,
                                                                   wardShiftTypeId,
-                                                                  name,
+                                                                  name: shortName ?? name,
                                                                   shortName: shortName ?? '',
                                                                   isPossible: !isPossible,
                                                                   isPreferred: false,

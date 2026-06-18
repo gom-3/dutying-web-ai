@@ -108,6 +108,8 @@ export type TMakeShiftStore = {
     setHydrated: () => void;
 };
 
+type TMakeShiftTeamContextState = Pick<TMakeShiftStore, 'wardId' | 'shiftTeams' | 'shiftTeamsStatus'>;
+
 function readMaxReached(wardId: number | null, shiftTeamId: number | null, year: number, month: number): TMakeShiftStep {
     if (!wardId || !shiftTeamId) return 1;
 
@@ -142,6 +144,20 @@ function exitingSteppingIfNeeded(phase: TFlowPhase): Partial<Pick<TMakeShiftStor
     return {phase: 'overview', currentStep: 1, restoreDraftModalOpen: false};
 }
 
+export function isMakeShiftTeamReadyForWard(
+    state: TMakeShiftTeamContextState,
+    wardId: number | null | undefined,
+    shiftTeamId: number | null | undefined,
+): shiftTeamId is number {
+    return (
+        wardId != null &&
+        state.wardId === wardId &&
+        shiftTeamId != null &&
+        state.shiftTeamsStatus === 'success' &&
+        state.shiftTeams.some((team) => team.shiftTeamId === shiftTeamId)
+    );
+}
+
 export const useMakeShiftStore = create<TMakeShiftStore>()(
     devtools((set, get) => ({
         phase: 'overview',
@@ -167,14 +183,38 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
         reloadToken: 0,
 
         setWardId: (wardId) => {
-            const {currentShiftTeamId, year, month} = get();
+            const state = get();
+            const isWardChanging = state.wardId !== wardId;
+
+            if (isWardChanging) {
+                set(() => ({
+                    wardId,
+                    phase: 'overview',
+                    currentStep: 1,
+                    maxReachedStep: 1,
+                    restoreDraftModalOpen: false,
+                    isHydrated: false,
+                    shiftTeams: [],
+                    shiftTeamsStatus: 'idle',
+                    currentShiftTeamId: null,
+                    shiftStatus: 'idle',
+                    shiftExists: false,
+                    shiftFullyAssigned: false,
+                    confirmedShiftSnapshot: null,
+                    workerConfirmationStatus: 'idle',
+                    workerConfirmationCount: 0,
+                    stepNavigationBusy: {},
+                }));
+
+                return;
+            }
 
             set(() => ({
                 wardId,
                 confirmedShiftSnapshot: null,
                 workerConfirmationStatus: 'idle',
                 workerConfirmationCount: 0,
-                maxReachedStep: wardId ? readMaxReached(wardId, currentShiftTeamId, year, month) : 1,
+                maxReachedStep: wardId ? readMaxReached(wardId, state.currentShiftTeamId, state.year, state.month) : 1,
             }));
         },
         setWorkerConfirmationState: ({status, count}) =>
@@ -435,7 +475,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             const maxReached = readMaxReached(wardId, currentShiftTeamId, year, month);
             const saved = loadDraftStep(wardId, currentShiftTeamId, year, month);
 
-            let currentStep: TMakeShiftStep = saved === 6 ? 1 : (saved ?? 1);
+            let currentStep: TMakeShiftStep = saved ?? 1;
 
             if (currentStep > maxReached) {
                 currentStep = maxReached;

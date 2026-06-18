@@ -112,6 +112,108 @@ describe('@dutying/api public entry', () => {
         });
     });
 
+    it('normalizes overnight ward shift types in create payloads', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+
+        postMock.mockResolvedValueOnce({
+            data: {
+                wardId: 10,
+                name: 'ICU',
+                hospitalName: 'Dutying Hospital',
+                code: 'A7K29Q',
+                nurseCnt: 0,
+                wardShiftTypes: [],
+                shiftTeams: [],
+            },
+        });
+
+        const wardApi = createWardApi(client);
+        const overnightShiftType = {
+            name: 'Late',
+            shortName: 'L',
+            startTime: '16:30',
+            endTime: '00:30',
+            color: '#5A95F8',
+            isOff: false,
+            isDefault: false,
+            isCounted: true,
+            classification: 'OTHER_WORK' as const,
+        };
+
+        await wardApi.createWard({
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [overnightShiftType],
+            shiftTeams: [],
+        });
+
+        expect(postMock).toHaveBeenCalledWith('/wards', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                {
+                    ...overnightShiftType,
+                    classification: 'NIGHT',
+                },
+            ],
+            shiftTeams: [],
+        });
+    });
+
+    it('sends inactive onboarding ward shift types without work times', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+
+        postMock.mockResolvedValueOnce({
+            data: {
+                wardId: 10,
+                name: 'ICU',
+                hospitalName: 'Dutying Hospital',
+                code: 'A7K29Q',
+                nurseCnt: 0,
+                wardShiftTypes: [],
+                shiftTeams: [],
+            },
+        });
+
+        const wardApi = createWardApi(client);
+
+        await wardApi.createWard({
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                {
+                    name: 'Archived A',
+                    shortName: 'A',
+                    startTime: '',
+                    endTime: '',
+                    color: '#5A95F8',
+                    isOff: false,
+                    isDefault: false,
+                    isCounted: true,
+                    classification: 'OTHER_WORK',
+                    isActive: false,
+                },
+            ],
+            shiftTeams: [],
+        });
+
+        expect(postMock).toHaveBeenCalledWith('/wards', {
+            name: 'ICU',
+            hospitalName: 'Dutying Hospital',
+            wardShiftTypes: [
+                expect.objectContaining({
+                    shortName: 'A',
+                    isActive: false,
+                    startTime: null,
+                    endTime: null,
+                }),
+            ],
+            shiftTeams: [],
+        });
+    });
+
     it('posts onboarding draft and completion to split onboarding endpoints', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
@@ -470,6 +572,39 @@ describe('@dutying/api public entry', () => {
             wardShiftTypeId: 99,
         });
         expect(patchMock).toHaveBeenNthCalledWith(2, '/wards/7/req-shifts/301/accept', {isAccepted: true});
+    });
+
+    it('normalizes overnight shift type create and update payloads', async () => {
+        const client = createClient();
+        const postMock = client.post as ReturnType<typeof vi.fn>;
+        const putMock = client.put as ReturnType<typeof vi.fn>;
+        const wardApi = createWardApi(client);
+        const payload = {
+            name: 'Late',
+            shortName: 'L',
+            startTime: '16:30',
+            endTime: '00:30',
+            color: '#5A95F8',
+            isOff: false,
+            isDefault: false,
+            isCounted: true,
+            classification: 'OTHER_WORK' as const,
+        };
+
+        postMock.mockResolvedValueOnce({data: {wardShiftTypeId: 3}});
+        putMock.mockResolvedValueOnce({data: {wardShiftTypeId: 3}});
+
+        await wardApi.createShiftType(7, payload);
+        await wardApi.updateShiftType(7, 3, payload);
+
+        expect(postMock).toHaveBeenCalledWith('/wards/7/shift-types', {
+            ...payload,
+            classification: 'NIGHT',
+        });
+        expect(putMock).toHaveBeenCalledWith('/wards/7/shift-types/3', {
+            ...payload,
+            classification: 'NIGHT',
+        });
     });
 
     it('filters retired fields from shift-team nurse create payloads', async () => {

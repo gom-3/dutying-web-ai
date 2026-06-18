@@ -127,6 +127,19 @@ describe('useShiftEditorKeyBindings', () => {
         expect(commands.moveSelection).toHaveBeenCalledWith('right', false, false);
     });
 
+    it('uses shifted symbol keys as work shortcuts', async () => {
+        const {result} = renderHook(() =>
+            useShiftEditorKeyBindings({
+                workKeyMap: {_: '_11', o: 'OFF'},
+            }),
+        );
+
+        await result.current.onKeyDown(createKeyboardEvent('_', {shiftKey: true}));
+
+        expect(commands.setSelectionValue).toHaveBeenCalledWith('_11');
+        expect(commands.moveSelection).toHaveBeenCalledWith('right', false, false);
+    });
+
     it('copies and cuts selected cells through the clipboard API', async () => {
         commands.copy.mockReturnValue({
             width: 2,

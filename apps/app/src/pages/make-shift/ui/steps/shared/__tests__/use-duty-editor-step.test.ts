@@ -96,7 +96,7 @@ function makeShift(): TShift {
     };
 }
 
-function makeWorkspaceSchedule() {
+function makeWorkspaceSchedule({fixed = true}: {fixed?: boolean} = {}) {
     return {
         wardId: 1,
         shiftTeamId: 10,
@@ -107,16 +107,18 @@ function makeWorkspaceSchedule() {
         rows: [],
         rowOrder: [],
         cells: [],
-        wardShiftBase: [
-            {
-                shiftNurseId: 2,
-                nurseId: 100,
-                date: '2026-05-01',
-                wardShiftTypeId: 10,
-                shiftCode: 'D',
-                fixed: true,
-            },
-        ],
+        wardShiftBase: fixed
+            ? [
+                  {
+                      shiftNurseId: 2,
+                      nurseId: 100,
+                      date: '2026-05-01',
+                      wardShiftTypeId: 10,
+                      shiftCode: 'D',
+                      fixed: true,
+                  },
+              ]
+            : [],
         requestShifts: [],
         rules: [],
         rulesHash: 'rules-v1',
@@ -142,8 +144,11 @@ describe('useDutyEditorStep', () => {
         wardApiMocks.getWorkspaceSchedule.mockReset();
         useShiftEditorStore.getState().reset();
         useMakeShiftStore.setState({
+            wardId: 1,
             year: 2026,
             month: 5,
+            shiftTeams: [{shiftTeamId: 10, name: 'A Team', nurseCnt: 0, nurses: []}],
+            shiftTeamsStatus: 'success',
             currentShiftTeamId: 10,
         });
     });
@@ -182,5 +187,51 @@ describe('useDutyEditorStep', () => {
         await waitFor(() => {
             expect(useShiftEditorStore.getState().rulesHash).toBe('rules-v1');
         });
+    });
+
+    it('does not request duty data until the selected team belongs to the current ward context', async () => {
+        useMakeShiftStore.setState({
+            wardId: 301,
+            shiftTeams: [{shiftTeamId: 727, name: 'Old Team', nurseCnt: 0, nurses: []}],
+            shiftTeamsStatus: 'success',
+            currentShiftTeamId: 727,
+        });
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(wardApiMocks.getShift).not.toHaveBeenCalled();
+        expect(wardApiMocks.getWorkspaceSchedule).not.toHaveBeenCalled();
+    });
+
+    it('keeps local editor changes when duty data refetches for the same context', async () => {
+        wardApiMocks.getShift.mockResolvedValueOnce(makeShift()).mockResolvedValueOnce(makeShift());
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        const {result} = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+        });
+
+        act(() => {
+            const {doc, setDoc} = useShiftEditorStore.getState();
+
+            setDoc({
+                ...doc,
+                rows: doc.rows.map((row, rowIdx) => (rowIdx === 0 ? {...row, cells: [null]} : row)),
+            });
+        });
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
+
+        await act(async () => {
+            await result.current.dutyQuery.refetch();
+        });
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
     });
 });

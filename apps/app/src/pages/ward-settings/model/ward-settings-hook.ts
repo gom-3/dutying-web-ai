@@ -10,15 +10,27 @@ import {showActionErrorFeedback} from '@/shared/util/feedback';
 
 export type TWardSettingsTab = 'shiftTypes' | 'constraints';
 type TQueryStatus = 'idle' | 'pending' | 'error' | 'success';
+type TRawWardShiftType = Omit<TWardShiftType, 'startTime' | 'endTime'> & {
+    startTime?: string | null;
+    endTime?: string | null;
+};
+
+function normalizeShiftType(shiftType: TRawWardShiftType): TWardShiftType {
+    return {
+        ...shiftType,
+        startTime: shiftType.startTime ?? '',
+        endTime: shiftType.endTime ?? '',
+    };
+}
 
 function normalizeShiftTypes(input: unknown): TWardShiftType[] {
-    if (Array.isArray(input)) return input as TWardShiftType[];
+    if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType);
 
     if (input && typeof input === 'object') {
         const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
 
-        if (Array.isArray(maybe.shiftTypes)) return maybe.shiftTypes as TWardShiftType[];
-        if (Array.isArray(maybe.wardShiftTypes)) return maybe.wardShiftTypes as TWardShiftType[];
+        if (Array.isArray(maybe.shiftTypes)) return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
+        if (Array.isArray(maybe.wardShiftTypes)) return (maybe.wardShiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
     }
 
     return [];
@@ -68,27 +80,35 @@ export function useWardSettings() {
         ]);
     };
     const addShiftType = async (payload: TCreateShiftTypeDTO) => {
-        if (!wardId) return;
+        if (!wardId) return false;
 
         try {
             await WardAPI.createShiftType(wardId, payload);
             await invalidateShiftTypeQueries();
+
+            return true;
         } catch (error) {
             showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.addFailed'));
+
+            return false;
         }
     };
     const updateShiftType = async (shiftTypeId: number, payload: TCreateShiftTypeDTO) => {
-        if (!wardId) return;
+        if (!wardId) return false;
 
         try {
             await WardAPI.updateShiftType(wardId, shiftTypeId, payload);
             await invalidateShiftTypeQueries();
+
+            return true;
         } catch (error) {
             showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.updateFailed'));
+
+            return false;
         }
     };
     const deleteShiftType = async (shiftTypeId: number) => {
-        if (!wardId) return;
+        if (!wardId) return false;
 
         try {
             const latest = await shiftTypesQuery.refetch();
@@ -97,14 +117,18 @@ export function useWardSettings() {
 
             if (!exists) {
                 showActionErrorFeedback(new Error('shift type not found'), t('page.wardSettings.shiftTypes.toast.notFound'));
-                return;
+                return false;
             }
 
             await WardAPI.deleteShiftType(wardId, shiftTypeId);
             await invalidateShiftTypeQueries();
+
+            return true;
         } catch (error) {
             await shiftTypesQuery.refetch();
             showActionErrorFeedback(error, t('page.wardSettings.shiftTypes.toast.deleteFailed'));
+
+            return false;
         }
     };
     const retryShiftTypes = async () => {

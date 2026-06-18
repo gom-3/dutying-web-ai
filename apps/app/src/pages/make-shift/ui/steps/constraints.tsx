@@ -10,7 +10,7 @@ import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
-import {useMakeShiftStore} from '../../model/make-shift-store';
+import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {
     getShiftConstraintRuleCandidates,
     getShiftConstraintRules,
@@ -1433,7 +1433,7 @@ function ImportantToggle({
                     : t('page.makeShift.constraints.important.ariaMark')
             }
             onClick={() => onChange(!checked)}
-            className={`mr-6 inline-flex h-6 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2 font-apple text-[12px] font-bold ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
+            className={`mr-6 inline-flex h-6 min-w-10 shrink-0 cursor-pointer items-center justify-center rounded-full px-2.5 font-apple text-[12px] font-bold whitespace-nowrap ring-1 transition-colors focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none ${
                 checked
                     ? 'bg-[#FFF3D6] text-[#B86E00] ring-[#FFD88A] hover:bg-[#FFE9AE]'
                     : 'bg-white text-gray-4 ring-gray-6 hover:bg-gray-7 hover:text-sub-1'
@@ -1867,8 +1867,10 @@ export function Constraints({
     const {t} = useTypedTranslation();
     const queryClient = useQueryClient();
     const authWardId = useAuthStore((s) => s.wardId);
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
     const storeShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const storeShiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const storeShiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const storeYear = useMakeShiftStore((s) => s.year);
     const storeMonth = useMakeShiftStore((s) => s.month);
     const wardId = wardIdProp ?? authWardId;
@@ -1876,7 +1878,16 @@ export function Constraints({
     const availableShiftTeams = shiftTeamsProp ?? storeShiftTeams;
     const year = yearProp ?? storeYear;
     const month = monthProp ?? storeMonth;
-    const enabled = wardId !== null && wardId !== undefined && currentShiftTeamId !== null && currentShiftTeamId !== undefined;
+    const hasExplicitWardTeam = wardIdProp != null && shiftTeamId != null;
+    const hasWardTeam = wardId !== null && wardId !== undefined && currentShiftTeamId !== null && currentShiftTeamId !== undefined;
+    const enabled =
+        hasWardTeam &&
+        (hasExplicitWardTeam ||
+            isMakeShiftTeamReadyForWard(
+                {wardId: storeWardId, shiftTeams: storeShiftTeams, shiftTeamsStatus: storeShiftTeamsStatus},
+                wardId,
+                currentShiftTeamId,
+            ));
     const frameClassName = variant === 'settings' ? 'flex min-w-0 flex-col' : 'flex min-w-0 flex-col items-end';
     const surfaceWidthClassName =
         variant === 'settings'
@@ -1972,7 +1983,7 @@ export function Constraints({
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
-            if (wardId == null || currentShiftTeamId == null) {
+            if (!enabled || wardId == null || currentShiftTeamId == null) {
                 throw new Error('Cannot save shift constraint rules without a ward and shift team.');
             }
 
@@ -1981,7 +1992,7 @@ export function Constraints({
             });
         },
         onMutate: async ({rules}) => {
-            if (wardId == null || currentShiftTeamId == null) return {previousRules: undefined};
+            if (!enabled || wardId == null || currentShiftTeamId == null) return {previousRules: undefined};
 
             await queryClient.cancelQueries({queryKey: rulesQueryKey});
 
@@ -2028,14 +2039,14 @@ export function Constraints({
     });
     const persistRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[]) => {
-            if (wardId == null || currentShiftTeamId == null) return;
+            if (!enabled || wardId == null || currentShiftTeamId == null) return;
 
             const requestId = saveRulesRequestSeqRef.current + 1;
 
             saveRulesRequestSeqRef.current = requestId;
             mutateSaveRules({rules: nextRules, requestId});
         },
-        [currentShiftTeamId, mutateSaveRules, wardId],
+        [currentShiftTeamId, enabled, mutateSaveRules, wardId],
     );
     const replaceRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
@@ -2141,7 +2152,7 @@ export function Constraints({
     };
     const importRulesFromTeam = useCallback(
         async (sourceShiftTeamId: number) => {
-            if (!wardId || currentShiftTeamId == null || importingShiftTeamId !== null) return;
+            if (!enabled || !wardId || currentShiftTeamId == null || importingShiftTeamId !== null) return;
 
             const sourceTeam = availableShiftTeams.find((team) => team.shiftTeamId === sourceShiftTeamId);
 
@@ -2172,7 +2183,7 @@ export function Constraints({
                 setImportingShiftTeamId(null);
             }
         },
-        [availableShiftTeams, currentShiftTeamId, importingShiftTeamId, queryClient, replaceRules, t, wardId],
+        [availableShiftTeams, currentShiftTeamId, enabled, importingShiftTeamId, queryClient, replaceRules, t, wardId],
     );
     const updateRuleParam = useCallback(
         (clientId: string, key: string, value: unknown) => {

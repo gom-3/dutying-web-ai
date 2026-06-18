@@ -1,8 +1,8 @@
-import {useEffect, useRef} from 'react';
-import {useShiftEditorCommands} from './use-shift-editor-commands';
+import {useEffect, useRef, useState} from 'react';
+import {type TShift} from '@/entities';
 import {fetchAndApplyScheduleValidation} from './schedule-violations';
 import {useShiftEditorStore} from './store';
-import {type TShift} from '@/entities';
+import {useShiftEditorCommands} from './use-shift-editor-commands';
 
 export type TUseAsyncScheduleValidationParams = {
     wardId: number | null;
@@ -14,33 +14,43 @@ export type TUseAsyncScheduleValidationParams = {
     debounceMs?: number;
 };
 
+export type TAsyncScheduleValidationStatus = 'idle' | 'validating' | 'valid' | 'error';
+
 /**
  * doc 변경 시 서버에 비동기로 제약조건 검증을 요청한다.
  */
 export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationParams) {
-    const {
-        wardId,
-        shiftTeamId,
-        year,
-        month,
-        originalShift,
-        enabled = true,
-        debounceMs = 1500,
-    } = params;
-
+    const {wardId, shiftTeamId, year, month, originalShift, enabled = true, debounceMs = 1000} = params;
     const doc = useShiftEditorStore((s) => s.doc);
     const draftRevision = useShiftEditorStore((s) => s.draftRevision);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const commands = useShiftEditorCommands();
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const requestSeqRef = useRef(0);
+    const applyValidationRef = useRef(commands.setScheduleValidationFromApi);
+    const clearValidationRef = useRef(commands.clearScheduleValidationFromApi);
+    const [status, setStatus] = useState<TAsyncScheduleValidationStatus>('idle');
+
+    applyValidationRef.current = commands.setScheduleValidationFromApi;
+    clearValidationRef.current = commands.clearScheduleValidationFromApi;
 
     useEffect(() => {
-        if (!enabled || !wardId || !shiftTeamId || !originalShift || !rulesHash || draftRevision === 0) return;
+        const requestSeq = requestSeqRef.current + 1;
+
+        requestSeqRef.current = requestSeq;
 
         if (timerRef.current) clearTimeout(timerRef.current);
 
+        if (!enabled || !wardId || !shiftTeamId || !originalShift || !rulesHash || draftRevision === 0) {
+            setStatus('idle');
+
+            return;
+        }
+
+        setStatus('validating');
+
         timerRef.current = setTimeout(async () => {
-            await fetchAndApplyScheduleValidation(
+            const applied = await fetchAndApplyScheduleValidation(
                 {
                     wardId,
                     doc,
@@ -51,13 +61,21 @@ export function useAsyncScheduleValidation(params: TUseAsyncScheduleValidationPa
                     draftRevision,
                     rulesHash,
                 },
-                commands.setScheduleValidationFromApi,
-                commands.clearScheduleValidationFromApi,
+                applyValidationRef.current,
+                clearValidationRef.current,
             );
+
+            if (requestSeqRef.current !== requestSeq) return;
+
+            if (useShiftEditorStore.getState().draftRevision !== draftRevision) return;
+
+            setStatus(applied ? 'valid' : 'error');
         }, debounceMs);
 
         return () => {
             if (timerRef.current) clearTimeout(timerRef.current);
         };
-    }, [doc, draftRevision, rulesHash, enabled, wardId, shiftTeamId, year, month, originalShift, debounceMs, commands]);
+    }, [doc, draftRevision, rulesHash, enabled, wardId, shiftTeamId, year, month, originalShift, debounceMs]);
+
+    return {status};
 }

@@ -11,7 +11,7 @@ import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
-import {useMakeShiftStore} from '../../model/make-shift-store';
+import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
@@ -38,11 +38,13 @@ export function ConfirmedShifts() {
     } = useAuth();
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const confirmedShiftSnapshot = useMakeShiftStore((s) => s.confirmedShiftSnapshot);
     const useCase = useMakeShiftUseCase();
-    const enabled = wardId !== null && currentShiftTeamId !== null;
+    const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,

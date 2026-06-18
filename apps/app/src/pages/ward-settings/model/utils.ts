@@ -1,4 +1,4 @@
-export function formatShiftDuration(startTime: string, endTime: string) {
+export function formatShiftDuration(startTime: string | null | undefined, endTime: string | null | undefined) {
     const start = parseTime(startTime);
     const end = parseTime(endTime);
 
@@ -13,8 +13,8 @@ export function formatShiftDuration(startTime: string, endTime: string) {
     return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1).replace(/\.0$/, '')}h`;
 }
 
-function parseTime(value: string) {
-    const normalizedValue = value.trim();
+function parseTime(value: string | null | undefined) {
+    const normalizedValue = value?.trim() ?? '';
 
     if (!/^\d{2}:\d{2}$/.test(normalizedValue)) return null;
 

@@ -23,6 +23,7 @@ const ROUTE = {
     WARD_ADMINS: '/ward-settings/admins',
     WARD_INFO_SETTINGS: '/ward-info-settings',
     PROFILE: '/profile',
+    DUTYING: '/dutying',
 };
 
 export type TRoute = TValues<typeof ROUTE>;

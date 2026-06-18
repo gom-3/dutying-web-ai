@@ -228,9 +228,30 @@ describe('shift-adapter', () => {
     });
 
     it('builds work key map from the first character of each short name', () => {
-        expect(buildWorkKeyMap(createShift())).toEqual({
+        const shift = createShift();
+
+        shift.wardShiftTypes = [
+            shift.wardShiftTypes[0]!,
+            {...shift.wardShiftTypes[1]!, shortName: 'OFF'},
+            shift.wardShiftTypes[2]!,
+            {
+                wardShiftTypeId: 40,
+                name: 'Custom',
+                shortName: '_11',
+                startTime: '09:00',
+                endTime: '18:00',
+                color: '#ddd',
+                isDefault: false,
+                isOff: false,
+                isCounted: false,
+                classification: 'OTHER_WORK',
+            },
+        ];
+
+        expect(buildWorkKeyMap(shift)).toEqual({
+            _: '_11',
             d: 'D',
-            o: 'O',
+            o: 'OFF',
             t: 'TR',
         });
     });

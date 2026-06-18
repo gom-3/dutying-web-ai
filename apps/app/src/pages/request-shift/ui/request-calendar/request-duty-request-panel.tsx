@@ -5,11 +5,11 @@ import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
-import requestEmptyShiftImage from '@/shared/assets/images/request-empty-shift.png';
-import {getLocaleForLanguage} from '@/shared/i18n/locale';
-import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import PageState from '@/shared/ui/PageState';
 import i18n from '@/i18n';
+import requestEmptyShiftImage from '@/shared/assets/images/request-empty-shift.png';
+import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import PageState from '@/shared/ui/PageState';
 import {getRequestFocus} from './utils';
 
 interface IRequestDutyRequestPanelProps {
@@ -575,6 +575,7 @@ export default function RequestDutyRequestPanel({
                         tone="empty"
                         title={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyTitle : emptyTitle}
                         description={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyDescription : emptyDescription}
+                        titleClassName="max-w-full !break-normal [overflow-wrap:anywhere]"
                         visual={shouldShowRequestEmptyVisual ? REQUEST_EMPTY_VISUAL : undefined}
                         className="min-h-[132px] px-5 py-6"
                     />

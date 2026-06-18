@@ -2358,7 +2358,13 @@ function BoardPage() {
                             className="py-0"
                         />
                     ) : posts.length === 0 ? (
-                        <PageState tone="empty" title={boardT('list.empty')} className="py-0" />
+                        <PageState
+                            tone="empty"
+                            title={boardT('list.empty')}
+                            className="px-0 py-0 sm:px-0"
+                            contentClassName="px-1 sm:px-1"
+                            titleClassName="mx-auto max-w-full text-center text-[15px] break-normal whitespace-nowrap"
+                        />
                     ) : (
                         <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                             {posts.map((post) => {

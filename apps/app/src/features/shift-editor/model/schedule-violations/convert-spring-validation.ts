@@ -43,6 +43,9 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
 
     if (cells.length === 0) return null;
 
+    const displayContextCells = item.displayContext?.affectedCells
+        ? affectedCellsToPositions(doc, item.displayContext.affectedCells)
+        : [];
     const level: TViolation['level'] = item.severity === 'HARD' ? 'error' : 'warning';
     const uniqueNurses = new Set(item.affectedCells.map((c) => c.shiftNurseId));
     const scope: TViolation['scope'] = uniqueNurses.size > 1 ? 'team' : 'nurse';
@@ -60,6 +63,17 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
 
     if (item.period) {
         violation.period = item.period;
+    }
+
+    if (item.displayContext && displayContextCells.length > 0) {
+        violation.displayContext = {
+            cells: displayContextCells,
+            affectedCells: item.displayContext.affectedCells,
+        };
+
+        if (item.displayContext.period) {
+            violation.displayContext.period = item.displayContext.period;
+        }
     }
 
     return violation;

@@ -25,6 +25,7 @@ const WardSettingsPage = lazy(() => import('@/pages/ward-settings'));
 const WardAdminsPage = lazy(() => import('@/pages/ward-admins'));
 const WardInfoSettingsPage = lazy(() => import('@/pages/ward-info-settings'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
+const DutyingPage = lazy(() => import('@/pages/dutying'));
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
 
 export const Router = () => {
@@ -69,6 +70,7 @@ export const Router = () => {
                         <Route path={ROUTE.WARD_ADMINS} element={<WardAdminsPage />} />
                         <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
+                        <Route path={ROUTE.DUTYING} element={<DutyingPage />} />
                     </Route>
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />

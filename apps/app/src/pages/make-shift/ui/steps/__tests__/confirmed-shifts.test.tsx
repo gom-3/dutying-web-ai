@@ -6,17 +6,21 @@ import {ConfirmedShifts} from '../confirmed-shifts';
 const editConfirmedMock = vi.fn();
 
 type TMakeShiftStoreState = {
+    wardId: number;
     year: number;
     month: number;
     shiftTeams: {shiftTeamId: number; name: string}[];
+    shiftTeamsStatus: 'success';
     currentShiftTeamId: number | null;
     confirmedShiftSnapshot: null;
 };
 
 const makeShiftStoreState: TMakeShiftStoreState = {
+    wardId: 1,
     year: 2026,
     month: 7,
     shiftTeams: [{shiftTeamId: 10, name: 'A팀'}],
+    shiftTeamsStatus: 'success',
     currentShiftTeamId: 10,
     confirmedShiftSnapshot: null,
 };
@@ -56,9 +60,14 @@ vi.mock('@/shared/hook/use-typed-translation', async () => {
     };
 });
 
-vi.mock('../../../model/make-shift-store', () => ({
-    useMakeShiftStore: (selector: (state: TMakeShiftStoreState) => unknown) => selector(makeShiftStoreState),
-}));
+vi.mock('../../../model/make-shift-store', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../../model/make-shift-store')>();
+
+    return {
+        ...actual,
+        useMakeShiftStore: (selector: (state: TMakeShiftStoreState) => unknown) => selector(makeShiftStoreState),
+    };
+});
 
 vi.mock('../../../model/make-shift-use-case', () => ({
     useMakeShiftUseCase: () => ({

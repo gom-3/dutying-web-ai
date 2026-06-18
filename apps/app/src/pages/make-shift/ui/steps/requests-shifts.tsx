@@ -6,7 +6,7 @@ import RequestCalendar from '@/pages/request-shift/ui/request-calendar';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
-import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
+import {canGoNext, canGoPrev, isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
 import {
     MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
@@ -26,18 +26,28 @@ export function RequestsShifts() {
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const makeYear = useMakeShiftStore((s) => s.year);
     const makeMonth = useMakeShiftStore((s) => s.month);
+    const makeWardId = useMakeShiftStore((s) => s.wardId);
+    const makeShiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const makeShiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const makeShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const setRequestState = useRequestShiftStore((s) => s.setState);
+    const setRequestWardContext = useRequestShiftStore((s) => s.setWardContext);
     const [isRequestContextSynced, setIsRequestContextSynced] = useState(false);
+    const isMakeShiftTeamReady = isMakeShiftTeamReadyForWard(
+        {wardId: makeWardId, shiftTeams: makeShiftTeams, shiftTeamsStatus: makeShiftTeamsStatus},
+        makeWardId,
+        makeShiftTeamId,
+    );
 
     useEffect(() => {
         setIsRequestContextSynced(false);
+        setRequestWardContext(makeWardId);
         setRequestState('year', makeYear);
         setRequestState('month', makeMonth);
-        setRequestState('currentShiftTeamId', makeShiftTeamId);
+        setRequestState('currentShiftTeamId', isMakeShiftTeamReady ? makeShiftTeamId : null);
         setRequestState('focus', null);
         setIsRequestContextSynced(true);
-    }, [makeMonth, makeShiftTeamId, makeYear, setRequestState]);
+    }, [isMakeShiftTeamReady, makeMonth, makeShiftTeamId, makeWardId, makeYear, setRequestState, setRequestWardContext]);
 
     const {
         state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus},

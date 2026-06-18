@@ -15,7 +15,7 @@ import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
-import {type TWorkerConfirmationStatus, useMakeShiftStore} from '../../model/make-shift-store';
+import {isMakeShiftTeamReadyForWard, type TWorkerConfirmationStatus, useMakeShiftStore} from '../../model/make-shift-store';
 import {
     applyMakeShiftWorkerDrag,
     buildMakeShiftWorkerMovePayload,
@@ -96,10 +96,13 @@ export function Workers() {
         state: {wardId},
     } = useAuth();
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const storeWardId = useMakeShiftStore((s) => s.wardId);
+    const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
+    const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const setWorkerConfirmationState = useMakeShiftStore((s) => s.setWorkerConfirmationState);
-    const enabled = wardId !== null && currentShiftTeamId !== null;
+    const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
     const {
         state: {nurseSaveStatus},
         actions: {moveNurseOrder, updateNurse},

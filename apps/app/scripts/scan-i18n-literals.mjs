@@ -1,7 +1,8 @@
 import {readdirSync, readFileSync, statSync} from 'node:fs';
 import {join, relative} from 'node:path';
+import {fileURLToPath} from 'node:url';
 
-const sourceRoot = new URL('../src', import.meta.url).pathname;
+const sourceRoot = fileURLToPath(new URL('../src', import.meta.url));
 const cjkPattern = /[가-힣ぁ-ゟ゠-ヿ一-龯]/;
 const failOnFindings = process.env.I18N_SCAN_FAIL_ON_FINDINGS === '1';
 const maxFindings = Number.parseInt(process.env.I18N_SCAN_MAX ?? '200', 10);
@@ -34,7 +35,7 @@ const ignoredLinePatterns = [
 ];
 
 function shouldScanFile(filePath) {
-    const relativePath = `/${relative(sourceRoot, filePath)}`;
+    const relativePath = `/${relative(sourceRoot, filePath).replaceAll('\\', '/')}`;
     const parts = relativePath.split('/').filter(Boolean);
 
     if (!includedFilePatterns.some((pattern) => pattern.test(filePath))) return false;

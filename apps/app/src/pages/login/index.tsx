@@ -666,6 +666,12 @@ function LoginPage() {
                                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                                 {t('page.login.submitLogin')}
                             </button>
+                            <p className="text-center text-sm text-gray-3">
+                                {t('page.login.noAccountPrompt')}{' '}
+                                <Link to={ROUTE.SIGN_UP} className="font-semibold text-main-1 underline underline-offset-[3px]">
+                                    {t('page.login.signupLink')}
+                                </Link>
+                            </p>
                         </form>
                     ) : null}
 

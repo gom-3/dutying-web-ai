@@ -5,9 +5,11 @@ import type {TAccount} from '@/entities/account';
 import useLoadingUseCase from '@/features/loading';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import useTutorialUseCase from '@/features/tutorial';
+import i18n from '@/i18n';
 import {AdminAPI, AuthAPI} from '@/shared/api';
 import {setAccessToken, setAdminAccessToken} from '@/shared/api/client';
 import ROUTE from '@/shared/constant/path';
+import {normalizePreferredLanguage, normalizeServiceRegion, setStoredServiceRegion} from '@/shared/i18n/locale';
 import {withTimeout} from '@/shared/util/with-timeout';
 import {toAccountCompatibleAdminMe} from './model/admin-account';
 import {isWardAdminAccessToken} from './model/admin-token';
@@ -20,6 +22,7 @@ type THandleLoginOptions = {
 };
 
 const ACCOUNT_BOOTSTRAP_TIMEOUT_MS = 15000;
+const LANGUAGE_QUERY_PARAM = 'lng';
 
 let accountMeRequest: {id: number; accessToken: string | null; promise: Promise<void>} | null = null;
 let accountMeRequestId = 0;
@@ -31,6 +34,30 @@ const clearAccountMeRequest = () => {
     }
 
     accountMeRequest = null;
+};
+const getExplicitLanguageFromQuery = () => {
+    if (typeof window === 'undefined') return undefined;
+
+    return normalizePreferredLanguage(new URLSearchParams(window.location.search).get(LANGUAGE_QUERY_PARAM));
+};
+const syncAccountLocalePreferences = (account: TAccount) => {
+    const nextServiceRegion = normalizeServiceRegion(account.serviceRegion) ?? normalizeServiceRegion(account.resolvedRegion);
+
+    if (nextServiceRegion) {
+        setStoredServiceRegion(nextServiceRegion);
+    }
+
+    if (getExplicitLanguageFromQuery()) return;
+
+    const nextLanguage = normalizePreferredLanguage(account.preferredLanguage) ?? normalizePreferredLanguage(account.resolvedLanguage);
+
+    if (!nextLanguage) return;
+
+    const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language);
+
+    if (currentLanguage !== nextLanguage) {
+        void i18n.changeLanguage(nextLanguage);
+    }
 };
 const useAuth = (activeEffect = false) => {
     const {
@@ -67,6 +94,10 @@ const useAuth = (activeEffect = false) => {
     const syncAccessTokenHeaders = (token: string) => {
         setAccessToken(token);
         setAdminAccessToken(isWardAdminAccessToken(token) ? token : '');
+    };
+    const applyAccountMe = (account: TAccount) => {
+        syncAccountLocalePreferences(account);
+        setAccountMeSuccess(account);
     };
     const handleLogout = async (fallBackPath?: string) => {
         resetSessionState();
@@ -147,7 +178,7 @@ const useAuth = (activeEffect = false) => {
                     return;
                 }
 
-                setAccountMeSuccess(account as TAccount);
+                applyAccountMe(account as TAccount);
                 resolveRequest();
             } catch (error) {
                 if (!canceledAccountMeRequestIds.has(requestId)) {
@@ -202,7 +233,7 @@ const useAuth = (activeEffect = false) => {
         },
         actions: {
             handleGetAccountMe,
-            applyAccountMe: setAccountMeSuccess,
+            applyAccountMe,
             handleLogin,
             handleLogout,
             setDemoExpired,

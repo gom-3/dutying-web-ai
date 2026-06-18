@@ -95,6 +95,12 @@ export type TViolationPeriod = {
     dates?: string[];
 };
 
+export type TViolationDisplayContext = {
+    cells: TCellPos[];
+    affectedCells?: TViolationAffectedCell[];
+    period?: TViolationPeriod | null;
+};
+
 export type TViolation = {
     ruleId: string;
     /** Spring violationId — 특정 위반 수정(repair) 요청에 사용 */
@@ -107,6 +113,7 @@ export type TViolation = {
     scope?: TViolationScope;
     period?: TViolationPeriod;
     affectedCells?: TViolationAffectedCell[];
+    displayContext?: TViolationDisplayContext;
     fixable?: boolean;
 };
 

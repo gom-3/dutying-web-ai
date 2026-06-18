@@ -159,6 +159,8 @@ export const MakeShiftPageView = () => {
                                     }
                                     description={t('page.makeShift.overview.shiftDraftDescription')}
                                     className="min-h-0 py-0"
+                                    contentClassName="max-w-[34rem]"
+                                    titleClassName="mx-auto max-w-full break-normal whitespace-normal [overflow-wrap:anywhere] [text-wrap:balance]"
                                     visual={
                                         <img
                                             src="/img/continue-schedule-nurse.webp"
@@ -196,6 +198,8 @@ export const MakeShiftPageView = () => {
                                         />
                                     }
                                     className="min-h-0 py-0"
+                                    contentClassName="max-w-[34rem]"
+                                    titleClassName="mx-auto max-w-full break-normal whitespace-normal [overflow-wrap:anywhere] [text-wrap:balance]"
                                     visual={
                                         <img
                                             src="/img/empty-schedule-nurse.webp"
