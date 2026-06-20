@@ -218,6 +218,24 @@ describe('NavigationBar', () => {
         expect(screen.queryByRole('img')).not.toBeInTheDocument();
     });
 
+    it('뷰포트 높이 안에서 스크롤 없이 들어가도록 높이 반응형 밀도를 적용한다', () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <NavigationBar />
+            </MemoryRouter>,
+        );
+
+        const navigationBar = screen.getByTestId('navigation-bar');
+        const navigationContent = navigationBar.firstElementChild;
+        const primaryNavigation = screen.getByRole('navigation', {name: '주요 메뉴'});
+        const makeScheduleButton = screen.getByRole('button', {name: '근무표 만들기'});
+
+        expect(navigationBar).toHaveClass('h-dvh', 'max-h-dvh', 'overflow-hidden');
+        expect(navigationContent).toHaveClass('h-full', 'min-h-0');
+        expect(primaryNavigation).toHaveClass('min-h-0', '[@media(max-height:760px)]:mt-4');
+        expect(makeScheduleButton).toHaveClass('min-h-[clamp(38px,5.6vh,44px)]');
+    });
+
     it('마이페이지 메뉴를 클릭하면 프로필 페이지로 이동한다', async () => {
         render(
             <MemoryRouter initialEntries={[ROUTE.MAKE]}>

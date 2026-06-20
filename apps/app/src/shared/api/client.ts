@@ -9,14 +9,14 @@ import {normalizeApiErrorResponse, resolveApiErrorMessage, type TApiClientError}
 
 const AUTH_REDIRECT_IGNORED_PATHS = new Set(['/demo/start', '/token/refresh', '/token/blacklist']);
 const AUTH_REDIRECT_IGNORED_PREFIXES = ['/auth/'];
-const createAxiosInstance = () =>
+const createAxiosInstance = (options: {withCredentials?: boolean} = {}) =>
     axios.create({
         baseURL: RUNTIME_CONFIG.serverUrl(),
         headers: {
             'Content-Type': 'application/json',
         },
 
-        withCredentials: true,
+        withCredentials: options.withCredentials ?? true,
     });
 const getRequestPathname = (requestUrl?: string) => {
     if (!requestUrl) return '';
@@ -54,7 +54,6 @@ const applyRequestInterceptor = (instance: ReturnType<typeof createAxiosInstance
 
     return instance;
 };
-
 const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstance>) => {
     instance.interceptors.response.use(
         (response) => response,
@@ -97,10 +96,10 @@ const applyResponseInterceptor = (instance: ReturnType<typeof createAxiosInstanc
     return instance;
 };
 const applyInterceptors = (instance: ReturnType<typeof createAxiosInstance>) => applyResponseInterceptor(applyRequestInterceptor(instance));
-
 const axiosInstance = applyInterceptors(createAxiosInstance());
 
 export const adminAxiosInstance = applyInterceptors(createAxiosInstance());
+export const publicAxiosInstance = applyInterceptors(createAxiosInstance({withCredentials: false}));
 
 const setBearerToken = (instance: ReturnType<typeof createAxiosInstance>, token: string) => {
     if (token) {

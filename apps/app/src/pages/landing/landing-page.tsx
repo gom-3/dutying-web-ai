@@ -1,13 +1,17 @@
+import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
-import {CalendarDays, ChevronDown, MessageCircle, UsersRound, X} from 'lucide-react';
+import {CalendarDays, ChevronDown, Languages, MessageCircle, UsersRound, X} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
 import type {TAccount} from '@/entities/account';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
 import ROUTE from '@/shared/constant/path';
+import {getIsPhoneViewport, usePhoneViewport} from '@/shared/hook/use-phone-viewport';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
 
 const appStoreLink = 'https://abr.ge/bv13wa';
@@ -20,8 +24,8 @@ const webCtaIconSrc = '/img/web.png';
 const appCtaIconSrc = '/img/app.png';
 const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,#F7F3FF_100%)]';
 const landingViewPreferenceKey = 'dutying:landing-view-preference';
-const phoneViewportQuery = '(max-width: 767px)';
 const desktopViewportMetaContent = 'width=1180';
+const languageOptions = SUPPORTED_LANGUAGES;
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
     {
@@ -151,16 +155,12 @@ const mobileAppBenefitSpecs = [
 
 type TLandingViewPreference = 'auto' | 'desktop';
 
-function getIsPhoneViewport() {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-        return false;
-    }
-
-    return window.matchMedia(phoneViewportQuery).matches;
-}
-
 function getInitialLandingViewPreference(): TLandingViewPreference {
     if (typeof window === 'undefined') {
+        return 'auto';
+    }
+
+    if (getIsPhoneViewport()) {
         return 'auto';
     }
 
@@ -216,31 +216,21 @@ function writeLandingViewPreference(preference: TLandingViewPreference) {
 
 function useLandingViewportMode() {
     const [viewPreference, setViewPreference] = useState<TLandingViewPreference>(getInitialLandingViewPreference);
-    const [isPhoneViewport, setIsPhoneViewport] = useState(getIsPhoneViewport);
+    const isPhoneViewport = usePhoneViewport();
+    const isDesktopVersionForced = !isPhoneViewport && viewPreference === 'desktop';
 
     useEffect(() => {
-        if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-            return undefined;
+        if (!isPhoneViewport || viewPreference !== 'desktop') {
+            return;
         }
 
-        const mediaQuery = window.matchMedia(phoneViewportQuery);
-        const updatePhoneViewport = () => setIsPhoneViewport(mediaQuery.matches);
-
-        updatePhoneViewport();
-
-        if (typeof mediaQuery.addEventListener === 'function') {
-            mediaQuery.addEventListener('change', updatePhoneViewport);
-
-            return () => mediaQuery.removeEventListener('change', updatePhoneViewport);
-        }
-
-        mediaQuery.addListener(updatePhoneViewport);
-
-        return () => mediaQuery.removeListener(updatePhoneViewport);
-    }, []);
+        writeLandingViewPreference('auto');
+        updateLandingViewUrl('auto');
+        setViewPreference('auto');
+    }, [isPhoneViewport, viewPreference]);
 
     useEffect(() => {
-        if (typeof document === 'undefined' || viewPreference !== 'desktop') {
+        if (typeof document === 'undefined' || !isDesktopVersionForced) {
             return undefined;
         }
 
@@ -255,28 +245,18 @@ function useLandingViewportMode() {
         viewportMeta.setAttribute('content', desktopViewportMetaContent);
 
         return () => viewportMeta.setAttribute('content', originalContent);
-    }, [viewPreference]);
+    }, [isDesktopVersionForced]);
 
-    const selectDesktopVersion = () => {
-        writeLandingViewPreference('desktop');
-        updateLandingViewUrl('desktop');
-        setViewPreference('desktop');
-    };
     const selectAutomaticVersion = () => {
         writeLandingViewPreference('auto');
         updateLandingViewUrl('auto');
         setViewPreference('auto');
-
-        if (typeof window !== 'undefined') {
-            window.setTimeout(() => setIsPhoneViewport(getIsPhoneViewport()), 0);
-        }
     };
 
     return {
-        isDesktopVersionForced: viewPreference === 'desktop',
+        isDesktopVersionForced,
         selectAutomaticVersion,
-        selectDesktopVersion,
-        showMobileAppLanding: isPhoneViewport && viewPreference !== 'desktop',
+        showMobileAppLanding: isPhoneViewport,
     };
 }
 
@@ -541,6 +521,100 @@ function ProfileSettingsDialog({open, onClose}: {open: boolean; onClose: () => v
     );
 }
 
+function HeaderLanguageMenu() {
+    const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const currentLanguage = normalizePreferredLanguage(i18n.resolvedLanguage ?? i18n.language) ?? 'en';
+
+    useEffect(() => {
+        if (!isOpen) {
+            return undefined;
+        }
+
+        const closeOnOutsideClick = (event: MouseEvent | TouchEvent) => {
+            if (!(event.target instanceof Node) || rootRef.current?.contains(event.target)) {
+                return;
+            }
+
+            setIsOpen(false);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', closeOnOutsideClick);
+        document.addEventListener('touchstart', closeOnOutsideClick);
+        document.addEventListener('keydown', closeOnEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', closeOnOutsideClick);
+            document.removeEventListener('touchstart', closeOnOutsideClick);
+            document.removeEventListener('keydown', closeOnEscape);
+        };
+    }, [isOpen]);
+
+    const getLanguageLabel = (language: TPreferredLanguage) => {
+        switch (language) {
+            case 'ko':
+                return t('page.profile.language.ko');
+            case 'ja':
+                return t('page.profile.language.ja');
+            case 'en':
+                return t('page.profile.language.en');
+        }
+    };
+    const handleLanguageChange = (language: TPreferredLanguage) => {
+        setIsOpen(false);
+        void i18n.changeLanguage(language);
+    };
+
+    return (
+        <div ref={rootRef} className="relative">
+            <button
+                type="button"
+                aria-label={t('page.landing.common.languageSelect')}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                onClick={() => setIsOpen((prev) => !prev)}
+                className="flex size-10 items-center justify-center rounded-full text-[#8B8797] transition-colors hover:bg-[#F5F2FA] hover:text-[#6F6B7A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
+            >
+                <Languages className="size-5" strokeWidth={2} aria-hidden="true" />
+            </button>
+
+            {isOpen && (
+                <div
+                    role="listbox"
+                    aria-label={t('page.landing.common.languageSelect')}
+                    className="absolute top-[calc(100%+10px)] right-0 z-50 w-44 overflow-hidden rounded-[8px] border border-[#E5DEF8] bg-white py-1 shadow-[0_18px_44px_rgba(37,22,91,0.16)]"
+                >
+                    {languageOptions.map((language) => {
+                        const isSelected = language === currentLanguage;
+
+                        return (
+                            <button
+                                key={language}
+                                type="button"
+                                role="option"
+                                aria-selected={isSelected}
+                                onClick={() => handleLanguageChange(language)}
+                                className={`flex w-full items-center px-4 py-2.5 text-left text-sm font-semibold transition-colors hover:bg-main-light hover:text-main-1 ${
+                                    isSelected ? 'bg-main-light text-main-1' : 'text-[#5F557F]'
+                                }`}
+                            >
+                                {getLanguageLabel(language)}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+}
+
 function HeaderActions({
     accountMe,
     isAuth,
@@ -587,20 +661,23 @@ function HeaderActions({
 
     if (!isAuth) {
         return (
-            <nav
-                aria-label={t('page.navigationBar.items.account')}
-                className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]"
-            >
-                <Link to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
-                    {t('page.landing.common.login')}
-                </Link>
-                <span aria-hidden="true" className="text-[#A29BB7]">
-                    |
-                </span>
-                <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
-                    {t('page.login.signupLink')}
-                </Link>
-            </nav>
+            <>
+                <nav
+                    aria-label={t('page.navigationBar.items.account')}
+                    className="flex h-10 items-center gap-2 px-1 text-sm font-bold text-[#150B3C]"
+                >
+                    <Link to={ROUTE.LOGIN} className="transition-colors hover:text-main-1">
+                        {t('page.landing.common.login')}
+                    </Link>
+                    <span aria-hidden="true" className="text-[#A29BB7]">
+                        |
+                    </span>
+                    <Link to={ROUTE.SIGN_UP} className="transition-colors hover:text-main-1">
+                        {t('page.login.signupLink')}
+                    </Link>
+                </nav>
+                <HeaderLanguageMenu />
+            </>
         );
     }
 
@@ -661,6 +738,7 @@ function HeaderActions({
                     </div>
                 )}
             </div>
+            <HeaderLanguageMenu />
             <ProfileSettingsDialog open={isProfileSettingsOpen} onClose={() => setIsProfileSettingsOpen(false)} />
         </>
     );
@@ -816,7 +894,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     );
 }
 
-function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () => void}) {
+function MobileAppLanding() {
     const {t} = useTypedTranslation();
     const mobileHeroPhrases = buildMobileHeroPhrases(t);
     const mobileAppBenefits = mobileAppBenefitSpecs.map((benefit) => ({
@@ -850,7 +928,7 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
                         <h1 className="reveal-on-scroll text-[36px] leading-[1.18] font-extrabold">
                             <RotatingMobileHeroPhrase phrases={mobileHeroPhrases} />
                         </h1>
-                        <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-4 text-base leading-7 font-medium text-[#6F6B7A]">
+                        <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-3 text-base leading-7 font-medium text-[#6F6B7A]">
                             {t('page.landing.mobileHero.description')}
                         </p>
 
@@ -919,14 +997,6 @@ function MobileAppLanding({onSelectDesktopVersion}: {onSelectDesktopVersion: () 
 
             <footer className={`${softPurpleBackground} px-5 py-9 text-sm font-medium text-[#777487]`}>
                 <div className="mx-auto flex max-w-[520px] flex-col gap-6">
-                    <button
-                        type="button"
-                        onClick={onSelectDesktopVersion}
-                        className="h-11 w-full rounded-[8px] border border-[#DED6F5] bg-white text-sm font-bold text-[#5F557F] transition-colors hover:border-main-3 hover:text-main-1"
-                    >
-                        {t('page.landing.common.viewDesktop')}
-                    </button>
-
                     <div className="flex flex-wrap gap-5">
                         <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
                             {t('page.login.termsOfService')}
@@ -949,7 +1019,7 @@ function LandingPage() {
         actions: {handleLogout},
     } = useAuth();
     const webMakeLink = getWebMakeLink(isAuth);
-    const {isDesktopVersionForced, selectAutomaticVersion, selectDesktopVersion, showMobileAppLanding} = useLandingViewportMode();
+    const {isDesktopVersionForced, selectAutomaticVersion, showMobileAppLanding} = useLandingViewportMode();
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
     const featureSections = buildFeatureSections(t);
     const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
@@ -958,7 +1028,7 @@ function LandingPage() {
     useRevealOnScroll(showMobileAppLanding ? 'mobile-app' : 'full-landing');
 
     if (showMobileAppLanding) {
-        return <MobileAppLanding onSelectDesktopVersion={selectDesktopVersion} />;
+        return <MobileAppLanding />;
     }
 
     return (

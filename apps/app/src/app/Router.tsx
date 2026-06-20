@@ -1,7 +1,8 @@
 import {Suspense, lazy} from 'react';
-import {Route, Routes} from 'react-router-dom';
+import {Navigate, Route, Routes} from 'react-router-dom';
 import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
+import {usePhoneViewport} from '@/shared/hook/use-phone-viewport';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
@@ -26,10 +27,33 @@ const WardAdminsPage = lazy(() => import('@/pages/ward-admins'));
 const WardInfoSettingsPage = lazy(() => import('@/pages/ward-info-settings'));
 const ProfilePage = lazy(() => import('@/pages/profile'));
 const DutyingPage = lazy(() => import('@/pages/dutying'));
+const DutyingNoticesPage = lazy(() => import('@/pages/dutying/notices'));
+const DutyingNoticeDetailPage = lazy(() => import('@/pages/dutying/notice-detail'));
 const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({default: module.NotFoundPage})));
 
 export const Router = () => {
     const {t} = useTypedTranslation();
+    const isPhoneViewport = usePhoneViewport();
+
+    if (isPhoneViewport) {
+        return (
+            <Suspense
+                fallback={
+                    <PageState
+                        tone="loading"
+                        layout="screen"
+                        title={t('page.state.loadingTitle')}
+                        description={t('page.state.loadingDescription')}
+                    />
+                }
+            >
+                <Routes>
+                    <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path="*" element={<Navigate to={ROUTE.ROOT} replace />} />
+                </Routes>
+            </Suspense>
+        );
+    }
 
     return (
         <Suspense
@@ -71,6 +95,8 @@ export const Router = () => {
                         <Route path={ROUTE.WARD_INFO_SETTINGS} element={<WardInfoSettingsPage />} />
                         <Route path={ROUTE.PROFILE} element={<ProfilePage />} />
                         <Route path={ROUTE.DUTYING} element={<DutyingPage />} />
+                        <Route path={ROUTE.DUTYING_NOTICES} element={<DutyingNoticesPage />} />
+                        <Route path={ROUTE.DUTYING_NOTICE_DETAIL} element={<DutyingNoticeDetailPage />} />
                     </Route>
                 </Route>
                 <Route path="*" element={<NotFoundPage />} />

@@ -539,6 +539,25 @@ export const ko = {
                     "title": "이용약관"
                 }
             },
+            "notice": {
+                "backToDutying": "듀팅",
+                "backToList": "목록",
+                "detailErrorDescription": "잠시 후 다시 시도하거나 공지사항 목록에서 다시 선택해 주세요.",
+                "detailErrorTitle": "공지사항을 확인하지 못했어요",
+                "emptyDescription": "새로운 공지가 올라오면 이곳에서 확인할 수 있어요.",
+                "emptyTitle": "아직 공개된 공지가 없어요",
+                "errorDescription": "네트워크 상태를 확인한 뒤 다시 시도해 주세요.",
+                "errorTitle": "공지사항을 불러오지 못했어요",
+                "invalidDescription": "주소를 확인하거나 목록에서 다시 선택해 주세요.",
+                "invalidTitle": "공지사항을 찾을 수 없어요",
+                "listAria": "공지사항 목록",
+                "loadMore": "더 보기",
+                "loadingTitle": "공지사항을 불러오고 있어요",
+                "pinned": "중요",
+                "publishedAt": "{{date}} 등록",
+                "retry": "다시 시도",
+                "updatedAt": "{{date}} 수정"
+            },
             "title": "듀팅"
         },
         "error": {
@@ -588,6 +607,7 @@ export const ko = {
                 "appDownload": "앱 다운로드",
                 "appSchedule": "앱에서 근무표 확인하기",
                 "copyright": "ⓒ 2026 듀팅. All Rights Reserved",
+                "languageSelect": "언어 선택",
                 "login": "로그인",
                 "logout": "로그아웃",
                 "makeSchedule": "근무표 만들기",
@@ -1620,28 +1640,49 @@ export const ko = {
         },
         "onboardingJoinWard": {
             "backToWardSelect": "병동 선택으로",
-            "checkingPermission": "입장 권한을 확인하는 중이에요.",
+            "checkingPermission": "병동에 입장하는 중이에요.",
             "codeDigitAria": "병동 코드 {{index}}번째 자리",
+            "codeEntry": {
+                "description": "공유받은 6자리 코드를 입력하면 해당 병동으로 입장해요.",
+                "title": "병동 코드로 입장"
+            },
+            "codeHelp": "영문과 숫자로 된 6자리 병동 코드를 입력해 주세요.",
             "codeInputAria": "병동 코드 입력",
-            "description": "병동 오너가 공유한 6자리 코드를 입력하면 권한 확인 후 바로 입장해요.",
+            "description": "병동 관리자에게 공유받은 6자리 코드를 입력하면 해당 병동으로 입장해요.",
+            "form": {
+                "submit": "코드로 입장",
+                "submitting": "입장 중..."
+            },
             "invalidCode": "존재하지 않는 병동 코드예요. 코드를 다시 확인해 주세요.",
             "permission": {
                 "close": "닫기",
                 "confirm": "확인",
-                "description": "병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요. 최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.",
-                "descriptionWithWard": "병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요. {{hospitalName}} {{wardName}} 최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.",
-                "eyebrow": "관리자 권한 필요",
-                "title": "병동 관리자에게 요청해 주세요",
-                "titleWithWard": "{{hospitalName}} {{wardName}} 관리자에게 요청해 주세요"
+                "description": "병동 코드는 맞지만 현재 계정 이메일이 해당 병동 관리자로 등록되어 있지 않아요. 병동 오너에게 이 계정 이메일 등록을 요청해 주세요.",
+                "descriptionWithWard": "{{hospitalName}} {{wardName}}에 입장하려면 현재 계정 이메일이 병동 관리자로 등록되어 있어야 해요. 병동 오너에게 이 계정 이메일 등록을 요청해 주세요.",
+                "eyebrow": "등록된 이메일 필요",
+                "title": "이 계정으로는 입장할 수 없어요",
+                "titleWithWard": "{{hospitalName}} {{wardName}}에 입장할 수 없어요"
+            },
+            "registeredWards": {
+                "description": "병동에서 내 이메일을 관리자로 등록해 둔 경우 여기에 보여요.",
+                "empty": "현재 계정 이메일로 등록된 병동이 아직 없어요. 병동 코드로 입장해 주세요.",
+                "enterAria": "{{hospitalName}} {{wardName}} 입장",
+                "loadFailed": "등록된 병동 정보를 불러오지 못했어요. 병동 코드로 입장해 주세요.",
+                "loading": "등록된 병동을 불러오고 있어요.",
+                "title": "내 이메일로 등록된 병동"
             },
             "state": {
                 "accountErrorDescription": "잠시 후 다시 시도해 주세요. 문제가 계속되면 다시 로그인해 주세요.",
                 "accountErrorTitle": "계정 정보를 불러오지 못했어요",
                 "retry": "다시 시도"
             },
-            "title": "병동 코드를 입력해요",
+            "title": "병동에 입장해요",
             "toast": {
-                "joinFailed": "병동에 들어가지 못했어요. 코드를 다시 확인해 주세요."
+                "joinFailed": "병동에 입장하지 못했어요. 다시 시도해 주세요."
+            },
+            "validation": {
+                "incomplete": "6자리를 모두 입력해 주세요.",
+                "invalidCharacters": "영문과 숫자만 사용할 수 있어요."
             }
         },
         "onboardingWardCreate": {
@@ -3035,6 +3076,25 @@ export const en: TLocale = {
                     "title": "Terms of Service"
                 }
             },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "Notices",
+                "detailErrorDescription": "Try again in a moment, or choose it again from the notices list.",
+                "detailErrorTitle": "Could not open this notice",
+                "emptyDescription": "New notices will appear here.",
+                "emptyTitle": "No notices yet",
+                "errorDescription": "Check your network connection and try again.",
+                "errorTitle": "Could not load notices",
+                "invalidDescription": "Check the address or choose a notice from the list.",
+                "invalidTitle": "Notice not found",
+                "listAria": "Notice list",
+                "loadMore": "Load more",
+                "loadingTitle": "Loading notices",
+                "pinned": "Important",
+                "publishedAt": "Published {{date}}",
+                "retry": "Try again",
+                "updatedAt": "Updated {{date}}"
+            },
             "title": "Dutying"
         },
         "error": {
@@ -3084,6 +3144,7 @@ export const en: TLocale = {
                 "appDownload": "Download app",
                 "appSchedule": "Check schedules in the app",
                 "copyright": "ⓒ 2026 Dutying. All Rights Reserved",
+                "languageSelect": "Select language",
                 "login": "Sign in",
                 "logout": "Sign out",
                 "makeSchedule": "Create schedule",
@@ -4116,28 +4177,49 @@ export const en: TLocale = {
         },
         "onboardingJoinWard": {
             "backToWardSelect": "Back to ward selection",
-            "checkingPermission": "Checking access permission.",
+            "checkingPermission": "Entering ward.",
             "codeDigitAria": "Ward code character {{index}}",
+            "codeEntry": {
+                "description": "Enter the 6-character code you received to join that ward.",
+                "title": "Enter with ward code"
+            },
+            "codeHelp": "Enter the 6-character ward code using letters and numbers.",
             "codeInputAria": "Ward code input",
-            "description": "Enter the 6-character code shared by the ward owner to verify access and join.",
+            "description": "Enter the 6-character code shared by a ward admin to enter that ward.",
+            "form": {
+                "submit": "Enter with code",
+                "submitting": "Entering..."
+            },
             "invalidCode": "This ward code does not exist. Check the code and try again.",
             "permission": {
                 "close": "Close",
                 "confirm": "OK",
-                "description": "The ward code was found, but this account does not have admin permission. The owner must register this account email as an admin before you can enter.",
-                "descriptionWithWard": "The ward code was found, but this account does not have admin permission. The owner of {{hospitalName}} {{wardName}} must register this account email as an admin before you can enter.",
-                "eyebrow": "Admin permission required",
-                "title": "Ask a ward admin for access",
-                "titleWithWard": "Ask an admin of {{hospitalName}} {{wardName}} for access"
+                "description": "The ward code is valid, but this account email is not registered as an admin for that ward. Ask the ward owner to register this account email.",
+                "descriptionWithWard": "To enter {{hospitalName}} {{wardName}}, this account email must be registered as a ward admin. Ask the ward owner to register this account email.",
+                "eyebrow": "Registered email required",
+                "title": "This account cannot enter",
+                "titleWithWard": "Cannot enter {{hospitalName}} {{wardName}}"
+            },
+            "registeredWards": {
+                "description": "Wards that registered your email as an admin appear here.",
+                "empty": "No wards are registered to this account email yet. Enter with the ward code instead.",
+                "enterAria": "Enter {{hospitalName}} {{wardName}}",
+                "loadFailed": "Could not load registered wards. Enter with the ward code instead.",
+                "loading": "Loading registered wards.",
+                "title": "Wards registered to your email"
             },
             "state": {
                 "accountErrorDescription": "Please try again shortly. If the problem continues, sign in again.",
                 "accountErrorTitle": "Could not load account information",
                 "retry": "Retry"
             },
-            "title": "Enter the ward code",
+            "title": "Enter a ward",
             "toast": {
-                "joinFailed": "Could not join the ward. Check the code and try again."
+                "joinFailed": "Could not enter the ward. Please try again."
+            },
+            "validation": {
+                "incomplete": "Enter all 6 characters.",
+                "invalidCharacters": "Only letters and numbers are allowed."
             }
         },
         "onboardingWardCreate": {
@@ -5529,6 +5611,25 @@ export const ja: TLocale = {
                     "title": "利用規約"
                 }
             },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "一覧",
+                "detailErrorDescription": "しばらくしてから再試行するか、お知らせ一覧からもう一度選択してください。",
+                "detailErrorTitle": "お知らせを確認できませんでした",
+                "emptyDescription": "新しいお知らせはこちらに表示されます。",
+                "emptyTitle": "公開中のお知らせはまだありません",
+                "errorDescription": "ネットワーク状態を確認してから再試行してください。",
+                "errorTitle": "お知らせを読み込めませんでした",
+                "invalidDescription": "アドレスを確認するか、一覧からもう一度選択してください。",
+                "invalidTitle": "お知らせが見つかりません",
+                "listAria": "お知らせ一覧",
+                "loadMore": "もっと見る",
+                "loadingTitle": "お知らせを読み込んでいます",
+                "pinned": "重要",
+                "publishedAt": "{{date}} 公開",
+                "retry": "再試行",
+                "updatedAt": "{{date}} 更新"
+            },
             "title": "Dutying"
         },
         "error": {
@@ -5578,6 +5679,7 @@ export const ja: TLocale = {
                 "appDownload": "アプリをダウンロード",
                 "appSchedule": "アプリで勤務表を確認",
                 "copyright": "ⓒ 2026 Dutying. All Rights Reserved",
+                "languageSelect": "言語を選択",
                 "login": "ログイン",
                 "logout": "ログアウト",
                 "makeSchedule": "勤務表を作成",
@@ -6610,28 +6712,49 @@ export const ja: TLocale = {
         },
         "onboardingJoinWard": {
             "backToWardSelect": "病棟選択へ",
-            "checkingPermission": "参加権限を確認しています。",
+            "checkingPermission": "病棟に参加しています。",
             "codeDigitAria": "病棟コード{{index}}文字目",
+            "codeEntry": {
+                "description": "共有された6桁コードを入力するとその病棟に参加できます。",
+                "title": "病棟コードで参加"
+            },
+            "codeHelp": "英字と数字の6桁の病棟コードを入力してください。",
             "codeInputAria": "病棟コード入力",
-            "description": "病棟のオーナーが共有した6桁のコードを入力すると、権限確認後すぐに参加できます。",
+            "description": "病棟管理者から共有された6桁コードを入力するとその病棟に参加できます。",
+            "form": {
+                "submit": "コードで参加",
+                "submitting": "参加中..."
+            },
             "invalidCode": "存在しない病棟コードです。コードを確認してください。",
             "permission": {
                 "close": "閉じる",
                 "confirm": "確認",
-                "description": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。オーナーが現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
-                "descriptionWithWard": "病棟コードは確認できましたが、現在のアカウントには管理者権限がありません。{{hospitalName}} {{wardName}}のオーナーが現在のアカウントのメールアドレスを管理者として登録しておく必要があります。",
-                "eyebrow": "管理者権限が必要です",
-                "title": "病棟管理者に依頼してください",
-                "titleWithWard": "{{hospitalName}} {{wardName}}の管理者に依頼してください"
+                "description": "病棟コードは正しいですが現在のアカウントのメールがその病棟の管理者として登録されていません。病棟オーナーにこのアカウントのメール登録を依頼してください。",
+                "descriptionWithWard": "{{hospitalName}} {{wardName}}に参加するには現在のアカウントのメールが病棟管理者として登録されている必要があります。病棟オーナーにこのアカウントのメール登録を依頼してください。",
+                "eyebrow": "登録済みメールが必要です",
+                "title": "このアカウントでは参加できません",
+                "titleWithWard": "{{hospitalName}} {{wardName}}に参加できません"
+            },
+            "registeredWards": {
+                "description": "病棟側で自分のメールが管理者として登録されている場合ここに表示されます。",
+                "empty": "現在のアカウントのメールで登録済みの病棟はまだありません。病棟コードで参加してください。",
+                "enterAria": "{{hospitalName}} {{wardName}}に参加",
+                "loadFailed": "登録済みの病棟情報を読み込めませんでした。病棟コードで参加してください。",
+                "loading": "登録済みの病棟を読み込んでいます。",
+                "title": "自分のメールで登録済みの病棟"
             },
             "state": {
                 "accountErrorDescription": "しばらくしてから再度お試しください。問題が続く場合は再ログインしてください。",
                 "accountErrorTitle": "アカウント情報を読み込めませんでした",
                 "retry": "再試行"
             },
-            "title": "病棟コードを入力してください",
+            "title": "病棟に参加します",
             "toast": {
-                "joinFailed": "病棟に参加できませんでした。コードを確認してください。"
+                "joinFailed": "病棟に参加できませんでした。もう一度お試しください。"
+            },
+            "validation": {
+                "incomplete": "6文字すべて入力してください。",
+                "invalidCharacters": "英字と数字のみ使用できます。"
             }
         },
         "onboardingWardCreate": {

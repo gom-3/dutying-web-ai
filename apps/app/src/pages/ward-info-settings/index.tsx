@@ -171,12 +171,10 @@ function WardInfoSettingsPage() {
 
             <div className="mx-auto mt-6 max-w-[480px] space-y-4">
                 <Card className="rounded-[24px] border-transparent p-6">
-                    <div className="mb-5 flex items-center gap-3">
-                        <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-main-light text-main-1">
-                            <Hospital className="h-5 w-5" />
-                        </span>
-                        <h2 className="text-lg font-semibold text-sub-1">{t('page.wardInfoSettings.sectionTitle')}</h2>
-                    </div>
+                    <h2 className="mb-5 flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
+                        <Hospital aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                        <span>{t('page.wardInfoSettings.sectionTitle')}</span>
+                    </h2>
                     <div className="grid grid-cols-1 gap-3">
                         <div className="max-w-[440px]">
                             <label htmlFor="hospitalName" className="mb-1.5 block font-apple text-sm font-medium text-sub-2">

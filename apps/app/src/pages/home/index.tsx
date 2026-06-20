@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {useQueries, useQuery} from '@tanstack/react-query';
-import {CalendarDays, ChevronDown} from 'lucide-react';
+import {CalendarDays, ChevronDown, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {useNavigate} from 'react-router';
@@ -76,12 +76,22 @@ type TTaskItem = {
 
 type TCalendarItem = {
     key: string;
+    kind: 'schedule' | 'deadline';
     tone: TCalendarItemTone;
     badge: string;
     title: string;
     meta: string;
     sortOrder: number;
-};
+} & (
+    | {
+          kind: 'schedule';
+          schedule: TWardBoardSchedule;
+      }
+    | {
+          kind: 'deadline';
+          deadline: TWardBoardDeadline;
+      }
+);
 
 type TMonthlyShiftCell = {
     day: number;
@@ -136,6 +146,15 @@ const formatMonth = (year: number, month: number, locale: string) =>
     new Intl.DateTimeFormat(locale, {year: 'numeric', month: 'long'}).format(new Date(year, month - 1, 1));
 const formatDateWithWeekday = (date: Date, locale: string) =>
     new Intl.DateTimeFormat(locale, {month: 'long', day: 'numeric', weekday: 'long'}).format(date);
+const formatDateWithWeekdayParts = (date: Date, locale: string) =>
+    new Intl.DateTimeFormat(locale, {month: 'long', day: 'numeric', weekday: 'long'}).formatToParts(date);
+const getHeaderWeekdayClassName = (weekdayIndex: number) => {
+    if (weekdayIndex === SATURDAY_INDEX) return 'text-[#5F8BFF]';
+
+    if (weekdayIndex === SUNDAY_INDEX) return 'text-[#FF6384]';
+
+    return undefined;
+};
 const formatMonthDay = (dateKey: string, locale: string) => {
     const date = parseDateKey(dateKey);
 
@@ -214,6 +233,39 @@ const getBoardScheduleTimeLabel = (schedule: TWardBoardSchedule, t: THomeTransla
 
     return getFirstNonEmptyValue(startTime, endTime, t('page.home.calendar.timeUnknown'));
 };
+const formatBoardScheduleDateRange = (startDate: string, endDate: string, locale: string) =>
+    startDate === endDate ? formatMonthDay(startDate, locale) : `${formatMonthDay(startDate, locale)} - ${formatMonthDay(endDate, locale)}`;
+const formatBoardScheduleDateTime = (dateKey: string, time: string, locale: string) =>
+    time ? `${formatMonthDay(dateKey, locale)} ${time}` : formatMonthDay(dateKey, locale);
+const getBoardScheduleDateTimeDetail = (schedule: TWardBoardSchedule, t: THomeTranslator, locale: string) => {
+    const startDate = getBoardScheduleStartDate(schedule);
+    const endDate = getBoardScheduleEndDate(schedule);
+    const allDay = getBoardScheduleAllDay(schedule);
+
+    if (allDay) {
+        return {
+            primary: formatBoardScheduleDateRange(startDate, endDate, locale),
+            badge: t('page.board.date.allDay'),
+        };
+    }
+
+    const startTime = normalizeTimeInput(schedule.startTime ?? schedule.start_time);
+    const endTime = normalizeTimeInput(schedule.endTime ?? schedule.end_time);
+    const timeRange =
+        startTime && endTime ? `${startTime}-${endTime}` : getFirstNonEmptyValue(startTime, endTime, t('page.board.date.timeUnknown'));
+
+    if (startDate === endDate) {
+        return {
+            primary: formatMonthDay(startDate, locale),
+            secondary: timeRange,
+        };
+    }
+
+    return {
+        primary: `${formatBoardScheduleDateTime(startDate, startTime, locale)} - ${formatBoardScheduleDateTime(endDate, endTime, locale)}`,
+        secondary: startTime || endTime ? undefined : t('page.board.date.timeUnknown'),
+    };
+};
 const getCalendarItems = (
     schedules: TWardBoardSchedule[],
     deadlines: TWardBoardDeadline[],
@@ -233,11 +285,13 @@ const getCalendarItems = (
                 return [
                     {
                         key: `schedule-today-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
+                        kind: 'schedule',
                         tone: 'today',
                         badge: t('page.home.calendar.today'),
                         title: schedule.title,
                         meta: t('page.home.calendar.scheduleMeta', {time: getBoardScheduleTimeLabel(schedule, t)}),
                         sortOrder: 10,
+                        schedule,
                     },
                 ];
             }
@@ -249,6 +303,7 @@ const getCalendarItems = (
             return [
                 {
                     key: `schedule-upcoming-${schedule.scheduleId ?? schedule.id ?? startDate}-${schedule.title}`,
+                    kind: 'schedule',
                     tone: 'quiet',
                     badge: formatShortMonthDay(startDate, locale),
                     title: schedule.title,
@@ -257,6 +312,7 @@ const getCalendarItems = (
                         time: getBoardScheduleTimeLabel(schedule, t),
                     }),
                     sortOrder: 50 + diff,
+                    schedule,
                 },
             ];
         });
@@ -268,11 +324,13 @@ const getCalendarItems = (
         return [
             {
                 key: `deadline-${deadline.postId}-${deadline.deadlineDate}`,
+                kind: 'deadline',
                 tone: diff < 0 ? 'danger' : 'warning',
                 badge: diff < 0 ? t('page.home.calendar.overdue') : diff === 0 ? t('page.home.calendar.today') : `D-${diff}`,
                 title: deadline.postTitle,
                 meta: t('page.home.calendar.deadlineMeta', {date: formatMonthDay(deadline.deadlineDate, locale)}),
                 sortOrder: diff === 0 ? 20 : diff < 0 ? 25 + Math.abs(diff) : 30 + diff,
+                deadline,
             },
         ];
     });
@@ -850,7 +908,17 @@ function CalendarActionButton({onClick}: {onClick: () => void}) {
     );
 }
 
-function CalendarPreview({items, isLoading, onOpen}: {items: TCalendarItem[]; isLoading: boolean; onOpen: () => void}) {
+function CalendarPreview({
+    items,
+    isLoading,
+    onOpen,
+    onOpenSchedule,
+}: {
+    items: TCalendarItem[];
+    isLoading: boolean;
+    onOpen: () => void;
+    onOpenSchedule: (schedule: TWardBoardSchedule) => void;
+}) {
     const {t} = useTypedTranslation();
 
     if (isLoading) {
@@ -883,7 +951,15 @@ function CalendarPreview({items, isLoading, onOpen}: {items: TCalendarItem[]; is
                     key={item.key}
                     type="button"
                     className="w-full cursor-pointer rounded-[8px] bg-[#F6F7F9] p-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
-                    onClick={onOpen}
+                    onClick={() => {
+                        if (item.kind === 'schedule') {
+                            onOpenSchedule(item.schedule);
+
+                            return;
+                        }
+
+                        onOpen();
+                    }}
                 >
                     <div className="flex min-w-0 items-start gap-3">
                         <span className={cn('shrink-0 rounded-[8px] px-2 py-1 text-[11px] font-bold', getCalendarToneClassName(item.tone))}>
@@ -896,6 +972,103 @@ function CalendarPreview({items, isLoading, onOpen}: {items: TCalendarItem[]; is
                     </div>
                 </button>
             ))}
+        </div>
+    );
+}
+
+function WardScheduleViewModal({schedule, locale, onClose}: {schedule: TWardBoardSchedule; locale: string; onClose: () => void}) {
+    const {t} = useTypedTranslation();
+    const detailDateTime = getBoardScheduleDateTimeDetail(schedule, t, locale);
+    const content = schedule.content?.trim() ?? '';
+    const modalTitle = t('page.board.schedule.modalView');
+
+    useEffect(() => {
+        const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        const previousOverflow = document.body.style.overflow;
+
+        document.body.style.overflow = 'hidden';
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
+            role="presentation"
+            onMouseDown={onClose}
+        >
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('page.board.schedule.modalAria', {title: modalTitle})}
+                className="w-full max-w-[440px] rounded-[16px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.22)]"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                        <p className="text-[13px] font-semibold text-gray-3">{t('page.board.schedule.sectionTitle')}</p>
+                        <h2 className="mt-1 text-[22px] leading-7 font-semibold break-words text-sub-1">{schedule.title}</h2>
+                    </div>
+                    <button
+                        type="button"
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-[8px] text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                        onClick={onClose}
+                        aria-label={t('page.board.schedule.closeAria')}
+                        title={t('page.board.schedule.closeAria')}
+                    >
+                        <X className="size-4" aria-hidden="true" />
+                    </button>
+                </div>
+
+                <div className="mt-5 grid gap-4">
+                    <div className="grid gap-1.5">
+                        <span className="text-[13px] font-semibold text-sub-2">{t('page.board.schedule.dateTime')}</span>
+                        <div className="flex min-h-11 items-start gap-2 rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 font-semibold text-sub-1">
+                            <CalendarDays className="size-4 shrink-0 text-main-1" aria-hidden="true" />
+                            <div className="grid min-w-0 flex-1 gap-1">
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                    <span className="min-w-0 break-words">{detailDateTime.primary}</span>
+                                    {'badge' in detailDateTime && detailDateTime.badge ? (
+                                        <span className="inline-flex h-6 shrink-0 items-center rounded-full bg-main-light px-2.5 text-[12px] font-semibold text-main-1">
+                                            {detailDateTime.badge}
+                                        </span>
+                                    ) : null}
+                                </div>
+                                {'secondary' in detailDateTime && detailDateTime.secondary ? (
+                                    <span className="text-[12px] leading-4 font-medium text-gray-3">{detailDateTime.secondary}</span>
+                                ) : null}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-1.5">
+                        <span className="text-[13px] font-semibold text-sub-2">{t('page.board.schedule.memo')}</span>
+                        <div className="flex min-h-[112px] items-start rounded-[8px] bg-gray-7 px-3.5 py-3 text-[14px] leading-5 font-medium">
+                            <p className={cn('min-h-5 whitespace-pre-line', content ? 'text-sub-1' : 'text-gray-4')}>
+                                {content || t('page.board.schedule.noMemo')}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-5 flex justify-end">
+                    <button
+                        type="button"
+                        className="h-10 rounded-[8px] bg-gray-7 px-4 text-[13px] font-semibold text-sub-2 transition-colors hover:bg-gray-6"
+                        onClick={onClose}
+                    >
+                        {t('page.board.common.close')}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
@@ -1046,7 +1219,7 @@ function HomePageSkeleton() {
             aria-busy="true"
             aria-label={t('page.home.skeleton.loadingAria')}
             data-testid="home-page-skeleton"
-            className="min-h-screen w-full min-w-[1080px] bg-[#F6F7F9] px-8 py-6 font-apple"
+            className="min-h-screen w-full min-w-[1080px] bg-main-bg px-8 py-6 font-apple"
         >
             <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
                 <header className="flex min-w-0 items-end justify-between gap-5">
@@ -1199,8 +1372,11 @@ function HomePage() {
     const [selectedTodayTeamId, setSelectedTodayTeamId] = useState<number | 'all'>('all');
     const [selectedMonthlyTeamId, setSelectedMonthlyTeamId] = useState<TMonthlyTeamFilter>('all');
     const [monthlySortOption, setMonthlySortOption] = useState<TMonthlySortOption>('default');
+    const [selectedCalendarSchedule, setSelectedCalendarSchedule] = useState<TWardBoardSchedule | null>(null);
     const today = useMemo(() => new Date(), []);
     const todayKey = toDateKey(today);
+    const todayDateParts = useMemo(() => formatDateWithWeekdayParts(today, locale), [locale, today]);
+    const headerWeekdayClassName = getHeaderWeekdayClassName(today.getDay());
     const currentYearMonth = {year: today.getFullYear(), month: today.getMonth() + 1};
     const nextYearMonth = getNextYearMonth(currentYearMonth.year, currentYearMonth.month);
     const monthStartKey = getMonthStartKey(currentYearMonth.year, currentYearMonth.month);
@@ -1425,7 +1601,7 @@ function HomePage() {
 
     if (wardId === null) {
         return (
-            <div className="flex min-h-screen w-full bg-[#F6F7F9]">
+            <div className="flex min-h-screen w-full bg-main-bg">
                 <PageState
                     tone="empty"
                     layout="screen"
@@ -1442,7 +1618,7 @@ function HomePage() {
 
     if (isBootstrapError) {
         return (
-            <div className="flex min-h-screen w-full bg-[#F6F7F9]">
+            <div className="flex min-h-screen w-full bg-main-bg">
                 <PageState
                     tone="error"
                     layout="screen"
@@ -1461,13 +1637,21 @@ function HomePage() {
     }
 
     return (
-        <div className="min-h-screen w-full min-w-[1080px] bg-[#F6F7F9] px-8 py-6 font-apple">
+        <div className="min-h-screen w-full min-w-[1080px] bg-main-bg px-8 py-6 font-apple">
             <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5">
                 <header className="flex min-w-0 items-end justify-between gap-5">
                     <div className="min-w-0">
                         <p className="truncate text-[14px] font-bold text-gray-3">{wardTitle}</p>
                         <h1 className="mt-1 truncate text-[32px] leading-[40px] font-bold text-sub-1">
-                            {formatDateWithWeekday(today, locale)}
+                            {todayDateParts.map((part, index) =>
+                                part.type === 'weekday' ? (
+                                    <span key={`${part.type}-${index}`} className={headerWeekdayClassName}>
+                                        {part.value}
+                                    </span>
+                                ) : (
+                                    <span key={`${part.type}-${index}`}>{part.value}</span>
+                                ),
+                            )}
                         </h1>
                         <p className="mt-1 text-[14px] font-semibold text-gray-3">
                             {t('page.home.header.todayAssigned', {managerName, count: todayAssignedCount})}
@@ -1547,6 +1731,7 @@ function HomePage() {
                                 items={calendarItems}
                                 isLoading={deadlinesQuery.isPending || schedulesQuery.isPending}
                                 onOpen={() => navigate(ROUTE.BOARD)}
+                                onOpenSchedule={setSelectedCalendarSchedule}
                             />
                         </SectionShell>
                     </aside>
@@ -1576,6 +1761,13 @@ function HomePage() {
                         />
                     </SectionShell>
                 </main>
+                {selectedCalendarSchedule ? (
+                    <WardScheduleViewModal
+                        schedule={selectedCalendarSchedule}
+                        locale={locale}
+                        onClose={() => setSelectedCalendarSchedule(null)}
+                    />
+                ) : null}
             </div>
         </div>
     );

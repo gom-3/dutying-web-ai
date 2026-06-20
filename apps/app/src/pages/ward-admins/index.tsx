@@ -305,14 +305,10 @@ function WardAdminsPage() {
     return (
         <div className="mx-auto w-full">
             <section className="rounded-[24px] bg-white p-6">
-                <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-main-light text-main-1">
-                        <UserPlus className="h-5 w-5" />
-                    </span>
-                    <div>
-                        <h2 className="text-lg font-semibold text-sub-1">{t('page.wardAdmins.title')}</h2>
-                    </div>
-                </div>
+                <h2 className="flex items-center gap-2 font-apple text-[20px] font-semibold text-sub-1">
+                    <UserPlus aria-hidden="true" className="h-5 w-5 shrink-0 text-main-1" />
+                    <span>{t('page.wardAdmins.title')}</span>
+                </h2>
 
                 {canAddAdmins ? (
                     <form onSubmit={handleSubmit} className="mt-4">

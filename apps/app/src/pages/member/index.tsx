@@ -1062,7 +1062,14 @@ function MemberPage() {
                             </h1>
                         </div>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 min-[1600px]:gap-2">
-                            <div className="flex h-10 max-w-[320px] min-w-[240px] items-center justify-center rounded-[10px] bg-white px-3 min-[1400px]:max-w-[340px] min-[1400px]:min-w-[260px] min-[1600px]:h-[46px] min-[1600px]:max-w-none min-[1600px]:min-w-[370px] min-[1600px]:px-4">
+                            <div
+                                className={cn(
+                                    'flex h-10 items-center justify-center rounded-[10px] bg-white px-3 min-[1600px]:h-[46px] min-[1600px]:px-4',
+                                    selectedNurse
+                                        ? 'max-w-[300px] min-w-[240px] min-[1400px]:max-w-[320px] min-[1400px]:min-w-[250px] min-[1600px]:max-w-[340px] min-[1600px]:min-w-[300px]'
+                                        : 'max-w-[320px] min-w-[240px] min-[1400px]:max-w-[340px] min-[1400px]:min-w-[260px] min-[1600px]:max-w-none min-[1600px]:min-w-[370px]',
+                                )}
+                            >
                                 <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 pr-3 min-[1600px]:gap-2 min-[1600px]:pr-4">
                                     <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1600px]:text-[16px]">
                                         {hospitalName}
@@ -1139,7 +1146,14 @@ function MemberPage() {
                             </div>
                             <button
                                 type="button"
-                                className="relative flex h-10 shrink-0 items-center gap-1.5 rounded-[10px] border border-[#D6DDEA] bg-white px-3 font-apple text-[13px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[46px] min-[1600px]:px-4 min-[1600px]:text-[14px]"
+                                aria-label={t('page.member.summary.connectionManage')}
+                                title={t('page.member.summary.connectionManage')}
+                                className={cn(
+                                    'relative flex h-10 shrink-0 items-center rounded-[10px] border border-[#D6DDEA] bg-white font-apple text-[13px] font-medium text-[#657084] shadow-[0_1px_0_rgba(15,23,42,0.02)] transition-colors hover:bg-[#F7F8FA] focus-visible:outline-2 focus-visible:outline-main-1',
+                                    selectedNurse
+                                        ? 'w-10 justify-center gap-0 px-0 min-[1600px]:h-[42px] min-[1600px]:w-[42px]'
+                                        : 'gap-1.5 px-3 min-[1600px]:h-[46px] min-[1600px]:px-4 min-[1600px]:text-[14px]',
+                                )}
                                 onClick={() => setConnectionManageModalOpen(true)}
                             >
                                 {(watingNurses?.length ?? 0) > 0 ? (
@@ -1147,7 +1161,7 @@ function MemberPage() {
                                         {watingNurses?.length}
                                     </span>
                                 ) : null}
-                                {t('page.member.summary.connectionManage')}
+                                <span className={cn(selectedNurse && 'sr-only')}>{t('page.member.summary.connectionManage')}</span>
                                 <Link2 className="h-[18px] w-[18px] text-main-1 min-[1600px]:h-5 min-[1600px]:w-5" strokeWidth={2.8} />
                             </button>
                         </div>
