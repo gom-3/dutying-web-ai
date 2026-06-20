@@ -288,7 +288,9 @@ const html = `<!doctype html>
                                 <dt>KO</dt><dd>${escapeHtml(term.ko)}</dd>
                                 <dt>EN</dt><dd>${escapeHtml(term.en)}</dd>
                                 <dt>JA</dt><dd>${escapeHtml(term.ja)}</dd>
-                                <dt>주의</dt><dd>${escapeHtml([term.forbiddenEn, term.forbiddenJa].filter(Boolean).join(' / ') || '-')}</dd>
+                                <dt>ZH</dt><dd>${escapeHtml(term.zh)}</dd>
+                                <dt>TH</dt><dd>${escapeHtml(term.th)}</dd>
+                                <dt>주의</dt><dd>${escapeHtml([term.forbiddenEn, term.forbiddenJa, term.forbiddenZh, term.forbiddenTh].filter(Boolean).join(' / ') || '-')}</dd>
                             </dl>
                             <p>${escapeHtml(term.description)}</p>
                         </article>`,
@@ -311,6 +313,8 @@ const html = `<!doctype html>
                             <th>KO</th>
                             <th>EN</th>
                             <th>JA</th>
+                            <th>ZH</th>
+                            <th>TH</th>
                             <th>Empty</th>
                             <th>Context</th>
                             <th>Terms</th>
@@ -329,6 +333,8 @@ const html = `<!doctype html>
                                     <td class="message">${normalizeMultiline(row.ko)}</td>
                                     <td class="message">${normalizeMultiline(row.en)}</td>
                                     <td class="message">${normalizeMultiline(row.ja)}</td>
+                                    <td class="message">${normalizeMultiline(row.zh)}</td>
+                                    <td class="message">${normalizeMultiline(row.th)}</td>
                                     <td><code>${escapeHtml(row.emptyLocales)}</code></td>
                                     <td class="muted">${normalizeMultiline(row.context || row.component || row.route)}</td>
                                     <td><code>${escapeHtml(row.termIds)}</code></td>

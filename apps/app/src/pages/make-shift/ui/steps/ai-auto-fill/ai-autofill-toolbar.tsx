@@ -3,7 +3,7 @@ import type {AnimationItem} from 'lottie-web';
 import {AlertTriangle, Check, Eye, EyeOff, History, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import type {TAsyncScheduleValidationStatus} from '@/features/shift-editor';
 import constraintValidationDotsAnimation from '@/shared/assets/animation/constraint-validation-dots.json';
 import aiAutofillSparkleIcon from '@/shared/assets/images/ai-autofill-sparkle.png';
@@ -147,11 +147,8 @@ export function AiAutofillToolbar({
                                     isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
                                 )}
                             >
-                                {isSavingSnapshot ? (
-                                    <BouncingDots className="w-5 shrink-0 text-main-1" />
-                                ) : (
-                                    <Save className="size-3.5" strokeWidth={2.2} aria-hidden />
-                                )}
+                                <BouncingDotsSlot active={isSavingSnapshot} className="w-5 shrink-0 text-main-1" />
+                                <Save className={cn('size-3.5', isSavingSnapshot && 'hidden')} strokeWidth={2.2} aria-hidden />
                             </IconButton>
                             <IconButton
                                 className="ai-autofill-toolbar__history-snapshots"
@@ -200,11 +197,13 @@ export function AiAutofillToolbar({
                                 className="pointer-events-none absolute inset-0 z-0 rounded-[13px] bg-white/12 motion-safe:animate-pulse"
                             />
                         )}
-                        {isAiGenerating ? (
-                            <BouncingDots className="relative z-10 w-5 shrink-0 text-white" />
-                        ) : (
-                            <img src={aiAutofillSparkleIcon} alt="" aria-hidden className="relative z-10 size-4 shrink-0 object-contain" />
-                        )}
+                        <BouncingDotsSlot active={isAiGenerating} className="relative z-10 w-5 shrink-0 text-white" />
+                        <img
+                            src={aiAutofillSparkleIcon}
+                            alt=""
+                            aria-hidden
+                            className={cn('relative z-10 size-4 shrink-0 object-contain', isAiGenerating && 'hidden')}
+                        />
                         <span className="relative z-10 truncate">{t(actionLabelKey)}</span>
                     </button>
 
@@ -221,11 +220,8 @@ export function AiAutofillToolbar({
                             'disabled:cursor-not-allowed disabled:bg-gray-5 disabled:text-white/70',
                         )}
                     >
-                        {isConfirming ? (
-                            <BouncingDots className="w-5 shrink-0 text-white" />
-                        ) : (
-                            <Check className="size-3.5" strokeWidth={2.4} aria-hidden />
-                        )}
+                        <BouncingDotsSlot active={isConfirming} className="w-5 shrink-0 text-white" />
+                        <Check className={cn('size-3.5', isConfirming && 'hidden')} strokeWidth={2.4} aria-hidden />
                         {isConfirming ? t('page.makeShift.navigation.saving') : t('page.makeShift.aiRefill.confirm')}
                     </button>
                 </div>

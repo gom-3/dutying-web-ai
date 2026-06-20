@@ -1,5 +1,5 @@
 import {useEffect, useState} from 'react';
-import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import useRequestShift from '@/features/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import RequestCalendar from '@/pages/request-shift/ui/request-calendar';
@@ -126,7 +126,7 @@ export function RequestsShifts() {
                             disabled={!canPrev || transitioning !== null}
                             type="button"
                         >
-                            {transitioning === 'prev' ? <BouncingDots className="w-5 shrink-0 text-main-1" /> : null}
+                            <BouncingDotsSlot active={transitioning === 'prev'} className="w-5 shrink-0 text-main-1" />
                             {transitioning === 'prev' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.previous')}
                         </Button>
                         <Button
@@ -136,7 +136,7 @@ export function RequestsShifts() {
                             disabled={!canNext || transitioning !== null}
                             type="button"
                         >
-                            {transitioning === 'next' ? <BouncingDots className="w-5 shrink-0 text-white" /> : null}
+                            <BouncingDotsSlot active={transitioning === 'next'} className="w-5 shrink-0 text-white" />
                             {transitioning === 'next' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.next')}
                         </Button>
                     </div>

@@ -1,5 +1,6 @@
 import type {TAccountResponse} from '@dutying/api/account';
 import type {TWardResponse} from '@dutying/api/ward';
+import type {TLegalAgreementRecordRequest} from '@/shared/legal/agreements';
 
 export type TDemoStartResponse = {
     wardResDto: TWardResponse;
@@ -19,6 +20,7 @@ export type TAdminPasswordSignupRequest = {
     name?: string;
     phoneNum?: string;
     profileImgUrl?: string | null;
+    legalAgreements?: TLegalAgreementRecordRequest[];
 };
 
 export type TAdminPasswordResetRequest = {
@@ -80,6 +82,7 @@ export type TAdminSocialSignupRequest = TAdminSocialProfileRequest & {
     name?: string | null;
     phoneNum?: string | null;
     profileImgUrl?: string | null;
+    legalAgreements?: TLegalAgreementRecordRequest[];
 };
 
 export type TAuthTokenResponse = {

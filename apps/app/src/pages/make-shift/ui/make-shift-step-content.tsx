@@ -1,4 +1,4 @@
-import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
@@ -110,7 +110,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = 
                             disabled={!canPrev || transitioning !== null}
                             className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                         >
-                            {transitioning === 'prev' ? <BouncingDots className="w-5 shrink-0 text-main-1" /> : null}
+                            <BouncingDotsSlot active={transitioning === 'prev'} className="w-5 shrink-0 text-main-1" />
                             {transitioning === 'prev' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.previous')}
                         </Button>
                     ) : (
@@ -123,7 +123,7 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = 
                         disabled={!canNext || transitioning !== null || nextBusy}
                         className={`cursor-pointer border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 disabled:cursor-not-allowed ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`}
                     >
-                        {isNextButtonBusy ? <BouncingDots className="w-5 shrink-0 text-white" /> : null}
+                        <BouncingDotsSlot active={isNextButtonBusy} className="w-5 shrink-0 text-white" />
                         {nextBusy
                             ? t('page.makeShift.navigation.saving')
                             : transitioning === 'next'

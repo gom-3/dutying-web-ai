@@ -106,10 +106,20 @@ function parseProperties(path) {
     );
 }
 
+function parseOptionalProperties(path) {
+    if (!existsSync(path)) {
+        return {};
+    }
+
+    return parseProperties(path);
+}
+
 const messages = {
     ko: parseProperties(resolve(serverMessagesDir, 'messages_ko.properties')),
     en: parseProperties(resolve(serverMessagesDir, 'messages_en.properties')),
     ja: parseProperties(resolve(serverMessagesDir, 'messages_ja.properties')),
+    zh: parseOptionalProperties(resolve(serverMessagesDir, 'messages_zh.properties')),
+    th: parseOptionalProperties(resolve(serverMessagesDir, 'messages_th.properties')),
 };
 
 const serverKeys = Array.from(
@@ -137,6 +147,8 @@ const serverRows = serverKeys.map((runtimeKey) => ({
     ko: messages.ko[runtimeKey] ?? '',
     en: messages.en[runtimeKey] ?? '',
     ja: messages.ja[runtimeKey] ?? '',
+    zh: messages.zh[runtimeKey] ?? '',
+    th: messages.th[runtimeKey] ?? '',
     serverMessageKey: runtimeKey,
     updatedAt,
 }));

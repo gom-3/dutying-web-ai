@@ -101,8 +101,8 @@ export const ko = {
             "connectWaitingNurseFailed": "기존 간호사 계정에 연결하지 못했어요.",
             "connectWaitingNurseSuccess": "기존 간호사 계정과 연결했어요.",
             "editSettingFailed": "근무 설정을 수정하지 못했어요.",
-            "rejectWaitingNurseSuccess": "연동 대기 요청을 거절했어요.",
-            "rejectWaitingNurseFailed": "연동 대기 요청을 거절하지 못했어요."
+            "rejectWaitingNurseFailed": "연동 대기 요청을 거절하지 못했어요.",
+            "rejectWaitingNurseSuccess": "연동 대기 요청을 거절했어요."
         },
         "file": {
             "profileImageUploadFailed": "프로필 이미지를 업로드하지 못했어요."
@@ -291,8 +291,8 @@ export const ko = {
                     "maxContinuousWork": "근무는 연속 {{count}}일까지 배정할 수 있어요.",
                     "minContinuousNight": "나이트 근무는 최소 {{count}}일 이상 배정해 주세요.",
                     "minNightInterval": "N 근무 사이를 {{count}}일 이상 띄워야 해요.",
-                    "minOffAssignAfterNight": "나이트 근무 후에는 OFF를 {{count}}일 이상 권장해요.",
-                    "minNightIntervalFallback": "N 근무 사이를 충분히 띄워 주세요."
+                    "minNightIntervalFallback": "N 근무 사이를 충분히 띄워 주세요.",
+                    "minOffAssignAfterNight": "나이트 근무 후에는 OFF를 {{count}}일 이상 권장해요."
                 },
                 "maxConsecutiveNight": "{{nurseName}}님은 N 근무가 {{actual}}회 연속이에요. 최대 {{expected}}회까지 가능해요.",
                 "maxConsecutiveWork": "{{nurseName}}님은 근무가 {{actual}}일 연속이에요. 최대 {{expected}}일까지 가능해요.",
@@ -551,8 +551,8 @@ export const ko = {
                 "invalidDescription": "주소를 확인하거나 목록에서 다시 선택해 주세요.",
                 "invalidTitle": "공지사항을 찾을 수 없어요",
                 "listAria": "공지사항 목록",
-                "loadMore": "더 보기",
                 "loadingTitle": "공지사항을 불러오고 있어요",
+                "loadMore": "더 보기",
                 "pinned": "중요",
                 "publishedAt": "{{date}} 등록",
                 "retry": "다시 시도",
@@ -574,6 +574,106 @@ export const ko = {
                 "code": "ERROR",
                 "description": "일시적인 문제가 발생했어요.\n다시 시도해도 계속된다면 새로고침 후 확인해 주세요.",
                 "title": "화면을 불러오지 못했어요"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "종일",
+                "deadlineMeta": "마감 · {{date}}",
+                "empty": "가까운 일정 없음",
+                "loading": "캘린더 확인 중",
+                "openAll": "캘린더 전체 보기",
+                "overdue": "지남",
+                "scheduleDateMeta": "일정 · {{date}} · {{time}}",
+                "scheduleMeta": "일정 · {{time}}",
+                "timeUnknown": "시간 미정",
+                "today": "오늘"
+            },
+            "emptyTeams": {
+                "description": "근무자 관리에서 간호 팀을 추가해요.",
+                "title": "팀을 추가하면 볼 수 있어요"
+            },
+            "fallback": {
+                "manager": "관리자",
+                "selectedTeam": "선택한 팀",
+                "ward": "병동"
+            },
+            "filter": {
+                "all": "전체"
+            },
+            "header": {
+                "createNextMonth": "다음 달 근무표 만들기",
+                "todayAssigned": "{{managerName}} · 오늘 근무 {{count}}명"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}일 {{shift}}",
+                "descriptionAll": "{{month}} · 전체",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "근무표 편집하기",
+                "emptyAllTitle": "이번 달 근무표가 비어 있어요",
+                "emptyDescription": "근무표 만들기에서 확인할 수 있어요.",
+                "emptyTeamsTitle": "팀을 추가하면 근무표를 볼 수 있어요",
+                "emptyTeamTitle": "{{teamName}} 근무표가 비어 있어요",
+                "nameHeader": "이름"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 다음 달 근무표"
+            },
+            "queue": {
+                "pendingRequests": "대기 중인 신청 근무",
+                "waitingNurses": "입장 대기"
+            },
+            "sections": {
+                "calendar": "캘린더",
+                "monthly": "이번 달 근무표",
+                "tasks": "해야 할 일",
+                "todayDuty": "오늘의 근무"
+            },
+            "skeleton": {
+                "loadingAria": "홈을 불러오고 있어요"
+            },
+            "sort": {
+                "default": "기본",
+                "label": "근무표 정렬 기준",
+                "nameAsc": "이름순",
+                "openAria": "근무표 정렬 기준 열기",
+                "todayShift": "오늘 근무순"
+            },
+            "state": {
+                "errorDescription": "잠시 후 다시 시도해요.",
+                "errorTitle": "홈을 불러오지 못했어요",
+                "noWardDescription": "병동을 연결하면 홈을 볼 수 있어요.",
+                "noWardTitle": "병동을 연결해야 해요",
+                "retry": "다시 시도하기"
+            },
+            "status": {
+                "checking": "확인 중",
+                "complete": "확정",
+                "draft": "진행 중",
+                "empty": "작성 전",
+                "error": "다시 확인"
+            },
+            "tasks": {
+                "checking": "확인하고 있어요",
+                "nextScheduleAria": "다음 달 근무표 진행 상태",
+                "overdueAction": "마감",
+                "overdueFallback": "가장 지난 마감부터 확인해요",
+                "overdueTitle": "지난 마감 {{count}}건",
+                "pendingRequestsAction": "신청",
+                "pendingRequestsDescription": "근무표에 반영할지 정해요",
+                "pendingRequestsTitle": "대기 중인 신청 근무 {{count}}건",
+                "todayAction": "오늘",
+                "todayFallback": "오늘까지 처리할 게시글이에요",
+                "todayTitle": "오늘 마감 {{count}}건",
+                "unreadChatAction": "톡",
+                "unreadChatDescription": "최근 대화를 확인해요",
+                "unreadChatTitle": "읽지 않은 병동톡 {{count}}개",
+                "waitingNursesAction": "멤버",
+                "waitingNursesDescription": "병동에 추가할 구성원을 확인해요",
+                "waitingNursesTitle": "입장 대기 {{count}}명"
+            },
+            "today": {
+                "emptyShift": "오늘 근무가 비어 있어요"
             }
         },
         "landing": {
@@ -721,6 +821,7 @@ export const ko = {
             "appleContinue": "Apple로 계속하기",
             "appleCta": "Apple 계정으로 시작하기",
             "appleStart": "Apple로 시작하기",
+            "backToLogin": "로그인으로 돌아가기",
             "continuePrefix": "계속하면",
             "demoExpired": {
                 "bannerDescription": "정식 전환 API는 준비 중이라, 이번 단계에서는 로그인 후 회원가입 절차로 연결해요.",
@@ -735,79 +836,85 @@ export const ko = {
             "emailPlaceholder": "이메일을 입력하세요",
             "emailSignupPlaceholder": "이메일을 입력해 주세요",
             "feedback": {
-                "loginFailed": "로그인하지 못했어요. 다시 시도해 주세요.",
-                "signupFailed": "가입을 완료하지 못했어요. 다시 시도해 주세요.",
-                "verificationFailed": "인증 메일을 보내지 못했어요. 다시 시도해 주세요.",
-                "verificationSent": "인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.",
+                "emailVerified": "이메일 인증이 완료됐어요.",
                 "invalidCredentials": "이메일 또는 비밀번호가 올바르지 않아요.",
                 "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
-                "emailVerified": "이메일 인증이 완료됐어요.",
-                "verificationInvalid": "인증번호를 확인해 주세요.",
-                "passwordResetTokenVerified": "인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.",
+                "loginFailed": "로그인하지 못했어요. 다시 시도해 주세요.",
+                "passwordResetFailed": "비밀번호를 변경하지 못했어요. 다시 시도해 주세요.",
                 "passwordResetSuccess": "비밀번호가 변경됐어요. 새 비밀번호로 로그인해 주세요.",
-                "passwordResetFailed": "비밀번호를 변경하지 못했어요. 다시 시도해 주세요."
+                "passwordResetTokenVerified": "인증번호를 확인했어요. 새 비밀번호를 입력해 주세요.",
+                "signupFailed": "가입을 완료하지 못했어요. 다시 시도해 주세요.",
+                "verificationFailed": "인증 메일을 보내지 못했어요. 다시 시도해 주세요.",
+                "verificationInvalid": "인증번호를 확인해 주세요.",
+                "verificationSent": "인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요."
             },
+            "forgotPassword": "비밀번호 찾기",
             "hasAccountPrompt": "이미 계정이 있나요?",
             "hidePassword": "비밀번호 숨기기",
             "kakaoContinue": "카카오로 계속하기",
             "kakaoCta": "카카오 계정으로 시작하기",
             "kakaoStart": "카카오로 시작하기",
             "loginLink": "로그인",
+            "loginVisualAria": "듀팅 로그인 소개 이미지",
+            "marketingConsent": "마케팅 정보 수신에 동의해요.",
             "name": "이름",
             "namePlaceholder": "이름을 입력해 주세요",
+            "newPassword": "새 비밀번호",
+            "newPasswordConfirm": "새 비밀번호 확인",
+            "newPasswordConfirmPlaceholder": "새 비밀번호를 다시 입력해 주세요",
+            "newPasswordPlaceholder": "새 비밀번호를 입력해 주세요",
+            "nextImage": "다음 이미지",
             "noAccountPrompt": "아직 계정이 없나요?",
+            "optionalConsentLabel": "[선택]",
             "password": "비밀번호",
             "passwordConfirm": "비밀번호 확인",
             "passwordConfirmPlaceholder": "비밀번호를 다시 입력해 주세요",
             "passwordPlaceholder": "비밀번호를 입력하세요",
+            "passwordResetSubmit": "비밀번호 재설정",
+            "passwordResetTitle": "비밀번호 찾기",
+            "passwordResetVerificationCodeAria": "비밀번호 재설정 인증번호",
             "passwordSignupPlaceholder": "비밀번호를 입력해 주세요",
+            "previousImage": "이전 이미지",
             "privacyPolicy": "개인정보 처리방침",
+            "privacyNoticePrefix": "개인정보는",
+            "privacyNoticeSuffix": "에 따라 처리돼요.",
             "redirect": {
                 "adminTokenMissing": "관리자 로그인 토큰을 받지 못했어요. 소셜 로그인 설정을 확인해 주세요.",
                 "errorTitle": "소셜 로그인에 실패했어요",
                 "loading": "로그인중입니다."
             },
+            "requiredConsentLabel": "[필수]",
             "showPassword": "비밀번호 보기",
             "signupLink": "회원가입",
             "signupTitle": "회원가입",
+            "sixDigitVerificationCodePlaceholder": "6자리 인증번호",
             "submitLogin": "로그인",
             "submitSignup": "계정 만들기",
             "termsConnector": "및",
-            "termsOfService": "서비스 약관",
+            "termsAgreementSuffix": "에 동의해요.",
+            "termsOfService": "이용약관",
             "termsPrefix": "버튼을 누르면",
-            "termsSuffix": "에 동의한 것으로 간주해요.",
-            "termsSuffixStrict": "에 동의한 것으로 간주합니다.",
+            "termsSuffix": "에 동의해요.",
+            "termsSuffixStrict": "에 동의합니다.",
             "title": "로그인",
             "validation": {
                 "emailInvalid": "올바른 이메일 주소를 입력해 주세요.",
+                "emailVerificationRequired": "이메일 인증을 완료해 주세요.",
                 "loginRequired": "이메일과 비밀번호를 입력해 주세요.",
                 "nameRequired": "이름을 입력해 주세요.",
+                "passwordConfirmRequired": "비밀번호를 다시 입력해 주세요.",
                 "passwordMinLength": "비밀번호는 {{count}}자 이상 입력해 주세요.",
                 "passwordMismatch": "비밀번호가 서로 달라요.",
-                "emailVerificationRequired": "이메일 인증을 완료해 주세요.",
+                "termsRequired": "이용약관에 동의해 주세요.",
                 "verificationCodeRequired": "인증번호를 입력해 주세요.",
-                "verificationConfirmRequired": "인증 확인을 완료해 주세요.",
-                "passwordConfirmRequired": "비밀번호를 다시 입력해 주세요."
+                "verificationConfirmRequired": "인증 확인을 완료해 주세요."
             },
             "verificationCodeAria": "이메일 인증번호",
             "verificationCodePlaceholder": "인증번호를 입력해 주세요",
-            "verificationResend": "재전송",
-            "verificationSend": "인증",
-            "passwordResetTitle": "비밀번호 찾기",
-            "forgotPassword": "비밀번호 찾기",
-            "previousImage": "이전 이미지",
-            "nextImage": "다음 이미지",
-            "loginVisualAria": "듀팅 로그인 소개 이미지",
-            "sixDigitVerificationCodePlaceholder": "6자리 인증번호",
-            "passwordResetVerificationCodeAria": "비밀번호 재설정 인증번호",
             "verificationComplete": "인증 완료",
             "verificationConfirm": "확인",
-            "newPassword": "새 비밀번호",
-            "newPasswordPlaceholder": "새 비밀번호를 입력해 주세요",
-            "newPasswordConfirm": "새 비밀번호 확인",
-            "newPasswordConfirmPlaceholder": "새 비밀번호를 다시 입력해 주세요",
-            "passwordResetSubmit": "비밀번호 재설정",
-            "backToLogin": "로그인으로 돌아가기"
+            "verificationResend": "재전송",
+            "verificationSend": "인증"
         },
         "makeShift": {
             "aiRefill": {
@@ -830,10 +937,13 @@ export const ko = {
                 "fixedOnly": "고정만 보기",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
-                "validationStatus": {
-                    "checking": "제약조건 검토 중"
-                },
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
+                "lastShiftBlankDialog": {
+                    "cancel": "입력 확인",
+                    "confirm": "그대로 확정",
+                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
+                    "title": "전달근무를 확인했나요?"
+                },
                 "loading": "근무표를 불러오는 중이에요",
                 "previous": "이전 단계",
                 "progressToast": "근무표 채우는 중",
@@ -898,32 +1008,29 @@ export const ko = {
                 "toolbarHint": "조건과 신청 근무를 기준으로 빈칸을 채워요",
                 "toolbarSubTitle": "AI 자동채우기로 빈칸을 한 번에 채워보세요.",
                 "toolbarTitle": "근무표를 채우고 확정해 주세요",
-                "viewAll": "전체 보기",
-                "lastShiftBlankDialog": {
-                    "title": "전달근무를 확인했나요?",
-                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
-                    "confirm": "그대로 확정",
-                    "cancel": "입력 확인"
-                }
+                "validationStatus": {
+                    "checking": "제약조건 검토 중"
+                },
+                "viewAll": "전체 보기"
             },
             "calendar": {
                 "carried": "이월",
                 "clearCell": "비우기",
                 "closePopover": "팝업 닫기",
+                "dateOthers": "외 {{count}}일",
                 "fullDayLabel": "{{day}}일 전체",
                 "name": "이름",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "전달 근무",
                 "shiftTypeDropdownAria": "근무유형 선택",
+                "violationCount": {
+                    "error": "중요 {{count}}",
+                    "warning": "일반 {{count}}"
+                },
                 "violationDialogAria": "제약조건 위반 {{count}}개",
                 "violationLevel": {
                     "error": "중요",
                     "warning": "일반"
-                },
-                "dateOthers": "외 {{count}}일",
-                "violationCount": {
-                    "error": "중요 {{count}}",
-                    "warning": "일반 {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -1137,9 +1244,9 @@ export const ko = {
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
                     "importFailed": "제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
-                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
                     "recommendedDeleted": "권장 조건을 삭제했어요.",
-                    "resetDefaults": "권장 조건 {{count}}개로 초기화했어요."
+                    "resetDefaults": "권장 조건 {{count}}개로 초기화했어요.",
+                    "saveFailed": "제약조건을 저장하지 못했어요. 잠시 후 다시 시도해 주세요."
                 },
                 "violationCount": "{{count}}개",
                 "warning": {
@@ -1306,6 +1413,7 @@ export const ko = {
                     "title": "보조 도구 활용하기"
                 }
             },
+            "wardCodeLoading": "병동 코드 확인 중",
             "workers": {
                 "activeCount": "투입 {{count}}명",
                 "column": {
@@ -1329,8 +1437,7 @@ export const ko = {
                 "sortBySkill": "숙련도 순",
                 "sortListMenuAria": "근무자 정렬 기준 열기",
                 "totalCount": "총 {{count}}명"
-            },
-            "wardCodeLoading": "병동 코드 확인 중"
+            }
         },
         "member": {
             "addFirstNurse": "첫 간호사 추가하기",
@@ -1449,9 +1556,9 @@ export const ko = {
                 "deleteConfirm": "{{nurseName}} 간호사를 삭제할까요? 삭제 후에는 되돌릴 수 없어요."
             },
             "emptyTeamDescription": "간호사를 추가해주세요",
-            "emptyTeamTitle": "간호사가 없어요",
             "emptyTeamsDescription": "팀을 만든 뒤 간호사를 추가할 수 있어요.",
             "emptyTeamsTitle": "먼저 팀을 만들어 주세요",
+            "emptyTeamTitle": "간호사가 없어요",
             "modal": {
                 "deleteNurseDescriptionSuffix": " 삭제 후에는 되돌릴 수 없어요.",
                 "deleteNurseTitle": "간호사를 삭제할까요?",
@@ -1702,28 +1809,28 @@ export const ko = {
                 "emptyTeam": "팀을 추가하면 병동을 만들 수 있어요.",
                 "emptyTeamNurses": "간호사 없는 팀이 있어요. 간호사를 추가하거나 팀을 삭제해 주세요.",
                 "invalidNurseName": "간호사 이름을 확인해 주세요.",
-                "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "invalidShiftTime": "근무 시간을 확인해 주세요.",
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
                 "missingHospitalName": "병원명을 입력해 주세요.",
+                "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "submitting": "병동을 생성하고 있어요. 잠시만 기다려 주세요.",
                 "success": "이미 병동 생성을 마쳤어요."
+            },
+            "defaults": {
+                "newNurseName": "신규 간호사 {{index}}",
+                "sampleNurse": {
+                    "first": "홍길동",
+                    "off": "박연우",
+                    "second": "김하늘",
+                    "skilled": "이서윤"
+                }
             },
             "deleteTeamAction": "팀 삭제하기",
             "fallback": {
                 "newTeam": "새 팀",
                 "selectedTeam": "선택한 팀",
                 "wardName": "듀팅 병동"
-            },
-            "defaults": {
-                "newNurseName": "신규 간호사 {{index}}",
-                "sampleNurse": {
-                    "first": "홍길동",
-                    "second": "김하늘",
-                    "skilled": "이서윤",
-                    "off": "박연우"
-                }
             },
             "identity": {
                 "hospitalName": "병원명",
@@ -1733,42 +1840,77 @@ export const ko = {
                 "wardNamePlaceholder": "병동명을 입력해 주세요"
             },
             "modal": {
+                "deleteTeamDescription": "을 삭제할까요?",
                 "deleteTeamDescriptionSuffix": " 팀을 삭제하면 소속 간호사 {{count}}명도 함께 삭제돼요.",
-                "deleteTeamTitle": "팀을 삭제할까요?",
-                "deleteTeamDescriptionWithNursesAndSchedule": "에 등록된 간호사 {{nurseCount}}명과 입력한 근무표가 함께 삭제돼요.",
                 "deleteTeamDescriptionWithNurses": "에 등록된 간호사 {{nurseCount}}명이 함께 삭제돼요.",
+                "deleteTeamDescriptionWithNursesAndSchedule": "에 등록된 간호사 {{nurseCount}}명과 입력한 근무표가 함께 삭제돼요.",
                 "deleteTeamDescriptionWithSchedule": "에 입력한 근무표가 함께 삭제돼요.",
-                "deleteTeamDescription": "을 삭제할까요?"
+                "deleteTeamTitle": "팀을 삭제할까요?"
             },
             "nurse": {
                 "deleteNurseAria": "{{nurseName}} 삭제",
                 "dragAria": "드래그하여 순서 변경",
+                "emptyTeamsDescription": "팀을 만든 뒤 간호사를 등록할 수 있어요.",
+                "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
+                "selectedTeamCountAria": "{{teamName}} 간호사 {{count}}명",
                 "skillAria": "{{nurseName}} 숙련도",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "미선택",
-                "emptyTeamsDescription": "팀을 만든 뒤 간호사를 등록할 수 있어요.",
-                "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
                 "sort": {
                     "manual": "수동순",
                     "name": "가나다순",
                     "skill": "숙련도순"
                 },
                 "sortAria": "간호사 정렬",
-                "sortOptionsAria": "간호사 정렬 옵션",
-                "selectedTeamCountAria": "{{teamName}} 간호사 {{count}}명"
+                "sortOptionsAria": "간호사 정렬 옵션"
+            },
+            "progress": {
+                "ariaLabel": "병동 생성 진행률",
+                "completeTitle": "병동 생성이 완료됐어요",
+                "finalCheck": "거의 다 됐어요. 마지막 확인 중이에요.",
+                "inputWardInfo": "입력한 병동 정보를 정리하고 있어요.",
+                "navigateDuty": "근무표 화면으로 이동하고 있어요.",
+                "nurses": "간호사 정보를 연결하고 있어요.",
+                "settingTitle": "병동을 세팅하고 있어요",
+                "shiftTypesAndTeams": "근무 유형과 팀을 세팅하고 있어요."
             },
             "schedule": {
                 "addRow": "행 추가",
                 "deleteRowAria": "{{rowLabel}} 삭제",
+                "emptyTeamsDescription": "팀을 만든 뒤 초기 근무표를 입력할 수 있어요.",
+                "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
                 "monthLabel": "{{year}}년 {{month}}월",
                 "nextMonth": "다음 달",
                 "nurseNameAria": "{{rowNumber}}행 간호사 이름",
                 "previousMonth": "이전 달",
                 "rowFallback": "{{rowNumber}}행",
                 "shiftCellAria": "{{rowNumber}}행 {{day}}일 근무",
-                "uploadFile": "근무표 파일 업로드",
-                "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
-                "emptyTeamsDescription": "팀을 만든 뒤 초기 근무표를 입력할 수 있어요."
+                "uploadFile": "근무표 파일 업로드"
+            },
+            "scheduleUpload": {
+                "description": "엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.",
+                "downloadTemplate": "양식 다운로드",
+                "dropzoneTitle": "엑셀 파일을 선택하거나 끌어다 놓아 주세요.",
+                "fileSupport": ".xlsx, .xls 파일을 지원해요.",
+                "submit": "파일 적용",
+                "submitting": "업로드 중",
+                "template": {
+                    "fileName": "초기근무표_{{year}}_{{month}}.xlsx",
+                    "guideRow1": "첫 번째 시트에 간호사 이름, 팀, 날짜별 근무를 입력해 주세요.",
+                    "guideRow2": "근무는 D, E, N, O 또는 병동에서 쓰는 근무 약자로 입력할 수 있어요.",
+                    "guideRow3": "비어 있는 칸은 오프로 처리돼요.",
+                    "guideRow4": "팀 이름이 비어 있으면 기본 팀에 배정돼요.",
+                    "guideRow5": "업로드 후 화면에서 내용을 다시 확인하고 수정할 수 있어요.",
+                    "guideSheetName": "작성가이드",
+                    "nameHeader": "이름",
+                    "sampleFirstName": "김듀티",
+                    "sampleFirstTeam": "1팀",
+                    "sampleSecondName": "박팅이",
+                    "sampleSecondTeam": "1팀",
+                    "teamHeader": "팀",
+                    "worksheetName": "근무표"
+                },
+                "title": "근무표 파일 업로드"
             },
             "section": {
                 "identity": {
@@ -1852,12 +1994,12 @@ export const ko = {
                 "deleteTeamWithNurses": "팀을 삭제했어요. 팀에 속한 간호사도 함께 삭제했어요.",
                 "maxNursesPerTeam": "한 팀에는 간호사를 최대 {{count}}명까지 추가할 수 있어요.",
                 "maxTeams": "팀은 최대 {{count}}개까지 추가할 수 있어요.",
+                "reloadDraftError": "저장된 병동 생성 정보를 불러오지 못했어요.",
                 "saveDraftError": "병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.",
+                "saveScheduleError": "초기 근무표를 저장하지 못했어요.",
                 "skillConfigDisabled": "숙련도 설정을 사용하지 않아요.",
                 "skillConfigSaved": "숙련도 설정이 간호사 목록에 반영됐어요.",
-                "uploadApplied": "근무표 파일을 반영했어요.",
-                "reloadDraftError": "저장된 병동 생성 정보를 불러오지 못했어요.",
-                "saveScheduleError": "초기 근무표를 저장하지 못했어요."
+                "uploadApplied": "근무표 파일을 반영했어요."
             },
             "upload": {
                 "dropHere": "근무표 파일을 여기에 놓아 주세요",
@@ -1870,41 +2012,6 @@ export const ko = {
                 "targetMonth": "근무표 기준 월",
                 "unsupportedFile": "엑셀 파일(.xlsx, .xls)만 업로드할 수 있어요.",
                 "uploadFile": "파일 업로드"
-            },
-            "scheduleUpload": {
-                "template": {
-                    "worksheetName": "근무표",
-                    "nameHeader": "이름",
-                    "teamHeader": "팀",
-                    "sampleFirstName": "김듀티",
-                    "sampleFirstTeam": "1팀",
-                    "sampleSecondName": "박팅이",
-                    "sampleSecondTeam": "1팀",
-                    "guideSheetName": "작성가이드",
-                    "guideRow1": "첫 번째 시트에 간호사 이름, 팀, 날짜별 근무를 입력해 주세요.",
-                    "guideRow2": "근무는 D, E, N, O 또는 병동에서 쓰는 근무 약자로 입력할 수 있어요.",
-                    "guideRow3": "비어 있는 칸은 오프로 처리돼요.",
-                    "guideRow4": "팀 이름이 비어 있으면 기본 팀에 배정돼요.",
-                    "guideRow5": "업로드 후 화면에서 내용을 다시 확인하고 수정할 수 있어요.",
-                    "fileName": "초기근무표_{{year}}_{{month}}.xlsx"
-                },
-                "title": "근무표 파일 업로드",
-                "description": "엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.",
-                "downloadTemplate": "양식 다운로드",
-                "dropzoneTitle": "엑셀 파일을 선택하거나 끌어다 놓아 주세요.",
-                "fileSupport": ".xlsx, .xls 파일을 지원해요.",
-                "submitting": "업로드 중",
-                "submit": "파일 적용"
-            },
-            "progress": {
-                "ariaLabel": "병동 생성 진행률",
-                "completeTitle": "병동 생성이 완료됐어요",
-                "finalCheck": "거의 다 됐어요. 마지막 확인 중이에요.",
-                "inputWardInfo": "입력한 병동 정보를 정리하고 있어요.",
-                "navigateDuty": "근무표 화면으로 이동하고 있어요.",
-                "nurses": "간호사 정보를 연결하고 있어요.",
-                "settingTitle": "병동을 세팅하고 있어요",
-                "shiftTypesAndTeams": "근무 유형과 팀을 세팅하고 있어요."
             }
         },
         "profile": {
@@ -1925,7 +2032,9 @@ export const ko = {
             "language": {
                 "en": "English",
                 "ja": "日本語 (Japanese)",
-                "ko": "한국어 (Korean)"
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "화면 언어 / Language",
             "loadingDescription": "내 계정과 병동 정보를 순서대로 확인하고 있어요.",
@@ -1949,9 +2058,11 @@ export const ko = {
             "savePreferences": "언어 설정 저장",
             "savingPreferences": "저장 중...",
             "serviceRegion": {
+                "CN": "중국",
                 "EN": "글로벌/영어권",
                 "JP": "일본",
-                "KR": "한국"
+                "KR": "한국",
+                "TH": "태국"
             },
             "serviceRegionLabel": "서비스 지역",
             "title": "마이페이지",
@@ -2234,6 +2345,7 @@ export const ko = {
                 "emailRequired": "이메일을 입력해 주세요.",
                 "maxAdmins": "병동 관리자는 최대 {{count}}명까지 추가할 수 있어요."
             },
+            "memberOnlyDescription": "병동 구성원으로 등록된 계정만 관리자로 추가할 수 있어요.",
             "ownerOnlyDescription": "최고 관리자만 관리자 권한을 변경할 수 있어요.",
             "registeredTitle": "등록된 관리자",
             "removeActiveAria": "{{email}} 관리자 삭제",
@@ -2251,18 +2363,17 @@ export const ko = {
             },
             "title": "병동 관리자",
             "toast": {
-                "createActive": "관리자를 등록했어요.",
+                "createActive": "관리자를 추가했어요.",
                 "createFailed": "관리자를 등록하지 못했어요.",
-                "createReserved": "관리자 이메일을 예약했어요.",
+                "createOwnerOnly": "최고 관리자만 관리자를 추가할 수 있어요.",
+                "createReserved": "관리자를 추가했어요.",
                 "duplicateEmail": "이미 등록된 관리자 이메일이에요.",
                 "ownerOnly": "최고 관리자만 변경할 수 있어요.",
                 "removeActive": "관리자를 삭제했어요.",
                 "removeActiveFailed": "관리자를 삭제하지 못했어요.",
                 "removeReserved": "예약된 관리자 이메일을 삭제했어요.",
-                "removeReservedFailed": "예약된 관리자 이메일을 삭제하지 못했어요.",
-                "createOwnerOnly": "최고 관리자만 관리자를 추가할 수 있어요."
-            },
-            "memberOnlyDescription": "병동 구성원으로 등록된 계정만 관리자로 추가할 수 있어요."
+                "removeReservedFailed": "예약된 관리자 이메일을 삭제하지 못했어요."
+            }
         },
         "wardInfoSettings": {
             "hospitalName": "병원명",
@@ -2356,106 +2467,6 @@ export const ko = {
             "type": {
                 "leave": "휴무",
                 "work": "근무"
-            }
-        },
-        "home": {
-            "calendar": {
-                "allDay": "종일",
-                "deadlineMeta": "마감 · {{date}}",
-                "empty": "가까운 일정 없음",
-                "loading": "캘린더 확인 중",
-                "openAll": "캘린더 전체 보기",
-                "overdue": "지남",
-                "scheduleDateMeta": "일정 · {{date}} · {{time}}",
-                "scheduleMeta": "일정 · {{time}}",
-                "timeUnknown": "시간 미정",
-                "today": "오늘"
-            },
-            "emptyTeams": {
-                "description": "근무자 관리에서 간호 팀을 추가해요.",
-                "title": "팀을 추가하면 볼 수 있어요"
-            },
-            "fallback": {
-                "manager": "관리자",
-                "selectedTeam": "선택한 팀",
-                "ward": "병동"
-            },
-            "filter": {
-                "all": "전체"
-            },
-            "header": {
-                "createNextMonth": "다음 달 근무표 만들기",
-                "todayAssigned": "{{managerName}} · 오늘 근무 {{count}}명"
-            },
-            "monthly": {
-                "cellTitle": "{{nurseName}} {{day}}일 {{shift}}",
-                "descriptionAll": "{{month}} · 전체",
-                "descriptionTeam": "{{month}} · {{teamName}}",
-                "edit": "근무표 편집하기",
-                "emptyAllTitle": "이번 달 근무표가 비어 있어요",
-                "emptyDescription": "근무표 만들기에서 확인할 수 있어요.",
-                "emptyTeamTitle": "{{teamName}} 근무표가 비어 있어요",
-                "emptyTeamsTitle": "팀을 추가하면 근무표를 볼 수 있어요",
-                "nameHeader": "이름"
-            },
-            "nextSchedule": {
-                "title": "{{teamName}} 다음 달 근무표"
-            },
-            "queue": {
-                "pendingRequests": "대기 중인 신청 근무",
-                "waitingNurses": "입장 대기"
-            },
-            "sections": {
-                "calendar": "캘린더",
-                "monthly": "이번 달 근무표",
-                "tasks": "해야 할 일",
-                "todayDuty": "오늘의 근무"
-            },
-            "skeleton": {
-                "loadingAria": "홈을 불러오고 있어요"
-            },
-            "sort": {
-                "default": "기본",
-                "label": "근무표 정렬 기준",
-                "nameAsc": "이름순",
-                "openAria": "근무표 정렬 기준 열기",
-                "todayShift": "오늘 근무순"
-            },
-            "state": {
-                "errorDescription": "잠시 후 다시 시도해요.",
-                "errorTitle": "홈을 불러오지 못했어요",
-                "noWardDescription": "병동을 연결하면 홈을 볼 수 있어요.",
-                "noWardTitle": "병동을 연결해야 해요",
-                "retry": "다시 시도하기"
-            },
-            "status": {
-                "checking": "확인 중",
-                "complete": "확정",
-                "draft": "진행 중",
-                "empty": "작성 전",
-                "error": "다시 확인"
-            },
-            "tasks": {
-                "checking": "확인하고 있어요",
-                "nextScheduleAria": "다음 달 근무표 진행 상태",
-                "overdueAction": "마감",
-                "overdueFallback": "가장 지난 마감부터 확인해요",
-                "overdueTitle": "지난 마감 {{count}}건",
-                "pendingRequestsAction": "신청",
-                "pendingRequestsDescription": "근무표에 반영할지 정해요",
-                "pendingRequestsTitle": "대기 중인 신청 근무 {{count}}건",
-                "todayAction": "오늘",
-                "todayFallback": "오늘까지 처리할 게시글이에요",
-                "todayTitle": "오늘 마감 {{count}}건",
-                "unreadChatAction": "톡",
-                "unreadChatDescription": "최근 대화를 확인해요",
-                "unreadChatTitle": "읽지 않은 병동톡 {{count}}개",
-                "waitingNursesAction": "멤버",
-                "waitingNursesDescription": "병동에 추가할 구성원을 확인해요",
-                "waitingNursesTitle": "입장 대기 {{count}}명"
-            },
-            "today": {
-                "emptyShift": "오늘 근무가 비어 있어요"
             }
         }
     },
@@ -2638,8 +2649,8 @@ export const en: TLocale = {
             "connectWaitingNurseFailed": "Could not connect to the existing nurse account.",
             "connectWaitingNurseSuccess": "Connected to the existing nurse account.",
             "editSettingFailed": "Could not update duty settings.",
-            "rejectWaitingNurseSuccess": "Rejected the pending connection request.",
-            "rejectWaitingNurseFailed": "Could not reject the pending connection request."
+            "rejectWaitingNurseFailed": "Could not reject the pending connection request.",
+            "rejectWaitingNurseSuccess": "Rejected the pending connection request."
         },
         "file": {
             "profileImageUploadFailed": "Could not upload the profile image."
@@ -2828,8 +2839,8 @@ export const en: TLocale = {
                     "maxContinuousWork": "Work can be assigned for up to {{count}} consecutive days.",
                     "minContinuousNight": "Assign night shifts for at least {{count}} consecutive days.",
                     "minNightInterval": "Keep at least {{count}} days between night shifts.",
-                    "minOffAssignAfterNight": "Recommend at least {{count}} OFF day(s) after a night shift.",
-                    "minNightIntervalFallback": "Keep enough space between night shifts."
+                    "minNightIntervalFallback": "Keep enough space between night shifts.",
+                    "minOffAssignAfterNight": "Recommend at least {{count}} OFF day(s) after a night shift."
                 },
                 "maxConsecutiveNight": "{{nurseName}} has {{actual}} consecutive N shifts. Maximum: {{expected}}.",
                 "maxConsecutiveWork": "{{nurseName}} has {{actual}} consecutive work days. Maximum: {{expected}}.",
@@ -3088,8 +3099,8 @@ export const en: TLocale = {
                 "invalidDescription": "Check the address or choose a notice from the list.",
                 "invalidTitle": "Notice not found",
                 "listAria": "Notice list",
-                "loadMore": "Load more",
                 "loadingTitle": "Loading notices",
+                "loadMore": "Load more",
                 "pinned": "Important",
                 "publishedAt": "Published {{date}}",
                 "retry": "Try again",
@@ -3111,6 +3122,106 @@ export const en: TLocale = {
                 "code": "ERROR",
                 "description": "Something went wrong for a moment.\nIf it keeps happening, refresh and try again.",
                 "title": "Could not load this screen"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "All day",
+                "deadlineMeta": "Deadline · {{date}}",
+                "empty": "No nearby events",
+                "loading": "Checking calendar",
+                "openAll": "View full calendar",
+                "overdue": "Overdue",
+                "scheduleDateMeta": "Event · {{date}} · {{time}}",
+                "scheduleMeta": "Event · {{time}}",
+                "timeUnknown": "Time TBD",
+                "today": "Today"
+            },
+            "emptyTeams": {
+                "description": "Add nursing teams from Member Management.",
+                "title": "Add a team to view this"
+            },
+            "fallback": {
+                "manager": "Admin",
+                "selectedTeam": "Selected team",
+                "ward": "Ward"
+            },
+            "filter": {
+                "all": "All"
+            },
+            "header": {
+                "createNextMonth": "Create next month schedule",
+                "todayAssigned": "{{managerName}} · {{count}} working today"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} day {{day}} {{shift}}",
+                "descriptionAll": "{{month}} · All",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "Edit schedule",
+                "emptyAllTitle": "This month schedule is empty",
+                "emptyDescription": "You can check it in Create schedule.",
+                "emptyTeamsTitle": "Add a team to view schedules",
+                "emptyTeamTitle": "{{teamName}} schedule is empty",
+                "nameHeader": "Name"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} next month schedule"
+            },
+            "queue": {
+                "pendingRequests": "Pending shift requests",
+                "waitingNurses": "Waiting to join"
+            },
+            "sections": {
+                "calendar": "Calendar",
+                "monthly": "This month schedule",
+                "tasks": "To do",
+                "todayDuty": "Today shifts"
+            },
+            "skeleton": {
+                "loadingAria": "Loading home"
+            },
+            "sort": {
+                "default": "Default",
+                "label": "Schedule sort order",
+                "nameAsc": "Name",
+                "openAria": "Open schedule sort order",
+                "todayShift": "Today shift"
+            },
+            "state": {
+                "errorDescription": "Please try again shortly.",
+                "errorTitle": "Could not load home",
+                "noWardDescription": "Connect a ward to view home.",
+                "noWardTitle": "Connect a ward first",
+                "retry": "Try again"
+            },
+            "status": {
+                "checking": "Checking",
+                "complete": "Confirmed",
+                "draft": "In progress",
+                "empty": "Not started",
+                "error": "Check again"
+            },
+            "tasks": {
+                "checking": "Checking",
+                "nextScheduleAria": "Next month schedule progress",
+                "overdueAction": "Deadline",
+                "overdueFallback": "Start with the oldest overdue item",
+                "overdueTitle": "{{count}} overdue deadlines",
+                "pendingRequestsAction": "Requests",
+                "pendingRequestsDescription": "Decide whether to apply them to the schedule",
+                "pendingRequestsTitle": "{{count}} pending shift requests",
+                "todayAction": "Today",
+                "todayFallback": "This post is due today",
+                "todayTitle": "{{count}} due today",
+                "unreadChatAction": "Chat",
+                "unreadChatDescription": "Check recent conversations",
+                "unreadChatTitle": "{{count}} unread ward chat messages",
+                "waitingNursesAction": "Members",
+                "waitingNursesDescription": "Review members to add to the ward",
+                "waitingNursesTitle": "{{count}} waiting to join"
+            },
+            "today": {
+                "emptyShift": "No shifts today"
             }
         },
         "landing": {
@@ -3258,6 +3369,7 @@ export const en: TLocale = {
             "appleContinue": "Continue with Apple",
             "appleCta": "Continue with Apple",
             "appleStart": "Start with Apple",
+            "backToLogin": "Back to sign in",
             "continuePrefix": "By continuing, you agree to the",
             "demoExpired": {
                 "bannerDescription": "The full conversion API is still in progress, so for now we will guide you through login and signup first.",
@@ -3272,44 +3384,62 @@ export const en: TLocale = {
             "emailPlaceholder": "Enter your email",
             "emailSignupPlaceholder": "Enter your email",
             "feedback": {
-                "loginFailed": "Could not sign in. Please try again.",
-                "signupFailed": "Could not complete sign-up. Please try again.",
-                "verificationFailed": "Could not send the verification email. Please try again.",
-                "verificationSent": "We sent a verification email. Check your inbox and enter the code.",
+                "emailVerified": "Email verification is complete.",
                 "invalidCredentials": "Email or password is incorrect.",
                 "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
-                "emailVerified": "Email verification is complete.",
-                "verificationInvalid": "Check the verification code.",
-                "passwordResetTokenVerified": "Code verified. Enter a new password.",
+                "loginFailed": "Could not sign in. Please try again.",
+                "passwordResetFailed": "Could not change the password. Please try again.",
                 "passwordResetSuccess": "Password changed. Sign in with your new password.",
-                "passwordResetFailed": "Could not change the password. Please try again."
+                "passwordResetTokenVerified": "Code verified. Enter a new password.",
+                "signupFailed": "Could not complete sign-up. Please try again.",
+                "verificationFailed": "Could not send the verification email. Please try again.",
+                "verificationInvalid": "Check the verification code.",
+                "verificationSent": "We sent a verification email. Check your inbox and enter the code."
             },
+            "forgotPassword": "Forgot password",
             "hasAccountPrompt": "Already have an account?",
             "hidePassword": "Hide password",
             "kakaoContinue": "Continue with Kakao",
             "kakaoCta": "Continue with Kakao",
             "kakaoStart": "Start with Kakao",
             "loginLink": "Sign in",
+            "loginVisualAria": "Dutying sign-in visual",
+            "marketingConsent": "I agree to receive marketing communications.",
             "name": "Name",
             "namePlaceholder": "Enter your name",
+            "newPassword": "New password",
+            "newPasswordConfirm": "Confirm new password",
+            "newPasswordConfirmPlaceholder": "Enter the new password again",
+            "newPasswordPlaceholder": "Enter a new password",
+            "nextImage": "Next image",
             "noAccountPrompt": "No account yet?",
+            "optionalConsentLabel": "[Optional]",
             "password": "Password",
             "passwordConfirm": "Confirm password",
             "passwordConfirmPlaceholder": "Enter your password again",
             "passwordPlaceholder": "Enter your password",
+            "passwordResetSubmit": "Reset password",
+            "passwordResetTitle": "Reset password",
+            "passwordResetVerificationCodeAria": "Password reset verification code",
             "passwordSignupPlaceholder": "Enter your password",
+            "previousImage": "Previous image",
             "privacyPolicy": "Privacy Policy",
+            "privacyNoticePrefix": "Personal information is handled under the",
+            "privacyNoticeSuffix": ".",
             "redirect": {
                 "adminTokenMissing": "Could not receive an admin login token. Check the social login settings.",
                 "errorTitle": "Social login failed",
                 "loading": "Signing in."
             },
+            "requiredConsentLabel": "[Required]",
             "showPassword": "Show password",
             "signupLink": "Sign up",
             "signupTitle": "Sign up",
+            "sixDigitVerificationCodePlaceholder": "6-digit verification code",
             "submitLogin": "Sign in",
             "submitSignup": "Create account",
             "termsConnector": "and",
+            "termsAgreementSuffix": ".",
             "termsOfService": "Terms of Service",
             "termsPrefix": "By continuing, you agree to the",
             "termsSuffix": ".",
@@ -3317,34 +3447,22 @@ export const en: TLocale = {
             "title": "Sign in",
             "validation": {
                 "emailInvalid": "Enter a valid email address.",
+                "emailVerificationRequired": "Complete email verification.",
                 "loginRequired": "Enter your email and password.",
                 "nameRequired": "Enter your name.",
+                "passwordConfirmRequired": "Enter the password again.",
                 "passwordMinLength": "Enter at least {{count}} characters for your password.",
                 "passwordMismatch": "Passwords do not match.",
-                "emailVerificationRequired": "Complete email verification.",
+                "termsRequired": "Agree to the Terms of Service.",
                 "verificationCodeRequired": "Enter the verification code.",
-                "verificationConfirmRequired": "Confirm the verification code first.",
-                "passwordConfirmRequired": "Enter the password again."
+                "verificationConfirmRequired": "Confirm the verification code first."
             },
             "verificationCodeAria": "Email verification code",
             "verificationCodePlaceholder": "Enter the verification code",
-            "verificationResend": "Resend",
-            "verificationSend": "Verify",
-            "passwordResetTitle": "Reset password",
-            "forgotPassword": "Forgot password",
-            "previousImage": "Previous image",
-            "nextImage": "Next image",
-            "loginVisualAria": "Dutying sign-in visual",
-            "sixDigitVerificationCodePlaceholder": "6-digit verification code",
-            "passwordResetVerificationCodeAria": "Password reset verification code",
             "verificationComplete": "Verified",
             "verificationConfirm": "Confirm",
-            "newPassword": "New password",
-            "newPasswordPlaceholder": "Enter a new password",
-            "newPasswordConfirm": "Confirm new password",
-            "newPasswordConfirmPlaceholder": "Enter the new password again",
-            "passwordResetSubmit": "Reset password",
-            "backToLogin": "Back to sign in"
+            "verificationResend": "Resend",
+            "verificationSend": "Verify"
         },
         "makeShift": {
             "aiRefill": {
@@ -3367,10 +3485,13 @@ export const en: TLocale = {
                 "fixedOnly": "Fixed only",
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
-                "validationStatus": {
-                    "checking": "Checking constraints"
-                },
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
+                "lastShiftBlankDialog": {
+                    "cancel": "Review input",
+                    "confirm": "Confirm as-is",
+                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.",
+                    "title": "Review previous shifts?"
+                },
                 "loading": "Loading the duty schedule",
                 "previous": "Previous step",
                 "progressToast": "Filling schedule",
@@ -3435,32 +3556,29 @@ export const en: TLocale = {
                 "toolbarHint": "Fill empty cells based on the rules and requested shifts.",
                 "toolbarSubTitle": "Use AI Autofill to fill empty cells in one go.",
                 "toolbarTitle": "Fill and confirm the schedule",
-                "viewAll": "View all",
-                "lastShiftBlankDialog": {
-                    "title": "Review previous shifts?",
-                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.",
-                    "confirm": "Confirm as-is",
-                    "cancel": "Review input"
-                }
+                "validationStatus": {
+                    "checking": "Checking constraints"
+                },
+                "viewAll": "View all"
             },
             "calendar": {
                 "carried": "Carry",
                 "clearCell": "Clear",
                 "closePopover": "Close popover",
+                "dateOthers": "+{{count}} more day",
                 "fullDayLabel": "Day {{day}} · all",
                 "name": "Name",
                 "nurseDayLabel": "{{name}} · day {{day}}",
                 "previousShifts": "Prev",
                 "shiftTypeDropdownAria": "Select shift type",
+                "violationCount": {
+                    "error": "Important {{count}}",
+                    "warning": "General {{count}}"
+                },
                 "violationDialogAria": "Constraint issues: {{count}}",
                 "violationLevel": {
                     "error": "Important",
                     "warning": "General"
-                },
-                "dateOthers": "+{{count}} more day",
-                "violationCount": {
-                    "error": "Important {{count}}",
-                    "warning": "General {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -3674,9 +3792,9 @@ export const en: TLocale = {
                     "importantUnmarked": "Important mark removed.",
                     "imported": "Imported constraints from {{teamName}}.",
                     "importFailed": "Could not import constraints. Please try again shortly.",
-                    "saveFailed": "Could not save constraints. Please try again shortly.",
                     "recommendedDeleted": "Recommended constraint deleted.",
-                    "resetDefaults": "Reset to {{count}} recommended constraints."
+                    "resetDefaults": "Reset to {{count}} recommended constraints.",
+                    "saveFailed": "Could not save constraints. Please try again shortly."
                 },
                 "violationCount": "{{count}}",
                 "warning": {
@@ -3843,6 +3961,7 @@ export const en: TLocale = {
                     "title": "Use helper tools"
                 }
             },
+            "wardCodeLoading": "Checking ward code",
             "workers": {
                 "activeCount": "{{count}} included",
                 "column": {
@@ -3866,8 +3985,7 @@ export const en: TLocale = {
                 "sortBySkill": "Skill level",
                 "sortListMenuAria": "Open worker sort options",
                 "totalCount": "Total {{count}}"
-            },
-            "wardCodeLoading": "Checking ward code"
+            }
         },
         "member": {
             "addFirstNurse": "Add the first nurse",
@@ -3986,9 +4104,9 @@ export const en: TLocale = {
                 "deleteConfirm": "Delete nurse {{nurseName}}? This cannot be undone."
             },
             "emptyTeamDescription": "Please add a nurse.",
-            "emptyTeamTitle": "There are no nurses.",
             "emptyTeamsDescription": "Create a team before adding nurses.",
             "emptyTeamsTitle": "Create a team first",
+            "emptyTeamTitle": "There are no nurses.",
             "modal": {
                 "deleteNurseDescriptionSuffix": " will be deleted permanently.",
                 "deleteNurseTitle": "Delete this nurse?",
@@ -4239,28 +4357,28 @@ export const en: TLocale = {
                 "emptyTeam": "Add a team before creating the ward.",
                 "emptyTeamNurses": "Some teams have no nurses. Add a nurse or delete the team.",
                 "invalidNurseName": "Check the nurse names.",
-                "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "invalidShiftTime": "Check the shift times.",
                 "invalidShiftType": "Check the shift type information.",
                 "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
                 "missingHospitalName": "Enter a hospital name.",
+                "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "submitting": "Creating the ward. Please wait.",
                 "success": "Ward creation is already complete."
+            },
+            "defaults": {
+                "newNurseName": "New nurse {{index}}",
+                "sampleNurse": {
+                    "first": "Alex Kim",
+                    "off": "Taylor Choi",
+                    "second": "Jamie Lee",
+                    "skilled": "Morgan Park"
+                }
             },
             "deleteTeamAction": "Delete team",
             "fallback": {
                 "newTeam": "New team",
                 "selectedTeam": "Selected team",
                 "wardName": "Dutying ward"
-            },
-            "defaults": {
-                "newNurseName": "New nurse {{index}}",
-                "sampleNurse": {
-                    "first": "Alex Kim",
-                    "second": "Jamie Lee",
-                    "skilled": "Morgan Park",
-                    "off": "Taylor Choi"
-                }
             },
             "identity": {
                 "hospitalName": "Hospital name",
@@ -4270,42 +4388,77 @@ export const en: TLocale = {
                 "wardNamePlaceholder": "Enter ward name"
             },
             "modal": {
+                "deleteTeamDescription": " will be deleted.",
                 "deleteTeamDescriptionSuffix": " team and its {{count}} nurses will be deleted.",
-                "deleteTeamTitle": "Delete this team?",
-                "deleteTeamDescriptionWithNursesAndSchedule": "'s {{nurseCount}} nurses and entered schedule will also be deleted.",
                 "deleteTeamDescriptionWithNurses": "'s {{nurseCount}} nurses will also be deleted.",
+                "deleteTeamDescriptionWithNursesAndSchedule": "'s {{nurseCount}} nurses and entered schedule will also be deleted.",
                 "deleteTeamDescriptionWithSchedule": "'s entered schedule will also be deleted.",
-                "deleteTeamDescription": " will be deleted."
+                "deleteTeamTitle": "Delete this team?"
             },
             "nurse": {
                 "deleteNurseAria": "Delete {{nurseName}}",
                 "dragAria": "Drag to change order",
+                "emptyTeamsDescription": "Create a team before registering nurses.",
+                "emptyTeamsTitle": "Add a team first.",
+                "selectedTeamCountAria": "{{teamName}} nurses: {{count}}",
                 "skillAria": "Skill level for {{nurseName}}",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "Unselected",
-                "emptyTeamsDescription": "Create a team before registering nurses.",
-                "emptyTeamsTitle": "Add a team first.",
                 "sort": {
                     "manual": "Manual order",
                     "name": "Name order",
                     "skill": "Skill order"
                 },
                 "sortAria": "Sort nurses",
-                "sortOptionsAria": "Nurse sort options",
-                "selectedTeamCountAria": "{{teamName}} nurses: {{count}}"
+                "sortOptionsAria": "Nurse sort options"
+            },
+            "progress": {
+                "ariaLabel": "Ward creation progress",
+                "completeTitle": "Ward creation is complete",
+                "finalCheck": "Almost done. Finishing the final check.",
+                "inputWardInfo": "Organizing the ward information you entered.",
+                "navigateDuty": "Moving to the schedule screen.",
+                "nurses": "Connecting nurse information.",
+                "settingTitle": "Setting up the ward",
+                "shiftTypesAndTeams": "Setting up shift types and teams."
             },
             "schedule": {
                 "addRow": "Add row",
                 "deleteRowAria": "Delete {{rowLabel}}",
+                "emptyTeamsDescription": "You can enter the initial schedule after creating a team.",
+                "emptyTeamsTitle": "Add a team first.",
                 "monthLabel": "{{year}}-{{month}}",
                 "nextMonth": "Next month",
                 "nurseNameAria": "Nurse name in row {{rowNumber}}",
                 "previousMonth": "Previous month",
                 "rowFallback": "Row {{rowNumber}}",
                 "shiftCellAria": "Shift for row {{rowNumber}}, day {{day}}",
-                "uploadFile": "Upload schedule file",
-                "emptyTeamsTitle": "Add a team first.",
-                "emptyTeamsDescription": "You can enter the initial schedule after creating a team."
+                "uploadFile": "Upload schedule file"
+            },
+            "scheduleUpload": {
+                "description": "We will read names, teams, and daily shifts from the Excel file and apply them to the initial ward setup.",
+                "downloadTemplate": "Download template",
+                "dropzoneTitle": "Choose or drop an Excel file.",
+                "fileSupport": "Supports .xlsx and .xls files.",
+                "submit": "Apply file",
+                "submitting": "Uploading",
+                "template": {
+                    "fileName": "initial-schedule-{{year}}-{{month}}.xlsx",
+                    "guideRow1": "Enter nurse names, teams, and daily shifts in the first sheet.",
+                    "guideRow2": "Use D, E, N, O, or your ward-specific shift abbreviations.",
+                    "guideRow3": "Blank cells are treated as off days.",
+                    "guideRow4": "Rows without a team are assigned to the default team.",
+                    "guideRow5": "After upload, you can review and edit the imported data on screen.",
+                    "guideSheetName": "Guide",
+                    "nameHeader": "Name",
+                    "sampleFirstName": "Alex Kim",
+                    "sampleFirstTeam": "Team 1",
+                    "sampleSecondName": "Jamie Park",
+                    "sampleSecondTeam": "Team 1",
+                    "teamHeader": "Team",
+                    "worksheetName": "Schedule"
+                },
+                "title": "Upload schedule file"
             },
             "section": {
                 "identity": {
@@ -4389,12 +4542,12 @@ export const en: TLocale = {
                 "deleteTeamWithNurses": "Deleted the team and its nurses.",
                 "maxNursesPerTeam": "You can add up to {{count}} nurses to one team.",
                 "maxTeams": "You can add up to {{count}} teams.",
+                "reloadDraftError": "Could not load the saved ward setup draft.",
                 "saveDraftError": "Could not save the basic ward information. Please try again.",
+                "saveScheduleError": "Could not save the initial schedule.",
                 "skillConfigDisabled": "Skill settings are disabled.",
                 "skillConfigSaved": "Applied skill settings to the nurse list.",
-                "uploadApplied": "Applied the schedule file.",
-                "reloadDraftError": "Could not load the saved ward setup draft.",
-                "saveScheduleError": "Could not save the initial schedule."
+                "uploadApplied": "Applied the schedule file."
             },
             "upload": {
                 "dropHere": "Drop the schedule file here",
@@ -4407,41 +4560,6 @@ export const en: TLocale = {
                 "targetMonth": "Schedule month",
                 "unsupportedFile": "Only Excel files (.xlsx, .xls) can be uploaded.",
                 "uploadFile": "Upload file"
-            },
-            "scheduleUpload": {
-                "template": {
-                    "worksheetName": "Schedule",
-                    "nameHeader": "Name",
-                    "teamHeader": "Team",
-                    "sampleFirstName": "Alex Kim",
-                    "sampleFirstTeam": "Team 1",
-                    "sampleSecondName": "Jamie Park",
-                    "sampleSecondTeam": "Team 1",
-                    "guideSheetName": "Guide",
-                    "guideRow1": "Enter nurse names, teams, and daily shifts in the first sheet.",
-                    "guideRow2": "Use D, E, N, O, or your ward-specific shift abbreviations.",
-                    "guideRow3": "Blank cells are treated as off days.",
-                    "guideRow4": "Rows without a team are assigned to the default team.",
-                    "guideRow5": "After upload, you can review and edit the imported data on screen.",
-                    "fileName": "initial-schedule-{{year}}-{{month}}.xlsx"
-                },
-                "title": "Upload schedule file",
-                "description": "We will read names, teams, and daily shifts from the Excel file and apply them to the initial ward setup.",
-                "downloadTemplate": "Download template",
-                "dropzoneTitle": "Choose or drop an Excel file.",
-                "fileSupport": "Supports .xlsx and .xls files.",
-                "submitting": "Uploading",
-                "submit": "Apply file"
-            },
-            "progress": {
-                "ariaLabel": "Ward creation progress",
-                "completeTitle": "Ward creation is complete",
-                "finalCheck": "Almost done. Finishing the final check.",
-                "inputWardInfo": "Organizing the ward information you entered.",
-                "navigateDuty": "Moving to the schedule screen.",
-                "nurses": "Connecting nurse information.",
-                "settingTitle": "Setting up the ward",
-                "shiftTypesAndTeams": "Setting up shift types and teams."
             }
         },
         "profile": {
@@ -4462,7 +4580,9 @@ export const en: TLocale = {
             "language": {
                 "en": "English",
                 "ja": "日本語 (Japanese)",
-                "ko": "한국어 (Korean)"
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "Display language",
             "loadingDescription": "Checking your account and ward information.",
@@ -4486,9 +4606,11 @@ export const en: TLocale = {
             "savePreferences": "Save language settings",
             "savingPreferences": "Saving...",
             "serviceRegion": {
+                "CN": "China",
                 "EN": "Global / English",
                 "JP": "Japan",
-                "KR": "Korea"
+                "KR": "Korea",
+                "TH": "Thailand"
             },
             "serviceRegionLabel": "Service region",
             "title": "Account",
@@ -4771,6 +4893,7 @@ export const en: TLocale = {
                 "emailRequired": "Enter an email address.",
                 "maxAdmins": "You can add up to {{count}} ward admins."
             },
+            "memberOnlyDescription": "Only accounts registered as ward members can be added as admins.",
             "ownerOnlyDescription": "Only the owner can change admin permissions.",
             "registeredTitle": "Registered admins",
             "removeActiveAria": "Remove admin {{email}}",
@@ -4788,18 +4911,17 @@ export const en: TLocale = {
             },
             "title": "Ward admins",
             "toast": {
-                "createActive": "Registered the admin.",
+                "createActive": "Added the admin.",
                 "createFailed": "Could not register the admin.",
-                "createReserved": "Reserved the admin email.",
+                "createOwnerOnly": "Only the owner can add admins.",
+                "createReserved": "Added the admin.",
                 "duplicateEmail": "This admin email is already registered.",
                 "ownerOnly": "Only the owner can make this change.",
                 "removeActive": "Removed the admin.",
                 "removeActiveFailed": "Could not remove the admin.",
                 "removeReserved": "Removed the reserved admin email.",
-                "removeReservedFailed": "Could not remove the reserved admin email.",
-                "createOwnerOnly": "Only the owner can add admins."
-            },
-            "memberOnlyDescription": "Only accounts registered as ward members can be added as admins."
+                "removeReservedFailed": "Could not remove the reserved admin email."
+            }
         },
         "wardInfoSettings": {
             "hospitalName": "Hospital name",
@@ -4893,106 +5015,6 @@ export const en: TLocale = {
             "type": {
                 "leave": "Leave",
                 "work": "Work"
-            }
-        },
-        "home": {
-            "calendar": {
-                "allDay": "All day",
-                "deadlineMeta": "Deadline · {{date}}",
-                "empty": "No nearby events",
-                "loading": "Checking calendar",
-                "openAll": "View full calendar",
-                "overdue": "Overdue",
-                "scheduleDateMeta": "Event · {{date}} · {{time}}",
-                "scheduleMeta": "Event · {{time}}",
-                "timeUnknown": "Time TBD",
-                "today": "Today"
-            },
-            "emptyTeams": {
-                "description": "Add nursing teams from Member Management.",
-                "title": "Add a team to view this"
-            },
-            "fallback": {
-                "manager": "Admin",
-                "selectedTeam": "Selected team",
-                "ward": "Ward"
-            },
-            "filter": {
-                "all": "All"
-            },
-            "header": {
-                "createNextMonth": "Create next month schedule",
-                "todayAssigned": "{{managerName}} · {{count}} working today"
-            },
-            "monthly": {
-                "cellTitle": "{{nurseName}} day {{day}} {{shift}}",
-                "descriptionAll": "{{month}} · All",
-                "descriptionTeam": "{{month}} · {{teamName}}",
-                "edit": "Edit schedule",
-                "emptyAllTitle": "This month schedule is empty",
-                "emptyDescription": "You can check it in Create schedule.",
-                "emptyTeamTitle": "{{teamName}} schedule is empty",
-                "emptyTeamsTitle": "Add a team to view schedules",
-                "nameHeader": "Name"
-            },
-            "nextSchedule": {
-                "title": "{{teamName}} next month schedule"
-            },
-            "queue": {
-                "pendingRequests": "Pending shift requests",
-                "waitingNurses": "Waiting to join"
-            },
-            "sections": {
-                "calendar": "Calendar",
-                "monthly": "This month schedule",
-                "tasks": "To do",
-                "todayDuty": "Today shifts"
-            },
-            "skeleton": {
-                "loadingAria": "Loading home"
-            },
-            "sort": {
-                "default": "Default",
-                "label": "Schedule sort order",
-                "nameAsc": "Name",
-                "openAria": "Open schedule sort order",
-                "todayShift": "Today shift"
-            },
-            "state": {
-                "errorDescription": "Please try again shortly.",
-                "errorTitle": "Could not load home",
-                "noWardDescription": "Connect a ward to view home.",
-                "noWardTitle": "Connect a ward first",
-                "retry": "Try again"
-            },
-            "status": {
-                "checking": "Checking",
-                "complete": "Confirmed",
-                "draft": "In progress",
-                "empty": "Not started",
-                "error": "Check again"
-            },
-            "tasks": {
-                "checking": "Checking",
-                "nextScheduleAria": "Next month schedule progress",
-                "overdueAction": "Deadline",
-                "overdueFallback": "Start with the oldest overdue item",
-                "overdueTitle": "{{count}} overdue deadlines",
-                "pendingRequestsAction": "Requests",
-                "pendingRequestsDescription": "Decide whether to apply them to the schedule",
-                "pendingRequestsTitle": "{{count}} pending shift requests",
-                "todayAction": "Today",
-                "todayFallback": "This post is due today",
-                "todayTitle": "{{count}} due today",
-                "unreadChatAction": "Chat",
-                "unreadChatDescription": "Check recent conversations",
-                "unreadChatTitle": "{{count}} unread ward chat messages",
-                "waitingNursesAction": "Members",
-                "waitingNursesDescription": "Review members to add to the ward",
-                "waitingNursesTitle": "{{count}} waiting to join"
-            },
-            "today": {
-                "emptyShift": "No shifts today"
             }
         }
     },
@@ -5173,8 +5195,8 @@ export const ja: TLocale = {
             "connectWaitingNurseFailed": "既存の看護師アカウントに連携できませんでした。",
             "connectWaitingNurseSuccess": "既存の看護師アカウントと連携しました。",
             "editSettingFailed": "勤務設定を更新できませんでした。",
-            "rejectWaitingNurseSuccess": "連携待ちリクエストを拒否しました。",
-            "rejectWaitingNurseFailed": "連携待ちリクエストを拒否できませんでした。"
+            "rejectWaitingNurseFailed": "連携待ちリクエストを拒否できませんでした。",
+            "rejectWaitingNurseSuccess": "連携待ちリクエストを拒否しました。"
         },
         "file": {
             "profileImageUploadFailed": "プロフィール画像をアップロードできませんでした。"
@@ -5363,8 +5385,8 @@ export const ja: TLocale = {
                     "maxContinuousWork": "勤務は連続{{count}}日まで割り当てられます。",
                     "minContinuousNight": "夜勤は最低{{count}}日以上連続で割り当ててください。",
                     "minNightInterval": "夜勤の間隔は最低{{count}}日以上空けてください。",
-                    "minOffAssignAfterNight": "夜勤後は休みを{{count}}日以上入れることを推奨します。",
-                    "minNightIntervalFallback": "夜勤の間隔を空けてください。"
+                    "minNightIntervalFallback": "夜勤の間隔を空けてください。",
+                    "minOffAssignAfterNight": "夜勤後は休みを{{count}}日以上入れることを推奨します。"
                 },
                 "maxConsecutiveNight": "{{nurseName}}さんはN勤務が連続{{actual}}回です。最大{{expected}}回までです。",
                 "maxConsecutiveWork": "{{nurseName}}さんは勤務が連続{{actual}}日です。最大{{expected}}日までです。",
@@ -5623,8 +5645,8 @@ export const ja: TLocale = {
                 "invalidDescription": "アドレスを確認するか、一覧からもう一度選択してください。",
                 "invalidTitle": "お知らせが見つかりません",
                 "listAria": "お知らせ一覧",
-                "loadMore": "もっと見る",
                 "loadingTitle": "お知らせを読み込んでいます",
+                "loadMore": "もっと見る",
                 "pinned": "重要",
                 "publishedAt": "{{date}} 公開",
                 "retry": "再試行",
@@ -5646,6 +5668,106 @@ export const ja: TLocale = {
                 "code": "ERROR",
                 "description": "一時的な問題が発生しました。\n再試行しても続く場合は、再読み込みして確認してください。",
                 "title": "画面を読み込めませんでした"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "終日",
+                "deadlineMeta": "締切・{{date}}",
+                "empty": "近い予定はありません",
+                "loading": "カレンダー確認中",
+                "openAll": "カレンダーをすべて見る",
+                "overdue": "経過",
+                "scheduleDateMeta": "予定・{{date}}・{{time}}",
+                "scheduleMeta": "予定・{{time}}",
+                "timeUnknown": "時間未定",
+                "today": "今日"
+            },
+            "emptyTeams": {
+                "description": "看護師管理で看護チームを追加してください。",
+                "title": "チームを追加すると表示できます"
+            },
+            "fallback": {
+                "manager": "管理者",
+                "selectedTeam": "選択したチーム",
+                "ward": "病棟"
+            },
+            "filter": {
+                "all": "すべて"
+            },
+            "header": {
+                "createNextMonth": "来月の勤務表を作成",
+                "todayAssigned": "{{managerName}}・本日の勤務 {{count}}名"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}日 {{shift}}",
+                "descriptionAll": "{{month}}・すべて",
+                "descriptionTeam": "{{month}}・{{teamName}}",
+                "edit": "勤務表を編集",
+                "emptyAllTitle": "今月の勤務表は空です",
+                "emptyDescription": "勤務表作成で確認できます。",
+                "emptyTeamsTitle": "チームを追加すると勤務表を表示できます",
+                "emptyTeamTitle": "{{teamName}}の勤務表は空です",
+                "nameHeader": "名前"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 来月の勤務表"
+            },
+            "queue": {
+                "pendingRequests": "確認待ちの勤務希望",
+                "waitingNurses": "入室待ち"
+            },
+            "sections": {
+                "calendar": "カレンダー",
+                "monthly": "今月の勤務表",
+                "tasks": "やること",
+                "todayDuty": "本日の勤務"
+            },
+            "skeleton": {
+                "loadingAria": "ホームを読み込み中"
+            },
+            "sort": {
+                "default": "標準",
+                "label": "勤務表の並び順",
+                "nameAsc": "名前順",
+                "openAria": "勤務表の並び順を開く",
+                "todayShift": "本日の勤務順"
+            },
+            "state": {
+                "errorDescription": "しばらくしてからもう一度お試しください。",
+                "errorTitle": "ホームを読み込めませんでした",
+                "noWardDescription": "病棟を連携するとホームを表示できます。",
+                "noWardTitle": "病棟の連携が必要です",
+                "retry": "再試行"
+            },
+            "status": {
+                "checking": "確認中",
+                "complete": "確定",
+                "draft": "進行中",
+                "empty": "未作成",
+                "error": "再確認"
+            },
+            "tasks": {
+                "checking": "確認中",
+                "nextScheduleAria": "来月の勤務表の進行状況",
+                "overdueAction": "締切",
+                "overdueFallback": "最も古い締切から確認してください",
+                "overdueTitle": "期限超過 {{count}}件",
+                "pendingRequestsAction": "申請",
+                "pendingRequestsDescription": "勤務表に反映するか決めてください",
+                "pendingRequestsTitle": "確認待ちの勤務希望 {{count}}件",
+                "todayAction": "今日",
+                "todayFallback": "今日までに対応する投稿です",
+                "todayTitle": "本日締切 {{count}}件",
+                "unreadChatAction": "チャット",
+                "unreadChatDescription": "最近の会話を確認してください",
+                "unreadChatTitle": "未読の病棟チャット {{count}}件",
+                "waitingNursesAction": "メンバー",
+                "waitingNursesDescription": "病棟に追加するメンバーを確認してください",
+                "waitingNursesTitle": "入室待ち {{count}}名"
+            },
+            "today": {
+                "emptyShift": "本日の勤務は空です"
             }
         },
         "landing": {
@@ -5793,6 +5915,7 @@ export const ja: TLocale = {
             "appleContinue": "Appleで続ける",
             "appleCta": "Appleアカウントで始める",
             "appleStart": "Appleで始める",
+            "backToLogin": "ログインに戻る",
             "continuePrefix": "続行すると",
             "demoExpired": {
                 "bannerDescription": "正式切り替えAPIは準備中のため、現段階ではログイン後に登録手続きへ案内します。",
@@ -5807,44 +5930,62 @@ export const ja: TLocale = {
             "emailPlaceholder": "メールアドレスを入力してください",
             "emailSignupPlaceholder": "メールアドレスを入力してください",
             "feedback": {
-                "loginFailed": "ログインできませんでした。もう一度お試しください。",
-                "signupFailed": "登録を完了できませんでした。もう一度お試しください。",
-                "verificationFailed": "認証メールを送信できませんでした。もう一度お試しください。",
-                "verificationSent": "認証メールを送信しました。メールボックスで認証コードを確認して入力してください。",
+                "emailVerified": "メール認証が完了しました。",
                 "invalidCredentials": "メールアドレスまたはパスワードが正しくありません。",
                 "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
-                "emailVerified": "メール認証が完了しました。",
-                "verificationInvalid": "認証コードを確認してください。",
-                "passwordResetTokenVerified": "認証番号を確認しました。新しいパスワードを入力してください。",
+                "loginFailed": "ログインできませんでした。もう一度お試しください。",
+                "passwordResetFailed": "パスワードを変更できませんでした。もう一度お試しください。",
                 "passwordResetSuccess": "パスワードが変更されました。新しいパスワードでログインしてください。",
-                "passwordResetFailed": "パスワードを変更できませんでした。もう一度お試しください。"
+                "passwordResetTokenVerified": "認証番号を確認しました。新しいパスワードを入力してください。",
+                "signupFailed": "登録を完了できませんでした。もう一度お試しください。",
+                "verificationFailed": "認証メールを送信できませんでした。もう一度お試しください。",
+                "verificationInvalid": "認証コードを確認してください。",
+                "verificationSent": "認証メールを送信しました。メールボックスで認証コードを確認して入力してください。"
             },
+            "forgotPassword": "パスワードをお忘れですか？",
             "hasAccountPrompt": "すでにアカウントをお持ちですか？",
             "hidePassword": "パスワードを非表示",
             "kakaoContinue": "Kakaoで続ける",
             "kakaoCta": "Kakaoアカウントで始める",
             "kakaoStart": "Kakaoで始める",
             "loginLink": "ログイン",
+            "loginVisualAria": "Dutyingログイン紹介画像",
+            "marketingConsent": "マーケティング情報の受信に同意します。",
             "name": "名前",
             "namePlaceholder": "名前を入力してください",
+            "newPassword": "新しいパスワード",
+            "newPasswordConfirm": "新しいパスワード確認",
+            "newPasswordConfirmPlaceholder": "新しいパスワードをもう一度入力してください",
+            "newPasswordPlaceholder": "新しいパスワードを入力してください",
+            "nextImage": "次の画像",
             "noAccountPrompt": "アカウントをお持ちでないですか？",
+            "optionalConsentLabel": "[任意]",
             "password": "パスワード",
             "passwordConfirm": "パスワード確認",
             "passwordConfirmPlaceholder": "パスワードをもう一度入力してください",
             "passwordPlaceholder": "パスワードを入力してください",
+            "passwordResetSubmit": "パスワード再設定",
+            "passwordResetTitle": "パスワード再設定",
+            "passwordResetVerificationCodeAria": "パスワード再設定認証コード",
             "passwordSignupPlaceholder": "パスワードを入力してください",
+            "previousImage": "前の画像",
             "privacyPolicy": "プライバシーポリシー",
+            "privacyNoticePrefix": "個人情報は",
+            "privacyNoticeSuffix": "に従って取り扱われます。",
             "redirect": {
                 "adminTokenMissing": "管理者ログイントークンを受け取れませんでした。ソーシャルログイン設定を確認してください。",
                 "errorTitle": "ソーシャルログインに失敗しました",
                 "loading": "ログイン中です。"
             },
+            "requiredConsentLabel": "[必須]",
             "showPassword": "パスワードを表示",
             "signupLink": "アカウント作成",
             "signupTitle": "アカウント作成",
+            "sixDigitVerificationCodePlaceholder": "6桁の認証コード",
             "submitLogin": "ログイン",
             "submitSignup": "アカウントを作成",
             "termsConnector": "および",
+            "termsAgreementSuffix": "に同意します。",
             "termsOfService": "利用規約",
             "termsPrefix": "続行すると",
             "termsSuffix": "に同意したものとみなされます。",
@@ -5852,34 +5993,22 @@ export const ja: TLocale = {
             "title": "ログイン",
             "validation": {
                 "emailInvalid": "有効なメールアドレスを入力してください。",
+                "emailVerificationRequired": "メール認証を完了してください。",
                 "loginRequired": "メールアドレスとパスワードを入力してください。",
                 "nameRequired": "名前を入力してください。",
+                "passwordConfirmRequired": "パスワードをもう一度入力してください。",
                 "passwordMinLength": "パスワードは{{count}}文字以上で入力してください。",
                 "passwordMismatch": "パスワードが一致しません。",
-                "emailVerificationRequired": "メール認証を完了してください。",
+                "termsRequired": "利用規約に同意してください。",
                 "verificationCodeRequired": "認証コードを入力してください。",
-                "verificationConfirmRequired": "先に認証確認を完了してください。",
-                "passwordConfirmRequired": "パスワードをもう一度入力してください。"
+                "verificationConfirmRequired": "先に認証確認を完了してください。"
             },
             "verificationCodeAria": "メール認証コード",
             "verificationCodePlaceholder": "認証コードを入力してください",
-            "verificationResend": "再送信",
-            "verificationSend": "認証",
-            "passwordResetTitle": "パスワード再設定",
-            "forgotPassword": "パスワードをお忘れですか？",
-            "previousImage": "前の画像",
-            "nextImage": "次の画像",
-            "loginVisualAria": "Dutyingログイン紹介画像",
-            "sixDigitVerificationCodePlaceholder": "6桁の認証コード",
-            "passwordResetVerificationCodeAria": "パスワード再設定認証コード",
             "verificationComplete": "認証完了",
             "verificationConfirm": "確認",
-            "newPassword": "新しいパスワード",
-            "newPasswordPlaceholder": "新しいパスワードを入力してください",
-            "newPasswordConfirm": "新しいパスワード確認",
-            "newPasswordConfirmPlaceholder": "新しいパスワードをもう一度入力してください",
-            "passwordResetSubmit": "パスワード再設定",
-            "backToLogin": "ログインに戻る"
+            "verificationResend": "再送信",
+            "verificationSend": "認証"
         },
         "makeShift": {
             "aiRefill": {
@@ -5902,10 +6031,13 @@ export const ja: TLocale = {
                 "fixedOnly": "固定のみ表示",
                 "generating": "入力中...",
                 "hidingFaults": "エラー非表示",
-                "validationStatus": {
-                    "checking": "制約条件を確認中"
-                },
                 "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
+                "lastShiftBlankDialog": {
+                    "cancel": "入力を確認",
+                    "confirm": "そのまま確定",
+                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。",
+                    "title": "前月勤務を確認しましたか？"
+                },
                 "loading": "勤務表を読み込み中です",
                 "previous": "前のステップ",
                 "progressToast": "勤務表を入力中",
@@ -5970,32 +6102,29 @@ export const ja: TLocale = {
                 "toolbarHint": "条件と勤務希望に基づいて空欄を埋めます。",
                 "toolbarSubTitle": "AI自動入力で空欄をまとめて埋めてみましょう。",
                 "toolbarTitle": "勤務表を入力して確定してください",
-                "viewAll": "すべて表示",
-                "lastShiftBlankDialog": {
-                    "title": "前月勤務を確認しましたか？",
-                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。",
-                    "confirm": "そのまま確定",
-                    "cancel": "入力を確認"
-                }
+                "validationStatus": {
+                    "checking": "制約条件を確認中"
+                },
+                "viewAll": "すべて表示"
             },
             "calendar": {
                 "carried": "繰越",
                 "clearCell": "クリア",
                 "closePopover": "ポップアップを閉じる",
+                "dateOthers": "ほか{{count}}日",
                 "fullDayLabel": "{{day}}日 全体",
                 "name": "名前",
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
                 "shiftTypeDropdownAria": "勤務区分を選択",
+                "violationCount": {
+                    "error": "重要 {{count}}",
+                    "warning": "通常 {{count}}"
+                },
                 "violationDialogAria": "制約の問題 {{count}}件",
                 "violationLevel": {
                     "error": "重要",
                     "warning": "通常"
-                },
-                "dateOthers": "ほか{{count}}日",
-                "violationCount": {
-                    "error": "重要 {{count}}",
-                    "warning": "通常 {{count}}"
                 }
             },
             "confirmedShifts": {
@@ -6209,9 +6338,9 @@ export const ja: TLocale = {
                     "importantUnmarked": "重要マークを外しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
                     "importFailed": "制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。",
-                    "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。",
                     "recommendedDeleted": "推奨条件を削除しました。",
-                    "resetDefaults": "推奨条件{{count}}件に初期化しました。"
+                    "resetDefaults": "推奨条件{{count}}件に初期化しました。",
+                    "saveFailed": "制約条件を保存できませんでした。しばらくしてからもう一度お試しください。"
                 },
                 "violationCount": "{{count}}件",
                 "warning": {
@@ -6378,6 +6507,7 @@ export const ja: TLocale = {
                     "title": "補助ツールを活用"
                 }
             },
+            "wardCodeLoading": "病棟コードを確認中",
             "workers": {
                 "activeCount": "投入 {{count}}名",
                 "column": {
@@ -6401,8 +6531,7 @@ export const ja: TLocale = {
                 "sortBySkill": "熟練度順",
                 "sortListMenuAria": "看護師の並び順を開く",
                 "totalCount": "合計 {{count}}名"
-            },
-            "wardCodeLoading": "病棟コードを確認中"
+            }
         },
         "member": {
             "addFirstNurse": "最初の看護師を追加",
@@ -6521,9 +6650,9 @@ export const ja: TLocale = {
                 "deleteConfirm": "{{nurseName}}看護師を削除しますか？削除後は元に戻せません。"
             },
             "emptyTeamDescription": "看護師を追加してください",
-            "emptyTeamTitle": "看護師がいません",
             "emptyTeamsDescription": "チームを作成すると看護師を追加できます。",
             "emptyTeamsTitle": "先にチームを作成してください",
+            "emptyTeamTitle": "看護師がいません",
             "modal": {
                 "deleteNurseDescriptionSuffix": " 削除後は元に戻せません。",
                 "deleteNurseTitle": "看護師を削除しますか？",
@@ -6774,28 +6903,28 @@ export const ja: TLocale = {
                 "emptyTeam": "チームを追加すると病棟を作成できます。",
                 "emptyTeamNurses": "看護師がいないチームがあります。看護師を追加するかチームを削除してください。",
                 "invalidNurseName": "看護師名を確認してください。",
-                "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "invalidShiftTime": "勤務時間を確認してください。",
                 "invalidShiftType": "勤務区分情報を確認してください。",
                 "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
                 "missingHospitalName": "病院名を入力してください。",
+                "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "submitting": "病棟を作成しています。しばらくお待ちください。",
                 "success": "病棟作成はすでに完了しています。"
+            },
+            "defaults": {
+                "newNurseName": "新規看護師 {{index}}",
+                "sampleNurse": {
+                    "first": "佐藤花子",
+                    "off": "鈴木葵",
+                    "second": "田中美咲",
+                    "skilled": "高橋結衣"
+                }
             },
             "deleteTeamAction": "チームを削除",
             "fallback": {
                 "newTeam": "新しいチーム",
                 "selectedTeam": "選択したチーム",
                 "wardName": "デューティング病棟"
-            },
-            "defaults": {
-                "newNurseName": "新規看護師 {{index}}",
-                "sampleNurse": {
-                    "first": "佐藤花子",
-                    "second": "田中美咲",
-                    "skilled": "高橋結衣",
-                    "off": "鈴木葵"
-                }
             },
             "identity": {
                 "hospitalName": "病院名",
@@ -6805,42 +6934,77 @@ export const ja: TLocale = {
                 "wardNamePlaceholder": "病棟名を入力してください"
             },
             "modal": {
+                "deleteTeamDescription": "を削除しますか？",
                 "deleteTeamDescriptionSuffix": "チームを削除すると所属看護師{{count}}名も一緒に削除されます。",
-                "deleteTeamTitle": "チームを削除しますか？",
-                "deleteTeamDescriptionWithNursesAndSchedule": "に登録された看護師{{nurseCount}}名と入力済み勤務表も削除されます。",
                 "deleteTeamDescriptionWithNurses": "に登録された看護師{{nurseCount}}名も削除されます。",
+                "deleteTeamDescriptionWithNursesAndSchedule": "に登録された看護師{{nurseCount}}名と入力済み勤務表も削除されます。",
                 "deleteTeamDescriptionWithSchedule": "に入力済みの勤務表も削除されます。",
-                "deleteTeamDescription": "を削除しますか？"
+                "deleteTeamTitle": "チームを削除しますか？"
             },
             "nurse": {
                 "deleteNurseAria": "{{nurseName}}を削除",
                 "dragAria": "ドラッグして順序を変更",
+                "emptyTeamsDescription": "チームを作成すると看護師を登録できます。",
+                "emptyTeamsTitle": "先にチームを追加してください。",
+                "selectedTeamCountAria": "{{teamName}} 看護師{{count}}名",
                 "skillAria": "{{nurseName}}の習熟度",
                 "skillUnselectedBadge": "-",
                 "skillUnselectedOption": "未選択",
-                "emptyTeamsDescription": "チームを作成すると看護師を登録できます。",
-                "emptyTeamsTitle": "先にチームを追加してください。",
                 "sort": {
                     "manual": "手動順",
                     "name": "名前順",
                     "skill": "習熟度順"
                 },
                 "sortAria": "看護師を並び替え",
-                "sortOptionsAria": "看護師の並び替えオプション",
-                "selectedTeamCountAria": "{{teamName}} 看護師{{count}}名"
+                "sortOptionsAria": "看護師の並び替えオプション"
+            },
+            "progress": {
+                "ariaLabel": "病棟作成の進行率",
+                "completeTitle": "病棟作成が完了しました",
+                "finalCheck": "もうすぐ完了です。最後の確認中です。",
+                "inputWardInfo": "入力した病棟情報を整理しています。",
+                "navigateDuty": "勤務表画面へ移動しています。",
+                "nurses": "看護師情報を連携しています。",
+                "settingTitle": "病棟を設定しています",
+                "shiftTypesAndTeams": "勤務区分とチームを設定しています。"
             },
             "schedule": {
                 "addRow": "行を追加",
                 "deleteRowAria": "{{rowLabel}}を削除",
+                "emptyTeamsDescription": "チームを作成すると初期勤務表を入力できます。",
+                "emptyTeamsTitle": "先にチームを追加してください。",
                 "monthLabel": "{{year}}年{{month}}月",
                 "nextMonth": "次の月",
                 "nurseNameAria": "{{rowNumber}}行目の看護師名",
                 "previousMonth": "前の月",
                 "rowFallback": "{{rowNumber}}行目",
                 "shiftCellAria": "{{rowNumber}}行目 {{day}}日の勤務",
-                "uploadFile": "勤務表ファイルをアップロード",
-                "emptyTeamsTitle": "先にチームを追加してください。",
-                "emptyTeamsDescription": "チームを作成すると初期勤務表を入力できます。"
+                "uploadFile": "勤務表ファイルをアップロード"
+            },
+            "scheduleUpload": {
+                "description": "Excelファイルの名前、チーム、日別勤務を読み取り、初期病棟設定に反映します。",
+                "downloadTemplate": "テンプレートをダウンロード",
+                "dropzoneTitle": "Excelファイルを選択またはドラッグしてください。",
+                "fileSupport": ".xlsx、.xlsファイルに対応しています。",
+                "submit": "ファイルを適用",
+                "submitting": "アップロード中",
+                "template": {
+                    "fileName": "初期勤務表_{{year}}_{{month}}.xlsx",
+                    "guideRow1": "1枚目のシートに看護師名、チーム、日別勤務を入力してください。",
+                    "guideRow2": "勤務はD、E、N、O、または病棟で使う勤務略称で入力できます。",
+                    "guideRow3": "空欄は休みとして扱われます。",
+                    "guideRow4": "チーム名が空欄の場合は既定チームに割り当てられます。",
+                    "guideRow5": "アップロード後、画面で内容を確認して編集できます。",
+                    "guideSheetName": "入力ガイド",
+                    "nameHeader": "名前",
+                    "sampleFirstName": "田中デューティ",
+                    "sampleFirstTeam": "1チーム",
+                    "sampleSecondName": "佐藤ティング",
+                    "sampleSecondTeam": "1チーム",
+                    "teamHeader": "チーム",
+                    "worksheetName": "勤務表"
+                },
+                "title": "勤務表ファイルをアップロード"
             },
             "section": {
                 "identity": {
@@ -6924,12 +7088,12 @@ export const ja: TLocale = {
                 "deleteTeamWithNurses": "チームを削除しました。所属看護師も一緒に削除しました。",
                 "maxNursesPerTeam": "1チームに追加できる看護師は最大{{count}}名です。",
                 "maxTeams": "チームは最大{{count}}個まで追加できます。",
+                "reloadDraftError": "保存済みの病棟作成情報を読み込めませんでした。",
                 "saveDraftError": "病棟の基本情報を保存できませんでした。もう一度お試しください。",
+                "saveScheduleError": "初期勤務表を保存できませんでした。",
                 "skillConfigDisabled": "習熟度設定を使用しません。",
                 "skillConfigSaved": "習熟度設定を看護師一覧に反映しました。",
-                "uploadApplied": "勤務表ファイルを反映しました。",
-                "reloadDraftError": "保存済みの病棟作成情報を読み込めませんでした。",
-                "saveScheduleError": "初期勤務表を保存できませんでした。"
+                "uploadApplied": "勤務表ファイルを反映しました。"
             },
             "upload": {
                 "dropHere": "勤務表ファイルをここにドロップしてください",
@@ -6942,41 +7106,6 @@ export const ja: TLocale = {
                 "targetMonth": "勤務表の基準月",
                 "unsupportedFile": "Excelファイル（.xlsx, .xls）のみアップロードできます。",
                 "uploadFile": "ファイルをアップロード"
-            },
-            "scheduleUpload": {
-                "template": {
-                    "worksheetName": "勤務表",
-                    "nameHeader": "名前",
-                    "teamHeader": "チーム",
-                    "sampleFirstName": "田中デューティ",
-                    "sampleFirstTeam": "1チーム",
-                    "sampleSecondName": "佐藤ティング",
-                    "sampleSecondTeam": "1チーム",
-                    "guideSheetName": "入力ガイド",
-                    "guideRow1": "1枚目のシートに看護師名、チーム、日別勤務を入力してください。",
-                    "guideRow2": "勤務はD、E、N、O、または病棟で使う勤務略称で入力できます。",
-                    "guideRow3": "空欄は休みとして扱われます。",
-                    "guideRow4": "チーム名が空欄の場合は既定チームに割り当てられます。",
-                    "guideRow5": "アップロード後、画面で内容を確認して編集できます。",
-                    "fileName": "初期勤務表_{{year}}_{{month}}.xlsx"
-                },
-                "title": "勤務表ファイルをアップロード",
-                "description": "Excelファイルの名前、チーム、日別勤務を読み取り、初期病棟設定に反映します。",
-                "downloadTemplate": "テンプレートをダウンロード",
-                "dropzoneTitle": "Excelファイルを選択またはドラッグしてください。",
-                "fileSupport": ".xlsx、.xlsファイルに対応しています。",
-                "submitting": "アップロード中",
-                "submit": "ファイルを適用"
-            },
-            "progress": {
-                "ariaLabel": "病棟作成の進行率",
-                "completeTitle": "病棟作成が完了しました",
-                "finalCheck": "もうすぐ完了です。最後の確認中です。",
-                "inputWardInfo": "入力した病棟情報を整理しています。",
-                "navigateDuty": "勤務表画面へ移動しています。",
-                "nurses": "看護師情報を連携しています。",
-                "settingTitle": "病棟を設定しています",
-                "shiftTypesAndTeams": "勤務区分とチームを設定しています。"
             }
         },
         "profile": {
@@ -6997,7 +7126,9 @@ export const ja: TLocale = {
             "language": {
                 "en": "English",
                 "ja": "日本語 (Japanese)",
-                "ko": "한국어 (Korean)"
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "画面言語 / Language",
             "loadingDescription": "アカウントと病棟情報を確認しています。",
@@ -7021,9 +7152,11 @@ export const ja: TLocale = {
             "savePreferences": "言語設定を保存",
             "savingPreferences": "保存中…",
             "serviceRegion": {
+                "CN": "中国",
                 "EN": "グローバル / 英語圏",
                 "JP": "日本",
-                "KR": "韓国"
+                "KR": "韓国",
+                "TH": "タイ"
             },
             "serviceRegionLabel": "サービス地域",
             "title": "マイページ",
@@ -7306,6 +7439,7 @@ export const ja: TLocale = {
                 "emailRequired": "メールアドレスを入力してください。",
                 "maxAdmins": "病棟管理者は最大{{count}}名まで追加できます。"
             },
+            "memberOnlyDescription": "病棟メンバーとして登録済みのアカウントのみ管理者に追加できます。",
             "ownerOnlyDescription": "オーナーのみ管理者権限を変更できます。",
             "registeredTitle": "登録済み管理者",
             "removeActiveAria": "{{email}}の管理者を削除",
@@ -7323,18 +7457,17 @@ export const ja: TLocale = {
             },
             "title": "病棟管理者",
             "toast": {
-                "createActive": "管理者を登録しました。",
+                "createActive": "管理者を追加しました。",
                 "createFailed": "管理者を登録できませんでした。",
-                "createReserved": "管理者メールを予約しました。",
+                "createOwnerOnly": "オーナーのみ管理者を追加できます。",
+                "createReserved": "管理者を追加しました。",
                 "duplicateEmail": "すでに登録されている管理者メールです。",
                 "ownerOnly": "オーナーのみ変更できます。",
                 "removeActive": "管理者を削除しました。",
                 "removeActiveFailed": "管理者を削除できませんでした。",
                 "removeReserved": "予約された管理者メールを削除しました。",
-                "removeReservedFailed": "予約された管理者メールを削除できませんでした。",
-                "createOwnerOnly": "オーナーのみ管理者を追加できます。"
-            },
-            "memberOnlyDescription": "病棟メンバーとして登録済みのアカウントのみ管理者に追加できます。"
+                "removeReservedFailed": "予約された管理者メールを削除できませんでした。"
+            }
         },
         "wardInfoSettings": {
             "hospitalName": "病院名",
@@ -7429,106 +7562,6 @@ export const ja: TLocale = {
                 "leave": "休み",
                 "work": "勤務"
             }
-        },
-        "home": {
-            "calendar": {
-                "allDay": "終日",
-                "deadlineMeta": "締切・{{date}}",
-                "empty": "近い予定はありません",
-                "loading": "カレンダー確認中",
-                "openAll": "カレンダーをすべて見る",
-                "overdue": "経過",
-                "scheduleDateMeta": "予定・{{date}}・{{time}}",
-                "scheduleMeta": "予定・{{time}}",
-                "timeUnknown": "時間未定",
-                "today": "今日"
-            },
-            "emptyTeams": {
-                "description": "看護師管理で看護チームを追加してください。",
-                "title": "チームを追加すると表示できます"
-            },
-            "fallback": {
-                "manager": "管理者",
-                "selectedTeam": "選択したチーム",
-                "ward": "病棟"
-            },
-            "filter": {
-                "all": "すべて"
-            },
-            "header": {
-                "createNextMonth": "来月の勤務表を作成",
-                "todayAssigned": "{{managerName}}・本日の勤務 {{count}}名"
-            },
-            "monthly": {
-                "cellTitle": "{{nurseName}} {{day}}日 {{shift}}",
-                "descriptionAll": "{{month}}・すべて",
-                "descriptionTeam": "{{month}}・{{teamName}}",
-                "edit": "勤務表を編集",
-                "emptyAllTitle": "今月の勤務表は空です",
-                "emptyDescription": "勤務表作成で確認できます。",
-                "emptyTeamTitle": "{{teamName}}の勤務表は空です",
-                "emptyTeamsTitle": "チームを追加すると勤務表を表示できます",
-                "nameHeader": "名前"
-            },
-            "nextSchedule": {
-                "title": "{{teamName}} 来月の勤務表"
-            },
-            "queue": {
-                "pendingRequests": "確認待ちの勤務希望",
-                "waitingNurses": "入室待ち"
-            },
-            "sections": {
-                "calendar": "カレンダー",
-                "monthly": "今月の勤務表",
-                "tasks": "やること",
-                "todayDuty": "本日の勤務"
-            },
-            "skeleton": {
-                "loadingAria": "ホームを読み込み中"
-            },
-            "sort": {
-                "default": "標準",
-                "label": "勤務表の並び順",
-                "nameAsc": "名前順",
-                "openAria": "勤務表の並び順を開く",
-                "todayShift": "本日の勤務順"
-            },
-            "state": {
-                "errorDescription": "しばらくしてからもう一度お試しください。",
-                "errorTitle": "ホームを読み込めませんでした",
-                "noWardDescription": "病棟を連携するとホームを表示できます。",
-                "noWardTitle": "病棟の連携が必要です",
-                "retry": "再試行"
-            },
-            "status": {
-                "checking": "確認中",
-                "complete": "確定",
-                "draft": "進行中",
-                "empty": "未作成",
-                "error": "再確認"
-            },
-            "tasks": {
-                "checking": "確認中",
-                "nextScheduleAria": "来月の勤務表の進行状況",
-                "overdueAction": "締切",
-                "overdueFallback": "最も古い締切から確認してください",
-                "overdueTitle": "期限超過 {{count}}件",
-                "pendingRequestsAction": "申請",
-                "pendingRequestsDescription": "勤務表に反映するか決めてください",
-                "pendingRequestsTitle": "確認待ちの勤務希望 {{count}}件",
-                "todayAction": "今日",
-                "todayFallback": "今日までに対応する投稿です",
-                "todayTitle": "本日締切 {{count}}件",
-                "unreadChatAction": "チャット",
-                "unreadChatDescription": "最近の会話を確認してください",
-                "unreadChatTitle": "未読の病棟チャット {{count}}件",
-                "waitingNursesAction": "メンバー",
-                "waitingNursesDescription": "病棟に追加するメンバーを確認してください",
-                "waitingNursesTitle": "入室待ち {{count}}名"
-            },
-            "today": {
-                "emptyShift": "本日の勤務は空です"
-            }
         }
     },
     "shared": {
@@ -7608,8 +7641,5102 @@ export const ja: TLocale = {
     }
 };
 
+export const zh: TLocale = {
+    "entity": {
+        "account": {
+            "profileImageAlt": "{{name}} 头像",
+            "userFallback": "用户"
+        },
+        "ward": {
+            "codeChecking": "检查",
+            "codeFallback": "区号",
+            "displayInfo": "区信息"
+        }
+    },
+    "feature": {
+        "account": {
+            "create": {
+                "exception": "创建帐户时出现问题。请稍后重试。",
+                "loading": "保存您的帐户信息。",
+                "success": "您的帐户信息已保存。"
+            },
+            "edit": {
+                "basicFailed": "更新帐户信息失败。",
+                "deleteAccountFailed": "无法删除账号。",
+                "profileFailed": "无法更新个人资料。",
+                "quitWardConfirm": "要离开病区吗？",
+                "quitWardFailed": "无法离开病区。"
+            }
+        },
+        "auth": {
+            "demoSession": {
+                "badge": "试用帐户",
+                "description": "该体验是一个临时会话，时间有限。要继续使用它，请在试用结束前切换为会员资格。",
+                "descriptionExpiringSoon": "体验很快结束。如果您想继续使用它，您将需要更改您的会员资格。",
+                "documentTitle": "体验{{countdown}} | Dutying",
+                "expiredDocumentTitle": "体验结束| Dutying",
+                "expiredModal": {
+                    "badge": "审判结束",
+                    "description": "如果您现在注册，您可以立即进行正式的帐户注册流程。试用账户转换API正在准备中，因此在这一步中，正在引导您完成登录后的注册过程。",
+                    "nextStepDescription": "注册或登录后，即可进行病区连接流程。与DUT-948连接后，经验数据的继承将继续。",
+                    "nextStepTitle": "现在可以采取下一步行动",
+                    "primaryAction": "注册并继续使用",
+                    "title": "体验时间结束"
+                },
+                "expiringSoon": "即将到期",
+                "remainingApprox": "还剩大约 {{minutes}} 分钟",
+                "remainingFallback": "体验进行中",
+                "remainingLabel": "剩余时间",
+                "remainingPrecise": "Dutying 配置 {{minutes}}:{{seconds}}",
+                "signupRequired": "需要会员转换",
+                "title": "目前，正在使用临时帐户创建时间表以供体验。",
+                "titleExpiringSoon": "距离体验结束已经不远了。"
+            },
+            "documentTitle": "Dutying | Dutying",
+            "sessionExpired": "登录时间已结束。请重新登录。",
+            "state": {
+                "errorDescription": "会话可能已过期或网络连接可能不稳定。",
+                "errorTitle": "无法检查登录状态",
+                "loadingTitle": "检查您的登录状态",
+                "logout": "注销",
+                "retry": "再试一次"
+            }
+        },
+        "createShiftModal": {
+            "backgroundColor": "背景颜色",
+            "createTitle": "添加工作/假期",
+            "delete": "删除",
+            "editTitle": "编辑工作/假期",
+            "leave": "假期",
+            "leaveNamePlaceholder": "请输入您的假期名称。",
+            "name": "作品名称",
+            "save": "节省",
+            "shortName": "缩写",
+            "shortNameHint": "* 您输入的缩写按原样显示在排班表列中。",
+            "validation": {
+                "nameRequired": "请输入您的工作名称。",
+                "shortNameFirstKey": "请使用字母、数字和符号（- . _ 等）输入第一个字母。",
+                "shortNameRequired": "请输入您的工作缩写。",
+                "timeRequired": "请输入您的工作时间。"
+            },
+            "work": "在职的",
+            "workNamePlaceholder": "请输入您的工作名称。",
+            "workTime": "时间"
+        },
+        "editShiftTeam": {
+            "addNurseFailed": "添加护士失败。",
+            "addNurseSuccess": "添加了 {{name}}。",
+            "deleteNurseFailed": "删除护士失败。",
+            "deleteNurseSuccess": "已删除护士",
+            "disconnectFailed": "无法断开连接。",
+            "disconnectSuccess": "已断开连接。",
+            "moveNurseFailed": "护士无法移动。",
+            "newNursePrefix": "新护士",
+            "updateNurseFailed": "护士信息无法修改。",
+            "updateNurseShiftFailed": "无法保存可能的班次类型。"
+        },
+        "editWard": {
+            "approveWaitingNurseFailed": "添加团队失败。",
+            "approveWaitingNurseSuccess": "一名护士已被添加到选定的团队中。",
+            "connectWaitingNurseFailed": "无法连接到现有护士账号。",
+            "connectWaitingNurseSuccess": "已关联现有护士账号。",
+            "editSettingFailed": "无法编辑班次设置。",
+            "rejectWaitingNurseFailed": "无法拒绝链路待机请求。",
+            "rejectWaitingNurseSuccess": "等待链接的请求被拒绝。"
+        },
+        "file": {
+            "profileImageUploadFailed": "上传个人资料图片失败。"
+        },
+        "register": {
+            "accountStatusChangeFailed": "无法更改账号状态。"
+        },
+        "registerWard": {
+            "defaultShiftType": {
+                "day": "天",
+                "evening": "晚上",
+                "night": "骑士",
+                "off": "离开"
+            },
+            "shiftTeams": {
+                "addNamePlaceholder": "添加姓名",
+                "addNurseAria": "添加团队护士姓名 {{index}}",
+                "addTeam": "添加团队",
+                "count": "{{count}}人",
+                "deleteNurseAria": "删除{{name}}",
+                "deleteTeamAria": "删除队伍{{index}}",
+                "description": "输入每个团队的护士姓名。本人会自动关联。",
+                "excludeMe": "* 请排除您自己",
+                "teamName": "护士{{index}}团队",
+                "title": "病区里的护士"
+            },
+            "shiftTypes": {
+                "add": "添加",
+                "addAction": "添加工作/假期",
+                "colorLabel": "颜色",
+                "column": {
+                    "category": "类别",
+                    "color": "颜色",
+                    "edit": "更正",
+                    "name": "作品名称",
+                    "shortName": "缩写",
+                    "workTime": "时间"
+                },
+                "description": "已先填入默认班次。请对其进行修改以符合病区标准。",
+                "editAria": "编辑{{name}}",
+                "leave": "假期",
+                "noTimeLeave": "这是一种没有工作时间的假期。",
+                "shortNameLabel": "缩写",
+                "title": "班次类型",
+                "typeLabel": "类别",
+                "work": "在职的"
+            },
+            "validation": {
+                "nameRequired": "请输入您的工作名称。",
+                "shortNameRequired": "请输入 {{name}} 班次的工作缩写。",
+                "timeRequired": "{{name}} 请输入您轮班的工作时间。"
+            }
+        },
+        "requestShift": {
+            "processFailed": "无法处理申请。"
+        },
+        "shiftEditor": {
+            "calendarDivision": {
+                "memberCount": "{{count}}人"
+            },
+            "calendarHeader": {
+                "carryOver": "结转到",
+                "name": "姓名",
+                "previousShift": "送货工作"
+            },
+            "editWard": {
+                "addShiftType": "添加新工作/假期",
+                "applied": "应用排班表",
+                "background": "背景",
+                "color": "颜色",
+                "count": "数数",
+                "defaultOffDays": "默认关闭 {{count}} 天",
+                "edit": "更正",
+                "editSettings": "编辑设置",
+                "leave": "假期",
+                "monthLabel": "{{month}}月",
+                "notApplied": "未应用排班表",
+                "shiftName": "缩写",
+                "shiftTypeColorStyle": "Shift型显示样式",
+                "shortName": "缩写",
+                "text": "信",
+                "type": "类别",
+                "weekendColor": "周六/周日背景颜色分类",
+                "work": "在职的",
+                "workTime": "时间"
+            },
+            "export": {
+                "excel": {
+                    "failure": "无法保存排班表 Excel 文件。请再试一次。",
+                    "fileName": "{{month}} 月度排班表.xlsx",
+                    "nameHeader": "姓名",
+                    "previousShiftHeader": "送货工作",
+                    "sheetName": "{{month}}每月排班表",
+                    "success": "已保存排班表 Excel 文件。",
+                    "title": "{{month}}每月排班表"
+                },
+                "image": {
+                    "failure": "无法保存考勤表图像。请再试一次。",
+                    "fileName": "{{year}}年{{month}}月排班表.png",
+                    "success": "已保存排班表图像。",
+                    "targetMissing": "找不到要保存的时间表屏幕。",
+                    "teamFileName": "{{teamName}} {{year}} 年 {{month}} 月排班表.png",
+                    "title": "{{year}}年{{month}}月排班表",
+                    "titleWithWard": "年 {{year}} 月 {{month}} {{wardLabel}} 排班表"
+                }
+            },
+            "grid": {
+                "clearSelection": "明确选择",
+                "nameHeader": "姓名",
+                "setSelectionD": "输入D进行选择"
+            },
+            "nurseEdit": {
+                "availableShifts": "可用的工作",
+                "availableShiftsDescription": "* 请选择所有可用职位。",
+                "close": "关闭",
+                "disabled": "不适用",
+                "dutyManager": "会写排班表的人",
+                "employmentDate": "加入年份",
+                "employmentDateDescription": "* 请输入您入院的年份。",
+                "enabled": "适用的",
+                "gender": {
+                    "female": "女性",
+                    "male": "其他"
+                },
+                "memo": "备忘录",
+                "phoneNumber": "电话号码",
+                "phoneNumberDescription": "* 紧急联络网络",
+                "save": "节省",
+                "title": "由护士管理",
+                "worker": "排班人员"
+            },
+            "panel": {
+                "expand": "扩张",
+                "faults": "问题",
+                "faultsEmpty": "如果您发现任何问题，请在此处指出。",
+                "fold": "关闭",
+                "histories": "记录",
+                "history": {
+                    "defaultLabel": "编辑历史记录",
+                    "editedCells": "{{count}} 细胞用 {{source}} 输入进行修改。",
+                    "empty": "如果您进行编辑，记录将出现在此处。",
+                    "reordered": "已调整排班人员顺序",
+                    "sourceAi": "AI",
+                    "sourceSystem": "系统",
+                    "sourceUser": "被动性"
+                }
+            },
+            "requestLayer": {
+                "pending": "所申请的工作{{name}}尚未体现。"
+            },
+            "toolbar": {
+                "autofill": "自动填充",
+                "createNextMonth": "创建下个月的排班表",
+                "edit": "编辑",
+                "layers": {
+                    "check": "班次申请反思",
+                    "fault": "错误的转变",
+                    "slash": "班次申请未得到体现"
+                },
+                "notReady": "此功能仍在准备中。",
+                "publish": "邮政",
+                "save": "节省",
+                "savedStatus": "保存完成",
+                "saveExcel": "保存Excel",
+                "saveImage": "保存图像",
+                "savingExcel": "保存Excel",
+                "savingImage": "保存图像",
+                "savingStatus": "保存",
+                "settings": {
+                    "constraint": "限制条件",
+                    "designTheme": "设计主题",
+                    "shiftType": "班次类型"
+                },
+                "shiftInfoTitle": "查看班次类型"
+            },
+            "validation": {
+                "forbidNextShift": "{{nurseName}} 在 {{prevShift}} 的第二天不能工作 {{nextShift}}。",
+                "l1ConsecutiveWork": "连续工作{{actual}}天，超过了{{expected}}天限制。",
+                "l2MaxConsecutiveSameShift": "{{shift}} 连续工作了 {{actual}} 天，超过了 {{expected}} 天限制。",
+                "l2MinOffAfterNight": "由于晚上后还有 {{actual}} 天休息，因此少于 {{expected}} 天。",
+                "l3MinStaffShortage": "{{shift}} 人员不足。",
+                "legacy": {
+                    "excludeCertainWorkTypes": "最好避免使用 ND/ED/NE/NOD 格式。",
+                    "excludeNightBeforeReqOff": "涂抹前一天最好避免上夜班。",
+                    "maxContinuousNight": "夜班最多可以连续分配 {{count}} 天。",
+                    "maxContinuousWork": "最多可以连续分配 {{count}} 天的工作。",
+                    "minContinuousNight": "请分配至少 {{count}} 天的夜间工作。",
+                    "minNightInterval": "N 轮班之间必须至少有 {{count}} 天的间隔。",
+                    "minNightIntervalFallback": "N 请在轮班之间留出足够的时间。",
+                    "minOffAssignAfterNight": "夜间工作后，建议关闭至少 {{count}} 天。"
+                },
+                "maxConsecutiveNight": "{{nurseName}}已连续工作N次{{actual}}。最多可能有 {{expected}} 次。",
+                "maxConsecutiveWork": "{{nurseName}} 已经连续工作了 {{actual}} 天。最多可能有 {{expected}} 天。",
+                "maxStaffByShift": "{{shift}} 有 {{actual}} 员工。最多可容纳 {{expected}} 人。",
+                "minMonthlyOff": "{{nurseName}} 的每月休息日是 {{actual}}。至少需要 {{expected}} 天。",
+                "minNightInterval": "{{nurseName}} N 个班次之间必须有至少 {{expected}} 天的间隔。",
+                "minOffAfterNight": "{{nurseName}} 工作 N 后没有足够的 OFF 时间。至少需要 {{expected}} 天。",
+                "minProficiencyStaffByShift": "在{{shift}}工作的护士有LV{{level}}多名，还有{{actual}}护士。至少需要{{expected}}人。",
+                "minStaffByShift": "{{shift}} 有 {{actual}} 员工。至少需要{{expected}}人。",
+                "nightBeforeRequestedOff": "{{nurseName}} 在申请关闭的前一天被分配到 N 班。",
+                "notAloneNight": "{{nurseName}}不能单独工作N。",
+                "nurseForbidWeekend": "{{nurseName}} 不能在周末或公共假期工作。",
+                "pairForbidSameShift": "{{nurseAName}} 和 {{nurseBName}} 不能同班工作。",
+                "pairPreferSameShift": "建议{{nurseAName}}和{{nurseBName}}一起工作。",
+                "title": {
+                    "minOffAfterNight": "晚上之后没有足够的休息。",
+                    "minStaffShortage": "人手不足。"
+                },
+                "unknown": "请检查限制条件。"
+            }
+        }
+    },
+    "page": {
+        "board": {
+            "comment": {
+                "cancelReply": "取消回复",
+                "loading": "正在加载评论",
+                "placeholder": "请输入评论",
+                "replyPlaceholder": "请输入您的回复",
+                "title": "回复 {{count}}"
+            },
+            "common": {
+                "add": "添加",
+                "author": "作者",
+                "cancel": "消除",
+                "close": "关闭",
+                "count": "{{count}}枪",
+                "delete": "删除",
+                "noContent": "没有内容",
+                "none": "不存在",
+                "notice": "通知",
+                "personCount": "{{count}}人",
+                "removeNamed": "删除{{name}}",
+                "reply": "回复",
+                "submit": "登记",
+                "update": "更正",
+                "write": "写作"
+            },
+            "composer": {
+                "addingImage": "附加",
+                "closeAria": "关闭写作",
+                "content": "细节",
+                "contentPlaceholder": "请输入您想分享的内容",
+                "image": "图片",
+                "imageLimit": "最大{{count}}张数，每张{{size}}MB",
+                "imageOnly": "您只能附加图像文件。",
+                "imageReadFailed": "无法加载照片。请重新选择。",
+                "maxImageCount": "您最多可以附加 {{count}} 照片。",
+                "maxImageSize": "请附上每页不大于 {{size}}MB 的照片。",
+                "newPost": "新帖子",
+                "shareTitle": "分享至病区",
+                "title": "标题",
+                "titlePlaceholder": "请输入标题"
+            },
+            "confirm": {
+                "deleteComment": "要删除我的评论吗？",
+                "deletePost": "要删除该帖子吗？",
+                "deleteSchedule": "要删除病区时间表吗？"
+            },
+            "date": {
+                "allDay": "整天",
+                "compactMonthDay": "{{month}}.{{day}}",
+                "datePickerButtonAria": "{{label}} {{value}}",
+                "datePlaceholder": "选择日期",
+                "justNow": "现在",
+                "monthDay": "{{month}} 月 {{day}} 日",
+                "monthTitle": "月 {{month}} 年 {{year}}",
+                "nextMonth": "下个月",
+                "prevMonth": "上个月",
+                "quick": {
+                    "inThreeDays": "3天后",
+                    "today": "今天",
+                    "tomorrow": "明天"
+                },
+                "selectAria": "选择{{date}}",
+                "timeUnknown": "时间待定",
+                "weekdays": {
+                    "fri": "金子",
+                    "mon": "月",
+                    "sat": "周六",
+                    "sun": "天",
+                    "thu": "脖子",
+                    "tue": "愤怒",
+                    "wed": "数字"
+                }
+            },
+            "deadline": {
+                "closePicker": "关闭截止日期选择",
+                "label": "最后期限",
+                "noSelection": "未选择",
+                "overdue": "截止日期已过",
+                "pickerTitle": "选择截止日期",
+                "selectedSuffix": "{{date}} 关闭",
+                "today": "今天截止"
+            },
+            "description": "您可以与同病区的护士共享必要的信息。",
+            "detail": {
+                "attachedImagePreview": "附图{{index}}放大图",
+                "check": "检查完成情况",
+                "checkedPeople": "检查 {{count}} 名称",
+                "closeImage": "近距离照片",
+                "deletePost": "删除帖子",
+                "imagePreview": "查看放大照片",
+                "like": "伟大的",
+                "selectPost": "请选择一个帖子",
+                "uncheck": "检查取消",
+                "unlike": "喜欢 取消"
+            },
+            "list": {
+                "clearSearch": "清除搜索词",
+                "empty": "发表新帖子",
+                "loadFailed": "无法加载帖子",
+                "loading": "正在加载帖子",
+                "searchAria": "帖子搜索",
+                "searchPlaceholder": "标题、内容搜索",
+                "title": "邮政"
+            },
+            "schedule": {
+                "calendarTitle": "病区日历",
+                "closeAria": "关闭病区时间表",
+                "createAria": "病区时间表登记",
+                "datePickerClose": "关闭日期选择",
+                "datePickerHeader": "时间表 {{label}}",
+                "dateTime": "日期和时间",
+                "dayAria": "{{date}} 时间表 {{count}}{{selectedSuffix}}",
+                "editAria": "病区时间表修改",
+                "endDate": "结束日期",
+                "endTime": "结尾",
+                "memo": "备忘录",
+                "memoPlaceholder": "请输入所需信息",
+                "modalAria": "病区 {{title}}",
+                "modalCreate": "安排登记",
+                "modalEdit": "修改时间表",
+                "modalView": "查看时间表",
+                "monthEventsTitle": "本月计划",
+                "noMemo": "没有笔记",
+                "noMonthEvents": "如果您登记病区时间表，它将显示在此处。",
+                "noSelectedDateEvents": "所选日期没有活动。",
+                "periodRequired": "请选择一个时间段。",
+                "postDeadline": "发布截止日期",
+                "sectionTitle": "病区时间表",
+                "selectedDateTitle": "{{date}} 时间表",
+                "selectedSuffix": ", 选定的",
+                "startDate": "开始日期",
+                "startTime": "开始",
+                "time": "小时",
+                "timeInputAria": "{{label}}时间",
+                "timeMissing": "请输入时间表的开始时间和结束时间。",
+                "timeRangeInvalid": "对于当天的活动，结束时间必须晚于开始时间。",
+                "title": "标题",
+                "titlePlaceholder": "请输入标题",
+                "titleRequired": "请输入标题。"
+            },
+            "state": {
+                "loadingDescription": "正在查病区信息。",
+                "loadingTitle": "正在准备一个公告板。",
+                "noWardDescription": "连接到病区后即可使用公告板。",
+                "noWardTitle": "如果连接到病区，则可以使用公告板。",
+                "retry": "再试一次",
+                "retryDescription": "请稍后重试。",
+                "wardLoadFailedTitle": "加载病区信息失败"
+            },
+            "title": "布告栏",
+            "tutorial": {
+                "composer": {
+                    "deadlineInfo": "如果您设置截止日期，它将显示在 Dutying App和病区日历上。\n尝试将其用于您想要与病区人员共享的时间表。",
+                    "deadlineTitle": "您可以指定截止日期"
+                },
+                "detail": {
+                    "checkInfo": "护士确认后，立即留下来作为支票。\n可以通过评论接收请求或更改。",
+                    "checkTitle": "通过检查和评论来管理确认。"
+                },
+                "list": {
+                    "createInfo": "所有支会成员都可以看到您所写的内容。\n写下您想与病区工作人员分享的内容。",
+                    "createTitle": "在这里写一篇新文章",
+                    "postsInfo": "您可以点击文章查看详细信息。",
+                    "postsTitle": "你可以看到帖子列表"
+                }
+            }
+        },
+        "duty": {
+            "bootstrapErrorDescription": "请再次检查您的帐户信息。如果问题仍然存在，请重新登录。",
+            "bootstrapErrorTitle": "加载病区信息失败",
+            "bootstrapLoadingDescription": "检查病区信息后，正在准备确认的排班表屏幕。",
+            "bootstrapLoadingTitle": "检查您的帐户信息",
+            "cancel": "取消",
+            "confirmedShift": "确认的排班表",
+            "createCurrentMonth": "制定本月的排班表",
+            "createNextMonth": "创建下个月的排班表",
+            "createShiftFlow": "创建排班表",
+            "editShift": "编辑排班表",
+            "emptyDescription": "您可以通过转到 {{month}} 每月排班表创建屏幕来开始计划。",
+            "emptyScheduleDescription": "您可以从自动创建的流程创建排班表。",
+            "emptyScheduleTitle": "{{teamName}} · {{month}} 该月还没有排班表。",
+            "emptyTitle": "{{teamName}} 的月份 {{month}} 没有排班表。",
+            "error": "无法加载排班表。",
+            "exportExcel": "Excel导出",
+            "exportExcelLoading": "保存Excel",
+            "loading": "正在加载排班表...",
+            "monthHeader": "月 {{month}} 年 {{year}}",
+            "nextMonth": "下个月",
+            "noTeamsDescription": "请创建工作组后再次检查。",
+            "noTeamsLabel": "没有工作团队",
+            "noTeamsTitle": "如果您创建了工作团队，您可以查看排班表。",
+            "pastEmptyScheduleTitle": "{{teamName}} · {{month}}没有每月的排班表。",
+            "prevMonth": "上个月",
+            "publish": "邮政",
+            "save": "节省",
+            "selectedTeamFallback": "选定的团队",
+            "teamsError": "无法加载工作团队。",
+            "title": "轮班管理",
+            "viewRangeDescription": "您只能创建和查看下个月的排班表。",
+            "viewRangeTitle": "无法查看这段时间的排班表。",
+            "wardCodeChecking": "检查"
+        },
+        "dutying": {
+            "comingSoon": "准备",
+            "description": "Dutying 检查使用该服务所需的信息和策略。",
+            "items": {
+                "contact": {
+                    "description": "请留下您需要帮助的任何问题或信息。",
+                    "title": "联系我们"
+                },
+                "notice": {
+                    "description": "检查更新和服务信息。",
+                    "title": "公告"
+                },
+                "privacy": {
+                    "description": "检查处理个人信息的标准。",
+                    "title": "隐私政策"
+                },
+                "terms": {
+                    "description": "检查服务条款和条件。",
+                    "title": "使用条款"
+                }
+            },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "存货",
+                "detailErrorDescription": "请稍后重试或从公告列表中重新选择。",
+                "detailErrorTitle": "无法查看通知",
+                "emptyDescription": "当新的通知发布时，您可以在这里查看。",
+                "emptyTitle": "目前还没有任何公告。",
+                "errorDescription": "请检查网络状态并重试。",
+                "errorTitle": "无法加载公告",
+                "invalidDescription": "请检查您的地址或从列表中再次选择。",
+                "invalidTitle": "找不到公告",
+                "listAria": "通知清单",
+                "loadingTitle": "通知正在加载中",
+                "loadMore": "查看更多",
+                "pinned": "重要性",
+                "publishedAt": "寄存器 {{date}}",
+                "retry": "再试一次",
+                "updatedAt": "编辑{{date}}"
+            },
+            "title": "Dutying"
+        },
+        "error": {
+            "documentTitle": "{{title}} | Dutying",
+            "goBack": "上一屏幕",
+            "goHome": "去上班时间表",
+            "notFound": {
+                "code": "404",
+                "description": "地址可能已更改或不再提供屏幕。\n请从考勤表屏幕重新开始。",
+                "title": "找不到页面"
+            },
+            "retry": "再试一次",
+            "unexpected": {
+                "code": "ERROR",
+                "description": "出现临时问题。\n如果重试后仍继续，请刷新并检查。",
+                "title": "屏幕加载失败"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "整天",
+                "deadlineMeta": "截止日期·{{date}}",
+                "empty": "没有即将举行的活动",
+                "loading": "检查日历",
+                "openAll": "查看所有日历",
+                "overdue": "通过了",
+                "scheduleDateMeta": "时间表·{{date}}·{{time}}",
+                "scheduleMeta": "时间表·{{time}}",
+                "timeUnknown": "时间待定",
+                "today": "今天"
+            },
+            "emptyTeams": {
+                "description": "在排班人员管理中增加护理团队。",
+                "title": "添加团队就可以看到。"
+            },
+            "fallback": {
+                "manager": "经理",
+                "selectedTeam": "选定的团队",
+                "ward": "病区"
+            },
+            "filter": {
+                "all": "全部的"
+            },
+            "header": {
+                "createNextMonth": "创建下个月的排班表",
+                "todayAssigned": "{{managerName}} · {{count}} 今天工作的人"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} {{day}}일 {{shift}}",
+                "descriptionAll": "{{month}} · 全部",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "编辑排班表",
+                "emptyAllTitle": "这个月的排班表是空的。",
+                "emptyDescription": "您可以通过创建排班表来检查它。",
+                "emptyTeamsTitle": "如果您添加团队，您可以查看时间表。",
+                "emptyTeamTitle": "{{teamName}} 排班表为空。",
+                "nameHeader": "姓名"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} 下个月的排班表"
+            },
+            "queue": {
+                "pendingRequests": "待处理的班次申请",
+                "waitingNurses": "等待入场"
+            },
+            "sections": {
+                "calendar": "压延机",
+                "monthly": "本月排班表",
+                "tasks": "该怎么办",
+                "todayDuty": "今天的转变"
+            },
+            "skeleton": {
+                "loadingAria": "加载首页"
+            },
+            "sort": {
+                "default": "基本的",
+                "label": "考勤表排序标准",
+                "nameAsc": "按名字",
+                "openAria": "打开时间表排序标准",
+                "todayShift": "今天的工单"
+            },
+            "state": {
+                "errorDescription": "请稍后重试。",
+                "errorTitle": "加载首页失败",
+                "noWardDescription": "如果连接病区，就可以看到家。",
+                "noWardTitle": "需要连接病区。",
+                "retry": "再试一次"
+            },
+            "status": {
+                "checking": "检查",
+                "complete": "确认的",
+                "draft": "进行中",
+                "empty": "写之前",
+                "error": "再次检查"
+            },
+            "tasks": {
+                "checking": "正在检查",
+                "nextScheduleAria": "下个月的排班表进度状况",
+                "overdueAction": "最后期限",
+                "overdueFallback": "从最近的截止日期开始检查。",
+                "overdueTitle": "最后关闭 {{count}}",
+                "pendingRequestsAction": "应用",
+                "pendingRequestsDescription": "决定是否将其反映在您的工作日程中",
+                "pendingRequestsTitle": "待处理的班次申请 {{count}} 案例",
+                "todayAction": "今天",
+                "todayFallback": "这是一个直到今天才会处理的帖子。",
+                "todayTitle": "今天截止：{{count}}",
+                "unreadChatAction": "讲话",
+                "unreadChatDescription": "检查最近的对话",
+                "unreadChatTitle": "{{count}} 未读病区谈话",
+                "waitingNursesAction": "成员",
+                "waitingNursesDescription": "查看要添加到病区的成员",
+                "waitingNursesTitle": "{{count}} 等待入场的人"
+            },
+            "today": {
+                "emptyShift": "今天的班次是空的。"
+            }
+        },
+        "landing": {
+            "appFeature": {
+                "community": {
+                    "description": "从实用信息到难以开口的烦恼，都可以匿名分享。",
+                    "highlight": "真实故事",
+                    "label": "护士社区",
+                    "title": "护士的真实故事\n在这里汇聚"
+                },
+                "home": {
+                    "description": "不用打开 App，也能通过小组件一眼确认。",
+                    "highlightPersonal": "个人日程",
+                    "highlightSchedule": "排班安排",
+                    "label": "首页",
+                    "title": "从排班安排到\n个人日程，一次掌握"
+                },
+                "ward": {
+                    "description": "让轮班所需的日程确认和协调更轻松。",
+                    "highlight": "连接病区",
+                    "label": "病区",
+                    "title": "连接病区后\n一起查看同事日程"
+                }
+            },
+            "appSection": {
+                "pill": "APP",
+                "titleLine1": "从排班日程管理到",
+                "titleLine2": "病区协作，一次完成"
+            },
+            "common": {
+                "appDownload": "下载 App",
+                "appSchedule": "在 App 中查看排班表",
+                "copyright": "ⓒ 2026 Dutying. All Rights Reserved",
+                "languageSelect": "选择语言",
+                "login": "登录",
+                "logout": "退出登录",
+                "makeSchedule": "创建排班表",
+                "profile": "个人中心",
+                "profileClose": "关闭个人中心",
+                "profileMenu": "个人资料菜单",
+                "schedule": "排班表",
+                "tryDemo": "体验一下",
+                "viewDesktop": "查看电脑版",
+                "viewMobile": "查看移动版",
+                "webMakeSchedule": "在 Web 上创建排班表"
+            },
+            "feature": {
+                "ai": {
+                    "description": "容易遗漏的条件\n也可以按步骤检查并应用。",
+                    "label": "AI 自动填充",
+                    "title": "空白排班表\n不必再从零填写"
+                },
+                "integration": {
+                    "description": "护士可以在 App 中提交班次申请。\n排班表确认后，会立即同步到 App。",
+                    "highlight": "联动",
+                    "label": "联动",
+                    "title": "护士和病区\n可以轻松联动"
+                },
+                "review": {
+                    "description": "需要调整的地方\n可以立即查看，也能看到修改建议。",
+                    "label": "AI 自动填充",
+                    "title": "异常排班\n立即检查并修正"
+                },
+                "ward": {
+                    "description": "从必看公告到日常通知，\n都集中在一处，不怕遗漏。",
+                    "highlightNurse": "护士",
+                    "highlightShare": "分享",
+                    "label": "公告栏",
+                    "title": "向病区护士\n轻松分享需要知道的内容"
+                }
+            },
+            "finalCta": {
+                "download": "下载 App",
+                "eyebrow": "只需 1 分钟",
+                "titleLine1": "连接 Web 和 App",
+                "titleLine2": "让管理更轻松"
+            },
+            "header": {
+                "app": "护士 App",
+                "homeAria": "Dutying 落地页首页",
+                "inquiry": "联系我们",
+                "sectionAria": "落地页导航",
+                "web": "排班管理员 Web"
+            },
+            "hero": {
+                "ariaLabel": "使用 Dutying，让轮班排班更轻松",
+                "description": "用 AI 轻松快速地创建排班表，\n并与护士联动，让病区管理更简单",
+                "phraseSchedule": "轮班排班，",
+                "phraseWard": "病区管理、",
+                "suffix": "用 Dutying 更轻松"
+            },
+            "imageAlt": {
+                "appLogo": "Dutying App 标志图片",
+                "appScreen": "App 画面",
+                "integration": "护士在 App 中查看班次申请的画面",
+                "mobileHero": "Dutying App 排班日程画面",
+                "wardBoard": "病区公告栏屏幕",
+                "webSchedule": "Dutying Web 排班表编辑画面"
+            },
+            "mobileBenefits": {
+                "community": {
+                    "description": "护士之间轻松分享必要信息和日常话题。",
+                    "title": "护士社区"
+                },
+                "schedule": {
+                    "description": "在 App 中直接查看我的排班表和个人日程。",
+                    "title": "查看排班安排"
+                },
+                "ward": {
+                    "description": "连接病区，轻松发送班次和休假申请。",
+                    "title": "病区联动"
+                }
+            },
+            "mobileHero": {
+                "benefitsLabel": "App 主要功能",
+                "benefitsTitleLine1": "把护士必备功能",
+                "benefitsTitleLine2": "都装进 Dutying",
+                "communityAria": "职业、临床和烦恼，都在 Dutying 分享",
+                "communityLine1": "职业、临床、烦恼",
+                "communityLine2": "都在 Dutying 分享",
+                "description": "从班次确认、班次/休假申请到病区消息，都可以在 App 中处理。",
+                "downloadEyebrow": "下载 Dutying App",
+                "downloadTitleLine1": "我的班次和病区消息",
+                "downloadTitleLine2": "用 App 不再错过",
+                "requestAria": "更轻松地发送班次和休假申请",
+                "requestLine1": "班次和休假申请",
+                "requestLine2": "轻松发送",
+                "scheduleAria": "在 Dutying 立即查看我的排班安排",
+                "scheduleLine1": "我的排班安排，",
+                "scheduleLine2": "在 Dutying 立即查看",
+                "wardAria": "病区消息也能通过 Dutying 立即接收",
+                "wardLine1": "病区消息也能",
+                "wardLine2": "通过 Dutying 立即接收"
+            },
+            "title": "排班表\n现在更轻松了！",
+            "webSection": {
+                "pill": "Web",
+                "titleHighlight": "AI 1 分钟",
+                "titleLine1": "复杂的排班表，",
+                "titleLine2Prefix": "用",
+                "titleLine2Suffix": "就能完成"
+            }
+        },
+        "login": {
+            "appleContinue": "继续使用苹果",
+            "appleCta": "开始使用您的 Apple 帐户",
+            "appleStart": "开始使用苹果",
+            "backToLogin": "返回登录",
+            "continuePrefix": "如果你继续",
+            "demoExpired": {
+                "bannerDescription": "官方转换API正在准备中，因此现阶段正在在登录后连接到会员注册流程。",
+                "bannerTitle": "试用结束后转换的信息",
+                "description": "试用期已结束，但如果您现在注册，则可以立即开始公众号注册流程。",
+                "title": "注册并继续使用"
+            },
+            "demoSignupDescription": "创建帐户后，您可以通过创建新病区来继续管理您的数据。",
+            "demoSignupTitle": "将您的试用帐户转换为完整帐户",
+            "description": "使用您的社交帐户启动 Dutying。",
+            "email": "电子邮件",
+            "emailPlaceholder": "请输入您的电子邮件",
+            "emailSignupPlaceholder": "请输入您的电子邮件",
+            "feedback": {
+                "emailVerified": "邮箱验证已完成。",
+                "invalidCredentials": "您的电子邮件或密码不正确。",
+                "legacyInvalidCredentialsServerText": "您的 ID 或密码不正确。",
+                "loginFailed": "无法登录。请重试。",
+                "passwordResetFailed": "无法更改密码。请再试一次。",
+                "passwordResetSuccess": "密码已更改。请使用您的新密码登录。",
+                "passwordResetTokenVerified": "验证码已确认。请输入新密码。",
+                "signupFailed": "无法完成注册。请再试一次。",
+                "verificationFailed": "无法发送验证电子邮件。请再试一次。",
+                "verificationInvalid": "请检查认证号码。",
+                "verificationSent": "验证电子邮件已发送。请检查您邮箱中的验证码并输入。"
+            },
+            "forgotPassword": "查找密码",
+            "hasAccountPrompt": "已经有帐户？",
+            "hidePassword": "隐藏您的密码",
+            "kakaoContinue": "继续卡考",
+            "kakaoCta": "开始使用 Kakao 帐户",
+            "kakaoStart": "从卡考开始",
+            "loginLink": "登录",
+            "loginVisualAria": "Dutying 登录介绍图",
+            "marketingConsent": "我同意接收营销信息。",
+            "name": "姓名",
+            "namePlaceholder": "请输入您的姓名",
+            "newPassword": "新密码",
+            "newPasswordConfirm": "确认新密码",
+            "newPasswordConfirmPlaceholder": "请重新输入您的新密码",
+            "newPasswordPlaceholder": "请输入新密码",
+            "nextImage": "下一张图片",
+            "noAccountPrompt": "还没有帐户？",
+            "optionalConsentLabel": "[可选]",
+            "password": "密码",
+            "passwordConfirm": "验证密码",
+            "passwordConfirmPlaceholder": "请重新输入您的密码",
+            "passwordPlaceholder": "请输入您的密码",
+            "passwordResetSubmit": "重置密码",
+            "passwordResetTitle": "查找密码",
+            "passwordResetVerificationCodeAria": "密码重置 验证号码",
+            "passwordSignupPlaceholder": "请输入您的密码",
+            "previousImage": "上一张图片",
+            "privacyPolicy": "隐私政策",
+            "privacyNoticePrefix": "个人信息将按照",
+            "privacyNoticeSuffix": "处理。",
+            "redirect": {
+                "adminTokenMissing": "未收到管理员登录令牌。请检查您的社交登录设置。",
+                "errorTitle": "社交登录失败",
+                "loading": "您正在登录。"
+            },
+            "requiredConsentLabel": "[必填]",
+            "showPassword": "查看密码",
+            "signupLink": "加入会员",
+            "signupTitle": "加入会员",
+            "sixDigitVerificationCodePlaceholder": "6位验证码",
+            "submitLogin": "登录",
+            "submitSignup": "创建一个帐户",
+            "termsConnector": "和",
+            "termsAgreementSuffix": "。",
+            "termsOfService": "服务条款",
+            "termsPrefix": "当您按下按钮时",
+            "termsSuffix": "。",
+            "termsSuffixStrict": "。",
+            "title": "登录",
+            "validation": {
+                "emailInvalid": "请输入有效的电子邮件地址。",
+                "emailVerificationRequired": "请完成电子邮件验证。",
+                "loginRequired": "请输入您的电子邮件和密码。",
+                "nameRequired": "请输入您的姓名。",
+                "passwordConfirmRequired": "请重新输入您的密码。",
+                "passwordMinLength": "请输入至少 {{count}} 个字符作为您的密码。",
+                "passwordMismatch": "密码不同。",
+                "termsRequired": "请同意服务条款。",
+                "verificationCodeRequired": "请输入您的身份验证号码。",
+                "verificationConfirmRequired": "请完成身份验证。"
+            },
+            "verificationCodeAria": "邮箱验证码",
+            "verificationCodePlaceholder": "请输入您的验证码",
+            "verificationComplete": "验证完成",
+            "verificationConfirm": "查看",
+            "verificationResend": "重传",
+            "verificationSend": "认证"
+        },
+        "makeShift": {
+            "aiRefill": {
+                "action": "补充装",
+                "cannotAutofillYet": "加载排班表信息。请稍后重试。",
+                "confirm": "确认排班表",
+                "description": {
+                    "error": "AI请求无法完成。当前屏幕上的时间表将保持不变，您可以立即重试。",
+                    "idle": "您可以使用上一步中整理的条件启动 AI 自动填充。",
+                    "loading": "在等待回复期间，会暂时阻止确认和重新请求。",
+                    "success": "AI已经反映了新的排班表。审核后，您可以自行编辑或立即确认。"
+                },
+                "draft": {
+                    "none": "正在查看基本时间表，尚未保存任何编辑。",
+                    "saved": "当前编辑将被保留并自动保存。"
+                },
+                "empty": "无法加载时间表数据",
+                "error": "无法加载时间表",
+                "firstFill": "自动填充",
+                "fixedOnly": "仅查看引脚",
+                "generating": "填充...",
+                "hidingFaults": "错误隐藏",
+                "intro": "即使失败，当前编辑的版本也会保留。\n您可以返回上一步并重新查看条件，或在此处重试并确认。",
+                "lastShiftBlankDialog": {
+                    "cancel": "确认输入",
+                    "confirm": "确认原样",
+                    "description": "上一个班次中有一个空格。\n如果您想继续上个月的工作，请输入。",
+                    "title": "您确认之前的班次了吗？"
+                },
+                "loading": "正在加载排班表。",
+                "previous": "之前的步骤",
+                "progressToast": "填写排班表表",
+                "publishSuccess": "已确认并发布排班表。",
+                "requestFailed": "AI 自动填充无法完成。",
+                "resetAction": "重置",
+                "retry": "再试一次",
+                "saveFailed": "保存失败。请稍后重试。",
+                "saveSnapshot": "临时储存",
+                "saveSnapshotFailed": "暂时保存失败。",
+                "saveSnapshotSuccess": "就暂时保存下来了。",
+                "savingSnapshot": "暂时保存...",
+                "showingFaults": "显示错误",
+                "snapshotLimitDialog": {
+                    "cancel": "消除",
+                    "confirm": "删除后保存",
+                    "description": "要保存新历史记录，必须删除最旧的历史记录“{{title}}”。要删除并保存它吗？",
+                    "title": "最多只能保存 10 条历史记录。"
+                },
+                "snapshotLimitReached": "最多可保存 10 条历史记录。",
+                "snapshotSidebar": {
+                    "close": "关闭保存",
+                    "defaultTitle": "自动填充保存的副本",
+                    "delete": "删除历史记录",
+                    "deleteCancel": "消除",
+                    "deleteConfirm": "删除",
+                    "deleteDescription": "删除“{{title}}”历史记录。删除的历史记录无法再次检索。",
+                    "deleteFailed": "删除历史记录失败。",
+                    "deleteSuccess": "已删除历史记录。",
+                    "deleteTitle": "要删除这条历史记录吗?",
+                    "description": "记录自动填充结果",
+                    "empty": "目前还没有临时保存的排班表。",
+                    "emptyCells": "空格 {{count}} 空格",
+                    "error": "无法加载保存列表。",
+                    "filledCells": "分配{{count}}空间",
+                    "hardViolations": "重大违规 {{count}}",
+                    "loadCancel": "消除",
+                    "loadConfirm": "加载",
+                    "loadDescription": "使用保存的“{{title}}”版本更改当前排班表。\n加载后，屏幕上当前正在编辑的内容消失。",
+                    "loadFailed": "无法加载保存的内容。",
+                    "loading": "正在加载保存的文件...",
+                    "loadSuccess": "{{title}} 保存的副本已加载。",
+                    "loadTitle": "要加载保存的记录吗?",
+                    "renameFailed": "无法更改历史标题。",
+                    "renameSuccess": "已更改历史标题。",
+                    "renameTitleAria": "历史标题",
+                    "restore": "加载",
+                    "savedCount": "{{count}} 保存的副本",
+                    "selectedHistory": "选定的历史",
+                    "softViolations": "一般违规 {{count}}",
+                    "title": "历史",
+                    "todayAt": "今天{{time}}",
+                    "toggleDetails": "查看详情",
+                    "totalViolations": "全部 {{count}}"
+                },
+                "title": {
+                    "error": "停止填充",
+                    "idle": "准备好自动填充",
+                    "loading": "计算排班表",
+                    "success": "填充完成"
+                },
+                "toolbarHint": "根据实际情况和所从事的工作填空。",
+                "toolbarSubTitle": "使用人工智能自动填充功能立即填充空白。",
+                "toolbarTitle": "请填写并确认时间表。",
+                "validationStatus": {
+                    "checking": "审查约束条件"
+                },
+                "viewAll": "查看全部"
+            },
+            "calendar": {
+                "carried": "结转到",
+                "clearCell": "空的",
+                "closePopover": "关闭弹出窗口",
+                "dateOthers": "等{{count}}天",
+                "fullDayLabel": "{{day}}全天",
+                "name": "姓名",
+                "nurseDayLabel": "{{name}} · {{day}}일",
+                "previousShifts": "送货工作",
+                "shiftTypeDropdownAria": "选择班次类型",
+                "violationCount": {
+                    "error": "重要{{count}}",
+                    "warning": "通用{{count}}"
+                },
+                "violationDialogAria": "{{count}} 约束违规",
+                "violationLevel": {
+                    "error": "重要性",
+                    "warning": "常见的"
+                }
+            },
+            "confirmedShifts": {
+                "editAction": "编辑",
+                "empty": "目前还没有确定的排班表。",
+                "error": "无法加载确认的时间表",
+                "fallbackTeamName": "选定的团队",
+                "hint": "与病区关联的护士可以直接从App查看他们确认的排班表！",
+                "imageAction": "图片下载",
+                "imageActionLoading": "下载图片",
+                "loading": "正在加载确认的时间表。",
+                "title": "这是{{teamName}}的{{month}}每月排班表。",
+                "wardCodeGuideAction": "查看病区代码信息"
+            },
+            "constraints": {
+                "action": {
+                    "add": "添加约束",
+                    "reset": "重置"
+                },
+                "category": {
+                    "combination": "工会",
+                    "forbidden": "禁止图案",
+                    "personal": "每人限制",
+                    "recommended": "受到推崇的",
+                    "skill": "熟练程度",
+                    "staffing": "人数",
+                    "workRest": "连续工作/休息"
+                },
+                "count": "{{count}}",
+                "dragHandleAria": "拖动以改变位置",
+                "empty": "如果您添加约束，您可以在此处看到它们。",
+                "exclude": "例外",
+                "excludeRuleAria": "关闭这个约束",
+                "import": {
+                    "cancel": "消除",
+                    "confirm": "加载",
+                    "currentTeam": "当前团队：{{teamName}}",
+                    "disabledTitle": "当有两个或更多团队时可以使用",
+                    "loading": "加载中",
+                    "modalTitle": "负载限制",
+                    "selectedTeamFallback": "选定的团队",
+                    "sourceTeamFallback": "另一队",
+                    "teamLabel": "团队加载",
+                    "title": "导入其他团队约束"
+                },
+                "important": {
+                    "ariaMark": "重要标志",
+                    "ariaRemove": "取消标记重要",
+                    "label": "重要性",
+                    "recommendedTitle": "推荐重要注意事项"
+                },
+                "info": "请打开重要标志以了解必须遵守的条件。",
+                "infoTooltipAria": "约束重要标记指南",
+                "listTitle": "约束条件",
+                "modal": {
+                    "addAria": "添加约束",
+                    "addTitle": "添加",
+                    "close": "关闭",
+                    "description": "根据工作日程，某些条件可能无法反映。",
+                    "title": "添加约束"
+                },
+                "option": {
+                    "all": "每一个",
+                    "allDays": "每天",
+                    "allPeople": "每个人",
+                    "dayLabel": "{{day}}天"
+                },
+                "phrase": {
+                    "day": "天",
+                    "gte": "更多的",
+                    "lte": "以下",
+                    "max": "最大限度",
+                    "min": "最低限度"
+                },
+                "rule": {
+                    "excludeCertainWorkTypes": {
+                        "label": "避免 ND/ED/NE/NOD 工作模式"
+                    },
+                    "excludeNightBeforeReqOff": {
+                        "label": "避免在下班前一天晚上使用"
+                    },
+                    "maxContinuousNight": {
+                        "label": "连续的夜晚"
+                    },
+                    "maxContinuousWork": {
+                        "label": "连续轮班数"
+                    },
+                    "minContinuousNight": {
+                        "label": "连续的夜晚"
+                    },
+                    "minNightInterval": {
+                        "label": "夜间间隔"
+                    },
+                    "minOffAssignAfterNight": {
+                        "label": "夜班结束后分配任务"
+                    }
+                },
+                "ruleAction": {
+                    "deleteAria": "删除约束"
+                },
+                "section": {
+                    "strong": "河流限制",
+                    "weak": "关于约束"
+                },
+                "state": {
+                    "loadError": "无法加载约束。请稍后重试。",
+                    "loading": "负载限制",
+                    "teamRequired": "请先选择您的工作团队。"
+                },
+                "templates": {
+                    "IMPORTANT_FORBIDDEN_DUTY_PATTERNS": {
+                        "label": "重要基本条件",
+                        "sentence": "避免 ND/ED/NE/NOD 工作模式。"
+                    },
+                    "IMPORTANT_MAX_NIGHT_STREAK": {
+                        "label": "重要基本条件",
+                        "sentence": "您可以连续工作 N 最多 {day} 天。"
+                    },
+                    "IMPORTANT_MAX_SAME_DUTY_STREAK": {
+                        "label": "重要基本条件",
+                        "sentence": "您最多可以连续 {days} 天进行相同的轮班工作。"
+                    },
+                    "IMPORTANT_MAX_WORK_STREAK": {
+                        "label": "重要基本条件",
+                        "sentence": "您最多可以连续工作 {day} 天。"
+                    },
+                    "IMPORTANT_MIN_NIGHT_INTERVAL": {
+                        "label": "重要基本条件",
+                        "sentence": "N 个轮班必须间隔至少 {days} 天"
+                    },
+                    "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
+                        "label": "重要基本条件",
+                        "sentence": "申请 OFF 避免在前一天工作 N。"
+                    },
+                    "IMPORTANT_OFF_AFTER_NIGHT": {
+                        "label": "重要基本条件",
+                        "sentence": "N 下班后您必须至少休息 {days} 天。"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_N": {
+                        "label": "禁止模式规则",
+                        "sentence": "{target} 最多可以连续执行 N 次。"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_WORK": {
+                        "label": "连续工作/休息规则",
+                        "sentence": "{target} 每月最多可以连续工作 {day} 天。"
+                    },
+                    "SOFT_MAX_STAFF_BY_DUTY": {
+                        "label": "人数规则",
+                        "sentence": "最多可分配 {count} 人执行 {duty} Dutying。"
+                    },
+                    "SOFT_MIN_MONTHLY_OFF": {
+                        "label": "连续工作/休息规则",
+                        "sentence": "{target} 每月必须至少有 {days} 个假期"
+                    },
+                    "SOFT_MIN_SKILL_IN_DUTY": {
+                        "label": "新人/经验丰富/熟练规则",
+                        "sentence": "必须至少有 {count} 名 {level} 或更高级别的护士执行 {duty} 值班。"
+                    },
+                    "SOFT_MIN_STAFF_BY_DATE_DUTY": {
+                        "label": "人数规则",
+                        "sentence": "{date} 的 {duty} 至少需要 {count} 人"
+                    },
+                    "SOFT_MIN_STAFF_BY_DUTY": {
+                        "label": "人数规则",
+                        "sentence": "必须至少有 {count} 人在执行 {duty}"
+                    },
+                    "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
+                        "label": "人数规则",
+                        "sentence": "至少有 {count} 人需要在周末/节假日工作 {duty}。"
+                    },
+                    "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
+                        "label": "连续工作/休息规则",
+                        "sentence": "连续工作 {days} 天后，{target} 需要关闭。"
+                    },
+                    "SOFT_NEED_OFF_AFTER_N": {
+                        "label": "连续工作/休息规则",
+                        "sentence": "{target} 工作 N 后至少需要休息 {day}"
+                    },
+                    "SOFT_NEWBIE_NO_SOLO_N": {
+                        "label": "新人/经验丰富/熟练规则",
+                        "sentence": "{护士}（新）避免单独工作 N"
+                    },
+                    "SOFT_NO_E_TO_D": {
+                        "label": "禁止模式规则",
+                        "sentence": "{target} 避免在 E 后的第二天工作 D"
+                    },
+                    "SOFT_NO_N_TO_D": {
+                        "label": "禁止模式规则",
+                        "sentence": "{target} 避免在 N 后的第二天工作 D。"
+                    },
+                    "SOFT_NO_N_TO_E": {
+                        "label": "禁止模式规则",
+                        "sentence": "{target} 避免在 N 后的第二天工作 E。"
+                    },
+                    "SOFT_NO_SAME_DUTY_PAIR": {
+                        "label": "工会",
+                        "sentence": "{nurseA} 和 {nurseB} 避免同班"
+                    },
+                    "SOFT_NO_WEEKEND_FOR_NURSE": {
+                        "label": "每人工作限制",
+                        "sentence": "{nurse} 避免在周末工作"
+                    },
+                    "SOFT_PREFER_SAME_DUTY_PAIR": {
+                        "label": "工会",
+                        "sentence": "{nurseA} 喜欢与 {nurseB} 轮班"
+                    }
+                },
+                "toast": {
+                    "added": "添加了约束条件。",
+                    "duplicatesRemoved": "已整理 {{count}} 重复约束。",
+                    "importantUnmarked": "未将其标记为重要。",
+                    "imported": "{{teamName}} 约束按原样加载。",
+                    "importFailed": "无法加载约束。请稍后重试。",
+                    "recommendedDeleted": "推荐的条件已被删除。",
+                    "resetDefaults": "已初始化为推荐条件{{count}}。",
+                    "saveFailed": "无法保存约束。请稍后重试。"
+                },
+                "violationCount": "{{count}}",
+                "warning": {
+                    "deleteConfirm": "删除",
+                    "deleteDescription": "也要从列表中删除吗?",
+                    "deleteTitle": "您想删除推荐条件吗？",
+                    "description": "此条件是稳定排班表的重要且推荐的基本要求。",
+                    "keep": "维持",
+                    "unmarkConfirm": "取出要点",
+                    "unmarkDescription": "也要取消重要标记吗?",
+                    "unmarkTitle": "要重要的标记去掉吗？"
+                }
+            },
+            "fixedShifts": {
+                "empty": "本月还没有排班表。",
+                "error": "无法加载固定班次数据",
+                "hint": "如果有已经设定或必须遵守的时间表，例如培训、教育或公共服务，请修复它。",
+                "loading": "正在加载排班表。",
+                "lockedToast": "固定班次只能在“固定班次”选项卡中修改。",
+                "saveFailed": "保存失败。请稍后重试。",
+                "title": "请输入您想要固定的时间表"
+            },
+            "monthRangeDescription": "在Dutying中，您只能创建本月和下个月的排班表。",
+            "monthRangeTitle": "在此期间无法创建排班表。",
+            "navigation": {
+                "complete": "完全的",
+                "moving": "在移动中...",
+                "next": "下一个",
+                "previous": "前",
+                "saving": "保存…",
+                "sequentialRequired": "请从前面的步骤中一一进行。",
+                "workerRequired": "排班表至少需要一名护士。"
+            },
+            "overview": {
+                "checking": "正在检查排班表状态。",
+                "continueShift": "继续制作",
+                "createShift": "{{month}}创建每月排班表",
+                "error": "无法检查排班表的状态。",
+                "fullyAssignedCantStart": "这个月的排班表已经全部填写完毕，所以无法继续在这里创建它。",
+                "loading": "正在加载排班表...",
+                "noTeamsDescription": "请先创建工作组或检查病区设置。",
+                "noTeamsLabel": "没有工作团队",
+                "noTeamsTitle": "您可以从创建一个工作团队开始。",
+                "selectedTeamFallback": "选定的团队",
+                "shiftDraft": "正在为 \u003cteam>{{teamName}}\u003c/team> 制作 \u003cmonth>{{month}}\u003c/month> 的排班表",
+                "shiftDraftDescription": "它还没有完成。您可以继续创建以前保存的内容。",
+                "shiftEmpty": "\u003cteam>{{teamName}}\u003c/team> 尚无 \u003cmonth>{{month}}\u003c/month> 的时间表。",
+                "shiftExists": "已有 {{month}} 月份 {{teamName}} 的时间表。",
+                "shiftPartialFill": "{{teamName}} 月份 {{month}} 的时间表上留有空白。",
+                "viewShift": "点击此处查看{{month}}每月排班表"
+            },
+            "progress": {
+                "ariaLabel": "创建排班表的步骤",
+                "current": "{{current}}/{{total}}단계 · {{label}}",
+                "eyebrow": "创建排班表",
+                "state": {
+                    "available": "活动",
+                    "current": "进行中",
+                    "done": "完全的",
+                    "locked": "锁定"
+                }
+            },
+            "requests": {
+                "action": {
+                    "accept": "验收",
+                    "hold": "抓住",
+                    "reject": "拒绝"
+                },
+                "badge": {
+                    "accepted": "已接受申请",
+                    "pending": "待申请",
+                    "rejected": "被拒绝的申请"
+                },
+                "count": "{{count}}",
+                "descriptionHighlight": "固定到排班表",
+                "descriptionLine": "请接受反映的申请并拒绝排除的申请。",
+                "descriptionPrefix": "反映的时间表是",
+                "descriptionSuffix": "做。",
+                "empty": "这个月的排班表还没有确定。",
+                "emptyAccepted": "如果您有已接受的申请，您将在此处看到它。",
+                "emptyPending": "当有审查申请时，它会出现在这里。",
+                "emptyRejected": "如果有被拒绝的申请，则会显示在此处。",
+                "error": "无法加载App工作数据",
+                "itemLabel": "{{name}} / {{date}}일",
+                "loading": "加载App工作数据。",
+                "lockedToast": "请求的工作只能在已应用的工作选项卡中修改。",
+                "panelTitle": "申请审查",
+                "section": {
+                    "accepted": "已接受申请",
+                    "pending": "等待",
+                    "rejected": "被拒绝"
+                },
+                "summary": {
+                    "accepted": "验收",
+                    "pending": "气氛",
+                    "rejected": "拒绝"
+                },
+                "summaryCountsAria": "已接受、待处理和拒绝的申请数量摘要",
+                "table": {
+                    "name": "姓名"
+                },
+                "title": "请确认您的工作申请。",
+                "updateFailed": "无法更改申请状态。请再试一次。"
+            },
+            "stepContent": {
+                "importantBadge": "重要性",
+                "importantPrefix": "必须遵守的条件是",
+                "importantSuffix": "请打开按钮。"
+            },
+            "stepLoadFailed": "无法加载进度步骤",
+            "steps": {
+                "aiAutofill": {
+                    "caption": "填写剩余的空白并做出最终决定。",
+                    "label": "写一个排班表"
+                },
+                "confirmedShifts": {
+                    "caption": "检查已完成的排班表",
+                    "label": "确认的排班表"
+                },
+                "constraints": {
+                    "caption": "定义约束",
+                    "introDescription": "对于必须遵守的条件，请打开重要按钮。",
+                    "introTitle": "请设置限制条件",
+                    "label": "约束条件"
+                },
+                "fixedShifts": {
+                    "caption": "提前修复一些班次",
+                    "label": "固定班次"
+                },
+                "requests": {
+                    "caption": "接受或拒绝护士发送的工作请求。",
+                    "label": "班次申请已确认"
+                },
+                "workers": {
+                    "caption": "检查哪些护士将值班",
+                    "introDescription": "请检查是否有人失踪。\n如果需要更改，可以在员工管理中更改。",
+                    "introTitle": "请检查值班人数。",
+                    "label": "排班人员确认"
+                }
+            },
+            "tutorial": {
+                "aiAutofill": {
+                    "info": "您可以多次运行人工智能自动填充，以快速接近您想要的排班表。\n请管理员再次检查结果并进行更正。",
+                    "title": "人工智能自动填充"
+                },
+                "constraints": {
+                    "info": "除了七个建议的约束之外，您还可以添加必要的条件。\n条件越多，任务就越困难。",
+                    "title": "添加约束"
+                },
+                "fixedShifts": {
+                    "info": "选择一个单元格并使用键盘输入工作缩写。\n如果您点击该区使用的缩写，例如 D、E、N 或 O，则会立即反映出来。",
+                    "title": "输入固定时间"
+                },
+                "requests": {
+                    "info": "检查剩余的工作请求。\n如果您打开“仅查看等待”，您将仅看到尚未处理的请求。",
+                    "title": "确认工作申请"
+                },
+                "stepper": {
+                    "info": "一边查看进度线，一边逐一执行这五个步骤。",
+                    "title": "创建排班表"
+                },
+                "tools": {
+                    "info": "使用查看选项和撤消/重做可以更轻松地优化您的时间表。",
+                    "title": "使用辅助工具"
+                }
+            },
+            "wardCodeLoading": "检查病区代码",
+            "workers": {
+                "activeCount": "输入{{count}}人",
+                "column": {
+                    "isWorker": "投入工作",
+                    "level": "熟练程度",
+                    "memo": "笔记",
+                    "name": "姓名",
+                    "preceptee": "戒律",
+                    "preceptor": "导师",
+                    "shiftTypes": "可用的工作"
+                },
+                "dragHandleAria": "通过拖动更改顺序",
+                "emptyDescription": "请首先检查分配工作的人数。",
+                "emptyTitle": "确认好人员后，就可以开始了。",
+                "goMemberManagement": "进入排班人员管理",
+                "noNurseDescription": "要创建排班表，首先添加护士。您可以立即开始排班人员管理。",
+                "noNurseTitle": "{{teamName}} 还没有护士。",
+                "preceptorActive": "相应的",
+                "sortByName": "按字母顺序",
+                "sortBySavedOrder": "随机顺序",
+                "sortBySkill": "按照熟练程度的顺序",
+                "sortListMenuAria": "按排班人员开放排序",
+                "totalCount": "总计 {{count}} 人"
+            }
+        },
+        "member": {
+            "addFirstNurse": "添加您的第一位护士",
+            "addingNurse": "增加护士...",
+            "addNurse": "添加护士",
+            "addTeam": "添加团队",
+            "canMakeDuty": "写一个排班表",
+            "canMakeDutyTooltip": "只有选定的人才能填写时间表。",
+            "common": {
+                "cancel": "消除",
+                "close": "关闭",
+                "complete": "完全的",
+                "deleteAction": "删除",
+                "discard": "不保存",
+                "disconnectAction": "断开",
+                "nurseFallback": "护士",
+                "previous": "前",
+                "previousStep": "之前的步骤",
+                "processing": "加工",
+                "processingEllipsis": "加工...",
+                "retry": "再试一次",
+                "saveAndLeave": "保存并退出",
+                "selectedNurse": "选定的护士",
+                "selectedTeam": "选定的团队"
+            },
+            "confirmDeleteTeam": "要删除团队 {{teamName}} 吗？该团队的护士也被删除。",
+            "connectionManage": {
+                "complete": {
+                    "viewOtherRequests": "查看其他请求"
+                },
+                "method": {
+                    "add": "新加入团队",
+                    "link": "与现有护士相关",
+                    "title": "请选择联动方式"
+                },
+                "result": {
+                    "failure": {
+                        "addDescription": "添加至 {{waitingNurseName}}{{objectParticle}} {{targetLabel}} 失败。请重试或返回上一步。",
+                        "addTitle": "无法将您添加到团队中",
+                        "linkDescription": "无法连接到帐户 {{targetLabel}}。请再试一次。",
+                        "linkNoTargetDescription": "无法连接到所选护士账号。请再试一次。",
+                        "linkTeamDescription": "无法连接{{targetTeamName}}的账户{{targetNurseName}}。请再试一次。",
+                        "linkTitle": "无法连接到现有帐户"
+                    },
+                    "loading": {
+                        "addDescription": "正在 {{waitingNurseName}} 添加到 {{targetLabel}} 团队。请稍等片刻，以便您的团队和关系变化得到反映。",
+                        "addTitle": "添加到选定的团队",
+                        "linkDescription": "正在将 {{waitingNurseName}} 申请信息关联到 {{targetLabel}} 账号。请稍候。",
+                        "linkTitle": "连接到现有帐户"
+                    },
+                    "success": {
+                        "addTitle": "将 {{waitingNurseName}} 添加到 {{targetLabel}}",
+                        "linkDescription": "已将 {{waitingNurseName}} App 关联到 {{targetLabel}} 账号。稍后可以查看。",
+                        "linkTitle": "已关联现有账号。"
+                    }
+                },
+                "target": {
+                    "addTitle": "请选择{{nurseName}}所属的队伍",
+                    "all": "全部的",
+                    "emptySearch": "您可以通过更改搜索词来找到护士。",
+                    "emptyTeam": "您可以选择何时将护士添加到您的团队中。",
+                    "linkTitle": "请选择一位现有护士进行联系",
+                    "searchPlaceholder": "按姓名或电话号码搜索"
+                },
+                "waiting": {
+                    "accept": "验收",
+                    "description": "如果您接受，您将在病区注册为护士。",
+                    "empty": "当收到链接请求时，它会出现在此处。",
+                    "reject": "拒绝",
+                    "title": "护士要求病区联动。"
+                }
+            },
+            "deleteTeam": "删除团队",
+            "description": "您可以在一个屏幕上管理每个团队的排班人员和技能。",
+            "detail": {
+                "cancel": "关闭",
+                "canMakeDuty": "可写",
+                "cannotMakeDuty": "创建限制",
+                "close": "关闭工作人员面板",
+                "closeAction": "关闭",
+                "connected": "链接",
+                "connection": "蠕动",
+                "connectionStatusAria": "{{nurseName}}联动状态",
+                "delete": "护士删除",
+                "deleting": "正在删除...",
+                "disconnected": "未链接",
+                "disconnectedTooltip": "连接不工作。",
+                "employmentDate": "加入年份",
+                "employmentDateHint": "它用作自动技能分配的标准。",
+                "emptyDescription": "如果您从左侧列表中选择一个人，您可以编辑其详细信息。",
+                "emptyPinnedDescription": "当您选择护士时，详细信息将显示在此处。",
+                "emptyTitle": "请选择一名排班人员",
+                "genderToggle": "性别改变",
+                "isDutyManager": "写一个排班表",
+                "isWorker": "工作承诺",
+                "isWorkerOff": "例外",
+                "isWorkerOn": "包括排班表",
+                "memo": "笔记",
+                "memoHint": "请写下该排班人员的特殊信息。",
+                "moveTargetTeam": "团队移动",
+                "moveTeam": "团队运动",
+                "phone": "电话号码",
+                "phoneHint": "它被用作紧急联系网络。",
+                "preceptee": "戒律",
+                "preceptor": "导师",
+                "rolesAndPermissions": "角色和权限",
+                "save": "节省",
+                "saveAction": "节省",
+                "saving": "保存…",
+                "shiftTypes": "可用的工作",
+                "shiftTypesHelpAria": "可用工作信息",
+                "shiftTypesHint": "请选择所有空缺职位",
+                "worker": "投入工作"
+            },
+            "drawer": {
+                "deleteConfirm": "{{nurseName}} 要删除护士吗？一旦删除，就无法恢复。"
+            },
+            "emptyTeamDescription": "请添加护士",
+            "emptyTeamsDescription": "创建团队后，您可以添加护士。",
+            "emptyTeamsTitle": "请先创建一个团队",
+            "emptyTeamTitle": "没有护士",
+            "modal": {
+                "deleteNurseDescriptionSuffix": "一旦删除，就无法恢复。",
+                "deleteNurseTitle": "要删除护士吗？",
+                "deleteTeamDescriptionSuffix": "如果删除团队，注册护士 {{count}} 也会被删除。",
+                "deleteTeamTitle": "要删除团队吗？",
+                "disconnectDescriptionSuffix": "断开与App的连接。",
+                "disconnectTitle": "要断开连接吗？",
+                "unsavedExitDescription": "更改可能无法保存。",
+                "unsavedExitTitle": "要退出而不保存吗？"
+            },
+            "nurseDrawerFeedback": {
+                "create": {
+                    "description": "请输入您的姓名和联系信息并保存。",
+                    "title": "添加了一名新护士"
+                },
+                "dirty": {
+                    "description": "如果您在未保存的情况下关闭，您的更改将会丢失。",
+                    "title": "有变化"
+                },
+                "error": {
+                    "description": "您输入的信息将保持原样。请检查内容并再次保存。",
+                    "title": "保存失败"
+                },
+                "idle": {
+                    "description": "进行更改后，“保存”按钮将被激活。",
+                    "title": "请检查需要修改的项目"
+                },
+                "saving": {
+                    "description": "您输入的信息将得到反映。请稍等片刻，直至保存完成。",
+                    "title": "保存"
+                },
+                "success": {
+                    "description": "已更新护士信息。如无需继续编辑，可以关闭。",
+                    "title": "已保存。"
+                }
+            },
+            "roleHelp": {
+                "aria": "{{label}} 说明",
+                "preceptee": {
+                    "description": "接受导师培训和适应支持的新护士或经验不足的护士。",
+                    "label": "戒律"
+                },
+                "preceptor": {
+                    "description": "这是一位负责帮助新护士或经验不足的护士适应和培训的护士。",
+                    "label": "导师"
+                }
+            },
+            "row": {
+                "connectionStatusAria": "{{nurseName}} 联动状态信息",
+                "dragAria": "通过拖动更改顺序",
+                "precepteeAria": "{{nurseName}} 理念",
+                "preceptorAria": "{{nurseName}} 导师",
+                "unselectedSkill": "未选择",
+                "workerAria": "{{nurseName}}投入使用"
+            },
+            "shiftTeamList": {
+                "addTeam": "添加团队",
+                "card": {
+                    "addDividerAria": "在 {{nurseName}} 下面添加分隔线",
+                    "addNurse": "做一名护士",
+                    "addNurseTooltip": "您可以创建和管理虚拟护士，而无需邀请任何人。您可以随时邀请和链接。",
+                    "deleteTeam": "删除团队",
+                    "divider": "轮廓",
+                    "editTeamNameAria": "{{teamName}} 编辑队伍名称",
+                    "empty": "如果您添加护士，您可以在这里看到。",
+                    "openMenuAria": "{{teamName}} 打开团队菜单",
+                    "removeDividerAria": "去掉{{nurseName}}下面的分割线",
+                    "selectNurseAria": "{{nurseName}} 护士选择",
+                    "viewShift": "去看看排班表",
+                    "virtualNurseTooltip": "这是一名尚未链接到该App的虚拟护士。"
+                },
+                "subtitle": "每个团队可以创建一个排班表。",
+                "title": "团队"
+            },
+            "skillLevelModal": {
+                "autoAssign": "自动分配",
+                "autoAssignTooltip": "注册护士名单分为几个阶段，并自动分配到第一阶段。",
+                "autoAssignTooltipAria": "查看自动分配说明",
+                "categoryLabel": "分配",
+                "close": "关闭熟练度设置",
+                "colorLabel": "颜色",
+                "complete": "完全的",
+                "description": "掌握标准、级别、术语、颜色均可自由定制。",
+                "disableAction": "不使用熟练度",
+                "disableConfirmAction": "请勿使用",
+                "disableConfirmDescription": "关闭时，显示、选择和排序熟练程度将暂停片刻。",
+                "disableConfirmTitle": "要关闭熟练度功能吗？",
+                "high": "高度",
+                "levelCountOption": "{{levelCount}}步",
+                "levelDisplay": "LV。 {{level}}",
+                "levelLabel": "熟练程度",
+                "low": "卑微",
+                "temporarySave": "临时储存",
+                "title": "设置熟练程度"
+            },
+            "skillSettings": "设定护士熟练程度",
+            "sort": {
+                "manual": "随机顺序",
+                "name": "按字母顺序",
+                "skill": "按照熟练程度的顺序"
+            },
+            "sortByPriorityOrder": "已保存订单",
+            "sortBySkill": "按照熟练程度的顺序",
+            "sortListMenuAria": "打开列表排序依据",
+            "summary": {
+                "connected": "链接",
+                "connectionManage": "链接管理",
+                "copyWardCodeAria": "复制病区代码",
+                "totalNurses": "总人数",
+                "unconnected": "未链接",
+                "wardCode": "病区代码",
+                "wardCodeGuideAria": "病区代码 {{wardCode}} 查看信息"
+            },
+            "table": {
+                "connection": "蠕动",
+                "isDutyManager": "写一个排班表",
+                "isWorker": "工作承诺",
+                "level": "熟练程度",
+                "memo": "笔记",
+                "name": "姓名",
+                "shiftTypes": "可用的工作"
+            },
+            "teamMenu": "打开团队菜单",
+            "title": "排班人员管理",
+            "toast": {
+                "copyWardCode": "已复制病区代码。",
+                "createTeam": "新增护士{{teamNumber}}团队。",
+                "deleteTeam": "已删除{{teamName}}团队。",
+                "maxNursesPerTeam": "一支队伍中最多可添加 {{count}} 名护士。",
+                "maxTeams": "您最多可以添加 {{count}} 团队。",
+                "moveNurse": "{{nurseName}} 被转移到 {{teamName}} 团队。",
+                "saveNurseInfo": "排班人员信息已保存。"
+            },
+            "tutorial": {
+                "add": {
+                    "info": "选择一个团队并单击“添加护士”以创建新护士。\n添加后，您可以立即输入您的姓名和工作信息。",
+                    "title": "添加护士"
+                },
+                "edit": {
+                    "info": "您可以在右侧面板中直接编辑姓名、技能级别、可用工作、角色/权限和注释。",
+                    "title": "编辑护士信息"
+                },
+                "skill": {
+                    "info": "要使用熟练度功能，请根据医院和病区标准设置级别和颜色。",
+                    "title": "设置熟练程度"
+                },
+                "team": {
+                    "info": "您可以一目了然地看到按工作组划分的护士名单。\n您还可以通过双击团队名称来更改团队名称。",
+                    "title": "按团队查看护士"
+                }
+            },
+            "wardInfo": {
+                "connectionStatus": "链接状态",
+                "copyError": "无法复制。",
+                "copying": "复制...",
+                "copySuccess": "复制完成！",
+                "hospital": "医院",
+                "hospitalInfo": "医院信息",
+                "personUnit": "人数",
+                "ward": "病区"
+            }
+        },
+        "navigationBar": {
+            "ariaLabel": "主菜单",
+            "expandAria": "展开侧边栏",
+            "foldAria": "折叠侧边栏",
+            "home": "家",
+            "items": {
+                "account": "我的页面",
+                "board": "布告栏",
+                "dutying": "Dutying",
+                "make": "创建排班表",
+                "member": "排班人员管理",
+                "request": "班次申请",
+                "wardAdmins": "病区经理",
+                "wardInfoSettings": "病区设置",
+                "wardSettings": "班次设置"
+            },
+            "landingAria": "前往登陆页面",
+            "sections": {
+                "operations": "病区",
+                "schedule": "排班表",
+                "settings": "环境"
+            },
+            "wardCodeGuideAria": "病区代码 {{wardCode}} 查看信息"
+        },
+        "onboardingJoinWard": {
+            "backToWardSelect": "按病区选择",
+            "checkingPermission": "正在进入病区",
+            "codeDigitAria": "区号 {{index}} 数字",
+            "codeEntry": {
+                "description": "输入与您共享的 6 位密码即可进入病区。",
+                "title": "使用病区代码进入"
+            },
+            "codeHelp": "请输入由字母和数字组成的 6 位病区代码。",
+            "codeInputAria": "输入病区代码",
+            "description": "输入与病区经理共享的 6 位密码即可进入病区。",
+            "form": {
+                "submit": "使用代码输入",
+                "submitting": "进入..."
+            },
+            "invalidCode": "这是一个不存在的病区代码。请再次检查您的代码。",
+            "permission": {
+                "close": "关闭",
+                "confirm": "查看",
+                "description": "病区代码正确，但当前账户邮箱未注册为病区管理员。请让病区主人注册此帐户的电子邮件地址。",
+                "descriptionWithWard": "要输入 {{hospitalName}} {{wardName}}，您当前的帐户电子邮件地址必须注册为病区经理。请让病区主人注册此帐户的电子邮件地址。",
+                "eyebrow": "需要注册邮箱",
+                "title": "您无法使用此帐户进入。",
+                "titleWithWard": "无法输入 {{hospitalName}} {{wardName}}"
+            },
+            "registeredWards": {
+                "description": "如果您已将电子邮件注册为病区管理员，则此处将显示该电子邮件。",
+                "empty": "当前账号邮箱还没有注册的病区。请使用病区代码进入。",
+                "enterAria": "输入 {{hospitalName}} {{wardName}}",
+                "loadFailed": "无法检索已登记的病区信息。请使用病区代码进入。",
+                "loading": "正在加载注册病区。",
+                "title": "用我的邮箱注册的病区"
+            },
+            "state": {
+                "accountErrorDescription": "请稍后重试。如果问题仍然存在，请重新登录。",
+                "accountErrorTitle": "检索账户信息失败",
+                "retry": "再试一次"
+            },
+            "title": "进入病区",
+            "toast": {
+                "joinFailed": "无法进入病区。请再试一次。"
+            },
+            "validation": {
+                "incomplete": "请输入全部 6 位数字。",
+                "invalidCharacters": "只能使用英文字母和数字。"
+            }
+        },
+        "onboardingWardCreate": {
+            "action": {
+                "complete": "完全的",
+                "created": "创建完成",
+                "creating": "创造...",
+                "next": "下一个",
+                "previous": "前",
+                "saving": "保存...",
+                "skip": "跳过"
+            },
+            "backToWardSelect": "按病区选择",
+            "blocked": {
+                "default": "请检查您输入的信息。",
+                "duplicateShiftType": "缩写的第一个字母是重复的。",
+                "emptyTeam": "您可以通过添加团队来创建守卫。",
+                "emptyTeamNurses": "有些团队没有护士。请添加护士或删除团队。",
+                "invalidNurseName": "请检查护士的姓名。",
+                "invalidShiftTime": "请检查班次时间。",
+                "invalidShiftType": "请检查您的班次类型信息。",
+                "invalidWardIdentity": "请输入仅包含韩语、英语、数字和空格的 1 至 20 个字符。",
+                "missingHospitalName": "请输入医院名称。",
+                "scheduleMissingNurseName": "请在输入班次的行中输入护士姓名。",
+                "submitting": "正在创建一个病区。请稍等。",
+                "success": "已完成病区的创建。"
+            },
+            "defaults": {
+                "newNurseName": "新护士{{index}}",
+                "sampleNurse": {
+                    "first": "洪吉东",
+                    "off": "朴延宇",
+                    "second": "金荷娜",
+                    "skilled": "李瑞云"
+                }
+            },
+            "deleteTeamAction": "删除团队",
+            "fallback": {
+                "newTeam": "新团队",
+                "selectedTeam": "选定的团队",
+                "wardName": "病区 Dutying"
+            },
+            "identity": {
+                "hospitalName": "医院名称",
+                "hospitalNamePlaceholder": "请输入医院名称",
+                "wardName": "病区名称",
+                "wardNameOptional": "（选填）病区名称",
+                "wardNamePlaceholder": "请输入病区名称"
+            },
+            "modal": {
+                "deleteTeamDescription": "要删除它吗？",
+                "deleteTeamDescriptionSuffix": "如果删除团队，注册护士 {{count}} 也会被删除。",
+                "deleteTeamDescriptionWithNurses": "注册护士{{nurseCount}}将一并删除。",
+                "deleteTeamDescriptionWithNursesAndSchedule": "注册护士姓名 {{nurseCount}} 和输入的排班表一起删除。",
+                "deleteTeamDescriptionWithSchedule": "输入的排班表将被一起删除。",
+                "deleteTeamTitle": "要删除团队吗？"
+            },
+            "nurse": {
+                "deleteNurseAria": "删除{{nurseName}}",
+                "dragAria": "通过拖动更改顺序",
+                "emptyTeamsDescription": "创建团队后，您可以注册护士。",
+                "emptyTeamsTitle": "请先添加一个团队。",
+                "selectedTeamCountAria": "{{teamName}} 护士 {{count}}",
+                "skillAria": "{{nurseName}} 熟练度",
+                "skillUnselectedBadge": "-",
+                "skillUnselectedOption": "未选择",
+                "sort": {
+                    "manual": "手动订单",
+                    "name": "按字母顺序",
+                    "skill": "按技能等级顺序"
+                },
+                "sortAria": "护士分拣",
+                "sortOptionsAria": "护士排序选项"
+            },
+            "progress": {
+                "ariaLabel": "病区创建进度",
+                "completeTitle": "病区创建已完成。",
+                "finalCheck": "快完成了。正在做最后检查。",
+                "inputWardInfo": "正在整理进入的病区信息。",
+                "navigateDuty": "正在转到排班表屏幕。",
+                "nurses": "正在链接护士信息。",
+                "settingTitle": "设置病区",
+                "shiftTypesAndTeams": "正在设置班次类型和团队。"
+            },
+            "schedule": {
+                "addRow": "添加行",
+                "deleteRowAria": "删除{{rowLabel}}",
+                "emptyTeamsDescription": "创建团队后，您可以输入初始排班表。",
+                "emptyTeamsTitle": "请先添加一个团队。",
+                "monthLabel": "月 {{month}} 年 {{year}}",
+                "nextMonth": "下个月",
+                "nurseNameAria": "护士姓名为 {{rowNumber}}",
+                "previousMonth": "上个月",
+                "rowFallback": "至 {{rowNumber}}",
+                "shiftCellAria": "{{day}} 白班至 {{rowNumber}}",
+                "uploadFile": "上传时间表文件"
+            },
+            "scheduleUpload": {
+                "description": "从 Excel 文件中按日期读取姓名、团队和轮班，并将其反映在初始病区设置中。",
+                "downloadTemplate": "下载表格",
+                "dropzoneTitle": "请选择或拖放 Excel 文件。",
+                "fileSupport": "支持 .xlsx 和 .xls 文件。",
+                "submit": "申请文件",
+                "submitting": "上传中",
+                "template": {
+                    "fileName": "初始排班表_{{year}}_{{month}}.xlsx",
+                    "guideRow1": "请在第一张表格中输入护士的姓名、团队和轮班日期。",
+                    "guideRow2": "轮班可以输入为 D、E、N、O 或病区中使用的轮班缩写。",
+                    "guideRow3": "空字段被视为关闭。",
+                    "guideRow4": "如果团队名称为空，则会分配给默认团队。",
+                    "guideRow5": "上传后，您可以再次在屏幕上查看和编辑内容。",
+                    "guideSheetName": "写作指导",
+                    "nameHeader": "姓名",
+                    "sampleFirstName": "金·杜蒂",
+                    "sampleFirstTeam": "1 队",
+                    "sampleSecondName": "巴克廷吉",
+                    "sampleSecondTeam": "1 队",
+                    "teamHeader": "团队",
+                    "worksheetName": "排班表"
+                },
+                "title": "上传时间表文件"
+            },
+            "section": {
+                "identity": {
+                    "description": "",
+                    "highlightHospitalName": "医院名称",
+                    "highlightWardName": "病区名称",
+                    "title": "请输入医院名称和病区名称。"
+                },
+                "nurse": {
+                    "description": "您每月可以为每个团队创建一张排班表。您可以随时编辑和添加",
+                    "highlight": "护士",
+                    "title": "请注册护士"
+                },
+                "schedule": {
+                    "description": "",
+                    "highlight": "最近使用的排班表",
+                    "title": "设置病区和排班表\n请输入最近使用的排班表"
+                },
+                "shiftType": {
+                    "description": "您也可以稍后编辑",
+                    "highlight": "班次类型",
+                    "title": "请设置病区的班次类型"
+                }
+            },
+            "shiftType": {
+                "add": "添加班次类型",
+                "color": "颜色",
+                "colorOptionAria": "选择{{color}}",
+                "colorSelectAria": "{{shiftName}} 颜色选择",
+                "deleteAria": "删除{{shiftName}}",
+                "leave": "关闭",
+                "name": "作品名称",
+                "shortName": "缩写",
+                "type": "类别",
+                "validation": {
+                    "nameDuplicate": "请输入不同的职位名称。",
+                    "nameRequired": "请输入您的工作名称。",
+                    "shortNameDuplicate": "请输入缩写的第一个字母，不要重叠。",
+                    "shortNameFirstKey": "请使用字母、数字和符号（- . _ 等）输入第一个字母。",
+                    "shortNameLength": "请输入最多 3 个字符，不含空格。",
+                    "shortNameRequired": "请输入缩写。",
+                    "timeFormat": "请以 00:00 格式输入时间。",
+                    "timeOrder": "请输入不同的开始/结束时间。",
+                    "timeRequired": "请输入时间。"
+                },
+                "work": "在职的",
+                "workTime": "时间"
+            },
+            "skillCta": {
+                "aria": "熟练度设置",
+                "description": "创建排班表时，可以根据技能水平自动进行分配。",
+                "title": "要设置护士熟练程度吗？"
+            },
+            "skillLevelModal": {
+                "autoAssign": "自动分配",
+                "autoAssignTooltip": "注册护士名单分为几个阶段，并自动分配到第一阶段。",
+                "cancel": "关闭",
+                "categoryLabel": "分配",
+                "colorLabel": "颜色",
+                "complete": "完全的",
+                "description": "掌握标准、级别、术语、颜色均可自由定制。",
+                "disable": "取消精通设置",
+                "high": "高度",
+                "levelCountAria": "掌握程度",
+                "levelCountOption": "{{levelCount}}步",
+                "levelDisplay": "LV。 {{level}}",
+                "levelLabel": "熟练程度",
+                "low": "卑微",
+                "title": "设置熟练程度"
+            },
+            "teamTabs": {
+                "addTeam": "添加团队"
+            },
+            "toast": {
+                "addNurseToTeam": "{{teamName}} 中添加了一名护士。",
+                "addTeam": "添加了 {{teamName}}。",
+                "addTeamAndNurse": "已添加 {{teamName}} 并注册了一名护士。",
+                "completeError": "无法创建病区。请再试一次。",
+                "completeSuccess": "病区创建已完成。",
+                "deleteNurse": "已删除护士",
+                "deleteTeamWithNurses": "已删除团队。该团队中的护士也已删除。",
+                "maxNursesPerTeam": "一支队伍中最多可添加 {{count}} 名护士。",
+                "maxTeams": "您最多可以添加 {{count}} 团队。",
+                "reloadDraftError": "无法加载保存的病区创建信息。",
+                "saveDraftError": "病区基本信息无法保存。请再试一次。",
+                "saveScheduleError": "无法保存初始时间表。",
+                "skillConfigDisabled": "不使用熟练度设置。",
+                "skillConfigSaved": "技能水平设置反映在护士列表中。",
+                "uploadApplied": "反映了时间表文件。"
+            },
+            "upload": {
+                "dropHere": "请将您的时间表文件放在这里",
+                "failedRow": "某些行 ({{rowLabel}}) 被排除，因为它们无法被解释。",
+                "failedSheet": "无法加载排班表“{{sheetName}}”数据。",
+                "failedTitle": "文件上传失败",
+                "networkFailed": "无法连接到解析服务器。请稍后重试。",
+                "parseFailed": "无法解释该文件。请检查Excel表格并重新上传。",
+                "parsing": "正在解析文件...",
+                "targetMonth": "月份根据排班表",
+                "unsupportedFile": "您只能上传 Excel 文件（.xlsx、.xls）。",
+                "uploadFile": "文件上传"
+            }
+        },
+        "profile": {
+            "basicInfoDescription": "管理您帐户中使用的信息。",
+            "basicInfoTitle": "基本信息",
+            "confirm": {
+                "deleteConfirm": "退订",
+                "deleteDescription": "如果您取消，您的帐户信息将被删除且无法恢复。",
+                "deleteTitle": "要注销账号吗?",
+                "logoutConfirm": "注销",
+                "logoutDescription": "注销当前帐户并转到主屏幕。",
+                "logoutTitle": "要退出吗？"
+            },
+            "deleteAccount": "退出会员资格",
+            "errorDescription": "请稍后重试。如果问题仍然存在，请重新登录。",
+            "errorTitle": "无法加载个人资料信息",
+            "imageFailed": "无法处理个人资料图像。",
+            "language": {
+                "en": "English",
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "zh": "简体中文 (Chinese)"
+            },
+            "languageLabel": "画面语言/语言",
+            "loadingDescription": "正在按顺序检查账号和病区信息。",
+            "loadingTitle": "准备个人资料信息",
+            "logout": "注销",
+            "modalSave": "节省",
+            "name": "姓名",
+            "namePlaceholder": "请输入您的姓名",
+            "phoneNum": "电话号码",
+            "phoneNumPlaceholder": "请输入您的电话号码",
+            "preferencesDescription": "选择屏幕上显示的语言。",
+            "preferencesFailed": "无法保存语言设置。",
+            "preferencesSaved": "已保存语言和服务区域。",
+            "preferencesTitle": "语言/语言",
+            "profileSection": "轮廓",
+            "quitWard": "离开病区",
+            "randomAvatar": "随机头像",
+            "retry": "再试一次",
+            "save": "保存更改",
+            "savedDescription": "保存最新信息。",
+            "savePreferences": "保存语言设置",
+            "savingPreferences": "保存...",
+            "serviceRegion": {
+                "CN": "中国",
+                "EN": "全球 / 英语区",
+                "JP": "日本",
+                "KR": "韩国",
+                "TH": "泰国"
+            },
+            "serviceRegionLabel": "服务区",
+            "title": "我的页面",
+            "unknownName": "姓名未注册",
+            "unsavedDescription": "更改未保存。",
+            "uploadPhoto": "上传照片",
+            "validation": {
+                "nameInvalid": "名称不得超过 20 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                "nameRequired": "请输入您的姓名。",
+                "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入电话号码。",
+                "phoneRequired": "请输入您的电话号码。"
+            }
+        },
+        "refresh": {
+            "loading": "正在登录。"
+        },
+        "register": {
+            "createWard": {
+                "back": "按病区选择",
+                "basicInfo": "基本信息",
+                "description": "起初，您只会收到所需的信息，稍后您可以更改详细设置。",
+                "hospitalName": "医院名称",
+                "hospitalNamePlaceholder": "Dutying医院",
+                "save": "保存病区",
+                "title": "创建新病区",
+                "validation": {
+                    "wardName": "只能输入 1 至 50 个韩语、英语、日语和数字字符。"
+                },
+                "wardName": "病区名称"
+            },
+            "enterWard": {
+                "back": "按病区选择",
+                "close": "关闭",
+                "codeCellAria": "区号 {{index}} 数字",
+                "codeInputAria": "输入病区代码",
+                "confirmDescription": "如果是正确的病区，会向您发送入院申请。",
+                "confirmEyebrow": "病区检查",
+                "description": "您可以通过输入管理员共享的6位代码来查看您的病区。",
+                "error": "请再次检查您的病区代码。",
+                "retry": "再次输入",
+                "submit": "要求参赛",
+                "title": "输入病区代码"
+            },
+            "nurse": {
+                "imageFailed": "无法处理个人资料图像。",
+                "name": "姓名",
+                "namePlaceholder": "请输入您的姓名",
+                "next": "下一个",
+                "phoneNum": "接触",
+                "phoneNumPlaceholder": "请输入您的联系信息",
+                "randomAvatar": "随机头像",
+                "saving": "保存...",
+                "submitting": "加工...",
+                "title": "请输入您的账户信息",
+                "uploadPhoto": "上传照片",
+                "validation": {
+                    "nameInvalid": "名称不得超过 20 个字符，并且只能输入韩文/英文/日文字母、空格、“-”和“·”。",
+                    "nameRequired": "请输入您的姓名。",
+                    "phoneDuplicate": "该联系电话已被使用。请输入另一个号码。",
+                    "phoneInvalid": "请包含国家/地区代码或以正确的本地格式输入联系信息。",
+                    "phoneRequired": "请输入您的联系信息。"
+                }
+            },
+            "pending": {
+                "cancelRequest": "取消参赛请求",
+                "description": "一旦管理员批准，您就可以立即使用该病区。",
+                "requestedWard": "请求病区",
+                "title": "等待入境批准"
+            },
+            "select": {
+                "back": "有账户信息",
+                "createDescription": "依次设置医院名称、病区名称、团队信息。",
+                "createTitle": "创建新病区",
+                "description": "如果您是第一次开始，请创建一个新病区，如果您收到邀请码，请进入现有病区。",
+                "enterDescription": "当管理员给出 6 位代码时选择它。",
+                "enterTitle": "进入现有病区",
+                "titleWithName": "{{name}}，连接病区。",
+                "titleWithoutName": "现在连接病区"
+            },
+            "shell": {
+                "homeAria": "Dutying 返回首页"
+            },
+            "state": {
+                "accountErrorDescription": "请稍后重试。如果问题仍然存在，请重新登录。",
+                "accountErrorTitle": "检索账户信息失败",
+                "statusErrorDescription": "重新加载您的帐户信息并继续注册过程。",
+                "statusErrorTitle": "无法确认账号状态"
+            }
+        },
+        "request": {
+            "availability": {
+                "editable": {
+                    "badgeLabel": "可编辑的",
+                    "description": "您可以在当前日历范围内修改请求的排班表。"
+                },
+                "editablePeriodLabel": "可编辑范围：上个月到下个月",
+                "lockedFuture": {
+                    "badgeLabel": "等待创作",
+                    "description": "您只能在下个月的申请期之前填写表格。尚未开通的月份开通后即可修改。",
+                    "validationMessage": "两个月后的工作申请还没办完。"
+                },
+                "lockedPast": {
+                    "badgeLabel": "仅供查看",
+                    "description": "您只能查看这个月。您只能查看已提交的申请和当前的展示位置。",
+                    "validationMessage": "只能查看两个月前提出的职位请求。"
+                }
+            },
+            "calendar": {
+                "ariaLabel": "申请排班表",
+                "linkColumn": "蠕动",
+                "nameColumn": "姓名",
+                "noNurseAction": "进入排班人员管理",
+                "noNurseDescription": "要确认所请求的轮班，首先在排班人员管理中添加团队护士。",
+                "noNurseTitleSuffix": "目前还没有护士",
+                "reorderAria": "{{name}} 更改订单",
+                "skillColumn": "熟练程度",
+                "status": {
+                    "accepted": "反映",
+                    "pending": "需要确认",
+                    "rejected": "排除"
+                },
+                "statusDescription": {
+                    "accepted": "反映了当前申请的工作。",
+                    "editable": "如果您单击某个名称，您可以转到该日期并进行查看。",
+                    "noFocus": "目前没有连接到团队的护士信息，因此您无法直接移动到日历位置。",
+                    "readonly": "由于月份无法修改，因此只能确认申请的工作地点。",
+                    "rejected": "当前排班显示为其他班次。"
+                }
+            },
+            "changeEvent": {
+                "add": "添加 → {{shiftType}}",
+                "delete": "{{shiftType}} → 删除",
+                "message": "{{nurseName}} / {{day}} | | {{changeLabel}}"
+            },
+            "faultOptions": {
+                "excludeCertainWorkTypes": {
+                    "label": "避免 ND/ED/NE/NOD 工作模式",
+                    "message": "最好避免使用 ND/ED/NE/NOD 格式。"
+                },
+                "excludeNightBeforeReqOff": {
+                    "label": "避免在下班前一天晚上使用",
+                    "message": "涂抹前一天最好避免上夜班。"
+                },
+                "maxContinuousNight": {
+                    "label": "连续的夜晚",
+                    "message": "夜班最多可以连续分配 {{count}} 天。"
+                },
+                "maxContinuousWork": {
+                    "label": "连续轮班数",
+                    "message": "最多可以连续分配 {{count}} 天的工作。"
+                },
+                "minContinuousNight": {
+                    "label": "连续的夜晚",
+                    "message": "请分配至少 {{count}} 天的夜间工作。"
+                },
+                "minNightInterval": {
+                    "label": "夜间间隔",
+                    "message": "请将夜间间隔设置为至少 {{count}} 天。"
+                },
+                "minOffAssignAfterNight": {
+                    "label": "夜班结束后分配任务",
+                    "message": "夜间工作后，建议关闭至少 {{count}} 天。"
+                }
+            },
+            "overview": {
+                "bootstrapErrorDescription": "请再次检查您的帐户信息。如果问题仍然存在，请重新登录。",
+                "bootstrapErrorTitle": "加载病区信息失败",
+                "bootstrapLoadingDescription": "确认完病区信息后，正在准备班次申请画面。",
+                "bootstrapLoadingTitle": "检查您的帐户信息",
+                "createNextMonth": "填写下个月的工作申请",
+                "emptyDescription": "您可以先打开并填写下个月的申请时间表。",
+                "emptyTitle": "这个月的排班表还没有确定。",
+                "loadingDescription": "工作团队和App排班表正在按顺序加载。",
+                "loadingTitle": "正在准备App工作屏幕。",
+                "noTeamsDescription": "要创建请求的轮班，请首先注册您的轮班团队。",
+                "noTeamsTitle": "还没有注册球队",
+                "shiftErrorTitle": "无法检索App排班表。",
+                "shiftLoadingDescription": "正在为选定的团队组织工作和申请细节。",
+                "shiftLoadingTitle": "正在加载申请时间表。",
+                "teamsErrorTitle": "无法加载工作团队"
+            },
+            "panel": {
+                "accept": "验收",
+                "acceptAll": "反映待机{{count}}",
+                "acceptedState": "反映",
+                "acceptedToast": "{{nurseName}} {{shiftType}} 班次申请已通过。",
+                "appliedCount": "反射{{count}}",
+                "appliedLabel": "反映",
+                "changeToAccept": "改变以反映",
+                "changeToReject": "更改为排除",
+                "dateLabel": "{{month}} 月 {{date}} 日",
+                "dayShortLabel": "{{date}}天",
+                "dayType": {
+                    "holiday": "公众假期",
+                    "saturday": "周六",
+                    "sunday": "星期日"
+                },
+                "editTitle": "班次申请",
+                "emptyDescriptionEdit": "提交的请求将显示在此处，以便您可以立即查看。",
+                "emptyDescriptionReadonly": "如果有App被反映，您可以立即在此面板上进行检查。",
+                "emptyTitleEdit": "由护士发送\n没有班次申请的要求。",
+                "emptyTitleReadonly": "尚未反映已申请的职位。",
+                "errorTitleEdit": "无法加载App详细信息",
+                "errorTitleReadonly": "无法检索所反映的请求班次。",
+                "excludedCount": "不包括{{count}}",
+                "excludedLabel": "例外",
+                "groupDone": "审核完成",
+                "groupPendingCount": "{{count}} 名称需要审核",
+                "groupRequestCaseCount": "{{count}}枪",
+                "groupRequestCount": "申请{{count}}名称",
+                "loadingDescriptionEdit": "正在检查提交的工作请求。",
+                "loadingDescriptionReadonly": "正在组织所反映的要求的轮班。",
+                "loadingTitleEdit": "正在加载App详细信息",
+                "loadingTitleReadonly": "正在检索反映的请求班次。",
+                "monthShortLabel": "{{month}}月",
+                "notLinked": "没有工作人员链接到表",
+                "nurseDateLabel": "{{nurseName}} / {{date}}일",
+                "overlapBadge": "同班{{count}}人",
+                "overlapSummary": "重叠 {{count}}",
+                "pendingCount": "备用{{count}}",
+                "pendingEmptyDescription": "此处只能查看未反映或排除的申请。",
+                "pendingEmptyTitle": "没有待处理的申请",
+                "pendingLabel": "气氛",
+                "readonlyTitle": "反映应用工作",
+                "reject": "拒绝",
+                "rejectAll": "不含备用{{count}}枪",
+                "rejectedState": "排除",
+                "rejectedToast": "{{nurseName}} {{shiftType}} 班次申请已拒绝。",
+                "showLess": "折叠",
+                "showMore": "查看更多{{count}} 枪",
+                "showNext": "下一个",
+                "showPrevious": "前",
+                "sortByDate": "按日期",
+                "sortByNurse": "按人物排序",
+                "sortByPending": "气氛",
+                "sortByRequestOrder": "申请顺序",
+                "sortOrder": "按日期",
+                "summaryLabel": "申请处理状态",
+                "unresolvedCount": "{{count}} 待处理申请",
+                "viewModeLabel": "排序申请审查",
+                "viewOnCalendar": "查看表中的位置",
+                "weekday": {
+                    "friday": "星期五",
+                    "monday": "周一",
+                    "saturday": "周六",
+                    "sunday": "星期日",
+                    "thursday": "周四",
+                    "tuesday": "周二",
+                    "wednesday": "周三"
+                }
+            },
+            "toolbar": {
+                "editAction": "编辑",
+                "editingDescription": "单击“应用”后，您将移至时间表位置。更改会自动保存。",
+                "editTitle": "请确认您的工作申请。",
+                "noTeamsLabel": "如果你注册了一个团队，你就可以班次申请。",
+                "readonlyDescription": "如有必要，您可以通过编辑来重新调整请求的排班表。",
+                "readonlyTitle": "{{month}} 月班次申请",
+                "saveAction": "节省",
+                "savedDescription": "您最近的更改已保存。",
+                "saveError": "无法保存您最近的更改。请再次保存。",
+                "savingAction": "保存...",
+                "savingDescription": "保存最近的更改。"
+            }
+        },
+        "state": {
+            "emptyDescription": "请按照屏幕上的说明进行操作。",
+            "errorDescription": "请稍后重试。如果问题仍然存在，请刷新并再次检查。",
+            "loadingDescription": "请稍等。",
+            "loadingTitle": "准备屏幕",
+            "retry": "再试一次"
+        },
+        "wardAdmins": {
+            "accountFallback": "帐号#{{accountId}}",
+            "addAria": "添加管理员",
+            "emailPlaceholder": "电子邮件",
+            "emptyAdmins": "还没有注册管理员。",
+            "error": {
+                "emailInvalid": "请输入有效的电子邮件。",
+                "emailRequired": "请输入您的电子邮件。",
+                "maxAdmins": "病区管理员最多可以添加 {{count}} 人。"
+            },
+            "memberOnlyDescription": "只有注册为病区成员的帐户才能添加为管理员。",
+            "ownerOnlyDescription": "只有超级管理员才能更改管理员权限。",
+            "registeredTitle": "注册管理员",
+            "removeActiveAria": "删除{{email}}管理员",
+            "removeReservedAria": "{{email}} 删除预约管理器",
+            "role": {
+                "editor": "经理",
+                "owner": "超级管理员"
+            },
+            "state": {
+                "loadFailedTitle": "加载管理员列表失败",
+                "noWardDescription": "创建新病区或进入已有病区后，您可以使用管理员管理。",
+                "noWardTitle": "没有管理的病区。",
+                "retry": "再试一次",
+                "retryDescription": "请稍后重试。"
+            },
+            "title": "病区经理",
+            "toast": {
+                "createActive": "已添加管理员。",
+                "createFailed": "注册管理员失败。",
+                "createOwnerOnly": "只有超级管理员才能添加管理员。",
+                "createReserved": "已添加管理员。",
+                "duplicateEmail": "这是已注册的管理员电子邮件。",
+                "ownerOnly": "只有最高管理员才能更改它。",
+                "removeActive": "已删除管理员。",
+                "removeActiveFailed": "删除管理员失败。",
+                "removeReserved": "已删除保留的管理员电子邮件。",
+                "removeReservedFailed": "无法删除保留的管理员电子邮件。"
+            }
+        },
+        "wardInfoSettings": {
+            "hospitalName": "医院名称",
+            "hospitalNamePlaceholder": "请输入医院名称",
+            "save": "保存更改",
+            "saving": "保存...",
+            "sectionTitle": "区信息",
+            "state": {
+                "loadFailedTitle": "加载病区信息失败",
+                "loadingTitle": "检索病区信息",
+                "noWardDescription": "进入病区或创建新病区后，您可以编辑病区设置。",
+                "noWardTitle": "需要连接病区。",
+                "retry": "再试一次",
+                "retryDescription": "请稍后重试。"
+            },
+            "title": "病区设置",
+            "toast": {
+                "saveFailed": "无法保存病区信息。",
+                "saveSuccess": "病区信息已保存。"
+            },
+            "validation": {
+                "invalid": "对于 {{label}}，只能输入韩语/英语/日语/{{count}} 字符或更少的数字。",
+                "required": "请输入{{label}}。"
+            },
+            "wardName": "病区名称",
+            "wardNamePlaceholder": "请输入病区名称"
+        },
+        "wardSettings": {
+            "addShiftType": "添加班次",
+            "constraints": {
+                "apply": "应用排班表",
+                "column": {
+                    "rule": "限制条件",
+                    "status": "适用与否",
+                    "value": "标准"
+                },
+                "error": "加载约束失败",
+                "exclude": "未应用排班表",
+                "loading": "负载限制",
+                "noTeamsDescription": "要管理约束，首先创建一个工作团队。",
+                "noTeamsTitle": "没有注册的工作团队",
+                "teamDescription": "约束由每个工作团队管理。",
+                "teamLabel": "目标团队"
+            },
+            "description": {
+                "constraints": "管理工作规则。",
+                "shiftTypes": "管理班次类型。"
+            },
+            "shiftTypes": {
+                "add": "添加班次类型",
+                "colorOptionAria": "选择{{color}}",
+                "colorSelectAria": "{{name}} 颜色选择",
+                "column": {
+                    "color": "颜色",
+                    "name": "作品名称",
+                    "shortName": "缩写",
+                    "type": "类别",
+                    "workTime": "时间"
+                },
+                "deleteAria": "删除{{name}}",
+                "editAria": "{{name}} 编辑班次类型",
+                "empty": "没有注册的班次类型",
+                "error": "无法加载班次类型",
+                "loading": "加载班次类型",
+                "newShiftName": "新的转变",
+                "save": "节省",
+                "toast": {
+                    "addFailed": "添加班次类型失败。",
+                    "deleteFailed": "删除班次类型失败。",
+                    "notFound": "这是已删除或在最新列表中找不到的班次类型。",
+                    "saveSuccess": "您的工作设置已保存。",
+                    "updateFailed": "无法编辑班次类型。"
+                },
+                "validation": {
+                    "nameDuplicate": "请输入不同的职位名称。",
+                    "nameRequired": "请输入您的工作名称。",
+                    "shortNameDuplicate": "请输入缩写的第一个字母，不要重叠。",
+                    "shortNameFirstKey": "请使用字母、数字和符号（- . _ 等）输入第一个字母。",
+                    "shortNameLength": "请输入最多 3 个字符，不含空格。",
+                    "shortNameRequired": "请输入缩写。",
+                    "timeFormat": "请以 00:00 格式输入时间。",
+                    "timeRequired": "请输入时间。",
+                    "timeSame": "请输入不同的开始/结束时间。"
+                }
+            },
+            "tabs": {
+                "constraints": "限制条件",
+                "shiftTypes": "班次类型"
+            },
+            "title": "班次设置",
+            "type": {
+                "leave": "关闭",
+                "work": "在职的"
+            }
+        }
+    },
+    "shared": {
+        "api": {
+            "requestFailed": "有问题。请再试一次。",
+            "unknownError": "发生未知错误。"
+        },
+        "confirmActionDialog": {
+            "cancel": "消除",
+            "close": "关闭"
+        }
+    },
+    "widget": {
+        "requestTutorial": {
+            "listInfo": "您可以在这里一目了然地看到护士申请的轮班。",
+            "listTitle": "检查右侧的工作申请。",
+            "pendingInfo": "这里一眼就能看到剩余的空气。",
+            "pendingTitle": "您只能查看等待的申请。"
+        },
+        "tutorialInfoBox": {
+            "done": "完全的",
+            "next": "下一个",
+            "previous": "前"
+        },
+        "wardChat": {
+            "closeAria": "密切病区谈话",
+            "conversationStart": "谈话开始",
+            "deletedMessage": "此消息已被删除",
+            "inputPlaceholder": "输入留言",
+            "loadOlder": "上一条消息",
+            "openAria": "开放病区谈话",
+            "openWithUnreadAria": "打开病区谈话，{{count}} 未读消息",
+            "sendAria": "发送消息",
+            "state": {
+                "emptyDescription": "留下您的第一条消息。",
+                "emptyTitle": "还没有对话。",
+                "loadFailed": "对话加载失败。",
+                "retry": "再试一次"
+            },
+            "subtitle": "病区人员聊天",
+            "title": "病区谈话",
+            "toast": {
+                "sendFailed": "消息无法发送。"
+            }
+        },
+        "wardCodeGuide": {
+            "benefits": {
+                "appApply": {
+                    "description": "当护士通过 Dutying App发送休假请求并请求工作请求时，\n护士长在一个屏幕上检查。",
+                    "title": "护士直接从App申请"
+                },
+                "board": {
+                    "description": "您可以发布公告、移交和指导帖子，查看它们是否得到确认以及评论的流向。",
+                    "title": "还可以查看公告栏通知。"
+                },
+                "chat": {
+                    "description": "直接与病区成员讨论轮班变更、紧急公告和当日协调。",
+                    "title": "通过病区聊天快速调整"
+                },
+                "scheduleShare": {
+                    "description": "如果您发布排班表，联网的护士可以直接从App中检查它。",
+                    "title": "立即分享您确认的排班表。"
+                }
+            },
+            "closeAria": "关闭病区代码信息",
+            "copyAria": "复制病区代码",
+            "description": "当护士在 Dutying App中输入此代码时，它会链接到病区。",
+            "participationGuide": "在 Dutying App中，点击加入病区\n只需输入病区代码 Dutying 即可。",
+            "participationGuideAria": "查看如何输入 Dutying 病区代码",
+            "title": "请告知您的护士病区代码。",
+            "toast": {
+                "copyFailed": "复制病区代码失败。",
+                "copySuccess": "已复制病区代码。"
+            },
+            "wardCodeLabel": "{{wardTitle}} 区号"
+        }
+    }
+};
+
+export const th: TLocale = {
+    "entity": {
+        "account": {
+            "profileImageAlt": "รูปโปรไฟล์ {{name}}",
+            "userFallback": "ผู้ใช้"
+        },
+        "ward": {
+            "codeChecking": "กำลังตรวจสอบ",
+            "codeFallback": "รหัสวอร์ด",
+            "displayInfo": "ข้อมูลวอร์ด"
+        }
+    },
+    "feature": {
+        "account": {
+            "create": {
+                "exception": "เกิดข้อผิดพลาดขณะสร้างบัญชี โปรดลองอีกครั้งในอีกสักครู่",
+                "loading": "ข้อมูลบัญชีออมทรัพย์",
+                "success": "ข้อมูลบัญชีที่บันทึกไว้"
+            },
+            "edit": {
+                "basicFailed": "ไม่สามารถอัปเดตข้อมูลบัญชีได้",
+                "deleteAccountFailed": "ไม่สามารถลบบัญชีได้",
+                "profileFailed": "ไม่สามารถอัปเดตโปรไฟล์ได้",
+                "quitWardConfirm": "ออกจากวอร์ดนี้เหรอ?",
+                "quitWardFailed": "ไม่สามารถออกจากวอร์ดได้"
+            }
+        },
+        "auth": {
+            "demoSession": {
+                "badge": "บัญชีทดลอง",
+                "description": "การทดลองใช้นี้ดำเนินการในเซสชันชั่วคราวที่จำกัด ลงทะเบียนก่อนที่จะสิ้นสุดหากคุณต้องการใช้ Dutying ต่อไป",
+                "descriptionExpiringSoon": "การทดลองใช้จะสิ้นสุดเร็วๆ นี้ คุณจะต้องสมัครใช้งาน Dutying ต่อไปในภายหลัง",
+                "documentTitle": "ทดลอง {{countdown}} | Dutying",
+                "expiredDocumentTitle": "สิ้นสุดการทดลองใช้แล้ว | Dutying",
+                "expiredModal": {
+                    "badge": "การทดลองสิ้นสุดลงแล้ว",
+                    "description": "ลงทะเบียนตอนนี้เพื่อเข้าสู่ขั้นตอนการตั้งค่าบัญชีอย่างเป็นทางการ การแปลงบัญชีทดลองยังคงอยู่ในระหว่างการเตรียมการ ดังนั้นเราจะแนะนำคุณตลอดขั้นตอนการลงทะเบียนหลังจากเข้าสู่ระบบในตอนนี้",
+                    "nextStepDescription": "หลังจากลงทะเบียนหรือเข้าสู่ระบบแล้ว คุณสามารถเชื่อมต่อกับวอร์ดได้ การย้ายข้อมูลรุ่นทดลองจะตามมาหลังจากการผสานรวม DUT-948",
+                    "nextStepTitle": "มีจำหน่ายขั้นต่อไป",
+                    "primaryAction": "ลงทะเบียนและดำเนินการต่อ",
+                    "title": "เวลาทดลองใช้งานของคุณสิ้นสุดลงแล้ว"
+                },
+                "expiringSoon": "กำลังจะหมดอายุเร็วๆ นี้",
+                "remainingApprox": "เหลืออีกประมาณ {{minutes}} นาที",
+                "remainingFallback": "อยู่ระหว่างการพิจารณาคดี",
+                "remainingLabel": "เหลือเวลา",
+                "remainingPrecise": "Dutying ทดลอง {{minutes}}:{{seconds}}",
+                "signupRequired": "จำเป็นต้องลงทะเบียน",
+                "title": "ขณะนี้คุณกำลังแก้ไขด้วยบัญชีทดลองชั่วคราว",
+                "titleExpiringSoon": "เซสชั่นทดลองใช้งานของคุณกำลังจะสิ้นสุดลง"
+            },
+            "documentTitle": "Dutying",
+            "sessionExpired": "การเข้าสู่ระบบของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบอีกครั้ง",
+            "state": {
+                "errorDescription": "เซสชันของคุณอาจหมดอายุหรือการเชื่อมต่อเครือข่ายอาจไม่เสถียร",
+                "errorTitle": "ไม่สามารถยืนยันสถานะการลงชื่อเข้าใช้ของคุณได้",
+                "loadingTitle": "กำลังตรวจสอบสถานะการลงชื่อเข้าใช้ของคุณ",
+                "logout": "ออกจากระบบ",
+                "retry": "ลองอีกครั้ง"
+            }
+        },
+        "createShiftModal": {
+            "backgroundColor": "สีพื้นหลัง",
+            "createTitle": "เพิ่มประเภทงาน/การลา",
+            "delete": "ลบ",
+            "editTitle": "แก้ไขงาน/ประเภทการลา",
+            "leave": "ออกจาก",
+            "leaveNamePlaceholder": "ป้อนชื่อลา",
+            "name": "เปลี่ยนชื่อ",
+            "save": "บันทึก",
+            "shortName": "คำย่อ",
+            "shortNameHint": "* ตัวย่อที่คุณป้อนจะแสดงอยู่ในเซลล์กำหนดการ",
+            "validation": {
+                "nameRequired": "ป้อนชื่อกะ",
+                "shortNameFirstKey": "ขึ้นต้นด้วยตัวอักษร ตัวเลข หรือสัญลักษณ์ เช่น -, ., _",
+                "shortNameRequired": "ป้อนคำย่อกะ",
+                "timeRequired": "ป้อนเวลากะ"
+            },
+            "work": "งาน",
+            "workNamePlaceholder": "ป้อนชื่องาน",
+            "workTime": "เวลาทำงาน"
+        },
+        "editShiftTeam": {
+            "addNurseFailed": "ไม่สามารถเพิ่มพยาบาลได้",
+            "addNurseSuccess": "เพิ่ม {{name}} แล้ว",
+            "deleteNurseFailed": "ไม่สามารถลบพยาบาลได้",
+            "deleteNurseSuccess": "ลบพยาบาลแล้ว",
+            "disconnectFailed": "ไม่สามารถยกเลิกการเชื่อมต่อลิงก์แอปได้",
+            "disconnectSuccess": "ยกเลิกการเชื่อมต่อลิงก์แอป",
+            "moveNurseFailed": "ไม่สามารถเคลื่อนย้ายพยาบาลได้",
+            "newNursePrefix": "พยาบาลใหม่",
+            "updateNurseFailed": "ไม่สามารถอัพเดตข้อมูลพยาบาลได้",
+            "updateNurseShiftFailed": "ไม่สามารถบันทึกประเภทกะที่มีอยู่ได้"
+        },
+        "editWard": {
+            "approveWaitingNurseFailed": "ไม่สามารถเพิ่มทีมได้",
+            "approveWaitingNurseSuccess": "เพิ่มพยาบาลเข้าทีมที่เลือก",
+            "connectWaitingNurseFailed": "ไม่สามารถเชื่อมต่อกับบัญชีพยาบาลที่มีอยู่ได้",
+            "connectWaitingNurseSuccess": "เชื่อมต่อกับบัญชีพยาบาลที่มีอยู่",
+            "editSettingFailed": "ไม่สามารถอัปเดตการตั้งค่าหน้าที่ได้",
+            "rejectWaitingNurseFailed": "ไม่สามารถปฏิเสธคำขอเชื่อมต่อที่รอดำเนินการได้",
+            "rejectWaitingNurseSuccess": "ปฏิเสธคำขอเชื่อมต่อที่รอดำเนินการ"
+        },
+        "file": {
+            "profileImageUploadFailed": "ไม่สามารถอัปโหลดภาพโปรไฟล์ได้"
+        },
+        "register": {
+            "accountStatusChangeFailed": "ไม่สามารถเปลี่ยนสถานะบัญชีได้"
+        },
+        "registerWard": {
+            "defaultShiftType": {
+                "day": "วัน",
+                "evening": "ตอนเย็น",
+                "night": "กลางคืน",
+                "off": "ปิด"
+            },
+            "shiftTeams": {
+                "addNamePlaceholder": "เพิ่มชื่อ",
+                "addNurseAria": "เพิ่มชื่อพยาบาลให้กับทีม {{index}}",
+                "addTeam": "เพิ่มทีม",
+                "count": "{{count}}",
+                "deleteNurseAria": "ลบ {{name}}",
+                "deleteTeamAria": "ลบทีม {{index}}",
+                "description": "กรอกชื่อพยาบาลแยกตามทีม บัญชีของคุณเชื่อมโยงโดยอัตโนมัติ",
+                "excludeMe": "* ยกเว้นตัวเอง",
+                "teamName": "ทีมพยาบาล {{index}}",
+                "title": "พยาบาลในวอร์ด"
+            },
+            "shiftTypes": {
+                "add": "เพิ่ม",
+                "addAction": "เพิ่มประเภทงาน/การลา",
+                "colorLabel": "สี",
+                "column": {
+                    "category": "หมวดหมู่",
+                    "color": "สี",
+                    "edit": "แก้ไข",
+                    "name": "เปลี่ยนชื่อ",
+                    "shortName": "คำย่อ",
+                    "workTime": "ชั่วโมงการทำงาน"
+                },
+                "description": "กะเริ่มต้นจะถูกกรอกไว้ล่วงหน้า ปรับให้เข้ากับวอร์ดนี้",
+                "editAria": "แก้ไข {{name}}",
+                "leave": "ออกจาก",
+                "noTimeLeave": "ประเภทลางานโดยไม่มีชั่วโมงทำงาน",
+                "shortNameLabel": "คำย่อ",
+                "title": "ประเภทกะ",
+                "typeLabel": "พิมพ์",
+                "work": "งาน"
+            },
+            "validation": {
+                "nameRequired": "ป้อนชื่อกะ",
+                "shortNameRequired": "ป้อนตัวย่อสำหรับ {{name}}",
+                "timeRequired": "ป้อนชั่วโมงทำงานสำหรับ {{name}}"
+            }
+        },
+        "requestShift": {
+            "processFailed": "ไม่สามารถดำเนินการตามคำขอได้"
+        },
+        "shiftEditor": {
+            "calendarDivision": {
+                "memberCount": "สมาชิก {{count}}"
+            },
+            "calendarHeader": {
+                "carryOver": "พก",
+                "name": "ชื่อ",
+                "previousShift": "กะก่อนหน้า"
+            },
+            "editWard": {
+                "addShiftType": "เพิ่มประเภทงาน/การลา",
+                "applied": "Appโกหก",
+                "background": "เติม",
+                "color": "สี",
+                "count": "นับ",
+                "defaultOffDays": "ค่าเริ่มต้น OFF {{count}}d",
+                "edit": "แก้ไข",
+                "editSettings": "แก้ไขการตั้งค่า",
+                "leave": "ออกจาก",
+                "monthLabel": "{{month}}",
+                "notApplied": "ปิด",
+                "shiftName": "รหัส",
+                "shiftTypeColorStyle": "เปลี่ยนสีสไตล์",
+                "shortName": "รหัส",
+                "text": "ข้อความ",
+                "type": "พิมพ์",
+                "weekendColor": "พื้นหลังวันหยุดสุดสัปดาห์",
+                "work": "งาน",
+                "workTime": "ชั่วโมง"
+            },
+            "export": {
+                "excel": {
+                    "failure": "ไม่สามารถบันทึกไฟล์กำหนดการ Excel โปรดลองอีกครั้ง",
+                    "fileName": "เดือน {{month}} schedule.xlsx",
+                    "nameHeader": "ชื่อ",
+                    "previousShiftHeader": "กะก่อนหน้า",
+                    "sheetName": "ตารางเวรเดือน {{month}}",
+                    "success": "บันทึกไฟล์กำหนดการ Excel",
+                    "title": "กำหนดการเดือน {{month}}"
+                },
+                "image": {
+                    "failure": "ไม่สามารถบันทึกรูปภาพกำหนดการได้ โปรดลองอีกครั้ง",
+                    "fileName": "{{year}} M{{month}} schedule.png",
+                    "success": "บันทึกภาพกำหนดการแล้ว",
+                    "targetMissing": "ไม่พบมุมมองกำหนดการที่จะบันทึก",
+                    "teamFileName": "{{teamName}} {{year}} M{{month}} schedule.png",
+                    "title": "ตารางเวรเดือน {{month}} ปี {{year}}",
+                    "titleWithWard": "ตารางเวร {{wardLabel}} เดือน {{month}} ปี {{year}}"
+                }
+            },
+            "grid": {
+                "clearSelection": "ล้างการเลือก",
+                "nameHeader": "ชื่อ",
+                "setSelectionD": "ตั้งค่า D ในการเลือก"
+            },
+            "nurseEdit": {
+                "availableShifts": "กะที่มีอยู่",
+                "availableShiftsDescription": "* เลือกทุกกะที่พยาบาลคนนี้สามารถทำงานได้",
+                "close": "ปิด",
+                "disabled": "พิการ",
+                "dutyManager": "ตัวแก้ไขกำหนดการ",
+                "employmentDate": "วันที่เริ่มต้น",
+                "employmentDateDescription": "* ใส่ปีที่พยาบาลคนนี้เข้าโรงพยาบาล",
+                "enabled": "เปิดใช้งานแล้ว",
+                "gender": {
+                    "female": "เอฟ",
+                    "male": "ม"
+                },
+                "memo": "บันทึก",
+                "phoneNumber": "โทรศัพท์",
+                "phoneNumberDescription": "* ติดต่อฉุกเฉิน",
+                "save": "บันทึก",
+                "title": "การตั้งค่าพยาบาล",
+                "worker": "คนงาน"
+            },
+            "panel": {
+                "expand": "ขยาย",
+                "faults": "การละเมิด",
+                "faultsEmpty": "ไม่มีการละเมิด",
+                "fold": "ปิด",
+                "histories": "ประวัติศาสตร์",
+                "history": {
+                    "defaultLabel": "แก้ไขประวัติ",
+                    "editedCells": "แก้ไขเซลล์ {{count}} โดย {{source}}",
+                    "empty": "ไม่มีประวัติการแก้ไข",
+                    "reordered": "จัดลำดับคนงานใหม่",
+                    "sourceAi": "AI",
+                    "sourceSystem": "ระบบ",
+                    "sourceUser": "คู่มือ"
+                }
+            },
+            "requestLayer": {
+                "pending": "กะที่ร้องขอ {{name}} ยังไม่ได้ใช้"
+            },
+            "toolbar": {
+                "autofill": "เติมอัตโนมัติ",
+                "createNextMonth": "สร้างตารางเดือนหน้า",
+                "edit": "แก้ไข",
+                "layers": {
+                    "check": "ใช้คำขอแล้ว",
+                    "fault": "การเปลี่ยนแปลงไม่ถูกต้อง",
+                    "slash": "คำขอไม่ได้ใช้"
+                },
+                "notReady": "คุณลักษณะนี้ยังไม่พร้อม",
+                "publish": "เผยแพร่",
+                "save": "บันทึก",
+                "savedStatus": "บันทึกแล้ว",
+                "saveExcel": "บันทึก Excel",
+                "saveImage": "บันทึกภาพ",
+                "savingExcel": "กำลังบันทึก Excel",
+                "savingImage": "กำลังบันทึกรูปภาพ",
+                "savingStatus": "ประหยัด",
+                "settings": {
+                    "constraint": "ข้อจำกัด",
+                    "designTheme": "ธีมการออกแบบ",
+                    "shiftType": "ประเภทกะ"
+                },
+                "shiftInfoTitle": "ประเภทกะ"
+            },
+            "validation": {
+                "forbidNextShift": "{{nurseName}} ไม่สามารถทำงานได้ {{nextShift}} ในวันหลังจาก {{prevShift}}",
+                "l1ConsecutiveWork": "การทำงานติดต่อกันคือ {{actual}} วัน ซึ่งเกินขีดจำกัดวัน {{expected}}",
+                "l2MaxConsecutiveSameShift": "{{shift}} ได้รับการกำหนดวัน {{actual}} ติดต่อกัน ซึ่งเกินขีดจำกัดวัน {{expected}}",
+                "l2MinOffAfterNight": "มี {{actual}} OFF วันหลังกะกลางคืน ซึ่งน้อยกว่า {{expected}} ที่กำหนด",
+                "l3MinStaffShortage": "{{shift}} การรับพนักงานกะสั้น",
+                "legacy": {
+                    "excludeCertainWorkTypes": "หลีกเลี่ยงรูปแบบการเปลี่ยน ND/ED/NE/NOD",
+                    "excludeNightBeforeReqOff": "หลีกเลี่ยงกะกลางคืนก่อนวันที่ OFF ที่ร้องขอ",
+                    "maxContinuousNight": "สามารถกำหนดกะกลางคืนได้สูงสุด {{count}} วันติดต่อกัน",
+                    "maxContinuousWork": "สามารถมอบหมายงานได้สูงสุด {{count}} วันติดต่อกัน",
+                    "minContinuousNight": "กำหนดกะกลางคืนเป็นเวลาอย่างน้อย {{count}} วันติดต่อกัน",
+                    "minNightInterval": "เก็บอย่างน้อย {{count}} วันระหว่างกะกลางคืน",
+                    "minNightIntervalFallback": "รักษาระยะห่างระหว่างกะกลางคืนให้เพียงพอ",
+                    "minOffAssignAfterNight": "แนะนำอย่างน้อย {{count}} OFF วันหลังจากกะกลางคืน"
+                },
+                "maxConsecutiveNight": "{{nurseName}} มี {{actual}} กะ N ติดต่อกัน สูงสุด: {{expected}}",
+                "maxConsecutiveWork": "{{nurseName}} มีวันทำงานติดต่อกัน {{actual}} สูงสุด: {{expected}}",
+                "maxStaffByShift": "{{shift}} พนักงานคือ {{actual}} สูงสุดที่อนุญาต: {{expected}}",
+                "minMonthlyOff": "{{nurseName}} มี {{actual}} วันต่อเดือน OFF ขั้นต่ำที่ต้องการ: {{expected}}",
+                "minNightInterval": "{{nurseName}} ต้องการอย่างน้อย {{expected}} วันระหว่าง N กะ",
+                "minOffAfterNight": "{{nurseName}} ต้องการอย่างน้อย {{expected}} OFF วันหลังจากการเปลี่ยน N",
+                "minProficiencyStaffByShift": "{{shift}} มีพยาบาล {{actual}} ที่ LV{{level}} หรือสูงกว่า ขั้นต่ำที่ต้องการ: {{expected}}",
+                "minStaffByShift": "{{shift}} พนักงานคือ {{actual}} ขั้นต่ำที่ต้องการ: {{expected}}",
+                "nightBeforeRequestedOff": "{{nurseName}} ได้รับการกำหนดให้มีกะ N ก่อนวันที่ OFF ที่ร้องขอ",
+                "notAloneNight": "{{nurseName}} ไม่สามารถทำงาน N shift เพียงอย่างเดียวได้",
+                "nurseForbidWeekend": "{{nurseName}} ไม่สามารถทำงานในวันหยุดสุดสัปดาห์หรือวันหยุดนักขัตฤกษ์",
+                "pairForbidSameShift": "{{nurseAName}} และ {{nurseBName}} ไม่สามารถทำงานกะเดียวกันได้",
+                "pairPreferSameShift": "แนะนำให้ใช้ {{nurseAName}} และ {{nurseBName}} เพื่อทำงานในกะเดียวกัน",
+                "title": {
+                    "minOffAfterNight": "OFF ไม่เพียงพอหลังจากกะกลางคืน",
+                    "minStaffShortage": "บุคลากรที่จำเป็นมีน้อย"
+                },
+                "unknown": "ตรวจสอบข้อจำกัดนี้"
+            }
+        }
+    },
+    "page": {
+        "board": {
+            "comment": {
+                "cancelReply": "ยกเลิกการตอบกลับ",
+                "loading": "กำลังโหลดความคิดเห็น",
+                "placeholder": "เขียนความคิดเห็น",
+                "replyPlaceholder": "เขียนตอบกลับ",
+                "title": "ความคิดเห็น {{count}}"
+            },
+            "common": {
+                "add": "เพิ่ม",
+                "author": "ผู้เขียน",
+                "cancel": "ยกเลิก",
+                "close": "ปิด",
+                "count": "รายการ {{count}}",
+                "delete": "ลบ",
+                "noContent": "ไม่มีเนื้อหา",
+                "none": "ไม่มี",
+                "notice": "สังเกต",
+                "personCount": "{{count}} ชาว",
+                "removeNamed": "ลบ {{name}}",
+                "reply": "ตอบ",
+                "submit": "ส่ง",
+                "update": "อัปเดต",
+                "write": "เขียน"
+            },
+            "composer": {
+                "addingImage": "การแนบ",
+                "closeAria": "ปิดผู้แต่ง",
+                "content": "เนื้อหา",
+                "contentPlaceholder": "เขียนสิ่งที่คุณต้องการแบ่งปัน",
+                "image": "ภาพถ่าย",
+                "imageLimit": "สูงสุด {{count}} รูปภาพ · แต่ละ {{size}}MB",
+                "imageOnly": "สามารถแนบไฟล์รูปภาพได้เท่านั้น",
+                "imageReadFailed": "ไม่สามารถโหลดรูปภาพได้ โปรดเลือกอีกครั้ง",
+                "maxImageCount": "คุณสามารถแนบรูปภาพได้สูงสุด {{count}}",
+                "maxImageSize": "รูปภาพแต่ละรูปต้องมีขนาด {{size}}MB หรือเล็กกว่า",
+                "newPost": "โพสต์ใหม่",
+                "shareTitle": "แบ่งปันกับวอร์ด",
+                "title": "ชื่อ",
+                "titlePlaceholder": "ป้อนชื่อ"
+            },
+            "confirm": {
+                "deleteComment": "ลบความคิดเห็นนี้ใช่ไหม",
+                "deletePost": "ลบโพสต์นี้ใช่ไหม",
+                "deleteSchedule": "ลบกำหนดการวอร์ดนี้ใช่ไหม"
+            },
+            "date": {
+                "allDay": "ทั้งวัน",
+                "compactMonthDay": "{{month}}/{{day}}",
+                "datePickerButtonAria": "{{label}} {{value}}",
+                "datePlaceholder": "เลือกวันที่",
+                "justNow": "แค่ตอนนี้",
+                "monthDay": "{{month}}/{{day}}",
+                "monthTitle": "{{year}}.{{month}}",
+                "nextMonth": "เดือนหน้า",
+                "prevMonth": "เดือนที่แล้ว",
+                "quick": {
+                    "inThreeDays": "ใน 3 วัน",
+                    "today": "วันนี้",
+                    "tomorrow": "พรุ่งนี้"
+                },
+                "selectAria": "เลือก {{date}}",
+                "timeUnknown": "เวลาจะแจ้งภายหลัง",
+                "weekdays": {
+                    "fri": "ศุกร์",
+                    "mon": "จันทร์",
+                    "sat": "นั่ง",
+                    "sun": "ดวงอาทิตย์",
+                    "thu": "พฤ",
+                    "tue": "อ",
+                    "wed": "พ"
+                }
+            },
+            "deadline": {
+                "closePicker": "ปิดตัวเลือกกำหนดเวลา",
+                "label": "กำหนดเวลา",
+                "noSelection": "ไม่ได้เลือก",
+                "overdue": "เกินกำหนด",
+                "pickerTitle": "เลือกกำหนดเวลา",
+                "selectedSuffix": "เนื่องจาก {{date}}",
+                "today": "ครบกำหนดวันนี้"
+            },
+            "description": "แบ่งปันข้อมูลอัปเดตที่สำคัญกับพยาบาลในวอร์ดเดียวกัน",
+            "detail": {
+                "attachedImagePreview": "เปิดรูปภาพที่แนบมา {{index}}",
+                "check": "ทำเครื่องหมายว่าเสร็จสมบูรณ์",
+                "checkedPeople": "ตรวจสอบ {{count}} แล้ว",
+                "closeImage": "ปิดรูปภาพ",
+                "deletePost": "ลบโพสต์",
+                "imagePreview": "เปิดรูปภาพ",
+                "like": "ชอบ",
+                "selectPost": "เลือกโพสต์",
+                "uncheck": "ลบเช็ค",
+                "unlike": "ไม่เหมือน"
+            },
+            "list": {
+                "clearSearch": "ล้างการค้นหา",
+                "empty": "สร้างโพสต์ใหม่",
+                "loadFailed": "ไม่สามารถโหลดโพสต์ได้",
+                "loading": "กำลังโหลดโพสต์",
+                "searchAria": "ค้นหาโพสต์",
+                "searchPlaceholder": "ค้นหาชื่อหรือเนื้อหา",
+                "title": "กระทู้"
+            },
+            "schedule": {
+                "calendarTitle": "ปฏิทินวอร์ด",
+                "closeAria": "ปิดตารางวอร์ด",
+                "createAria": "สร้างกำหนดการวอร์ด",
+                "datePickerClose": "ปิดตัวเลือกวันที่",
+                "datePickerHeader": "กำหนดการ {{label}}",
+                "dateTime": "วันที่และเวลา",
+                "dayAria": "{{date}}, {{count}} รายการกำหนดการ{{selectedSuffix}}",
+                "editAria": "แก้ไขตารางวอร์ด",
+                "endDate": "วันที่สิ้นสุด",
+                "endTime": "จบ",
+                "memo": "บันทึก",
+                "memoPlaceholder": "เพิ่มรายละเอียดใด ๆ",
+                "modalAria": "วอร์ด {{title}}",
+                "modalCreate": "สร้างกำหนดการ",
+                "modalEdit": "แก้ไขกำหนดการ",
+                "modalView": "ดูกำหนดการ",
+                "monthEventsTitle": "เดือนนี้",
+                "noMemo": "ไม่มีบันทึก",
+                "noMonthEvents": "ตารางวอร์ดจะปรากฏที่นี่",
+                "noSelectedDateEvents": "ไม่มีกำหนดการในวันที่เลือก",
+                "periodRequired": "โปรดเลือกช่วงเวลากำหนดการ",
+                "postDeadline": "กำหนดเวลาการโพสต์",
+                "sectionTitle": "ตารางวอร์ด",
+                "selectedDateTitle": "ตารางเวลา {{date}}",
+                "selectedSuffix": ", เลือกแล้ว",
+                "startDate": "วันที่เริ่มต้น",
+                "startTime": "เริ่ม",
+                "time": "เวลา",
+                "timeInputAria": "{{label}} เวลา",
+                "timeMissing": "ตารางเวลาที่กำหนดเวลาต้องใช้ทั้งเวลาเริ่มต้นและเวลาสิ้นสุด",
+                "timeRangeInvalid": "สำหรับกำหนดการในวันเดียวกัน เวลาสิ้นสุดจะต้องอยู่หลังเวลาเริ่มต้น",
+                "title": "ชื่อ",
+                "titlePlaceholder": "ป้อนชื่อ",
+                "titleRequired": "กรุณากรอกชื่อ"
+            },
+            "state": {
+                "loadingDescription": "กำลังตรวจสอบข้อมูลวอร์ด",
+                "loadingTitle": "เตรียมบอร์ด",
+                "noWardDescription": "คุณสามารถใช้กระดานได้หลังจากเชื่อมโยงวอร์ดแล้ว",
+                "noWardTitle": "เชื่อมโยงวอร์ดเพื่อใช้กระดาน",
+                "retry": "ลองอีกครั้ง",
+                "retryDescription": "โปรดลองอีกครั้งในอีกสักครู่",
+                "wardLoadFailedTitle": "ไม่สามารถโหลดข้อมูลวอร์ดได้"
+            },
+            "title": "กระดาน",
+            "tutorial": {
+                "composer": {
+                    "deadlineInfo": "กำหนดเวลาปรากฏในแอป Dutying และปฏิทินวอร์ด\nใช้สำหรับการอัพเดตที่เกี่ยวข้องกับวันที่",
+                    "deadlineTitle": "กำหนดเส้นตาย"
+                },
+                "detail": {
+                    "checkInfo": "พยาบาลสามารถฝากเช็คได้เมื่อยืนยันแล้ว\nใช้ความคิดเห็นสำหรับการร้องขอหรือการเปลี่ยนแปลง",
+                    "checkTitle": "ติดตามการตรวจสอบและแสดงความคิดเห็น"
+                },
+                "list": {
+                    "createInfo": "โพสต์จะปรากฏแก่สมาชิกวอร์ดทุกคน\nแชร์ข้อมูลอัปเดตที่วอร์ดควรรู้",
+                    "createTitle": "สร้างโพสต์ใหม่ที่นี่",
+                    "postsInfo": "เลือกโพสต์เพื่ออ่านรายละเอียด",
+                    "postsTitle": "ดูกระทู้ในบอร์ด"
+                }
+            }
+        },
+        "duty": {
+            "bootstrapErrorDescription": "โปรดตรวจสอบข้อมูลบัญชีอีกครั้ง หากปัญหายังคงอยู่ ให้ลงชื่อเข้าใช้อีกครั้ง",
+            "bootstrapErrorTitle": "ไม่สามารถโหลดข้อมูลวอร์ดได้",
+            "bootstrapLoadingDescription": "การเตรียมมุมมองกำหนดการที่ยืนยันหลังจากตรวจสอบข้อมูลวอร์ด",
+            "bootstrapLoadingTitle": "การตรวจสอบข้อมูลบัญชี",
+            "cancel": "ยกเลิก",
+            "confirmedShift": "ตารางการปฏิบัติหน้าที่ที่ได้รับการยืนยัน",
+            "createCurrentMonth": "สร้างกำหนดการเดือนนี้",
+            "createNextMonth": "สร้างตารางเดือนหน้า",
+            "createShiftFlow": "สร้างกำหนดการ",
+            "editShift": "แก้ไขตารางการปฏิบัติหน้าที่",
+            "emptyDescription": "ไปที่การสร้างตารางเวลาเพื่อเริ่มตารางการปฏิบัติหน้าที่สำหรับเดือน {{month}}",
+            "emptyScheduleDescription": "สร้างกำหนดการในขั้นตอนการสร้างอัตโนมัติ",
+            "emptyScheduleTitle": "ยังไม่มีตารางปฏิบัติหน้าที่สำหรับ {{month}} สำหรับ {{teamName}}",
+            "emptyTitle": "ไม่มีตารางปฏิบัติหน้าที่สำหรับ {{teamName}} ในเดือน {{month}}",
+            "error": "โหลดตารางการปฏิบัติหน้าที่ไม่สำเร็จ",
+            "exportExcel": "ส่งออก Excel",
+            "exportExcelLoading": "กำลังส่งออก Excel...",
+            "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่...",
+            "monthHeader": "{{year}}-{{month}}",
+            "nextMonth": "เดือนหน้า",
+            "noTeamsDescription": "สร้างทีมกะแล้วลองอีกครั้ง",
+            "noTeamsLabel": "ไม่มีทีมกะ",
+            "noTeamsTitle": "ไม่พบทีมกะ",
+            "pastEmptyScheduleTitle": "ไม่มีตารางปฏิบัติหน้าที่ {{month}} สำหรับ {{teamName}}",
+            "prevMonth": "เดือนที่แล้ว",
+            "publish": "เผยแพร่",
+            "save": "บันทึก",
+            "selectedTeamFallback": "ทีมที่ได้รับการคัดเลือก",
+            "teamsError": "โหลดทีมกะไม่สำเร็จ",
+            "title": "การจัดการหน้าที่",
+            "viewRangeDescription": "คุณสามารถสร้างและดูกำหนดการได้จนถึงเดือนถัดไปเท่านั้น",
+            "viewRangeTitle": "ช่วงนี้ไม่ว่าง",
+            "wardCodeChecking": "กำลังตรวจสอบ"
+        },
+        "dutying": {
+            "comingSoon": "เร็วๆ นี้",
+            "description": "ค้นหาข้อมูลบริการและนโยบายสำหรับ Dutying",
+            "items": {
+                "contact": {
+                    "description": "ถามคำถามหรือฝากคำขอการสนับสนุน",
+                    "title": "ติดต่อเรา"
+                },
+                "notice": {
+                    "description": "ตรวจสอบการอัปเดตและประกาศเกี่ยวกับบริการ",
+                    "title": "ประกาศ"
+                },
+                "privacy": {
+                    "description": "ทบทวนวิธีการจัดการข้อมูลส่วนบุคคล",
+                    "title": "นโยบายความเป็นส่วนตัว"
+                },
+                "terms": {
+                    "description": "ตรวจสอบเงื่อนไขการใช้บริการ",
+                    "title": "ข้อกำหนดในการให้บริการ"
+                }
+            },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "ประกาศ",
+                "detailErrorDescription": "โปรดลองอีกครั้งในอีกสักครู่ หรือเลือกอีกครั้งจากรายการประกาศ",
+                "detailErrorTitle": "ไม่สามารถเปิดประกาศนี้ได้",
+                "emptyDescription": "ประกาศใหม่จะปรากฏที่นี่",
+                "emptyTitle": "ยังไม่มีการแจ้งเตือน",
+                "errorDescription": "ตรวจสอบการเชื่อมต่อเครือข่ายของคุณแล้วลองอีกครั้ง",
+                "errorTitle": "ไม่สามารถโหลดประกาศได้",
+                "invalidDescription": "ตรวจสอบที่อยู่หรือเลือกประกาศจากรายการ",
+                "invalidTitle": "ไม่พบประกาศ",
+                "listAria": "รายการแจ้งให้ทราบล่วงหน้า",
+                "loadingTitle": "กำลังโหลดประกาศ",
+                "loadMore": "โหลดเพิ่ม",
+                "pinned": "สำคัญ",
+                "publishedAt": "เผยแพร่ {{date}}",
+                "retry": "ลองอีกครั้ง",
+                "updatedAt": "อัปเดต {{date}}"
+            },
+            "title": "Dutying"
+        },
+        "error": {
+            "documentTitle": "{{title}} | Dutying",
+            "goBack": "กลับไป",
+            "goHome": "ไปที่กำหนดการ",
+            "notFound": {
+                "code": "404",
+                "description": "ที่อยู่อาจมีการเปลี่ยนแปลงหรือหน้าจอนี้อาจไม่สามารถใช้งานได้อีกต่อไป\nเริ่มต้นใหม่อีกครั้งจากหน้ากำหนดการ",
+                "title": "ไม่พบหน้า"
+            },
+            "retry": "ลองอีกครั้ง",
+            "unexpected": {
+                "code": "ข้อผิดพลาด",
+                "description": "มีบางอย่างผิดพลาดไปชั่วขณะหนึ่ง\nหากยังคงเกิดขึ้น ให้รีเฟรชและลองอีกครั้ง",
+                "title": "ไม่สามารถโหลดหน้าจอนี้ได้"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "ทั้งวัน",
+                "deadlineMeta": "กำหนดเวลา · {{date}}",
+                "empty": "ไม่มีกิจกรรมใกล้เคียง",
+                "loading": "กำลังตรวจสอบปฏิทิน",
+                "openAll": "ดูปฏิทินแบบเต็ม",
+                "overdue": "เกินกำหนด",
+                "scheduleDateMeta": "กิจกรรม · {{date}} · {{time}}",
+                "scheduleMeta": "กิจกรรม · {{time}}",
+                "timeUnknown": "เวลาจะแจ้งภายหลัง",
+                "today": "วันนี้"
+            },
+            "emptyTeams": {
+                "description": "เพิ่มทีมพยาบาลจาก Member Management",
+                "title": "เพิ่มทีมเพื่อดูสิ่งนี้"
+            },
+            "fallback": {
+                "manager": "ผู้ดูแลระบบ",
+                "selectedTeam": "ทีมที่ได้รับการคัดเลือก",
+                "ward": "วอร์ด"
+            },
+            "filter": {
+                "all": "ทั้งหมด"
+            },
+            "header": {
+                "createNextMonth": "สร้างตารางเดือนหน้า",
+                "todayAssigned": "{{managerName}} · {{count}} ทำงานวันนี้"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} วัน {{day}} {{shift}}",
+                "descriptionAll": "{{month}} · ทั้งหมด",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "แก้ไขกำหนดการ",
+                "emptyAllTitle": "ตารางเดือนนี้ว่างครับ",
+                "emptyDescription": "คุณสามารถตรวจสอบได้ในสร้างกำหนดการ",
+                "emptyTeamsTitle": "เพิ่มทีมเพื่อดูกำหนดการ",
+                "emptyTeamTitle": "กำหนดการ {{teamName}} ว่างเปล่า",
+                "nameHeader": "ชื่อ"
+            },
+            "nextSchedule": {
+                "title": "ตาราง {{teamName}} เดือนหน้าครับ"
+            },
+            "queue": {
+                "pendingRequests": "คำขอกะที่รอดำเนินการ",
+                "waitingNurses": "กำลังรอที่จะเข้าร่วม"
+            },
+            "sections": {
+                "calendar": "ปฏิทิน",
+                "monthly": "ตารางเดือนนี้ครับ",
+                "tasks": "ที่จะทำ",
+                "todayDuty": "วันนี้กะ"
+            },
+            "skeleton": {
+                "loadingAria": "กำลังโหลดบ้าน."
+            },
+            "sort": {
+                "default": "ค่าเริ่มต้น",
+                "label": "กำหนดการเรียงลำดับ",
+                "nameAsc": "ชื่อ",
+                "openAria": "เปิดลำดับการจัดเรียงกำหนดการ",
+                "todayShift": "วันนี้กะ"
+            },
+            "state": {
+                "errorDescription": "โปรดลองอีกครั้งในอีกสักครู่",
+                "errorTitle": "ไม่สามารถโหลดที่บ้านได้",
+                "noWardDescription": "เชื่อมต่อวอร์ดเพื่อดูบ้าน",
+                "noWardTitle": "เชื่อมต่อวอร์ดก่อน",
+                "retry": "ลองอีกครั้ง"
+            },
+            "status": {
+                "checking": "กำลังตรวจสอบ",
+                "complete": "ยืนยันแล้ว",
+                "draft": "อยู่ระหว่างดำเนินการ",
+                "empty": "ไม่ได้เริ่ม",
+                "error": "ตรวจสอบอีกครั้ง"
+            },
+            "tasks": {
+                "checking": "กำลังตรวจสอบ",
+                "nextScheduleAria": "ความคืบหน้ากำหนดการเดือนหน้า",
+                "overdueAction": "กำหนดเวลา",
+                "overdueFallback": "เริ่มต้นด้วยรายการที่ค้างชำระที่เก่าแก่ที่สุด",
+                "overdueTitle": "{{count}} เกินกำหนดเวลา",
+                "pendingRequestsAction": "คำขอ",
+                "pendingRequestsDescription": "ตัดสินใจว่าจะใช้สิ่งเหล่านี้กับกำหนดการหรือไม่",
+                "pendingRequestsTitle": "{{count}} ที่รอดำเนินการคำร้องขอกะ",
+                "todayAction": "วันนี้",
+                "todayFallback": "โพสต์นี้ครบกำหนดวันนี้",
+                "todayTitle": "{{count}} ครบกำหนดวันนี้",
+                "unreadChatAction": "แชท",
+                "unreadChatDescription": "ตรวจสอบการสนทนาล่าสุด",
+                "unreadChatTitle": "{{count}} ข้อความแชทวอร์ดที่ยังไม่ได้อ่าน",
+                "waitingNursesAction": "สมาชิก",
+                "waitingNursesDescription": "ทบทวนสมาชิกเพื่อเพิ่มเข้าวอร์ด",
+                "waitingNursesTitle": "{{count}} รอเข้าร่วมนะครับ"
+            },
+            "today": {
+                "emptyShift": "วันนี้ไม่มีกะ"
+            }
+        },
+        "landing": {
+            "appFeature": {
+                "community": {
+                    "description": "แชร์ข้อมูลที่ใช้ได้จริงและเรื่องที่พูดยากได้แบบไม่ระบุตัวตน",
+                    "highlight": "เรื่องจริง",
+                    "label": "ชุมชนพยาบาล",
+                    "title": "เรื่องจริงของพยาบาล\nรวมอยู่ที่นี่"
+                },
+                "home": {
+                    "description": "ไม่ต้องเปิดแอป ก็เช็กได้ทันทีผ่านวิดเจ็ต",
+                    "highlightPersonal": "ตารางส่วนตัว",
+                    "highlightSchedule": "ตารางเวร",
+                    "label": "หน้าหลัก",
+                    "title": "ดูทั้งตารางเวร\nและตารางส่วนตัวในที่เดียว"
+                },
+                "ward": {
+                    "description": "เช็กและปรับตารางที่จำเป็นสำหรับงานกะได้ง่ายขึ้น",
+                    "highlight": "เชื่อมต่อหอผู้ป่วย",
+                    "label": "หอผู้ป่วย",
+                    "title": "เชื่อมต่อหอผู้ป่วย\nแล้วดูตารางของทีมด้วยกัน"
+                }
+            },
+            "appSection": {
+                "pill": "App",
+                "titleLine1": "ตั้งแต่จัดการตารางเวร",
+                "titleLine2": "จนถึงประสานงานในหอผู้ป่วย ครบในที่เดียว"
+            },
+            "common": {
+                "appDownload": "ดาวน์โหลดแอป",
+                "appSchedule": "ดูตารางเวรในแอป",
+                "copyright": "ⓒ 2026 Dutying. All Rights Reserved",
+                "languageSelect": "เลือกภาษา",
+                "login": "เข้าสู่ระบบ",
+                "logout": "ออกจากระบบ",
+                "makeSchedule": "สร้างตารางเวร",
+                "profile": "โปรไฟล์",
+                "profileClose": "ปิดโปรไฟล์",
+                "profileMenu": "เมนูโปรไฟล์",
+                "schedule": "ตารางเวร",
+                "tryDemo": "ทดลองใช้",
+                "viewDesktop": "ดูเวอร์ชันเดสก์ท็อป",
+                "viewMobile": "ดูเวอร์ชันมือถือ",
+                "webMakeSchedule": "สร้างตารางเวรบน Web"
+            },
+            "feature": {
+                "ai": {
+                    "description": "เงื่อนไขที่มักพลาด\nตรวจและนำไปใช้ได้ทีละขั้นตอน",
+                    "label": "เติมอัตโนมัติด้วย AI",
+                    "title": "ตารางเวรว่าง\nไม่ต้องเริ่มกรอกเองตั้งแต่ศูนย์"
+                },
+                "integration": {
+                    "description": "พยาบาลส่งคำขอเวรผ่านแอปได้\nเมื่อยืนยันตารางแล้ว ระบบจะซิงก์ไปยังแอปทันที",
+                    "highlight": "เชื่อมต่อ",
+                    "label": "เชื่อมต่อ",
+                    "title": "เชื่อมต่อพยาบาล\nกับหอผู้ป่วยได้ง่ายขึ้น"
+                },
+                "review": {
+                    "description": "จุดที่ต้องแก้\nดูได้ทันที พร้อมคำแนะนำในการปรับ",
+                    "label": "ตรวจด้วย AI",
+                    "title": "ตรวจตารางเวรผิดปกติ\nแล้วแก้ได้ทันที"
+                },
+                "ward": {
+                    "description": "ตั้งแต่ประกาศสำคัญจนถึงแจ้งเตือนทั่วไป\nรวมไว้ที่เดียว ไม่พลาดข้อมูล",
+                    "highlightNurse": "พยาบาล",
+                    "highlightShare": "แชร์",
+                    "label": "บอร์ดประกาศ",
+                    "title": "แชร์ข้อมูลสำคัญ\nให้พยาบาลในหอผู้ป่วย"
+                }
+            },
+            "finalCta": {
+                "download": "ดาวน์โหลดแอป",
+                "eyebrow": "ใช้เวลาเพียง 1 นาที",
+                "titleLine1": "เชื่อมต่อ Web และ App",
+                "titleLine2": "ให้การจัดการง่ายขึ้น"
+            },
+            "header": {
+                "app": "App สำหรับพยาบาล",
+                "homeAria": "หน้าแรกของ Landing page Dutying",
+                "inquiry": "ติดต่อเรา",
+                "sectionAria": "เมนูนำทาง Landing page",
+                "web": "Web สำหรับผู้จัดตารางเวร"
+            },
+            "hero": {
+                "ariaLabel": "ตารางเวรและการจัดการหอผู้ป่วยง่ายขึ้นด้วย Dutying",
+                "description": "สร้างตารางเวรได้ง่ายและรวดเร็วด้วย AI\nเชื่อมต่อกับพยาบาล เพื่อให้การจัดการหอผู้ป่วยง่ายขึ้น",
+                "phraseSchedule": "ตารางเวร,",
+                "phraseWard": "การจัดการหอผู้ป่วย,",
+                "suffix": "ง่ายขึ้นด้วย Dutying"
+            },
+            "imageAlt": {
+                "appLogo": "ภาพโลโก้แอป Dutying",
+                "appScreen": "หน้าจอแอป",
+                "integration": "หน้าจอที่พยาบาลตรวจคำขอเวรในแอป",
+                "mobileHero": "หน้าจอตารางเวรในแอป Dutying",
+                "wardBoard": "หน้าจอบอร์ดประกาศของหอผู้ป่วย",
+                "webSchedule": "หน้าจอแก้ไขตารางเวรบน Dutying Web"
+            },
+            "mobileBenefits": {
+                "community": {
+                    "description": "แชร์ข้อมูลที่จำเป็นและเรื่องราวประจำวันระหว่างพยาบาลได้ง่ายๆ",
+                    "title": "ชุมชนพยาบาล"
+                },
+                "schedule": {
+                    "description": "ดูตารางเวรและตารางส่วนตัวของฉันได้ทันทีในแอป",
+                    "title": "ดูตารางเวร"
+                },
+                "ward": {
+                    "description": "เชื่อมต่อกับหอผู้ป่วย แล้วส่งคำขอเวรหรือวันหยุดได้ง่ายขึ้น",
+                    "title": "เชื่อมต่อหอผู้ป่วย"
+                }
+            },
+            "mobileHero": {
+                "benefitsLabel": "ฟีเจอร์หลักของแอป",
+                "benefitsTitleLine1": "ฟีเจอร์ที่พยาบาลต้องใช้",
+                "benefitsTitleLine2": "รวมไว้ใน Dutying",
+                "communityAria": "แชร์เรื่องงาน คลินิก และความกังวลได้ใน Dutying",
+                "communityLine1": "เรื่องงาน คลินิก และความกังวล",
+                "communityLine2": "แชร์ได้ใน Dutying",
+                "description": "ตั้งแต่เช็กเวร ส่งคำขอเวร/วันหยุด ไปจนถึงข่าวจากหอผู้ป่วย ทำได้ในแอป",
+                "downloadEyebrow": "ดาวน์โหลดแอป Dutying",
+                "downloadTitleLine1": "ไม่พลาดตารางเวรของฉัน",
+                "downloadTitleLine2": "และข่าวจากหอผู้ป่วย",
+                "requestAria": "ส่งคำขอเวรและวันหยุดได้ง่ายขึ้น",
+                "requestLine1": "ส่งคำขอเวรและวันหยุด",
+                "requestLine2": "ได้ง่ายขึ้น",
+                "scheduleAria": "ดูตารางเวรของฉันได้ทันทีใน Dutying",
+                "scheduleLine1": "ตารางเวรของฉัน",
+                "scheduleLine2": "ดูได้ทันทีใน Dutying",
+                "wardAria": "รับข่าวจากหอผู้ป่วยได้ทันทีผ่าน Dutying",
+                "wardLine1": "ข่าวจากหอผู้ป่วย",
+                "wardLine2": "รับได้ทันทีผ่าน Dutying"
+            },
+            "title": "ตารางเวร\nง่ายขึ้นกว่าเดิม!",
+            "webSection": {
+                "pill": "Web",
+                "titleHighlight": "AI ใน 1 นาที",
+                "titleLine1": "ตารางเวรที่ซับซ้อน,",
+                "titleLine2Prefix": "ใช้",
+                "titleLine2Suffix": "ก็สร้างได้"
+            }
+        },
+        "login": {
+            "appleContinue": "ต่อด้วย Apple",
+            "appleCta": "ต่อด้วย Apple",
+            "appleStart": "เริ่มต้นด้วย Apple",
+            "backToLogin": "กลับไปลงชื่อเข้าใช้",
+            "continuePrefix": "การดำเนินการต่อแสดงว่าคุณยอมรับ",
+            "demoExpired": {
+                "bannerDescription": "API การแปลงแบบเต็มยังอยู่ระหว่างดำเนินการ ดังนั้นในตอนนี้เราจะแนะนำคุณเกี่ยวกับการเข้าสู่ระบบและการลงทะเบียนก่อน",
+                "bannerTitle": "การสาธิตสิ้นสุดลงแล้ว",
+                "description": "เวลาสาธิตของคุณสิ้นสุดลงแล้ว แต่คุณสามารถดำเนินการต่อตามขั้นตอนการลงทะเบียนแบบเต็มได้ทันที",
+                "title": "ลงทะเบียนและไปต่อ"
+            },
+            "demoSignupDescription": "สร้างบัญชีและวอร์ดใหม่เพื่อจัดการข้อมูลของคุณต่อไป",
+            "demoSignupTitle": "แปลงบัญชีทดลองของคุณเป็นบัญชีเต็ม",
+            "description": "เริ่ม Dutying ด้วยบัญชีโซเชียลของคุณ",
+            "email": "อีเมล",
+            "emailPlaceholder": "ใส่อีเมลของคุณ",
+            "emailSignupPlaceholder": "ใส่อีเมลของคุณ",
+            "feedback": {
+                "emailVerified": "การยืนยันอีเมลเสร็จสมบูรณ์",
+                "invalidCredentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+                "legacyInvalidCredentialsServerText": "ID หรือรหัสผ่านของคุณไม่ถูกต้อง",
+                "loginFailed": "ไม่สามารถลงชื่อเข้าใช้ได้ โปรดลองอีกครั้ง",
+                "passwordResetFailed": "ไม่สามารถเปลี่ยนรหัสผ่านได้ โปรดลองอีกครั้ง",
+                "passwordResetSuccess": "เปลี่ยนรหัสผ่านแล้ว ลงชื่อเข้าใช้ด้วยรหัสผ่านใหม่ของคุณ",
+                "passwordResetTokenVerified": "ตรวจสอบรหัสแล้ว ป้อนรหัสผ่านใหม่",
+                "signupFailed": "ไม่สามารถลงทะเบียนให้เสร็จสิ้นได้ โปรดลองอีกครั้ง",
+                "verificationFailed": "ไม่สามารถส่งอีเมลยืนยันได้ โปรดลองอีกครั้ง",
+                "verificationInvalid": "ตรวจสอบรหัสยืนยัน",
+                "verificationSent": "เราได้ส่งอีเมลยืนยันแล้ว ตรวจสอบกล่องจดหมายของคุณและป้อนรหัส"
+            },
+            "forgotPassword": "ลืมรหัสผ่าน",
+            "hasAccountPrompt": "มีบัญชีอยู่แล้ว?",
+            "hidePassword": "ซ่อนรหัสผ่าน",
+            "kakaoContinue": "ต่อด้วย Kakao",
+            "kakaoCta": "ต่อด้วย Kakao",
+            "kakaoStart": "เริ่มต้นด้วย Kakao",
+            "loginLink": "เข้าสู่ระบบ",
+            "loginVisualAria": "ภาพการลงชื่อเข้าใช้ Dutying",
+            "marketingConsent": "ฉันยินยอมรับข้อมูลการตลาด",
+            "name": "ชื่อ",
+            "namePlaceholder": "ใส่ชื่อของคุณ",
+            "newPassword": "รหัสผ่านใหม่",
+            "newPasswordConfirm": "ยืนยันรหัสผ่านใหม่",
+            "newPasswordConfirmPlaceholder": "ป้อนรหัสผ่านใหม่อีกครั้ง",
+            "newPasswordPlaceholder": "ป้อนรหัสผ่านใหม่",
+            "nextImage": "รูปภาพถัดไป",
+            "noAccountPrompt": "ยังไม่มีบัญชี?",
+            "optionalConsentLabel": "[ไม่บังคับ]",
+            "password": "รหัสผ่าน",
+            "passwordConfirm": "ยืนยันรหัสผ่าน",
+            "passwordConfirmPlaceholder": "ป้อนรหัสผ่านของคุณอีกครั้ง",
+            "passwordPlaceholder": "ใส่รหัสผ่านของคุณ",
+            "passwordResetSubmit": "รีเซ็ตรหัสผ่าน",
+            "passwordResetTitle": "รีเซ็ตรหัสผ่าน",
+            "passwordResetVerificationCodeAria": "รหัสยืนยันการรีเซ็ตรหัสผ่าน",
+            "passwordSignupPlaceholder": "ใส่รหัสผ่านของคุณ",
+            "previousImage": "รูปภาพก่อนหน้า",
+            "privacyPolicy": "นโยบายความเป็นส่วนตัว",
+            "privacyNoticePrefix": "ข้อมูลส่วนบุคคลจะได้รับการจัดการตาม",
+            "privacyNoticeSuffix": ".",
+            "redirect": {
+                "adminTokenMissing": "ไม่สามารถรับโทเค็นการเข้าสู่ระบบของผู้ดูแลระบบได้ ตรวจสอบการตั้งค่าการเข้าสู่ระบบโซเชียล",
+                "errorTitle": "การเข้าสู่ระบบโซเชียลล้มเหลว",
+                "loading": "กำลังลงชื่อเข้าใช้"
+            },
+            "requiredConsentLabel": "[จำเป็น]",
+            "showPassword": "แสดงรหัสผ่าน",
+            "signupLink": "ลงทะเบียน",
+            "signupTitle": "ลงทะเบียน",
+            "sixDigitVerificationCodePlaceholder": "รหัสยืนยัน 6 หลัก",
+            "submitLogin": "เข้าสู่ระบบ",
+            "submitSignup": "สร้างบัญชี",
+            "termsConnector": "และ",
+            "termsAgreementSuffix": ".",
+            "termsOfService": "ข้อกำหนดในการให้บริการ",
+            "termsPrefix": "การดำเนินการต่อแสดงว่าคุณยอมรับ",
+            "termsSuffix": ".",
+            "termsSuffixStrict": ".",
+            "title": "เข้าสู่ระบบ",
+            "validation": {
+                "emailInvalid": "ป้อนที่อยู่อีเมลที่ถูกต้อง",
+                "emailVerificationRequired": "ยืนยันอีเมลให้เสร็จสมบูรณ์",
+                "loginRequired": "กรอกอีเมลและรหัสผ่านของคุณ",
+                "nameRequired": "ใส่ชื่อของคุณ",
+                "passwordConfirmRequired": "ป้อนรหัสผ่านอีกครั้ง",
+                "passwordMinLength": "ป้อนอักขระอย่างน้อย {{count}} สำหรับรหัสผ่านของคุณ",
+                "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
+                "termsRequired": "ยอมรับข้อกำหนดในการให้บริการ",
+                "verificationCodeRequired": "ป้อนรหัสยืนยัน",
+                "verificationConfirmRequired": "ยืนยันรหัสยืนยันก่อน"
+            },
+            "verificationCodeAria": "รหัสยืนยันอีเมล",
+            "verificationCodePlaceholder": "ป้อนรหัสยืนยัน",
+            "verificationComplete": "ตรวจสอบแล้ว",
+            "verificationConfirm": "ยืนยัน",
+            "verificationResend": "ส่งอีกครั้ง",
+            "verificationSend": "ตรวจสอบ"
+        },
+        "makeShift": {
+            "aiRefill": {
+                "action": "เติมเงิน",
+                "cannotAutofillYet": "ข้อมูลกำหนดการยังคงโหลดอยู่ โปรดลองอีกครั้งในอีกสักครู่",
+                "confirm": "ยืนยันกำหนดการ",
+                "description": {
+                    "error": "คำร้องขอ AI ล้มเหลว กำหนดการปัจจุบันจะคงอยู่ตามเดิม และคุณสามารถลองอีกครั้งได้ทันที",
+                    "idle": "คุณสามารถเริ่มป้อนอัตโนมัติ AI ด้วยเงื่อนไขจากขั้นตอนก่อนหน้าได้",
+                    "loading": "ขณะรอการตอบกลับ ให้ยืนยันและลองอีกครั้งว่าถูกปิดใช้งานชั่วคราว",
+                    "success": "ผลลัพธ์ AI ถูกนำไปใช้ ตรวจสอบ แก้ไข หรือยืนยันได้ทันที"
+                },
+                "draft": {
+                    "none": "คุณกำลังดูกำหนดการพื้นฐานโดยยังไม่มีการแก้ไขใดๆ ที่บันทึกไว้",
+                    "saved": "การแก้ไขปัจจุบันของคุณจะถูกเก็บรักษาและบันทึกอัตโนมัติ"
+                },
+                "empty": "ไม่สามารถโหลดข้อมูลกำหนดการได้",
+                "error": "ไม่สามารถโหลดตารางการปฏิบัติหน้าที่ได้",
+                "firstFill": "ป้อนอัตโนมัติ",
+                "fixedOnly": "คงที่เท่านั้น",
+                "generating": "กำลังกรอก...",
+                "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
+                "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
+                "lastShiftBlankDialog": {
+                    "cancel": "ตรวจสอบอินพุต",
+                    "confirm": "ยืนยันตามที่เป็นอยู่",
+                    "description": "เซลล์ที่เลื่อนก่อนหน้าบางเซลล์ว่างเปล่า กรอกหากกำหนดการนี้ควรพิจารณาเดือนก่อนหน้า",
+                    "title": "ทบทวนกะก่อนหน้าไหม?"
+                },
+                "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่",
+                "previous": "ขั้นตอนก่อนหน้า",
+                "progressToast": "กำหนดการเติม",
+                "publishSuccess": "กำหนดการได้รับการยืนยันและเผยแพร่แล้ว",
+                "requestFailed": "ไม่สามารถกรอก AI อัตโนมัติได้",
+                "resetAction": "รีเซ็ต",
+                "retry": "ลองอีกครั้ง",
+                "saveFailed": "บันทึกไม่สำเร็จ โปรดลองอีกครั้งในอีกสักครู่",
+                "saveSnapshot": "บันทึกฉบับร่าง",
+                "saveSnapshotFailed": "บันทึกฉบับร่างไม่สำเร็จ",
+                "saveSnapshotSuccess": "บันทึกฉบับร่างแล้ว",
+                "savingSnapshot": "กำลังบันทึกฉบับร่าง...",
+                "showingFaults": "กำลังแสดงข้อผิดพลาด",
+                "snapshotLimitDialog": {
+                    "cancel": "ยกเลิก",
+                    "confirm": "ลบและบันทึก",
+                    "description": "หากต้องการบันทึกรายการประวัติใหม่ ให้ลบรายการเก่าที่สุด \"{{title}}\" ลบแล้วบันทึก?",
+                    "title": "ประวัติศาสตร์จัดเก็บได้ถึง 10 รายการ"
+                },
+                "snapshotLimitReached": "ประวัติศาสตร์สามารถจัดเก็บได้ถึง 10 รายการ",
+                "snapshotSidebar": {
+                    "close": "ปิดแบบร่าง",
+                    "defaultTitle": "กรอกข้อความร่างอัตโนมัติ",
+                    "delete": "ลบประวัติ",
+                    "deleteCancel": "ยกเลิก",
+                    "deleteConfirm": "ลบ",
+                    "deleteDescription": "ลบ \"{{title}}\" ประวัติที่ถูกลบไม่สามารถกู้คืนได้",
+                    "deleteFailed": "ไม่สามารถลบประวัติได้",
+                    "deleteSuccess": "ลบประวัติแล้ว",
+                    "deleteTitle": "ลบประวัติใช่ไหม",
+                    "description": "บันทึกผลลัพธ์การป้อนอัตโนมัติ",
+                    "empty": "ยังไม่มีฉบับร่างที่บันทึกไว้",
+                    "emptyCells": "ว่างเปล่า {{count}}",
+                    "error": "ไม่สามารถโหลดเวอร์ชันที่บันทึกไว้ได้",
+                    "filledCells": "เติม {{count}} แล้ว",
+                    "hardViolations": "สำคัญ {{count}}",
+                    "loadCancel": "ยกเลิก",
+                    "loadConfirm": "โหลด",
+                    "loadDescription": "แทนที่กำหนดการปัจจุบันด้วย \"{{title}}\"\nการแก้ไขใดๆ บนหน้าจอนี้จะหายไป",
+                    "loadFailed": "ไม่สามารถโหลดเวอร์ชันที่บันทึกไว้",
+                    "loading": "กำลังโหลดเวอร์ชันที่บันทึกไว้...",
+                    "loadSuccess": "โหลดเวอร์ชันที่บันทึกไว้ {{title}} แล้ว",
+                    "loadTitle": "โหลดเวอร์ชันที่บันทึกไว้นี้หรือไม่",
+                    "renameFailed": "ไม่สามารถอัปเดตชื่อประวัติได้",
+                    "renameSuccess": "อัปเดตชื่อประวัติแล้ว",
+                    "renameTitleAria": "ชื่อประวัติศาสตร์",
+                    "restore": "คืนค่า",
+                    "savedCount": "{{count}} ฉบับร่าง",
+                    "selectedHistory": "ประวัติศาสตร์ที่เลือก",
+                    "softViolations": "ทั่วไป {{count}}",
+                    "title": "ประวัติศาสตร์",
+                    "todayAt": "วันนี้ {{time}}",
+                    "toggleDetails": "แสดงรายละเอียด",
+                    "totalViolations": "รวม {{count}}"
+                },
+                "title": {
+                    "error": "การเติมล้มเหลว",
+                    "idle": "ป้อนอัตโนมัติพร้อมแล้ว",
+                    "loading": "กำลังคำนวณกำหนดการ",
+                    "success": "เติมให้ครบ"
+                },
+                "toolbarHint": "เติมเซลล์ว่างตามกฎและกะที่ร้องขอ",
+                "toolbarSubTitle": "ใช้การป้อนอัตโนมัติ AI เพื่อเติมเซลล์ว่างในครั้งเดียว",
+                "toolbarTitle": "กรอกและยืนยันกำหนดการ",
+                "validationStatus": {
+                    "checking": "การตรวจสอบข้อจำกัด"
+                },
+                "viewAll": "ดูทั้งหมด"
+            },
+            "calendar": {
+                "carried": "พก",
+                "clearCell": "ชัดเจน",
+                "closePopover": "ปิดป๊อปโอเวอร์",
+                "dateOthers": "+{{count}} อีกวัน",
+                "fullDayLabel": "วัน {{day}} · ทั้งหมด",
+                "name": "ชื่อ",
+                "nurseDayLabel": "{{name}} · วัน {{day}}",
+                "previousShifts": "ก่อนหน้า",
+                "shiftTypeDropdownAria": "เลือกประเภทกะ",
+                "violationCount": {
+                    "error": "สำคัญ {{count}}",
+                    "warning": "ทั่วไป {{count}}"
+                },
+                "violationDialogAria": "ปัญหาข้อจำกัด: {{count}}",
+                "violationLevel": {
+                    "error": "สำคัญ",
+                    "warning": "ทั่วไป"
+                }
+            },
+            "confirmedShifts": {
+                "editAction": "แก้ไข",
+                "empty": "ยังไม่มีกำหนดการที่ยืนยัน",
+                "error": "ไม่สามารถโหลดกำหนดการที่ยืนยันแล้ว",
+                "fallbackTeamName": "ทีมที่ได้รับการคัดเลือก",
+                "hint": "พยาบาลที่เชื่อมต่อกับวอร์ดนี้สามารถดูตารางที่ยืนยันได้ในแอปทันที!",
+                "imageAction": "ดาวน์โหลดรูปภาพ",
+                "imageActionLoading": "กำลังดาวน์โหลดรูปภาพ",
+                "loading": "กำลังโหลดกำหนดการที่ยืนยันแล้ว",
+                "title": "ตาราง {{teamName}} ของ {{month}}",
+                "wardCodeGuideAction": "เปิดคู่มือรหัสวอร์ด"
+            },
+            "constraints": {
+                "action": {
+                    "add": "เพิ่มข้อจำกัด",
+                    "reset": "รีเซ็ต"
+                },
+                "category": {
+                    "combination": "การจับคู่คนงาน",
+                    "forbidden": "รูปแบบต้องห้าม",
+                    "personal": "ข้อจำกัดของบุคคล",
+                    "recommended": "ที่แนะนำ",
+                    "skill": "ระดับทักษะ",
+                    "staffing": "การจัดหาพนักงาน",
+                    "workRest": "ทำงาน/พักผ่อน"
+                },
+                "count": "{{count}}",
+                "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
+                "empty": "ไม่มีข้อจำกัดในการแสดง",
+                "exclude": "ไม่รวม",
+                "excludeRuleAria": "ปิดการใช้งานข้อจำกัดนี้",
+                "import": {
+                    "cancel": "ยกเลิก",
+                    "confirm": "นำเข้า",
+                    "currentTeam": "ทีมปัจจุบัน: {{teamName}}",
+                    "disabledTitle": "ใช้ได้เมื่อมีอย่างน้อยสองทีม",
+                    "loading": "กำลังนำเข้า",
+                    "modalTitle": "ข้อจำกัดในการนำเข้า",
+                    "selectedTeamFallback": "ทีมที่ได้รับการคัดเลือก",
+                    "sourceTeamFallback": "อีกทีม",
+                    "teamLabel": "ทีมงานนำเข้า",
+                    "title": "ข้อจำกัดการนำเข้าจากทีมอื่น"
+                },
+                "important": {
+                    "ariaMark": "ทำเครื่องหมายว่าสำคัญ",
+                    "ariaRemove": "ลบเครื่องหมายสำคัญ",
+                    "label": "สำคัญ",
+                    "recommendedTitle": "ข้อจำกัดที่สำคัญที่แนะนำ"
+                },
+                "info": "ทำเครื่องหมายข้อจำกัดที่ต้องปฏิบัติตามว่าสำคัญ",
+                "infoTooltipAria": "เกี่ยวกับข้อจำกัดที่สำคัญ",
+                "listTitle": "ข้อจำกัด",
+                "modal": {
+                    "addAria": "เพิ่มข้อจำกัด",
+                    "addTitle": "เพิ่ม",
+                    "close": "ปิด",
+                    "description": "ข้อจำกัดบางประการอาจใช้ไม่ได้ขึ้นอยู่กับกำหนดการ",
+                    "title": "เพิ่มข้อจำกัด"
+                },
+                "option": {
+                    "all": "ทั้งหมด",
+                    "allDays": "ทั้งวัน",
+                    "allPeople": "ทุกคน",
+                    "dayLabel": "วัน {{day}}"
+                },
+                "phrase": {
+                    "day": "วัน",
+                    "gte": "หรือมากกว่านั้น",
+                    "lte": "หรือน้อยกว่า",
+                    "max": "สูงสุด",
+                    "min": "นาที"
+                },
+                "rule": {
+                    "excludeCertainWorkTypes": {
+                        "label": "หลีกเลี่ยงรูปแบบ ND / ED / NE / NOD"
+                    },
+                    "excludeNightBeforeReqOff": {
+                        "label": "หลีกเลี่ยงคืนก่อนที่จะขอ OFF"
+                    },
+                    "maxContinuousNight": {
+                        "label": "คืนติดต่อกันสูงสุด"
+                    },
+                    "maxContinuousWork": {
+                        "label": "วันทำงานติดต่อกันสูงสุด"
+                    },
+                    "minContinuousNight": {
+                        "label": "คืนติดต่อกันขั้นต่ำ"
+                    },
+                    "minNightInterval": {
+                        "label": "ช่วงเวลาขั้นต่ำระหว่างคืน"
+                    },
+                    "minOffAssignAfterNight": {
+                        "label": "แนะนำ OFF หลังคืนครับ"
+                    }
+                },
+                "ruleAction": {
+                    "deleteAria": "ลบข้อจำกัด"
+                },
+                "section": {
+                    "strong": "ข้อจำกัดที่ยาก",
+                    "weak": "ข้อจำกัดที่นุ่มนวล"
+                },
+                "state": {
+                    "loadError": "ไม่สามารถโหลดข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
+                    "loading": "กำลังโหลดข้อจำกัด",
+                    "teamRequired": "เลือกทีมกะก่อน"
+                },
+                "templates": {
+                    "IMPORTANT_FORBIDDEN_DUTY_PATTERNS": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "หลีกเลี่ยงรูปแบบการเปลี่ยน ND / ED / NE / NOD"
+                    },
+                    "IMPORTANT_MAX_NIGHT_STREAK": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "สามารถกำหนดกะได้ N กะเป็นเวลาสูงสุด {days} วันติดต่อกัน"
+                    },
+                    "IMPORTANT_MAX_SAME_DUTY_STREAK": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "คุณสามารถมอบหมายกะเดียวกันได้สูงสุด {days} วันติดต่อกัน"
+                    },
+                    "IMPORTANT_MAX_WORK_STREAK": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "อนุญาตให้ทำงานติดต่อกันได้นานถึง {days} วัน"
+                    },
+                    "IMPORTANT_MIN_NIGHT_INTERVAL": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "N กะต้องใช้เวลาอย่างน้อย {days} วันระหว่างการมอบหมายงาน"
+                    },
+                    "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "หลีกเลี่ยงการกะ N ในวันก่อน OFF ที่ร้องขอ"
+                    },
+                    "IMPORTANT_OFF_AFTER_NIGHT": {
+                        "label": "ข้อจำกัดสำคัญเริ่มต้น",
+                        "sentence": "หลังจากกะ N ให้กำหนดอย่างน้อย {days} OFF วัน"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_N": {
+                        "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
+                        "sentence": "{target} สามารถทำงานได้ N สูงสุด {count} ครั้งติดต่อกัน"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_WORK": {
+                        "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
+                        "sentence": "{target} สามารถทำงานได้สูงสุด {days} วันติดต่อกันในหนึ่งเดือน"
+                    },
+                    "SOFT_MAX_STAFF_BY_DUTY": {
+                        "label": "ข้อจำกัดด้านบุคลากร",
+                        "sentence": "{duty} กะสามารถมีได้สูงสุด {count} คน"
+                    },
+                    "SOFT_MIN_MONTHLY_OFF": {
+                        "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
+                        "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันต่อเดือน"
+                    },
+                    "SOFT_MIN_SKILL_IN_DUTY": {
+                        "label": "พยาบาลใหม่ / ข้อจำกัดด้านทักษะ",
+                        "sentence": "กะ {duty} กะ ต้องการพยาบาลอย่างน้อย {count} คนที่ระดับ {level} หรือสูงกว่า"
+                    },
+                    "SOFT_MIN_STAFF_BY_DATE_DUTY": {
+                        "label": "ข้อจำกัดด้านบุคลากร",
+                        "sentence": "ในวันที่ {date} กะงาน {duty} ต้องมีอย่างน้อย {count} คน"
+                    },
+                    "SOFT_MIN_STAFF_BY_DUTY": {
+                        "label": "ข้อจำกัดด้านบุคลากร",
+                        "sentence": "กะ {duty} กะต้องการคนอย่างน้อย {count} คน"
+                    },
+                    "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
+                        "label": "ข้อจำกัดด้านบุคลากร",
+                        "sentence": "ในวันหยุดสุดสัปดาห์และวันหยุดนักขัตฤกษ์ กะทำงาน {duty} กะต้องมีคนอย่างน้อย {count} คน"
+                    },
+                    "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
+                        "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
+                        "sentence": "{target} ต้องการ OFF หลังจาก {days} วันทำงานติดต่อกัน"
+                    },
+                    "SOFT_NEED_OFF_AFTER_N": {
+                        "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
+                        "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันหลังจากการเปลี่ยน N"
+                    },
+                    "SOFT_NEWBIE_NO_SOLO_N": {
+                        "label": "พยาบาลใหม่ / ข้อจำกัดด้านทักษะ",
+                        "sentence": "หลีกเลี่ยงการกะ N เดี่ยวสำหรับ {nurse} ในฐานะพยาบาลใหม่"
+                    },
+                    "SOFT_NO_E_TO_D": {
+                        "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
+                        "sentence": "หลีกเลี่ยง D ในวันถัดไปหลังจาก E สำหรับ {target}"
+                    },
+                    "SOFT_NO_N_TO_D": {
+                        "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
+                        "sentence": "หลีกเลี่ยง D ในวันถัดไปหลังจาก N สำหรับ {target}"
+                    },
+                    "SOFT_NO_N_TO_E": {
+                        "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
+                        "sentence": "หลีกเลี่ยง E ในวันถัดไปหลังจาก N สำหรับ {target}"
+                    },
+                    "SOFT_NO_SAME_DUTY_PAIR": {
+                        "label": "การจับคู่คนงาน",
+                        "sentence": "หลีกเลี่ยงการมอบหมาย {nurseA} และ {nurseB} ให้กับกะเดียวกัน"
+                    },
+                    "SOFT_NO_WEEKEND_FOR_NURSE": {
+                        "label": "ข้อจำกัดเฉพาะบุคคล",
+                        "sentence": "หลีกเลี่ยงการกะวันหยุดสุดสัปดาห์สำหรับ {nurse}"
+                    },
+                    "SOFT_PREFER_SAME_DUTY_PAIR": {
+                        "label": "การจับคู่คนงาน",
+                        "sentence": "ต้องการมอบหมายให้ {nurseA} และ {nurseB} อยู่ในกะเดียวกัน"
+                    }
+                },
+                "toast": {
+                    "added": "เพิ่มข้อจำกัดแล้ว",
+                    "duplicatesRemoved": "ทำความสะอาดข้อจำกัดที่ซ้ำกันของ {{count}}",
+                    "importantUnmarked": "เครื่องหมายสำคัญถูกลบออก",
+                    "imported": "ข้อจำกัดที่นำเข้าจาก {{teamName}}",
+                    "importFailed": "ไม่สามารถนำเข้าข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่",
+                    "recommendedDeleted": "ลบข้อจำกัดที่แนะนำแล้ว",
+                    "resetDefaults": "รีเซ็ตเป็น {{count}} ข้อจำกัดที่แนะนำ",
+                    "saveFailed": "ไม่สามารถบันทึกข้อจำกัดได้ โปรดลองอีกครั้งในอีกสักครู่"
+                },
+                "violationCount": "{{count}}",
+                "warning": {
+                    "deleteConfirm": "ลบ",
+                    "deleteDescription": "คุณยังต้องการลบออกจากรายการหรือไม่",
+                    "deleteTitle": "ลบข้อจำกัดที่แนะนำนี้ใช่ไหม",
+                    "description": "ข้อจำกัดสำคัญเริ่มต้นนี้ช่วยให้กำหนดการมีเสถียรภาพ",
+                    "keep": "เก็บ",
+                    "unmarkConfirm": "ลบเครื่องหมาย",
+                    "unmarkDescription": "คุณยังต้องการลบเครื่องหมายสำคัญออกหรือไม่",
+                    "unmarkTitle": "ลบเครื่องหมายสำคัญออกใช่ไหม"
+                }
+            },
+            "fixedShifts": {
+                "empty": "ยังไม่มีกำหนดการสำหรับเดือนนี้",
+                "error": "โหลดข้อมูลกะคงที่ไม่สำเร็จ",
+                "hint": "หากมีรายการที่กำหนดไว้แล้ว เช่น การฝึกอบรม การศึกษา หรือการลาอย่างเป็นทางการ หรือกำหนดการใดๆ ที่ต้องรักษาไว้ ให้แก้ไขที่นี่",
+                "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่",
+                "lockedToast": "กะคงที่สามารถแก้ไขได้จากแท็บกะคงที่เท่านั้น",
+                "saveFailed": "บันทึกไม่สำเร็จ โปรดลองอีกครั้งในอีกสักครู่",
+                "title": "ป้อนรายการที่ควรคงที่"
+            },
+            "monthRangeDescription": "ใน Dutying คุณสามารถสร้างตารางเวลาสำหรับเดือนนี้และเดือนถัดไปเท่านั้น",
+            "monthRangeTitle": "คุณไม่สามารถสร้างกำหนดการสำหรับช่วงเวลานี้ได้",
+            "navigation": {
+                "complete": "สมบูรณ์",
+                "moving": "กำลังย้าย...",
+                "next": "ต่อไป",
+                "previous": "ก่อนหน้า",
+                "saving": "ประหยัด…",
+                "sequentialRequired": "กรุณาทำตามขั้นตอนตามลำดับ",
+                "workerRequired": "ต้องรวมพยาบาลอย่างน้อยหนึ่งคนเพื่อสร้างตารางเวลา"
+            },
+            "overview": {
+                "checking": "การตรวจสอบสถานะกำหนดการ",
+                "continueShift": "แก้ไขต่อ",
+                "createShift": "สร้างตารางเวรเดือน {{month}}",
+                "error": "ไม่สามารถตรวจสอบสถานะกำหนดการได้",
+                "fullyAssignedCantStart": "ตารางเดือนนี้เต็มแล้ว คุณไม่สามารถเริ่มขั้นตอนการสร้างได้ที่นี่",
+                "loading": "กำลังโหลดตารางเวร...",
+                "noTeamsDescription": "สร้างทีมเวรก่อน หรือตรวจสอบการตั้งค่าหอผู้ป่วย",
+                "noTeamsLabel": "ไม่มีทีมเวร",
+                "noTeamsTitle": "ยังไม่มีทีมเวร",
+                "selectedTeamFallback": "ทีมที่เลือก",
+                "shiftDraft": "กำลังสร้างตารางเวรเดือน \u003cmonth>{{month}}\u003c/month> ของ \u003cteam>{{teamName}}\u003c/team> อยู่",
+                "shiftDraftDescription": "ยังไม่เสร็จสมบูรณ์ คุณสามารถทำต่อจากข้อมูลที่บันทึกไว้ก่อนหน้านี้ได้",
+                "shiftEmpty": "ยังไม่มีตารางเวรเดือน \u003cmonth>{{month}}\u003c/month> ของ \u003cteam>{{teamName}}\u003c/team>",
+                "shiftExists": "{{teamName}} มีตารางเวรเดือน {{month}} แล้ว",
+                "shiftPartialFill": "ตารางเวรเดือน {{month}} ของ {{teamName}} ยังมีช่องว่างอยู่",
+                "viewShift": "ดูตารางเวรเดือน {{month}}"
+            },
+            "progress": {
+                "ariaLabel": "สร้างความคืบหน้าของกำหนดการ",
+                "current": "ขั้น {{current}}/{{total}} · {{label}}",
+                "eyebrow": "สร้างกำหนดการ",
+                "state": {
+                    "available": "มีอยู่",
+                    "current": "อยู่ระหว่างดำเนินการ",
+                    "done": "เสร็จแล้ว",
+                    "locked": "ล็อคแล้ว"
+                }
+            },
+            "requests": {
+                "action": {
+                    "accept": "ยอมรับ",
+                    "hold": "ถือ",
+                    "reject": "ปฏิเสธ"
+                },
+                "badge": {
+                    "accepted": "ยอมรับคำขอแล้ว",
+                    "pending": "คำขอที่รอดำเนินการ",
+                    "rejected": "คำขอที่ถูกปฏิเสธ"
+                },
+                "count": "{{count}}",
+                "descriptionHighlight": "ล็อคอยู่ในกำหนดการ",
+                "descriptionLine": "ยอมรับคำขอเพื่อสะท้อน และปฏิเสธคำขอที่จะยกเว้น",
+                "descriptionPrefix": "คำขอที่ได้รับการยอมรับคือ",
+                "descriptionSuffix": ".",
+                "empty": "ยังไม่มีกำหนดกะที่ร้องขอสำหรับเดือนนี้",
+                "emptyAccepted": "ไม่มีคำขอที่ได้รับการยอมรับ",
+                "emptyPending": "ไม่มีการร้องขอให้ตรวจสอบ",
+                "emptyRejected": "ไม่มีคำขอที่ถูกปฏิเสธ",
+                "error": "ไม่สามารถโหลดข้อมูลกะที่ร้องขอได้",
+                "itemLabel": "{{name}} / {{date}}",
+                "loading": "กำลังโหลดข้อมูลกะที่ร้องขอ",
+                "lockedToast": "กะที่ร้องขอสามารถแก้ไขได้จากแท็บคำขอเท่านั้น",
+                "panelTitle": "เรียกร้องให้ทบทวน",
+                "section": {
+                    "accepted": "ได้รับการยอมรับ",
+                    "pending": "รอดำเนินการ",
+                    "rejected": "ถูกปฏิเสธ"
+                },
+                "summary": {
+                    "accepted": "ได้รับการยอมรับ",
+                    "pending": "รอดำเนินการ",
+                    "rejected": "ถูกปฏิเสธ"
+                },
+                "summaryCountsAria": "สรุปคำขอที่ยอมรับ รอดำเนินการ และถูกปฏิเสธ",
+                "table": {
+                    "name": "ชื่อ"
+                },
+                "title": "ยืนยันการเปลี่ยนแปลงที่ร้องขอ",
+                "updateFailed": "ไม่สามารถอัปเดตคำขอได้ โปรดลองอีกครั้ง"
+            },
+            "stepContent": {
+                "importantBadge": "สำคัญ",
+                "importantPrefix": "เปิดเครื่อง",
+                "importantSuffix": "สำหรับเงื่อนไขที่จะต้องปฏิบัติตาม"
+            },
+            "stepLoadFailed": "ไม่สามารถโหลดขั้นตอนนี้ได้",
+            "steps": {
+                "aiAutofill": {
+                    "caption": "เติมเซลล์ที่เหลือและยืนยันกำหนดการ",
+                    "label": "ป้อนอัตโนมัติ"
+                },
+                "confirmedShifts": {
+                    "caption": "ทบทวนกำหนดการที่เสร็จสมบูรณ์",
+                    "label": "กำหนดการที่ได้รับการยืนยัน"
+                },
+                "constraints": {
+                    "caption": "ตั้งกฎการจัดกำหนดการแบบแข็งและแบบอ่อน",
+                    "introDescription": "กฎเกณฑ์ที่ยากจะต้องได้รับการตอบสนอง\nมีการใช้กฎอ่อนเมื่อเป็นไปได้",
+                    "introTitle": "ทบทวนกฎการจัดกำหนดการ",
+                    "label": "กฎ"
+                },
+                "fixedShifts": {
+                    "caption": "ล็อคกะที่ไม่ควรเปลี่ยน",
+                    "label": "การเปลี่ยนแปลงคงที่"
+                },
+                "requests": {
+                    "caption": "ยอมรับหรือปฏิเสธคำขอที่ต้องการและนอกคำขอ",
+                    "label": "กะที่ร้องขอ"
+                },
+                "workers": {
+                    "caption": "ทบทวนว่าใครจะได้วางและเรียงลำดับอะไร",
+                    "introDescription": "ตรวจสอบว่าไม่มีใครหายไป\nทำการเปลี่ยนแปลงจากการจัดการผู้ปฏิบัติงานหากจำเป็น",
+                    "introTitle": "รีวิวรวมคนงานด้วย",
+                    "label": "คนงาน"
+                }
+            },
+            "tutorial": {
+                "aiAutofill": {
+                    "info": "เรียกใช้การป้อนอัตโนมัติ AI หลายครั้งเพื่อเลื่อนไปยังกำหนดเวลาที่คุณต้องการอย่างรวดเร็ว\nผู้ดูแลระบบควรตรวจสอบและแก้ไขผลลัพธ์",
+                    "title": "AI ป้อนอัตโนมัติ"
+                },
+                "constraints": {
+                    "info": "คุณสามารถเพิ่มกฎที่กำหนดเองนอกเหนือจากข้อจำกัดที่แนะนำเจ็ดข้อได้\nกฎเพิ่มเติมอาจทำให้การจัดกำหนดการยากขึ้น",
+                    "title": "เพิ่มข้อจำกัด"
+                },
+                "fixedShifts": {
+                    "info": "เลือกเซลล์และพิมพ์คำย่อของกะ\nคำย่อวอร์ด เช่น D, E, N และ O จะมีผลทันที",
+                    "title": "ป้อนกะคงที่"
+                },
+                "requests": {
+                    "info": "ตรวจสอบคำขอที่เหลือ\nเปิดมุมมองที่รอดำเนินการเท่านั้นเพื่อดูคำขอที่ยังต้องมีการตัดสินใจ",
+                    "title": "ยืนยันการเปลี่ยนแปลงที่ร้องขอ"
+                },
+                "stepper": {
+                    "info": "ทำตามแถบความคืบหน้าและทำตามขั้นตอนห้าขั้นตอนตามลำดับ",
+                    "title": "สร้างกำหนดการ"
+                },
+                "tools": {
+                    "info": "ใช้ตัวเลือกมุมมอง เลิกทำ และทำซ้ำเพื่อปรับแต่งกำหนดการได้ง่ายขึ้น",
+                    "title": "ใช้เครื่องมือช่วยเหลือ"
+                }
+            },
+            "wardCodeLoading": "กำลังตรวจสอบรหัสวอร์ด",
+            "workers": {
+                "activeCount": "{{count}} รวมอยู่ด้วย",
+                "column": {
+                    "isWorker": "รวมอยู่ด้วย",
+                    "level": "ระดับ",
+                    "memo": "บันทึก",
+                    "name": "ชื่อ",
+                    "preceptee": "ผู้รับอุปการะ",
+                    "preceptor": "อุปัชฌาย์",
+                    "shiftTypes": "กะที่มีอยู่"
+                },
+                "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
+                "emptyDescription": "ตรวจสอบเจ้าหน้าที่ที่ทำเครื่องหมายไว้ปฏิบัติหน้าที่ก่อน",
+                "emptyTitle": "ยังไม่มีคนงานยืนยัน",
+                "goMemberManagement": "ไปที่การจัดการสมาชิก",
+                "noNurseDescription": "เพิ่มพยาบาลก่อนที่จะสร้างตารางเวลา คุณสามารถเริ่มต้นจากการจัดการสมาชิก",
+                "noNurseTitle": "{{teamName}} ยังไม่มีพยาบาล",
+                "preceptorActive": "ใช่",
+                "sortByName": "ชื่อ",
+                "sortBySavedOrder": "คำสั่งซื้อที่กำหนดเอง",
+                "sortBySkill": "ระดับทักษะ",
+                "sortListMenuAria": "เปิดตัวเลือกการเรียงลำดับผู้ปฏิบัติงาน",
+                "totalCount": "รวม {{count}}"
+            }
+        },
+        "member": {
+            "addFirstNurse": "เพิ่มพยาบาลคนแรก",
+            "addingNurse": "กำลังเพิ่มพยาบาล...",
+            "addNurse": "เพิ่มพยาบาล.",
+            "addTeam": "เพิ่มทีม",
+            "canMakeDuty": "ตารางปฏิบัติหน้าที่",
+            "canMakeDutyTooltip": "เฉพาะผู้ที่ได้รับเลือกเท่านั้นที่สามารถสร้างตารางการปฏิบัติหน้าที่ได้",
+            "common": {
+                "cancel": "ยกเลิก",
+                "close": "ปิด",
+                "complete": "สมบูรณ์",
+                "deleteAction": "ลบ",
+                "discard": "อย่าบันทึก",
+                "disconnectAction": "ตัดการเชื่อมต่อ",
+                "nurseFallback": "พยาบาล",
+                "previous": "ก่อนหน้า",
+                "previousStep": "ขั้นตอนก่อนหน้า",
+                "processing": "กำลังประมวลผล",
+                "processingEllipsis": "กำลังประมวลผล...",
+                "retry": "ลองอีกครั้ง",
+                "saveAndLeave": "บันทึกและออกไป",
+                "selectedNurse": "พยาบาลที่ได้รับการคัดเลือก",
+                "selectedTeam": "ทีมที่ได้รับการคัดเลือก"
+            },
+            "confirmDeleteTeam": "ลบทีม {{teamName}}? พยาบาลในทีมจะถูกถอดออกพร้อมกัน",
+            "connectionManage": {
+                "complete": {
+                    "viewOtherRequests": "ดูคำขออื่นๆ"
+                },
+                "method": {
+                    "add": "เพิ่มเข้าทีม",
+                    "link": "ลิงค์ไปยังพยาบาลที่มีอยู่",
+                    "title": "เลือกวิธีเชื่อมต่อพยาบาลคนนี้"
+                },
+                "result": {
+                    "failure": {
+                        "addDescription": "ไม่สามารถเพิ่ม {{waitingNurseName}} ให้กับ {{targetLabel}} โปรดลองอีกครั้งหรือกลับไปยังขั้นตอนก่อนหน้า",
+                        "addTitle": "ไม่สามารถเพิ่มเข้าทีมได้",
+                        "linkDescription": "ไม่สามารถเชื่อมโยงไปยัง {{targetLabel}} โปรดลองอีกครั้ง",
+                        "linkNoTargetDescription": "ไม่สามารถเชื่อมโยงกับบัญชีพยาบาลที่เลือกได้ โปรดลองอีกครั้ง",
+                        "linkTeamDescription": "ไม่สามารถเชื่อมโยงไปยัง {{targetNurseName}} ใน {{targetTeamName}} โปรดลองอีกครั้ง",
+                        "linkTitle": "ไม่สามารถเชื่อมโยงกับบัญชีที่มีอยู่ได้"
+                    },
+                    "loading": {
+                        "addDescription": "เพิ่ม {{waitingNurseName}} ให้กับทีม {{targetLabel}} การเปลี่ยนแปลงทีมและบทบาทอาจใช้เวลาสักครู่",
+                        "addTitle": "การเพิ่มให้กับทีมที่เลือก",
+                        "linkDescription": "การเชื่อมโยง {{waitingNurseName}} กับ {{targetLabel}} โปรดรอ.",
+                        "linkTitle": "การเชื่อมโยงไปยังบัญชีที่มีอยู่"
+                    },
+                    "success": {
+                        "addTitle": "เพิ่ม {{waitingNurseName}} ใน {{targetLabel}}",
+                        "linkDescription": "เชื่อมโยง {{waitingNurseName}} กับ {{targetLabel}} คุณสามารถตรวจสอบคำขอต่อไปได้",
+                        "linkTitle": "เชื่อมโยงกับบัญชีที่มีอยู่"
+                    }
+                },
+                "target": {
+                    "addTitle": "เลือกทีมสำหรับ {{nurseName}}",
+                    "all": "ทั้งหมด",
+                    "emptySearch": "ลองเปลี่ยนคำค้นหา",
+                    "emptyTeam": "เพิ่มพยาบาลเข้าทีมก่อนเลือก",
+                    "linkTitle": "เลือกพยาบาลที่มีอยู่เพื่อเชื่อมโยง",
+                    "searchPlaceholder": "ค้นหาตามชื่อหรือโทรศัพท์"
+                },
+                "waiting": {
+                    "accept": "ยอมรับ",
+                    "description": "การรับขึ้นทะเบียนเป็นพยาบาลในวอร์ดนี้",
+                    "empty": "คำขอเชื่อมต่อจะปรากฏที่นี่",
+                    "reject": "ปฏิเสธ",
+                    "title": "พยาบาลขอเข้าหอผู้ป่วย"
+                }
+            },
+            "deleteTeam": "ลบทีม",
+            "description": "จัดการพยาบาล ความพร้อมใช้งาน และระดับทักษะของแต่ละทีมได้ในที่เดียว",
+            "detail": {
+                "cancel": "ยกเลิก",
+                "canMakeDuty": "สามารถสร้าง",
+                "cannotMakeDuty": "ไม่สามารถสร้างได้",
+                "close": "ปิดแผงพยาบาล",
+                "closeAction": "ปิด",
+                "connected": "เชื่อมต่อแล้ว",
+                "connection": "การเชื่อมต่อ",
+                "connectionStatusAria": "สถานะการเชื่อมต่อสำหรับ {{nurseName}}",
+                "delete": "ลบนางพยาบาล",
+                "deleting": "กำลังลบ...",
+                "disconnected": "ไม่ได้เชื่อมต่อ",
+                "disconnectedTooltip": "พยาบาลคนนี้ไม่ได้เชื่อมต่อ",
+                "employmentDate": "วันที่เข้าทำงาน",
+                "employmentDateHint": "ใช้เป็นพื้นฐานสำหรับการกำหนดทักษะอัตโนมัติ",
+                "emptyDescription": "เลือกบุคคลจากรายการด้านซ้ายเพื่อแก้ไขข้อมูลโดยละเอียด",
+                "emptyPinnedDescription": "เลือกพยาบาลเพื่อปักหมุดรายละเอียดไว้ที่นี่",
+                "emptyTitle": "เลือกพยาบาล",
+                "genderToggle": "เปลี่ยนเพศ",
+                "isDutyManager": "ตารางปฏิบัติหน้าที่",
+                "isWorker": "รวมเข้าปฏิบัติหน้าที่ด้วย",
+                "isWorkerOff": "ไม่รวม",
+                "isWorkerOn": "รวมอยู่ด้วย",
+                "memo": "บันทึก",
+                "memoHint": "เขียนสิ่งที่เพื่อนร่วมทีมควรรู้",
+                "moveTargetTeam": "ย้ายไปร่วมทีม",
+                "moveTeam": "ย้ายทีม",
+                "phone": "หมายเลขโทรศัพท์",
+                "phoneHint": "ใช้สำหรับการติดต่อในกรณีฉุกเฉิน",
+                "preceptee": "ผู้รับอุปการะ",
+                "preceptor": "อุปัชฌาย์",
+                "rolesAndPermissions": "บทบาทและการอนุญาต",
+                "save": "บันทึก",
+                "saveAction": "บันทึก",
+                "saving": "ประหยัด…",
+                "shiftTypes": "กะที่มีอยู่",
+                "shiftTypesHelpAria": "คู่มือกะที่มีอยู่",
+                "shiftTypesHint": "เลือกทุกกะที่บุคคลนี้สามารถทำงานได้",
+                "worker": "รวมอยู่ด้วย"
+            },
+            "drawer": {
+                "deleteConfirm": "ลบพยาบาล {{nurseName}} ใช่ไหม สิ่งนี้ไม่สามารถยกเลิกได้"
+            },
+            "emptyTeamDescription": "ขอเพิ่มพยาบาลค่ะ.",
+            "emptyTeamsDescription": "สร้างทีมก่อนเพิ่มพยาบาล",
+            "emptyTeamsTitle": "สร้างทีมก่อน",
+            "emptyTeamTitle": "ไม่มีพยาบาล",
+            "modal": {
+                "deleteNurseDescriptionSuffix": "จะถูกลบอย่างถาวร",
+                "deleteNurseTitle": "ลบพยาบาลคนนี้ใช่ไหม",
+                "deleteTeamDescriptionSuffix": "ทีมและพยาบาล {{count}} จะถูกลบออก",
+                "deleteTeamTitle": "ลบทีมนี้ใช่ไหม",
+                "disconnectDescriptionSuffix": "จะถูกตัดการเชื่อมต่อจากแอพ",
+                "disconnectTitle": "ยกเลิกการเชื่อมต่อบัญชีนี้ใช่ไหม",
+                "unsavedExitDescription": "การเปลี่ยนแปลงของคุณอาจไม่ได้รับการบันทึก",
+                "unsavedExitTitle": "ออกโดยไม่บันทึกใช่ไหม"
+            },
+            "nurseDrawerFeedback": {
+                "create": {
+                    "description": "ป้อนชื่อและข้อมูลติดต่อ จากนั้นบันทึก",
+                    "title": "มีพยาบาลใหม่มาเพิ่ม"
+                },
+                "dirty": {
+                    "description": "การปิดโดยไม่บันทึกจะละทิ้งการแก้ไข",
+                    "title": "คุณมีการเปลี่ยนแปลง"
+                },
+                "error": {
+                    "description": "ข้อมูลของคุณยังคงอยู่ที่นี่ ตรวจสอบรายละเอียดแล้วลองบันทึกอีกครั้ง",
+                    "title": "ไม่สามารถบันทึกได้"
+                },
+                "idle": {
+                    "description": "ปุ่มบันทึกจะเปิดใช้งานเมื่อมีการเปลี่ยนแปลงบางอย่าง",
+                    "title": "ตรวจสอบช่องที่แก้ไขได้"
+                },
+                "saving": {
+                    "description": "Appกำลังแสดงรายละเอียดที่ป้อน กรุณารอจนกว่าการบันทึกจะเสร็จสิ้น",
+                    "title": "ประหยัด"
+                },
+                "success": {
+                    "description": "ข้อมูลพยาบาลถูกนำไปใช้ คุณสามารถปิดสิ่งนี้ได้หากไม่จำเป็นต้องแก้ไขเพิ่มเติม",
+                    "title": "บันทึกแล้ว"
+                }
+            },
+            "roleHelp": {
+                "aria": "คำอธิบาย {{label}}",
+                "preceptee": {
+                    "description": "พยาบาลใหม่หรือพยาบาลรุ่นน้องที่ได้รับความช่วยเหลือด้านการปรับตัวและการฝึกอบรมจากอุปัชฌาย์",
+                    "label": "ผู้รับอุปการะ"
+                },
+                "preceptor": {
+                    "description": "พยาบาลที่ช่วยให้พยาบาลใหม่หรือพยาบาลรุ่นน้องปรับตัวและเรียนรู้",
+                    "label": "อุปัชฌาย์"
+                }
+            },
+            "row": {
+                "connectionStatusAria": "สถานะการเชื่อมต่อสำหรับ {{nurseName}}",
+                "dragAria": "ลากเพื่อเปลี่ยนลำดับ",
+                "precepteeAria": "{{nurseName}} ผู้รับศีล",
+                "preceptorAria": "{{nurseName}} อุปัชฌาย์",
+                "unselectedSkill": "ไม่ได้เลือก",
+                "workerAria": "{{nurseName}} รวมปฏิบัติหน้าที่แล้ว"
+            },
+            "shiftTeamList": {
+                "addTeam": "เพิ่มทีม",
+                "card": {
+                    "addDividerAria": "เพิ่มตัวแบ่งด้านล่าง {{nurseName}}",
+                    "addNurse": "สร้างพยาบาล",
+                    "addNurseTooltip": "คุณสามารถจัดการพยาบาลเสมือนได้โดยไม่ต้องส่งคำเชิญก่อน คุณสามารถเชิญและเชื่อมต่อพวกเขาได้ตลอดเวลา",
+                    "deleteTeam": "ลบทีม",
+                    "divider": "ตัวแบ่ง",
+                    "editTeamNameAria": "แก้ไขชื่อทีมสำหรับ {{teamName}}",
+                    "empty": "ยังไม่มีพยาบาล!",
+                    "openMenuAria": "เปิดเมนูสำหรับ {{teamName}}",
+                    "removeDividerAria": "ลบตัวแบ่งด้านล่าง {{nurseName}}",
+                    "selectNurseAria": "เลือกพยาบาล {{nurseName}}",
+                    "viewShift": "ดูตารางการปฏิบัติหน้าที่",
+                    "virtualNurseTooltip": "นี่คือพยาบาลเสมือนที่ไม่ได้เชื่อมต่อ"
+                },
+                "subtitle": "คุณสามารถสร้างตารางปฏิบัติหน้าที่ได้หนึ่งตารางต่อทีม",
+                "title": "ทีม"
+            },
+            "skillLevelModal": {
+                "autoAssign": "มอบหมายอัตโนมัติ",
+                "autoAssignTooltip": "เราจะกระจายพยาบาลวิชาชีพเท่าๆ กันตามระดับสำหรับการตั้งค่าเริ่มต้น",
+                "autoAssignTooltipAria": "แสดงคำอธิบายการมอบหมายอัตโนมัติ",
+                "categoryLabel": "หมวดหมู่",
+                "close": "ปิดการตั้งค่าทักษะ",
+                "colorLabel": "สี",
+                "complete": "สมบูรณ์",
+                "description": "คุณสามารถกำหนดเกณฑ์ได้อย่างอิสระ",
+                "disableAction": "ปิดระดับทักษะ",
+                "disableConfirmAction": "ปิดเครื่อง",
+                "disableConfirmDescription": "การแสดงทักษะ การเลือก และการเรียงลำดับจะหยุดชั่วคราวในขณะที่ปิดอยู่",
+                "disableConfirmTitle": "ปิดระดับทักษะ?",
+                "high": "สูง",
+                "levelCountOption": "ระดับ {{levelCount}}",
+                "levelDisplay": "แอลวี. {{level}}",
+                "levelLabel": "ทักษะ",
+                "low": "ต่ำ",
+                "temporarySave": "บันทึกไว้ตอนนี้",
+                "title": "กำหนดระดับทักษะ"
+            },
+            "skillSettings": "กำหนดระดับทักษะพยาบาล",
+            "sort": {
+                "manual": "คำสั่งซื้อที่กำหนดเอง",
+                "name": "ลำดับชื่อ",
+                "skill": "ลำดับทักษะ"
+            },
+            "sortByPriorityOrder": "บันทึกคำสั่งซื้อแล้ว",
+            "sortBySkill": "เรียงตามความสามารถ",
+            "sortListMenuAria": "เปิดตัวเลือกการจัดเรียงรายการ",
+            "summary": {
+                "connected": "เชื่อมต่อแล้ว",
+                "connectionManage": "การเชื่อมต่อ",
+                "copyWardCodeAria": "คัดลอกรหัสวอร์ด",
+                "totalNurses": "ทั้งหมด",
+                "unconnected": "ไม่ได้เชื่อมต่อ",
+                "wardCode": "รหัสวอร์ด",
+                "wardCodeGuideAria": "แสดงคำแนะนำสำหรับรหัสวอร์ด {{wardCode}}"
+            },
+            "table": {
+                "connection": "เชื่อมต่อแล้ว",
+                "isDutyManager": "สามารถสร้างหน้าที่",
+                "isWorker": "รวมอยู่ด้วย",
+                "level": "ทักษะ",
+                "memo": "บันทึก",
+                "name": "ชื่อ",
+                "shiftTypes": "กะที่มีอยู่"
+            },
+            "teamMenu": "เปิดเมนูทีม",
+            "title": "การจัดการสมาชิก",
+            "toast": {
+                "copyWardCode": "คัดลอกรหัสวอร์ดแล้ว",
+                "createTeam": "เพิ่มทีมพยาบาล {{teamNumber}}",
+                "deleteTeam": "ลบทีม {{teamName}}",
+                "maxNursesPerTeam": "คุณสามารถเพิ่มพยาบาล {{count}} ในหนึ่งทีมได้มากถึง {{count}}",
+                "maxTeams": "คุณสามารถเพิ่มทีมได้สูงสุด {{count}}",
+                "moveNurse": "ย้าย {{nurseName}} ไปที่ทีม {{teamName}}",
+                "saveNurseInfo": "ข้อมูลสมาชิกที่บันทึกไว้"
+            },
+            "tutorial": {
+                "add": {
+                    "info": "เลือกทีมและเพิ่มพยาบาลเพื่อสร้างโปรไฟล์ใหม่\nท่านสามารถกรอกชื่อและข้อมูลหน้าที่ได้ทันที",
+                    "title": "เพิ่มพยาบาล"
+                },
+                "edit": {
+                    "info": "ใช้แผงด้านขวาเพื่อแก้ไขชื่อ ทักษะ กะที่มีอยู่ บทบาท สิทธิ์ และบันทึกย่อ",
+                    "title": "แก้ไขรายละเอียดพยาบาล"
+                },
+                "skill": {
+                    "info": "กำหนดค่าระดับและสีให้ตรงกับมาตรฐานของโรงพยาบาลและวอร์ดของคุณ",
+                    "title": "กำหนดระดับทักษะ"
+                },
+                "team": {
+                    "info": "ดูพยาบาลในแต่ละทีมได้อย่างรวดเร็ว\nดับเบิลคลิกชื่อทีมเพื่อเปลี่ยนชื่อ",
+                    "title": "ดูพยาบาลตามทีม"
+                }
+            },
+            "wardInfo": {
+                "connectionStatus": "สถานะการเชื่อมต่อ",
+                "copyError": "ไม่สามารถคัดลอกได้",
+                "copying": "กำลังคัดลอก...",
+                "copySuccess": "คัดลอก!",
+                "hospital": "โรงพยาบาล",
+                "hospitalInfo": "ข้อมูลโรงพยาบาล",
+                "personUnit": "ประชากร",
+                "ward": "วอร์ด"
+            }
+        },
+        "navigationBar": {
+            "ariaLabel": "การนำทางหลัก",
+            "expandAria": "ขยายแถบด้านข้าง",
+            "foldAria": "ยุบแถบด้านข้าง",
+            "home": "บ้าน",
+            "items": {
+                "account": "บัญชี",
+                "board": "กระดาน",
+                "dutying": "Dutying",
+                "make": "สร้างกำหนดการ",
+                "member": "สมาชิก",
+                "request": "คำขอกะ",
+                "wardAdmins": "ผู้ดูแลระบบวอร์ด",
+                "wardInfoSettings": "การตั้งค่าวอร์ด",
+                "wardSettings": "การตั้งค่าหน้าที่"
+            },
+            "landingAria": "ไปที่หน้า Landing Page",
+            "sections": {
+                "operations": "การดำเนินงาน",
+                "schedule": "กำหนดการ",
+                "settings": "การตั้งค่า"
+            },
+            "wardCodeGuideAria": "เปิดรหัสวอร์ด {{wardCode}} คู่มือ"
+        },
+        "onboardingJoinWard": {
+            "backToWardSelect": "กลับไปที่การเลือกวอร์ด",
+            "checkingPermission": "กำลังเข้าวอร์ด.",
+            "codeDigitAria": "อักขระรหัสวอร์ด {{index}}",
+            "codeEntry": {
+                "description": "กรอกรหัส 6 ตัวอักษรที่คุณได้รับเพื่อเข้าร่วมวอร์ดนั้น",
+                "title": "เข้าด้วยรหัสวอร์ด"
+            },
+            "codeHelp": "กรอกรหัสวอร์ด 6 ตัวอักษร โดยใช้ตัวอักษรและตัวเลข",
+            "codeInputAria": "การป้อนรหัสวอร์ด",
+            "description": "ป้อนรหัส 6 ตัวอักษรที่ผู้ดูแลระบบวอร์ดแชร์เพื่อเข้าสู่วอร์ดนั้น",
+            "form": {
+                "submit": "เข้าด้วยรหัส",
+                "submitting": "กำลังเข้า..."
+            },
+            "invalidCode": "ไม่มีรหัสวอร์ดนี้ ตรวจสอบรหัสแล้วลองอีกครั้ง",
+            "permission": {
+                "close": "ปิด",
+                "confirm": "ตกลง",
+                "description": "รหัสวอร์ดถูกต้อง แต่อีเมลของบัญชีนี้ไม่ได้ลงทะเบียนเป็นผู้ดูแลระบบสำหรับวอร์ดนั้น ขอให้เจ้าของวอร์ดลงทะเบียนอีเมลบัญชีนี้",
+                "descriptionWithWard": "หากต้องการเข้าสู่ {{hospitalName}} {{wardName}} อีเมลของบัญชีนี้จะต้องลงทะเบียนเป็นผู้ดูแลระบบวอร์ด ขอให้เจ้าของวอร์ดลงทะเบียนอีเมลบัญชีนี้",
+                "eyebrow": "ต้องใช้อีเมลที่ลงทะเบียน",
+                "title": "บัญชีนี้ไม่สามารถเข้าได้",
+                "titleWithWard": "ไม่สามารถป้อน {{hospitalName}} {{wardName}} ได้"
+            },
+            "registeredWards": {
+                "description": "วอร์ดที่ลงทะเบียนอีเมลของคุณในฐานะผู้ดูแลจะปรากฏที่นี่",
+                "empty": "ยังไม่มีวอร์ดที่ลงทะเบียนกับอีเมลบัญชีนี้ เข้าด้วยรหัสวอร์ดแทน",
+                "enterAria": "ป้อน {{hospitalName}} {{wardName}}",
+                "loadFailed": "ไม่สามารถโหลดวอร์ดที่ลงทะเบียนแล้ว เข้าด้วยรหัสวอร์ดแทน",
+                "loading": "กำลังโหลดวอร์ดที่ลงทะเบียนแล้ว",
+                "title": "วอร์ดที่ลงทะเบียนกับอีเมลของคุณ"
+            },
+            "state": {
+                "accountErrorDescription": "โปรดลองอีกครั้งในอีกสักครู่ หากปัญหายังคงอยู่ ให้ลงชื่อเข้าใช้อีกครั้ง",
+                "accountErrorTitle": "ไม่สามารถโหลดข้อมูลบัญชีได้",
+                "retry": "ลองอีกครั้ง"
+            },
+            "title": "เข้าวอร์ด",
+            "toast": {
+                "joinFailed": "ไม่สามารถเข้าวอร์ดได้ โปรดลองอีกครั้ง"
+            },
+            "validation": {
+                "incomplete": "กรอกตัวอักษรให้ครบ 6 ตัว",
+                "invalidCharacters": "อนุญาตให้ใช้เฉพาะตัวอักษรและตัวเลขเท่านั้น"
+            }
+        },
+        "onboardingWardCreate": {
+            "action": {
+                "complete": "สมบูรณ์",
+                "created": "สร้าง",
+                "creating": "กำลังสร้าง...",
+                "next": "ต่อไป",
+                "previous": "ก่อนหน้า",
+                "saving": "ประหยัด...",
+                "skip": "ข้าม"
+            },
+            "backToWardSelect": "กลับไปที่การเลือกวอร์ด",
+            "blocked": {
+                "default": "ตรวจสอบข้อมูลที่ป้อน",
+                "duplicateShiftType": "ตัวอักษรย่อตัวแรกจะต้องไม่ซ้ำกัน",
+                "emptyTeam": "เพิ่มทีมก่อนสร้างวอร์ด",
+                "emptyTeamNurses": "บางทีมไม่มีพยาบาล เพิ่มพยาบาลหรือลบทีม",
+                "invalidNurseName": "ตรวจสอบชื่อพยาบาล",
+                "invalidShiftTime": "ตรวจสอบเวลากะ",
+                "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
+                "invalidWardIdentity": "ใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น ตัวเลข และช่องว่างเท่านั้น โดยมีความยาวไม่เกิน 1-20 อักขระ",
+                "missingHospitalName": "ป้อนชื่อโรงพยาบาล",
+                "scheduleMissingNurseName": "ป้อนชื่อพยาบาลสำหรับแต่ละแถวที่มีกะ",
+                "submitting": "การสร้างวอร์ด โปรดรอ.",
+                "success": "การสร้างวอร์ดเสร็จสมบูรณ์แล้ว"
+            },
+            "defaults": {
+                "newNurseName": "พยาบาลคนใหม่ {{index}}",
+                "sampleNurse": {
+                    "first": "อเล็กซ์ คิม",
+                    "off": "เทย์เลอร์ ชอย",
+                    "second": "เจมี่ ลี",
+                    "skilled": "มอร์แกน พาร์ค"
+                }
+            },
+            "deleteTeamAction": "ลบทีม",
+            "fallback": {
+                "newTeam": "ทีมใหม่",
+                "selectedTeam": "ทีมที่ได้รับการคัดเลือก",
+                "wardName": "วอร์ด Dutying"
+            },
+            "identity": {
+                "hospitalName": "ชื่อโรงพยาบาล",
+                "hospitalNamePlaceholder": "กรอกชื่อโรงพยาบาล",
+                "wardName": "ชื่อวอร์ด",
+                "wardNameOptional": "(ไม่บังคับ) ชื่อวอร์ด",
+                "wardNamePlaceholder": "กรอกชื่อวอร์ด"
+            },
+            "modal": {
+                "deleteTeamDescription": "จะถูกลบ",
+                "deleteTeamDescriptionSuffix": "ทีมและพยาบาล {{count}} จะถูกลบออก",
+                "deleteTeamDescriptionWithNurses": "พยาบาล {{nurseCount}} ของ {{nurseCount}} ก็จะถูกลบเช่นกัน",
+                "deleteTeamDescriptionWithNursesAndSchedule": "พยาบาล {{nurseCount}} และกำหนดการที่ป้อนจะถูกลบออกด้วย",
+                "deleteTeamDescriptionWithSchedule": "กำหนดการที่ป้อนจะถูกลบด้วย",
+                "deleteTeamTitle": "ลบทีมนี้ใช่ไหม"
+            },
+            "nurse": {
+                "deleteNurseAria": "ลบ {{nurseName}}",
+                "dragAria": "ลากเพื่อเปลี่ยนลำดับ",
+                "emptyTeamsDescription": "สร้างทีมก่อนขึ้นทะเบียนพยาบาล",
+                "emptyTeamsTitle": "เพิ่มทีมก่อนครับ",
+                "selectedTeamCountAria": "{{teamName}} พยาบาล: {{count}}",
+                "skillAria": "ระดับทักษะสำหรับ {{nurseName}}",
+                "skillUnselectedBadge": "-",
+                "skillUnselectedOption": "ไม่ได้เลือก",
+                "sort": {
+                    "manual": "สั่งซื้อด้วยตนเอง",
+                    "name": "ลำดับชื่อ",
+                    "skill": "ลำดับทักษะ"
+                },
+                "sortAria": "เรียงลำดับพยาบาล",
+                "sortOptionsAria": "ตัวเลือกการเรียงลำดับพยาบาล"
+            },
+            "progress": {
+                "ariaLabel": "ความคืบหน้าการสร้างวอร์ด",
+                "completeTitle": "การสร้างวอร์ดเสร็จสมบูรณ์",
+                "finalCheck": "เกือบเสร็จแล้ว เสร็จสิ้นการตรวจสอบขั้นสุดท้าย",
+                "inputWardInfo": "การจัดระเบียบข้อมูลวอร์ดที่คุณป้อน",
+                "navigateDuty": "ย้ายไปที่หน้าจอกำหนดการ",
+                "nurses": "การเชื่อมต่อข้อมูลพยาบาล",
+                "settingTitle": "การจัดตั้งวอร์ด",
+                "shiftTypesAndTeams": "การตั้งค่าประเภทกะและทีม"
+            },
+            "schedule": {
+                "addRow": "เพิ่มแถว",
+                "deleteRowAria": "ลบ {{rowLabel}}",
+                "emptyTeamsDescription": "คุณสามารถป้อนกำหนดการเริ่มต้นได้หลังจากสร้างทีมแล้ว",
+                "emptyTeamsTitle": "เพิ่มทีมก่อนครับ",
+                "monthLabel": "{{year}}-{{month}}",
+                "nextMonth": "เดือนหน้า",
+                "nurseNameAria": "ชื่อพยาบาลแถว {{rowNumber}}",
+                "previousMonth": "เดือนที่แล้ว",
+                "rowFallback": "แถว {{rowNumber}}",
+                "shiftCellAria": "เลื่อนไปที่แถว {{rowNumber}} วัน {{day}}",
+                "uploadFile": "อัพโหลดไฟล์กำหนดการ"
+            },
+            "scheduleUpload": {
+                "description": "เราจะอ่านชื่อ ทีม และกะการทำงานรายวันจากไฟล์ Excel และนำไปใช้กับการตั้งค่าวอร์ดเริ่มต้น",
+                "downloadTemplate": "ดาวน์โหลดเทมเพลต",
+                "dropzoneTitle": "เลือกหรือวางไฟล์ Excel",
+                "fileSupport": "รองรับไฟล์ .xlsx และ .xls",
+                "submit": "ไฟล์ Apply",
+                "submitting": "กำลังอัพโหลด",
+                "template": {
+                    "fileName": "ตารางเวรเริ่มต้น-{{year}}-{{month}}.xlsx",
+                    "guideRow1": "กรอกชื่อพยาบาล ทีม และกะรายวันในแผ่นแรก",
+                    "guideRow2": "ใช้ D, E, N, O หรือตัวย่อกะเฉพาะวอร์ดของคุณ",
+                    "guideRow3": "เซลล์ว่างจะถือเป็นวันหยุด",
+                    "guideRow4": "แถวที่ไม่มีทีมจะถูกกำหนดให้กับทีมเริ่มต้น",
+                    "guideRow5": "หลังจากอัปโหลด คุณสามารถตรวจสอบและแก้ไขข้อมูลที่นำเข้าบนหน้าจอได้",
+                    "guideSheetName": "แนะนำ",
+                    "nameHeader": "ชื่อ",
+                    "sampleFirstName": "อเล็กซ์ คิม",
+                    "sampleFirstTeam": "ทีม 1",
+                    "sampleSecondName": "เจมี่ ปาร์ค",
+                    "sampleSecondTeam": "ทีม 1",
+                    "teamHeader": "ทีม",
+                    "worksheetName": "กำหนดการ"
+                },
+                "title": "อัพโหลดไฟล์กำหนดการ"
+            },
+            "section": {
+                "identity": {
+                    "description": "",
+                    "highlightHospitalName": "โรงพยาบาล",
+                    "highlightWardName": "วอร์ด",
+                    "title": "กรอกชื่อโรงพยาบาลและวอร์ด"
+                },
+                "nurse": {
+                    "description": "คุณสามารถสร้างตารางเวลาได้หนึ่งรายการต่อทีมในแต่ละเดือน คุณสามารถแก้ไขหรือเพิ่มพยาบาลได้ตลอดเวลา",
+                    "highlight": "พยาบาล",
+                    "title": "ขึ้นทะเบียนพยาบาล"
+                },
+                "schedule": {
+                    "description": "",
+                    "highlight": "กำหนดการล่าสุด",
+                    "title": "ป้อนกำหนดการล่าสุด\nสำหรับวอร์ดและการตั้งค่ากำหนดการ"
+                },
+                "shiftType": {
+                    "description": "คุณสามารถแก้ไขได้ในภายหลัง",
+                    "highlight": "ประเภทกะ",
+                    "title": "ตั้งค่าประเภทกะวอร์ด"
+                }
+            },
+            "shiftType": {
+                "add": "เพิ่มประเภทกะ",
+                "color": "สี",
+                "colorOptionAria": "เลือก {{color}}",
+                "colorSelectAria": "เลือกสีสำหรับ {{shiftName}}",
+                "deleteAria": "ลบ {{shiftName}}",
+                "leave": "ออกจาก",
+                "name": "เปลี่ยนชื่อ",
+                "shortName": "คำย่อ",
+                "type": "พิมพ์",
+                "validation": {
+                    "nameDuplicate": "ใช้ชื่อกะอื่น",
+                    "nameRequired": "ป้อนชื่อกะ",
+                    "shortNameDuplicate": "ใช้อักษรตัวแรกอื่น",
+                    "shortNameFirstKey": "ขึ้นต้นด้วยตัวอักษร ตัวเลข หรือสัญลักษณ์ เช่น -, ., _",
+                    "shortNameLength": "ใช้ได้ถึง 3 ตัวอักษรโดยไม่ต้องเว้นวรรค",
+                    "shortNameRequired": "ป้อนคำย่อ",
+                    "timeFormat": "ใช้รูปแบบเวลา 00:00",
+                    "timeOrder": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน",
+                    "timeRequired": "ป้อนเวลา"
+                },
+                "work": "งาน",
+                "workTime": "เวลากะ"
+            },
+            "skillCta": {
+                "aria": "การตั้งค่าระดับทักษะ",
+                "description": "เมื่อสร้างตารางเวลา พยาบาลสามารถมอบหมายโดยอัตโนมัติตามระดับทักษะ",
+                "title": "กำหนดระดับทักษะพยาบาล?"
+            },
+            "skillLevelModal": {
+                "autoAssign": "มอบหมายอัตโนมัติ",
+                "autoAssignTooltip": "กระจายพยาบาลวิชาชีพข้ามระดับโดยอัตโนมัติสำหรับการมอบหมายงานเบื้องต้น",
+                "cancel": "ยกเลิก",
+                "categoryLabel": "หมวดหมู่",
+                "colorLabel": "สี",
+                "complete": "สมบูรณ์",
+                "description": "คุณสามารถกำหนดเกณฑ์ได้อย่างอิสระ",
+                "disable": "ยกเลิกการตั้งค่าทักษะ",
+                "high": "สูง",
+                "levelCountAria": "การนับระดับทักษะ",
+                "levelCountOption": "ระดับ {{levelCount}}",
+                "levelDisplay": "แอลวี. {{level}}",
+                "levelLabel": "ระดับ",
+                "low": "ต่ำ",
+                "title": "กำหนดระดับทักษะ"
+            },
+            "teamTabs": {
+                "addTeam": "เพิ่มทีม"
+            },
+            "toast": {
+                "addNurseToTeam": "เพิ่มพยาบาลใน {{teamName}}",
+                "addTeam": "เพิ่ม {{teamName}} แล้ว",
+                "addTeamAndNurse": "เพิ่ม {{teamName}} และขึ้นทะเบียนพยาบาลแล้ว",
+                "completeError": "ไม่สามารถสร้างวอร์ดได้ โปรดลองอีกครั้ง",
+                "completeSuccess": "การสร้างวอร์ดเสร็จสมบูรณ์",
+                "deleteNurse": "ลบพยาบาลแล้ว",
+                "deleteTeamWithNurses": "ลบทีมและพยาบาลออก",
+                "maxNursesPerTeam": "คุณสามารถเพิ่มพยาบาล {{count}} ในหนึ่งทีมได้มากถึง {{count}}",
+                "maxTeams": "คุณสามารถเพิ่มทีมได้สูงสุด {{count}}",
+                "reloadDraftError": "ไม่สามารถโหลดแบบร่างการตั้งค่าวอร์ดที่บันทึกไว้ได้",
+                "saveDraftError": "ไม่สามารถบันทึกข้อมูลวอร์ดพื้นฐานได้ โปรดลองอีกครั้ง",
+                "saveScheduleError": "ไม่สามารถบันทึกกำหนดการเริ่มต้นได้",
+                "skillConfigDisabled": "การตั้งค่าทักษะถูกปิดใช้งาน",
+                "skillConfigSaved": "Appนำการตั้งค่าทักษะไปใช้กับรายชื่อพยาบาล",
+                "uploadApplied": "Appโกหกไฟล์กำหนดการ"
+            },
+            "upload": {
+                "dropHere": "วางไฟล์กำหนดการที่นี่",
+                "failedRow": "ไม่สามารถแยกวิเคราะห์บางแถว ({{rowLabel}}) และถูกยกเว้น",
+                "failedSheet": "ไม่สามารถโหลดข้อมูลจากชีต \"{{sheetName}}\"",
+                "failedTitle": "การอัปโหลดไฟล์ล้มเหลว",
+                "networkFailed": "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์การแยกวิเคราะห์ โปรดลองอีกครั้งในอีกสักครู่",
+                "parseFailed": "ไม่สามารถแยกวิเคราะห์ไฟล์ได้ ตรวจสอบเทมเพลต Excel แล้วอัปโหลดอีกครั้ง",
+                "parsing": "กำลังแยกวิเคราะห์ไฟล์...",
+                "targetMonth": "กำหนดการเดือน",
+                "unsupportedFile": "สามารถอัปโหลดได้เฉพาะไฟล์ Excel (.xlsx, .xls) เท่านั้น",
+                "uploadFile": "อัพโหลดไฟล์"
+            }
+        },
+        "profile": {
+            "basicInfoDescription": "จัดการข้อมูลที่ใช้สำหรับบัญชีของคุณ",
+            "basicInfoTitle": "ข้อมูลพื้นฐาน",
+            "confirm": {
+                "deleteConfirm": "ลบ",
+                "deleteDescription": "ข้อมูลบัญชีของคุณจะถูกลบและไม่สามารถกู้คืนได้",
+                "deleteTitle": "ลบบัญชี?",
+                "logoutConfirm": "ออกจากระบบ",
+                "logoutDescription": "ออกจากระบบบัญชีนี้และกลับสู่หน้าจอแรก",
+                "logoutTitle": "ออกจากระบบ?"
+            },
+            "deleteAccount": "ลบบัญชี",
+            "errorDescription": "โปรดลองอีกครั้งในอีกสักครู่ หากปัญหายังคงอยู่ ให้ลงชื่อเข้าใช้อีกครั้ง",
+            "errorTitle": "ไม่สามารถโหลดโปรไฟล์ของคุณได้",
+            "imageFailed": "ไม่สามารถประมวลผลภาพโปรไฟล์ได้",
+            "language": {
+                "en": "English",
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "zh": "简体中文 (Chinese)"
+            },
+            "languageLabel": "ภาษาที่แสดง",
+            "loadingDescription": "ตรวจสอบข้อมูลบัญชีและวอร์ดของคุณ",
+            "loadingTitle": "กำลังเตรียมโปรไฟล์ของคุณ",
+            "logout": "ออกจากระบบ",
+            "modalSave": "บันทึก",
+            "name": "ชื่อ",
+            "namePlaceholder": "ใส่ชื่อของคุณ",
+            "phoneNum": "หมายเลขโทรศัพท์",
+            "phoneNumPlaceholder": "ป้อนหมายเลขโทรศัพท์ของคุณ",
+            "preferencesDescription": "เลือกภาษาที่แสดงในแอป",
+            "preferencesFailed": "ไม่สามารถบันทึกการตั้งค่าภาษาได้",
+            "preferencesSaved": "บันทึกภาษาและภูมิภาคการบริการแล้ว",
+            "preferencesTitle": "ภาษา",
+            "profileSection": "ประวัติโดยย่อ",
+            "quitWard": "ออกจากวอร์ด",
+            "randomAvatar": "อวาตาร์สุ่ม",
+            "retry": "ลองอีกครั้ง",
+            "save": "บันทึกการเปลี่ยนแปลง",
+            "savedDescription": "ข้อมูลล่าสุดของคุณจะถูกบันทึกไว้",
+            "savePreferences": "บันทึกการตั้งค่าภาษา",
+            "savingPreferences": "ประหยัด...",
+            "serviceRegion": {
+                "CN": "จีน",
+                "EN": "ทั่วโลก / อังกฤษ",
+                "JP": "ญี่ปุ่น",
+                "KR": "เกาหลี",
+                "TH": "ประเทศไทย"
+            },
+            "serviceRegionLabel": "ภูมิภาคที่ให้บริการ",
+            "title": "บัญชี",
+            "unknownName": "ไม่มีการตั้งชื่อ",
+            "unsavedDescription": "คุณมีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก",
+            "uploadPhoto": "อัพโหลดรูปภาพ",
+            "validation": {
+                "nameInvalid": "ใช้อักขระเกาหลี อังกฤษ หรือญี่ปุ่น ช่องว่าง '-' หรือ '·' ได้สูงสุด 20 ตัว",
+                "nameRequired": "ใส่ชื่อของคุณ",
+                "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
+                "phoneRequired": "ป้อนหมายเลขโทรศัพท์ของคุณ"
+            }
+        },
+        "refresh": {
+            "loading": "กำลังเข้าสู่ระบบ..."
+        },
+        "register": {
+            "createWard": {
+                "back": "กลับไปที่การเลือกวอร์ด",
+                "basicInfo": "ข้อมูลพื้นฐาน",
+                "description": "เริ่มต้นด้วยสิ่งสำคัญ คุณสามารถปรับการตั้งค่าโดยละเอียดได้ในภายหลัง",
+                "hospitalName": "ชื่อโรงพยาบาล",
+                "hospitalNamePlaceholder": "โรงพยาบาล Dutying",
+                "save": "บันทึกวอร์ด",
+                "title": "สร้างวอร์ดใหม่",
+                "validation": {
+                    "wardName": "ใช้อักขระภาษาเกาหลี อังกฤษ ญี่ปุ่น หรือตัวเลข 1-50 ตัว"
+                },
+                "wardName": "ชื่อวอร์ด"
+            },
+            "enterWard": {
+                "back": "กลับไปที่การเลือกวอร์ด",
+                "close": "ปิด",
+                "codeCellAria": "อักขระรหัสวอร์ด {{index}}",
+                "codeInputAria": "การป้อนรหัสวอร์ด",
+                "confirmDescription": "หากนี่คือวอร์ดที่ถูกต้อง เราจะส่งคำขอเข้า",
+                "confirmEyebrow": "ยืนยันวอร์ด",
+                "description": "ป้อนรหัส 6 ตัวอักษรที่ผู้ดูแลระบบของคุณแชร์เพื่อค้นหาวอร์ด",
+                "error": "ตรวจสอบรหัสวอร์ดแล้วลองอีกครั้ง",
+                "retry": "เข้าอีกแล้ว",
+                "submit": "ขอเข้า",
+                "title": "ใส่รหัสวอร์ด"
+            },
+            "nurse": {
+                "imageFailed": "ไม่สามารถประมวลผลภาพโปรไฟล์ได้",
+                "name": "ชื่อ",
+                "namePlaceholder": "ใส่ชื่อ",
+                "next": "ต่อไป",
+                "phoneNum": "หมายเลขโทรศัพท์",
+                "phoneNumPlaceholder": "ป้อนหมายเลขโทรศัพท์",
+                "randomAvatar": "อวาตาร์สุ่ม",
+                "saving": "ประหยัด...",
+                "submitting": "กำลังประมวลผล...",
+                "title": "ป้อนข้อมูลบัญชี",
+                "uploadPhoto": "อัพโหลดรูปภาพ",
+                "validation": {
+                    "nameInvalid": "ใช้อักขระได้สูงสุด 20 ตัว: เกาหลี อังกฤษ ญี่ปุ่น ช่องว่าง '-' และ '·'",
+                    "nameRequired": "ป้อนชื่อ",
+                    "phoneDuplicate": "หมายเลขโทรศัพท์นี้มีการใช้งานแล้ว ป้อนหมายเลขอื่น",
+                    "phoneInvalid": "ป้อนหมายเลขโทรศัพท์ที่ถูกต้องสำหรับภาษาหรือภูมิภาคที่เลือก",
+                    "phoneRequired": "ป้อนหมายเลขโทรศัพท์"
+                }
+            },
+            "pending": {
+                "cancelRequest": "ยกเลิกการขอเข้า",
+                "description": "คุณสามารถใช้วอร์ดได้ทันทีที่ผู้ดูแลระบบอนุมัติคำขอของคุณ",
+                "requestedWard": "วอร์ดที่ร้องขอ",
+                "title": "รอการอนุมัติการเข้า"
+            },
+            "select": {
+                "back": "กลับไปที่ข้อมูลบัญชี",
+                "createDescription": "ตั้งชื่อโรงพยาบาล ชื่อวอร์ด และข้อมูลทีมตามลำดับ",
+                "createTitle": "สร้างวอร์ดใหม่",
+                "description": "สร้างวอร์ดใหม่หากคุณเพิ่งเริ่มต้นใหม่ หรือเข้าร่วมวอร์ดที่มีอยู่หากคุณได้รับรหัสเชิญ",
+                "enterDescription": "เลือกตัวเลือกนี้หากคุณมีรหัส 6 ตัวอักษรจากผู้ดูแลระบบ",
+                "enterTitle": "เข้าร่วมวอร์ดที่มีอยู่",
+                "titleWithName": "{{name}} เชื่อมต่อวอร์ด",
+                "titleWithoutName": "เชื่อมต่อวอร์ด"
+            },
+            "shell": {
+                "homeAria": "ไปที่ Dutying ที่บ้าน"
+            },
+            "state": {
+                "accountErrorDescription": "โปรดลองอีกครั้งในอีกสักครู่ หากปัญหายังคงอยู่ ให้ลงชื่อเข้าใช้อีกครั้ง",
+                "accountErrorTitle": "ไม่สามารถโหลดข้อมูลบัญชีได้",
+                "statusErrorDescription": "โหลดข้อมูลบัญชีซ้ำและลงทะเบียนต่อ",
+                "statusErrorTitle": "ไม่สามารถยืนยันสถานะบัญชีได้"
+            }
+        },
+        "request": {
+            "availability": {
+                "editable": {
+                    "badgeLabel": "แก้ไขได้",
+                    "description": "คุณสามารถแก้ไขคำขอภายในช่วงปฏิทินปัจจุบันได้"
+                },
+                "editablePeriodLabel": "ช่วงที่แก้ไขได้: เดือนก่อนหน้าถึงเดือนถัดไป",
+                "lockedFuture": {
+                    "badgeLabel": "ยังไม่เปิด",
+                    "description": "คุณสามารถแก้ไขคำขอได้จนถึงเดือนถัดไป เดือนในอนาคตสามารถแก้ไขได้เมื่อเปิดแล้ว",
+                    "validationMessage": "คำขอล่วงหน้าสองเดือนยังไม่เปิด"
+                },
+                "lockedPast": {
+                    "badgeLabel": "ดูอย่างเดียว",
+                    "description": "เดือนนี้เป็นแบบดูอย่างเดียว คุณสามารถตรวจสอบคำขอที่ส่งและการมอบหมายปัจจุบันได้",
+                    "validationMessage": "คำขอจากสองเดือนที่ผ่านมาเป็นแบบดูอย่างเดียว"
+                }
+            },
+            "calendar": {
+                "ariaLabel": "ขอตารางกะ",
+                "linkColumn": "ลิงค์",
+                "nameColumn": "ชื่อ",
+                "noNurseAction": "ไปที่การจัดการสมาชิก",
+                "noNurseDescription": "เพิ่มพยาบาลให้กับทีมนี้จากฝ่ายบริหารสมาชิก ก่อนที่จะตรวจสอบกะที่ร้องขอ",
+                "noNurseTitleSuffix": "ยังไม่มีพยาบาล",
+                "reorderAria": "สั่งซื้อ {{name}} ใหม่",
+                "skillColumn": "ทักษะ",
+                "status": {
+                    "accepted": "Appโกหก",
+                    "pending": "จำเป็นต้องตรวจสอบ",
+                    "rejected": "ไม่รวม"
+                },
+                "statusDescription": {
+                    "accepted": "มีการใช้กะที่ร้องขออยู่ในขณะนี้",
+                    "editable": "เลือกชื่อที่จะย้ายไปวันที่นั้นและตรวจสอบ",
+                    "noFocus": "ไม่พบข้อมูลพยาบาลที่เชื่อมโยงสำหรับทีมนี้ ดังนั้นจึงไม่สามารถเปิดตำแหน่งปฏิทินได้โดยตรง",
+                    "readonly": "เดือนนี้ไม่สามารถแก้ไขได้ ดังนั้นคุณสามารถตรวจสอบได้เฉพาะตำแหน่งกะที่ร้องขอเท่านั้น",
+                    "rejected": "กำหนดการปัจจุบันได้รับการยืนยันด้วยการเปลี่ยนแปลงอื่น"
+                }
+            },
+            "changeEvent": {
+                "add": "เพิ่ม → {{shiftType}}",
+                "delete": "{{shiftType}} → ลบ",
+                "message": "{{nurseName}} / วัน {{day}} | {{changeLabel}}"
+            },
+            "faultOptions": {
+                "excludeCertainWorkTypes": {
+                    "label": "หลีกเลี่ยงรูปแบบ ND / ED / NE / NOD",
+                    "message": "หลีกเลี่ยงรูปแบบการเปลี่ยน ND/ED/NE/NOD"
+                },
+                "excludeNightBeforeReqOff": {
+                    "label": "หลีกเลี่ยงคืนก่อนที่จะขอปิด",
+                    "message": "หลีกเลี่ยงกะกลางคืนก่อนวันที่ขอหยุด"
+                },
+                "maxContinuousNight": {
+                    "label": "คืนติดต่อกัน",
+                    "message": "สามารถกำหนดกะกลางคืนได้สูงสุด {{count}} วันติดต่อกัน"
+                },
+                "maxContinuousWork": {
+                    "label": "วันทำงานติดต่อกัน",
+                    "message": "สามารถมอบหมายงานได้สูงสุด {{count}} วันติดต่อกัน"
+                },
+                "minContinuousNight": {
+                    "label": "คืนติดต่อกัน",
+                    "message": "กำหนดกะกลางคืนเป็นเวลาอย่างน้อย {{count}} วันติดต่อกัน"
+                },
+                "minNightInterval": {
+                    "label": "ช่วงกลางคืน",
+                    "message": "เก็บอย่างน้อย {{count}} วันระหว่างกะกลางคืน"
+                },
+                "minOffAssignAfterNight": {
+                    "label": "ปิดหลังกะกลางคืน",
+                    "message": "หลังจากกะกลางคืน แนะนำให้ใช้อย่างน้อย {{count}} OFF วัน"
+                }
+            },
+            "overview": {
+                "bootstrapErrorDescription": "กรุณาตรวจสอบข้อมูลบัญชีของคุณ หากปัญหายังคงอยู่ ให้ลงชื่อเข้าใช้อีกครั้ง",
+                "bootstrapErrorTitle": "โหลดข้อมูลวอร์ดไม่สำเร็จ",
+                "bootstrapLoadingDescription": "ตรวจสอบข้อมูลวอร์ดของคุณและเตรียมหน้าคำขอกะ",
+                "bootstrapLoadingTitle": "การตรวจสอบข้อมูลบัญชี",
+                "createNextMonth": "สร้างการเปลี่ยนแปลงคำขอในเดือนถัดไป",
+                "emptyDescription": "เปิดตารางคำขอกะเดือนหน้าก่อนแล้วเริ่มแก้ไขที่นั่น",
+                "emptyTitle": "ยังไม่มีกำหนดการขอกะสำหรับเดือนนี้",
+                "loadingDescription": "กำลังโหลดทีมกะและขอกำหนดกะตามลำดับ",
+                "loadingTitle": "จัดทำหน้าคำขอกะ",
+                "noTeamsDescription": "ลงทะเบียนทีมกะก่อนเพื่อจัดการกะที่ร้องขอ",
+                "noTeamsTitle": "ยังไม่มีทีมที่ลงทะเบียน",
+                "shiftErrorTitle": "โหลดกำหนดการกะคำขอไม่สำเร็จ",
+                "shiftLoadingDescription": "การจัดกำหนดการของทีมที่เลือกและรายการคำขอ",
+                "shiftLoadingTitle": "กำลังโหลดกำหนดการกะคำขอ",
+                "teamsErrorTitle": "โหลดทีมกะไม่สำเร็จ"
+            },
+            "panel": {
+                "accept": "ยอมรับ",
+                "acceptAll": "ยอมรับ {{count}} ที่รอดำเนินการ",
+                "acceptedState": "ได้รับการยอมรับ",
+                "acceptedToast": "ยอมรับคำขอ {{shiftType}} ของ {{nurseName}} แล้ว",
+                "appliedCount": "Appโกหก {{count}}",
+                "appliedLabel": "Appโกหก",
+                "changeToAccept": "เปลี่ยนแปลงเพื่อยอมรับ",
+                "changeToReject": "เปลี่ยนเป็นปฏิเสธ",
+                "dateLabel": "{{month}}/{{date}}",
+                "dayShortLabel": "{{date}}",
+                "dayType": {
+                    "holiday": "วันหยุด",
+                    "saturday": "วันเสาร์",
+                    "sunday": "วันอาทิตย์"
+                },
+                "editTitle": "ตรวจสอบคำขอ",
+                "emptyDescriptionEdit": "คำขอที่ส่งจะปรากฏที่นี่เพื่อให้คุณสามารถตรวจสอบได้ทันที",
+                "emptyDescriptionReadonly": "คำขอที่ได้รับการยอมรับจะปรากฏในแผงนี้",
+                "emptyTitleEdit": "ยังไม่มีการร้องขอใดๆ",
+                "emptyTitleReadonly": "ยังไม่มีการเปลี่ยนแปลงที่ขอใช้",
+                "errorTitleEdit": "โหลดรายการคำขอไม่สำเร็จ",
+                "errorTitleReadonly": "ไม่สามารถโหลดกะที่ร้องขอที่ใช้",
+                "excludedCount": "ไม่รวม {{count}}",
+                "excludedLabel": "ไม่รวม",
+                "groupDone": "ตรวจสอบแล้ว",
+                "groupPendingCount": "{{count}} จำเป็นต้องตรวจสอบ",
+                "groupRequestCaseCount": "คำขอ {{count}}",
+                "groupRequestCount": "คำขอ {{count}}",
+                "loadingDescriptionEdit": "ตรวจสอบกะที่ร้องขอที่ส่งมา",
+                "loadingDescriptionReadonly": "จัดระเบียบกะที่ร้องขอที่ได้รับการยอมรับ",
+                "loadingTitleEdit": "กำลังโหลดรายการคำขอ",
+                "loadingTitleReadonly": "กำลังโหลดกะที่ร้องขอที่ใช้",
+                "monthShortLabel": "เดือน {{month}}",
+                "notLinked": "ไม่มีพยาบาลที่เชื่อมโยงตามกำหนดเวลา",
+                "nurseDateLabel": "{{nurseName}} / {{date}}",
+                "overlapBadge": "{{count}} ต้องการการเปลี่ยนแปลงนี้",
+                "overlapSummary": "{{count}} ทับซ้อนกัน",
+                "pendingCount": "รอดำเนินการ {{count}}",
+                "pendingEmptyDescription": "เฉพาะคำขอที่ไม่มีการตัดสินใจยอมรับหรือปฏิเสธเท่านั้นที่ปรากฏที่นี่",
+                "pendingEmptyTitle": "ไม่มีคำขอที่ค้างอยู่",
+                "pendingLabel": "รอดำเนินการ",
+                "readonlyTitle": "Applied ร้องขอการเปลี่ยนแปลง",
+                "reject": "ปฏิเสธ",
+                "rejectAll": "ปฏิเสธ {{count}} ที่รอดำเนินการ",
+                "rejectedState": "ถูกปฏิเสธ",
+                "rejectedToast": "คำขอ {{shiftType}} ของ {{nurseName}} ถูกปฏิเสธ",
+                "showLess": "ทรุด",
+                "showMore": "แสดง {{count}} เพิ่มเติม",
+                "showNext": "ต่อไป",
+                "showPrevious": "ก่อนหน้า",
+                "sortByDate": "ตามวันที่",
+                "sortByNurse": "โดยพยาบาล",
+                "sortByPending": "รอดำเนินการ",
+                "sortByRequestOrder": "ตามคำขอ",
+                "sortOrder": "เรียงตามวันที่",
+                "summaryLabel": "ขอสรุปการประมวลผล",
+                "unresolvedCount": "{{count}} คำขอที่ยังไม่ได้รับการแก้ไข",
+                "viewModeLabel": "ขอการเรียงลำดับบทวิจารณ์",
+                "viewOnCalendar": "ดูตามกำหนดเวลา",
+                "weekday": {
+                    "friday": "วันศุกร์",
+                    "monday": "วันจันทร์",
+                    "saturday": "วันเสาร์",
+                    "sunday": "วันอาทิตย์",
+                    "thursday": "วันพฤหัสบดี",
+                    "tuesday": "วันอังคาร",
+                    "wednesday": "วันพุธ"
+                }
+            },
+            "toolbar": {
+                "editAction": "แก้ไข",
+                "editingDescription": "การเปลี่ยนแปลงจะถูกบันทึกโดยอัตโนมัติ เสร็จสิ้นด้วยการบันทึกหลังจากการซิงค์เสร็จสิ้น",
+                "editTitle": "โปรดยืนยันการเปลี่ยนแปลงที่ร้องขอ",
+                "noTeamsLabel": "ไม่มีทีมที่ลงทะเบียน",
+                "readonlyDescription": "กดแก้ไขเพื่อปรับกะที่ร้องขอทันที",
+                "readonlyTitle": "ยืนยันการเปลี่ยนแปลงที่ร้องขอสำหรับ {{month}}",
+                "saveAction": "บันทึก",
+                "savedDescription": "บันทึกการเปลี่ยนแปลงล่าสุดของคุณแล้ว",
+                "saveError": "ไม่สามารถบันทึกการเปลี่ยนแปลงล่าสุด โปรดลองบันทึกอีกครั้ง",
+                "savingAction": "ประหยัด...",
+                "savingDescription": "กำลังบันทึกการเปลี่ยนแปลงล่าสุดของคุณ"
+            }
+        },
+        "state": {
+            "emptyDescription": "ทำตามคำแนะนำบนหน้าจอเพื่อดำเนินการต่อ",
+            "errorDescription": "โปรดลองอีกครั้งในอีกสักครู่ หากปัญหายังคงอยู่ ให้รีเฟรชและตรวจสอบอีกครั้ง",
+            "loadingDescription": "กรุณารอสักครู่.",
+            "loadingTitle": "การเตรียมหน้าจอ",
+            "retry": "ลองอีกครั้ง"
+        },
+        "wardAdmins": {
+            "accountFallback": "บัญชี #{{accountId}}",
+            "addAria": "เพิ่มผู้ดูแลระบบ",
+            "emailPlaceholder": "อีเมล",
+            "emptyAdmins": "ยังไม่มีผู้ดูแลระบบลงทะเบียนเลย",
+            "error": {
+                "emailInvalid": "ป้อนที่อยู่อีเมลที่ถูกต้อง",
+                "emailRequired": "ป้อนที่อยู่อีเมล",
+                "maxAdmins": "คุณสามารถเพิ่มผู้ดูแลระบบวอร์ด {{count}} ได้สูงสุด"
+            },
+            "memberOnlyDescription": "เฉพาะบัญชีที่ลงทะเบียนเป็นสมาชิกวอร์ดเท่านั้นที่สามารถเพิ่มเป็นผู้ดูแลระบบได้",
+            "ownerOnlyDescription": "มีเพียงเจ้าของเท่านั้นที่สามารถเปลี่ยนสิทธิ์ผู้ดูแลระบบได้",
+            "registeredTitle": "ผู้ดูแลระบบที่ลงทะเบียน",
+            "removeActiveAria": "ลบผู้ดูแลระบบ {{email}}",
+            "removeReservedAria": "ลบผู้ดูแลระบบที่สงวนไว้ {{email}}",
+            "role": {
+                "editor": "ผู้ดูแลระบบ",
+                "owner": "เจ้าของ"
+            },
+            "state": {
+                "loadFailedTitle": "ไม่สามารถโหลดรายชื่อผู้ดูแลระบบได้",
+                "noWardDescription": "สร้างวอร์ดหรือเข้าร่วมวอร์ดที่มีอยู่เพื่อจัดการผู้ดูแลระบบ",
+                "noWardTitle": "ขณะนี้ไม่มีวอร์ดที่ได้รับการจัดการ",
+                "retry": "ลองอีกครั้ง",
+                "retryDescription": "โปรดลองอีกครั้งในอีกสักครู่"
+            },
+            "title": "ผู้ดูแลระบบวอร์ด",
+            "toast": {
+                "createActive": "เพิ่มผู้ดูแลระบบแล้ว",
+                "createFailed": "ไม่สามารถลงทะเบียนผู้ดูแลระบบได้",
+                "createOwnerOnly": "มีเพียงเจ้าของเท่านั้นที่สามารถเพิ่มผู้ดูแลระบบได้",
+                "createReserved": "เพิ่มผู้ดูแลระบบแล้ว",
+                "duplicateEmail": "อีเมลผู้ดูแลระบบนี้ลงทะเบียนแล้ว",
+                "ownerOnly": "มีเพียงเจ้าของเท่านั้นที่สามารถทำการเปลี่ยนแปลงนี้ได้",
+                "removeActive": "ถอดผู้ดูแลระบบออกแล้ว",
+                "removeActiveFailed": "ไม่สามารถลบผู้ดูแลระบบได้",
+                "removeReserved": "ลบอีเมลผู้ดูแลระบบที่สงวนไว้",
+                "removeReservedFailed": "ไม่สามารถลบอีเมลผู้ดูแลระบบที่สงวนไว้ได้"
+            }
+        },
+        "wardInfoSettings": {
+            "hospitalName": "ชื่อโรงพยาบาล",
+            "hospitalNamePlaceholder": "กรอกชื่อโรงพยาบาล",
+            "save": "บันทึกการเปลี่ยนแปลง",
+            "saving": "ประหยัด...",
+            "sectionTitle": "ข้อมูลวอร์ด",
+            "state": {
+                "loadFailedTitle": "ไม่สามารถโหลดข้อมูลวอร์ดได้",
+                "loadingTitle": "กำลังโหลดข้อมูลวอร์ด",
+                "noWardDescription": "เข้าร่วมวอร์ดหรือสร้างวอร์ดใหม่ก่อนที่จะแก้ไขการตั้งค่าวอร์ด",
+                "noWardTitle": "จำเป็นต้องมีการเชื่อมต่อวอร์ด",
+                "retry": "ลองอีกครั้ง",
+                "retryDescription": "โปรดลองอีกครั้งในอีกสักครู่"
+            },
+            "title": "การตั้งค่าวอร์ด",
+            "toast": {
+                "saveFailed": "ไม่สามารถบันทึกข้อมูลวอร์ดได้",
+                "saveSuccess": "ข้อมูลวอร์ดที่บันทึกไว้"
+            },
+            "validation": {
+                "invalid": "{{label}} ต้องเป็นอักขระ {{count}} หรือน้อยกว่า และใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น หรือตัวเลข",
+                "required": "ป้อน {{label}}"
+            },
+            "wardName": "ชื่อวอร์ด",
+            "wardNamePlaceholder": "กรอกชื่อวอร์ด"
+        },
+        "wardSettings": {
+            "addShiftType": "เพิ่มประเภทกะ",
+            "constraints": {
+                "apply": "Appโกหกตามกำหนดการ",
+                "column": {
+                    "rule": "ข้อจำกัด",
+                    "status": "สถานะ",
+                    "value": "ค่า"
+                },
+                "error": "ไม่สามารถโหลดข้อจำกัด",
+                "exclude": "ไม่รวมอยู่ในกำหนดการ",
+                "loading": "กำลังโหลดข้อจำกัด",
+                "noTeamsDescription": "สร้างทีมกะก่อนจัดการข้อจำกัด",
+                "noTeamsTitle": "ไม่พบทีมกะ",
+                "teamDescription": "มีการจัดการข้อจำกัดต่อทีมกะ",
+                "teamLabel": "ทีม"
+            },
+            "description": {
+                "constraints": "จัดการข้อจำกัดในการจัดกำหนดการ",
+                "shiftTypes": "จัดการประเภทกะ"
+            },
+            "shiftTypes": {
+                "add": "เพิ่มประเภทกะ",
+                "colorOptionAria": "เลือก {{color}}",
+                "colorSelectAria": "เลือกสีสำหรับ {{name}}",
+                "column": {
+                    "color": "สี",
+                    "name": "ชื่อ",
+                    "shortName": "คำย่อ",
+                    "type": "พิมพ์",
+                    "workTime": "เวลาทำงาน"
+                },
+                "deleteAria": "ลบ {{name}}",
+                "editAria": "แก้ไขประเภทกะ {{name}}",
+                "empty": "ไม่พบประเภทกะ",
+                "error": "โหลดประเภทกะไม่สำเร็จ",
+                "loading": "กำลังโหลดประเภทกะ",
+                "newShiftName": "กะใหม่",
+                "save": "บันทึก",
+                "toast": {
+                    "addFailed": "ไม่สามารถเพิ่มประเภทกะได้",
+                    "deleteFailed": "ไม่สามารถลบประเภทกะได้",
+                    "notFound": "ประเภทกะนี้ถูกลบไปแล้วหรือไม่พบในรายการล่าสุด",
+                    "saveSuccess": "การตั้งค่าหน้าที่ที่บันทึกไว้",
+                    "updateFailed": "ไม่สามารถอัปเดตประเภทกะได้"
+                },
+                "validation": {
+                    "nameDuplicate": "ใช้ชื่อกะอื่น",
+                    "nameRequired": "ป้อนชื่อกะ",
+                    "shortNameDuplicate": "ใช้อักษรตัวแรกอื่น",
+                    "shortNameFirstKey": "ขึ้นต้นด้วยตัวอักษร ตัวเลข หรือสัญลักษณ์ เช่น -, ., _",
+                    "shortNameLength": "ใช้ได้ถึง 3 ตัวอักษรโดยไม่ต้องเว้นวรรค",
+                    "shortNameRequired": "ป้อนคำย่อ",
+                    "timeFormat": "ใช้รูปแบบเวลา 00:00",
+                    "timeRequired": "ป้อนเวลา",
+                    "timeSame": "ใช้เวลาเริ่มต้นและเวลาสิ้นสุดที่แตกต่างกัน"
+                }
+            },
+            "tabs": {
+                "constraints": "ข้อจำกัด",
+                "shiftTypes": "ประเภทกะ"
+            },
+            "title": "การจัดการหน้าที่",
+            "type": {
+                "leave": "ออกจาก",
+                "work": "งาน"
+            }
+        }
+    },
+    "shared": {
+        "api": {
+            "requestFailed": "มีบางอย่างผิดพลาด โปรดลองอีกครั้ง",
+            "unknownError": "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ"
+        },
+        "confirmActionDialog": {
+            "cancel": "ยกเลิก",
+            "close": "ปิด"
+        }
+    },
+    "widget": {
+        "requestTutorial": {
+            "listInfo": "คุณสามารถตรวจสอบกะที่พยาบาลร้องขอได้ในที่เดียว",
+            "listTitle": "ตรวจสอบคำขอกะทางด้านขวา",
+            "pendingInfo": "คุณสามารถรวบรวมคำขอที่ค้างอยู่ที่เหลือได้ที่นี่",
+            "pendingTitle": "ดูเฉพาะคำขอที่รอดำเนินการเท่านั้น"
+        },
+        "tutorialInfoBox": {
+            "done": "เสร็จแล้ว",
+            "next": "ต่อไป",
+            "previous": "ก่อนหน้า"
+        },
+        "wardChat": {
+            "closeAria": "ปิดการสนทนาวอร์ด",
+            "conversationStart": "เริ่มการสนทนา",
+            "deletedMessage": "ข้อความนี้ถูกลบแล้ว",
+            "inputPlaceholder": "ป้อนข้อความ",
+            "loadOlder": "ข้อความก่อนหน้า",
+            "openAria": "เปิดการสนทนาในวอร์ด",
+            "openWithUnreadAria": "เปิดแชทวอร์ด {{count}} ข้อความที่ยังไม่ได้อ่าน",
+            "sendAria": "ส่งข้อความ",
+            "state": {
+                "emptyDescription": "ฝากข้อความแรกไว้",
+                "emptyTitle": "ยังไม่มีการสนทนา",
+                "loadFailed": "ไม่สามารถโหลดการสนทนาได้",
+                "retry": "ลองอีกครั้ง"
+            },
+            "subtitle": "การสนทนาของสมาชิกวอร์ด",
+            "title": "การสนทนาในวอร์ด",
+            "toast": {
+                "sendFailed": "ไม่สามารถส่งข้อความได้"
+            }
+        },
+        "wardCodeGuide": {
+            "benefits": {
+                "appApply": {
+                    "description": "เมื่อพยาบาลส่งคำขอวันหยุดและกะในแอป Dutying\nหัวหน้าพยาบาลสามารถตรวจสอบได้ในที่เดียว",
+                    "title": "พยาบาลสามารถขอกะในแอปได้"
+                },
+                "board": {
+                    "description": "โพสต์ประกาศ การส่งมอบ และคำแนะนำในขณะที่ติดตามการตรวจสอบและกระแสความคิดเห็น",
+                    "title": "ให้มองเห็นประกาศของวอร์ดได้"
+                },
+                "chat": {
+                    "description": "สนทนาเรื่องการเปลี่ยนแปลงกะ ประกาศด่วน และการประสานงานในวันเดียวกันกับสมาชิกวอร์ด",
+                    "title": "ประสานงานอย่างรวดเร็วในการสนทนาในวอร์ด"
+                },
+                "scheduleShare": {
+                    "description": "เมื่อคุณเผยแพร่กำหนดการ พยาบาลที่เชื่อมต่อสามารถตรวจสอบได้ในแอปได้ทันที",
+                    "title": "แบ่งปันกำหนดการที่ยืนยันแล้วทันที"
+                }
+            },
+            "closeAria": "ปิดคำแนะนำรหัสวอร์ด",
+            "copyAria": "คัดลอกรหัสวอร์ด",
+            "description": "พยาบาลสามารถเชื่อมต่อกับวอร์ดได้โดยกรอกรหัสนี้ในแอป Dutying",
+            "participationGuide": "ในแอป Dutying ให้แตะเข้าร่วมวอร์ด\nและกรอกรหัสวอร์ด Dutying",
+            "participationGuideAria": "แสดงวิธีการกรอกรหัสวอร์ด Dutying",
+            "title": "แบ่งปันรหัสวอร์ดกับพยาบาลของคุณ",
+            "toast": {
+                "copyFailed": "ไม่สามารถคัดลอกรหัสวอร์ดได้",
+                "copySuccess": "คัดลอกรหัสวอร์ดแล้ว"
+            },
+            "wardCodeLabel": "รหัสวอร์ด {{wardTitle}}"
+        }
+    }
+};
+
 export const resources = {
     ko: {translation: ko},
     en: {translation: en},
     ja: {translation: ja},
+    zh: {translation: zh},
+    th: {translation: th},
 } as const;

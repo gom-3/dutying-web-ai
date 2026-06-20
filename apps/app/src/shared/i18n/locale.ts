@@ -1,22 +1,26 @@
 import type {TPreferredLanguage, TServiceRegion} from '@dutying/domain';
 
-export const SUPPORTED_LANGUAGES = ['ko', 'ja', 'en'] as const satisfies readonly TPreferredLanguage[];
-export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN'] as const satisfies readonly TServiceRegion[];
+export const SUPPORTED_LANGUAGES = ['ko', 'ja', 'en', 'zh', 'th'] as const satisfies readonly TPreferredLanguage[];
+export const SUPPORTED_SERVICE_REGIONS = ['KR', 'JP', 'EN', 'CN', 'TH'] as const satisfies readonly TServiceRegion[];
 
 export const SERVICE_REGION_STORAGE_KEY = 'dutying.serviceRegion';
 
-type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US';
+type TBcp47Locale = 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH';
 
 const LANGUAGE_TO_LOCALE: Record<TPreferredLanguage, TBcp47Locale> = {
     ko: 'ko-KR',
     ja: 'ja-JP',
     en: 'en-US',
+    zh: 'zh-CN',
+    th: 'th-TH',
 };
 
 const LANGUAGE_TO_REGION: Record<TPreferredLanguage, TServiceRegion> = {
     ko: 'KR',
     ja: 'JP',
     en: 'EN',
+    zh: 'CN',
+    th: 'TH',
 };
 
 const isSupportedLanguage = (value: string): value is TPreferredLanguage => SUPPORTED_LANGUAGES.includes(value as TPreferredLanguage);

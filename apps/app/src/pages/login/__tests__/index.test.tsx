@@ -195,6 +195,7 @@ describe('LoginPage', () => {
         expect(await screen.findByText('이메일 인증이 완료됐어요.')).toBeInTheDocument();
         await user.type(screen.getByLabelText('비밀번호'), 'password1234');
         await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
+        await user.click(screen.getAllByRole('checkbox')[0]);
         await user.click(screen.getByRole('button', {name: '계정 만들기'}));
 
         expect(mockSendAdminEmailVerification).toHaveBeenCalledWith({email: 'admin@example.com'});
@@ -204,8 +205,66 @@ describe('LoginPage', () => {
             email: 'admin@example.com',
             emailVerificationToken: '123456',
             password: 'password1234',
+            legalAgreements: [
+                expect.objectContaining({
+                    documentType: 'TERMS_OF_SERVICE',
+                    documentVersion: '2026-06-20',
+                    documentUrl: 'https://www.notion.so/37698c0fae2580d1a3d2dcbb0c163fc9?source=copy_link',
+                    agreed: true,
+                    agreedAt: expect.any(String),
+                    preferredLanguage: 'ko',
+                    locale: 'ko-KR',
+                    serviceRegion: 'KR',
+                }),
+            ],
         });
         expect(mockHandleLogin).toHaveBeenCalledWith('admin-token', ROUTE.REGISTER);
+    });
+
+    it('includes the optional marketing agreement only when selected', async () => {
+        const user = userEvent.setup();
+
+        mockSendAdminEmailVerification.mockResolvedValueOnce({email: 'admin@example.com'});
+        mockConfirmEmailVerification.mockResolvedValueOnce(undefined);
+        mockPasswordSignup.mockResolvedValueOnce({accessToken: 'admin-token'});
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.SIGN_UP]}>
+                <Routes>
+                    <Route path={ROUTE.SIGN_UP} element={<LoginPage />} />
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        await user.type(screen.getByLabelText('이름'), '김관리');
+        await user.type(screen.getByLabelText('이메일'), 'admin@example.com');
+        await user.click(screen.getByRole('button', {name: '인증'}));
+        await screen.findByText('인증 메일을 보냈어요. 메일함에서 인증번호를 확인해 입력해 주세요.');
+        await user.type(screen.getByLabelText('이메일 인증번호'), '123456');
+        await user.click(screen.getByRole('button', {name: '확인'}));
+        await screen.findByText('이메일 인증이 완료됐어요.');
+        await user.type(screen.getByLabelText('비밀번호'), 'password1234');
+        await user.type(screen.getByLabelText('비밀번호 확인'), 'password1234');
+
+        const [termsCheckbox, marketingCheckbox] = screen.getAllByRole('checkbox');
+
+        await user.click(termsCheckbox);
+        await user.click(marketingCheckbox);
+        await user.click(screen.getByRole('button', {name: '계정 만들기'}));
+
+        expect(mockPasswordSignup).toHaveBeenCalledWith(
+            expect.objectContaining({
+                legalAgreements: [
+                    expect.objectContaining({documentType: 'TERMS_OF_SERVICE'}),
+                    expect.objectContaining({
+                        documentType: 'MARKETING_COMMUNICATIONS',
+                        documentVersion: '2026-06-20',
+                        agreed: true,
+                        agreedAt: expect.any(String),
+                    }),
+                ],
+            }),
+        );
     });
 
     it('shows required signup field errors when creating an account with empty fields', async () => {
@@ -229,6 +288,7 @@ describe('LoginPage', () => {
         expect(screen.getByText('올바른 이메일 주소를 입력해 주세요.')).toBeInTheDocument();
         expect(screen.getByText('비밀번호는 8자 이상 입력해 주세요.')).toBeInTheDocument();
         expect(screen.getByText('비밀번호를 다시 입력해 주세요.')).toBeInTheDocument();
+        expect(screen.getByText('이용약관에 동의해 주세요.')).toBeInTheDocument();
         expect(mockPasswordSignup).not.toHaveBeenCalled();
     });
 

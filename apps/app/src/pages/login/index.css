@@ -1,6 +1,9 @@
 .login-visual-panel {
-    position: relative;
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
     width: 50vw;
+    height: 100vh;
     min-height: 100vh;
     flex: 0 0 50vw;
     overflow: hidden;
