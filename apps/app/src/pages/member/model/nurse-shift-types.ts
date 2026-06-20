@@ -59,11 +59,12 @@ export const resolveNurseShiftTypeOptions = (
                 legacyNurseShiftTypeByCode.get(normalizeShiftTypeKey(wardShiftType.shortName)) ??
                 legacyNurseShiftTypeByCode.get(normalizeShiftTypeKey(wardShiftType.name));
             const shortName = wardShiftType.shortName || wardShiftType.name;
+            const name = wardShiftType.name || shortName;
 
             return {
                 nurseShiftTypeId: matched?.nurseShiftTypeId ?? wardShiftType.wardShiftTypeId,
                 wardShiftTypeId: wardShiftType.wardShiftTypeId,
-                name: shortName,
+                name,
                 shortName,
                 isPossible: matched?.isPossible ?? true,
                 isPreferred: matched?.isPreferred ?? false,

@@ -1888,10 +1888,10 @@ page.request.panel.showLess,web,page.request.panel.showLess,page.request,request
 page.request.panel.showMore,web,page.request.panel.showMore,page.request,request,text,imported,,,,,,,,,{{count}}건 더 보기,Show {{count}} more,{{count}}件もっと見る,查看更多{{count}} 枪,แสดง {{count}} เพิ่มเติม,,2026-06-10
 page.request.panel.showNext,web,page.request.panel.showNext,page.request,request,text,imported,,,,,,,,,다음,Next,次へ,下一个,ต่อไป,,2026-06-10
 page.request.panel.showPrevious,web,page.request.panel.showPrevious,page.request,request,text,imported,,,,,,,,,이전,Previous,前へ,前,ก่อนหน้า,,2026-06-10
-page.request.panel.sortByDate,web,page.request.panel.sortByDate,page.request,request,text,imported,,,,,,,,,날짜순,By date,日付順,按日期,ตามวันที่,,2026-06-10
-page.request.panel.sortByNurse,web,page.request.panel.sortByNurse,page.request,request,text,imported,,,,,,,,,사람순,By nurse,看護師順,按人物排序,โดยพยาบาล,,2026-06-10
+page.request.panel.sortByDate,web,page.request.panel.sortByDate,page.request,request,text,imported,,,,,,,,,날짜순,Date,日付順,按日期,ตามวันที่,,2026-06-10
+page.request.panel.sortByNurse,web,page.request.panel.sortByNurse,page.request,request,text,imported,,,,,,,,,사람순,Nurse,看護師順,按人物排序,โดยพยาบาล,,2026-06-10
 page.request.panel.sortByPending,web,page.request.panel.sortByPending,page.request,request,text,imported,,,,,,,,,대기,Pending,待機,气氛,รอดำเนินการ,,2026-06-10
-page.request.panel.sortByRequestOrder,web,page.request.panel.sortByRequestOrder,page.request,request,text,imported,,,,,,,,,신청순,By request,申請順,申请顺序,ตามคำขอ,,2026-06-10
+page.request.panel.sortByRequestOrder,web,page.request.panel.sortByRequestOrder,page.request,request,text,imported,,,,,,,,,신청순,Order,申請順,申请顺序,ตามคำขอ,,2026-06-10
 page.request.panel.sortOrder,web,page.request.panel.sortOrder,page.request,request,text,imported,,,,,,,,,날짜순,Sorted by date,日付順,按日期,เรียงตามวันที่,,2026-06-10
 page.request.panel.summaryLabel,web,page.request.panel.summaryLabel,page.request,request,accessibility,imported,,,,,,,,,신청 처리 현황,Request processing summary,申請処理状況,申请处理状态,ขอสรุปการประมวลผล,,2026-06-10
 page.request.panel.unresolvedCount,web,page.request.panel.unresolvedCount,page.request,request,text,imported,,,,,,,,,처리할 신청 {{count}}건,{{count}} unresolved requests,処理する申請 {{count}}件,{{count}} 待处理申请,{{count}} คำขอที่ยังไม่ได้รับการแก้ไข,,2026-06-10
