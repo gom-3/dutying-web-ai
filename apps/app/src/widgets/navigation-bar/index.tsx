@@ -59,7 +59,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
         <aside
             data-testid="navigation-bar"
             className={cn(
-                'sticky top-0 z-[997] min-h-screen shrink-0 overflow-x-hidden border-r border-gray-6 bg-white font-apple shadow-[8px_0_24px_rgba(36,36,40,0.04)] transition-[width] duration-300 ease-out',
+                'sticky top-0 z-[997] h-dvh max-h-dvh shrink-0 overflow-hidden border-r border-gray-6 bg-white font-apple shadow-[8px_0_24px_rgba(36,36,40,0.04)] transition-[width] duration-300 ease-out',
                 isCollapsed ? NAV_WIDTH_COLLAPSED : NAV_WIDTH_EXPANDED,
             )}
             onPointerEnter={() => {
@@ -81,21 +81,38 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                 }
             }}
         >
-            <div className={cn('flex min-h-screen shrink-0 flex-col', isCollapsed ? 'w-[64px] px-2 py-3' : 'w-[216px] px-3 py-4')}>
-                <div className={cn('flex min-h-11 items-center', isCollapsed ? 'flex-col gap-2' : 'justify-between')}>
+            <div
+                className={cn(
+                    'flex h-full min-h-0 shrink-0 flex-col',
+                    isCollapsed
+                        ? 'w-[64px] px-2 py-3 [@media(max-height:720px)]:py-2'
+                        : 'w-[216px] px-3 py-4 [@media(max-height:760px)]:py-3',
+                )}
+            >
+                <div
+                    className={cn(
+                        'flex min-h-11 items-center [@media(max-height:760px)]:min-h-10',
+                        isCollapsed ? 'flex-col gap-2' : 'justify-between',
+                    )}
+                >
                     <Link
                         to={ROUTE.HOME}
                         aria-label={t('page.navigationBar.home')}
                         className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
                         {isCollapsed ? (
-                            <img src="/img/image-43-2.png" alt="" aria-hidden="true" className="mt-2 size-[22px] object-contain" />
+                            <img
+                                src="/img/image-43-2.png"
+                                alt=""
+                                aria-hidden="true"
+                                className="mt-2 size-[22px] object-contain [@media(max-height:720px)]:mt-1"
+                            />
                         ) : (
                             <img
                                 src="/img/group-19.png"
                                 alt=""
                                 aria-hidden="true"
-                                className="h-[26px] w-auto max-w-[128px] object-contain"
+                                className="h-[26px] w-auto max-w-[128px] object-contain [@media(max-height:760px)]:h-6"
                             />
                         )}
                     </Link>

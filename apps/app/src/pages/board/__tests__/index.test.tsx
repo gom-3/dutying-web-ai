@@ -179,6 +179,21 @@ describe('BoardPage', () => {
         expect(within(activeMetricsPost!).getByText('4')).toHaveClass('text-main-1');
     });
 
+    it('marks today on the ward calendar', async () => {
+        const today = new Date();
+        const todayLabel = `${today.getMonth() + 1}월 ${today.getDate()}일 일정 0건`;
+
+        renderPage(<BoardPage />);
+
+        await waitFor(() => expect(mockGetSchedules).toHaveBeenCalled());
+
+        const todayCell = screen.getByRole('button', {name: todayLabel});
+        const todayBadge = within(todayCell).getByText(String(today.getDate()));
+
+        expect(todayCell).toHaveAttribute('aria-current', 'date');
+        expect(todayBadge).toHaveClass('rounded-full', 'bg-[#3182F6]', 'text-white');
+    });
+
     it('creates an all-day ward schedule spanning multiple days', async () => {
         const user = userEvent.setup();
         const tomorrow = new Date();
@@ -233,6 +248,25 @@ describe('BoardPage', () => {
                 endTime: null,
             }),
         );
+    });
+
+    it('keeps only the latest opened schedule date picker visible', async () => {
+        const user = userEvent.setup();
+        const {container} = renderPage(<BoardPage />);
+
+        await waitFor(() => expect(mockGetSchedules).toHaveBeenCalled());
+        await user.click(container.querySelector<HTMLButtonElement>('#board_schedule_create_button')!);
+
+        const dialog = await screen.findByRole('dialog', {name: '병동 일정 등록'});
+
+        await user.click(within(dialog).getByRole('button', {name: /시작일/}));
+
+        expect(within(dialog).getByText('일정 시작일')).toBeInTheDocument();
+
+        await user.click(within(dialog).getByRole('button', {name: /종료일/}));
+
+        expect(within(dialog).queryByText('일정 시작일')).not.toBeInTheDocument();
+        expect(within(dialog).getByText('일정 종료일')).toBeInTheDocument();
     });
 
     it('creates a timed ward schedule with required start and end times', async () => {

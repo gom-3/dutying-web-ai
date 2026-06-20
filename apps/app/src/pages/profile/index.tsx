@@ -175,6 +175,7 @@ function LanguageSelect({id, labelId, value, options, getOptionLabel, onChange, 
 export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const {t} = useTypedTranslation();
     const {i18n} = useTranslation();
+    const isModalLayout = layout === 'modal';
     const {
         state: {accountMe, accountMeStatus, _loaded},
         actions: {handleGetAccountMe, handleLogout},
@@ -215,8 +216,9 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const currentProfileImage = getCurrentProfileImage(accountMe, profileImg);
     const isAccountBootstrapPending = !_loaded || accountMeStatus === 'idle' || accountMeStatus === 'loading';
     const isAccountBootstrapError = accountMeStatus === 'error';
-    const isWardProfilePending = Boolean(accountMe?.wardId) && wardQuery.isPending && !selectedNurse;
-    const isWardProfileError = Boolean(accountMe?.wardId) && wardQuery.isError && !selectedNurse;
+    const shouldBlockOnWardProfile = !isModalLayout;
+    const isWardProfilePending = shouldBlockOnWardProfile && Boolean(accountMe?.wardId) && wardQuery.isPending && !selectedNurse;
+    const isWardProfileError = shouldBlockOnWardProfile && Boolean(accountMe?.wardId) && wardQuery.isError && !selectedNurse;
     const hasNurseProfile = Boolean(selectedNurse && writeNurse);
     const isDirty = isProfileFormDirty({
         originalNurse: selectedNurse,
@@ -457,7 +459,6 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                   confirmLabel: t('page.profile.confirm.logoutConfirm'),
                   tone: 'default' as const,
               };
-    const isModalLayout = layout === 'modal';
     const stateContainerClassName = cn(
         'mx-auto flex w-full items-center justify-center px-8',
         isModalLayout ? 'min-h-[360px] max-w-[560px] py-8' : 'h-full max-w-306',

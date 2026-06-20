@@ -92,7 +92,7 @@ const NavigationBarItem = ({
             aria-disabled={isDisabled ? true : undefined}
             disabled={isDisabled}
             className={cn(
-                'group relative flex min-h-11 w-full items-center rounded-[10px] font-apple text-[15px] leading-normal font-semibold transition-colors duration-150',
+                'group relative flex min-h-[clamp(38px,5.6vh,44px)] w-full items-center rounded-[10px] font-apple text-[15px] leading-normal font-semibold transition-colors duration-150',
                 'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
                 collapsed ? 'justify-center px-0' : 'justify-start gap-3 px-3',
                 isSelected ? 'bg-main-light text-[#844AFF]' : 'text-gray-3 hover:bg-gray-7 hover:text-sub-1',

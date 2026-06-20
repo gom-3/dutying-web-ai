@@ -24,6 +24,8 @@ const ROUTE = {
     WARD_INFO_SETTINGS: '/ward-info-settings',
     PROFILE: '/profile',
     DUTYING: '/dutying',
+    DUTYING_NOTICES: '/dutying/notices',
+    DUTYING_NOTICE_DETAIL: '/dutying/notices/:noticeId',
 };
 
 export type TRoute = TValues<typeof ROUTE>;

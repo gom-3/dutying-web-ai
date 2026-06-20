@@ -228,6 +228,7 @@ export const en: TLocale = {
                 webMakeSchedule: 'Create a schedule on web',
                 appSchedule: 'Check schedules in the app',
                 appDownload: 'Download app',
+                languageSelect: 'Select language',
                 tryDemo: 'Try demo',
                 viewDesktop: 'View desktop version',
                 viewMobile: 'View mobile version',
@@ -1306,30 +1307,51 @@ export const en: TLocale = {
         },
         onboardingJoinWard: {
             backToWardSelect: 'Back to ward selection',
-            title: 'Enter the ward code',
-            description: 'Enter the 6-character code shared by the ward owner to verify access and join.',
+            title: 'Enter a ward',
+            description: 'Enter the 6-character code shared by a ward admin to enter that ward.',
             codeInputAria: 'Ward code input',
             codeDigitAria: 'Ward code character {{index}}',
-            checkingPermission: 'Checking access permission.',
+            codeHelp: 'Enter the 6-character ward code using letters and numbers.',
+            checkingPermission: 'Entering ward.',
             invalidCode: 'This ward code does not exist. Check the code and try again.',
+            codeEntry: {
+                title: 'Enter with ward code',
+                description: 'Enter the 6-character code you received to join that ward.',
+            },
+            form: {
+                submit: 'Enter with code',
+                submitting: 'Entering...',
+            },
+            validation: {
+                incomplete: 'Enter all 6 characters.',
+                invalidCharacters: 'Only letters and numbers are allowed.',
+            },
+            registeredWards: {
+                title: 'Wards registered to your email',
+                description: 'Wards that registered your email as an admin appear here.',
+                loading: 'Loading registered wards.',
+                empty: 'No wards are registered to this account email yet. Enter with the ward code instead.',
+                loadFailed: 'Could not load registered wards. Enter with the ward code instead.',
+                enterAria: 'Enter {{hospitalName}} {{wardName}}',
+            },
             state: {
                 accountErrorTitle: 'Could not load account information',
                 accountErrorDescription: 'Please try again shortly. If the problem continues, sign in again.',
                 retry: 'Retry',
             },
             permission: {
-                eyebrow: 'Admin permission required',
-                title: 'Ask a ward admin for access',
-                titleWithWard: 'Ask an admin of {{hospitalName}} {{wardName}} for access',
+                eyebrow: 'Registered email required',
+                title: 'This account cannot enter',
+                titleWithWard: 'Cannot enter {{hospitalName}} {{wardName}}',
                 description:
-                    'The ward code was found, but this account does not have admin permission. The owner must register this account email as an admin before you can enter.',
+                    'The ward code is valid, but this account email is not registered as an admin for that ward. Ask the ward owner to register this account email.',
                 descriptionWithWard:
-                    'The ward code was found, but this account does not have admin permission. The owner of {{hospitalName}} {{wardName}} must register this account email as an admin before you can enter.',
+                    'To enter {{hospitalName}} {{wardName}}, this account email must be registered as a ward admin. Ask the ward owner to register this account email.',
                 close: 'Close',
                 confirm: 'OK',
             },
             toast: {
-                joinFailed: 'Could not join the ward. Check the code and try again.',
+                joinFailed: 'Could not enter the ward. Please try again.',
             },
         },
         wardInfoSettings: {

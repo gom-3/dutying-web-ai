@@ -139,8 +139,8 @@ const WardIdentity = ({collapsed, onItemNavigate, ward}: TWardIdentityProps) => 
 
     return (
         <>
-            <div className="mb-5">
-                <div className="mb-4 h-px w-full bg-gray-6" />
+            <div className="mb-5 [@media(max-height:760px)]:mb-3">
+                <div className="mb-4 h-px w-full bg-gray-6 [@media(max-height:760px)]:mb-3" />
                 <div className="px-2">
                     {supportingName ? (
                         <>
@@ -153,20 +153,26 @@ const WardIdentity = ({collapsed, onItemNavigate, ward}: TWardIdentityProps) => 
                                 </p>
                                 {wardCodeButton}
                             </div>
-                            <p className="mt-1 truncate text-[16px] leading-5 font-bold text-sub-1" title={primaryName}>
+                            <p
+                                className="mt-1 truncate text-[16px] leading-5 font-bold text-sub-1 [@media(max-height:760px)]:mt-0.5 [@media(max-height:760px)]:text-[15px] [@media(max-height:760px)]:leading-[18px]"
+                                title={primaryName}
+                            >
                                 {primaryName}
                             </p>
                         </>
                     ) : (
                         <div className="flex items-start justify-between gap-2">
-                            <p className="min-w-0 flex-1 truncate text-[16px] leading-5 font-bold text-sub-1" title={primaryName}>
+                            <p
+                                className="min-w-0 flex-1 truncate text-[16px] leading-5 font-bold text-sub-1 [@media(max-height:760px)]:text-[15px] [@media(max-height:760px)]:leading-[18px]"
+                                title={primaryName}
+                            >
                                 {primaryName}
                             </p>
                             {wardCodeButton}
                         </div>
                     )}
                 </div>
-                <div className="mt-3">
+                <div className="mt-3 [@media(max-height:760px)]:mt-2">
                     <NavigationBarItem
                         path={homeItem.path}
                         activePaths={homeItem.activePaths}
@@ -190,10 +196,16 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
     const pendingRequestCount = useTotalPendingRequestCount();
 
     return (
-        <nav aria-label={t('page.navigationBar.ariaLabel')} className={cn('flex w-full flex-1 flex-col', collapsed ? 'mt-5' : 'mt-6')}>
+        <nav
+            aria-label={t('page.navigationBar.ariaLabel')}
+            className={cn(
+                'flex min-h-0 w-full flex-1 flex-col',
+                collapsed ? 'mt-5 [@media(max-height:720px)]:mt-3' : 'mt-6 [@media(max-height:760px)]:mt-4',
+            )}
+        >
             <div>
                 {collapsed ? (
-                    <div className="mb-4">
+                    <div className="mb-4 [@media(max-height:720px)]:mb-3">
                         <NavigationBarItem
                             path={homeItem.path}
                             activePaths={homeItem.activePaths}
@@ -209,11 +221,33 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                 {sections.map((section, sectionIndex) => (
                     <div
                         key={section.labelKey}
-                        className={cn(collapsed ? (sectionIndex === 0 ? 'mt-0' : 'mt-4') : sectionIndex === 0 ? 'mt-0' : 'mt-7')}
+                        className={cn(
+                            sectionIndex === 0
+                                ? 'mt-0'
+                                : collapsed
+                                  ? 'mt-4 [@media(max-height:720px)]:mt-3'
+                                  : 'mt-7 [@media(max-height:760px)]:mt-4',
+                        )}
                     >
-                        <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
-                        {collapsed ? null : <div className="px-3 pb-2 text-[12px] font-semibold text-gray-4">{t(section.labelKey)}</div>}
-                        <div className={cn('flex flex-col', collapsed ? 'gap-2' : 'gap-1.5')}>
+                        <div
+                            className={cn(
+                                'h-px bg-gray-6',
+                                collapsed
+                                    ? 'mx-auto mb-4 w-8 [@media(max-height:720px)]:mb-3'
+                                    : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
+                            )}
+                        />
+                        {collapsed ? null : (
+                            <div className="px-3 pb-2 text-[12px] font-semibold text-gray-4 [@media(max-height:760px)]:pb-1 [@media(max-height:760px)]:text-[11px]">
+                                {t(section.labelKey)}
+                            </div>
+                        )}
+                        <div
+                            className={cn(
+                                'flex flex-col',
+                                collapsed ? 'gap-2 [@media(max-height:720px)]:gap-1' : 'gap-1.5 [@media(max-height:760px)]:gap-1',
+                            )}
+                        >
                             {section.items.map((item) => (
                                 <NavigationBarItem
                                     key={item.path ?? item.textKey ?? item.text}
@@ -231,7 +265,14 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                             ))}
                             {section.labelKey === 'page.navigationBar.sections.settings' ? (
                                 <>
-                                    <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto my-4 w-8' : 'my-4 w-full')} />
+                                    <div
+                                        className={cn(
+                                            'h-px bg-gray-6',
+                                            collapsed
+                                                ? 'mx-auto my-4 w-8 [@media(max-height:720px)]:my-2.5'
+                                                : 'my-4 w-full [@media(max-height:760px)]:my-2.5',
+                                        )}
+                                    />
                                     <NavigationBarItem
                                         path={accountItem.path}
                                         activePaths={accountItem.activePaths}
@@ -247,11 +288,21 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                     </div>
                 ))}
             </div>
-            <div className={cn('mt-auto shrink-0', collapsed ? 'pt-4' : 'pt-5')}>
-                <div className={cn('h-px bg-gray-6', collapsed ? 'mx-auto mb-4 w-8' : 'mb-4 w-full')} />
+            <div
+                className={cn(
+                    'mt-auto shrink-0',
+                    collapsed ? 'pt-4 [@media(max-height:720px)]:pt-2' : 'pt-5 [@media(max-height:760px)]:pt-3',
+                )}
+            >
+                <div
+                    className={cn(
+                        'h-px bg-gray-6',
+                        collapsed ? 'mx-auto mb-4 w-8 [@media(max-height:720px)]:mb-3' : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
+                    )}
+                />
                 <Link
                     to={ROUTE.DUTYING}
-                    className="mx-auto block w-fit rounded-[4px] px-1 py-1 text-center font-apple text-[12px] leading-4 font-medium text-gray-4 transition-colors hover:text-gray-3 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    className="mx-auto block w-fit rounded-[4px] px-1 py-1 text-center font-apple text-[12px] leading-4 font-medium text-gray-4 transition-colors hover:text-gray-3 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none [@media(max-height:720px)]:py-0.5"
                     onClick={onItemNavigate}
                 >
                     {t('page.navigationBar.items.dutying')}

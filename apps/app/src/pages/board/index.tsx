@@ -72,6 +72,7 @@ type TScheduleDraft = {
 };
 
 type TScheduleModalMode = 'create' | 'edit' | 'view';
+type TScheduleDatePickerId = 'start' | 'end';
 
 type TCalendarEvent =
     | {
@@ -814,23 +815,31 @@ function DeadlinePicker({value, onChange}: {value?: string; onChange: (deadlineD
 }
 
 function ScheduleDatePicker({
+    pickerId,
     label,
     value,
     invalid,
     minDate,
+    popoverAlign = 'left',
+    openPickerId,
+    onOpenPickerChange,
     disabled,
     onChange,
 }: {
+    pickerId: TScheduleDatePickerId;
     label: string;
     value: string;
     invalid: boolean;
     minDate?: string;
+    popoverAlign?: 'left' | 'right';
+    openPickerId: TScheduleDatePickerId | null;
+    onOpenPickerChange: (pickerId: TScheduleDatePickerId | null) => void;
     disabled: boolean;
     onChange: (scheduleDate: string) => void;
 }) {
     const todayKey = toDateKey(new Date());
     const today = useMemo(() => parseDateKey(todayKey), [todayKey]);
-    const [isOpen, setIsOpen] = useState(false);
+    const isOpen = openPickerId === pickerId;
     const [viewMonth, setViewMonth] = useState(() => {
         const initialDate = value ? parseDateKey(value) : today;
 
@@ -861,12 +870,12 @@ function ScheduleDatePicker({
 
         const handlePointerDown = (event: MouseEvent) => {
             if (!pickerRef.current?.contains(event.target as Node)) {
-                setIsOpen(false);
+                onOpenPickerChange(null);
             }
         };
         const handleKeyDown = (event: globalThis.KeyboardEvent) => {
             if (event.key === 'Escape') {
-                setIsOpen(false);
+                onOpenPickerChange(null);
             }
         };
 
@@ -877,7 +886,7 @@ function ScheduleDatePicker({
             document.removeEventListener('mousedown', handlePointerDown);
             document.removeEventListener('keydown', handleKeyDown);
         };
-    }, [isOpen]);
+    }, [isOpen, onOpenPickerChange]);
 
     const moveViewMonth = (delta: number) => {
         setViewMonth((current) => {
@@ -893,7 +902,7 @@ function ScheduleDatePicker({
         if (minDate && compareDateKey(dateKey, minDate) < 0) return;
 
         onChange(dateKey);
-        setIsOpen(false);
+        onOpenPickerChange(null);
     };
     const isDateDisabled = (dateKey: string) => Boolean(minDate && compareDateKey(dateKey, minDate) < 0);
 
@@ -911,7 +920,7 @@ function ScheduleDatePicker({
                     invalid ? 'bg-white ring-[#E85D75]' : isOpen ? undefined : 'ring-transparent focus:ring-main-3',
                 )}
                 onClick={() => {
-                    if (!disabled) setIsOpen((current) => !current);
+                    if (!disabled) onOpenPickerChange(isOpen ? null : pickerId);
                 }}
                 disabled={disabled}
                 aria-label={boardT('date.datePickerButtonAria', {label, value: value ? formatDate(value) : boardT('date.datePlaceholder')})}
@@ -940,18 +949,23 @@ function ScheduleDatePicker({
             </button>
 
             {isOpen ? (
-                <div className="absolute top-full left-0 z-50 mt-2 w-full max-w-[calc(100vw-48px)] rounded-[14px] bg-white p-4 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-gray-6">
+                <div
+                    className={cn(
+                        'absolute top-full z-50 mt-2 w-[304px] max-w-[calc(100vw-48px)] rounded-[14px] bg-white p-3.5 shadow-[0_20px_60px_rgba(15,23,42,0.16)] ring-1 ring-gray-6',
+                        popoverAlign === 'right' ? 'right-0' : 'left-0',
+                    )}
+                >
                     <div className="flex items-start justify-between gap-3">
                         <div>
-                            <p className="text-[13px] font-semibold text-gray-3">{boardT('schedule.datePickerHeader', {label})}</p>
-                            <p className="mt-1 text-[18px] font-semibold text-sub-1">
+                            <p className="text-[12px] font-semibold text-gray-3">{boardT('schedule.datePickerHeader', {label})}</p>
+                            <p className="mt-0.5 text-[16px] font-semibold text-sub-1">
                                 {value ? formatDate(value) : boardT('date.datePlaceholder')}
                             </p>
                         </div>
                         <button
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => onOpenPickerChange(null)}
                             aria-label={boardT('schedule.datePickerClose')}
                             title={boardT('schedule.datePickerClose')}
                         >
@@ -959,7 +973,7 @@ function ScheduleDatePicker({
                         </button>
                     </div>
 
-                    <div className="mt-4 grid grid-cols-3 gap-2">
+                    <div className="mt-3 grid grid-cols-3 gap-1.5">
                         {quickChoices.map((choice) => {
                             const choiceKey = toDateKey(choice.date);
                             const isSelected = value === choiceKey;
@@ -970,7 +984,7 @@ function ScheduleDatePicker({
                                     key={choice.label}
                                     type="button"
                                     className={cn(
-                                        'h-9 rounded-[9px] text-[13px] font-semibold transition-colors',
+                                        'h-8 rounded-[8px] text-[12px] font-semibold transition-colors',
                                         isSelected
                                             ? 'bg-[#3182F6] text-white'
                                             : choiceDisabled
@@ -986,7 +1000,7 @@ function ScheduleDatePicker({
                         })}
                     </div>
 
-                    <div className="mt-4 flex items-center justify-between">
+                    <div className="mt-3 flex items-center justify-between">
                         <button
                             type="button"
                             className="grid h-8 w-8 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
@@ -1008,9 +1022,9 @@ function ScheduleDatePicker({
                         </button>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-7 text-center text-[11px] font-semibold text-gray-4">
+                    <div className="mt-2 grid grid-cols-7 text-center text-[11px] font-semibold text-gray-4">
                         {getWeekdayLabels().map((dayLabel) => (
-                            <span key={dayLabel} className="h-7 leading-7">
+                            <span key={dayLabel} className="h-6 leading-6">
                                 {dayLabel}
                             </span>
                         ))}
@@ -1026,7 +1040,7 @@ function ScheduleDatePicker({
                                     key={cell.key}
                                     type="button"
                                     className={cn(
-                                        'grid h-9 place-items-center rounded-full text-[13px] font-semibold transition-colors',
+                                        'grid aspect-square w-full place-items-center rounded-full text-[12px] font-semibold transition-colors',
                                         cell.inMonth ? 'text-sub-2' : 'text-gray-5',
                                         isSelected
                                             ? 'bg-[#3182F6] text-white shadow-[0_6px_14px_rgba(49,130,246,0.24)]'
@@ -1178,6 +1192,7 @@ function WardScheduleModal({
         !draft.allDay &&
         draft.startDate === draft.endDate &&
         Boolean(draft.startTime && draft.endTime && draft.startTime >= draft.endTime);
+    const [openDatePicker, setOpenDatePicker] = useState<TScheduleDatePickerId | null>(null);
     const modalTitle = isViewMode
         ? boardT('schedule.modalView')
         : isEditMode
@@ -1301,17 +1316,24 @@ function WardScheduleModal({
                         <div className="grid gap-1.5">
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
                                 <ScheduleDatePicker
+                                    pickerId="start"
                                     label={boardT('schedule.startDate')}
                                     value={draft.startDate}
                                     invalid={isStartDateInvalid}
+                                    openPickerId={openDatePicker}
+                                    onOpenPickerChange={setOpenDatePicker}
                                     disabled={false}
                                     onChange={updateStartDate}
                                 />
                                 <ScheduleDatePicker
+                                    pickerId="end"
                                     label={boardT('schedule.endDate')}
                                     value={draft.endDate}
                                     invalid={isEndDateInvalid}
                                     minDate={draft.startDate}
+                                    popoverAlign="right"
+                                    openPickerId={openDatePicker}
+                                    onOpenPickerChange={setOpenDatePicker}
                                     disabled={false}
                                     onChange={updateEndDate}
                                 />
@@ -1506,6 +1528,7 @@ function DeadlineCalendar({
         [calendarEvents],
     );
     const defaultScheduleDate = getDefaultScheduleDateForMonth(year, month);
+    const todayKey = toDateKey(new Date());
     const visibleEvents = selectedDate ? (eventsByDate.get(selectedDate) ?? []) : monthEvents;
 
     useEffect(() => {
@@ -1566,13 +1589,14 @@ function DeadlineCalendar({
                             const hasSchedule = dayEvents.some((event) => event.kind === 'schedule');
                             const hasEvent = dayEvents.length > 0;
                             const isSelected = selectedDate === cell.key;
+                            const isToday = cell.key === todayKey;
 
                             return (
                                 <button
                                     key={cell.key}
                                     type="button"
                                     className={cn(
-                                        'relative aspect-square rounded-[7px] text-[11px] font-semibold transition-colors disabled:cursor-default',
+                                        'relative grid aspect-square place-items-center rounded-[7px] text-[11px] font-semibold transition-colors disabled:cursor-default',
                                         cell.inMonth ? 'text-sub-2' : 'text-gray-5',
                                         isSelected
                                             ? 'bg-sub-1 text-white hover:bg-sub-1'
@@ -1585,6 +1609,7 @@ function DeadlineCalendar({
                                                   : undefined,
                                     )}
                                     disabled={!cell.inMonth}
+                                    aria-current={isToday ? 'date' : undefined}
                                     onClick={() => {
                                         setSelectedDate(cell.key);
                                     }}
@@ -1594,7 +1619,14 @@ function DeadlineCalendar({
                                         selectedSuffix: isSelected ? boardT('schedule.selectedSuffix') : '',
                                     })}
                                 >
-                                    {cell.date.getDate()}
+                                    <span
+                                        className={cn(
+                                            'relative z-10 grid size-5 place-items-center rounded-full',
+                                            isToday && !isSelected ? 'bg-[#3182F6] text-white' : undefined,
+                                        )}
+                                    >
+                                        {cell.date.getDate()}
+                                    </span>
                                     {hasEvent ? (
                                         <span className="absolute right-1 bottom-1 flex gap-0.5" aria-hidden="true">
                                             {dayEvents.slice(0, 2).map((event) => (

@@ -1,4 +1,6 @@
-import {Bell, ExternalLink, FileText, MessageCircle, ShieldCheck, type LucideIcon} from 'lucide-react';
+import {Bell, ChevronRight, ExternalLink, FileText, MessageCircle, ShieldCheck, type LucideIcon} from 'lucide-react';
+import {Link} from 'react-router-dom';
+import ROUTE from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Card from '@/shared/ui/Card';
 
@@ -10,6 +12,7 @@ type TDutyingLinkItem = {
     titleKey: TI18nKey;
     descriptionKey: TI18nKey;
     href?: string;
+    to?: string;
     Icon: LucideIcon;
 };
 
@@ -27,6 +30,8 @@ function DutyingLinkItem({item}: {item: TDutyingLinkItem}) {
             </span>
             {item.href ? (
                 <ExternalLink className="size-4 shrink-0 text-gray-4" aria-hidden="true" />
+            ) : item.to ? (
+                <ChevronRight className="size-4 shrink-0 text-gray-4" aria-hidden="true" />
             ) : (
                 <span className="shrink-0 rounded-full bg-gray-7 px-2.5 py-1 font-apple text-[11px] font-semibold text-gray-3">
                     {t('page.dutying.comingSoon')}
@@ -36,6 +41,14 @@ function DutyingLinkItem({item}: {item: TDutyingLinkItem}) {
     );
     const className =
         'flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-left transition-colors focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none';
+
+    if (item.to) {
+        return (
+            <Link to={item.to} className={`${className} hover:bg-gray-7`}>
+                {content}
+            </Link>
+        );
+    }
 
     if (!item.href) {
         return (
@@ -58,6 +71,7 @@ function DutyingPage() {
         {
             titleKey: 'page.dutying.items.notice.title',
             descriptionKey: 'page.dutying.items.notice.description',
+            to: ROUTE.DUTYING_NOTICES,
             Icon: Bell,
         },
         {

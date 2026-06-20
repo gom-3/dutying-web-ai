@@ -226,6 +226,7 @@ export const ko = {
                 webMakeSchedule: '웹에서 근무표 만들기',
                 appSchedule: '앱에서 근무표 확인하기',
                 appDownload: '앱 다운로드',
+                languageSelect: '언어 선택',
                 tryDemo: '체험하기',
                 viewDesktop: 'PC 버전으로 보기',
                 viewMobile: '모바일 버전으로 보기',
@@ -1303,30 +1304,51 @@ export const ko = {
         },
         onboardingJoinWard: {
             backToWardSelect: '병동 선택으로',
-            title: '병동 코드를 입력해요',
-            description: '병동 오너가 공유한 6자리 코드를 입력하면 권한 확인 후 바로 입장해요.',
+            title: '병동에 입장해요',
+            description: '병동 관리자에게 공유받은 6자리 코드를 입력하면 해당 병동으로 입장해요.',
             codeInputAria: '병동 코드 입력',
             codeDigitAria: '병동 코드 {{index}}번째 자리',
-            checkingPermission: '입장 권한을 확인하는 중이에요.',
+            codeHelp: '영문과 숫자로 된 6자리 병동 코드를 입력해 주세요.',
+            checkingPermission: '병동에 입장하는 중이에요.',
             invalidCode: '존재하지 않는 병동 코드예요. 코드를 다시 확인해 주세요.',
+            codeEntry: {
+                title: '병동 코드로 입장',
+                description: '공유받은 6자리 코드를 입력하면 해당 병동으로 입장해요.',
+            },
+            form: {
+                submit: '코드로 입장',
+                submitting: '입장 중...',
+            },
+            validation: {
+                incomplete: '6자리를 모두 입력해 주세요.',
+                invalidCharacters: '영문과 숫자만 사용할 수 있어요.',
+            },
+            registeredWards: {
+                title: '내 이메일로 등록된 병동',
+                description: '병동에서 내 이메일을 관리자로 등록해 둔 경우 여기에 보여요.',
+                loading: '등록된 병동을 불러오고 있어요.',
+                empty: '현재 계정 이메일로 등록된 병동이 아직 없어요. 병동 코드로 입장해 주세요.',
+                loadFailed: '등록된 병동 정보를 불러오지 못했어요. 병동 코드로 입장해 주세요.',
+                enterAria: '{{hospitalName}} {{wardName}} 입장',
+            },
             state: {
                 accountErrorTitle: '계정 정보를 불러오지 못했어요',
                 accountErrorDescription: '잠시 후 다시 시도해 주세요. 문제가 계속되면 다시 로그인해 주세요.',
                 retry: '다시 시도',
             },
             permission: {
-                eyebrow: '관리자 권한 필요',
-                title: '병동 관리자에게 요청해 주세요',
-                titleWithWard: '{{hospitalName}} {{wardName}} 관리자에게 요청해 주세요',
+                eyebrow: '등록된 이메일 필요',
+                title: '이 계정으로는 입장할 수 없어요',
+                titleWithWard: '{{hospitalName}} {{wardName}}에 입장할 수 없어요',
                 description:
-                    '병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요. 최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.',
+                    '병동 코드는 맞지만 현재 계정 이메일이 해당 병동 관리자로 등록되어 있지 않아요. 병동 오너에게 이 계정 이메일 등록을 요청해 주세요.',
                 descriptionWithWard:
-                    '병동 코드는 확인됐지만 현재 계정에는 관리자 권한이 없어요. {{hospitalName}} {{wardName}} 최고 관리자(오너)가 현재 계정의 이메일을 관리자로 등록해 둬야 입장할 수 있어요.',
+                    '{{hospitalName}} {{wardName}}에 입장하려면 현재 계정 이메일이 병동 관리자로 등록되어 있어야 해요. 병동 오너에게 이 계정 이메일 등록을 요청해 주세요.',
                 close: '닫기',
                 confirm: '확인',
             },
             toast: {
-                joinFailed: '병동에 들어가지 못했어요. 코드를 다시 확인해 주세요.',
+                joinFailed: '병동에 입장하지 못했어요. 다시 시도해 주세요.',
             },
         },
         wardInfoSettings: {

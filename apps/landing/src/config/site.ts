@@ -14,6 +14,7 @@ type SiteEnv = {
     PUBLIC_APP_SITE_URL?: string;
     PUBLIC_DOCS_SITE_URL?: string;
     PUBLIC_TERMS_URL?: string;
+    PUBLIC_PRIVACY_POLICY_URL?: string;
 };
 
 const readSiteEnv = (): SiteEnv => ({
@@ -21,6 +22,7 @@ const readSiteEnv = (): SiteEnv => ({
     PUBLIC_APP_SITE_URL: import.meta.env.PUBLIC_APP_SITE_URL,
     PUBLIC_DOCS_SITE_URL: import.meta.env.PUBLIC_DOCS_SITE_URL,
     PUBLIC_TERMS_URL: import.meta.env.PUBLIC_TERMS_URL,
+    PUBLIC_PRIVACY_POLICY_URL: import.meta.env.PUBLIC_PRIVACY_POLICY_URL,
 });
 
 export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
@@ -28,6 +30,7 @@ export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
     const appOrigin = getRuntimeOrigin(env.PUBLIC_APP_SITE_URL, 'https://app.dutying.net');
     const docsOrigin = getRuntimeOrigin(env.PUBLIC_DOCS_SITE_URL, 'https://docs.dutying.net');
     const termsUrl = env.PUBLIC_TERMS_URL ?? 'https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4';
+    const privacyPolicyUrl = env.PUBLIC_PRIVACY_POLICY_URL ?? 'https://www.notion.so/35c98c0fae25805cb6d5e2ce5f591f42?source=copy_link';
 
     return {
         productName: 'Dutying',
@@ -36,6 +39,7 @@ export const createSiteConfig = (env: SiteEnv = readSiteEnv()) => {
         docsOrigin,
         legal: {
             terms: termsUrl,
+            privacyPolicy: privacyPolicyUrl,
         },
         appLinks: {
             home: appOrigin,

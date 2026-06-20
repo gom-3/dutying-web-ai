@@ -82,7 +82,7 @@
 .mobile-hero-title-rotator {
     display: grid;
     width: 100%;
-    min-height: 5.9em;
+    min-height: 2.5em;
     overflow: hidden;
     -webkit-mask-image: none;
     mask-image: none;
