@@ -1,18 +1,20 @@
 import {cn} from '@dutying/utils/style';
 import {ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
 import {type FormEvent, useCallback, useEffect, useRef, useState} from 'react';
-import {Link, useLocation, useNavigate} from 'react-router';
+import {Link, useLocation} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
 import {buildSocialSignupRegisterPath} from '@/features/auth/model/social-signup';
+import i18n from '@/i18n';
 import {AuthAPI} from '@/shared/api';
 import {AppleIcon, KakaoIcon} from '@/shared/assets/svg';
-import {buildAuthAuthorizeUrl, sanitizeInternalPath} from '@/shared/config/runtime';
+import {buildAuthAuthorizeUrl, RUNTIME_CONFIG, sanitizeInternalPath} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {createMarketingAgreementRecord, createTermsAgreementRecord} from '@/shared/legal/agreements';
 import './index.css';
 
-type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm', string>>;
+type TSignupErrors = Partial<Record<'name' | 'email' | 'password' | 'passwordConfirm' | 'terms', string>>;
 type TPasswordResetErrors = Partial<Record<'email' | 'resetToken' | 'newPassword' | 'newPasswordConfirm', string>>;
 
 const FIELD_CLASS =
@@ -51,10 +53,74 @@ const FieldError = ({id, message}: {id: string; message?: string}) =>
             {message}
         </p>
     ) : null;
+const LegalAgreementOptions = ({
+    t,
+    termsAgreed,
+    marketingAgreed,
+    termsError,
+    onTermsChange,
+    onMarketingChange,
+}: {
+    t: ReturnType<typeof useTypedTranslation>['t'];
+    termsAgreed: boolean;
+    marketingAgreed: boolean;
+    termsError?: string;
+    onTermsChange: (checked: boolean) => void;
+    onMarketingChange: (checked: boolean) => void;
+}) => (
+    <div className="space-y-2 rounded-[12px] bg-gray-7 px-3 py-3 text-sm text-sub-2">
+        <label className="flex cursor-pointer items-start gap-2">
+            <input
+                type="checkbox"
+                checked={termsAgreed}
+                onChange={(event) => onTermsChange(event.target.checked)}
+                aria-invalid={Boolean(termsError)}
+                aria-describedby={termsError ? 'signup-terms-error' : undefined}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-main-1"
+            />
+            <span>
+                <span className="font-semibold text-main-1">{t('page.login.requiredConsentLabel')}</span>{' '}
+                <a
+                    href={RUNTIME_CONFIG.docs.termsOfService}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sub-2 underline underline-offset-[3px]"
+                >
+                    {t('page.login.termsOfService')}
+                </a>
+                {t('page.login.termsAgreementSuffix')}
+            </span>
+        </label>
+        <FieldError id="signup-terms-error" message={termsError} />
+        <label className="flex cursor-pointer items-start gap-2">
+            <input
+                type="checkbox"
+                checked={marketingAgreed}
+                onChange={(event) => onMarketingChange(event.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-main-1"
+            />
+            <span>
+                <span className="font-semibold text-gray-3">{t('page.login.optionalConsentLabel')}</span>{' '}
+                {t('page.login.marketingConsent')}
+            </span>
+        </label>
+        <p className="pl-6 text-xs leading-5 text-gray-3">
+            {t('page.login.privacyNoticePrefix')}{' '}
+            <a
+                href={RUNTIME_CONFIG.docs.privacyPolicy}
+                target="_blank"
+                rel="noreferrer"
+                className="text-gray-3 underline underline-offset-[3px]"
+            >
+                {t('page.login.privacyPolicy')}
+            </a>
+            {t('page.login.privacyNoticeSuffix')}
+        </p>
+    </div>
+);
 
 function LoginPage() {
     const {t} = useTypedTranslation();
-    const navigate = useNavigate();
     const {pathname, search} = useLocation();
     const {
         actions: {handleLogin},
@@ -70,6 +136,8 @@ function LoginPage() {
     const [signupEmailVerificationToken, setSignupEmailVerificationToken] = useState<string | null>(null);
     const [signupPassword, setSignupPassword] = useState('');
     const [signupPasswordConfirm, setSignupPasswordConfirm] = useState('');
+    const [isTermsAgreed, setIsTermsAgreed] = useState(false);
+    const [isMarketingAgreed, setIsMarketingAgreed] = useState(false);
     const [loginError, setLoginError] = useState<string | null>(null);
     const [loginNotice, setLoginNotice] = useState<string | null>(null);
     const [signupErrors, setSignupErrors] = useState<TSignupErrors>({});
@@ -188,6 +256,10 @@ function LoginPage() {
             nextErrors.passwordConfirm = t('page.login.validation.passwordMismatch');
         }
 
+        if (!isTermsAgreed) {
+            nextErrors.terms = t('page.login.validation.termsRequired');
+        }
+
         setSignupErrors(nextErrors);
         setSignupVerificationError(nextVerificationError);
         if (nextVerificationError) {
@@ -288,6 +360,13 @@ function LoginPage() {
 
         if (value && signupPassword === value) {
             clearSignupErrors('passwordConfirm');
+        }
+    };
+    const handleTermsAgreementChange = (checked: boolean) => {
+        setIsTermsAgreed(checked);
+
+        if (checked) {
+            clearSignupErrors('terms');
         }
     };
     const handleSignupVerificationCodeChange = (value: string) => {
@@ -525,11 +604,18 @@ function LoginPage() {
         setIsSubmitting(true);
 
         try {
+            const legalAgreements = [createTermsAgreementRecord(i18n.resolvedLanguage ?? i18n.language)];
+
+            if (isMarketingAgreed) {
+                legalAgreements.push(createMarketingAgreementRecord(i18n.resolvedLanguage ?? i18n.language));
+            }
+
             const response = await AuthAPI.passwordSignup({
                 name: signupName.trim(),
                 email: signupEmail.trim(),
                 emailVerificationToken: signupEmailVerificationToken ?? undefined,
                 password: signupPassword,
+                legalAgreements,
             });
 
             handleLogin(response.accessToken, ROUTE.REGISTER);
@@ -574,12 +660,13 @@ function LoginPage() {
                 </div>
             </aside>
 
-            <div className="z-10 flex min-h-screen w-full min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 py-10 md:px-16 xl:px-26.25">
-                <button type="button" className="flex cursor-pointer items-center" onClick={() => navigate(ROUTE.ROOT)}>
-                    <img src="/img/group-19.png" alt="" aria-hidden="true" className="mt-8 h-[34px] w-auto max-w-[166px] object-contain" />
-                </button>
-
-                <div className={`mt-6 w-full ${isSignupPage ? 'max-w-[560px]' : 'max-w-[480px]'} md:mt-10`}>
+            <div
+                className={cn(
+                    'z-10 flex min-h-screen w-full min-w-0 flex-1 shrink-0 flex-col items-center bg-white px-5 md:px-16 xl:px-26.25',
+                    isSignupPage ? 'pt-2 pb-10 md:pt-3' : 'py-10',
+                )}
+            >
+                <div className={cn('w-full', isSignupPage ? 'mt-0 max-w-[560px]' : 'mt-1 max-w-[480px] md:mt-3')}>
                     {isDemoSignupFlow ? (
                         <div className="mb-6 rounded-[16px] border border-main-3/40 bg-main-light px-5 py-4">
                             <p className="font-apple text-sm font-semibold text-main-1">{t('page.login.demoSignupTitle')}</p>
@@ -943,6 +1030,15 @@ function LoginPage() {
                                     {signupError}
                                 </p>
                             ) : null}
+
+                            <LegalAgreementOptions
+                                t={t}
+                                termsAgreed={isTermsAgreed}
+                                marketingAgreed={isMarketingAgreed}
+                                termsError={signupErrors.terms}
+                                onTermsChange={handleTermsAgreementChange}
+                                onMarketingChange={setIsMarketingAgreed}
+                            />
 
                             <button
                                 type="submit"

@@ -1,7 +1,7 @@
 import {useQueryClient} from '@tanstack/react-query';
 import {useCallback, useEffect, useMemo, useState} from 'react';
 import toast from 'react-hot-toast';
-import {BouncingDots} from '@/components/loading-ui/bouncing-dots';
+import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {docToWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
@@ -150,7 +150,7 @@ export function FixedShifts() {
                         onClick={() => runTransition('prev', useCase.prev)}
                         disabled={!canPrev || isSaving || transitioning !== null}
                     >
-                        {transitioning === 'prev' ? <BouncingDots className="w-5 shrink-0 text-main-1" /> : null}
+                        <BouncingDotsSlot active={transitioning === 'prev'} className="w-5 shrink-0 text-main-1" />
                         {transitioning === 'prev' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.previous')}
                     </Button>
                     <Button
@@ -160,7 +160,7 @@ export function FixedShifts() {
                         onClick={() => void handleNext()}
                         disabled={nextDisabled}
                     >
-                        {isSaving ? <BouncingDots className="w-5 shrink-0 text-white" /> : null}
+                        <BouncingDotsSlot active={isSaving} className="w-5 shrink-0 text-white" />
                         {isSaving ? t('page.makeShift.navigation.saving') : t('page.makeShift.navigation.next')}
                     </Button>
                 </div>

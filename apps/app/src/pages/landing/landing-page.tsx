@@ -565,6 +565,10 @@ function HeaderLanguageMenu() {
                 return t('page.profile.language.ja');
             case 'en':
                 return t('page.profile.language.en');
+            case 'zh':
+                return t('page.profile.language.zh');
+            case 'th':
+                return t('page.profile.language.th');
         }
     };
     const handleLanguageChange = (language: TPreferredLanguage) => {
@@ -1001,7 +1005,7 @@ function MobileAppLanding() {
                         <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
                             {t('page.login.termsOfService')}
                         </a>
-                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="font-bold hover:text-main-1">
                             {t('page.login.privacyPolicy')}
                         </a>
                     </div>
@@ -1234,7 +1238,7 @@ function LandingPage() {
                         <a href={termsOfServiceLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
                             {t('page.login.termsOfService')}
                         </a>
-                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="hover:text-main-1">
+                        <a href={privacyPolicyLink} target="_blank" rel="noreferrer" className="font-bold hover:text-main-1">
                             {t('page.login.privacyPolicy')}
                         </a>
                     </div>
