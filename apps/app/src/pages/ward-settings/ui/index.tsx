@@ -842,36 +842,40 @@ function ConstraintsContent({
         );
     }
 
+    const shouldShowTeamSwitcher = state.shiftTeams.length > 1;
+
     return (
         <div className="mx-auto w-full max-w-[960px]">
-            <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div>
-                    <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.wardSettings.constraints.teamLabel')}</p>
-                    <p className="mt-1 font-apple text-sm text-gray-3">{t('page.wardSettings.constraints.teamDescription')}</p>
-                </div>
+            {shouldShowTeamSwitcher ? (
+                <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <p className="font-apple text-sm font-semibold text-sub-2.5">{t('page.wardSettings.constraints.teamLabel')}</p>
+                        <p className="mt-1 font-apple text-sm text-gray-3">{t('page.wardSettings.constraints.teamDescription')}</p>
+                    </div>
 
-                <div className="max-w-full rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5">
-                    <div className="scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap">
-                        {state.shiftTeams.map((team) => {
-                            const active = team.shiftTeamId === state.currentShiftTeamId;
+                    <div className="max-w-full rounded-[12px] border border-[#4F5A71] bg-[#3D4658] p-0.5">
+                        <div className="scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap">
+                            {state.shiftTeams.map((team) => {
+                                const active = team.shiftTeamId === state.currentShiftTeamId;
 
-                            return (
-                                <button
-                                    key={team.shiftTeamId}
-                                    type="button"
-                                    className={cn(
-                                        'rounded-[9px] px-3 py-2 font-apple text-sm font-semibold transition-colors',
-                                        active ? 'bg-white text-sub-1' : 'text-[#AEB7C7] hover:text-[#D2D9E5]',
-                                    )}
-                                    onClick={() => actions.selectShiftTeam(team.shiftTeamId)}
-                                >
-                                    {team.name}
-                                </button>
-                            );
-                        })}
+                                return (
+                                    <button
+                                        key={team.shiftTeamId}
+                                        type="button"
+                                        className={cn(
+                                            'rounded-[9px] px-3 py-2 font-apple text-sm font-semibold transition-colors',
+                                            active ? 'bg-white text-sub-1' : 'text-[#AEB7C7] hover:text-[#D2D9E5]',
+                                        )}
+                                        onClick={() => actions.selectShiftTeam(team.shiftTeamId)}
+                                    >
+                                        {team.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
-            </div>
+            ) : null}
 
             <ShiftConstraintRules
                 wardId={state.wardId}

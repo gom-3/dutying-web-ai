@@ -572,7 +572,7 @@ export interface IWardAPI {
         shiftNurseId: number,
         wardShiftTypeId: number | null,
     ) => Promise<void>;
-    acceptRequestShift: (wardId: number, reqShiftId: number, isAccepted: boolean | null) => Promise<void>;
+    acceptRequestShift: (wardId: number, reqShiftId: number, isAccepted: boolean) => Promise<void>;
     postShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<void>;
     getShiftTeamNurses: (wardId: number, shiftTeamId: number) => Promise<TNurseResponse[]>;
     getShiftTeams: (wardId: number) => Promise<TShiftTeamResponse[]>;

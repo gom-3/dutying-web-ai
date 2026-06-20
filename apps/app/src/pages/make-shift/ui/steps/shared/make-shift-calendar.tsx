@@ -1448,7 +1448,9 @@ export function MakeShiftCalendar({
                                                 )}
                                                 lastShiftCells={docEntry.row.lastCells}
                                                 days={shift.days}
+                                                columns={doc.columns}
                                                 cells={docEntry.row.cells}
+                                                requestCells={doc.requestCells}
                                                 rowIndex={docEntry.index}
                                                 shiftNurseId={row.shiftNurse.shiftNurseId}
                                                 shortNameToType={shortNameToType}
@@ -1556,7 +1558,9 @@ type TCalendarRowLeftProps = {
     lastShifts: (TWardShiftType | null)[];
     lastShiftCells?: TCellValue[];
     days: TShift['days'];
+    columns: TDutyDoc['columns'];
     cells: TDutyDoc['rows'][number]['cells'];
+    requestCells: TDutyDoc['requestCells'];
     rowIndex: number;
     shiftNurseId: number;
     shortNameToType: Map<string, TWardShiftType>;
@@ -1593,7 +1597,9 @@ function CalendarRowLeft({
     lastShifts,
     lastShiftCells,
     days,
+    columns,
     cells,
+    requestCells,
     rowIndex,
     shiftNurseId,
     shortNameToType,
@@ -1837,7 +1843,9 @@ function CalendarRowLeft({
                         })}
                     {days.map((day, j) => {
                         const shiftType = getCellShiftType(j);
-                        const reqId = wardReqShiftList[j] ?? null;
+                        const date = columns[j];
+                        const requestCellKey = date ? `${shiftNurseId}|${date}` : null;
+                        const reqId = requestCellKey && requestCells[requestCellKey] === true ? (wardReqShiftList[j] ?? null) : null;
                         const reqType = reqId != null ? idToType.get(reqId) : null;
                         const cellViolationList = showFaults ? violationsByDayCol.get(j) : undefined;
                         const cellViolations = getUniqueViolationsForDisplay(cellViolationList ?? []);

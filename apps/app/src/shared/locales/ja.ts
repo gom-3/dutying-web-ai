@@ -540,7 +540,7 @@ export const ja: TLocale = {
             },
             savePreferences: '言語設定を保存',
             savingPreferences: '保存中...',
-            preferencesSaved: '言語とサービス地域を保存しました。',
+            preferencesSaved: '言語を保存しました。',
             preferencesFailed: '言語設定を保存できませんでした。',
             name: '名前',
             namePlaceholder: '名前を入力してください',

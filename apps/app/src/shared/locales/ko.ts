@@ -532,7 +532,7 @@ export const ko = {
             },
             savePreferences: '언어 설정 저장',
             savingPreferences: '저장 중...',
-            preferencesSaved: '언어와 서비스 지역을 저장했어요.',
+            preferencesSaved: '언어를 저장했어요.',
             preferencesFailed: '언어 설정을 저장하지 못했어요.',
             name: '이름',
             namePlaceholder: '이름을 입력하세요',

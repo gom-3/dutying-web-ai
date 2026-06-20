@@ -28,6 +28,10 @@ const ROUTE = {
     DUTYING_NOTICE_DETAIL: '/dutying/notices/:noticeId',
 };
 
+export const MEMBER_CONNECTION_MANAGE_SEARCH_PARAM = 'connectionManage';
+export const MEMBER_CONNECTION_MANAGE_SEARCH_VALUE = 'open';
+export const MEMBER_CONNECTION_MANAGE_PATH = `${ROUTE.MEMBER}?${MEMBER_CONNECTION_MANAGE_SEARCH_PARAM}=${MEMBER_CONNECTION_MANAGE_SEARCH_VALUE}`;
+
 export type TRoute = TValues<typeof ROUTE>;
 
 export default ROUTE;

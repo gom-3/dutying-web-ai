@@ -354,7 +354,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('제약 조건을 관리하려면 먼저 근무팀을 만들어 주세요.')).toBeInTheDocument();
     });
 
-    it('제약 조건 탭에서 근무표 플로우의 제약조건 UI를 보여준다', () => {
+    it('제약 조건 탭에서 팀이 하나이면 팀 탭 없이 제약조건 UI를 보여준다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
                 state: {
@@ -365,7 +365,8 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('대상 팀')).toBeInTheDocument();
+        expect(screen.queryByText('대상 팀')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '중환자실 A팀'})).not.toBeInTheDocument();
         expect(screen.getByTestId('shift-constraint-rules')).toHaveTextContent('rules:1:1:settings');
     });
 
@@ -391,6 +392,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
+        expect(screen.getByText('대상 팀')).toBeInTheDocument();
         await user.click(screen.getByRole('button', {name: '중환자실 B팀'}));
 
         expect(selectShiftTeam).toHaveBeenCalledWith(2);

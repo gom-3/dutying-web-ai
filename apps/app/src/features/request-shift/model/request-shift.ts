@@ -98,6 +98,10 @@ export const getAdjacentRequestShiftDate = (year: number, month: number, type: T
           };
 };
 
+export const getNextRequestShiftDate = (baseDate = new Date()) => {
+    return getAdjacentRequestShiftDate(baseDate.getFullYear(), baseDate.getMonth() + 1, 'next');
+};
+
 export const getRequestShiftMonthChangeDecision = ({
     year,
     month,

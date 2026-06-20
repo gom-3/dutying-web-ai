@@ -2,6 +2,7 @@ import {type TValues} from '@dutying/utils';
 import {create} from 'zustand';
 import {devtools, persist} from 'zustand/middleware';
 import {type TWardShiftType} from '@/entities/ward';
+import {getNextRequestShiftDate} from './request-shift';
 import {type TFocus} from './types';
 
 interface IState {
@@ -21,28 +22,33 @@ interface IState {
 interface IStore extends IState {
     setState: (key: keyof IState, value: TValues<IState>) => void;
     setWardContext: (wardId: number | null) => void;
+    resetToNextMonth: () => void;
     resetState: () => void;
 }
 
-const initialState: IState = {
-    wardId: null,
-    year: new Date().getMonth() + 1 === 12 ? new Date().getFullYear() + 1 : new Date().getFullYear(),
-    month: new Date().getMonth() + 1 === 12 ? 1 : new Date().getMonth() + 2,
-    focus: null,
-    currentShiftTeamId: null,
-    oldCurrentShiftTeamId: null,
-    foldedLevels: null,
-    wardShiftTypeMap: null,
-    readonly: true,
-    changeStatus: 'idle',
-    updatingRequestId: null,
+const createInitialState = (): IState => {
+    const {year, month} = getNextRequestShiftDate();
+
+    return {
+        wardId: null,
+        year,
+        month,
+        focus: null,
+        currentShiftTeamId: null,
+        oldCurrentShiftTeamId: null,
+        foldedLevels: null,
+        wardShiftTypeMap: null,
+        readonly: true,
+        changeStatus: 'idle',
+        updatingRequestId: null,
+    };
 };
 
 export const useRequestShiftStore = create<IStore>()(
     devtools(
         persist(
             (set) => ({
-                ...initialState,
+                ...createInitialState(),
                 setState: (state, value) => set((prev) => ({...prev, [state]: value})),
                 setWardContext: (wardId) =>
                     set((prev) => {
@@ -60,7 +66,21 @@ export const useRequestShiftStore = create<IStore>()(
                             updatingRequestId: null,
                         };
                     }),
-                resetState: () => set(initialState),
+                resetToNextMonth: () =>
+                    set((prev) => {
+                        const {year, month} = getNextRequestShiftDate();
+
+                        return {
+                            ...prev,
+                            year,
+                            month,
+                            focus: null,
+                            readonly: true,
+                            changeStatus: 'idle',
+                            updatingRequestId: null,
+                        };
+                    }),
+                resetState: () => set(createInitialState()),
             }),
             {
                 name: 'useRequestShiftStore',

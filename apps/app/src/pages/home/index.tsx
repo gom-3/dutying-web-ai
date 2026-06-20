@@ -13,7 +13,7 @@ import {BoardAPI, WardAPI} from '@/shared/api';
 import {type TWardBoardDeadline, type TWardBoardSchedule} from '@/shared/api/board';
 import {PersonIcon} from '@/shared/assets/svg';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
-import ROUTE from '@/shared/constant/path';
+import ROUTE, {MEMBER_CONNECTION_MANAGE_PATH} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {getShiftWorkflowStatus} from '@/shared/lib/shift-workflow-status';
@@ -1549,7 +1549,7 @@ function HomePage() {
                 title: t('page.home.tasks.waitingNursesTitle', {count: waitingNurseCount}),
                 description: t('page.home.tasks.waitingNursesDescription'),
                 actionLabel: t('page.home.tasks.waitingNursesAction'),
-                path: ROUTE.MEMBER,
+                path: MEMBER_CONNECTION_MANAGE_PATH,
             });
         }
 
@@ -1693,7 +1693,7 @@ function HomePage() {
                                 <QueueButton
                                     label={t('page.home.queue.waitingNurses')}
                                     value={waitingNurseCount}
-                                    onClick={() => navigate(ROUTE.MEMBER)}
+                                    onClick={() => navigate(MEMBER_CONNECTION_MANAGE_PATH)}
                                 />
                             </div>
                             {nextScheduleStatusItems.length > 0 ? (
