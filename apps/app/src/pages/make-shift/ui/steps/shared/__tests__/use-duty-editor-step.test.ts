@@ -1,3 +1,4 @@
+import {type TWorkspaceScheduleResponse} from '@dutying/api/ward';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import React, {type ReactNode} from 'react';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -48,6 +49,7 @@ function createQueryWrapper() {
 function createDeferred<T>() {
     let resolve!: (value: T) => void;
     let reject!: (reason?: unknown) => void;
+
     const promise = new Promise<T>((res, rej) => {
         resolve = res;
         reject = rej;
@@ -56,7 +58,13 @@ function createDeferred<T>() {
     return {promise, resolve, reject};
 }
 
-function makeShift(): TShift {
+function makeShift({
+    wardShiftList = [10],
+    wardReqShiftList = [null],
+}: {
+    wardShiftList?: (number | null)[];
+    wardReqShiftList?: (number | null)[];
+} = {}): TShift {
     return {
         lastDays: [],
         days: [{day: 1, dayType: 'workday'}],
@@ -88,15 +96,21 @@ function makeShift(): TShift {
                     },
                     lastWardShiftList: [],
                     lastWardReqShiftList: [],
-                    wardShiftList: [10],
-                    wardReqShiftList: [null],
+                    wardShiftList,
+                    wardReqShiftList,
                 },
             ],
         ],
     };
 }
 
-function makeWorkspaceSchedule({fixed = true}: {fixed?: boolean} = {}) {
+function makeWorkspaceSchedule({
+    fixed = true,
+    requestShifts = [],
+}: {
+    fixed?: boolean;
+    requestShifts?: TWorkspaceScheduleResponse['requestShifts'];
+} = {}) {
     return {
         wardId: 1,
         shiftTeamId: 10,
@@ -119,7 +133,7 @@ function makeWorkspaceSchedule({fixed = true}: {fixed?: boolean} = {}) {
                   },
               ]
             : [],
-        requestShifts: [],
+        requestShifts,
         rules: [],
         rulesHash: 'rules-v1',
         latestSnapshot: null,
@@ -187,6 +201,62 @@ describe('useDutyEditorStep', () => {
         await waitFor(() => {
             expect(useShiftEditorStore.getState().rulesHash).toBe('rules-v1');
         });
+    });
+
+    it('hydrates request cells from accepted workspace requests', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeShift({wardShiftList: [null], wardReqShiftList: [10]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(
+            makeWorkspaceSchedule({
+                fixed: false,
+                requestShifts: [
+                    {
+                        shiftNurseId: 2,
+                        nurseId: 100,
+                        date: '2026-05-01',
+                        wardShiftTypeId: 10,
+                        shiftCode: 'D',
+                        isAccepted: true,
+                        isRequested: true,
+                    },
+                ],
+            }),
+        );
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'2|2026-05-01': true});
+        });
+
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+    });
+
+    it('does not hydrate rejected workspace requests into fixed request cells', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeShift({wardShiftList: [null], wardReqShiftList: [10]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(
+            makeWorkspaceSchedule({
+                fixed: false,
+                requestShifts: [
+                    {
+                        shiftNurseId: 2,
+                        nurseId: 100,
+                        date: '2026-05-01',
+                        wardShiftTypeId: 10,
+                        shiftCode: 'D',
+                        isAccepted: false,
+                        isRequested: true,
+                    },
+                ],
+            }),
+        );
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBeNull();
+        });
+
+        expect(useShiftEditorStore.getState().doc.requestCells).toEqual({});
     });
 
     it('does not request duty data until the selected team belongs to the current ward context', async () => {

@@ -8,6 +8,7 @@ interface IConnectionManageCompleteStepProps {
     connectMode: TConnectMode;
     waitingNurseName?: string;
     targetLabel?: string | null;
+    hasOtherWaitingRequests: boolean;
     onRestart: () => void;
     onBack: () => void;
     onRetry: () => void;
@@ -19,6 +20,7 @@ function ConnectionManageCompleteStep({
     connectMode,
     waitingNurseName,
     targetLabel,
+    hasOtherWaitingRequests,
     onRestart,
     onBack,
     onRetry,
@@ -65,21 +67,23 @@ function ConnectionManageCompleteStep({
                     <h1 className="mt-6 font-apple text-[20px] leading-7 font-semibold text-sub-1">{feedback.title}</h1>
                 </div>
 
-                <div className="mt-2 grid grid-cols-2 gap-3">
+                <div className={hasOtherWaitingRequests ? 'mt-2 grid grid-cols-2 gap-3' : 'mt-2'}>
                     <button
                         type="button"
-                        className="h-11 rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                        className="h-11 w-full rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
                         onClick={onClose}
                     >
                         {t('page.member.common.close')}
                     </button>
-                    <button
-                        type="button"
-                        className="h-11 rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover"
-                        onClick={onRestart}
-                    >
-                        {t('page.member.connectionManage.complete.viewOtherRequests')}
-                    </button>
+                    {hasOtherWaitingRequests ? (
+                        <button
+                            type="button"
+                            className="h-11 w-full rounded-[10px] bg-main-1 px-4 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-main-1-hover"
+                            onClick={onRestart}
+                        >
+                            {t('page.member.connectionManage.complete.viewOtherRequests')}
+                        </button>
+                    ) : null}
                 </div>
             </div>
         );

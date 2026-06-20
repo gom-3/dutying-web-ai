@@ -360,7 +360,7 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     wardShiftTypeId,
                 })
             ).data,
-        acceptRequestShift: async (wardId: number, reqShiftId: number, isAccepted: boolean | null) =>
+        acceptRequestShift: async (wardId: number, reqShiftId: number, isAccepted: boolean) =>
             (
                 await client.patch<void>(wardPath(`/${wardId}/req-shifts/${reqShiftId}/accept`), {
                     isAccepted,

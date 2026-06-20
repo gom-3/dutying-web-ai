@@ -1,5 +1,5 @@
 import type * as ReactQueryModule from '@tanstack/react-query';
-import {MemoryRouter} from 'react-router';
+import {MemoryRouter, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import HomePage from '..';
@@ -34,7 +34,15 @@ const createLoadedQuery = (data: unknown) => ({
     data,
     refetch: vi.fn(),
 });
-const mockLoadedHomeQueries = ({deadlines = [], schedules = []}: {deadlines?: unknown[]; schedules?: unknown[]} = {}) => {
+const mockLoadedHomeQueries = ({
+    deadlines = [],
+    schedules = [],
+    waitingNurses = [],
+}: {
+    deadlines?: unknown[];
+    schedules?: unknown[];
+    waitingNurses?: unknown[];
+} = {}) => {
     mockUseQuery.mockImplementation((options?: {queryKey?: readonly unknown[]}) => {
         const queryKey = options?.queryKey ?? [];
 
@@ -52,7 +60,7 @@ const mockLoadedHomeQueries = ({deadlines = [], schedules = []}: {deadlines?: un
 
         if (queryKey[0] === 'ward' && queryKey[1] === 'shiftTeams') return createLoadedQuery([]);
 
-        if (queryKey[0] === 'ward' && queryKey[1] === 'waitingNurses') return createLoadedQuery([]);
+        if (queryKey[0] === 'ward' && queryKey[1] === 'waitingNurses') return createLoadedQuery(waitingNurses);
 
         if (queryKey[0] === 'ward' && queryKey[1] === 'requestPendingCount') return createLoadedQuery({totalPendingCount: 0});
 
@@ -65,6 +73,12 @@ const mockLoadedHomeQueries = ({deadlines = [], schedules = []}: {deadlines?: un
         return createLoadedQuery(undefined);
     });
     mockUseQueries.mockReturnValue([]);
+};
+
+const LocationProbe = () => {
+    const location = useLocation();
+
+    return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
 };
 
 describe('HomePage', () => {
@@ -158,5 +172,22 @@ describe('HomePage', () => {
         expect(screen.getByRole('dialog', {name: '병동 일정 보기'})).toBeInTheDocument();
         expect(screen.getByRole('heading', {name: '교육 일정'})).toBeInTheDocument();
         expect(screen.getByText('신규 교육')).toBeInTheDocument();
+    });
+
+    it('moves to member with the connection manage modal flag when waiting nurses are selected', async () => {
+        mockLoadedHomeQueries({
+            waitingNurses: [{waitingNurseId: 1, name: '대기 간호사'}],
+        });
+
+        render(
+            <MemoryRouter initialEntries={['/home']}>
+                <HomePage />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await userEvent.click(screen.getByText('입장 대기'));
+
+        expect(screen.getByTestId('location')).toHaveTextContent('/member?connectionManage=open');
     });
 });

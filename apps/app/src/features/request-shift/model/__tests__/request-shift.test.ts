@@ -6,6 +6,7 @@ import {
     createWardShiftTypeMap,
     findDutyRequestByFocus,
     getAdjacentRequestShiftDate,
+    getNextRequestShiftDate,
     getRequestShiftBootstrapStatus,
     getRequestShiftChangeEventMessage,
     getRequestShiftMonthChangeDecision,
@@ -147,6 +148,7 @@ describe('useRequestShift model', () => {
     it('월 이동 정책을 순수 계산으로 분리한다', () => {
         expect(getAdjacentRequestShiftDate(2026, 1, 'prev')).toEqual({year: 2025, month: 12});
         expect(getAdjacentRequestShiftDate(2026, 12, 'next')).toEqual({year: 2027, month: 1});
+        expect(getNextRequestShiftDate(new Date('2026-12-15T09:00:00+09:00'))).toEqual({year: 2027, month: 1});
 
         expect(
             getRequestShiftMonthChangeDecision({

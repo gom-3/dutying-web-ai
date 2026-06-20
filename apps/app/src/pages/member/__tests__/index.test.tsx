@@ -34,7 +34,7 @@ vi.mock('@/features/edit-shift-team', () => ({
 }));
 
 vi.mock('../ui/connection-manage', () => ({
-    default: () => null,
+    default: ({open}: {open: boolean}) => <span data-testid="connection-manage-open">{String(open)}</span>,
 }));
 
 vi.mock('../ui/member-skill-level-modal', () => ({
@@ -305,6 +305,20 @@ describe('MemberPage', () => {
         await waitFor(() => {
             expect(screen.getByRole('button', {name: /A팀/})).toHaveAttribute('aria-pressed', 'true');
         });
+    });
+
+    it('URL의 connectionManage 플래그가 있으면 연동관리 모달을 연 뒤 플래그를 지운다', async () => {
+        render(
+            <MemoryRouter initialEntries={['/member?connectionManage=open']}>
+                <MemberPage />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => {
+            expect(screen.getByTestId('connection-manage-open')).toHaveTextContent('true');
+        });
+        expect(screen.getByTestId('location-search')).toHaveTextContent('');
     });
 
     it('선택한 팀에 간호사가 없으면 빈 팀 안내 박스 안에 간호사 추가 버튼을 보여준다', async () => {

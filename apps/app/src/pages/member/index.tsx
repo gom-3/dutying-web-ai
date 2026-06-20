@@ -29,6 +29,7 @@ import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import i18n from '@/i18n';
 import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
 import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
+import {MEMBER_CONNECTION_MANAGE_SEARCH_PARAM, MEMBER_CONNECTION_MANAGE_SEARCH_VALUE} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Input} from '@/shared/ui/primitives/input';
@@ -288,6 +289,18 @@ function MemberPage() {
         hasInitializedSelectionRef.current = true;
         selectNurse(null);
     }, [selectNurse]);
+    useEffect(() => {
+        if (searchParams.get(MEMBER_CONNECTION_MANAGE_SEARCH_PARAM) !== MEMBER_CONNECTION_MANAGE_SEARCH_VALUE) {
+            return;
+        }
+
+        setConnectionManageModalOpen(true);
+
+        const nextSearchParams = new URLSearchParams(searchParams);
+
+        nextSearchParams.delete(MEMBER_CONNECTION_MANAGE_SEARCH_PARAM);
+        setSearchParams(nextSearchParams, {replace: true});
+    }, [searchParams, setSearchParams]);
 
     const {config: skillConfig, levelsByNurseId} = useMemo(
         () => resolveWardSkillLevels(allNurses, skillSettings),

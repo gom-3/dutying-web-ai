@@ -1,11 +1,13 @@
+import {useLayoutEffect, useState} from 'react';
 import useRequestShift from '@/features/request-shift';
+import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import RequestCalendar from './ui/request-calendar';
 import Toolbar from './ui/toolbar';
 
-const RequestShiftPage = () => {
+const RequestShiftPageContent = () => {
     const {t} = useTypedTranslation();
     const {
         state: {requestShift, shiftStatus, shiftTeams, shiftTeamsStatus, bootstrapStatus},
@@ -94,6 +96,19 @@ const RequestShiftPage = () => {
             </div>
         </div>
     );
+};
+const RequestShiftPage = () => {
+    const resetToNextMonth = useRequestShiftStore((state) => state.resetToNextMonth);
+    const [isMonthReady, setIsMonthReady] = useState(false);
+
+    useLayoutEffect(() => {
+        resetToNextMonth();
+        setIsMonthReady(true);
+    }, [resetToNextMonth]);
+
+    if (!isMonthReady) return null;
+
+    return <RequestShiftPageContent />;
 };
 
 export default RequestShiftPage;

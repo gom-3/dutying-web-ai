@@ -99,6 +99,28 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('does not render an unaccepted request as a request-only cell', () => {
+        const requestedShift: TShift = {
+            ...shift,
+            divisionShiftNurses: [
+                [],
+                [
+                    {
+                        ...shift.divisionShiftNurses[1]![0]!,
+                        wardReqShiftList: [10, null],
+                    },
+                ],
+            ],
+        };
+
+        render(<MakeShiftCalendar shift={requestedShift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
+
+        const firstCell = document.querySelector<HTMLElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+
+        expect(firstCell).not.toBeNull();
+        expect(firstCell?.querySelector('.opacity-60')).not.toBeInTheDocument();
+    });
+
     it('shows a busy shimmer layer while auto fill is loading', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly isShimmering />);
 
@@ -290,15 +312,7 @@ describe('MakeShiftCalendar', () => {
             scope: 'nurse',
         };
 
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map([['2,1-hover-rule', violation]])}
-                showFaults
-                readonly
-            />,
-        );
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map([['2,1-hover-rule', violation]])} showFaults readonly />);
 
         const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
 
@@ -614,11 +628,7 @@ describe('MakeShiftCalendar', () => {
         expect(await screen.findByRole('listbox', {name: '근무유형 선택'})).toBeInTheDocument();
         expect(trigger).not.toHaveClass('bg-main-4/70');
         expect(trigger!.querySelector('.make-shift-calendar__selection-bg')).toHaveClass('bg-main-4/70');
-        expect(trigger!.querySelector('.make-shift-calendar__row-last-shift-badge')).toHaveClass(
-            'ring-2',
-            'ring-inset',
-            'ring-main-1',
-        );
+        expect(trigger!.querySelector('.make-shift-calendar__row-last-shift-badge')).toHaveClass('ring-2', 'ring-inset', 'ring-main-1');
 
         act(() => {
             fireEvent.click(screen.getByRole('option', {name: /^D D$/}));

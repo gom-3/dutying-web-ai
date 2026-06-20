@@ -1,3 +1,4 @@
+import {type TWorkspaceScheduleResponse} from '@dutying/api/ward';
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {type TShift} from '@/entities';
@@ -39,6 +40,7 @@ function getPreviousYearMonth(year: number, month: number): {year: number; month
 
 function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] | undefined): TCellValue[] | undefined {
     if (!persisted) return base?.slice();
+
     if (!base || base.length === 0) return persisted.slice();
 
     return base.map((_cell, index) => persisted[index] ?? null);
@@ -46,36 +48,38 @@ function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] 
 
 function deriveRequestCells(
     shift: TShift | undefined,
-    year: number,
-    month: number,
+    requestShifts: TWorkspaceScheduleResponse['requestShifts'] | undefined,
 ): Map<string, string> {
-    if (!shift) return new Map();
+    if (!shift || !requestShifts) return new Map();
 
     const idToShortName = new Map<number, string>();
+    const workerIds = new Set<string>();
 
     for (const t of shift.wardShiftTypes) {
         idToShortName.set(t.wardShiftTypeId, t.shortName);
     }
 
-    const monthStr = String(month).padStart(2, '0');
-    const result = new Map<string, string>();
-
     for (const division of shift.divisionShiftNurses) {
         for (const row of division) {
             if (!row.shiftNurse.isWorker) continue;
 
-            const workerId = String(row.shiftNurse.shiftNurseId);
+            workerIds.add(String(row.shiftNurse.shiftNurseId));
+        }
+    }
 
-            row.wardReqShiftList.forEach((wardShiftTypeId, idx) => {
-                if (wardShiftTypeId !== null) {
-                    const day = String(shift.days[idx].day).padStart(2, '0');
-                    const shortName = idToShortName.get(wardShiftTypeId);
+    const result = new Map<string, string>();
 
-                    if (shortName) {
-                        result.set(`${workerId}|${year}-${monthStr}-${day}`, shortName);
-                    }
-                }
-            });
+    for (const requestShift of requestShifts) {
+        if (requestShift.isAccepted !== true) continue;
+
+        const workerId = String(requestShift.shiftNurseId);
+
+        if (!workerIds.has(workerId)) continue;
+
+        const shortName = idToShortName.get(requestShift.wardShiftTypeId) ?? requestShift.shiftCode;
+
+        if (shortName) {
+            result.set(`${workerId}|${requestShift.date}`, shortName);
         }
     }
 
@@ -107,12 +111,10 @@ export function useDutyEditorStep({
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
-
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
     });
-
     const workspaceQuery = useQuery({
         queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
         queryFn: () => WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
@@ -128,7 +130,6 @@ export function useDutyEditorStep({
             ? previousDutyQuery.data
             : null;
     const setRulesHash = useShiftEditorStore((s) => s.setRulesHash);
-
     const editorDoc = useShiftEditorStore((s) => s.doc);
     const commands = useShiftEditorCommands();
     const editorRef = useRef<HTMLDivElement>(null);
@@ -188,7 +189,7 @@ export function useDutyEditorStep({
 
         const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
         const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
-        const requestValueMap = deriveRequestCells(dutyQuery.data, year, month);
+        const requestValueMap = deriveRequestCells(dutyQuery.data, workspaceQuery.data?.requestShifts);
         const requestCells: Record<string, true> = {};
 
         for (const [key, value] of requestValueMap.entries()) {
@@ -215,6 +216,7 @@ export function useDutyEditorStep({
                     lastCells: mergeLastCells(row.lastCells, baseRow?.lastCells),
                     cells: row.cells.map((cell, colIdx) => {
                         const date = persisted.doc.columns[colIdx];
+
                         if (!date) return cell;
 
                         const key = `${row.workerId}|${date}`;

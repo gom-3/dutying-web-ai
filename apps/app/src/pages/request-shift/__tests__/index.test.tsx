@@ -1,4 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {getNextRequestShiftDate} from '@/features/request-shift/model/request-shift';
+import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import RequestShiftPage from '../index';
 
@@ -103,7 +105,20 @@ function baseUseRequestShiftValue(): TMockUseRequestShiftValue {
 
 describe('RequestShiftPage', () => {
     beforeEach(() => {
+        localStorage.removeItem('useRequestShiftStore');
+        useRequestShiftStore.getState().resetState();
         mockUseRequestShift.mockReset();
+    });
+
+    it('페이지 진입 시 저장된 연월 대신 다음 달을 선택한다', () => {
+        useRequestShiftStore.setState({year: 2024, month: 2});
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue());
+
+        render(<RequestShiftPage />);
+
+        const {year, month} = getNextRequestShiftDate();
+
+        expect(useRequestShiftStore.getState()).toMatchObject({year, month});
     });
 
     it('근무 팀을 불러오는 중이면 초기 로딩 상태를 보여준다', () => {

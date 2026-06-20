@@ -1701,7 +1701,7 @@ page.profile.phoneNum,web,page.profile.phoneNum,page.profile,profile,text,import
 page.profile.phoneNumPlaceholder,web,page.profile.phoneNumPlaceholder,page.profile,profile,input,imported,,,,,,,,,전화번호를 입력하세요,Enter your phone number,電話番号を入力してください,请输入您的电话号码,ป้อนหมายเลขโทรศัพท์ของคุณ,,2026-06-10
 page.profile.preferencesDescription,web,page.profile.preferencesDescription,page.profile,profile,description,imported,,,,,,,,,화면에 표시할 언어를 선택해요.,Choose the language shown in the app.,画面に表示する言語を選択します。,选择屏幕上显示的语言。,เลือกภาษาที่แสดงในแอป,,2026-06-10
 page.profile.preferencesFailed,web,page.profile.preferencesFailed,page.profile,profile,feedback,imported,,,,,,,,,언어 설정을 저장하지 못했어요.,Could not save language settings.,言語設定を保存できませんでした。,无法保存语言设置。,ไม่สามารถบันทึกการตั้งค่าภาษาได้,,2026-06-10
-page.profile.preferencesSaved,web,page.profile.preferencesSaved,page.profile,profile,button,imported,,,,,,,,,언어와 서비스 지역을 저장했어요.,Language and service region saved.,言語とサービス地域を保存しました。,已保存语言和服务区域。,บันทึกภาษาและภูมิภาคการบริการแล้ว,,2026-06-10
+page.profile.preferencesSaved,web,page.profile.preferencesSaved,page.profile,profile,button,imported,,,,,,,,,언어를 저장했어요.,Language saved.,言語を保存しました。,已保存语言。,บันทึกภาษาแล้ว,,2026-06-20
 page.profile.preferencesTitle,web,page.profile.preferencesTitle,page.profile,profile,accessibility,imported,,,,,,,,,언어 / Language,Language,言語 / Language,语言/语言,ภาษา,,2026-06-19
 page.profile.profileSection,web,page.profile.profileSection,page.profile,profile,text,imported,,,,,,,,,프로필,Profile,プロフィール,轮廓,ประวัติโดยย่อ,,2026-06-10
 page.profile.quitWard,web,page.profile.quitWard,page.profile,profile,text,imported,,,,,,,,,병동 나가기,Leave ward,病棟を退出,离开病区,ออกจากวอร์ด,,2026-06-10

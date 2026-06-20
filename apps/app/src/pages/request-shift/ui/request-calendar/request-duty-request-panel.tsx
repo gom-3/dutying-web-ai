@@ -23,8 +23,8 @@ interface IRequestDutyRequestPanelProps {
     updatingRequestId: number | null;
     shiftNurseIdByNurseId: Map<number, number>;
     changeFocus: (focus: TFocus | null) => void;
-    acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => Promise<boolean>;
-    acceptRequests: (reqShiftIds: number[], isAccepted: boolean | null) => Promise<boolean>;
+    acceptRequest: (reqShiftId: number, isAccepted: boolean) => Promise<boolean>;
+    acceptRequests: (reqShiftIds: number[], isAccepted: boolean) => Promise<boolean>;
     retry: () => Promise<unknown>;
     onAcceptAnalytics: (accepted: boolean) => void;
     defaultReviewMode?: TReviewMode;
@@ -283,7 +283,6 @@ export default function RequestDutyRequestPanel({
         {value: 'pending', label: t('page.request.panel.sortByPending'), count: pendingRequestList.length},
     ];
     const pendingEmptyTitle = t('page.request.panel.pendingEmptyTitle');
-    const pendingEmptyDescription = t('page.request.panel.pendingEmptyDescription');
     const queuePendingRequestDismissal = (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
         if (reviewMode !== 'pending' || dutyRequest.isAccepted !== null) return;
 
@@ -311,28 +310,27 @@ export default function RequestDutyRequestPanel({
 
         exitingPendingRequestTimerByIdRef.current.set(dutyRequest.wardReqShiftId, nextTimer);
     };
-    const decideRequest = async (dutyRequest: TDutyRequest, nextAccepted: boolean | null) => {
+    const decideRequest = async (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
         if (isRequestActionLocked) return;
+        if (dutyRequest.isAccepted === nextAccepted) return;
 
         const accepted = await acceptRequest(dutyRequest.wardReqShiftId, nextAccepted);
 
         if (!accepted) return;
 
-        if (nextAccepted !== null) {
-            onAcceptAnalytics(nextAccepted);
-            queuePendingRequestDismissal(dutyRequest, nextAccepted);
-            toast.success(
-                nextAccepted
-                    ? t('page.request.panel.acceptedToast', {
-                          nurseName: dutyRequest.nurseName,
-                          shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
-                      })
-                    : t('page.request.panel.rejectedToast', {
-                          nurseName: dutyRequest.nurseName,
-                          shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
-                      }),
-            );
-        }
+        onAcceptAnalytics(nextAccepted);
+        queuePendingRequestDismissal(dutyRequest, nextAccepted);
+        toast.success(
+            nextAccepted
+                ? t('page.request.panel.acceptedToast', {
+                      nurseName: dutyRequest.nurseName,
+                      shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
+                  })
+                : t('page.request.panel.rejectedToast', {
+                      nurseName: dutyRequest.nurseName,
+                      shiftType: getRequestShiftType(dutyRequest, wardShiftTypeMap).shortName,
+                  }),
+        );
     };
 
     useEffect(
@@ -404,7 +402,7 @@ export default function RequestDutyRequestPanel({
                             className={getActionButtonClassName({active: isAccepted, tone: 'accept'})}
                             disabled={isRequestActionLocked || isExitingPendingRequest}
                             aria-pressed={isAccepted}
-                            onClick={() => void decideRequest(dutyRequest, isAccepted ? null : true)}
+                            onClick={() => void decideRequest(dutyRequest, true)}
                         >
                             {t('page.request.panel.accept')}
                         </button>
@@ -413,7 +411,7 @@ export default function RequestDutyRequestPanel({
                             className={getActionButtonClassName({active: isRejected, tone: 'reject'})}
                             disabled={isRequestActionLocked || isExitingPendingRequest}
                             aria-pressed={isRejected}
-                            onClick={() => void decideRequest(dutyRequest, isRejected ? null : false)}
+                            onClick={() => void decideRequest(dutyRequest, false)}
                         >
                             {t('page.request.panel.reject')}
                         </button>
@@ -574,7 +572,7 @@ export default function RequestDutyRequestPanel({
                     <PageState
                         tone="empty"
                         title={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyTitle : emptyTitle}
-                        description={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyDescription : emptyDescription}
+                        description={reviewMode === 'pending' && hasAnyRequest ? undefined : emptyDescription}
                         titleClassName="max-w-full !break-normal [overflow-wrap:anywhere]"
                         visual={shouldShowRequestEmptyVisual ? REQUEST_EMPTY_VISUAL : undefined}
                         className="min-h-[132px] px-5 py-6"

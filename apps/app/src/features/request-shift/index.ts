@@ -79,13 +79,15 @@ const useRequestShift = (activeEffect = false) => {
         if (wardId === null || requestWardId !== wardId || shiftTeamsStatus !== 'success') return;
 
         const firstTeamId = shiftTeams?.[0]?.shiftTeamId ?? null;
-        const hasCurrentTeam = currentShiftTeamId !== null && Boolean(shiftTeams?.some((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId));
+        const hasCurrentTeam =
+            currentShiftTeamId !== null && Boolean(shiftTeams?.some((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId));
         const nextShiftTeamId = hasCurrentTeam ? currentShiftTeamId : firstTeamId;
 
         if (nextShiftTeamId !== currentShiftTeamId) {
             setState('currentShiftTeamId', nextShiftTeamId);
         }
     }, [currentShiftTeamId, requestWardId, setState, shiftTeams, shiftTeamsStatus, wardId]);
+
     const teamPendingRequestCountQueries = useQueries({
         queries: (shiftTeams ?? []).map((shiftTeam) => ({
             queryKey: wardQueryKeys.requestList(wardId ?? 0, shiftTeam.shiftTeamId, year, month),
@@ -148,7 +150,7 @@ const useRequestShift = (activeEffect = false) => {
         setChangeStatus: (status) => setState('changeStatus', status),
     });
     const acceptRequests = useCallback(
-        async (reqShiftIds: number[], isAccepted: boolean | null) => {
+        async (reqShiftIds: number[], isAccepted: boolean) => {
             if (reqShiftIds.length === 0 || useRequestShiftStore.getState().updatingRequestId !== null) return false;
 
             if (!wardId) return false;
@@ -166,6 +168,12 @@ const useRequestShift = (activeEffect = false) => {
                 await queryClient.invalidateQueries({queryKey: wardQueryKeys.requestPendingCount(wardId)});
                 await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'duty', wardId]});
 
+                if (currentShiftTeamId !== null) {
+                    await queryClient.invalidateQueries({
+                        queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
+                    });
+                }
+
                 if (rejectedResults.length > 0) {
                     showActionErrorFeedback(rejectedResults[0].reason, t('feature.requestShift.processFailed'));
 
@@ -177,10 +185,10 @@ const useRequestShift = (activeEffect = false) => {
                 setState('updatingRequestId', null);
             }
         },
-        [dutyRequestQueryKey, queryClient, requestShiftQueryKey, setState, t, wardId],
+        [currentShiftTeamId, dutyRequestQueryKey, month, queryClient, requestShiftQueryKey, setState, t, wardId, year],
     );
     const acceptRequest = useCallback(
-        async (reqShiftId: number, isAccepted: boolean | null) => {
+        async (reqShiftId: number, isAccepted: boolean) => {
             return acceptRequests([reqShiftId], isAccepted);
         },
         [acceptRequests],
@@ -337,8 +345,8 @@ const useRequestShift = (activeEffect = false) => {
             changeRequestShift: (nextFocus: TFocus, shiftTypeId: number | null) => changeRequestShift(nextFocus, shiftTypeId),
             toggleEditMode: handleToggleEditMode,
             createNextMonthShift: handleCreateNextMonthShift,
-            acceptRequest: (reqShiftId: number, isAccepted: boolean | null) => acceptRequest(reqShiftId, isAccepted),
-            acceptRequests: (reqShiftIds: number[], isAccepted: boolean | null) => acceptRequests(reqShiftIds, isAccepted),
+            acceptRequest: (reqShiftId: number, isAccepted: boolean) => acceptRequest(reqShiftId, isAccepted),
+            acceptRequests: (reqShiftIds: number[], isAccepted: boolean) => acceptRequests(reqShiftIds, isAccepted),
             foldLevel,
             changeMonth,
             retry,

@@ -145,6 +145,39 @@ describe('RequestDutyRequestPanel', () => {
         await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Kim's D request rejected."));
     });
 
+    it('does not send a request when clicking the already selected decision', async () => {
+        const user = userEvent.setup();
+        const acceptRequest = vi.fn().mockResolvedValue(true);
+
+        render(
+            <RequestDutyRequestPanel
+                year={2026}
+                month={6}
+                days={[{day: 1, dayType: 'workday'}]}
+                dutyRequestList={[createDutyRequest({isAccepted: true})]}
+                dutyRequestStatus="success"
+                wardShiftTypeMap={new Map()}
+                canEdit
+                updatingRequestId={null}
+                shiftNurseIdByNurseId={new Map([[10, 20]])}
+                changeFocus={vi.fn()}
+                acceptRequest={acceptRequest}
+                acceptRequests={vi.fn().mockResolvedValue(true)}
+                retry={vi.fn()}
+                onAcceptAnalytics={vi.fn()}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: 'Accept'}));
+
+        expect(acceptRequest).not.toHaveBeenCalled();
+        expect(toast.success).not.toHaveBeenCalled();
+
+        await user.click(screen.getByRole('button', {name: 'Reject'}));
+
+        expect(acceptRequest).toHaveBeenCalledWith(1, false);
+    });
+
     it('keeps the pending badge from being clipped by the review toggle', () => {
         render(
             <RequestDutyRequestPanel
@@ -192,7 +225,7 @@ describe('RequestDutyRequestPanel', () => {
                     updatingRequestId={null}
                     shiftNurseIdByNurseId={new Map([[10, 20]])}
                     changeFocus={vi.fn()}
-                    acceptRequest={vi.fn().mockImplementation(async (reqShiftId: number, isAccepted: boolean | null) => {
+                    acceptRequest={vi.fn().mockImplementation(async (reqShiftId: number, isAccepted: boolean) => {
                         setDutyRequestList((current) =>
                             current.map((request) => (request.wardReqShiftId === reqShiftId ? {...request, isAccepted} : request)),
                         );

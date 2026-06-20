@@ -47,6 +47,9 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
         toLinkNurseId,
         toAddShiftTeamId,
     });
+    const hasOtherWaitingRequests = watingNurses.some(
+        (waitingNurse) => waitingNurse.waitingNurseId !== currentWaitingNurse?.waitingNurseId,
+    );
     const normalizeName = (name?: string | null) => (name ?? '').trim();
     const handleAcceptWaitingNurse = (waitingNurse: (typeof watingNurses)[number]) => {
         const waitingName = normalizeName(waitingNurse.name);
@@ -102,6 +105,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
                               connectMode={connectMode}
                               waitingNurseName={currentWaitingNurse?.name}
                               targetLabel={targetLabel}
+                              hasOtherWaitingRequests={hasOtherWaitingRequests}
                               onRestart={initialize}
                               onBack={goToMethodSelection}
                               onRetry={retryCompleteSelection}

@@ -535,7 +535,7 @@ export const en: TLocale = {
             },
             savePreferences: 'Save language settings',
             savingPreferences: 'Saving...',
-            preferencesSaved: 'Language and service region saved.',
+            preferencesSaved: 'Language saved.',
             preferencesFailed: 'Could not save language settings.',
             name: 'Name',
             namePlaceholder: 'Enter your name',
