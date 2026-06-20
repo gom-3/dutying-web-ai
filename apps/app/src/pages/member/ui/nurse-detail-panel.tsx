@@ -160,7 +160,7 @@ function NurseDetailPanel({
                 {isPossible: shiftType.isPossible},
                 {
                     wardShiftTypeId: shiftType.wardShiftTypeId,
-                    name: shiftType.shortName ?? shiftType.name,
+                    name: shiftType.name,
                     shortName: shiftType.shortName ?? '',
                 },
             );
@@ -387,8 +387,9 @@ function NurseDetailPanel({
                                         type="button"
                                         disabled={isBusy}
                                         aria-pressed={isPossible}
+                                        title={`${shortName ? `${shortName} ` : ''}${name}`.trim()}
                                         className={cn(
-                                            'inline-flex min-h-7 w-full cursor-pointer items-center justify-center gap-1 rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-8 min-[1600px]:px-2.5 min-[1600px]:text-[14px]',
+                                            'inline-flex min-h-7 w-full min-w-0 cursor-pointer items-center justify-start gap-1 overflow-hidden rounded-[5px] border px-1.5 py-1 font-apple text-[13px] whitespace-nowrap transition-[background-color,color,border-color,opacity,transform,filter] duration-150 hover:-translate-y-[1px] hover:brightness-95 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-8 min-[1600px]:px-2 min-[1600px]:text-[14px]',
                                         )}
                                         style={
                                             isPossible
@@ -417,7 +418,7 @@ function NurseDetailPanel({
                                                               draft.push({
                                                                   nurseShiftTypeId: apiShiftTypeId,
                                                                   wardShiftTypeId,
-                                                                  name: shortName ?? name,
+                                                                  name,
                                                                   shortName: shortName ?? '',
                                                                   isPossible: !isPossible,
                                                                   isPreferred: false,
@@ -429,10 +430,10 @@ function NurseDetailPanel({
                                             sendEvent(events.memberPage.editNurseDrawer.changeNurseShiftTypes);
                                         }}
                                     >
-                                        <span className="relative inline-flex h-[16px] w-[14px] items-center justify-center overflow-hidden">
+                                        <span className="relative inline-flex h-5 w-[22px] shrink-0 items-center justify-center overflow-visible min-[1600px]:w-6">
                                             <span
                                                 className={cn(
-                                                    'absolute inset-0 flex items-center justify-center font-medium transition-all duration-200',
+                                                    'absolute inset-x-0 flex min-w-0 items-center justify-center truncate px-0.5 font-medium transition-all duration-200',
                                                     isPossible ? 'scale-75 opacity-0' : 'scale-100 opacity-100',
                                                 )}
                                             >
@@ -440,13 +441,13 @@ function NurseDetailPanel({
                                             </span>
                                             <Check
                                                 className={cn(
-                                                    'absolute h-3.5 w-3.5 transition-all duration-200',
+                                                    'absolute h-4 w-4 transition-all duration-200',
                                                     isPossible ? 'scale-100 opacity-100' : 'scale-75 opacity-0',
                                                 )}
                                                 strokeWidth={3}
                                             />
                                         </span>
-                                        <span className="font-normal">{name}</span>
+                                        <span className="min-w-0 flex-1 truncate text-left font-normal">{name}</span>
                                     </button>
                                 );
                             })}

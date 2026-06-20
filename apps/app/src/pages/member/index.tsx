@@ -1813,7 +1813,7 @@ function MemberNurseRow({
                                             {isPossible: !selected},
                                             {
                                                 wardShiftTypeId: shiftType.wardShiftTypeId,
-                                                name: shiftType.shortName ?? shiftType.name,
+                                                name: shiftType.name,
                                                 shortName: shiftType.shortName ?? '',
                                             },
                                         );

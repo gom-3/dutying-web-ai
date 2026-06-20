@@ -176,8 +176,8 @@ describe('resolveNurseShiftTypeOptions', () => {
         );
 
         expect(options).toMatchObject([
-            {apiShiftTypeId: 101, wardShiftTypeId: 10, name: 'O', shortName: 'O', isPossible: false},
-            {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'O', shortName: 'O', isPossible: true},
+            {apiShiftTypeId: 101, wardShiftTypeId: 10, name: 'OnCall', shortName: 'O', isPossible: false},
+            {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'Orientation', shortName: 'O', isPossible: true},
         ]);
     });
 });
