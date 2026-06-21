@@ -120,6 +120,7 @@ const messages = {
     ja: parseProperties(resolve(serverMessagesDir, 'messages_ja.properties')),
     zh: parseOptionalProperties(resolve(serverMessagesDir, 'messages_zh.properties')),
     th: parseOptionalProperties(resolve(serverMessagesDir, 'messages_th.properties')),
+    vi: parseOptionalProperties(resolve(serverMessagesDir, 'messages_vi.properties')),
 };
 
 const serverKeys = Array.from(
@@ -149,6 +150,7 @@ const serverRows = serverKeys.map((runtimeKey) => ({
     ja: messages.ja[runtimeKey] ?? '',
     zh: messages.zh[runtimeKey] ?? '',
     th: messages.th[runtimeKey] ?? '',
+    vi: messages.vi[runtimeKey] ?? '',
     serverMessageKey: runtimeKey,
     updatedAt,
 }));

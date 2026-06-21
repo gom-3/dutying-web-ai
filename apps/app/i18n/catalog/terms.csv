@@ -1,10 +1,10 @@
-termId,ko,en,ja,zh,th,description,forbiddenEn,forbiddenJa,forbiddenZh,forbiddenTh
-ward,병동,Ward,病棟,病区,หอผู้ป่วย,간호 운영 단위. 병원 부서 전체가 아니라 근무표를 공유하는 병동을 의미한다.,Department,部署,部门,แผนก
-nurse,간호사,Nurse,看護師,护士,พยาบาล,병동 근무표에 배정되는 구성원.,,,,
-shiftSchedule,근무표,Schedule,勤務表,排班表,ตารางเวร,병동 근무 배정표. 화면 맥락에 따라 duty schedule 의미를 가진다.,Roster,シフト表,值班表,
-requestShift,신청 근무,Shift request,勤務希望,班次申请,คำขอเวร,간호사가 희망 근무 또는 휴무를 신청하는 기능.,Requested duty,希望シフト|申請勤務,值班申请,
-confirmedSchedule,확정 근무표,Confirmed schedule,確定勤務表,已确认排班表,ตารางเวรที่ยืนยันแล้ว,관리자가 확정한 최종 근무표.,Final roster,確定シフト,最终值班表,
-offShift,오프,Off,休み,休息,วันหยุด,휴무 근무 유형. 병동 커스텀 근무 유형과 구분한다.,,,,
-shiftType,근무 유형,Shift type,勤務区分,班次类型,ประเภทเวร,근무표 칸에 배정되는 병동별 근무 또는 휴무 유형.,Duty type,勤務タイプ|勤務種類,工作类型,
-importantConstraint,중요,Important,重要,重要,สำคัญ,반드시 지켜야 하는 제약 조건 표시. UI에서는 중요 마크로 표현한다.,Key,キー|必須,关键,
-owner,최고 관리자,Owner,オーナー,所有者,เจ้าของ,관리자 권한을 관리할 수 있는 최고 관리자 역할.,Top admin,最高管理者,最高管理员,
+termId,ko,en,ja,zh,th,vi,description,forbiddenEn,forbiddenJa,forbiddenZh,forbiddenTh,forbiddenVi
+ward,병동,Ward,病棟,病区,หอผู้ป่วย,Khoa,간호 운영 단위. 병원 부서 전체가 아니라 근무표를 공유하는 병동을 의미한다.,Department,部署,部门,แผนก,Phòng ban
+nurse,간호사,Nurse,看護師,护士,พยาบาล,Điều dưỡng,병동 근무표에 배정되는 구성원.,,,,,
+shiftSchedule,근무표,Schedule,勤務表,排班表,ตารางเวร,Lịch trực,병동 근무 배정표. 화면 맥락에 따라 duty schedule 의미를 가진다.,Roster,シフト表,值班表,,
+requestShift,신청 근무,Shift request,勤務希望,班次申请,คำขอเวร,Yêu cầu ca trực,간호사가 희망 근무 또는 휴무를 신청하는 기능.,Requested duty,希望シフト|申請勤務,值班申请,,
+confirmedSchedule,확정 근무표,Confirmed schedule,確定勤務表,已确认排班表,ตารางเวรที่ยืนยันแล้ว,Lịch trực đã xác nhận,관리자가 확정한 최종 근무표.,Final roster,確定シフト,最终值班表,,
+offShift,오프,Off,休み,休息,วันหยุด,Nghỉ,휴무 근무 유형. 병동 커스텀 근무 유형과 구분한다.,,,,,
+shiftType,근무 유형,Shift type,勤務区分,班次类型,ประเภทเวร,Loại ca trực,근무표 칸에 배정되는 병동별 근무 또는 휴무 유형.,Duty type,勤務タイプ|勤務種類,工作类型,,
+importantConstraint,중요,Important,重要,重要,สำคัญ,Quan trọng,반드시 지켜야 하는 제약 조건 표시. UI에서는 중요 마크로 표현한다.,Key,キー|必須,关键,,
+owner,최고 관리자,Owner,オーナー,所有者,เจ้าของ,Chủ sở hữu,관리자 권한을 관리할 수 있는 최고 관리자 역할.,Top admin,最高管理者,最高管理员,,

@@ -90,9 +90,9 @@ type LegalAgreementRequest = {
   documentUrl?: string;
   agreed: true;
   agreedAt: string;
-  preferredLanguage: 'ko' | 'ja' | 'en' | 'zh' | 'th';
-  locale: 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH';
-  serviceRegion: 'KR' | 'JP' | 'EN' | 'CN' | 'TH';
+  preferredLanguage: 'ko' | 'ja' | 'en' | 'zh' | 'th' | 'vi';
+  locale: 'ko-KR' | 'ja-JP' | 'en-US' | 'zh-CN' | 'th-TH' | 'vi-VN';
+  serviceRegion: 'KR' | 'JP' | 'EN' | 'CN' | 'TH' | 'VN';
 };
 ```
 

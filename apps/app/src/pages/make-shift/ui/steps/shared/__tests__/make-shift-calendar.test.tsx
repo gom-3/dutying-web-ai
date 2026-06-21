@@ -99,6 +99,55 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('includes off shift types in row and daily summaries when they are assigned', () => {
+        const offShiftType = {
+            wardShiftTypeId: 20,
+            name: 'Off',
+            shortName: 'O',
+            startTime: '',
+            endTime: '',
+            color: '#465B7A',
+            isDefault: true,
+            isOff: true,
+            isCounted: false,
+            classification: 'OFF',
+        } satisfies TShift['wardShiftTypes'][number];
+        const shiftWithOff: TShift = {
+            ...shift,
+            wardShiftTypes: [offShiftType, ...shift.wardShiftTypes],
+            divisionShiftNurses: [
+                [],
+                [
+                    {
+                        ...shift.divisionShiftNurses[1]![0]!,
+                        wardShiftList: [20, 10],
+                    },
+                ],
+            ],
+        };
+        const docWithOff: TDutyDoc = {
+            ...doc,
+            rows: [{...doc.rows[0]!, cells: ['O', 'D']}],
+        };
+
+        render(<MakeShiftCalendar shift={shiftWithOff} doc={docWithOff} violationMap={new Map()} showFaults={false} readonly />);
+
+        expect(
+            Array.from(document.querySelectorAll('.make-shift-calendar__type-summary-badge')).map((node) => node.textContent),
+        ).toEqual(['D', 'O']);
+        expect(
+            Array.from(document.querySelectorAll('.make-shift-calendar__row-summary-count')).map((node) => node.textContent),
+        ).toEqual(['1', '1']);
+
+        const offDailySummary = document.querySelector<HTMLElement>('.make-shift-daily-summary__row[data-shift-type-id="20"]');
+
+        expect(offDailySummary).not.toBeNull();
+        expect(within(offDailySummary!).getByText('O')).toBeInTheDocument();
+        expect(
+            Array.from(offDailySummary!.querySelectorAll('.make-shift-daily-summary__cell')).map((node) => node.textContent),
+        ).toEqual(['1', '0']);
+    });
+
     it('does not render an unaccepted request as a request-only cell', () => {
         const requestedShift: TShift = {
             ...shift,
@@ -769,6 +818,7 @@ describe('MakeShiftCalendar', () => {
         expect(saturdayCell).not.toBeNull();
         expect(document.querySelector('[data-day-header-index="0"]')).toHaveClass('text-blue');
         expect(document.querySelector('[data-day-header-index="0"]')).toHaveAttribute('data-day-type', 'saturday');
+        expect(saturdayCell).toHaveClass('bg-blue/5');
 
         await act(async () => {
             await user.click(saturdayCell!);

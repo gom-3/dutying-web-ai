@@ -3,7 +3,6 @@ import {type CSSProperties, type PointerEvent as ReactPointerEvent, useCallback,
 import {createPortal} from 'react-dom';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
-import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {
     type TCellPos,
     type TCellValue,
@@ -817,6 +816,25 @@ function isEditableDutyCell(rowIndex: number, colIndex: number, readonly: boolea
     return true;
 }
 
+function isSummaryShiftType(type: TWardShiftType | undefined): type is TWardShiftType {
+    return type != null && (type.isCounted || type.isOff);
+}
+
+function orderSummaryShiftTypes(types: TWardShiftType[]) {
+    const workTypes: TWardShiftType[] = [];
+    const offTypes: TWardShiftType[] = [];
+
+    for (const type of types) {
+        if (type.isOff) {
+            offTypes.push(type);
+        } else {
+            workTypes.push(type);
+        }
+    }
+
+    return [...workTypes, ...offTypes];
+}
+
 function ShiftTypeDropdown({
     dropdown,
     shiftTypes,
@@ -938,7 +956,6 @@ export function MakeShiftCalendar({
     isShimmering = false,
     skillColumn,
 }: TMakeShiftCalendarProps) {
-    const {separateWeekendColor} = useUIConfigStore();
     const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
     const selection = useShiftEditorStore((s) => s.selection);
@@ -1190,7 +1207,7 @@ export function MakeShiftCalendar({
 
                 const type = shortNameToType.get(cell);
 
-                if (type?.isCounted) {
+                if (isSummaryShiftType(type)) {
                     usedTypeIds.add(type.wardShiftTypeId);
                 }
             }
@@ -1216,8 +1233,9 @@ export function MakeShiftCalendar({
 
     const summaryShiftTypes = useMemo(() => {
         const summaryTypeIds = new Set<number>([...stickySummaryShiftTypeIds, ...visibleSummaryShiftTypeIds]);
+        const visibleTypes = shift.wardShiftTypes.filter((type) => isSummaryShiftType(type) && summaryTypeIds.has(type.wardShiftTypeId));
 
-        return shift.wardShiftTypes.filter((type) => type.isCounted && summaryTypeIds.has(type.wardShiftTypeId));
+        return orderSummaryShiftTypes(visibleTypes);
     }, [shift.wardShiftTypes, stickySummaryShiftTypeIds, visibleSummaryShiftTypeIds]);
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
@@ -1459,7 +1477,6 @@ export function MakeShiftCalendar({
                                                 violations={violationMap}
                                                 showFaults={showFaults}
                                                 activeViolationKey={activeViolationKey}
-                                                separateWeekendColor={separateWeekendColor}
                                                 simplified={isSimplified}
                                                 showSkillColumn={showSkillColumn}
                                                 showRowInfoColumn={showRowInfoColumn}
@@ -1569,7 +1586,6 @@ type TCalendarRowLeftProps = {
     violations: TViolationMap;
     showFaults: boolean;
     activeViolationKey: string | null;
-    separateWeekendColor: boolean;
     simplified: boolean;
     showSkillColumn: boolean;
     showRowInfoColumn: boolean;
@@ -1608,7 +1624,6 @@ function CalendarRowLeft({
     violations,
     showFaults,
     activeViolationKey,
-    separateWeekendColor,
     simplified,
     showSkillColumn,
     showRowInfoColumn,
@@ -1857,9 +1872,7 @@ function CalendarRowLeft({
                         const isCellViolationDimmed = activeViolationKey !== null && hasCellViolations && !activeCellViolation;
                         const normalizedDayType = normalizeDayType(day.dayType);
                         const weekendBg = isSaturday(day.dayType)
-                            ? separateWeekendColor
-                                ? 'bg-blue/5'
-                                : 'bg-red/5'
+                            ? 'bg-blue/5'
                             : isRedCalendarDay(day.dayType)
                               ? 'bg-red/5'
                               : '';
@@ -2172,8 +2185,7 @@ function DailySummary({
  * 보이지는 않지만 row-summary와 동일한 size의 placeholder를 그려서
  * 좌측 영역(carrier-card)의 width가 body division-card와 1px도 어긋나지 않도록 한다.
  *
- * row-summary는 counted + off를 모두 표시하므로 spacer도 동일 폭을 갖는다.
- * (daily-summary 본문은 off를 표시하지 않지만 spacer는 정렬용이라 포함해야 함.)
+ * row-summary와 daily-summary가 같은 summaryShiftTypes를 표시하므로 spacer도 동일 폭을 갖는다.
  */
 function DailySummarySpacer({count}: {count: number}) {
     return (

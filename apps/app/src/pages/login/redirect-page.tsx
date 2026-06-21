@@ -1,7 +1,11 @@
-import qs from 'qs';
 import {useLayoutEffect, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {
+    ACCESS_TOKEN_QUERY_KEYS,
+    clearStoredOAuthRedirectPayload,
+    getOAuthRedirectQuery,
+} from '@/features/auth/model/oauth-redirect-payload';
 import {
     buildSocialSignupRegisterPath,
     getIsSocialSignupPath,
@@ -15,7 +19,6 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import LoadingSpinner from '@/shared/ui/LoadingSpinner';
 import PageState from '@/shared/ui/PageState';
 
-const ACCESS_TOKEN_QUERY_KEYS = ['accessToken', 'access_token', 'token', 'adminAccessToken', 'jwt'];
 const normalizeQueryValue = (value: unknown): string | undefined => {
     if (Array.isArray(value)) {
         return normalizeQueryValue(value[0]);
@@ -32,26 +35,6 @@ const getStringQueryValue = (query: Record<string, unknown>, keys: string[]) => 
 
     return undefined;
 };
-const getHashQueryString = () => {
-    const hash = location.hash.replace(/^#/, '');
-
-    if (!hash) return '';
-
-    if (hash.startsWith('?')) return hash.slice(1);
-
-    const queryIndex = hash.indexOf('?');
-
-    return queryIndex >= 0 ? hash.slice(queryIndex + 1) : hash;
-};
-const getRedirectQuery = () => {
-    const hashQuery = qs.parse(getHashQueryString());
-    const searchQuery = qs.parse(location.search, {ignoreQueryPrefix: true});
-
-    return {
-        ...hashQuery,
-        ...searchQuery,
-    };
-};
 const getRedirectAccessToken = (query: Record<string, unknown>) => getStringQueryValue(query, ACCESS_TOKEN_QUERY_KEYS);
 const RedirectPage = () => {
     const {t} = useTypedTranslation();
@@ -61,7 +44,7 @@ const RedirectPage = () => {
         state: {_loaded},
         actions: {handleLogin},
     } = useAuth();
-    const renderQuery = getRedirectQuery();
+    const renderQuery = getOAuthRedirectQuery();
     const renderAccessToken = getRedirectAccessToken(renderQuery);
     const hasLoginToken = Boolean(renderAccessToken);
 
@@ -70,11 +53,12 @@ const RedirectPage = () => {
             return;
         }
 
-        const query = getRedirectQuery();
+        const query = getOAuthRedirectQuery();
         const accessToken = getRedirectAccessToken(query);
 
         if (!accessToken) {
             hasHandledRedirectRef.current = true;
+            clearStoredOAuthRedirectPayload();
             setRedirectError(t('page.login.redirect.adminTokenMissing'));
 
             return;
@@ -98,11 +82,13 @@ const RedirectPage = () => {
         hasHandledRedirectRef.current = true;
 
         if (!isWardAdminAccessToken(accessToken)) {
+            clearStoredOAuthRedirectPayload();
             setRedirectError(t('page.login.redirect.adminTokenMissing'));
 
             return;
         }
 
+        clearStoredOAuthRedirectPayload();
         handleLogin(accessToken, isSocialSignupRequired ? buildSocialSignupRegisterPath() : nextPageUrl);
     }, [_loaded, handleLogin, t]);
 

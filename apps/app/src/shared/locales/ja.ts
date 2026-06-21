@@ -530,6 +530,7 @@ export const ja: TLocale = {
                 en: 'English',
                 zh: '简体中文 (Chinese)',
                 th: 'ภาษาไทย (Thai)',
+                vi: 'Tiếng Việt (Vietnamese)',
             },
             serviceRegion: {
                 KR: '韓国',
@@ -537,6 +538,7 @@ export const ja: TLocale = {
                 EN: 'グローバル / 英語圏',
                 CN: '中国',
                 TH: 'タイ',
+                VN: 'ベトナム',
             },
             savePreferences: '言語設定を保存',
             savingPreferences: '保存中...',

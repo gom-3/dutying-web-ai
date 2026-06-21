@@ -20,6 +20,7 @@ describe('NotAuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
+                accessToken: 'token',
                 _loaded: true,
             },
         } as never);
@@ -48,6 +49,7 @@ describe('NotAuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: true,
+                accessToken: 'token',
                 _loaded: true,
             },
         } as never);
@@ -76,6 +78,7 @@ describe('NotAuthLayout', () => {
         mockedUseAuth.mockReturnValue({
             state: {
                 isAuth: false,
+                accessToken: null,
                 _loaded: false,
             },
         } as never);

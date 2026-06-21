@@ -442,7 +442,7 @@ const getTodayTeamDuty = (item: TScheduleStatusItem, todayDay: number, actionPat
     item.shift.wardShiftTypes.forEach((shiftType, index) => {
         groupsByShiftTypeId.set(shiftType.wardShiftTypeId, {
             key: String(shiftType.wardShiftTypeId),
-            label: shiftType.shortName || shiftType.name,
+            label: shiftType.name || shiftType.shortName,
             color: shiftType.color || '#8A8F98',
             shiftType,
             names: [],
@@ -742,8 +742,8 @@ function MonthlySortSelect({value, onChange}: {value: TMonthlySortOption; onChan
 }
 
 function TodayShiftLine({group}: {group: TTodayShiftGroup}) {
-    const shiftShortName = group.shiftType?.shortName?.trim() ?? '';
-    const shiftName = shiftShortName.length > 0 ? shiftShortName : group.label;
+    const shiftLabel = group.label.trim();
+    const shiftName = shiftLabel.length > 0 ? shiftLabel : (group.shiftType?.shortName?.trim() ?? '');
 
     return (
         <div className="min-w-0 rounded-[8px] bg-white px-2.5 py-2">

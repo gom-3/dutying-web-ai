@@ -429,6 +429,71 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(warnings).toEqual(['확정표가 없어 신뢰도를 낮췄어요.']);
     });
 
+    it('prefers observed excel shift symbols over default D/E/N/O fallbacks', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            wardShiftTypes: [
+                {name: '데이', shortName: 'D', isDefault: true, classification: 'DAY'},
+                {name: '이브닝', shortName: 'E', isDefault: true, classification: 'EVENING'},
+                {name: '나이트', shortName: 'N', isDefault: true, classification: 'NIGHT'},
+                {name: '오프', shortName: 'O', isDefault: true, isOff: true, classification: 'OFF'},
+                {name: '데이', shortName: 'DA', classification: 'DAY'},
+                {name: '이브닝', shortName: 'EV', classification: 'EVENING'},
+                {name: '오프', shortName: '-', isOff: true, classification: 'OFF'},
+            ],
+            nurse_candidates: [
+                {
+                    raw_name: '김하늘',
+                    assignments: {'2026-05-01': 'DA', '2026-05-02': 'EV', '2026-05-03': 'N', '2026-05-04': '-'},
+                    monthly_counts: {DA: 1, EV: 1, N: 1, '-': 1},
+                },
+            ],
+        };
+        const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+        const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
+        const payload = buildCreateWardPayload(nextDraft);
+
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.classification).toBe('OFF');
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.isOff).toBe(true);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'D')).toBe(false);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'E')).toBe(false);
+        expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'O')).toBe(false);
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'DA'},
+            {date: '2026-05-02', shiftShortName: 'EV'},
+            {date: '2026-05-03', shiftShortName: 'N'},
+            {date: '2026-05-04', shiftShortName: '-'},
+        ]);
+    });
+
+    it('keeps one representative off symbol and remaps off aliases to it', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            wardShiftTypes: [
+                {name: '오프', shortName: 'O', isDefault: true, isOff: true, classification: 'OFF'},
+                {name: '오프', shortName: '/', isOff: true, classification: 'OFF'},
+            ],
+            nurse_candidates: [
+                {
+                    raw_name: '김하늘',
+                    assignments: {'2026-05-01': '/', '2026-05-02': '/', '2026-05-03': 'O'},
+                    monthly_counts: {'/': 2, O: 1},
+                },
+            ],
+        };
+        const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+        const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
+        const payload = buildCreateWardPayload(nextDraft);
+
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
+        expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['/']);
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: '/'},
+            {date: '2026-05-02', shiftShortName: '/'},
+            {date: '2026-05-03', shiftShortName: '/'},
+        ]);
+    });
+
     it('uses the selected upload month to preserve day-number assignments', () => {
         const response: TOnboardingWardParseApiResponse = {
             nurse_candidates: [

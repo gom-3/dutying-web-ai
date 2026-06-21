@@ -5,7 +5,7 @@ const routes = (process.env.I18N_UI_ROUTES ?? '/login,/')
     .split(',')
     .map((route) => route.trim())
     .filter(Boolean);
-const languages = ['ko', 'ja', 'en', 'zh', 'th'];
+const languages = ['ko', 'ja', 'en', 'zh', 'th', 'vi'];
 const viewports = [
     {name: 'mobile', width: 390, height: 844},
     {name: 'desktop', width: 1440, height: 1000},
