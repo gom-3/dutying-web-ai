@@ -4,6 +4,8 @@ import {type TWardShiftType} from '@/entities/ward';
 import i18n from '@/i18n';
 import {
     createRequestCalendarCellFocus,
+    getDayBadgeClass,
+    getDayCellClass,
     getDutyRequestStatusDescription,
     getMoveNurseOrderPayload,
     getRequestCalendarCellState,
@@ -214,6 +216,23 @@ describe('request-calendar utils', () => {
             shiftNurseId: 11,
             day: 4,
         });
+    });
+
+    it('일자 헤더 색상을 홈 캘린더 기준으로 표시한다', () => {
+        expect(getDayBadgeClass('saturday', false, false)).toBe('text-blue');
+        expect(getDayBadgeClass('saturday', false, true)).toBe('text-blue');
+        expect(getDayBadgeClass('saturday', true, false)).toBe('bg-blue text-white');
+        expect(getDayBadgeClass('sunday', false, false)).toBe('text-red');
+        expect(getDayBadgeClass('holiday', true, false)).toBe('bg-red text-white');
+        expect(getDayBadgeClass('workday', false, false)).toBe('text-sub-2.5');
+    });
+
+    it('주말 셀 배경색을 홈 캘린더 기준으로 표시한다', () => {
+        expect(getDayCellClass('saturday', false, false)).toBe('bg-blue/5');
+        expect(getDayCellClass('saturday', false, true)).toBe('bg-blue/5');
+        expect(getDayCellClass('sunday', false, false)).toBe('bg-red/5');
+        expect(getDayCellClass('holiday', true, false)).toBe('bg-red/5 bg-main-light');
+        expect(getDayCellClass('workday', false, false)).toBe('');
     });
 
     it('요청만 있는 셀 상태를 계산한다', () => {

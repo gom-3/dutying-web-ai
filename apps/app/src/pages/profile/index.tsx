@@ -560,6 +560,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                 return t('page.profile.language.zh');
             case 'th':
                 return t('page.profile.language.th');
+            case 'vi':
+                return t('page.profile.language.vi');
         }
     };
 

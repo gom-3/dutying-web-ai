@@ -14,6 +14,7 @@ describe('locale helpers', () => {
         expect(normalizePreferredLanguage('en-US')).toBe('en');
         expect(normalizePreferredLanguage('zh-CN')).toBe('zh');
         expect(normalizePreferredLanguage('th-TH')).toBe('th');
+        expect(normalizePreferredLanguage('vi-VN')).toBe('vi');
         expect(normalizePreferredLanguage('fr-FR')).toBeUndefined();
     });
 
@@ -22,6 +23,7 @@ describe('locale helpers', () => {
         expect(normalizeServiceRegion('JP')).toBe('JP');
         expect(normalizeServiceRegion('cn')).toBe('CN');
         expect(normalizeServiceRegion('th')).toBe('TH');
+        expect(normalizeServiceRegion('vn')).toBe('VN');
         expect(normalizeServiceRegion('us')).toBeUndefined();
     });
 
@@ -31,9 +33,11 @@ describe('locale helpers', () => {
         expect(getLocaleForLanguage('en')).toBe('en-US');
         expect(getLocaleForLanguage('zh')).toBe('zh-CN');
         expect(getLocaleForLanguage('th')).toBe('th-TH');
+        expect(getLocaleForLanguage('vi')).toBe('vi-VN');
         expect(getDefaultServiceRegionForLanguage('ja-JP')).toBe('JP');
         expect(getDefaultServiceRegionForLanguage('zh-CN')).toBe('CN');
         expect(getDefaultServiceRegionForLanguage('th-TH')).toBe('TH');
+        expect(getDefaultServiceRegionForLanguage('vi-VN')).toBe('VN');
     });
 
     it('builds API locale headers with explicit service region taking priority', () => {

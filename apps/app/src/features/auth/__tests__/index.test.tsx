@@ -95,6 +95,7 @@ vi.mock('@/shared/api', () => ({
     },
     AuthAPI: {
         demoStart: vi.fn(),
+        logout: vi.fn(),
     },
 }));
 
@@ -109,6 +110,7 @@ describe('useAuth', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(AuthAPI.logout).mockResolvedValue(undefined);
         localStorage.clear();
         window.history.replaceState({}, '', '/request');
         mockI18n.language = 'en';
@@ -368,5 +370,31 @@ describe('useAuth', () => {
         expect(setAccessTokenMock).toHaveBeenCalledWith('demo-token');
         expect(mockNavigate).toHaveBeenCalled();
         expect(setAccessTokenMock.mock.invocationCallOrder[0]).toBeLessThan(mockNavigate.mock.invocationCallOrder[0]);
+    });
+
+    it('revokes the current token when logging out after clearing local auth state', async () => {
+        const currentToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9});
+        const {result} = renderHook(() => useAuth());
+
+        act(() => {
+            useAuthStore.setState({
+                accessToken: currentToken,
+                isAuth: true,
+            });
+        });
+
+        await act(async () => {
+            await result.current.actions.handleLogout('/');
+        });
+
+        expect(useAuthStore.getState()).toMatchObject({
+            isAuth: false,
+            accessToken: null,
+            accountId: null,
+            nurseId: null,
+            wardId: null,
+        });
+        expect(AuthAPI.logout).toHaveBeenCalledWith(currentToken);
+        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 });

@@ -1,7 +1,8 @@
 import type * as ReactQueryModule from '@tanstack/react-query';
 import {MemoryRouter, useLocation} from 'react-router';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
-import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {type TShift, type TShiftTeam, type TWardShiftType} from '@/entities';
+import {render, screen, userEvent, within} from '@/shared/util/test-utils';
 import HomePage from '..';
 
 const mockUseQuery = vi.fn();
@@ -34,13 +35,62 @@ const createLoadedQuery = (data: unknown) => ({
     data,
     refetch: vi.fn(),
 });
+const createShiftTeam = (overrides: Partial<TShiftTeam> = {}): TShiftTeam => ({
+    shiftTeamId: 1,
+    name: '1팀',
+    nurseCnt: 1,
+    nurses: [],
+    ...overrides,
+});
+const createShiftType = (overrides: Partial<TWardShiftType> = {}): TWardShiftType => ({
+    wardShiftTypeId: 1,
+    name: '데이',
+    shortName: 'D',
+    startTime: '07:00',
+    endTime: '15:00',
+    color: '#8A5CFF',
+    isDefault: true,
+    isOff: false,
+    isCounted: true,
+    classification: 'DAY',
+    ...overrides,
+});
+const createTodayShift = (day: number, shiftType: TWardShiftType): TShift => ({
+    lastDays: [],
+    days: [{day, dayType: 'workday'}],
+    wardShiftTypes: [shiftType],
+    divisionShiftNurses: [
+        [
+            {
+                shiftNurse: {
+                    shiftNurseId: 101,
+                    name: '김간호',
+                    carried: 0,
+                    divisionNum: 0,
+                    priority: 0,
+                    isWorker: true,
+                    nurseId: 201,
+                },
+                lastWardShiftList: [],
+                lastWardReqShiftList: [],
+                wardShiftList: [shiftType.wardShiftTypeId],
+                wardReqShiftList: [null],
+            },
+        ],
+    ],
+    workflowStatus: 'CONFIRMED',
+});
 const mockLoadedHomeQueries = ({
     deadlines = [],
     schedules = [],
+    shiftTeams = [],
+    currentMonthShifts = [],
     waitingNurses = [],
 }: {
     deadlines?: unknown[];
     schedules?: unknown[];
+    shiftTeams?: TShiftTeam[];
+    currentMonthShifts?: TShift[];
     waitingNurses?: unknown[];
 } = {}) => {
     mockUseQuery.mockImplementation((options?: {queryKey?: readonly unknown[]}) => {
@@ -54,11 +104,11 @@ const mockLoadedHomeQueries = ({
                 hospitalName: '테스트병원',
                 nurseCnt: 0,
                 wardShiftTypes: [],
-                shiftTeams: [],
+                shiftTeams,
             });
         }
 
-        if (queryKey[0] === 'ward' && queryKey[1] === 'shiftTeams') return createLoadedQuery([]);
+        if (queryKey[0] === 'ward' && queryKey[1] === 'shiftTeams') return createLoadedQuery(shiftTeams);
 
         if (queryKey[0] === 'ward' && queryKey[1] === 'waitingNurses') return createLoadedQuery(waitingNurses);
 
@@ -72,7 +122,7 @@ const mockLoadedHomeQueries = ({
 
         return createLoadedQuery(undefined);
     });
-    mockUseQueries.mockReturnValue([]);
+    mockUseQueries.mockReturnValue(currentMonthShifts.map((shift) => createLoadedQuery(shift)));
 };
 
 const LocationProbe = () => {
@@ -138,6 +188,30 @@ describe('HomePage', () => {
         );
 
         expect(screen.getByText('일요일')).toHaveClass('text-[#FF6384]');
+    });
+
+    it('shows the shift type short name in the badge and the shift type name beside it for today duty', () => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date(2026, 5, 20, 9));
+
+        const shiftType = createShiftType({name: '데이', shortName: 'D'});
+
+        mockLoadedHomeQueries({
+            shiftTeams: [createShiftTeam()],
+            currentMonthShifts: [createTodayShift(20, shiftType)],
+        });
+
+        render(
+            <MemoryRouter>
+                <HomePage />
+            </MemoryRouter>,
+        );
+
+        const todayDutySection = screen.getByRole('heading', {name: '오늘의 근무'}).closest('section');
+
+        expect(todayDutySection).not.toBeNull();
+        expect(within(todayDutySection!).getByText('데이')).toBeInTheDocument();
+        expect(within(todayDutySection!).getByText('D')).toBeInTheDocument();
     });
 
     it('opens the ward schedule modal when a home calendar schedule item is selected', async () => {

@@ -14,6 +14,10 @@ export function getShiftShortNameEntryKey(value: string) {
     return Array.from(value.trim().toLocaleUpperCase())[0]?.toLowerCase() ?? '';
 }
 
+export function getShiftShortNameValueKey(value: string) {
+    return value.trim().toLocaleUpperCase();
+}
+
 export function hasInvalidShiftShortNameEntryKey(value: string) {
     const entryKey = getShiftShortNameEntryKey(value);
 

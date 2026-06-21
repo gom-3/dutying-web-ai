@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {Constraints as ShiftConstraintRules} from '@/pages/make-shift/ui/steps/constraints';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
-    getShiftShortNameEntryKey,
+    getShiftShortNameValueKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
@@ -246,7 +246,7 @@ function ShiftTypeTable({
         const countByShortNameKey = new Map<string, number>();
 
         draftShiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
+            const normalizedShortNameKey = getShiftShortNameValueKey(shiftType.shortName);
 
             if (!normalizedShortNameKey) return;
 
@@ -318,7 +318,7 @@ function ShiftTypeTable({
             return t('page.wardSettings.shiftTypes.validation.shortNameFirstKey');
         }
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameEntryKey(normalizedShortName))) {
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameValueKey(normalizedShortName))) {
             return t('page.wardSettings.shiftTypes.validation.shortNameDuplicate');
         }
 

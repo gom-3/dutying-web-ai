@@ -140,11 +140,11 @@ export const getRequestCalendarDivisionAction = ({
 export const getRequestCalendarRowClassName = ({isFocusedRow}: {isFocusedRow: boolean}) =>
     `relative flex h-11 w-full items-center gap-2 transition-colors ${isFocusedRow ? 'bg-main-light' : 'bg-white'}`;
 
-export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType'], isFocused: boolean, separateWeekendColor: boolean) => {
+export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType'], isFocused: boolean, _separateWeekendColor: boolean) => {
     if (dayType === 'saturday') {
-        if (isFocused) return separateWeekendColor ? 'bg-blue text-white' : 'bg-red text-white';
+        if (isFocused) return 'bg-blue text-white';
 
-        return separateWeekendColor ? 'text-blue' : 'text-red';
+        return 'text-blue';
     }
 
     if (dayType === 'sunday' || dayType === 'holiday') {
@@ -161,14 +161,14 @@ export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType
 export const getDayCellClass = (
     dayType: TRequestShift['days'][number]['dayType'],
     isFocusedDay: boolean,
-    separateWeekendColor: boolean,
+    _separateWeekendColor: boolean,
 ) => {
     const classes = [];
 
     if (dayType === 'sunday' || dayType === 'holiday') {
-        classes.push('bg-[#FFE1E680]');
+        classes.push('bg-red/5');
     } else if (dayType === 'saturday') {
-        classes.push(separateWeekendColor ? 'bg-[#E1E5FF80]' : 'bg-[#FFE1E680]');
+        classes.push('bg-blue/5');
     }
 
     if (isFocusedDay) {

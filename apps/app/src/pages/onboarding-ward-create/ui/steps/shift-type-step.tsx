@@ -2,7 +2,7 @@
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
-    getShiftShortNameEntryKey,
+    getShiftShortNameValueKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
@@ -110,7 +110,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
         const countByShortNameKey = new Map<string, number>();
 
         shiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
+            const normalizedShortNameKey = getShiftShortNameValueKey(shiftType.shortName);
 
             if (!normalizedShortNameKey) return;
 
@@ -134,7 +134,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             return t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey');
         }
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameEntryKey(normalizedShortName))) {
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameValueKey(normalizedShortName))) {
             return t('page.onboardingWardCreate.shiftType.validation.shortNameDuplicate');
         }
 
@@ -411,20 +411,16 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 </div>
                             ) : null}
                         </div>
-                        {shiftType.isDefault ? (
-                            <div className="h-10 w-10" aria-hidden="true" />
-                        ) : (
-                            <button
-                                type="button"
-                                aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
-                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
-                                })}
-                                onClick={() => onDelete(shiftType.id)}
-                                className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
+                                shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
+                            })}
+                            onClick={() => onDelete(shiftType.id)}
+                            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
                 ))}
             </div>

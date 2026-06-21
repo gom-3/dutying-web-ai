@@ -11,6 +11,9 @@
 | 한국어 | `ko` | `KR` |
 | 일본어 | `ja` | `JP` |
 | 영어 | `en` | `EN` |
+| 중국어(간체) | `zh` | `CN` |
+| 태국어 | `th` | `TH` |
+| 베트남어 | `vi` | `VN` |
 
 ## 쉽게 설명
 
@@ -50,8 +53,8 @@ PATCH /accounts/me/preferences
 
 ```ts
 type UpdateAccountPreferencesRequest = {
-  preferredLanguage?: 'ko' | 'ja' | 'en' | null;
-  serviceRegion?: 'KR' | 'JP' | 'EN' | null;
+  preferredLanguage?: 'ko' | 'ja' | 'en' | 'zh' | 'th' | 'vi' | null;
+  serviceRegion?: 'KR' | 'JP' | 'EN' | 'CN' | 'TH' | 'VN' | null;
 };
 ```
 
@@ -86,6 +89,15 @@ type UpdateAccountPreferencesRequest = {
 }
 ```
 
+베트남어 선택:
+
+```json
+{
+  "preferredLanguage": "vi",
+  "serviceRegion": "VN"
+}
+```
+
 ## 기대 동작
 
 - 백엔드는 요청으로 온 `preferredLanguage`를 저장합니다.
@@ -111,4 +123,3 @@ if (body.serviceRegion !== undefined) {
 ## 결론
 
 새 API는 필요 없습니다. 기존 `PATCH /accounts/me/preferences`에서 `preferredLanguage`와 `serviceRegion`을 함께 저장할 수 있으면 됩니다.
-

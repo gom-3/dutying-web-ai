@@ -1,5 +1,10 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import useAuth from '@/features/auth';
+import {
+    captureOAuthRedirectPayload,
+    clearStoredOAuthRedirectPayload,
+    readStoredOAuthRedirectPayload,
+} from '@/features/auth/model/oauth-redirect-payload';
 import {clearSocialSignupProfile, readSocialSignupProfile} from '@/features/auth/model/social-signup';
 import i18n from '@/i18n';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
@@ -30,6 +35,7 @@ describe('RedirectPage', () => {
         await i18n.changeLanguage('ko');
         handleLogin.mockReset();
         clearSocialSignupProfile();
+        clearStoredOAuthRedirectPayload();
         mockedUseAuth.mockReset();
         mockedUseAuth.mockReturnValue({
             state: {
@@ -220,5 +226,25 @@ describe('RedirectPage', () => {
 
         expect(await screen.findByText('소셜 로그인에 실패했어요')).toBeInTheDocument();
         expect(handleLogin).not.toHaveBeenCalled();
+    });
+
+    it('handles a callback token captured before analytics initialization and clears it after login', async () => {
+        window.history.replaceState({}, '', `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=%2Frequest`);
+
+        captureOAuthRedirectPayload();
+
+        expect(window.location.search).toBe('');
+        expect(readStoredOAuthRedirectPayload()).toMatchObject({
+            accessToken: adminToken,
+            nextPageUrl: '/request',
+        });
+
+        render(<RedirectPage />);
+
+        await waitFor(() => {
+            expect(handleLogin).toHaveBeenCalledWith(adminToken, '/request');
+        });
+
+        expect(readStoredOAuthRedirectPayload()).toBeNull();
     });
 });

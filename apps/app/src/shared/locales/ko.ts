@@ -522,6 +522,7 @@ export const ko = {
                 en: 'English',
                 zh: '简体中文 (Chinese)',
                 th: 'ภาษาไทย (Thai)',
+                vi: 'Tiếng Việt (Vietnamese)',
             },
             serviceRegion: {
                 KR: '한국',
@@ -529,6 +530,7 @@ export const ko = {
                 EN: '글로벌/영어권',
                 CN: '중국',
                 TH: '태국',
+                VN: '베트남',
             },
             savePreferences: '언어 설정 저장',
             savingPreferences: '저장 중...',

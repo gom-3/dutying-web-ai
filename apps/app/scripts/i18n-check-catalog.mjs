@@ -4,7 +4,7 @@ const REQUIRED_COLUMNS = ['messageId', 'platform', 'runtimeKey', 'namespace', 'o
 const STATUSES = new Set(['imported', 'draft', 'machine', 'needs-review', 'reviewed', 'legal-approved']);
 const DISPLAY_POLICIES = new Set(['', 'CLIENT_TRANSLATE', 'SERVER_TEXT', 'SERVER_TEXT_WITH_LANGUAGE', 'DEBUG_ONLY']);
 const GRAMMAR_PLACEHOLDERS = new Set(['objectParticle', 'subjectParticle', 'topicParticle']);
-const LOCALES = ['ko', 'en', 'ja', 'zh', 'th'];
+const LOCALES = ['ko', 'en', 'ja', 'zh', 'th', 'vi'];
 
 const interpolationPattern = /{{\s*([\w.]+)\s*}}/g;
 

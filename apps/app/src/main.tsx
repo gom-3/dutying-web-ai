@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {LoaderIcon, Toaster} from 'react-hot-toast';
 import {BrowserRouter} from 'react-router-dom';
 import App from '@/app/App';
+import {captureOAuthRedirectPayload} from '@/features/auth/model/oauth-redirect-payload';
 import {initializeProfileImageStore} from '@/features/file';
 import Loading from '@/widgets/loading';
 import Tutorial from '@/widgets/tutorial';
@@ -24,6 +25,7 @@ if (import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCATOR === 'true') {
     });
 }
 
+captureOAuthRedirectPayload();
 initializeApp();
 initializeProfileImageStore();
 

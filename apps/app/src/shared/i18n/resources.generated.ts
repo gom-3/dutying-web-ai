@@ -2034,6 +2034,7 @@ export const ko = {
                 "ja": "日本語 (Japanese)",
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
                 "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "화면 언어 / Language",
@@ -2062,7 +2063,8 @@ export const ko = {
                 "EN": "글로벌/영어권",
                 "JP": "일본",
                 "KR": "한국",
-                "TH": "태국"
+                "TH": "태국",
+                "VN": "베트남"
             },
             "serviceRegionLabel": "서비스 지역",
             "title": "마이페이지",
@@ -4582,6 +4584,7 @@ export const en: TLocale = {
                 "ja": "日本語 (Japanese)",
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
                 "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "Display language",
@@ -4610,7 +4613,8 @@ export const en: TLocale = {
                 "EN": "Global / English",
                 "JP": "Japan",
                 "KR": "Korea",
-                "TH": "Thailand"
+                "TH": "Thailand",
+                "VN": "Vietnam"
             },
             "serviceRegionLabel": "Service region",
             "title": "Account",
@@ -7128,6 +7132,7 @@ export const ja: TLocale = {
                 "ja": "日本語 (Japanese)",
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
                 "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "画面言語 / Language",
@@ -7156,7 +7161,8 @@ export const ja: TLocale = {
                 "EN": "グローバル / 英語圏",
                 "JP": "日本",
                 "KR": "韓国",
-                "TH": "タイ"
+                "TH": "タイ",
+                "VN": "ベトナム"
             },
             "serviceRegionLabel": "サービス地域",
             "title": "マイページ",
@@ -9674,6 +9680,7 @@ export const zh: TLocale = {
                 "ja": "日本語 (Japanese)",
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
                 "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "画面语言/语言",
@@ -9702,7 +9709,8 @@ export const zh: TLocale = {
                 "EN": "全球 / 英语区",
                 "JP": "日本",
                 "KR": "韩国",
-                "TH": "泰国"
+                "TH": "泰国",
+                "VN": "越南"
             },
             "serviceRegionLabel": "服务区",
             "title": "我的页面",
@@ -12220,6 +12228,7 @@ export const th: TLocale = {
                 "ja": "日本語 (Japanese)",
                 "ko": "한국어 (Korean)",
                 "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
                 "zh": "简体中文 (Chinese)"
             },
             "languageLabel": "ภาษาที่แสดง",
@@ -12248,7 +12257,8 @@ export const th: TLocale = {
                 "EN": "ทั่วโลก / อังกฤษ",
                 "JP": "ญี่ปุ่น",
                 "KR": "เกาหลี",
-                "TH": "ประเทศไทย"
+                "TH": "ประเทศไทย",
+                "VN": "เวียดนาม"
             },
             "serviceRegionLabel": "ภูมิภาคที่ให้บริการ",
             "title": "บัญชี",
@@ -12733,10 +12743,2559 @@ export const th: TLocale = {
     }
 };
 
+export const vi: TLocale = {
+    "entity": {
+        "account": {
+            "profileImageAlt": "{{name}} ảnh hồ sơ",
+            "userFallback": "người dùng"
+        },
+        "ward": {
+            "codeChecking": "Kiểm tra",
+            "codeFallback": "Mã khoa",
+            "displayInfo": "Thông tin khoa"
+        }
+    },
+    "feature": {
+        "account": {
+            "create": {
+                "exception": "Đã xảy ra lỗi khi tạo tài khoản. Vui lòng thử lại trong thời gian ngắn.",
+                "loading": "Lưu thông tin tài khoản.",
+                "success": "Thông tin tài khoản đã lưu."
+            },
+            "edit": {
+                "basicFailed": "Không thể cập nhật thông tin tài khoản.",
+                "deleteAccountFailed": "Không thể xóa tài khoản.",
+                "profileFailed": "Không thể cập nhật hồ sơ.",
+                "quitWardConfirm": "Rời khỏi khoa này?",
+                "quitWardFailed": "Không thể rời khỏi khoa."
+            }
+        },
+        "auth": {
+            "demoSession": {
+                "badge": "Tài khoản dùng thử",
+                "description": "Bản dùng thử này chạy trong một phiên tạm thời có giới hạn. Đăng ký trước khi nó kết thúc nếu bạn muốn tiếp tục sử dụng Dutying.",
+                "descriptionExpiringSoon": "Phiên tòa sẽ sớm kết thúc. Sau đó, bạn sẽ cần phải đăng ký để tiếp tục sử dụng Dutying.",
+                "documentTitle": "Dùng thử {{countdown}} | Dutying",
+                "expiredDocumentTitle": "Dùng thử đã kết thúc | Dutying",
+                "expiredModal": {
+                    "badge": "Thử nghiệm đã kết thúc",
+                    "description": "Đăng ký ngay bây giờ để tiếp tục quá trình thiết lập tài khoản chính thức. Việc chuyển đổi tài khoản dùng thử vẫn đang được chuẩn bị, vì vậy hiện tại chúng tôi sẽ hướng dẫn bạn đăng ký sau khi đăng nhập.",
+                    "nextStepDescription": "Sau khi đăng ký hoặc đăng nhập, bạn có thể kết nối với khoa. Quá trình di chuyển dữ liệu thử nghiệm sẽ diễn ra sau khi tích hợp DUT-948.",
+                    "nextStepTitle": "Có sẵn bước tiếp theo",
+                    "primaryAction": "Đăng ký và tiếp tục",
+                    "title": "Thời gian dùng thử của bạn đã kết thúc"
+                },
+                "expiringSoon": "Sắp hết hạn",
+                "remainingApprox": "Còn khoảng {{minutes}} phút",
+                "remainingFallback": "Đang trong quá trình thử nghiệm",
+                "remainingLabel": "Thời gian còn lại",
+                "remainingPrecise": "Dùng thử Dutying {{minutes}}:{{seconds}}",
+                "signupRequired": "Yêu cầu đăng ký",
+                "title": "Bạn hiện đang chỉnh sửa bằng tài khoản dùng thử tạm thời.",
+                "titleExpiringSoon": "Phiên dùng thử của bạn sắp kết thúc."
+            },
+            "documentTitle": "Dutying",
+            "sessionExpired": "Đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại.",
+            "state": {
+                "errorDescription": "Phiên của bạn có thể đã hết hạn hoặc kết nối mạng có thể không ổn định.",
+                "errorTitle": "Không thể xác nhận trạng thái đăng nhập của bạn",
+                "loadingTitle": "Kiểm tra trạng thái đăng nhập của bạn",
+                "logout": "Đăng xuất",
+                "retry": "Thử lại"
+            }
+        },
+        "createShiftModal": {
+            "backgroundColor": "Màu nền",
+            "createTitle": "Thêm loại công việc/nghỉ phép",
+            "delete": "Xóa",
+            "editTitle": "Chỉnh sửa loại công việc/nghỉ phép",
+            "leave": "Rời khỏi",
+            "leaveNamePlaceholder": "Nhập tên nghỉ phép.",
+            "name": "Tên ca",
+            "save": "Lưu",
+            "shortName": "Viết nghỉ",
+            "shortNameHint": "* Chữ viết nghỉ bạn nhập được hiển thị trong các ô lịch.",
+            "validation": {
+                "nameRequired": "Nhập tên ca.",
+                "shortNameFirstKey": "Bắt đầu bằng một chữ cái, số hoặc ký hiệu như -,., _.",
+                "shortNameRequired": "Nhập tên viết nghỉ của ca.",
+                "timeRequired": "Nhập thời gian thay đổi."
+            },
+            "work": "công việc",
+            "workNamePlaceholder": "Nhập tên công việc.",
+            "workTime": "thời gian làm việc"
+        },
+        "editShiftTeam": {
+            "addNurseFailed": "Không thể thêm điều dưỡng.",
+            "addNurseSuccess": "Đã thêm {{name}}.",
+            "deleteNurseFailed": "Không thể xóa điều dưỡng.",
+            "deleteNurseSuccess": "Đã xóa điều dưỡng.",
+            "disconnectFailed": "Không thể ngắt kết nối liên kết ứng dụng.",
+            "disconnectSuccess": "Đã ngắt kết nối liên kết ứng dụng.",
+            "moveNurseFailed": "Không thể di chuyển điều dưỡng.",
+            "newNursePrefix": "điều dưỡng mới",
+            "updateNurseFailed": "Không thể cập nhật thông tin điều dưỡng.",
+            "updateNurseShiftFailed": "Không thể lưu các loại ca có sẵn."
+        },
+        "editWard": {
+            "approveWaitingNurseFailed": "Không thể thêm đội.",
+            "approveWaitingNurseSuccess": "Đã thêm điều dưỡng vào nhóm đã chọn.",
+            "connectWaitingNurseFailed": "Không thể kết nối với tài khoản điều dưỡng hiện có.",
+            "connectWaitingNurseSuccess": "Đã kết nối với tài khoản điều dưỡng hiện có.",
+            "editSettingFailed": "Không thể cập nhật cài đặt trực.",
+            "rejectWaitingNurseFailed": "Không thể từ chối yêu cầu kết nối đang chờ xử lý.",
+            "rejectWaitingNurseSuccess": "Đã từ chối yêu cầu kết nối đang chờ xử lý."
+        },
+        "file": {
+            "profileImageUploadFailed": "Không thể tải lên hình ảnh hồ sơ."
+        },
+        "register": {
+            "accountStatusChangeFailed": "Không thể thay đổi trạng thái tài khoản."
+        },
+        "registerWard": {
+            "defaultShiftType": {
+                "day": "Ngày",
+                "evening": "Chiều",
+                "night": "Đêm",
+                "off": "Nghỉ"
+            },
+            "shiftTeams": {
+                "addNamePlaceholder": "Thêm tên",
+                "addNurseAria": "Thêm tên điều dưỡng vào nhóm {{index}}",
+                "addTeam": "Thêm đội",
+                "count": "{{count}}",
+                "deleteNurseAria": "Xóa {{name}}",
+                "deleteTeamAria": "Xóa nhóm {{index}}",
+                "description": "Nhập tên điều dưỡng theo nhóm. Tài khoản của bạn được liên kết tự động.",
+                "excludeMe": "* Loại trừ chính mình",
+                "teamName": "Đội điều dưỡng {{index}}",
+                "title": "điều dưỡng tại khoa"
+            },
+            "shiftTypes": {
+                "add": "Thêm",
+                "addAction": "Thêm loại công việc/nghỉ phép",
+                "colorLabel": "Màu sắc",
+                "column": {
+                    "category": "Danh mục",
+                    "color": "Màu sắc",
+                    "edit": "Chỉnh sửa",
+                    "name": "Tên ca",
+                    "shortName": "Viết nghỉ",
+                    "workTime": "Giờ làm việc"
+                },
+                "description": "Các ca mặc định được điền trước. Điều chỉnh chúng để phù hợp với khoa này.",
+                "editAria": "Chỉnh sửa {{name}}",
+                "leave": "Rời khỏi",
+                "noTimeLeave": "Loại nghỉ phép không có giờ làm việc.",
+                "shortNameLabel": "Viết nghỉ",
+                "title": "Các loại ca",
+                "typeLabel": "loại",
+                "work": "công việc"
+            },
+            "validation": {
+                "nameRequired": "Nhập tên ca.",
+                "shortNameRequired": "Nhập tên viết nghỉ của {{name}}.",
+                "timeRequired": "Nhập giờ làm việc cho {{name}}."
+            }
+        },
+        "requestShift": {
+            "processFailed": "Không thể xử lý yêu cầu."
+        },
+        "shiftEditor": {
+            "calendarDivision": {
+                "memberCount": "{{count}} thành viên"
+            },
+            "calendarHeader": {
+                "carryOver": "Mang theo",
+                "name": "Tên",
+                "previousShift": "Ca trước"
+            },
+            "editWard": {
+                "addShiftType": "Thêm loại công việc/nghỉ phép",
+                "applied": "Đã áp dụng",
+                "background": "Điền vào",
+                "color": "Màu sắc",
+                "count": "Đếm",
+                "defaultOffDays": "TẮT mặc định {{count}} d",
+                "edit": "Chỉnh sửa",
+                "editSettings": "Chỉnh sửa cài đặt",
+                "leave": "Rời khỏi",
+                "monthLabel": "{{month}}",
+                "notApplied": "Nghỉ",
+                "shiftName": "Mã",
+                "shiftTypeColorStyle": "Thay đổi phong cách màu sắc",
+                "shortName": "Mã",
+                "text": "văn bản",
+                "type": "loại",
+                "weekendColor": "Nền cuối tuần",
+                "work": "công việc",
+                "workTime": "Giờ"
+            },
+            "export": {
+                "excel": {
+                    "failure": "Không thể lưu tệp Excel lịch. Vui lòng thử lại.",
+                    "fileName": "Tháng {{month}} lịch.xlsx",
+                    "nameHeader": "Tên",
+                    "previousShiftHeader": "Ca trước",
+                    "sheetName": "lịch M{{month}}",
+                    "success": "Đã lưu file Excel lịch.",
+                    "title": "lịch tháng {{month}}"
+                },
+                "image": {
+                    "failure": "Không thể lưu hình ảnh lịch. Vui lòng thử lại.",
+                    "fileName": "{{year}} M{{month}} lịch.png",
+                    "success": "Đã lưu hình ảnh lịch.",
+                    "targetMissing": "Không thể tìm thấy chế độ xem lịch biểu để lưu.",
+                    "teamFileName": "{{teamName}} {{year}} M{{month}} lịch.png",
+                    "title": "lịch {{year}} M{{month}}",
+                    "titleWithWard": "{{wardLabel}} {{year}} M{{month}} lịch"
+                }
+            },
+            "grid": {
+                "clearSelection": "Xóa lựa chọn",
+                "nameHeader": "Tên",
+                "setSelectionD": "Đặt D khi lựa chọn"
+            },
+            "nurseEdit": {
+                "availableShifts": "ca có sẵn",
+                "availableShiftsDescription": "* Chọn từng ca mà điều dưỡng này có thể làm việc.",
+                "close": "Đóng",
+                "disabled": "Đã nghỉ",
+                "dutyManager": "Trình chỉnh sửa lịch",
+                "employmentDate": "Ngày bắt đầu",
+                "employmentDateDescription": "* Nhập năm điều dưỡng này gia nhập bệnh viện.",
+                "enabled": "Đã bật",
+                "gender": {
+                    "female": "F",
+                    "male": "M"
+                },
+                "memo": "Bản ghi nhớ",
+                "phoneNumber": "Điện thoại",
+                "phoneNumberDescription": "* Liên hệ khẩn cấp",
+                "save": "Lưu",
+                "title": "Cài đặt điều dưỡng",
+                "worker": "công nhân"
+            },
+            "panel": {
+                "expand": "Mở rộng",
+                "faults": "Vi phạm",
+                "faultsEmpty": "Không có vi phạm.",
+                "fold": "Đóng",
+                "histories": "Lịch sử",
+                "history": {
+                    "defaultLabel": "Chỉnh sửa lịch sử",
+                    "editedCells": "Đã chỉnh sửa ô {{count}} bởi {{source}}",
+                    "empty": "Không có lịch sử chỉnh sửa.",
+                    "reordered": "Sắp xếp lại công nhân",
+                    "sourceAi": "trí tuệ nhân tạo",
+                    "sourceSystem": "Hệ thống",
+                    "sourceUser": "Hướng dẫn sử dụng"
+                }
+            },
+            "requestLayer": {
+                "pending": "Ca yêu cầu {{name}} chưa được áp dụng."
+            },
+            "toolbar": {
+                "autofill": "Tự động điền",
+                "createNextMonth": "Tạo lịch tháng tiếp theo",
+                "edit": "Chỉnh sửa",
+                "layers": {
+                    "check": "Yêu cầu đã được áp dụng",
+                    "fault": "ca không hợp lệ",
+                    "slash": "Yêu cầu không được áp dụng"
+                },
+                "notReady": "Tính năng này chưa sẵn sàng.",
+                "publish": "Xuất bản",
+                "save": "Lưu",
+                "savedStatus": "Đã lưu",
+                "saveExcel": "Lưu Excel",
+                "saveImage": "Lưu hình ảnh",
+                "savingExcel": "Lưu Excel",
+                "savingImage": "Lưu hình ảnh",
+                "savingStatus": "Đang lưu",
+                "settings": {
+                    "constraint": "Ràng buộc",
+                    "designTheme": "Chủ đề thiết kế",
+                    "shiftType": "Các loại ca"
+                },
+                "shiftInfoTitle": "Các loại ca"
+            },
+            "validation": {
+                "forbidNextShift": "{{nurseName}} không thể hoạt động {{nextShift}} vào ngày sau {{prevShift}}.",
+                "l1ConsecutiveWork": "Công việc liên tiếp là {{actual}} ngày, vượt quá giới hạn {{expected}} ngày.",
+                "l2MaxConsecutiveSameShift": "{{shift}} được chỉ định {{actual}} ngày liên tiếp, vượt quá giới hạn {{expected}} ngày.",
+                "l2MinOffAfterNight": "Có {{actual}} số ngày TẮT sau ca đêm, ít hơn số {{expected}} yêu cầu.",
+                "l3MinStaffShortage": "{{shift}} nhân sự theo ca đang thiếu.",
+                "legacy": {
+                    "excludeCertainWorkTypes": "Tránh các mẫu dịch chuyển ND/ED/NE/NOD.",
+                    "excludeNightBeforeReqOff": "Tránh làm ca đêm trước ngày nghỉ được yêu cầu.",
+                    "maxContinuousNight": "Có thể bố trí ca đêm tối đa {{count}} ngày liên tiếp.",
+                    "maxContinuousWork": "Công việc có thể được phân công trong tối đa {{count}} ngày liên tiếp.",
+                    "minContinuousNight": "Phân công ca đêm trong ít nhất {{count}} ngày liên tiếp.",
+                    "minNightInterval": "Giữ ít nhất {{count}} ngày giữa các ca đêm.",
+                    "minNightIntervalFallback": "Giữ đủ không gian giữa các ca đêm.",
+                    "minOffAssignAfterNight": "Đề xuất ít nhất {{count}} (các) ngày TẮT sau ca đêm."
+                },
+                "maxConsecutiveNight": "{{nurseName}} có {{actual}} N ca liên tiếp. Tối đa: {{expected}}.",
+                "maxConsecutiveWork": "{{nurseName}} có {{actual}} ngày làm việc liên tiếp. Tối đa: {{expected}}.",
+                "maxStaffByShift": "{{shift}} nhân sự là {{actual}}. Tối đa được phép: {{expected}}.",
+                "minMonthlyOff": "{{nurseName}} có {{actual}} ngày OFF hàng tháng. Yêu cầu tối thiểu: {{expected}}.",
+                "minNightInterval": "{{nurseName}} cần ít nhất {{expected}} ngày giữa N ca.",
+                "minOffAfterNight": "{{nurseName}} cần ít nhất {{expected}} ngày TẮT sau ca N.",
+                "minProficiencyStaffByShift": "{{shift}} có {{actual}} điều dưỡng ở LV{{level}} trở lên. Yêu cầu tối thiểu: {{expected}}.",
+                "minStaffByShift": "{{shift}} nhân sự là {{actual}}. Yêu cầu tối thiểu: {{expected}}.",
+                "nightBeforeRequestedOff": "{{nurseName}} được chỉ định ca N trước ngày TẮT được yêu cầu.",
+                "notAloneNight": "{{nurseName}} không thể làm việc một ca N.",
+                "nurseForbidWeekend": "{{nurseName}} không thể làm việc vào cuối tuần hoặc ngày lễ.",
+                "pairForbidSameShift": "{{nurseAName}} và {{nurseBName}} không thể làm việc cùng một ca.",
+                "pairPreferSameShift": "{{nurseAName}} và {{nurseBName}} nên làm việc cùng một ca.",
+                "title": {
+                    "minOffAfterNight": "Không đủ OFF sau ca đêm.",
+                    "minStaffShortage": "Số lượng nhân sự cần thiết còn hạn chế."
+                },
+                "unknown": "Xem lại hạn chế này."
+            }
+        }
+    },
+    "page": {
+        "board": {
+            "comment": {
+                "cancelReply": "Hủy trả lời",
+                "loading": "Đang tải bình luận",
+                "placeholder": "Viết bình luận",
+                "replyPlaceholder": "Viết thư trả lời",
+                "title": "Nhận xét {{count}}"
+            },
+            "common": {
+                "add": "Thêm",
+                "author": "tác giả",
+                "cancel": "Hủy bỏ",
+                "close": "Đóng",
+                "count": "{{count}} vật phẩm",
+                "delete": "Xóa",
+                "noContent": "Không có nội dung",
+                "none": "không có",
+                "notice": "thông báo",
+                "personCount": "{{count}} người",
+                "removeNamed": "Xóa {{name}}",
+                "reply": "trả lời",
+                "submit": "Gửi",
+                "update": "cập nhật",
+                "write": "Viết"
+            },
+            "composer": {
+                "addingImage": "đính kèm",
+                "closeAria": "Đóng nhà soạn nhạc",
+                "content": "Nội dung",
+                "contentPlaceholder": "Viết những gì bạn muốn chia sẻ",
+                "image": "Ảnh",
+                "imageLimit": "Tối đa {{count}} ảnh · {{size}}MB mỗi ảnh",
+                "imageOnly": "Chỉ có thể đính kèm tập tin hình ảnh.",
+                "imageReadFailed": "Không thể tải ảnh. Vui lòng chọn lại.",
+                "maxImageCount": "Bạn có thể đính kèm tối đa {{count}} ảnh.",
+                "maxImageSize": "Mỗi ảnh phải có dung lượng {{size}}MB hoặc nhỏ hơn.",
+                "newPost": "bài đăng mới",
+                "shareTitle": "Chia sẻ với khoa",
+                "title": "Tiêu đề",
+                "titlePlaceholder": "Nhập tiêu đề"
+            },
+            "confirm": {
+                "deleteComment": "Xóa nhận xét này?",
+                "deletePost": "Xóa bài đăng này?",
+                "deleteSchedule": "Xóa lịch khoa này?"
+            },
+            "date": {
+                "allDay": "Cả ngày",
+                "compactMonthDay": "{{month}}/{{day}}",
+                "datePickerButtonAria": "{{label}} {{value}}",
+                "datePlaceholder": "Chọn ngày",
+                "justNow": "Vừa rồi",
+                "monthDay": "{{month}}/{{day}}",
+                "monthTitle": "{{year}}.{{month}}",
+                "nextMonth": "Tháng tiếp theo",
+                "prevMonth": "Tháng trước",
+                "quick": {
+                    "inThreeDays": "trong 3 ngày",
+                    "today": "hôm nay",
+                    "tomorrow": "Ngày mai"
+                },
+                "selectAria": "Chọn {{date}}",
+                "timeUnknown": "Thời gian TBD",
+                "weekdays": {
+                    "fri": "Thứ Sáu",
+                    "mon": "Thứ hai",
+                    "sat": "Thứ bảy",
+                    "sun": "mặt trời",
+                    "thu": "Thứ năm",
+                    "tue": "thứ ba",
+                    "wed": "Thứ tư"
+                }
+            },
+            "deadline": {
+                "closePicker": "Đóng bộ chọn thời hạn",
+                "label": "thời hạn",
+                "noSelection": "Không được chọn",
+                "overdue": "Quá hạn",
+                "pickerTitle": "Chọn thời hạn",
+                "selectedSuffix": "Đến hạn {{date}}",
+                "today": "Hạn chót hôm nay"
+            },
+            "description": "Chia sẻ thông tin cập nhật quan trọng với các điều dưỡng trong cùng khoa.",
+            "detail": {
+                "attachedImagePreview": "Mở ảnh đính kèm {{index}}",
+                "check": "Đánh dấu hoàn thành",
+                "checkedPeople": "{{count}} đã kiểm tra",
+                "closeImage": "Đóng ảnh",
+                "deletePost": "Xóa bài đăng",
+                "imagePreview": "Mở ảnh",
+                "like": "thích",
+                "selectPost": "Chọn một bài đăng",
+                "uncheck": "Xóa séc",
+                "unlike": "Không giống"
+            },
+            "list": {
+                "clearSearch": "Xóa tìm kiếm",
+                "empty": "Tạo một bài viết mới",
+                "loadFailed": "Không thể tải bài viết",
+                "loading": "Đang tải bài viết",
+                "searchAria": "Tìm kiếm bài viết",
+                "searchPlaceholder": "Tìm kiếm tiêu đề hoặc nội dung",
+                "title": "bài viết"
+            },
+            "schedule": {
+                "calendarTitle": "lịch khoa",
+                "closeAria": "Đóng lịch khoa",
+                "createAria": "Tạo lịch khoa",
+                "datePickerClose": "Đóng bộ chọn ngày",
+                "datePickerHeader": "Lên lịch {{label}}",
+                "dateTime": "Ngày và giờ",
+                "dayAria": "{{date}}, {{count}} lên lịch các mục{{selectedSuffix}}",
+                "editAria": "Chỉnh sửa lịch khoa",
+                "endDate": "Ngày kết thúc",
+                "endTime": "Kết thúc",
+                "memo": "Bản ghi nhớ",
+                "memoPlaceholder": "Thêm bất kỳ chi tiết nào",
+                "modalAria": "khoa {{title}}",
+                "modalCreate": "Tạo lịch",
+                "modalEdit": "Chỉnh sửa lịch",
+                "modalView": "Xem lịch",
+                "monthEventsTitle": "Tháng này",
+                "noMemo": "Không có bản ghi nhớ",
+                "noMonthEvents": "lịch khoa sẽ xuất hiện ở đây.",
+                "noSelectedDateEvents": "Không có lịch vào ngày đã chọn.",
+                "periodRequired": "Vui lòng chọn một khoảng thời gian lịch.",
+                "postDeadline": "Thời hạn đăng bài",
+                "sectionTitle": "lịch khoa",
+                "selectedDateTitle": "lịch {{date}}",
+                "selectedSuffix": ", đã chọn",
+                "startDate": "Ngày bắt đầu",
+                "startTime": "Bắt đầu",
+                "time": "thời gian",
+                "timeInputAria": "{{label}} thời gian",
+                "timeMissing": "lịch tính thời gian yêu cầu cả thời gian bắt đầu và kết thúc.",
+                "timeRangeInvalid": "Đối với lịch trong ngày, thời gian kết thúc phải sau thời gian bắt đầu.",
+                "title": "Tiêu đề",
+                "titlePlaceholder": "Nhập tiêu đề",
+                "titleRequired": "Vui lòng nhập tiêu đề."
+            },
+            "state": {
+                "loadingDescription": "Kiểm tra thông tin khoa.",
+                "loadingTitle": "Bảng chuẩn bị",
+                "noWardDescription": "Bạn có thể sử dụng bảng sau khi liên kết một khoa.",
+                "noWardTitle": "Liên kết một khoa để sử dụng bảng",
+                "retry": "Thử lại",
+                "retryDescription": "Vui lòng thử lại sau giây lát.",
+                "wardLoadFailedTitle": "Không thể tải thông tin khoa"
+            },
+            "title": "Ban",
+            "tutorial": {
+                "composer": {
+                    "deadlineInfo": "Thời hạn xuất hiện trong ứng dụng Dutying và lịch khoa.\nSử dụng nó để cập nhật gắn liền với một ngày.",
+                    "deadlineTitle": "Đặt thời hạn"
+                },
+                "detail": {
+                    "checkInfo": "điều dưỡng có thể để lại séc khi họ xác nhận.\nSử dụng nhận xét cho các yêu cầu hoặc thay đổi.",
+                    "checkTitle": "Theo dõi kiểm tra và nhận xét"
+                },
+                "list": {
+                    "createInfo": "Bài viết được hiển thị cho tất cả các thành viên khoa.\nChia sẻ thông tin cập nhật khoa nên biết.",
+                    "createTitle": "Tạo một bài viết mới ở đây",
+                    "postsInfo": "Chọn một bài viết để đọc chi tiết.",
+                    "postsTitle": "Xem bài viết trên bảng"
+                }
+            }
+        },
+        "duty": {
+            "bootstrapErrorDescription": "Vui lòng kiểm tra lại thông tin tài khoản. Nếu sự cố vẫn tiếp diễn, hãy đăng nhập lại.",
+            "bootstrapErrorTitle": "Không thể tải thông tin khoa",
+            "bootstrapLoadingDescription": "Chuẩn bị xem lịch đã được xác nhận sau khi kiểm tra thông tin khoa.",
+            "bootstrapLoadingTitle": "Kiểm tra thông tin tài khoản",
+            "cancel": "Hủy bỏ",
+            "confirmedShift": "lịch trực đã được xác nhận",
+            "createCurrentMonth": "Tạo lịch tháng này",
+            "createNextMonth": "Tạo lịch tháng tiếp theo",
+            "createShiftFlow": "Tạo lịch",
+            "editShift": "Chỉnh sửa lịch trực",
+            "emptyDescription": "Chuyển đến phần tạo lịch để bắt đầu lịch trực cho tháng {{month}}.",
+            "emptyScheduleDescription": "Tạo lịch trong quy trình tạo tự động.",
+            "emptyScheduleTitle": "Chưa có lịch trực {{month}} cho {{teamName}}",
+            "emptyTitle": "Không có lịch trực cho {{teamName}} trong tháng {{month}}.",
+            "error": "Không thể tải Lịch trực.",
+            "exportExcel": "Xuất Excel",
+            "exportExcelLoading": "Đang xuất Excel...",
+            "loading": "Đang tải lịch trực...",
+            "monthHeader": "{{year}}-{{month}}",
+            "nextMonth": "Tháng tiếp theo",
+            "noTeamsDescription": "Tạo một nhóm thay đổi và thử lại.",
+            "noTeamsLabel": "Không có đội thay đổi",
+            "noTeamsTitle": "Không tìm thấy đội thay đổi nào.",
+            "pastEmptyScheduleTitle": "Không có Lịch trực {{month}} cho {{teamName}}",
+            "prevMonth": "Tháng trước",
+            "publish": "Xuất bản",
+            "save": "Lưu",
+            "selectedTeamFallback": "Đội đã chọn",
+            "teamsError": "Không thể tải các nhóm làm ca.",
+            "title": "Quản lý lịch trực",
+            "viewRangeDescription": "Bạn chỉ có thể tạo và xem lịch trong tháng tiếp theo.",
+            "viewRangeTitle": "Khoảng thời gian này không có sẵn",
+            "wardCodeChecking": "Kiểm tra"
+        },
+        "dutying": {
+            "comingSoon": "Sắp có",
+            "description": "Tìm thông tin dịch vụ và chính sách cho Dutying.",
+            "items": {
+                "contact": {
+                    "description": "Đặt câu hỏi hoặc để lại yêu cầu hỗ trợ.",
+                    "title": "Liên hệ với chúng tôi"
+                },
+                "notice": {
+                    "description": "Kiểm tra cập nhật và thông báo dịch vụ.",
+                    "title": "Thông báo"
+                },
+                "privacy": {
+                    "description": "Xem lại cách xử lý thông tin cá nhân.",
+                    "title": "Chính sách bảo mật"
+                },
+                "terms": {
+                    "description": "Xem lại các điều khoản sử dụng dịch vụ.",
+                    "title": "Điều khoản dịch vụ"
+                }
+            },
+            "notice": {
+                "backToDutying": "Dutying",
+                "backToList": "Thông báo",
+                "detailErrorDescription": "Hãy thử lại sau giây lát hoặc chọn lại từ danh sách thông báo.",
+                "detailErrorTitle": "Không thể mở thông báo này",
+                "emptyDescription": "Thông báo mới sẽ xuất hiện ở đây.",
+                "emptyTitle": "Chưa có thông báo nào",
+                "errorDescription": "Hãy kiểm tra kết nối mạng của bạn và thử lại.",
+                "errorTitle": "Không thể tải thông báo",
+                "invalidDescription": "Kiểm tra địa chỉ hoặc chọn một thông báo từ danh sách.",
+                "invalidTitle": "Không tìm thấy thông báo",
+                "listAria": "Danh sách thông báo",
+                "loadingTitle": "Đang tải thông báo",
+                "loadMore": "Tải thêm",
+                "pinned": "Quan trọng",
+                "publishedAt": "Đã xuất bản {{date}}",
+                "retry": "Thử lại",
+                "updatedAt": "Đã cập nhật {{date}}"
+            },
+            "title": "Dutying"
+        },
+        "error": {
+            "documentTitle": "{{title}} | Dutying",
+            "goBack": "Quay lại",
+            "goHome": "Đi tới lịch",
+            "notFound": {
+                "code": "404",
+                "description": "Địa chỉ có thể đã thay đổi hoặc màn hình này có thể không còn nữa.\nBắt đầu lại từ trang lịch.",
+                "title": "Không tìm thấy trang"
+            },
+            "retry": "Thử lại",
+            "unexpected": {
+                "code": "LỖI",
+                "description": "Đã xảy ra lỗi trong giây lát.\nNếu nó tiếp tục xảy ra, hãy làm mới và thử lại.",
+                "title": "Không thể tải màn hình này"
+            }
+        },
+        "home": {
+            "calendar": {
+                "allDay": "Cả ngày",
+                "deadlineMeta": "Hạn chót · {{date}}",
+                "empty": "Không có sự kiện lân cận",
+                "loading": "Kiểm tra lịch",
+                "openAll": "Xem toàn bộ lịch",
+                "overdue": "Quá hạn",
+                "scheduleDateMeta": "Sự kiện · {{date}} · {{time}}",
+                "scheduleMeta": "Sự kiện · {{time}}",
+                "timeUnknown": "Thời gian TBD",
+                "today": "hôm nay"
+            },
+            "emptyTeams": {
+                "description": "Thêm nhóm điều dưỡng từ Quản lý thành viên.",
+                "title": "Thêm một nhóm để xem điều này"
+            },
+            "fallback": {
+                "manager": "Quản trị viên",
+                "selectedTeam": "Đội đã chọn",
+                "ward": "Khoa"
+            },
+            "filter": {
+                "all": "Tất cả"
+            },
+            "header": {
+                "createNextMonth": "Tạo lịch tháng tiếp theo",
+                "todayAssigned": "{{managerName}} · {{count}} làm việc hôm nay"
+            },
+            "monthly": {
+                "cellTitle": "{{nurseName}} ngày {{day}} {{shift}}",
+                "descriptionAll": "{{month}} · Tất cả",
+                "descriptionTeam": "{{month}} · {{teamName}}",
+                "edit": "Chỉnh sửa lịch",
+                "emptyAllTitle": "lịch tháng này trống",
+                "emptyDescription": "Bạn có thể kiểm tra nó trong Tạo lịch.",
+                "emptyTeamsTitle": "Thêm nhóm để xem lịch",
+                "emptyTeamTitle": "{{teamName}} lịch trống",
+                "nameHeader": "Tên"
+            },
+            "nextSchedule": {
+                "title": "{{teamName}} lịch tháng tới"
+            },
+            "queue": {
+                "pendingRequests": "Yêu cầu ca trực đang chờ xử lý",
+                "waitingNurses": "Đang chờ tham gia"
+            },
+            "sections": {
+                "calendar": "Lịch",
+                "monthly": "lịch tháng này",
+                "tasks": "để làm",
+                "todayDuty": "Hôm nay thay đổi"
+            },
+            "skeleton": {
+                "loadingAria": "Đang tải về nhà"
+            },
+            "sort": {
+                "default": "Mặc định",
+                "label": "Lên lịch sắp xếp thứ tự",
+                "nameAsc": "Tên",
+                "openAria": "Thứ tự sắp xếp lịch mở",
+                "todayShift": "Ca hôm nay"
+            },
+            "state": {
+                "errorDescription": "Vui lòng thử lại trong thời gian ngắn.",
+                "errorTitle": "Không thể tải trang chủ",
+                "noWardDescription": "Kết nối một khoa để xem nhà.",
+                "noWardTitle": "Kết nối khoa trước",
+                "retry": "Thử lại"
+            },
+            "status": {
+                "checking": "Kiểm tra",
+                "complete": "Đã xác nhận",
+                "draft": "Đang tiến hành",
+                "empty": "Chưa bắt đầu",
+                "error": "Kiểm tra lại"
+            },
+            "tasks": {
+                "checking": "Kiểm tra",
+                "nextScheduleAria": "Tiến độ kế hoạch tháng tiếp theo",
+                "overdueAction": "thời hạn",
+                "overdueFallback": "Bắt đầu với mục quá hạn cũ nhất",
+                "overdueTitle": "{{count}} thời hạn quá hạn",
+                "pendingRequestsAction": "Yêu cầu",
+                "pendingRequestsDescription": "Quyết định xem có nên áp dụng chúng vào lịch hay không",
+                "pendingRequestsTitle": "{{count}} yêu cầu chuyển ca đang chờ xử lý",
+                "todayAction": "hôm nay",
+                "todayFallback": "Bài đăng này sẽ đến hạn vào hôm nay",
+                "todayTitle": "{{count}} hạn chót hôm nay",
+                "unreadChatAction": "Trò chuyện",
+                "unreadChatDescription": "Kiểm tra các cuộc trò chuyện gần đây",
+                "unreadChatTitle": "{{count}} tin nhắn trò chuyện của khoa chưa đọc",
+                "waitingNursesAction": "Thành viên",
+                "waitingNursesDescription": "Đánh giá thành viên để thêm vào khoa",
+                "waitingNursesTitle": "{{count}} đang chờ tham gia"
+            },
+            "today": {
+                "emptyShift": "Hôm nay không có ca"
+            }
+        },
+        "landing": {
+            "appFeature": {
+                "community": {
+                    "description": "Chia sẻ ẩn danh các câu hỏi, lời khuyên lâm sàng và những mối quan ngại khó nói ra.",
+                    "highlight": "Những câu chuyện có thật",
+                    "label": "Nói chuyện điều dưỡng",
+                    "title": "Những câu chuyện có thật từ các điều dưỡng,\nở một nơi"
+                },
+                "home": {
+                    "description": "Kiểm tra lịch trực tiếp từ các vật dụng mà không cần mở ứng dụng.",
+                    "highlightPersonal": "kế hoạch cá nhân",
+                    "highlightSchedule": "Ca làm việc",
+                    "label": "Trang chủ",
+                    "title": "Ca làm việc và\nkế hoạch cá nhân cùng nhau"
+                },
+                "ward": {
+                    "description": "Phối hợp Lịch trực theo ca với ít việc phải qua lại hơn.",
+                    "highlight": "Kết nối với khoa của bạn",
+                    "label": "Khoa",
+                    "title": "Kết nối với khoa của bạn\nvà xem lịch của đội"
+                }
+            },
+            "appSection": {
+                "pill": "ứng dụng",
+                "titleLine1": "Lịch ca",
+                "titleLine2": "và cập nhật khoa cùng nhau"
+            },
+            "common": {
+                "appDownload": "Tải xuống ứng dụng",
+                "appSchedule": "Kiểm tra lịch trong ứng dụng",
+                "copyright": "ⓒ Nhiệm vụ 2026. Mọi quyền được bảo lưu",
+                "languageSelect": "Chọn ngôn ngữ",
+                "login": "Đăng nhập",
+                "logout": "Đăng xuất",
+                "makeSchedule": "Tạo lịch",
+                "profile": "Tài khoản",
+                "profileClose": "Đóng tài khoản",
+                "profileMenu": "Trình đơn hồ sơ",
+                "schedule": "Lịch trực",
+                "tryDemo": "Hãy thử bản demo",
+                "viewDesktop": "Xem phiên bản máy tính để bàn",
+                "viewMobile": "Xem phiên bản di động",
+                "webMakeSchedule": "Tạo lịch trên web"
+            },
+            "feature": {
+                "ai": {
+                    "description": "Xem lại các điều kiện dễ bỏ lỡ\ntừng bước và áp dụng chúng.",
+                    "label": "Tự động điền AI",
+                    "title": "Không cần phải điền\nlịch trống từ đầu"
+                },
+                "integration": {
+                    "description": "điều dưỡng có thể gửi yêu cầu trong ứng dụng.\nlịch đã được xác nhận sẽ được gửi ngay lập tức.",
+                    "highlight": "Kết nối",
+                    "label": "Quy trình làm việc được kết nối",
+                    "title": "Kết nối điều dưỡng\nvới khoa"
+                },
+                "review": {
+                    "description": "Xem những gì cần chú ý\nvà xem xét các bản sửa lỗi được đề xuất.",
+                    "label": "Tự động điền AI",
+                    "title": "Tìm ca sai\nvà sửa chúng một cách nhanh chóng"
+                },
+                "ward": {
+                    "description": "Từ những thông báo phải đọc đến những cập nhật nhanh chóng,\ngiữ mọi thứ ở một nơi.",
+                    "highlightNurse": "điều dưỡng khoa",
+                    "highlightShare": "Chia sẻ",
+                    "label": "Ban",
+                    "title": "Chia sẻ điều điều dưỡng khoa\ncần biết"
+                }
+            },
+            "finalCta": {
+                "download": "Tải xuống ứng dụng",
+                "eyebrow": "Một phút là đủ",
+                "titleLine1": "Kết nối web và ứng dụng",
+                "titleLine2": "để quản lý khoa của bạn"
+            },
+            "header": {
+                "app": "ứng dụng điều dưỡng",
+                "homeAria": "Về trang chủ Dutying",
+                "inquiry": "Liên hệ với chúng tôi",
+                "sectionAria": "Đoạn hạ cánh",
+                "web": "web quản lý"
+            },
+            "hero": {
+                "ariaLabel": "Thay đổi lịch, thực hiện dễ dàng hơn với Dutying",
+                "description": "Tạo lịch nhanh hơn với AI,\nvà kết nối các điều dưỡng để đơn giản hóa hoạt động của khoa.",
+                "phraseSchedule": "lịch thay đổi,",
+                "phraseWard": "Hoạt động của khoa,",
+                "suffix": "trở nên dễ dàng hơn với Dutying"
+            },
+            "imageAlt": {
+                "appLogo": "Hình ảnh logo ứng dụng nghĩa vụ",
+                "appScreen": "Màn hình ứng dụng",
+                "integration": "Một điều dưỡng đang xem xét các Yêu cầu ca trực trong ứng dụng",
+                "mobileHero": "Màn hình lịch ca làm việc của ứng dụng trực",
+                "wardBoard": "Màn hình bảng khoa",
+                "webSchedule": "Màn hình soạn lịch web Dutying"
+            },
+            "mobileBenefits": {
+                "community": {
+                    "description": "Chia sẻ những thông tin hữu ích và những câu chuyện đời thường với điều dưỡng.",
+                    "title": "cộng đồng điều dưỡng"
+                },
+                "schedule": {
+                    "description": "Kiểm tra ca làm việc và sự kiện cá nhân của bạn ngay trong ứng dụng.",
+                    "title": "Lịch ca"
+                },
+                "ward": {
+                    "description": "Kết nối với khoa của bạn và gửi yêu cầu ca hoặc ngày nghỉ một cách dễ dàng.",
+                    "title": "Kết nối khoa"
+                }
+            },
+            "mobileHero": {
+                "benefitsLabel": "Các tính năng ứng dụng chính",
+                "benefitsTitleLine1": "Được xây dựng xung quanh những gì",
+                "benefitsTitleLine2": "điều dưỡng cần mỗi ngày",
+                "communityAria": "Chia sẻ mối quan tâm về nghề nghiệp, lâm sàng và hàng ngày trong Dutying",
+                "communityLine1": "Nói chuyện nghề nghiệp, phòng khám,",
+                "communityLine2": "và những mối quan tâm hàng ngày",
+                "description": "Giữ các ca làm việc, yêu cầu, ngày nghỉ và cập nhật khoa cùng nhau trong ứng dụng.",
+                "downloadEyebrow": "Tải Dutying",
+                "downloadTitleLine1": "Đừng bỏ lỡ ca làm việc của bạn",
+                "downloadTitleLine2": "hoặc cập nhật khoa",
+                "requestAria": "Gửi yêu cầu ca và ngày nghỉ dễ dàng hơn",
+                "requestLine1": "Gửi ca và ngày nghỉ",
+                "requestLine2": "yêu cầu dễ dàng hơn",
+                "scheduleAria": "Kiểm tra ca làm việc của bạn ngay lập tức trong Dutying",
+                "scheduleLine1": "Kiểm tra ca làm việc của bạn",
+                "scheduleLine2": "ngay lập tức trong Dutying",
+                "wardAria": "Nhận cập nhật khoa ngay trong Dutying",
+                "wardLine1": "Nhận thông tin cập nhật về khoa",
+                "wardLine2": "ngay trong Dutying"
+            },
+            "title": "lịch trực\nBây giờ dễ dàng hơn!",
+            "webSection": {
+                "pill": "Web",
+                "titleHighlight": "1 phút với AI",
+                "titleLine1": "lịch phức tạp,",
+                "titleLine2Prefix": "bây giờ được xây dựng trong",
+                "titleLine2Suffix": "là xong"
+            }
+        },
+        "login": {
+            "appleContinue": "Tiếp tục với Apple",
+            "appleCta": "Tiếp tục với Apple",
+            "appleStart": "Bắt đầu với Apple",
+            "backToLogin": "Quay lại để đăng nhập",
+            "continuePrefix": "Bằng cách tiếp tục, bạn đồng ý với",
+            "demoExpired": {
+                "bannerDescription": "API chuyển đổi đầy đủ vẫn đang được tiến hành, vì vậy bây giờ chúng tôi sẽ hướng dẫn bạn đăng nhập và đăng ký trước.",
+                "bannerTitle": "Bản demo đã kết thúc",
+                "description": "Thời gian dùng thử của bạn đã kết thúc nhưng bạn có thể tiếp tục ngay với quy trình đăng ký đầy đủ.",
+                "title": "Đăng ký và tiếp tục"
+            },
+            "demoSignupDescription": "Tạo một tài khoản và một khoa mới để tiếp tục quản lý dữ liệu của bạn sau này.",
+            "demoSignupTitle": "Chuyển đổi tài khoản dùng thử của bạn thành tài khoản đầy đủ",
+            "description": "Bắt đầu Dutying bằng tài khoản mạng xã hội của bạn.",
+            "email": "Email",
+            "emailPlaceholder": "Nhập email của bạn",
+            "emailSignupPlaceholder": "Nhập email của bạn",
+            "feedback": {
+                "emailVerified": "Xác minh email đã hoàn tất.",
+                "invalidCredentials": "Email hoặc mật khẩu không đúng.",
+                "legacyInvalidCredentialsServerText": "아이디 또는 비밀번호가 올바르지 않습니다.",
+                "loginFailed": "Không thể đăng nhập. Vui lòng thử lại.",
+                "passwordResetFailed": "Không thể thay đổi mật khẩu. Vui lòng thử lại.",
+                "passwordResetSuccess": "Mật khẩu đã thay đổi. Đăng nhập bằng mật khẩu mới của bạn.",
+                "passwordResetTokenVerified": "Mã đã được xác minh. Nhập mật khẩu mới.",
+                "signupFailed": "Không thể hoàn tất đăng ký. Vui lòng thử lại.",
+                "verificationFailed": "Không thể gửi email xác minh. Vui lòng thử lại.",
+                "verificationInvalid": "Kiểm tra mã xác minh.",
+                "verificationSent": "Chúng tôi đã gửi email xác minh. Kiểm tra hộp thư đến của bạn và nhập mã."
+            },
+            "forgotPassword": "Quên mật khẩu",
+            "hasAccountPrompt": "Đã có tài khoản?",
+            "hidePassword": "Ẩn mật khẩu",
+            "kakaoContinue": "Tiếp tục với Kakao",
+            "kakaoCta": "Tiếp tục với Kakao",
+            "kakaoStart": "Bắt đầu với Kakao",
+            "loginLink": "Đăng nhập",
+            "loginVisualAria": "Hình ảnh đăng nhập bắt buộc",
+            "marketingConsent": "Tôi đồng ý nhận thông tin tiếp thị.",
+            "name": "Tên",
+            "namePlaceholder": "Nhập tên của bạn",
+            "newPassword": "Mật khẩu mới",
+            "newPasswordConfirm": "Xác nhận mật khẩu mới",
+            "newPasswordConfirmPlaceholder": "Nhập lại mật khẩu mới",
+            "newPasswordPlaceholder": "Nhập mật khẩu mới",
+            "nextImage": "Hình ảnh tiếp theo",
+            "noAccountPrompt": "Chưa có tài khoản?",
+            "optionalConsentLabel": "[Tùy chọn]",
+            "password": "Mật khẩu",
+            "passwordConfirm": "Xác nhận mật khẩu",
+            "passwordConfirmPlaceholder": "Nhập lại mật khẩu của bạn",
+            "passwordPlaceholder": "Nhập mật khẩu của bạn",
+            "passwordResetSubmit": "Đặt lại mật khẩu",
+            "passwordResetTitle": "Đặt lại mật khẩu",
+            "passwordResetVerificationCodeAria": "Mã xác minh đặt lại mật khẩu",
+            "passwordSignupPlaceholder": "Nhập mật khẩu của bạn",
+            "previousImage": "Hình ảnh trước đó",
+            "privacyPolicy": "Chính sách bảo mật",
+            "privacyNoticePrefix": "Thông tin cá nhân được xử lý theo",
+            "privacyNoticeSuffix": ".",
+            "redirect": {
+                "adminTokenMissing": "Không thể nhận được mã thông báo đăng nhập của quản trị viên. Kiểm tra cài đặt đăng nhập xã hội.",
+                "errorTitle": "Đăng nhập mạng xã hội không thành công",
+                "loading": "Đang đăng nhập."
+            },
+            "requiredConsentLabel": "[Bắt buộc]",
+            "showPassword": "Hiển thị mật khẩu",
+            "signupLink": "Đăng ký",
+            "signupTitle": "Đăng ký",
+            "sixDigitVerificationCodePlaceholder": "Mã xác minh gồm 6 chữ số",
+            "submitLogin": "Đăng nhập",
+            "submitSignup": "Tạo tài khoản",
+            "termsConnector": "và",
+            "termsAgreementSuffix": ".",
+            "termsOfService": "Điều khoản dịch vụ",
+            "termsPrefix": "Bằng cách tiếp tục, bạn đồng ý với",
+            "termsSuffix": ".",
+            "termsSuffixStrict": ".",
+            "title": "Đăng nhập",
+            "validation": {
+                "emailInvalid": "Nhập địa chỉ email hợp lệ.",
+                "emailVerificationRequired": "Hoàn tất xác minh email.",
+                "loginRequired": "Nhập email và mật khẩu của bạn.",
+                "nameRequired": "Nhập tên của bạn.",
+                "passwordConfirmRequired": "Nhập lại mật khẩu.",
+                "passwordMinLength": "Nhập ít nhất {{count}} ký tự cho mật khẩu của bạn.",
+                "passwordMismatch": "Mật khẩu không khớp.",
+                "termsRequired": "Đồng ý với Điều khoản dịch vụ.",
+                "verificationCodeRequired": "Nhập mã xác minh.",
+                "verificationConfirmRequired": "Xác nhận mã xác minh trước."
+            },
+            "verificationCodeAria": "Mã xác minh email",
+            "verificationCodePlaceholder": "Nhập mã xác minh",
+            "verificationComplete": "Đã xác minh",
+            "verificationConfirm": "Xác nhận",
+            "verificationResend": "Gửi lại",
+            "verificationSend": "Xác minh"
+        },
+        "makeShift": {
+            "aiRefill": {
+                "action": "Nạp tiền",
+                "cannotAutofillYet": "Dữ liệu lịch vẫn đang tải. Vui lòng thử lại trong thời gian ngắn.",
+                "confirm": "Xác nhận lịch",
+                "description": {
+                    "error": "Yêu cầu AI không thành công. lịch hiện tại vẫn giữ nguyên và bạn có thể thử lại ngay lập tức.",
+                    "idle": "Bạn có thể bắt đầu tự động điền AI với các điều kiện từ các bước trước đó.",
+                    "loading": "Trong khi chờ phản hồi, xác nhận và thử lại tạm thời bị nghỉ.",
+                    "success": "Kết quả AI đã được áp dụng. Xem lại, chỉnh sửa hoặc xác nhận ngay."
+                },
+                "draft": {
+                    "none": "Bạn đang xem lịch cơ sở mà chưa lưu bất kỳ chỉnh sửa nào.",
+                    "saved": "Các chỉnh sửa hiện tại của bạn được giữ nguyên và lưu tự động."
+                },
+                "empty": "Không thể tải dữ liệu lịch",
+                "error": "Không tải được lịch trực",
+                "firstFill": "Tự động điền",
+                "fixedOnly": "Chỉ cố định",
+                "generating": "Làm đầy...",
+                "hidingFaults": "Lỗi ẩn",
+                "intro": "Các chỉnh sửa hiện tại của bạn vẫn được giữ nguyên ngay cả khi AI bị lỗi.\nBạn có thể quay lại bước trước để xem lại các điều kiện hoặc thử lại và xác nhận tại đây.",
+                "lastShiftBlankDialog": {
+                    "cancel": "Xem lại thông tin đầu vào",
+                    "confirm": "Xác nhận nguyên trạng",
+                    "description": "Một số ô của ca trước trống. Điền vào chúng nếu lịch này nên được xem xét trong tháng trước.",
+                    "title": "Xem lại các ca trước?"
+                },
+                "loading": "Đang tải Lịch trực",
+                "previous": "Bước trước",
+                "progressToast": "lịch chiết rót",
+                "publishSuccess": "lịch được xác nhận và công bố.",
+                "requestFailed": "Không thể hoàn thành tính năng tự động điền AI.",
+                "resetAction": "Đặt lại",
+                "retry": "Thử lại",
+                "saveFailed": "Không lưu được. Vui lòng thử lại trong thời gian ngắn.",
+                "saveSnapshot": "Lưu bản nháp",
+                "saveSnapshotFailed": "Không lưu được bản nháp.",
+                "saveSnapshotSuccess": "Đã lưu bản nháp.",
+                "savingSnapshot": "Đang lưu bản nháp…",
+                "showingFaults": "Hiển thị lỗi",
+                "snapshotLimitDialog": {
+                    "cancel": "Hủy bỏ",
+                    "confirm": "Xóa và lưu",
+                    "description": "Để lưu mục lịch sử mới, hãy xóa mục lịch sử cũ nhất, \"{{title}}\". Xóa nó và lưu lại?",
+                    "title": "Lịch sử lưu trữ tối đa 10 mục"
+                },
+                "snapshotLimitReached": "Lịch sử có thể lưu trữ tối đa 10 mục.",
+                "snapshotSidebar": {
+                    "close": "Đóng bản nháp",
+                    "defaultTitle": "Tự động điền bản nháp",
+                    "delete": "Xóa lịch sử",
+                    "deleteCancel": "Hủy bỏ",
+                    "deleteConfirm": "Xóa",
+                    "deleteDescription": "Xóa \"{{title}}\". Lịch sử đã xóa không thể khôi phục được.",
+                    "deleteFailed": "Không thể xóa lịch sử.",
+                    "deleteSuccess": "Đã xóa lịch sử.",
+                    "deleteTitle": "Xóa lịch sử?",
+                    "description": "Tự động điền hồ sơ kết quả",
+                    "empty": "Chưa có bản nháp nào được lưu.",
+                    "emptyCells": "Trống {{count}}",
+                    "error": "Không thể tải các phiên bản đã lưu.",
+                    "filledCells": "Đã điền {{count}}",
+                    "hardViolations": "Quan trọng {{count}}",
+                    "loadCancel": "Hủy bỏ",
+                    "loadConfirm": "Tải",
+                    "loadDescription": "Thay thế lịch hiện tại bằng \"{{title}}\".\nMọi chỉnh sửa trên màn hình này sẽ bị mất.",
+                    "loadFailed": "Không thể tải phiên bản đã lưu.",
+                    "loading": "Đang tải các phiên bản đã lưu…",
+                    "loadSuccess": "Đã tải {{title}} phiên bản đã lưu.",
+                    "loadTitle": "Tải phiên bản đã lưu này?",
+                    "renameFailed": "Không thể cập nhật tiêu đề lịch sử.",
+                    "renameSuccess": "Tiêu đề lịch sử được cập nhật.",
+                    "renameTitleAria": "Tiêu đề lịch sử",
+                    "restore": "Khôi phục",
+                    "savedCount": "{{count}} bản nháp",
+                    "selectedHistory": "Lịch sử đã chọn",
+                    "softViolations": "Chung {{count}}",
+                    "title": "Lịch sử",
+                    "todayAt": "Hôm nay {{time}}",
+                    "toggleDetails": "Hiển thị chi tiết",
+                    "totalViolations": "Tổng cộng {{count}}"
+                },
+                "title": {
+                    "error": "Điền không thành công",
+                    "idle": "Tự động điền đã sẵn sàng",
+                    "loading": "lịch tính toán",
+                    "success": "Điền đầy đủ"
+                },
+                "toolbarHint": "Điền vào các ô trống dựa trên các quy tắc và ca được yêu cầu.",
+                "toolbarSubTitle": "Sử dụng tính năng Tự động điền AI để điền vào các ô trống chỉ trong một lần.",
+                "toolbarTitle": "Điền và xác nhận lịch",
+                "validationStatus": {
+                    "checking": "Kiểm tra các ràng buộc"
+                },
+                "viewAll": "Xem tất cả"
+            },
+            "calendar": {
+                "carried": "Mang theo",
+                "clearCell": "Xóa",
+                "closePopover": "Đóng cửa sổ bật lên",
+                "dateOthers": "+{{count}} thêm ngày",
+                "fullDayLabel": "Ngày {{day}} · tất cả",
+                "name": "Tên",
+                "nurseDayLabel": "{{name}} · ngày {{day}}",
+                "previousShifts": "Trước đó",
+                "shiftTypeDropdownAria": "Chọn loại ca",
+                "violationCount": {
+                    "error": "Quan trọng {{count}}",
+                    "warning": "Chung {{count}}"
+                },
+                "violationDialogAria": "Các vấn đề về ràng buộc: {{count}}",
+                "violationLevel": {
+                    "error": "Quan trọng",
+                    "warning": "chung"
+                }
+            },
+            "confirmedShifts": {
+                "editAction": "Chỉnh sửa",
+                "empty": "Chưa xác nhận lịch",
+                "error": "Không tải được lịch đã xác nhận",
+                "fallbackTeamName": "Đội đã chọn",
+                "hint": "Các điều dưỡng kết nối với khoa này có thể xem ngay lịch đã được xác nhận trong ứng dụng!",
+                "imageAction": "Tải hình ảnh xuống",
+                "imageActionLoading": "Đang tải hình ảnh",
+                "loading": "Đang tải lịch đã xác nhận",
+                "title": "lịch của {{teamName}} {{month}}",
+                "wardCodeGuideAction": "Hướng dẫn mở mã khoa"
+            },
+            "constraints": {
+                "action": {
+                    "add": "Thêm ràng buộc",
+                    "reset": "Đặt lại"
+                },
+                "category": {
+                    "combination": "Ghép đôi công nhân",
+                    "forbidden": "mẫu bị cấm",
+                    "personal": "Giới hạn người",
+                    "recommended": "Được đề xuất",
+                    "skill": "Cấp độ kỹ năng",
+                    "staffing": "nhân sự",
+                    "workRest": "Làm việc/nghỉ ngơi"
+                },
+                "count": "{{count}}",
+                "dragHandleAria": "Kéo để sắp xếp lại",
+                "empty": "Không có ràng buộc để hiển thị.",
+                "exclude": "Loại trừ",
+                "excludeRuleAria": "Vô hiệu hóa hạn chế này",
+                "import": {
+                    "cancel": "Hủy bỏ",
+                    "confirm": "Nhập khẩu",
+                    "currentTeam": "Đội hiện tại: {{teamName}}",
+                    "disabledTitle": "Có sẵn khi có ít nhất hai đội",
+                    "loading": "Nhập khẩu",
+                    "modalTitle": "Hạn chế nhập khẩu",
+                    "selectedTeamFallback": "Đội đã chọn",
+                    "sourceTeamFallback": "Một đội khác",
+                    "teamLabel": "Nhóm nhập khẩu",
+                    "title": "Nhập các ràng buộc từ một nhóm khác"
+                },
+                "important": {
+                    "ariaMark": "Đánh dấu là quan trọng",
+                    "ariaRemove": "Xóa dấu quan trọng",
+                    "label": "Quan trọng",
+                    "recommendedTitle": "Ràng buộc quan trọng được đề xuất"
+                },
+                "info": "Đánh dấu các ràng buộc phải tuân theo là Quan trọng.",
+                "infoTooltipAria": "Giới thiệu về các ràng buộc quan trọng",
+                "listTitle": "Ràng buộc",
+                "modal": {
+                    "addAria": "Thêm ràng buộc",
+                    "addTitle": "Thêm",
+                    "close": "Đóng",
+                    "description": "Một số ràng buộc có thể không được áp dụng tùy theo lịch.",
+                    "title": "Thêm ràng buộc"
+                },
+                "option": {
+                    "all": "Tất cả",
+                    "allDays": "Tất cả các ngày",
+                    "allPeople": "mọi người",
+                    "dayLabel": "Ngày {{day}}"
+                },
+                "phrase": {
+                    "day": "ngày",
+                    "gte": "hoặc hơn",
+                    "lte": "hoặc ít hơn",
+                    "max": "Tối đa",
+                    "min": "tối thiểu"
+                },
+                "rule": {
+                    "excludeCertainWorkTypes": {
+                        "label": "Tránh các mẫu ND/ED/NE/NOD"
+                    },
+                    "excludeNightBeforeReqOff": {
+                        "label": "Tránh đêm trước khi yêu cầu TẮT"
+                    },
+                    "maxContinuousNight": {
+                        "label": "Tối đa số đêm liên tiếp"
+                    },
+                    "maxContinuousWork": {
+                        "label": "Số ngày làm việc liên tục tối đa"
+                    },
+                    "minContinuousNight": {
+                        "label": "Đêm liên tiếp tối thiểu"
+                    },
+                    "minNightInterval": {
+                        "label": "Khoảng cách tối thiểu giữa các đêm"
+                    },
+                    "minOffAssignAfterNight": {
+                        "label": "Khuyến nghị TẮT sau đêm"
+                    }
+                },
+                "ruleAction": {
+                    "deleteAria": "Xóa ràng buộc"
+                },
+                "section": {
+                    "strong": "Ràng buộc cứng",
+                    "weak": "Ràng buộc mềm"
+                },
+                "state": {
+                    "loadError": "Không thể tải các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
+                    "loading": "Đang tải các ràng buộc",
+                    "teamRequired": "Chọn một đội thay đổi đầu tiên."
+                },
+                "templates": {
+                    "IMPORTANT_FORBIDDEN_DUTY_PATTERNS": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Tránh các kiểu dịch chuyển ND/ED/NE/NOD"
+                    },
+                    "IMPORTANT_MAX_NIGHT_STREAK": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Có thể chỉ định N ca tối đa {days} ngày liên tiếp"
+                    },
+                    "IMPORTANT_MAX_SAME_DUTY_STREAK": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Có thể chỉ định cùng một ca làm việc tối đa {days} ngày liên tiếp"
+                    },
+                    "IMPORTANT_MAX_WORK_STREAK": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Công việc liên tục được phép tối đa {days} ngày"
+                    },
+                    "IMPORTANT_MIN_NIGHT_INTERVAL": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "N ca cần ít nhất {days} ngày giữa các lần phân công"
+                    },
+                    "IMPORTANT_NO_NIGHT_BEFORE_REQUEST_OFF": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Tránh N ca vào ngày trước ngày TẮT được yêu cầu"
+                    },
+                    "IMPORTANT_OFF_AFTER_NIGHT": {
+                        "label": "Mặc định Ràng buộc quan trọng",
+                        "sentence": "Sau ca N, ấn định ít nhất {days} ngày TẮT"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_N": {
+                        "label": "Ràng buộc mẫu bị cấm",
+                        "sentence": "{target} có thể hoạt động N tối đa {count} lần liên tiếp"
+                    },
+                    "SOFT_MAX_CONSECUTIVE_WORK": {
+                        "label": "Hạn chế làm việc/nghỉ ngơi",
+                        "sentence": "{target} có thể hoạt động tối đa {days} ngày liên tục trong một tháng"
+                    },
+                    "SOFT_MAX_STAFF_BY_DUTY": {
+                        "label": "Hạn chế về nhân sự",
+                        "sentence": "{duty} ca làm việc có thể có tối đa {count} người"
+                    },
+                    "SOFT_MIN_MONTHLY_OFF": {
+                        "label": "Hạn chế làm việc/nghỉ ngơi",
+                        "sentence": "{target} cần ít nhất {days} ngày OFF mỗi tháng"
+                    },
+                    "SOFT_MIN_SKILL_IN_DUTY": {
+                        "label": "điều dưỡng mới/hạn chế về kỹ năng",
+                        "sentence": "{duty} ca cần ít nhất {count} điều dưỡng ở trình độ {level} trở lên"
+                    },
+                    "SOFT_MIN_STAFF_BY_DATE_DUTY": {
+                        "label": "Hạn chế về nhân sự",
+                        "sentence": "Vào ca {date}, {duty} cần ít nhất {count} người"
+                    },
+                    "SOFT_MIN_STAFF_BY_DUTY": {
+                        "label": "Hạn chế về nhân sự",
+                        "sentence": "{duty} ca cần ít nhất {count} người"
+                    },
+                    "SOFT_MIN_STAFF_WEEKEND_HOLIDAY": {
+                        "label": "Hạn chế về nhân sự",
+                        "sentence": "Vào cuối tuần và ngày lễ, {duty} ca cần ít nhất {count} người"
+                    },
+                    "SOFT_NEED_OFF_AFTER_CONSECUTIVE": {
+                        "label": "Hạn chế làm việc/nghỉ ngơi",
+                        "sentence": "{target} cần TẮT sau {days} ngày làm việc liên tiếp"
+                    },
+                    "SOFT_NEED_OFF_AFTER_N": {
+                        "label": "Hạn chế làm việc/nghỉ ngơi",
+                        "sentence": "{target} cần ít nhất {days} ngày TẮT sau ca N"
+                    },
+                    "SOFT_NEWBIE_NO_SOLO_N": {
+                        "label": "điều dưỡng mới/hạn chế về kỹ năng",
+                        "sentence": "Tránh làm ca N một mình trong {nurse} với tư cách là điều dưỡng mới"
+                    },
+                    "SOFT_NO_E_TO_D": {
+                        "label": "Ràng buộc mẫu bị cấm",
+                        "sentence": "Tránh D vào ngày sau E trong {target}"
+                    },
+                    "SOFT_NO_N_TO_D": {
+                        "label": "Ràng buộc mẫu bị cấm",
+                        "sentence": "Tránh D vào ngày sau N trong {target}"
+                    },
+                    "SOFT_NO_N_TO_E": {
+                        "label": "Ràng buộc mẫu bị cấm",
+                        "sentence": "Tránh E vào ngày sau N trong {target}"
+                    },
+                    "SOFT_NO_SAME_DUTY_PAIR": {
+                        "label": "Ghép đôi công nhân",
+                        "sentence": "Tránh chỉ định {nurseA} và {nurseB} cho cùng một ca"
+                    },
+                    "SOFT_NO_WEEKEND_FOR_NURSE": {
+                        "label": "Ràng buộc dành riêng cho từng người",
+                        "sentence": "Tránh làm ca cuối tuần trong {nurse}"
+                    },
+                    "SOFT_PREFER_SAME_DUTY_PAIR": {
+                        "label": "Ghép đôi công nhân",
+                        "sentence": "Ưu tiên chỉ định {nurseA} và {nurseB} cho cùng một ca"
+                    }
+                },
+                "toast": {
+                    "added": "Đã thêm hạn chế.",
+                    "duplicatesRemoved": "Đã dọn sạch {{count}} các hạn chế trùng lặp.",
+                    "importantUnmarked": "Dấu quan trọng đã bị xóa.",
+                    "imported": "Đã nhập các ràng buộc từ {{teamName}}.",
+                    "importFailed": "Không thể nhập các ràng buộc. Vui lòng thử lại trong thời gian ngắn.",
+                    "recommendedDeleted": "Đã xóa hạn chế được đề xuất.",
+                    "resetDefaults": "Đặt lại về {{count}} các ràng buộc được đề xuất.",
+                    "saveFailed": "Không thể lưu các ràng buộc. Vui lòng thử lại trong thời gian ngắn."
+                },
+                "violationCount": "{{count}}",
+                "warning": {
+                    "deleteConfirm": "Xóa",
+                    "deleteDescription": "Bạn vẫn muốn xóa nó khỏi danh sách?",
+                    "deleteTitle": "Xóa hạn chế được đề xuất này?",
+                    "description": "Ràng buộc quan trọng mặc định này giúp giữ lịch ổn định.",
+                    "keep": "Giữ",
+                    "unmarkConfirm": "Xóa dấu",
+                    "unmarkDescription": "Bạn vẫn muốn xóa dấu Quan trọng?",
+                    "unmarkTitle": "Xóa dấu quan trọng?"
+                }
+            },
+            "fixedShifts": {
+                "empty": "Chưa có lịch nào cho tháng này",
+                "error": "Không thể tải dữ liệu ca cố định",
+                "hint": "Nếu có các mục đã được thiết lập sẵn như đào tạo, giáo dục hoặc nghỉ phép chính thức hoặc bất kỳ lịch nào cần được giữ nguyên, hãy sửa chúng tại đây.",
+                "loading": "Đang tải Lịch trực",
+                "lockedToast": "Ca cố định chỉ có thể được chỉnh sửa từ tab Ca cố định",
+                "saveFailed": "Không lưu được. Vui lòng thử lại trong thời gian ngắn.",
+                "title": "Nhập các mục cần cố định"
+            },
+            "monthRangeDescription": "Trên Dutying, bạn chỉ có thể tạo lịch cho tháng này và tháng tiếp theo.",
+            "monthRangeTitle": "Bạn không thể tạo lịch cho khoảng thời gian này",
+            "navigation": {
+                "complete": "Hoàn thành",
+                "moving": "Đang di chuyển…",
+                "next": "Tiếp theo",
+                "previous": "trước đó",
+                "saving": "Đang lưu…",
+                "sequentialRequired": "Vui lòng hoàn thành các bước theo thứ tự.",
+                "workerRequired": "Phải có ít nhất một điều dưỡng để lập lịch."
+            },
+            "overview": {
+                "checking": "Kiểm tra trạng thái lịch.",
+                "continueShift": "Tiếp tục chỉnh sửa",
+                "createShift": "Tạo lịch biểu {{month}}",
+                "error": "Không thể kiểm tra trạng thái lịch.",
+                "fullyAssignedCantStart": "lịch của tháng này đã được lấp đầy. Bạn không thể bắt đầu quy trình sáng tạo ở đây.",
+                "loading": "Đang tải lịch trực...",
+                "noTeamsDescription": "Trước tiên hãy tạo một nhóm thay đổi hoặc kiểm tra cài đặt khoa.",
+                "noTeamsLabel": "Không có đội thay đổi",
+                "noTeamsTitle": "Không tìm thấy đội thay đổi nào.",
+                "selectedTeamFallback": "Đội đã chọn",
+                "shiftDraft": "Bạn đang tạo lịch \u003cmonth>{{teamName}}\u003c/team>của \u003cmonth>{{month}}\u003c/month>của\u003c/month>.",
+                "shiftDraftDescription": "Nó vẫn chưa hoàn chỉnh. Tiếp tục khôi phục các chỉnh sửa đã lưu trước đó của bạn.",
+                "shiftEmpty": "lịch của \u003cteam>{{teamName}}\u003c/team>của \u003cmonth>{{month}}\u003c/month>chưa tồn tại.",
+                "shiftExists": "{{teamName}} có lịch cho {{month}}.",
+                "shiftPartialFill": "lịch {{month}} của {{teamName}} vẫn còn chỗ trống.",
+                "viewShift": "Xem Lịch trực {{month}}"
+            },
+            "progress": {
+                "ariaLabel": "Tạo tiến độ lịch",
+                "current": "Bước {{current}}/{{total}} · {{label}}",
+                "eyebrow": "Tạo lịch",
+                "state": {
+                    "available": "Có sẵn",
+                    "current": "Đang tiến hành",
+                    "done": "Xong",
+                    "locked": "Đã khóa"
+                }
+            },
+            "requests": {
+                "action": {
+                    "accept": "Chấp nhận",
+                    "hold": "Giữ",
+                    "reject": "Từ chối"
+                },
+                "badge": {
+                    "accepted": "Yêu cầu được chấp nhận",
+                    "pending": "Yêu cầu đang chờ xử lý",
+                    "rejected": "Yêu cầu bị từ chối"
+                },
+                "count": "{{count}}",
+                "descriptionHighlight": "bị khóa trong lịch",
+                "descriptionLine": "Chấp nhận yêu cầu phản ánh và từ chối yêu cầu loại trừ.",
+                "descriptionPrefix": "Các yêu cầu được chấp nhận là",
+                "descriptionSuffix": ".",
+                "empty": "Chưa có lịch làm ca nào được yêu cầu cho tháng này",
+                "emptyAccepted": "Không có yêu cầu nào được chấp nhận.",
+                "emptyPending": "Không có yêu cầu để xem xét.",
+                "emptyRejected": "Không có yêu cầu bị từ chối.",
+                "error": "Không thể tải dữ liệu ca được yêu cầu",
+                "itemLabel": "{{name}} / {{date}}",
+                "loading": "Đang tải dữ liệu ca được yêu cầu",
+                "lockedToast": "Các ca đã yêu cầu chỉ có thể được chỉnh sửa từ tab Yêu cầu",
+                "panelTitle": "Yêu cầu xem xét",
+                "section": {
+                    "accepted": "Đã chấp nhận",
+                    "pending": "Đang chờ xử lý",
+                    "rejected": "Bị từ chối"
+                },
+                "summary": {
+                    "accepted": "Đã chấp nhận",
+                    "pending": "Đang chờ xử lý",
+                    "rejected": "Bị từ chối"
+                },
+                "summaryCountsAria": "Tóm nghỉ các yêu cầu được chấp nhận, đang chờ xử lý và bị từ chối",
+                "table": {
+                    "name": "Tên"
+                },
+                "title": "Xác nhận ca làm việc được yêu cầu",
+                "updateFailed": "Không thể cập nhật yêu cầu. Vui lòng thử lại."
+            },
+            "stepContent": {
+                "importantBadge": "Quan trọng",
+                "importantPrefix": "Bật",
+                "importantSuffix": "đối với các điều kiện phải được tuân theo."
+            },
+            "stepLoadFailed": "Không tải được bước này",
+            "steps": {
+                "aiAutofill": {
+                    "caption": "Điền vào các ô còn lại và xác nhận lịch",
+                    "label": "Tự động điền"
+                },
+                "confirmedShifts": {
+                    "caption": "Xem lại lịch đã hoàn thành",
+                    "label": "Lịch trực đã xác nhận"
+                },
+                "constraints": {
+                    "caption": "Đặt quy tắc lập kế hoạch cứng và mềm",
+                    "introDescription": "Quy tắc cứng phải được đáp ứng\nQuy tắc mềm được áp dụng khi có thể",
+                    "introTitle": "Xem lại các quy tắc lập kế hoạch",
+                    "label": "Quy tắc"
+                },
+                "fixedShifts": {
+                    "caption": "Khóa ca không nên thay đổi",
+                    "label": "ca cố định"
+                },
+                "requests": {
+                    "caption": "Chấp nhận hoặc từ chối các yêu cầu mong muốn và nghỉ",
+                    "label": "Ca làm việc được yêu cầu"
+                },
+                "workers": {
+                    "caption": "Xem lại ai sẽ được xếp và theo thứ tự nào",
+                    "introDescription": "Kiểm tra xem không có ai bị thiếu\nThực hiện các thay đổi từ Quản lý nhân viên nếu cần",
+                    "introTitle": "Đánh giá bao gồm công nhân",
+                    "label": "Công nhân"
+                }
+            },
+            "tutorial": {
+                "aiAutofill": {
+                    "info": "Chạy tính năng tự động điền AI nhiều lần để nhanh chóng tiến tới lịch bạn muốn.\nMột quản trị viên nên xem xét và điều chỉnh kết quả.",
+                    "title": "Tự động điền AI"
+                },
+                "constraints": {
+                    "info": "Bạn có thể thêm các quy tắc tùy chỉnh ngoài bảy ràng buộc được đề xuất.\nNhiều quy tắc hơn có thể khiến việc lập kế hoạch trở nên khó khăn hơn.",
+                    "title": "Thêm ràng buộc"
+                },
+                "fixedShifts": {
+                    "info": "Chọn một ô và nhập chữ viết nghỉ của ca.\nCác chữ viết nghỉ của khoa như D, E, N và O được áp dụng ngay lập tức.",
+                    "title": "Nhập ca cố định"
+                },
+                "requests": {
+                    "info": "Xem xét các yêu cầu còn lại.\nBật chế độ xem chỉ đang chờ xử lý để xem các yêu cầu vẫn cần quyết định.",
+                    "title": "Xác nhận ca làm việc được yêu cầu"
+                },
+                "stepper": {
+                    "info": "Thực hiện theo thanh tiến trình và hoàn thành năm bước theo thứ tự.",
+                    "title": "Tạo lịch"
+                },
+                "tools": {
+                    "info": "Sử dụng các tùy chọn xem, hoàn tác và làm lại để tinh chỉnh lịch dễ dàng hơn.",
+                    "title": "Sử dụng các công cụ trợ giúp"
+                }
+            },
+            "wardCodeLoading": "Kiểm tra mã khoa",
+            "workers": {
+                "activeCount": "Đã bao gồm {{count}}",
+                "column": {
+                    "isWorker": "Bao gồm",
+                    "level": "Cấp độ",
+                    "memo": "Bản ghi nhớ",
+                    "name": "Tên",
+                    "preceptee": "giới luật",
+                    "preceptor": "thầy giáo",
+                    "shiftTypes": "ca có sẵn"
+                },
+                "dragHandleAria": "Kéo để sắp xếp lại",
+                "emptyDescription": "Trước tiên hãy kiểm tra nhân sự được đánh dấu tham gia trực.",
+                "emptyTitle": "Chưa có công nhân nào được xác nhận.",
+                "goMemberManagement": "Vào quản lý thành viên",
+                "noNurseDescription": "Thêm điều dưỡng trước khi tạo lịch. Bạn có thể bắt đầu từ việc quản lý thành viên.",
+                "noNurseTitle": "{{teamName}} chưa có điều dưỡng nào",
+                "preceptorActive": "Có",
+                "sortByName": "Tên",
+                "sortBySavedOrder": "Thứ tự tùy chỉnh",
+                "sortBySkill": "Cấp độ kỹ năng",
+                "sortListMenuAria": "Mở tùy chọn sắp xếp nhân viên",
+                "totalCount": "Tổng cộng {{count}}"
+            }
+        },
+        "member": {
+            "addFirstNurse": "Thêm điều dưỡng đầu tiên",
+            "addingNurse": "Đang thêm điều dưỡng…",
+            "addNurse": "Thêm điều dưỡng",
+            "addTeam": "Thêm đội",
+            "canMakeDuty": "Lịch trực",
+            "canMakeDutyTooltip": "Chỉ những người được chọn mới có thể tạo Lịch trực.",
+            "common": {
+                "cancel": "Hủy bỏ",
+                "close": "Đóng",
+                "complete": "Hoàn thành",
+                "deleteAction": "Xóa",
+                "discard": "Không lưu",
+                "disconnectAction": "Ngắt kết nối",
+                "nurseFallback": "Điều dưỡng",
+                "previous": "trước đó",
+                "previousStep": "Bước trước",
+                "processing": "Đang xử lý",
+                "processingEllipsis": "Đang xử lý...",
+                "retry": "Thử lại",
+                "saveAndLeave": "Lưu và rời đi",
+                "selectedNurse": "điều dưỡng được chọn",
+                "selectedTeam": "Đội đã chọn"
+            },
+            "confirmDeleteTeam": "Xóa nhóm {{teamName}}? Các điều dưỡng trong đội sẽ được loại bỏ cùng nhau.",
+            "connectionManage": {
+                "complete": {
+                    "viewOtherRequests": "Xem các yêu cầu khác"
+                },
+                "method": {
+                    "add": "Thêm vào một nhóm",
+                    "link": "Liên kết với điều dưỡng hiện có",
+                    "title": "Chọn cách kết nối điều dưỡng này"
+                },
+                "result": {
+                    "failure": {
+                        "addDescription": "Không thể thêm {{waitingNurseName}} vào {{targetLabel}}. Vui lòng thử lại hoặc quay lại bước trước đó.",
+                        "addTitle": "Không thể thêm vào nhóm",
+                        "linkDescription": "Không thể liên kết tới {{targetLabel}}. Vui lòng thử lại.",
+                        "linkNoTargetDescription": "Không thể liên kết với tài khoản điều dưỡng đã chọn. Vui lòng thử lại.",
+                        "linkTeamDescription": "Không thể liên kết tới {{targetNurseName}} trong {{targetTeamName}}. Vui lòng thử lại.",
+                        "linkTitle": "Không thể liên kết với tài khoản hiện tại"
+                    },
+                    "loading": {
+                        "addDescription": "Thêm {{waitingNurseName}} vào nhóm {{targetLabel}}. Việc thay đổi nhóm và vai trò có thể mất một chút thời gian.",
+                        "addTitle": "Thêm vào nhóm đã chọn",
+                        "linkDescription": "Đang liên kết {{waitingNurseName}} với {{targetLabel}}. Vui lòng chờ.",
+                        "linkTitle": "Liên kết với tài khoản hiện có"
+                    },
+                    "success": {
+                        "addTitle": "Đã thêm {{waitingNurseName}} vào {{targetLabel}}",
+                        "linkDescription": "Đã liên kết {{waitingNurseName}} với {{targetLabel}}. Bạn có thể tiếp tục xem xét các yêu cầu.",
+                        "linkTitle": "Đã liên kết với tài khoản hiện tại"
+                    }
+                },
+                "target": {
+                    "addTitle": "Chọn đội cho {{nurseName}}",
+                    "all": "Tất cả",
+                    "emptySearch": "Hãy thử thay đổi cụm từ tìm kiếm.",
+                    "emptyTeam": "Thêm điều dưỡng vào nhóm trước khi chọn.",
+                    "linkTitle": "Chọn một điều dưỡng hiện có để liên kết",
+                    "searchPlaceholder": "Tìm kiếm theo tên hoặc điện thoại"
+                },
+                "waiting": {
+                    "accept": "Chấp nhận",
+                    "description": "Chấp nhận đăng ký họ làm điều dưỡng ở khoa này.",
+                    "empty": "Yêu cầu kết nối sẽ xuất hiện ở đây.",
+                    "reject": "Từ chối",
+                    "title": "Một điều dưỡng yêu cầu được vào khoa"
+                }
+            },
+            "deleteTeam": "Xóa đội",
+            "description": "Quản lý điều dưỡng, tình trạng sẵn sàng và trình độ kỹ năng của mỗi nhóm ở một nơi.",
+            "detail": {
+                "cancel": "Hủy bỏ",
+                "canMakeDuty": "Có thể tạo",
+                "cannotMakeDuty": "Không thể tạo",
+                "close": "Đóng bảng điều dưỡng",
+                "closeAction": "Đóng",
+                "connected": "Đã kết nối",
+                "connection": "Kết nối",
+                "connectionStatusAria": "Trạng thái kết nối cho {{nurseName}}",
+                "delete": "Xóa điều dưỡng",
+                "deleting": "Đang xóa…",
+                "disconnected": "Không được kết nối",
+                "disconnectedTooltip": "điều dưỡng này không được kết nối.",
+                "employmentDate": "Ngày làm việc",
+                "employmentDateHint": "Được sử dụng làm cơ sở cho việc phân công kỹ năng tự động",
+                "emptyDescription": "Chọn một người từ danh sách bên trái để chỉnh sửa thông tin chi tiết.",
+                "emptyPinnedDescription": "Chọn một điều dưỡng để ghim thông tin chi tiết của họ ở đây.",
+                "emptyTitle": "Chọn điều dưỡng",
+                "genderToggle": "Thay đổi giới tính",
+                "isDutyManager": "Lịch trực",
+                "isWorker": "Bao gồm trong lịch trực",
+                "isWorkerOff": "Đã loại trừ",
+                "isWorkerOn": "Bao gồm",
+                "memo": "Lưu ý",
+                "memoHint": "Viết ra bất cứ điều gì đồng đội nên biết",
+                "moveTargetTeam": "Chuyển sang đội",
+                "moveTeam": "Di chuyển đội",
+                "phone": "Số điện thoại",
+                "phoneHint": "Dùng để liên lạc khẩn cấp",
+                "preceptee": "giới luật",
+                "preceptor": "thầy giáo",
+                "rolesAndPermissions": "Vai trò và quyền",
+                "save": "Lưu",
+                "saveAction": "Lưu",
+                "saving": "Đang lưu…",
+                "shiftTypes": "ca có sẵn",
+                "shiftTypesHelpAria": "Hướng dẫn ca làm việc có sẵn",
+                "shiftTypesHint": "Chọn mọi ca mà người này có thể làm việc",
+                "worker": "Bao gồm"
+            },
+            "drawer": {
+                "deleteConfirm": "Xóa điều dưỡng {{nurseName}}? Điều này không thể hoàn tác được."
+            },
+            "emptyTeamDescription": "Vui lòng thêm một điều dưỡng.",
+            "emptyTeamsDescription": "Tạo một nhóm trước khi thêm điều dưỡng.",
+            "emptyTeamsTitle": "Trước tiên hãy tạo một nhóm",
+            "emptyTeamTitle": "Không có điều dưỡng.",
+            "modal": {
+                "deleteNurseDescriptionSuffix": "sẽ bị xóa vĩnh viễn.",
+                "deleteNurseTitle": "Xóa điều dưỡng này?",
+                "deleteTeamDescriptionSuffix": "nhóm và các điều dưỡng {{count}} của nhóm sẽ bị xóa.",
+                "deleteTeamTitle": "Xóa nhóm này?",
+                "disconnectDescriptionSuffix": "sẽ bị ngắt kết nối khỏi ứng dụng.",
+                "disconnectTitle": "Ngắt kết nối tài khoản này?",
+                "unsavedExitDescription": "Những thay đổi của bạn có thể không được lưu.",
+                "unsavedExitTitle": "Rời đi mà không lưu?"
+            },
+            "nurseDrawerFeedback": {
+                "create": {
+                    "description": "Nhập tên và thông tin liên hệ, sau đó lưu.",
+                    "title": "điều dưỡng mới được thêm vào"
+                },
+                "dirty": {
+                    "description": "Đóng mà không lưu sẽ loại bỏ các chỉnh sửa.",
+                    "title": "Bạn có những thay đổi"
+                },
+                "error": {
+                    "description": "Đầu vào của bạn vẫn còn ở đây. Hãy kiểm tra chi tiết và thử lưu lại.",
+                    "title": "Không thể lưu"
+                },
+                "idle": {
+                    "description": "Nút lưu sẽ kích hoạt khi có gì đó thay đổi.",
+                    "title": "Xem lại các trường có thể chỉnh sửa"
+                },
+                "saving": {
+                    "description": "Áp dụng các chi tiết đã nhập. Vui lòng đợi cho đến khi quá trình lưu hoàn tất.",
+                    "title": "Đang lưu"
+                },
+                "success": {
+                    "description": "Thông tin điều dưỡng đã được áp dụng. Bạn có thể đóng phần này nếu không cần chỉnh sửa thêm.",
+                    "title": "Đã lưu"
+                }
+            },
+            "roleHelp": {
+                "aria": "{{label}} mô tả",
+                "preceptee": {
+                    "description": "Một điều dưỡng mới hoặc cấp dưới nhận được sự hỗ trợ về đào tạo và thích ứng từ người hướng dẫn.",
+                    "label": "giới luật"
+                },
+                "preceptor": {
+                    "description": "Một điều dưỡng giúp các điều dưỡng mới hoặc cấp dưới thích nghi và học hỏi.",
+                    "label": "thầy giáo"
+                }
+            },
+            "row": {
+                "connectionStatusAria": "Trạng thái kết nối cho {{nurseName}}",
+                "dragAria": "Kéo để thay đổi thứ tự",
+                "precepteeAria": "{{nurseName}} giới luật",
+                "preceptorAria": "{{nurseName}} thầy giáo",
+                "unselectedSkill": "Bỏ chọn",
+                "workerAria": "{{nurseName}} được bao gồm trong nghĩa vụ"
+            },
+            "shiftTeamList": {
+                "addTeam": "Thêm đội",
+                "card": {
+                    "addDividerAria": "Thêm dải phân cách bên dưới {{nurseName}}",
+                    "addNurse": "Tạo điều dưỡng",
+                    "addNurseTooltip": "Bạn có thể quản lý điều dưỡng ảo mà không cần gửi lời mời trước. Bạn có thể mời và kết nối họ bất cứ lúc nào.",
+                    "deleteTeam": "Xóa đội",
+                    "divider": "Dải phân cách",
+                    "editTeamNameAria": "Chỉnh sửa tên nhóm cho {{teamName}}",
+                    "empty": "Chưa có điều dưỡng nào cả!",
+                    "openMenuAria": "Mở menu cho {{teamName}}",
+                    "removeDividerAria": "Xóa dải phân cách bên dưới {{nurseName}}",
+                    "selectNurseAria": "Chọn điều dưỡng {{nurseName}}",
+                    "viewShift": "Xem lịch trực",
+                    "virtualNurseTooltip": "Đây là một điều dưỡng ảo không được kết nối."
+                },
+                "subtitle": "Bạn có thể tạo một Lịch trực cho mỗi đội.",
+                "title": "đội"
+            },
+            "skillLevelModal": {
+                "autoAssign": "Tự động gán",
+                "autoAssignTooltip": "Chúng tôi sẽ phân bổ đều điều dưỡng đã đăng ký theo cấp độ cho thiết lập ban đầu.",
+                "autoAssignTooltipAria": "Hiển thị mô tả tự động gán",
+                "categoryLabel": "Danh mục",
+                "close": "Đóng cài đặt kỹ năng",
+                "colorLabel": "Màu sắc",
+                "complete": "Hoàn thành",
+                "description": "Bạn có thể xác định các tiêu chí một cách tự do.",
+                "disableAction": "nghỉ cấp độ kỹ năng",
+                "disableConfirmAction": "nghỉ",
+                "disableConfirmDescription": "Hiển thị, lựa chọn và sắp xếp kỹ năng sẽ tạm dừng khi tính năng này nghỉ.",
+                "disableConfirmTitle": "nghỉ cấp độ kỹ năng?",
+                "high": "Cao",
+                "levelCountOption": "{{levelCount}} cấp độ",
+                "levelDisplay": "LV. {{level}}",
+                "levelLabel": "kỹ năng",
+                "low": "Thấp",
+                "temporarySave": "Lưu ngay bây giờ",
+                "title": "Đặt cấp độ kỹ năng"
+            },
+            "skillSettings": "Đặt cấp độ kỹ năng của điều dưỡng",
+            "sort": {
+                "manual": "Thứ tự tùy chỉnh",
+                "name": "Thứ tự tên",
+                "skill": "Thứ tự kỹ năng"
+            },
+            "sortByPriorityOrder": "Đơn hàng đã lưu",
+            "sortBySkill": "Sắp xếp theo kỹ năng",
+            "sortListMenuAria": "Mở tùy chọn sắp xếp danh sách",
+            "summary": {
+                "connected": "Đã kết nối",
+                "connectionManage": "Kết nối",
+                "copyWardCodeAria": "Sao chép mã khoa",
+                "totalNurses": "Tổng cộng",
+                "unconnected": "Không được kết nối",
+                "wardCode": "Mã khoa",
+                "wardCodeGuideAria": "Hiển thị hướng dẫn mã khoa {{wardCode}}"
+            },
+            "table": {
+                "connection": "Đã kết nối",
+                "isDutyManager": "Có thể tạo lịch trực",
+                "isWorker": "Bao gồm",
+                "level": "kỹ năng",
+                "memo": "Lưu ý",
+                "name": "Tên",
+                "shiftTypes": "ca có sẵn"
+            },
+            "teamMenu": "Mở menu nhóm",
+            "title": "Quản lý thành viên",
+            "toast": {
+                "copyWardCode": "Đã sao chép mã khoa.",
+                "createTeam": "Đã thêm Nhóm điều dưỡng {{teamNumber}}.",
+                "deleteTeam": "Đã xóa nhóm {{teamName}}.",
+                "maxNursesPerTeam": "Bạn có thể thêm tối đa {{count}} điều dưỡng vào một đội.",
+                "maxTeams": "Bạn có thể thêm tối đa {{count}} đội.",
+                "moveNurse": "Đã chuyển {{nurseName}} sang nhóm {{teamName}}.",
+                "saveNurseInfo": "Đã lưu thông tin thành viên."
+            },
+            "tutorial": {
+                "add": {
+                    "info": "Chọn một nhóm và thêm điều dưỡng để tạo hồ sơ mới.\nBạn có thể nhập tên và thông tin trực của họ ngay lập tức.",
+                    "title": "Thêm điều dưỡng"
+                },
+                "edit": {
+                    "info": "Sử dụng bảng bên phải để chỉnh sửa tên, kỹ năng, ca làm việc có sẵn, vai trò, quyền và ghi chú.",
+                    "title": "Chỉnh sửa chi tiết điều dưỡng"
+                },
+                "skill": {
+                    "info": "Định cấu hình cấp độ và màu sắc để phù hợp với tiêu chuẩn bệnh viện và khoa của bạn.",
+                    "title": "Đặt cấp độ kỹ năng"
+                },
+                "team": {
+                    "info": "Xem nhanh điều dưỡng trong từng nhóm trực.\nBấm đúp vào tên nhóm để đổi tên.",
+                    "title": "Xem điều dưỡng theo nhóm"
+                }
+            },
+            "wardInfo": {
+                "connectionStatus": "Trạng thái kết nối",
+                "copyError": "Không thể sao chép.",
+                "copying": "Đang sao chép...",
+                "copySuccess": "Đã sao chép!",
+                "hospital": "bệnh viện",
+                "hospitalInfo": "Thông tin bệnh viện",
+                "personUnit": "mọi người",
+                "ward": "Khoa"
+            }
+        },
+        "navigationBar": {
+            "ariaLabel": "Điều hướng chính",
+            "expandAria": "Mở rộng thanh bên",
+            "foldAria": "Thu gọn thanh bên",
+            "home": "Trang chủ",
+            "items": {
+                "account": "Tài khoản",
+                "board": "Ban",
+                "dutying": "Dutying",
+                "make": "Tạo lịch",
+                "member": "Thành viên",
+                "request": "Yêu cầu ca trực",
+                "wardAdmins": "quản trị khoa",
+                "wardInfoSettings": "Cài đặt khoa",
+                "wardSettings": "Cài đặt nhiệm vụ"
+            },
+            "landingAria": "Đi đến trang đích",
+            "sections": {
+                "operations": "Hoạt động",
+                "schedule": "Lịch trực",
+                "settings": "Cài đặt"
+            },
+            "wardCodeGuideAria": "Hướng dẫn mở mã khoa {{wardCode}}"
+        },
+        "onboardingJoinWard": {
+            "backToWardSelect": "Quay lại lựa chọn khoa",
+            "checkingPermission": "Đang vào khoa.",
+            "codeDigitAria": "Ký tự mã khoa {{index}}",
+            "codeEntry": {
+                "description": "Nhập mã 6 ký tự bạn nhận được để tham gia khoa đó.",
+                "title": "Nhập bằng mã khoa"
+            },
+            "codeHelp": "Nhập mã khoa gồm 6 ký tự bằng chữ và số.",
+            "codeInputAria": "Nhập mã khoa",
+            "description": "Nhập mã 6 ký tự được quản trị khoa chia sẻ để vào khoa đó.",
+            "form": {
+                "submit": "Nhập bằng mã",
+                "submitting": "Đang vào..."
+            },
+            "invalidCode": "Mã khoa này không tồn tại. Hãy kiểm tra mã và thử lại.",
+            "permission": {
+                "close": "Đóng",
+                "confirm": "được rồi",
+                "description": "Mã khoa hợp lệ nhưng email tài khoản này chưa được đăng ký làm quản trị viên cho khoa đó. Yêu cầu chủ khoa đăng ký email tài khoản này.",
+                "descriptionWithWard": "Để nhập {{hospitalName}} {{wardName}}, email tài khoản này phải được đăng ký làm quản trị viên khoa. Yêu cầu chủ khoa đăng ký email tài khoản này.",
+                "eyebrow": "Cần có email đăng ký",
+                "title": "Tài khoản này không thể nhập",
+                "titleWithWard": "Không thể nhập {{hospitalName}} {{wardName}}"
+            },
+            "registeredWards": {
+                "description": "Các khoa đã đăng ký email của bạn với tư cách quản trị viên sẽ xuất hiện ở đây.",
+                "empty": "Chưa có khoa nào được đăng ký vào email tài khoản này. Thay vào đó hãy nhập bằng mã khoa.",
+                "enterAria": "Nhập {{hospitalName}} {{wardName}}",
+                "loadFailed": "Không thể tải khoa đã đăng ký. Thay vào đó hãy nhập bằng mã khoa.",
+                "loading": "Đang tải khoa đã đăng ký.",
+                "title": "khoa đã đăng ký vào email của bạn"
+            },
+            "state": {
+                "accountErrorDescription": "Vui lòng thử lại trong thời gian ngắn. Nếu sự cố vẫn tiếp diễn, hãy đăng nhập lại.",
+                "accountErrorTitle": "Không thể tải thông tin tài khoản",
+                "retry": "Thử lại"
+            },
+            "title": "Nhập khoa",
+            "toast": {
+                "joinFailed": "Không thể vào khoa. Vui lòng thử lại."
+            },
+            "validation": {
+                "incomplete": "Nhập đầy đủ 6 ký tự.",
+                "invalidCharacters": "Chỉ cho phép chữ cái và số."
+            }
+        },
+        "onboardingWardCreate": {
+            "action": {
+                "complete": "Hoàn thành",
+                "created": "Đã tạo",
+                "creating": "Đang tạo...",
+                "next": "Tiếp theo",
+                "previous": "trước đó",
+                "saving": "Đang lưu...",
+                "skip": "Bỏ qua"
+            },
+            "backToWardSelect": "Quay lại lựa chọn khoa",
+            "blocked": {
+                "default": "Kiểm tra thông tin đã nhập.",
+                "duplicateShiftType": "Chữ viết nghỉ đầu tiên phải là duy nhất.",
+                "emptyTeam": "Thêm đội trước khi tạo khoa.",
+                "emptyTeamNurses": "Một số đội không có điều dưỡng. Thêm điều dưỡng hoặc xóa nhóm.",
+                "invalidNurseName": "Kiểm tra tên điều dưỡng.",
+                "invalidShiftTime": "Kiểm tra thời gian thay đổi.",
+                "invalidShiftType": "Kiểm tra thông tin loại ca.",
+                "invalidWardIdentity": "Chỉ sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật, số và dấu cách, trong vòng 1-20 ký tự.",
+                "missingHospitalName": "Nhập tên bệnh viện.",
+                "scheduleMissingNurseName": "Nhập tên điều dưỡng cho mỗi hàng theo ca.",
+                "submitting": "Tạo khoa. Vui lòng chờ.",
+                "success": "Việc tạo khoa đã hoàn tất."
+            },
+            "defaults": {
+                "newNurseName": "điều dưỡng mới {{index}}",
+                "sampleNurse": {
+                    "first": "Alex Kim",
+                    "off": "Taylor Choi",
+                    "second": "Jamie Lee",
+                    "skilled": "Công viên Morgan"
+                }
+            },
+            "deleteTeamAction": "Xóa đội",
+            "fallback": {
+                "newTeam": "Đội mới",
+                "selectedTeam": "Đội đã chọn",
+                "wardName": "khoa trực"
+            },
+            "identity": {
+                "hospitalName": "Tên bệnh viện",
+                "hospitalNamePlaceholder": "Nhập tên bệnh viện",
+                "wardName": "Tên khoa",
+                "wardNameOptional": "(Tùy chọn) Tên khoa",
+                "wardNamePlaceholder": "Nhập tên khoa"
+            },
+            "modal": {
+                "deleteTeamDescription": "sẽ bị xóa.",
+                "deleteTeamDescriptionSuffix": "nhóm và các điều dưỡng {{count}} của nhóm sẽ bị xóa.",
+                "deleteTeamDescriptionWithNurses": "điều dưỡng của {{nurseCount}} cũng sẽ bị xóa.",
+                "deleteTeamDescriptionWithNursesAndSchedule": "điều dưỡng và lịch đã nhập của {{nurseCount}} cũng sẽ bị xóa.",
+                "deleteTeamDescriptionWithSchedule": "lịch đã nhập của cũng sẽ bị xóa.",
+                "deleteTeamTitle": "Xóa nhóm này?"
+            },
+            "nurse": {
+                "deleteNurseAria": "Xóa {{nurseName}}",
+                "dragAria": "Kéo để thay đổi thứ tự",
+                "emptyTeamsDescription": "Tạo một nhóm trước khi đăng ký điều dưỡng.",
+                "emptyTeamsTitle": "Thêm một đội đầu tiên.",
+                "selectedTeamCountAria": "{{teamName}} điều dưỡng: {{count}}",
+                "skillAria": "Cấp độ kỹ năng cho {{nurseName}}",
+                "skillUnselectedBadge": "-",
+                "skillUnselectedOption": "Bỏ chọn",
+                "sort": {
+                    "manual": "Đặt hàng thủ công",
+                    "name": "Thứ tự tên",
+                    "skill": "Thứ tự kỹ năng"
+                },
+                "sortAria": "Sắp xếp điều dưỡng",
+                "sortOptionsAria": "Tùy chọn sắp xếp điều dưỡng"
+            },
+            "progress": {
+                "ariaLabel": "Tiến trình tạo khoa",
+                "completeTitle": "Việc tạo khoa đã hoàn tất",
+                "finalCheck": "Gần xong rồi. Hoàn tất việc kiểm tra cuối cùng.",
+                "inputWardInfo": "Sắp xếp thông tin khoa bạn đã nhập.",
+                "navigateDuty": "Di chuyển đến màn hình lịch.",
+                "nurses": "Kết nối thông tin điều dưỡng.",
+                "settingTitle": "Thiết lập khoa",
+                "shiftTypesAndTeams": "Thiết lập các loại ca và đội."
+            },
+            "schedule": {
+                "addRow": "Thêm hàng",
+                "deleteRowAria": "Xóa {{rowLabel}}",
+                "emptyTeamsDescription": "Bạn có thể nhập lịch ban đầu sau khi tạo nhóm.",
+                "emptyTeamsTitle": "Thêm một đội đầu tiên.",
+                "monthLabel": "{{year}}-{{month}}",
+                "nextMonth": "Tháng tiếp theo",
+                "nurseNameAria": "Tên điều dưỡng ở hàng {{rowNumber}}",
+                "previousMonth": "Tháng trước",
+                "rowFallback": "Hàng {{rowNumber}}",
+                "shiftCellAria": "Chuyển cho hàng {{rowNumber}}, ngày {{day}}",
+                "uploadFile": "Tải lên tệp lịch"
+            },
+            "scheduleUpload": {
+                "description": "Chúng ta sẽ đọc tên, đội và ca làm việc hàng ngày từ tệp Excel và áp dụng chúng vào thiết lập khoa ban đầu.",
+                "downloadTemplate": "Tải xuống mẫu",
+                "dropzoneTitle": "Chọn hoặc thả một tệp Excel.",
+                "fileSupport": "Hỗ trợ các tệp.xlsx và.xls.",
+                "submit": "Áp dụng tập tin",
+                "submitting": "Đang tải lên",
+                "template": {
+                    "fileName": "lịch ban đầu-{{year}}-{{month}}.xlsx",
+                    "guideRow1": "Nhập tên điều dưỡng, đội và ca hàng ngày vào trang đầu tiên.",
+                    "guideRow2": "Sử dụng các chữ viết nghỉ của ca D, E, N, O hoặc khoa cụ thể của bạn.",
+                    "guideRow3": "Các ô trống được coi là ngày nghỉ.",
+                    "guideRow4": "Các hàng không có nhóm được gán cho nhóm mặc định.",
+                    "guideRow5": "Sau khi tải lên, bạn có thể xem lại và chỉnh sửa dữ liệu đã nhập trên màn hình.",
+                    "guideSheetName": "hướng dẫn",
+                    "nameHeader": "Tên",
+                    "sampleFirstName": "Alex Kim",
+                    "sampleFirstTeam": "Đội 1",
+                    "sampleSecondName": "Công viên Jamie",
+                    "sampleSecondTeam": "Đội 1",
+                    "teamHeader": "đội",
+                    "worksheetName": "Lịch trực"
+                },
+                "title": "Tải lên tệp lịch"
+            },
+            "section": {
+                "identity": {
+                    "description": "",
+                    "highlightHospitalName": "bệnh viện",
+                    "highlightWardName": "Khoa",
+                    "title": "Nhập tên bệnh viện và khoa"
+                },
+                "nurse": {
+                    "description": "Bạn có thể tạo một lịch cho mỗi nhóm mỗi tháng. Bạn có thể chỉnh sửa hoặc thêm điều dưỡng bất cứ lúc nào.",
+                    "highlight": "Điều dưỡng",
+                    "title": "Đăng ký điều dưỡng"
+                },
+                "schedule": {
+                    "description": "",
+                    "highlight": "lịch gần đây nhất",
+                    "title": "Nhập lịch gần đây nhất\nđể thiết lập khoa và lịch"
+                },
+                "shiftType": {
+                    "description": "Bạn có thể chỉnh sửa những điều này sau",
+                    "highlight": "các loại ca",
+                    "title": "Đặt loại ca khoa"
+                }
+            },
+            "shiftType": {
+                "add": "Thêm loại ca",
+                "color": "Màu sắc",
+                "colorOptionAria": "Chọn {{color}}",
+                "colorSelectAria": "Chọn màu cho {{shiftName}}",
+                "deleteAria": "Xóa {{shiftName}}",
+                "leave": "Rời khỏi",
+                "name": "Tên ca",
+                "shortName": "Viết nghỉ",
+                "type": "loại",
+                "validation": {
+                    "nameDuplicate": "Sử dụng tên ca khác.",
+                    "nameRequired": "Nhập tên ca.",
+                    "shortNameDuplicate": "Sử dụng chữ cái đầu tiên khác.",
+                    "shortNameFirstKey": "Bắt đầu bằng một chữ cái, số hoặc ký hiệu như -,., _.",
+                    "shortNameLength": "Sử dụng tối đa 3 ký tự không có dấu cách.",
+                    "shortNameRequired": "Nhập một từ viết nghỉ.",
+                    "timeFormat": "Sử dụng định dạng thời gian 00:00.",
+                    "timeOrder": "Sử dụng thời gian bắt đầu và kết thúc khác nhau.",
+                    "timeRequired": "Nhập thời gian."
+                },
+                "work": "công việc",
+                "workTime": "thời gian thay đổi"
+            },
+            "skillCta": {
+                "aria": "Cài đặt cấp độ kỹ năng",
+                "description": "Khi tạo lịch, điều dưỡng có thể được phân công tự động theo cấp độ kỹ năng.",
+                "title": "Đặt cấp độ kỹ năng của điều dưỡng?"
+            },
+            "skillLevelModal": {
+                "autoAssign": "Tự động gán",
+                "autoAssignTooltip": "Tự động phân bổ các điều dưỡng đã đăng ký theo các cấp độ cho nhiệm vụ ban đầu.",
+                "cancel": "Hủy bỏ",
+                "categoryLabel": "Danh mục",
+                "colorLabel": "Màu sắc",
+                "complete": "Hoàn thành",
+                "description": "Bạn có thể xác định các tiêu chí một cách tự do.",
+                "disable": "Hủy cài đặt kỹ năng",
+                "high": "Cao",
+                "levelCountAria": "Số cấp độ kỹ năng",
+                "levelCountOption": "{{levelCount}} cấp độ",
+                "levelDisplay": "LV. {{level}}",
+                "levelLabel": "Cấp độ",
+                "low": "Thấp",
+                "title": "Đặt cấp độ kỹ năng"
+            },
+            "teamTabs": {
+                "addTeam": "Thêm đội"
+            },
+            "toast": {
+                "addNurseToTeam": "Đã thêm điều dưỡng vào {{teamName}}.",
+                "addTeam": "Đã thêm {{teamName}}.",
+                "addTeamAndNurse": "Đã thêm {{teamName}} và đăng ký điều dưỡng.",
+                "completeError": "Không thể tạo khoa. Vui lòng thử lại.",
+                "completeSuccess": "Việc tạo khoa đã hoàn tất.",
+                "deleteNurse": "Đã xóa điều dưỡng.",
+                "deleteTeamWithNurses": "Đã xóa nhóm và điều dưỡng của nó.",
+                "maxNursesPerTeam": "Bạn có thể thêm tối đa {{count}} điều dưỡng vào một đội.",
+                "maxTeams": "Bạn có thể thêm tối đa {{count}} đội.",
+                "reloadDraftError": "Không thể tải bản nháp thiết lập khoa đã lưu.",
+                "saveDraftError": "Không thể lưu thông tin khoa cơ bản. Vui lòng thử lại.",
+                "saveScheduleError": "Không thể lưu lịch ban đầu.",
+                "skillConfigDisabled": "Cài đặt kỹ năng bị vô hiệu hóa.",
+                "skillConfigSaved": "Áp dụng cài đặt kỹ năng cho danh sách điều dưỡng.",
+                "uploadApplied": "Đã áp dụng tệp lịch."
+            },
+            "upload": {
+                "dropHere": "Thả tập tin lịch ở đây",
+                "failedRow": "Không thể phân tích cú pháp một số hàng ({{rowLabel}}) và đã bị loại trừ.",
+                "failedSheet": "Không thể tải dữ liệu từ trang tính \"{{sheetName}}\".",
+                "failedTitle": "Tải tệp lên không thành công",
+                "networkFailed": "Không thể kết nối với máy chủ phân tích cú pháp. Vui lòng thử lại trong thời gian ngắn.",
+                "parseFailed": "Không thể phân tích tập tin. Kiểm tra mẫu Excel và tải lại.",
+                "parsing": "Đang phân tích tệp...",
+                "targetMonth": "Lên lịch tháng",
+                "unsupportedFile": "Chỉ có thể tải lên các tệp Excel (.xlsx,.xls).",
+                "uploadFile": "Tải tập tin lên"
+            }
+        },
+        "profile": {
+            "basicInfoDescription": "Quản lý thông tin được sử dụng cho tài khoản của bạn.",
+            "basicInfoTitle": "Thông tin cơ bản",
+            "confirm": {
+                "deleteConfirm": "Xóa",
+                "deleteDescription": "Thông tin tài khoản của bạn sẽ bị xóa và không thể khôi phục được.",
+                "deleteTitle": "Xóa tài khoản?",
+                "logoutConfirm": "Đăng xuất",
+                "logoutDescription": "Đăng xuất khỏi tài khoản này và quay lại màn hình đầu tiên.",
+                "logoutTitle": "Đăng xuất?"
+            },
+            "deleteAccount": "Xóa tài khoản",
+            "errorDescription": "Vui lòng thử lại trong thời gian ngắn. Nếu sự cố vẫn tiếp diễn, hãy đăng nhập lại.",
+            "errorTitle": "Không thể tải hồ sơ của bạn",
+            "imageFailed": "Không thể xử lý ảnh hồ sơ.",
+            "language": {
+                "en": "English",
+                "ja": "日本語 (Japanese)",
+                "ko": "한국어 (Korean)",
+                "th": "ภาษาไทย (Thai)",
+                "vi": "Tiếng Việt (Vietnamese)",
+                "zh": "简体中文 (Chinese)"
+            },
+            "languageLabel": "Ngôn ngữ hiển thị",
+            "loadingDescription": "Kiểm tra thông tin tài khoản và khoa của bạn.",
+            "loadingTitle": "Đang chuẩn bị hồ sơ của bạn",
+            "logout": "Đăng xuất",
+            "modalSave": "Lưu",
+            "name": "Tên",
+            "namePlaceholder": "Nhập tên của bạn",
+            "phoneNum": "Số điện thoại",
+            "phoneNumPlaceholder": "Nhập số điện thoại của bạn",
+            "preferencesDescription": "Chọn ngôn ngữ hiển thị trong ứng dụng.",
+            "preferencesFailed": "Không thể lưu cài đặt ngôn ngữ.",
+            "preferencesSaved": "Đã lưu ngôn ngữ.",
+            "preferencesTitle": "Ngôn ngữ",
+            "profileSection": "Hồ sơ",
+            "quitWard": "Rời khỏi khoa",
+            "randomAvatar": "Hình đại diện ngẫu nhiên",
+            "retry": "Thử lại",
+            "save": "Lưu thay đổi",
+            "savedDescription": "Thông tin mới nhất của bạn được lưu.",
+            "savePreferences": "Lưu cài đặt ngôn ngữ",
+            "savingPreferences": "Đang lưu...",
+            "serviceRegion": {
+                "CN": "Trung Quốc",
+                "EN": "Toàn cầu / Tiếng Anh",
+                "JP": "Nhật Bản",
+                "KR": "Hàn Quốc",
+                "TH": "Thái Lan",
+                "VN": "Việt Nam"
+            },
+            "serviceRegionLabel": "Khu vực dịch vụ",
+            "title": "Tài khoản",
+            "unknownName": "Chưa đặt tên",
+            "unsavedDescription": "Bạn có những thay đổi chưa được lưu.",
+            "uploadPhoto": "Tải ảnh lên",
+            "validation": {
+                "nameInvalid": "Sử dụng tối đa 20 ký tự tiếng Hàn, tiếng Anh hoặc tiếng Nhật, dấu cách, '-' hoặc '·'.",
+                "nameRequired": "Nhập tên của bạn.",
+                "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
+                "phoneRequired": "Nhập số điện thoại của bạn."
+            }
+        },
+        "refresh": {
+            "loading": "Đang đăng nhập..."
+        },
+        "register": {
+            "createWard": {
+                "back": "Quay lại lựa chọn khoa",
+                "basicInfo": "Thông tin cơ bản",
+                "description": "Bắt đầu với những điều cần thiết. Bạn có thể điều chỉnh cài đặt chi tiết sau.",
+                "hospitalName": "Tên bệnh viện",
+                "hospitalNamePlaceholder": "Bệnh viện trực",
+                "save": "Lưu khoa",
+                "title": "Tạo một khoa mới",
+                "validation": {
+                    "wardName": "Sử dụng 1-50 ký tự tiếng Hàn, tiếng Anh, tiếng Nhật hoặc số."
+                },
+                "wardName": "Tên khoa"
+            },
+            "enterWard": {
+                "back": "Quay lại lựa chọn khoa",
+                "close": "Đóng",
+                "codeCellAria": "Ký tự mã khoa {{index}}",
+                "codeInputAria": "Nhập mã khoa",
+                "confirmDescription": "Nếu đúng khoa này, chúng tôi sẽ gửi yêu cầu vào.",
+                "confirmEyebrow": "Xác nhận khoa",
+                "description": "Nhập mã 6 ký tự được quản trị viên chia sẻ để tìm khoa.",
+                "error": "Hãy kiểm tra mã khoa và thử lại.",
+                "retry": "Nhập lại",
+                "submit": "Yêu cầu nhập",
+                "title": "Nhập mã khoa"
+            },
+            "nurse": {
+                "imageFailed": "Không thể xử lý ảnh hồ sơ.",
+                "name": "Tên",
+                "namePlaceholder": "Nhập tên",
+                "next": "Tiếp theo",
+                "phoneNum": "Số điện thoại",
+                "phoneNumPlaceholder": "Nhập số điện thoại",
+                "randomAvatar": "Hình đại diện ngẫu nhiên",
+                "saving": "Đang lưu...",
+                "submitting": "Đang xử lý...",
+                "title": "Nhập thông tin tài khoản",
+                "uploadPhoto": "Tải ảnh lên",
+                "validation": {
+                    "nameInvalid": "Sử dụng tối đa 20 ký tự: tiếng Hàn, tiếng Anh, tiếng Nhật, dấu cách, '-' và '·'.",
+                    "nameRequired": "Nhập tên.",
+                    "phoneDuplicate": "Số điện thoại này đã được sử dụng. Nhập số khác.",
+                    "phoneInvalid": "Nhập số điện thoại hợp lệ cho ngôn ngữ hoặc khu vực đã chọn.",
+                    "phoneRequired": "Nhập số điện thoại."
+                }
+            },
+            "pending": {
+                "cancelRequest": "Hủy yêu cầu nhập cảnh",
+                "description": "Bạn có thể sử dụng khoa ngay khi quản trị viên chấp thuận yêu cầu của bạn.",
+                "requestedWard": "khoa yêu cầu",
+                "title": "Đang chờ phê duyệt nhập cảnh"
+            },
+            "select": {
+                "back": "Quay lại thông tin tài khoản",
+                "createDescription": "Thiết lập tên bệnh viện, tên khoa, thông tin đội theo thứ tự.",
+                "createTitle": "Tạo khoa mới",
+                "description": "Tạo một khoa mới nếu bạn mới bắt đầu hoặc tham gia một khoa hiện có nếu bạn nhận được mã mời.",
+                "enterDescription": "Chọn tùy chọn này nếu bạn có mã gồm 6 ký tự từ quản trị viên.",
+                "enterTitle": "Tham gia khoa hiện có",
+                "titleWithName": "{{name}}, kết nối một khoa",
+                "titleWithoutName": "Kết nối khoa"
+            },
+            "shell": {
+                "homeAria": "Đến nhà Dutying"
+            },
+            "state": {
+                "accountErrorDescription": "Vui lòng thử lại trong thời gian ngắn. Nếu sự cố vẫn tiếp diễn, hãy đăng nhập lại.",
+                "accountErrorTitle": "Không thể tải thông tin tài khoản",
+                "statusErrorDescription": "Tải lại thông tin tài khoản và tiếp tục đăng ký.",
+                "statusErrorTitle": "Không thể xác nhận trạng thái tài khoản"
+            }
+        },
+        "request": {
+            "availability": {
+                "editable": {
+                    "badgeLabel": "Có thể chỉnh sửa",
+                    "description": "Bạn có thể chỉnh sửa các yêu cầu trong phạm vi lịch hiện tại."
+                },
+                "editablePeriodLabel": "Phạm vi có thể chỉnh sửa: tháng trước đến tháng sau",
+                "lockedFuture": {
+                    "badgeLabel": "Chưa mở",
+                    "description": "Bạn có thể chỉnh sửa yêu cầu cho đến tháng tiếp theo. Các tháng trong tương lai có thể được chỉnh sửa khi chúng mở.",
+                    "validationMessage": "Yêu cầu hai tháng tới vẫn chưa được mở."
+                },
+                "lockedPast": {
+                    "badgeLabel": "Chỉ xem",
+                    "description": "Tháng này chỉ có thể xem. Bạn có thể kiểm tra các yêu cầu đã gửi và bài tập hiện tại.",
+                    "validationMessage": "Yêu cầu từ hai tháng trước chỉ ở chế độ xem."
+                }
+            },
+            "calendar": {
+                "ariaLabel": "Yêu cầu lịch làm ca",
+                "linkColumn": "liên kết",
+                "nameColumn": "Tên",
+                "noNurseAction": "Vào phần Quản lý thành viên",
+                "noNurseDescription": "Thêm điều dưỡng vào nhóm này từ Quản lý thành viên trước khi xem xét các ca được yêu cầu.",
+                "noNurseTitleSuffix": "vẫn chưa có điều dưỡng",
+                "reorderAria": "Sắp xếp lại {{name}}",
+                "skillColumn": "kỹ năng",
+                "status": {
+                    "accepted": "Đã áp dụng",
+                    "pending": "Cần xem xét",
+                    "rejected": "Đã loại trừ"
+                },
+                "statusDescription": {
+                    "accepted": "Ca làm việc được yêu cầu hiện đang được áp dụng.",
+                    "editable": "Chọn tên để chuyển đến ngày đó và xem lại nó.",
+                    "noFocus": "Không tìm thấy thông tin điều dưỡng được liên kết cho nhóm này nên không thể mở trực tiếp vị trí lịch.",
+                    "readonly": "Tháng này không thể chỉnh sửa được nên bạn chỉ có thể kiểm tra vị trí ca làm việc được yêu cầu.",
+                    "rejected": "lịch hiện tại được xác nhận bằng một ca khác."
+                }
+            },
+            "changeEvent": {
+                "add": "Thêm → {{shiftType}}",
+                "delete": "{{shiftType}} → Xóa",
+                "message": "{{nurseName}} / ngày {{day}} | {{changeLabel}}"
+            },
+            "faultOptions": {
+                "excludeCertainWorkTypes": {
+                    "label": "Tránh các mẫu ND/ED/NE/NOD",
+                    "message": "Tránh các mẫu dịch chuyển ND/ED/NE/NOD."
+                },
+                "excludeNightBeforeReqOff": {
+                    "label": "Tránh đêm trước ngày yêu cầu nghỉ",
+                    "message": "Tránh làm ca đêm trước ngày nghỉ được yêu cầu."
+                },
+                "maxContinuousNight": {
+                    "label": "Đêm liên tiếp",
+                    "message": "Có thể bố trí ca đêm tối đa {{count}} ngày liên tiếp."
+                },
+                "maxContinuousWork": {
+                    "label": "Ngày làm việc liên tục",
+                    "message": "Công việc có thể được phân công trong tối đa {{count}} ngày liên tiếp."
+                },
+                "minContinuousNight": {
+                    "label": "Đêm liên tiếp",
+                    "message": "Phân công ca đêm trong ít nhất {{count}} ngày liên tiếp."
+                },
+                "minNightInterval": {
+                    "label": "Khoảng thời gian ban đêm",
+                    "message": "Giữ ít nhất {{count}} ngày giữa các ca đêm."
+                },
+                "minOffAssignAfterNight": {
+                    "label": "nghỉ sau ca đêm",
+                    "message": "Sau ca đêm, nên có ít nhất {{count}} ngày TẮT."
+                }
+            },
+            "overview": {
+                "bootstrapErrorDescription": "Vui lòng xác minh thông tin tài khoản của bạn. Nếu sự cố vẫn tiếp diễn, hãy đăng nhập lại.",
+                "bootstrapErrorTitle": "Không tải được thông tin khoa",
+                "bootstrapLoadingDescription": "Kiểm tra thông tin khoa của bạn và chuẩn bị trang Yêu cầu ca trực.",
+                "bootstrapLoadingTitle": "Kiểm tra thông tin tài khoản",
+                "createNextMonth": "Tạo ca yêu cầu tháng tiếp theo",
+                "emptyDescription": "Trước tiên hãy mở lịch yêu cầu ca làm việc của tháng tiếp theo và bắt đầu chỉnh sửa ở đó.",
+                "emptyTitle": "Chưa có lịch làm ca yêu cầu trong tháng này",
+                "loadingDescription": "Đang tải các nhóm làm ca và yêu cầu lịch làm ca theo thứ tự.",
+                "loadingTitle": "Chuẩn bị trang chuyển yêu cầu",
+                "noTeamsDescription": "Đăng ký nhóm làm ca trước để quản lý các ca được yêu cầu.",
+                "noTeamsTitle": "Chưa có đội nào đăng ký",
+                "shiftErrorTitle": "Không thể tải lịch ca yêu cầu",
+                "shiftLoadingDescription": "Tổ chức lịch thi đấu của các đội đã chọn và danh sách yêu cầu.",
+                "shiftLoadingTitle": "Đang tải lịch ca yêu cầu",
+                "teamsErrorTitle": "Không thể tải các nhóm làm ca"
+            },
+            "panel": {
+                "accept": "Chấp nhận",
+                "acceptAll": "Chấp nhận {{count}} đang chờ xử lý",
+                "acceptedState": "Đã chấp nhận",
+                "acceptedToast": "Yêu cầu {{shiftType}} của {{nurseName}} đã được chấp nhận.",
+                "appliedCount": "Đã áp dụng {{count}}",
+                "appliedLabel": "Đã áp dụng",
+                "changeToAccept": "Thay đổi để chấp nhận",
+                "changeToReject": "Thay đổi để từ chối",
+                "dateLabel": "{{month}}/{{date}}",
+                "dayShortLabel": "{{date}}",
+                "dayType": {
+                    "holiday": "Kỳ nghỉ",
+                    "saturday": "thứ bảy",
+                    "sunday": "chủ nhật"
+                },
+                "editTitle": "Xem xét yêu cầu",
+                "emptyDescriptionEdit": "Các yêu cầu đã gửi sẽ xuất hiện ở đây để bạn có thể xem xét chúng ngay lập tức.",
+                "emptyDescriptionReadonly": "Các yêu cầu được chấp nhận sẽ xuất hiện trong bảng này.",
+                "emptyTitleEdit": "Chưa có yêu cầu nào được gửi",
+                "emptyTitleReadonly": "Chưa có ca nào được yêu cầu áp dụng",
+                "errorTitleEdit": "Không tải được danh sách yêu cầu",
+                "errorTitleReadonly": "Không thể tải các ca được yêu cầu đã áp dụng",
+                "excludedCount": "Đã loại trừ {{count}}",
+                "excludedLabel": "Đã loại trừ",
+                "groupDone": "Đã đánh giá",
+                "groupPendingCount": "{{count}} cần xem xét",
+                "groupRequestCaseCount": "{{count}} yêu cầu",
+                "groupRequestCount": "{{count}} yêu cầu",
+                "loadingDescriptionEdit": "Kiểm tra các ca được yêu cầu đã gửi.",
+                "loadingDescriptionReadonly": "Tổ chức các ca làm việc được yêu cầu đã được chấp nhận.",
+                "loadingTitleEdit": "Đang tải danh sách yêu cầu",
+                "loadingTitleReadonly": "Đang tải các ca được yêu cầu đã áp dụng",
+                "monthShortLabel": "M{{month}}",
+                "notLinked": "Không có điều dưỡng liên kết đúng lịch",
+                "nurseDateLabel": "{{nurseName}} / {{date}}",
+                "overlapBadge": "{{count}} muốn ca này",
+                "overlapSummary": "{{count}} trùng lặp",
+                "pendingCount": "Đang chờ xử lý {{count}}",
+                "pendingEmptyDescription": "Chỉ những yêu cầu không có quyết định chấp nhận hoặc từ chối mới xuất hiện ở đây.",
+                "pendingEmptyTitle": "Không có yêu cầu đang chờ xử lý",
+                "pendingLabel": "Đang chờ xử lý",
+                "readonlyTitle": "Các ca được yêu cầu đã áp dụng",
+                "reject": "Từ chối",
+                "rejectAll": "Từ chối {{count}} đang chờ xử lý",
+                "rejectedState": "Bị từ chối",
+                "rejectedToast": "Yêu cầu {{shiftType}} của {{nurseName}} bị từ chối.",
+                "showLess": "Thu gọn",
+                "showMore": "Hiển thị {{count}} thêm",
+                "showNext": "Tiếp theo",
+                "showPrevious": "trước đó",
+                "sortByDate": "Ngày",
+                "sortByNurse": "Điều dưỡng",
+                "sortByPending": "Đang chờ xử lý",
+                "sortByRequestOrder": "Đặt hàng",
+                "sortOrder": "Sắp xếp theo ngày",
+                "summaryLabel": "Tóm nghỉ xử lý yêu cầu",
+                "unresolvedCount": "{{count}} yêu cầu chưa được giải quyết",
+                "viewModeLabel": "Yêu cầu sắp xếp đánh giá",
+                "viewOnCalendar": "Xem theo lịch",
+                "weekday": {
+                    "friday": "thứ sáu",
+                    "monday": "thứ hai",
+                    "saturday": "thứ bảy",
+                    "sunday": "chủ nhật",
+                    "thursday": "thứ năm",
+                    "tuesday": "thứ ba",
+                    "wednesday": "thứ tư"
+                }
+            },
+            "toolbar": {
+                "editAction": "Chỉnh sửa",
+                "editingDescription": "Các thay đổi được lưu tự động. Kết thúc bằng Lưu sau khi đồng bộ hóa hoàn tất.",
+                "editTitle": "Vui lòng xác nhận ca làm việc được yêu cầu",
+                "noTeamsLabel": "Không có đội đăng ký",
+                "readonlyDescription": "Nhấn Edit để điều chỉnh ngay ca làm việc được yêu cầu.",
+                "readonlyTitle": "Đã xác nhận ca làm việc được yêu cầu cho {{month}}",
+                "saveAction": "Lưu",
+                "savedDescription": "Những thay đổi mới nhất của bạn đã được lưu.",
+                "saveError": "Không lưu được những thay đổi mới nhất. Vui lòng thử lưu lại.",
+                "savingAction": "Đang lưu...",
+                "savingDescription": "Đang lưu những thay đổi mới nhất của bạn."
+            }
+        },
+        "state": {
+            "emptyDescription": "Làm theo hướng dẫn trên màn hình để tiếp tục.",
+            "errorDescription": "Vui lòng thử lại trong thời gian ngắn. Nếu sự cố vẫn tiếp diễn, hãy làm mới và kiểm tra lại.",
+            "loadingDescription": "Xin vui lòng chờ một lát.",
+            "loadingTitle": "Chuẩn bị màn hình",
+            "retry": "Thử lại"
+        },
+        "wardAdmins": {
+            "accountFallback": "Tài khoản #{{accountId}}",
+            "addAria": "Thêm quản trị viên",
+            "emailPlaceholder": "Email",
+            "emptyAdmins": "Chưa có quản trị viên nào được đăng ký.",
+            "error": {
+                "emailInvalid": "Nhập địa chỉ email hợp lệ.",
+                "emailRequired": "Nhập địa chỉ email.",
+                "maxAdmins": "Bạn có thể thêm tối đa {{count}} quản trị viên khoa."
+            },
+            "memberOnlyDescription": "Chỉ những tài khoản đã đăng ký là thành viên khoa mới có thể được thêm làm quản trị viên.",
+            "ownerOnlyDescription": "Chỉ chủ sở hữu mới có thể thay đổi quyền quản trị.",
+            "registeredTitle": "Quản trị viên đã đăng ký",
+            "removeActiveAria": "Xóa quản trị viên {{email}}",
+            "removeReservedAria": "Xóa quản trị viên dành riêng {{email}}",
+            "role": {
+                "editor": "Quản trị viên",
+                "owner": "chủ sở hữu"
+            },
+            "state": {
+                "loadFailedTitle": "Không thể tải danh sách quản trị viên",
+                "noWardDescription": "Tạo một khoa hoặc tham gia một khoa hiện có để quản lý quản trị viên.",
+                "noWardTitle": "Hiện tại không có khoa nào được quản lý",
+                "retry": "Thử lại",
+                "retryDescription": "Vui lòng thử lại trong thời gian ngắn."
+            },
+            "title": "quản trị khoa",
+            "toast": {
+                "createActive": "Đã thêm quản trị viên.",
+                "createFailed": "Không thể đăng ký quản trị viên.",
+                "createOwnerOnly": "Chỉ chủ sở hữu mới có thể thêm quản trị viên.",
+                "createReserved": "Đã thêm quản trị viên.",
+                "duplicateEmail": "Email quản trị này đã được đăng ký.",
+                "ownerOnly": "Chỉ chủ sở hữu mới có thể thực hiện thay đổi này.",
+                "removeActive": "Đã xóa quản trị viên.",
+                "removeActiveFailed": "Không thể xóa quản trị viên.",
+                "removeReserved": "Đã xóa email quản trị viên dành riêng.",
+                "removeReservedFailed": "Không thể xóa email quản trị viên dành riêng."
+            }
+        },
+        "wardInfoSettings": {
+            "hospitalName": "Tên bệnh viện",
+            "hospitalNamePlaceholder": "Nhập tên bệnh viện",
+            "save": "Lưu thay đổi",
+            "saving": "Đang lưu...",
+            "sectionTitle": "Thông tin khoa",
+            "state": {
+                "loadFailedTitle": "Không thể tải thông tin khoa",
+                "loadingTitle": "Đang tải thông tin khoa",
+                "noWardDescription": "Tham gia một mắt hoặc tạo một mắt mới trước khi chỉnh sửa cài đặt mắt.",
+                "noWardTitle": "Yêu cầu kết nối khoa",
+                "retry": "Thử lại",
+                "retryDescription": "Vui lòng thử lại trong thời gian ngắn."
+            },
+            "title": "Cài đặt khoa",
+            "toast": {
+                "saveFailed": "Không thể lưu thông tin khoa.",
+                "saveSuccess": "Đã lưu thông tin khoa."
+            },
+            "validation": {
+                "invalid": "{{label}} phải có {{count}} ký tự trở xuống và sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật hoặc số.",
+                "required": "Nhập {{label}}."
+            },
+            "wardName": "Tên khoa",
+            "wardNamePlaceholder": "Nhập tên khoa"
+        },
+        "wardSettings": {
+            "addShiftType": "Thêm loại ca",
+            "constraints": {
+                "apply": "Áp dụng cho lịch",
+                "column": {
+                    "rule": "ràng buộc",
+                    "status": "Trạng thái",
+                    "value": "Giá trị"
+                },
+                "error": "Không thể tải các ràng buộc.",
+                "exclude": "Bị loại khỏi lịch",
+                "loading": "Đang tải các ràng buộc",
+                "noTeamsDescription": "Tạo một nhóm thay đổi trước khi quản lý các ràng buộc.",
+                "noTeamsTitle": "Không tìm thấy đội thay đổi nào.",
+                "teamDescription": "Các ràng buộc được quản lý theo từng nhóm làm việc.",
+                "teamLabel": "đội"
+            },
+            "description": {
+                "constraints": "Quản lý các hạn chế về lịch.",
+                "shiftTypes": "Quản lý các loại ca làm việc."
+            },
+            "shiftTypes": {
+                "add": "Thêm loại ca",
+                "colorOptionAria": "Chọn {{color}}",
+                "colorSelectAria": "Chọn màu cho {{name}}",
+                "column": {
+                    "color": "Màu sắc",
+                    "name": "Tên",
+                    "shortName": "Viết nghỉ",
+                    "type": "loại",
+                    "workTime": "thời gian làm việc"
+                },
+                "deleteAria": "Xóa {{name}}",
+                "editAria": "Chỉnh sửa loại ca {{name}}",
+                "empty": "Không tìm thấy loại ca nào.",
+                "error": "Không thể tải các loại ca làm việc.",
+                "loading": "Đang tải các loại ca",
+                "newShiftName": "Ca mới",
+                "save": "Lưu",
+                "toast": {
+                    "addFailed": "Không thể thêm loại ca làm việc.",
+                    "deleteFailed": "Không thể xóa loại ca làm việc.",
+                    "notFound": "Loại ca này đã bị xóa hoặc không thể tìm thấy trong danh sách mới nhất.",
+                    "saveSuccess": "Cài đặt nhiệm vụ đã lưu.",
+                    "updateFailed": "Không thể cập nhật loại ca làm việc."
+                },
+                "validation": {
+                    "nameDuplicate": "Sử dụng tên ca khác.",
+                    "nameRequired": "Nhập tên ca.",
+                    "shortNameDuplicate": "Sử dụng chữ cái đầu tiên khác.",
+                    "shortNameFirstKey": "Bắt đầu bằng một chữ cái, số hoặc ký hiệu như -,., _.",
+                    "shortNameLength": "Sử dụng tối đa 3 ký tự không có dấu cách.",
+                    "shortNameRequired": "Nhập một từ viết nghỉ.",
+                    "timeFormat": "Sử dụng định dạng thời gian 00:00.",
+                    "timeRequired": "Nhập thời gian.",
+                    "timeSame": "Sử dụng thời gian bắt đầu và kết thúc khác nhau."
+                }
+            },
+            "tabs": {
+                "constraints": "Ràng buộc",
+                "shiftTypes": "Các loại ca"
+            },
+            "title": "Quản lý nhiệm vụ",
+            "type": {
+                "leave": "Rời khỏi",
+                "work": "công việc"
+            }
+        }
+    },
+    "shared": {
+        "api": {
+            "requestFailed": "Đã xảy ra lỗi. Vui lòng thử lại.",
+            "unknownError": "Đã xảy ra lỗi không xác định."
+        },
+        "confirmActionDialog": {
+            "cancel": "Hủy bỏ",
+            "close": "Đóng"
+        }
+    },
+    "widget": {
+        "requestTutorial": {
+            "listInfo": "Bạn có thể xem lại ca làm việc được yêu cầu của điều dưỡng ở một nơi.",
+            "listTitle": "Xem xét yêu cầu ca ở bên phải",
+            "pendingInfo": "Bạn có thể thu thập các yêu cầu đang chờ xử lý còn lại tại đây.",
+            "pendingTitle": "Chỉ xem các yêu cầu đang chờ xử lý"
+        },
+        "tutorialInfoBox": {
+            "done": "Xong",
+            "next": "Tiếp theo",
+            "previous": "trước đó"
+        },
+        "wardChat": {
+            "closeAria": "Đóng trò chuyện khoa",
+            "conversationStart": "Bắt đầu cuộc trò chuyện",
+            "deletedMessage": "Tin nhắn này đã bị xóa",
+            "inputPlaceholder": "Nhập tin nhắn",
+            "loadOlder": "Tin nhắn trước đó",
+            "openAria": "Mở trò chuyện khoa",
+            "openWithUnreadAria": "Mở cuộc trò chuyện của khoa, {{count}} tin nhắn chưa đọc",
+            "sendAria": "Gửi tin nhắn",
+            "state": {
+                "emptyDescription": "Để lại tin nhắn đầu tiên.",
+                "emptyTitle": "Chưa có cuộc trò chuyện nào.",
+                "loadFailed": "Không thể tải cuộc trò chuyện.",
+                "retry": "Thử lại"
+            },
+            "subtitle": "Trò chuyện thành viên khoa",
+            "title": "trò chuyện khoa",
+            "toast": {
+                "sendFailed": "Không thể gửi tin nhắn."
+            }
+        },
+        "wardCodeGuide": {
+            "benefits": {
+                "appApply": {
+                    "description": "Khi điều dưỡng gửi yêu cầu về ngày nghỉ và ca trong ứng dụng Dutying,\nđiều dưỡng trưởng có thể xem xét chúng ở một nơi.",
+                    "title": "điều dưỡng có thể yêu cầu ca trong ứng dụng"
+                },
+                "board": {
+                    "description": "Đăng thông báo, chuyển giao và hướng dẫn trong khi theo dõi các bước kiểm tra và luồng nhận xét.",
+                    "title": "Giữ thông báo của khoa luôn hiển thị"
+                },
+                "chat": {
+                    "description": "Thảo luận về việc thay đổi ca làm việc, thông báo khẩn cấp và phối hợp trong ngày với các thành viên trong khoa.",
+                    "title": "Phối hợp nhanh chóng trong trò chuyện khoa"
+                },
+                "scheduleShare": {
+                    "description": "Khi bạn xuất bản lịch, các điều dưỡng được kết nối có thể kiểm tra lịch đó ngay trong ứng dụng.",
+                    "title": "Chia sẻ lịch đã được xác nhận ngay lập tức"
+                }
+            },
+            "closeAria": "Đóng hướng dẫn mã khoa",
+            "copyAria": "Sao chép mã khoa",
+            "description": "Điều dưỡng có thể kết nối với khoa bằng cách nhập mã này trong ứng dụng Dutying.",
+            "participationGuide": "Trong ứng dụng Dutying, chạm vào Tham gia khoa\nvà nhập mã khoa Dutying.",
+            "participationGuideAria": "Hướng dẫn cách nhập mã khoa Dutying",
+            "title": "Chia sẻ mã khoa với điều dưỡng của bạn",
+            "toast": {
+                "copyFailed": "Không thể sao chép mã khoa.",
+                "copySuccess": "Đã sao chép mã khoa."
+            },
+            "wardCodeLabel": "{{wardTitle}} mã khoa"
+        }
+    }
+};
+
 export const resources = {
     ko: {translation: ko},
     en: {translation: en},
     ja: {translation: ja},
     zh: {translation: zh},
     th: {translation: th},
+    vi: {translation: vi},
 } as const;

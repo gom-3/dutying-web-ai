@@ -100,10 +100,18 @@ const useAuth = (activeEffect = false) => {
         setAccountMeSuccess(account);
     };
     const handleLogout = async (fallBackPath?: string) => {
+        const logoutAccessToken = useAuthStore.getState().accessToken;
+
         resetSessionState();
         sendEvent(events.auth.logut);
 
         if (fallBackPath && pathname !== fallBackPath) navigate(fallBackPath);
+
+        try {
+            await AuthAPI.logout(logoutAccessToken);
+        } catch {
+            // Local logout should still succeed even if the server-side revocation request fails.
+        }
     };
     const handleLogin = (accessToken: string, nextPageUrl?: string | null, options?: THandleLoginOptions) => {
         clearAccountMeRequest();

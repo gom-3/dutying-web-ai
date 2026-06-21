@@ -1,7 +1,7 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
 import {
-    getShiftShortNameEntryKey,
+    getShiftShortNameValueKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
 } from '@/shared/lib/shift-short-name';
@@ -629,10 +629,10 @@ const normalizeShiftCodeToRemap = (value: string | undefined) => {
 const getShiftTypeRemapCodes = (shiftType: TOnboardingWardShiftType, shiftTypes: TOnboardingWardShiftType[]) => {
     const codes = new Set<string>();
     const oldShortName = normalizeShiftCodeToRemap(shiftType.shortName);
-    const oldShortNameKey = oldShortName ? getShiftShortNameEntryKey(oldShortName) : '';
+    const oldShortNameKey = oldShortName ? getShiftShortNameValueKey(oldShortName) : '';
     const oldShortNameIsDuplicated =
         oldShortNameKey &&
-        shiftTypes.some((candidate) => candidate.id !== shiftType.id && getShiftShortNameEntryKey(candidate.shortName) === oldShortNameKey);
+        shiftTypes.some((candidate) => candidate.id !== shiftType.id && getShiftShortNameValueKey(candidate.shortName) === oldShortNameKey);
 
     if (oldShortName && !oldShortNameIsDuplicated) {
         codes.add(oldShortName);
@@ -653,13 +653,13 @@ const hasDuplicateShiftShortName = (shiftTypes: TOnboardingWardShiftType[], shif
         return false;
     }
 
-    const shortNameKey = getShiftShortNameEntryKey(shortName);
+    const shortNameKey = getShiftShortNameValueKey(shortName);
 
     if (!shortNameKey) {
         return false;
     }
 
-    return shiftTypes.some((shiftType) => shiftType.id !== shiftTypeId && getShiftShortNameEntryKey(shiftType.shortName) === shortNameKey);
+    return shiftTypes.some((shiftType) => shiftType.id !== shiftTypeId && getShiftShortNameValueKey(shiftType.shortName) === shortNameKey);
 };
 const remapScheduleInputsShiftCode = (
     scheduleInputs: TOnboardingWardDraft['scheduleInputs'],
@@ -1411,7 +1411,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     }
 
     activeShiftTypes.forEach((shiftType) => {
-        const normalizedShortName = getShiftShortNameEntryKey(shiftType.shortName);
+        const normalizedShortName = getShiftShortNameValueKey(shiftType.shortName);
 
         if (normalizedShortName) {
             shiftShortNameCountByValue.set(normalizedShortName, (shiftShortNameCountByValue.get(normalizedShortName) ?? 0) + 1);
@@ -1421,7 +1421,7 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
     activeShiftTypes.forEach((shiftType) => {
         const normalizedName = shiftType.name.trim();
         const normalizedShortName = shiftType.shortName.trim().toLocaleUpperCase();
-        const normalizedShortNameDuplicateKey = getShiftShortNameEntryKey(shiftType.shortName);
+        const normalizedShortNameDuplicateKey = getShiftShortNameValueKey(shiftType.shortName);
 
         if (!normalizedName) {
             issues.push({code: 'missing-shift-name', step, targetId: shiftType.id});

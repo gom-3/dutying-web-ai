@@ -1,6 +1,6 @@
 import type {TPreferredLanguage} from '@dutying/domain';
 import * as Dialog from '@radix-ui/react-dialog';
-import {CalendarDays, ChevronDown, Languages, MessageCircle, UsersRound, X} from 'lucide-react';
+import {CalendarDays, ChevronDown, Globe, MessageCircle, UsersRound, X} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link} from 'react-router';
@@ -569,6 +569,8 @@ function HeaderLanguageMenu() {
                 return t('page.profile.language.zh');
             case 'th':
                 return t('page.profile.language.th');
+            case 'vi':
+                return t('page.profile.language.vi');
         }
     };
     const handleLanguageChange = (language: TPreferredLanguage) => {
@@ -586,7 +588,7 @@ function HeaderLanguageMenu() {
                 onClick={() => setIsOpen((prev) => !prev)}
                 className="flex size-10 items-center justify-center rounded-full text-[#8B8797] transition-colors hover:bg-[#F5F2FA] hover:text-[#6F6B7A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-main-1"
             >
-                <Languages className="size-5" strokeWidth={2} aria-hidden="true" />
+                <Globe className="size-5" strokeWidth={2} aria-hidden="true" />
             </button>
 
             {isOpen && (
