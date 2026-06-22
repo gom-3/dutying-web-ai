@@ -386,15 +386,15 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 4 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const koreanNameDraft = updateNurseDraft(draft, nurseId, {name: '신규 간호사 1'});
-        const englishNameDraft = updateNurseDraft(draft, nurseId, {name: 'Nurse 1'});
+        const validNames = ['신규 간호사 1', 'Nurse 1', '山田 花子', '佐藤・美咲', 'ジョン・スミス'];
 
-        expect(getStepValidation(koreanNameDraft, 4).issues).not.toEqual(
-            expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
-        );
-        expect(getStepValidation(englishNameDraft, 4).issues).not.toEqual(
-            expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
-        );
+        validNames.forEach((name) => {
+            const validDraft = updateNurseDraft(draft, nurseId, {name});
+
+            expect(getStepValidation(validDraft, 4).issues).not.toEqual(
+                expect.arrayContaining([{code: 'invalid-nurse-name', step: 4, targetId: nurseId}]),
+            );
+        });
     });
 
     it('rejects unsupported nurse name separators and special characters', () => {
@@ -403,7 +403,7 @@ describe('OnboardingWardCreatePage model', () => {
             currentStep: 4 as const,
         };
         const nurseId = draft.nurses[0]?.id ?? '';
-        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김　길동'];
+        const invalidNames = ['Nurse_1', '김\t길동', '김\n길동', '김　길동', '🙂', '・'];
 
         invalidNames.forEach((name) => {
             const invalidDraft = updateNurseDraft(draft, nurseId, {name});

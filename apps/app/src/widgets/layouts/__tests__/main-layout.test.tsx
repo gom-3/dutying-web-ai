@@ -242,4 +242,18 @@ describe('MainLayout', () => {
         });
         expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
     });
+
+    it('keeps the ward settings scroll container stable across tab height changes', () => {
+        render(
+            <MemoryRouter initialEntries={[ROUTE.WARD_SETTINGS]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={ROUTE.WARD_SETTINGS} element={<div>ward settings page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('main')).toHaveClass('overflow-y-scroll');
+    });
 });

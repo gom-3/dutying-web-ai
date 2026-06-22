@@ -9,6 +9,7 @@ describe('api client unauthorized redirect policy', () => {
     });
 
     it('does not redirect token lifecycle failures back into refresh', () => {
+        expect(shouldRedirectToRefreshOnUnauthorized('/auth/admin/token/refresh', ROUTE.REFRESH)).toBe(false);
         expect(shouldRedirectToRefreshOnUnauthorized('/token/refresh', ROUTE.REFRESH)).toBe(false);
         expect(shouldRedirectToRefreshOnUnauthorized('/token/blacklist', ROUTE.PROFILE)).toBe(false);
     });

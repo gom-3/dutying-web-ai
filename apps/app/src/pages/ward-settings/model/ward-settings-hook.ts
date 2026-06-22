@@ -1,6 +1,11 @@
-﻿import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
+﻿import {
+    type TCreateShiftTypeDTO,
+    type TReqShiftReceptionSettingsResponse,
+    type TUpdateReqShiftReceptionSettingsDTO,
+} from '@dutying/api/ward';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
+import {useSearchParams} from 'react-router';
 import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -8,7 +13,7 @@ import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
-export type TWardSettingsTab = 'shiftTypes' | 'constraints';
+export type TWardSettingsTab = 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
 type TQueryStatus = 'idle' | 'pending' | 'error' | 'success';
 type TRawWardShiftType = Omit<TWardShiftType, 'startTime' | 'endTime'> & {
     startTime?: string | null;
@@ -24,26 +29,56 @@ function normalizeShiftType(shiftType: TRawWardShiftType): TWardShiftType {
 }
 
 function normalizeShiftTypes(input: unknown): TWardShiftType[] {
-    if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType);
+    if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
 
     if (input && typeof input === 'object') {
         const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
 
-        if (Array.isArray(maybe.shiftTypes)) return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
-        if (Array.isArray(maybe.wardShiftTypes)) return (maybe.wardShiftTypes as TRawWardShiftType[]).map(normalizeShiftType);
+        if (Array.isArray(maybe.shiftTypes))
+            return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
+
+        if (Array.isArray(maybe.wardShiftTypes))
+            return (maybe.wardShiftTypes as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
     }
 
     return [];
 }
 
+export const DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS = {
+    enabled: false,
+    startDay: 1,
+    startTime: '00:00',
+    endDay: 15,
+    endTime: '23:59',
+    notifyOnOpen: true,
+    notifyBeforeDeadline: true,
+    notifyBeforeDeadlineHours: 24,
+} satisfies TReqShiftReceptionSettingsResponse;
+
+async function getReqShiftReceptionSettingsOrDefault(wardId: number): Promise<TReqShiftReceptionSettingsResponse> {
+    try {
+        return await WardAPI.getReqShiftReceptionSettings(wardId);
+    } catch {
+        return DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS;
+    }
+}
+
+function parseWardSettingsTab(raw: string | null): TWardSettingsTab | null {
+    if (raw === 'shiftTypes' || raw === 'restLeavePolicy' || raw === 'requestReception' || raw === 'constraints') return raw;
+
+    return null;
+}
+
 export function useWardSettings() {
     const {t} = useTypedTranslation();
+    const [searchParams, setSearchParams] = useSearchParams();
     const {
         state: {wardId},
     } = useAuth();
     const queryClient = useQueryClient();
-    const [currentTab, setCurrentTab] = useState<TWardSettingsTab>('shiftTypes');
+    const [currentTab, setCurrentTab] = useState<TWardSettingsTab>(() => parseWardSettingsTab(searchParams.get('tab')) ?? 'shiftTypes');
     const [currentShiftTeamId, setCurrentShiftTeamId] = useState<number | null>(null);
+    const shouldLoadRequestReceptionSettings = wardId !== null && currentTab === 'requestReception';
     const shiftTypesQuery = useQuery({
         ...wardQueryOptions.shiftTypes(wardId ?? -1),
         enabled: wardId !== null,
@@ -54,6 +89,22 @@ export function useWardSettings() {
         enabled: wardId !== null,
         staleTime: 1000 * 60 * 5,
     });
+    const requestReceptionSettingsQuery = useQuery({
+        ...wardQueryOptions.requestReceptionSettings(wardId ?? -1),
+        queryFn: () => (wardId === null ? DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS : getReqShiftReceptionSettingsOrDefault(wardId)),
+        enabled: shouldLoadRequestReceptionSettings,
+        retry: false,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    useEffect(() => {
+        const queryTab = parseWardSettingsTab(searchParams.get('tab'));
+
+        if (!queryTab || queryTab === currentTab) return;
+
+        setCurrentTab(queryTab);
+    }, [currentTab, searchParams]);
+
     useEffect(() => {
         if (!shiftTeamsQuery.data) {
             setCurrentShiftTeamId(null);
@@ -117,6 +168,7 @@ export function useWardSettings() {
 
             if (!exists) {
                 showActionErrorFeedback(new Error('shift type not found'), t('page.wardSettings.shiftTypes.toast.notFound'));
+
                 return false;
             }
 
@@ -137,14 +189,45 @@ export function useWardSettings() {
     const retryShiftTeams = async () => {
         await shiftTeamsQuery.refetch();
     };
+    const retryRequestReceptionSettings = async () => {
+        await requestReceptionSettingsQuery.refetch();
+    };
+    const updateRequestReceptionSettings = async (settings: TUpdateReqShiftReceptionSettingsDTO) => {
+        if (!wardId) return false;
+
+        try {
+            await WardAPI.updateReqShiftReceptionSettings(wardId, settings);
+            await queryClient.invalidateQueries({queryKey: wardQueryKeys.requestReceptionSettings(wardId)});
+
+            return true;
+        } catch (error) {
+            showActionErrorFeedback(error, t('page.wardSettings.requestReception.toast.updateFailed'));
+
+            return false;
+        }
+    };
     const selectTab = (tab: TWardSettingsTab) => {
         setCurrentTab(tab);
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+
+            next.set('tab', tab);
+
+            return next;
+        });
+
         if (tab === 'shiftTypes') {
             void shiftTypesQuery.refetch();
         }
     };
     const shiftTypesStatus: TQueryStatus = shiftTypesQuery.isPending ? 'pending' : shiftTypesQuery.isError ? 'error' : 'success';
     const shiftTeamsStatus: TQueryStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
+    const requestReceptionStatus: TQueryStatus =
+        requestReceptionSettingsQuery.isFetching && !requestReceptionSettingsQuery.data
+            ? 'pending'
+            : requestReceptionSettingsQuery.isError
+              ? 'error'
+              : 'success';
 
     return {
         state: {
@@ -155,6 +238,8 @@ export function useWardSettings() {
             shiftTeams: shiftTeamsQuery.data ?? [],
             shiftTeamsStatus,
             currentShiftTeamId,
+            requestReceptionSettings: requestReceptionSettingsQuery.data ?? DEFAULT_REQ_SHIFT_RECEPTION_SETTINGS,
+            requestReceptionStatus,
         },
         actions: {
             selectTab,
@@ -164,6 +249,8 @@ export function useWardSettings() {
             deleteShiftType,
             retryShiftTypes,
             retryShiftTeams,
+            retryRequestReceptionSettings,
+            updateRequestReceptionSettings,
         },
     };
 }

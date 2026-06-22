@@ -99,6 +99,33 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('shows rest shortage and surplus when rest check summaries are provided', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                restCheckByShiftNurseId={{
+                    2: {
+                        targetDays: 10,
+                        assignedDays: 1,
+                        carriedDays: 2,
+                        differenceDays: -9,
+                    },
+                }}
+            />,
+        );
+
+        expect(screen.getByText('이월')).toBeInTheDocument();
+        expect(screen.getByTitle('지난달에서 넘어온 쉬는 날 +2일')).toBeInTheDocument();
+        expect(screen.getByText('+2')).toBeInTheDocument();
+        expect(screen.getByText('휴무')).toBeInTheDocument();
+        expect(screen.getByTitle('휴무 체크')).toBeInTheDocument();
+        expect(screen.getByText('-9')).toBeInTheDocument();
+    });
+
     it('includes off shift types in row and daily summaries when they are assigned', () => {
         const offShiftType = {
             wardShiftTypeId: 20,
@@ -132,20 +159,23 @@ describe('MakeShiftCalendar', () => {
 
         render(<MakeShiftCalendar shift={shiftWithOff} doc={docWithOff} violationMap={new Map()} showFaults={false} readonly />);
 
-        expect(
-            Array.from(document.querySelectorAll('.make-shift-calendar__type-summary-badge')).map((node) => node.textContent),
-        ).toEqual(['D', 'O']);
-        expect(
-            Array.from(document.querySelectorAll('.make-shift-calendar__row-summary-count')).map((node) => node.textContent),
-        ).toEqual(['1', '1']);
+        expect(Array.from(document.querySelectorAll('.make-shift-calendar__type-summary-badge')).map((node) => node.textContent)).toEqual([
+            'D',
+            'O',
+        ]);
+        expect(Array.from(document.querySelectorAll('.make-shift-calendar__row-summary-count')).map((node) => node.textContent)).toEqual([
+            '1',
+            '1',
+        ]);
 
         const offDailySummary = document.querySelector<HTMLElement>('.make-shift-daily-summary__row[data-shift-type-id="20"]');
 
         expect(offDailySummary).not.toBeNull();
         expect(within(offDailySummary!).getByText('O')).toBeInTheDocument();
-        expect(
-            Array.from(offDailySummary!.querySelectorAll('.make-shift-daily-summary__cell')).map((node) => node.textContent),
-        ).toEqual(['1', '0']);
+        expect(Array.from(offDailySummary!.querySelectorAll('.make-shift-daily-summary__cell')).map((node) => node.textContent)).toEqual([
+            '1',
+            '0',
+        ]);
     });
 
     it('does not render an unaccepted request as a request-only cell', () => {
@@ -190,7 +220,7 @@ describe('MakeShiftCalendar', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
 
         expect(screen.queryByText('이월')).not.toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-carry-value')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
     });
 
     it('replaces the carry column with a skill badge when skillColumn is provided', () => {
@@ -210,9 +240,32 @@ describe('MakeShiftCalendar', () => {
 
         expect(screen.getByText('숙련도')).toBeInTheDocument();
         expect(screen.queryByText('이월')).not.toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-carry-value')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('LV. 3');
         expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass('min-h-[18px]', 'min-w-10', 'text-[10px]');
+    });
+
+    it('keeps custom skill badge labels visible', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                skillColumn={{
+                    config: {
+                        ...DEFAULT_SKILL_LEVEL_CONFIG,
+                        levelLabels: {
+                            3: '책임간호',
+                        },
+                    },
+                    levelsByNurseId: {100: 3},
+                }}
+            />,
+        );
+
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('책임간호');
     });
 
     it('hides the skill column when skill settings are disabled', () => {

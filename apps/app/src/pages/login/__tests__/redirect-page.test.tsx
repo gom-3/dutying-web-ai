@@ -7,6 +7,7 @@ import {
 } from '@/features/auth/model/oauth-redirect-payload';
 import {clearSocialSignupProfile, readSocialSignupProfile} from '@/features/auth/model/social-signup';
 import i18n from '@/i18n';
+import ROUTE from '@/shared/constant/path';
 import {render, screen, waitFor} from '@/shared/util/test-utils';
 import RedirectPage from '../redirect-page';
 
@@ -20,6 +21,7 @@ vi.mock('react-loading', () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const originalLocation = window.location;
 
 describe('RedirectPage', () => {
     const handleLogin = vi.fn();
@@ -28,6 +30,10 @@ describe('RedirectPage', () => {
     const adminToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 123});
 
     afterEach(() => {
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: originalLocation,
+        });
         vi.unstubAllEnvs();
     });
 
@@ -49,6 +55,20 @@ describe('RedirectPage', () => {
         vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
         window.history.replaceState({}, '', '/oauth2/redirect');
     });
+
+    const mockLocationReplace = () => {
+        const replace = vi.fn();
+
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                ...window.location,
+                replace,
+            },
+        });
+
+        return replace;
+    };
 
     it('falls back when nextPageUrl points to the landing domain', async () => {
         window.history.replaceState(
@@ -199,16 +219,21 @@ describe('RedirectPage', () => {
         });
     });
 
-    it('does not trigger login without accessToken', () => {
-        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=%2Frequest');
+    it('uses the refresh cookie flow when the callback only includes an app-domain nextPageUrl', async () => {
+        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2F');
+
+        const replace = mockLocationReplace();
 
         render(<RedirectPage />);
 
+        await waitFor(() => {
+            expect(replace).toHaveBeenCalledWith(`${ROUTE.REFRESH}?next=%2F`);
+        });
         expect(handleLogin).not.toHaveBeenCalled();
     });
 
     it('does not stay in the loading state when the callback has no token', async () => {
-        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=%2Frequest');
+        window.history.replaceState({}, '', '/oauth2/redirect');
 
         render(<RedirectPage />);
 

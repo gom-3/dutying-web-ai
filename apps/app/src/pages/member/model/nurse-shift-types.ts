@@ -51,7 +51,8 @@ export const resolveNurseShiftTypeOptions = (
         setIfAbsent(legacyNurseShiftTypeByCode, normalizeShiftTypeKey(shiftType.name), shiftType);
     });
 
-    return [...wardShiftTypes]
+    return wardShiftTypes
+        .filter((wardShiftType) => wardShiftType.isActive !== false)
         .sort((a, b) => a.wardShiftTypeId - b.wardShiftTypeId)
         .map((wardShiftType) => {
             const matched =

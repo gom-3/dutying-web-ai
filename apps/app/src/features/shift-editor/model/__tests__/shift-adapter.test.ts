@@ -256,6 +256,23 @@ describe('shift-adapter', () => {
         });
     });
 
+    it('excludes inactive shift types from keyboard entry candidates', () => {
+        const shift = createShift();
+
+        shift.wardShiftTypes = [
+            shift.wardShiftTypes[0]!,
+            {
+                ...shift.wardShiftTypes[2]!,
+                wardShiftTypeId: 40,
+                name: 'Archived',
+                shortName: 'A',
+                isActive: false,
+            },
+        ];
+
+        expect(buildWorkKeyMap(shift)).toEqual({d: 'D'});
+    });
+
     it('projects editor doc back onto worker rows while preserving non-worker rows', () => {
         const shift = createShift();
         const doc = {

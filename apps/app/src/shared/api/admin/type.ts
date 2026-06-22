@@ -49,6 +49,24 @@ export type TUpdateAdminProfileDTO = {
     defaultProfileImgId?: number;
 };
 
+export type TAdminMonthlyMemoResponse = {
+    monthlyMemoId?: number;
+    accountId?: number;
+    wardId: number;
+    year: number;
+    month: number;
+    content: string;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+};
+
+export type TUpsertAdminMonthlyMemoDTO = {
+    wardId: number;
+    year: number;
+    month: number;
+    content: string;
+};
+
 export type TCreateAdminWorkspaceResponse =
     | TAdminMeResponse
     | TWardResponse

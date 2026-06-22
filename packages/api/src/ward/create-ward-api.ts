@@ -17,6 +17,7 @@ import type {
     TEditWardDTO,
     TPublishSnapshotRes,
     TReadWardChatDTO,
+    TReqShiftReceptionSettingsResponse,
     TRequestShiftResponse,
     TShiftConstraintRuleCandidatesResponse,
     TShiftConstraintRulesResponse,
@@ -27,6 +28,7 @@ import type {
     TOnboardingWardDraftResponse,
     TSnapshotSaveRes,
     TUpdateOnboardingWardDraftDTO,
+    TUpdateReqShiftReceptionSettingsDTO,
     TUpdateShiftConstraintRulesDTO,
     TUpdateShiftTeamDTO,
     TValidationRes,
@@ -297,6 +299,19 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             ).data,
         getReqShiftPendingCount: async (wardId: number) =>
             (await client.get<TWardReqShiftPendingCountResponse>(wardPath(`/${wardId}/req-shifts/pending-count`))).data,
+        getReqShiftReceptionSettings: async (wardId: number) =>
+            (
+                await client.get<TReqShiftReceptionSettingsResponse>(
+                    wardPath(`/${wardId}/req-shifts/reception-settings`),
+                )
+            ).data,
+        updateReqShiftReceptionSettings: async (wardId: number, settings: TUpdateReqShiftReceptionSettingsDTO) =>
+            (
+                await client.put<TReqShiftReceptionSettingsResponse>(
+                    wardPath(`/${wardId}/req-shifts/reception-settings`),
+                    settings,
+                )
+            ).data,
         updateShift: async (
             wardId: number,
             year: number,

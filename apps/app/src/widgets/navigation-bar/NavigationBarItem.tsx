@@ -86,6 +86,7 @@ const NavigationBarItem = ({
     return (
         <button
             type="button"
+            data-navigation-path={path}
             title={collapsed ? text : undefined}
             aria-label={collapsed ? text : undefined}
             aria-current={isSelected ? 'page' : undefined}

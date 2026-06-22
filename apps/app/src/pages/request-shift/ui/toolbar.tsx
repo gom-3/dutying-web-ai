@@ -1,12 +1,15 @@
 import {cn} from '@dutying/utils/style';
-import {AlertCircle, CheckCircle2, Loader2} from 'lucide-react';
+import {AlertCircle, CheckCircle2, Loader2, Settings} from 'lucide-react';
+import {useNavigate} from 'react-router-dom';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/request-shift';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 
 function Toolbar() {
     const {t} = useTypedTranslation();
+    const navigate = useNavigate();
     const {
         state: {year, month, changeStatus, currentShiftTeam, shiftTeams, teamPendingRequestCountByTeamId, editAvailability},
         actions: {changeMonth, changeShiftTeam},
@@ -102,6 +105,14 @@ function Toolbar() {
                         </p>
                     ) : null}
                 </div>
+                <button
+                    type="button"
+                    className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-[10px] bg-white px-3.5 font-apple text-[13px] font-semibold text-sub-1 shadow-[0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-gray-6 transition-colors hover:bg-gray-7 hover:text-sub-1 hover:ring-gray-5 focus-visible:ring-2 focus-visible:ring-main-1/40 focus-visible:outline-none md:self-auto"
+                    onClick={() => navigate(`${ROUTE.WARD_SETTINGS}?tab=requestReception`)}
+                >
+                    <Settings className="h-4 w-4" aria-hidden="true" />
+                    {t('page.request.toolbar.settingsAction')}
+                </button>
             </div>
         </div>
     );

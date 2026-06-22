@@ -1,14 +1,25 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {waitFor} from '@testing-library/react';
 import toast from 'react-hot-toast';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import WardSettingsPage from '../index';
 
 const mockUseWardSettings = vi.fn();
+const mockNavigate = vi.hoisted(() => vi.fn());
 
 vi.mock('../model/ward-settings-hook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
 }));
+
+vi.mock('react-router', async () => {
+    const actual = await vi.importActual<typeof import('react-router')>('react-router');
+
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
 vi.mock('react-hot-toast', () => ({
     default: {
@@ -17,7 +28,7 @@ vi.mock('react-hot-toast', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+    const {default: i18n} = await vi.importActual<typeof I18nModule>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -40,7 +51,7 @@ vi.mock('@/pages/make-shift/ui/steps/constraints', () => ({
 type TMockValue = {
     state: {
         wardId: number | null;
-        currentTab: 'shiftTypes' | 'constraints';
+        currentTab: 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
         shiftTypes: Array<{
             wardShiftTypeId: number;
             name: string;
@@ -57,6 +68,17 @@ type TMockValue = {
         shiftTeams: Array<{shiftTeamId: number; name: string; nurseCnt: number; nurses: []}>;
         shiftTeamsStatus: 'success' | 'pending' | 'error';
         currentShiftTeamId: number | null;
+        requestReceptionSettings: {
+            enabled: boolean;
+            startDay: number;
+            startTime: string;
+            endDay: number;
+            endTime: string;
+            notifyOnOpen: boolean;
+            notifyBeforeDeadline: boolean;
+            notifyBeforeDeadlineHours: number;
+        };
+        requestReceptionStatus: 'success' | 'pending' | 'error';
     };
     actions: {
         selectTab: ReturnType<typeof vi.fn>;
@@ -66,6 +88,8 @@ type TMockValue = {
         deleteShiftType: ReturnType<typeof vi.fn>;
         retryShiftTypes: ReturnType<typeof vi.fn>;
         retryShiftTeams: ReturnType<typeof vi.fn>;
+        retryRequestReceptionSettings: ReturnType<typeof vi.fn>;
+        updateRequestReceptionSettings: ReturnType<typeof vi.fn>;
     };
 };
 
@@ -92,6 +116,17 @@ function baseValue() {
             shiftTeams: [{shiftTeamId: 1, name: '중환자실 A팀', nurseCnt: 0, nurses: []}],
             shiftTeamsStatus: 'success' as const,
             currentShiftTeamId: 1,
+            requestReceptionSettings: {
+                enabled: true,
+                startDay: 1,
+                startTime: '00:00',
+                endDay: 15,
+                endTime: '23:59',
+                notifyOnOpen: true,
+                notifyBeforeDeadline: true,
+                notifyBeforeDeadlineHours: 24,
+            },
+            requestReceptionStatus: 'success' as const,
         },
         actions: {
             selectTab: vi.fn(),
@@ -101,6 +136,8 @@ function baseValue() {
             deleteShiftType: vi.fn(),
             retryShiftTypes: vi.fn(),
             retryShiftTeams: vi.fn(),
+            retryRequestReceptionSettings: vi.fn(),
+            updateRequestReceptionSettings: vi.fn(),
         },
     };
 }
@@ -123,7 +160,9 @@ function createValue(overrides?: {state?: Partial<TMockValue['state']>; actions?
 describe('WardSettingsPage', () => {
     beforeEach(() => {
         mockUseWardSettings.mockReset();
+        mockNavigate.mockClear();
         vi.mocked(toast.success).mockClear();
+        window.localStorage.removeItem('dutying:ward:1:rest-leave-policy');
     });
 
     it('근무 유형 탭에서 피그마 컬럼과 행을 보여준다', () => {
@@ -205,6 +244,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getAllByText('8h')).toHaveLength(2);
 
         const buttons = screen.getAllByRole('button');
+
         await user.click(buttons[buttons.length - 1]!);
 
         await waitFor(() => {
@@ -280,6 +320,238 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: '제약 조건'}));
 
         expect(selectTab).toHaveBeenCalledWith('constraints');
+    });
+
+    it('신청근무 접수 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
+        const user = userEvent.setup();
+        const selectTab = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                actions: {
+                    selectTab,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
+
+        expect(selectTab).toHaveBeenCalledWith('requestReception');
+    });
+
+    it('신청근무 접수 설정을 저장한다', async () => {
+        const user = userEvent.setup();
+        const updateRequestReceptionSettings = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'requestReception',
+                },
+                actions: {
+                    updateRequestReceptionSettings,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('신청받는 날짜')).toBeInTheDocument();
+        expect(screen.queryByText('시작 시간')).not.toBeInTheDocument();
+        expect(screen.queryByText('마감 시간')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '3일'}));
+        await user.click(screen.getByRole('button', {name: '10일'}));
+
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(updateRequestReceptionSettings).toHaveBeenCalledWith({
+                enabled: true,
+                startDay: 3,
+                startTime: '00:00',
+                endDay: 10,
+                endTime: '23:59',
+                notifyOnOpen: true,
+                notifyBeforeDeadline: true,
+                notifyBeforeDeadlineHours: 24,
+            });
+        });
+        expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/신청.*설정을 저장했어요/));
+    });
+
+    it('쉬는 날 계산 탭에서 실제 쉬는 날로 계산할 근무유형을 고른다', async () => {
+        const user = userEvent.setup();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                    shiftTypes: [
+                        baseValue().state.shiftTypes[0],
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: '오프',
+                            shortName: 'O',
+                            color: '#465B7A',
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OFF',
+                        },
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 3,
+                            name: '연차',
+                            shortName: 'A',
+                            color: '#7C8AF2',
+                            isDefault: false,
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OTHER_LEAVE',
+                        },
+                    ],
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /오프.*쉬는 날 계산/})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: /연차.*쉬는 날 계산/}));
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(JSON.parse(window.localStorage.getItem('dutying:ward:1:rest-leave-policy') ?? '{}')).toMatchObject({
+                countedRestShiftTypeIds: [2],
+            });
+        });
+    });
+
+    it('쉬는 날 계산 탭에서 기본 휴무만 있어도 포함 항목에 표시한다', () => {
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                    shiftTypes: [
+                        baseValue().state.shiftTypes[0],
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: '휴무',
+                            shortName: 'O',
+                            color: '#465B7A',
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OFF',
+                        },
+                    ],
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /휴무.*쉬는 날 계산/})).toBeInTheDocument();
+        expect(screen.queryByText('아직 휴무 유형이 없어요.')).not.toBeInTheDocument();
+    });
+
+    it('쉬는 날 계산 탭에서 기능을 끄면 세부 설정을 접고 저장한다', async () => {
+        const user = userEvent.setup();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                    shiftTypes: [
+                        baseValue().state.shiftTypes[0],
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: '연차',
+                            shortName: 'A',
+                            color: '#7C8AF2',
+                            isDefault: false,
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OTHER_LEAVE',
+                        },
+                    ],
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
+
+        const restPolicySwitch = screen.getByRole('switch', {name: '쉬는 날 계산을 사용할까요?'});
+
+        expect(restPolicySwitch).toHaveAttribute('aria-checked', 'true');
+
+        await user.click(restPolicySwitch);
+
+        expect(restPolicySwitch).toHaveAttribute('aria-checked', 'false');
+        expect(screen.queryByText('쉬는 날에 넣을 항목')).not.toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(JSON.parse(window.localStorage.getItem('dutying:ward:1:rest-leave-policy') ?? '{}')).toMatchObject({
+                enabled: false,
+            });
+        });
+    });
+
+    it('쉬는 날 계산 탭에서 변경 후 다른 탭으로 나가려 하면 확인 모달을 띄운다', async () => {
+        const user = userEvent.setup();
+        const selectTab = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'restLeavePolicy',
+                    shiftTypes: [
+                        baseValue().state.shiftTypes[0],
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: '연차',
+                            shortName: 'A',
+                            color: '#7C8AF2',
+                            isDefault: false,
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OTHER_LEAVE',
+                        },
+                    ],
+                },
+                actions: {
+                    selectTab,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('switch', {name: '쉬는 날 계산을 사용할까요?'}));
+        await waitFor(() => {
+            expect(screen.getByRole('button', {name: '저장하기'})).toBeEnabled();
+        });
+
+        await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
+
+        expect(selectTab).not.toHaveBeenCalled();
+        expect(screen.getByText('저장하지 않고 나갈까요?')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: '저장 안 함'}));
+
+        expect(selectTab).toHaveBeenCalledWith('requestReception');
     });
 
     it('근무 유형 추가하기를 누르면 새 근무 유형 행을 추가한다', async () => {

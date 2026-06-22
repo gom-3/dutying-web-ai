@@ -13,6 +13,7 @@ import {
     useShiftEditorCommands,
     useShiftEditorStore,
 } from '@/features/shift-editor';
+import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
@@ -22,6 +23,8 @@ import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-au
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
+import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
+import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {
     MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
@@ -181,6 +184,8 @@ export function AiAutofill() {
         editorInputDisabled: isAiGenerating,
     });
     const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
+    const {policy} = useRestLeavePolicy(wardId);
+    const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const aiRequestSeqRef = useRef(0);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
@@ -238,6 +243,20 @@ export function AiAutofill() {
     const calendarDoc = useMemo(
         () => (autoFillEnabled ? hydratedDoc : maskDutyDocNonFixedCells(hydratedDoc)),
         [autoFillEnabled, hydratedDoc],
+    );
+    const restCheckByShiftNurseId = useMemo(
+        () =>
+            dutyQuery.data
+                ? calculateRestCheckByShiftNurse({
+                      shift: dutyQuery.data,
+                      doc: calendarDoc,
+                      policy,
+                      year,
+                      month,
+                      adjustmentDays,
+                  })
+                : undefined,
+        [adjustmentDays, calendarDoc, dutyQuery.data, month, policy, year],
     );
     const canConfirm =
         !isWorking &&
@@ -696,6 +715,7 @@ export function AiAutofill() {
                         editableLastShifts={!isAiGenerating}
                         isShimmering={isAiGenerating}
                         skillColumn={skillColumn}
+                        restCheckByShiftNurseId={restCheckByShiftNurseId}
                     />
                 )}
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (

@@ -1,7 +1,9 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import Toolbar from '../toolbar';
 
+const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseRequestShift = vi.fn();
 const mockSendEvent = vi.fn();
 const translations: Record<string, string> = {
@@ -19,6 +21,7 @@ const translations: Record<string, string> = {
     'page.request.toolbar.savedDescription': '최근 변경 사항을 저장했어요.',
     'page.request.toolbar.noTeamsLabel': '팀을 등록하면 신청 근무를 쓸 수 있어요',
     'page.request.toolbar.saveError': '최근 변경 사항을 저장하지 못했어요. 다시 저장해 주세요.',
+    'page.request.toolbar.settingsAction': '접수 설정',
 };
 
 vi.mock('@/features/request-shift', () => ({
@@ -34,6 +37,15 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
         },
     }),
 }));
+
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+
+    return {
+        ...actual,
+        useNavigate: () => mockNavigate,
+    };
+});
 
 vi.mock('@/analytics', () => ({
     events: {
@@ -118,6 +130,7 @@ describe('RequestShiftPage Toolbar', () => {
     beforeEach(() => {
         mockUseRequestShift.mockReset();
         mockSendEvent.mockReset();
+        mockNavigate.mockReset();
     });
 
     it('수정 가능한 달은 신청 정리 화면으로 바로 보여준다', () => {
@@ -126,6 +139,7 @@ describe('RequestShiftPage Toolbar', () => {
         render(<Toolbar />);
 
         expect(screen.getByText('신청 근무를 확정해 주세요')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '접수 설정'})).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '수정하기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '저장하기'})).not.toBeInTheDocument();
     });
@@ -186,6 +200,18 @@ describe('RequestShiftPage Toolbar', () => {
 
         expect(screen.getByText('4월 신청 근무')).toBeInTheDocument();
         expect(screen.getByText('이 달은 신청 근무를 수정할 수 없어요.')).toBeInTheDocument();
+    });
+
+    it('접수 설정 버튼을 누르면 신청근무 접수 설정 탭으로 이동한다', async () => {
+        const user = userEvent.setup();
+
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue());
+
+        render(<Toolbar />);
+
+        await user.click(screen.getByRole('button', {name: '접수 설정'}));
+
+        expect(mockNavigate).toHaveBeenCalledWith(`${ROUTE.WARD_SETTINGS}?tab=requestReception`);
     });
 
     it('저장 성공과 실패 피드백을 상태에 따라 보여준다', () => {

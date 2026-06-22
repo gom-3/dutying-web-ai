@@ -20,14 +20,11 @@ import {
     normalizeContactPhoneForStorage,
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
+import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 
-const NURSE_NAME_MAX_LENGTH = 20;
-const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]+$/u;
-const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-z\u3131-\u318E\uAC00-\uD7A3\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FEF\u3005\s'’\-·・]/gu;
 const DUPLICATE_PHONE_NUM_ERROR_TYPE = 'duplicate-phone-num';
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
-const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const getErrorTextValues = (value: unknown): string[] => {
     if (typeof value === 'string') return [value];
 
@@ -63,10 +60,10 @@ const createSchema = (serviceRegion: ReturnType<typeof getDefaultServiceRegionFo
         .shape({
             name: yup
                 .string()
-                .transform((value) => value?.trim() ?? '')
+                .transform((value) => normalizeNurseNameForRequest(value ?? ''))
                 .required()
                 .max(NURSE_NAME_MAX_LENGTH)
-                .matches(NURSE_NAME_ALLOWED_REGEXP),
+                .test('nurse-name', (value) => isValidNurseName(value ?? '')),
             phoneNum: yup
                 .string()
                 .transform((value) => normalizeContactPhoneForStorage(value ?? ''))
