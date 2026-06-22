@@ -180,6 +180,35 @@ describe('resolveNurseShiftTypeOptions', () => {
             {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'Orientation', shortName: 'O', isPossible: true},
         ]);
     });
+
+    it('omits inactive ward shift types from selectable options', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 10,
+                    name: 'Day',
+                    shortName: 'D',
+                    isPossible: true,
+                    isPreferred: false,
+                },
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 20,
+                    name: 'Archived',
+                    shortName: 'A',
+                    isPossible: true,
+                    isPreferred: false,
+                },
+            ],
+            [
+                createWardShiftType({wardShiftTypeId: 10, name: 'Day', shortName: 'D', isActive: true}),
+                createWardShiftType({wardShiftTypeId: 20, name: 'Archived', shortName: 'A', isActive: false}),
+            ],
+        );
+
+        expect(options).toMatchObject([{wardShiftTypeId: 10, shortName: 'D'}]);
+    });
 });
 
 describe('getNurseDrawerFeedback', () => {

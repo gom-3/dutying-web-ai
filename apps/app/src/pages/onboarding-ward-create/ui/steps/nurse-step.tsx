@@ -7,6 +7,7 @@ import {useTypedTranslation, type TI18nKey} from '@/shared/hook/use-typed-transl
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {
+    isOnboardingShiftTypeActive,
     MAX_ONBOARDING_NURSE_NAME_LENGTH,
     sortNursesByMode,
     type TOnboardingNurseDraft,
@@ -133,7 +134,10 @@ function NurseStep({
     const sortedNurses = useMemo(() => sortNursesByMode(currentNurses, sortMode), [currentNurses, sortMode]);
     const hasTeams = draft.teams.length > 0;
     const hasNursesInSelectedTeam = hasTeams && currentNurses.length > 0;
-    const activeShiftTypes = useMemo(() => draft.shiftTypes.filter((shiftType) => shiftType.shortName), [draft.shiftTypes]);
+    const activeShiftTypes = useMemo(
+        () => draft.shiftTypes.filter((shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.shortName),
+        [draft.shiftTypes],
+    );
     const levelItems = useMemo(
         () => Array.from({length: draft.skillLevelConfig.levelCount}, (_, index) => draft.skillLevelConfig.levelCount - index),
         [draft.skillLevelConfig.levelCount],
@@ -490,7 +494,9 @@ function NurseStep({
                                                                             <SkillBadge
                                                                                 level={null}
                                                                                 config={draft.skillLevelConfig}
-                                                                                label={t('page.onboardingWardCreate.nurse.skillUnselectedOption')}
+                                                                                label={t(
+                                                                                    'page.onboardingWardCreate.nurse.skillUnselectedOption',
+                                                                                )}
                                                                                 backgroundColor={SKILL_UNSELECTED_BACKGROUND}
                                                                                 textColor={SKILL_UNSELECTED_TEXT}
                                                                                 className="text-[12px]"
@@ -572,7 +578,9 @@ function NurseStep({
                                                                     ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
-                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptor ? '' : PRECEPTOR_MEMO})}
+                                                            onClick={() =>
+                                                                onNurseChange(nurse.id, {memo: isPreceptor ? '' : PRECEPTOR_MEMO})
+                                                            }
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </button>
@@ -590,7 +598,9 @@ function NurseStep({
                                                                     ? 'border-main-1 bg-main-1 text-white hover:bg-main-1-hover'
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
-                                                            onClick={() => onNurseChange(nurse.id, {memo: isPreceptee ? '' : PRECEPTEE_MEMO})}
+                                                            onClick={() =>
+                                                                onNurseChange(nurse.id, {memo: isPreceptee ? '' : PRECEPTEE_MEMO})
+                                                            }
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
                                                         </button>

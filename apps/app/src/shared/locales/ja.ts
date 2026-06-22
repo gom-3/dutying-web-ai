@@ -693,10 +693,14 @@ export const ja: TLocale = {
             title: '勤務設定',
             description: {
                 shiftTypes: '勤務区分を管理します。',
+                restLeavePolicy: en.page.wardSettings.description.restLeavePolicy,
+                requestReception: en.page.wardSettings.description.requestReception,
                 constraints: '勤務条件を管理します。',
             },
             tabs: {
                 shiftTypes: '勤務区分',
+                restLeavePolicy: en.page.wardSettings.tabs.restLeavePolicy,
+                requestReception: en.page.wardSettings.tabs.requestReception,
                 constraints: '制約条件',
             },
             addShiftType: '勤務を追加',

@@ -1,10 +1,13 @@
 import {type TCreateWardDTO, type TShiftConstraintSeverity} from '@dutying/api/ward';
 import {type DropResult} from '@hello-pangea/dnd';
+import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest} from '@/shared/lib/nurse-name';
 import {
     getShiftShortNameValueKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
 } from '@/shared/lib/shift-short-name';
+
+export {normalizeNurseNameForRequest};
 
 export type TOnboardingStep = 1 | 2 | 3 | 4;
 
@@ -172,7 +175,7 @@ const MAX_STEP = 4;
 export const MAX_ONBOARDING_TEAMS = 8;
 export const MAX_ONBOARDING_SHIFT_TYPES = 10;
 export const MAX_ONBOARDING_NURSES = 40;
-export const MAX_ONBOARDING_NURSE_NAME_LENGTH = 20;
+export const MAX_ONBOARDING_NURSE_NAME_LENGTH = NURSE_NAME_MAX_LENGTH;
 export const DEFAULT_SHIFT_TYPE_COLORS = [
     '#4DC2AD',
     '#FF8BA5',
@@ -190,11 +193,6 @@ export const CUSTOM_SHIFT_TYPE_COLORS = DEFAULT_SHIFT_TYPE_COLORS.slice(4);
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 2, 3, 4];
 const WARD_IDENTITY_REGEX = /^[a-zA-Z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9\s]{1,20}$/u;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
-const ASCII_SPACE_EDGE_REGEX = /^ +| +$/g;
-const KOREAN_SYLLABLE_REGEX = /[\uAC00-\uD7A3]/g;
-const KOREAN_SYLLABLE_OR_SPACE_REGEX = /^[\uAC00-\uD7A3 ]+$/u;
-const KOREAN_JAMO_REGEX = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\ud7b0-\ud7ff]/u;
-const NURSE_NAME_ALLOWED_REGEX = /^[\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9A-Za-z ]+$/u;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
@@ -234,8 +232,6 @@ export const DEFAULT_ONBOARDING_DRAFT_LABELS: TOnboardingDraftLabels = {
 const getDefaultTeamName = (teamNumber: number, labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS) =>
     labels.teamName(teamNumber);
 const normalizeColor = (color: string) => color.trim().toUpperCase();
-
-export const normalizeNurseNameForRequest = (name: string) => name.replace(ASCII_SPACE_EDGE_REGEX, '');
 
 export const normalizeOnboardingShiftCode = (value: string) => value.trim().toLocaleUpperCase();
 export const isOnboardingShiftTypeActive = (shiftType: TOnboardingWardShiftType) => shiftType.isActive !== false;
@@ -370,33 +366,6 @@ const normalizeSkillPaletteId = (paletteId: string) =>
 
 export const getScheduleMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 
-const isValidNurseName = (name: string): boolean => {
-    const requestName = normalizeNurseNameForRequest(name);
-
-    if (!requestName) {
-        return false;
-    }
-
-    if (KOREAN_JAMO_REGEX.test(requestName)) {
-        return false;
-    }
-
-    if (requestName.length > MAX_ONBOARDING_NURSE_NAME_LENGTH) {
-        return false;
-    }
-
-    if (!NURSE_NAME_ALLOWED_REGEX.test(requestName)) {
-        return false;
-    }
-
-    const koreanSyllableCount = requestName.match(KOREAN_SYLLABLE_REGEX)?.length ?? 0;
-
-    if (KOREAN_SYLLABLE_OR_SPACE_REGEX.test(requestName) && koreanSyllableCount < 2) {
-        return false;
-    }
-
-    return true;
-};
 const parseShiftTimeToMinutes = (value: string): number | null => {
     const normalizedValue = value.trim();
 

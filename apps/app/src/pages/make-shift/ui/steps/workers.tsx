@@ -22,6 +22,7 @@ import {
     freshenMakeShiftDisplayWorkers,
     sortMakeShiftWorkersInitialOrder,
 } from '../../model/make-shift-worker-order';
+import {RestLeavePolicySummaryCard} from './rest-leave-policy-summary-card';
 import {WorkersList, WorkersTableHeader} from './workers-sections';
 
 const MAKE_SHIFT_WORKER_SORT_OPTIONS = [
@@ -459,13 +460,18 @@ export function Workers() {
                 ) : workerCount > 0 ? (
                     <>
                         <div className="mb-3 flex min-w-0 items-center justify-between gap-3 px-1">
-                            <span
-                                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 font-apple text-[12px] font-semibold text-sub-2"
-                                aria-label={t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
-                            >
-                                <PersonIcon aria-hidden className="size-3.5 shrink-0" />
-                                <span className="tabular-nums">{t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}</span>
-                            </span>
+                            <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                <span
+                                    className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-white px-2.5 font-apple text-[12px] font-semibold text-sub-2"
+                                    aria-label={t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
+                                >
+                                    <PersonIcon aria-hidden className="size-3.5 shrink-0" />
+                                    <span className="tabular-nums">
+                                        {t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
+                                    </span>
+                                </span>
+                                <RestLeavePolicySummaryCard wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
+                            </div>
                             <div ref={sortMenuRef} className="relative">
                                 <button
                                     type="button"

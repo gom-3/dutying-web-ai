@@ -6,6 +6,7 @@ import {type TShift} from '@/entities';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {shiftToDoc, type TViolation, useShiftImageExport} from '@/features/shift-editor';
+import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
@@ -13,6 +14,8 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
+import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
@@ -58,7 +61,23 @@ export function ConfirmedShifts() {
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.confirmedShifts.fallbackTeamName');
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
     const skillColumn = useMakeShiftSkillColumn(shift);
+    const {policy} = useRestLeavePolicy(wardId);
+    const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const doc = useMemo(() => toConfirmedDoc(shift, year, month), [month, shift, year]);
+    const restCheckByShiftNurseId = useMemo(
+        () =>
+            shift && doc
+                ? calculateRestCheckByShiftNurse({
+                      shift,
+                      doc,
+                      policy,
+                      year,
+                      month,
+                      adjustmentDays,
+                  })
+                : undefined,
+        [adjustmentDays, doc, month, policy, shift, year],
+    );
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,
         year,
@@ -205,6 +224,7 @@ export function ConfirmedShifts() {
                                 readonly
                                 disableInitialSelection
                                 skillColumn={skillColumn}
+                                restCheckByShiftNurseId={restCheckByShiftNurseId}
                             />
                         </ConfirmedCalendarBoundary>
                     </div>

@@ -56,7 +56,10 @@ function findShiftRowByShiftNurseId(shift: TShift | null | undefined, shiftNurse
     return null;
 }
 
-function resolveLastShiftIds(row: TShift['divisionShiftNurses'][number][number], previousConfirmedShift?: TShift | null): (number | null)[] {
+function resolveLastShiftIds(
+    row: TShift['divisionShiftNurses'][number][number],
+    previousConfirmedShift?: TShift | null,
+): (number | null)[] {
     const previousRow = findShiftRowByShiftNurseId(previousConfirmedShift, row.shiftNurse.shiftNurseId);
 
     if (previousRow?.wardShiftList) {
@@ -94,6 +97,7 @@ export function isDutyShiftFullyAssigned(shift: TShift): boolean {
 
     const dayCount = shift.days.length;
     const divisions = shift.divisionShiftNurses ?? [];
+
     let seenWorker = false;
 
     for (const division of divisions) {
@@ -101,6 +105,7 @@ export function isDutyShiftFullyAssigned(shift: TShift): boolean {
             if (!row.shiftNurse.isWorker) continue;
 
             seenWorker = true;
+
             const list = row.wardShiftList ?? [];
 
             for (let j = 0; j < dayCount; j += 1) {
@@ -116,37 +121,36 @@ export function shiftToDoc(shift: TShift, year: number, month: number, options: 
     const {idToType} = buildWardShiftTypeMaps(shift);
     const columns = shift.days.map((d) => formatDateKey(year, month, d.day));
     const workerMeta: TDutyDoc['workerMeta'] = {};
-    const rows = shift.divisionShiftNurses
-        .flatMap((division, divisionIdx) =>
-            division
-                .filter((row) => row.shiftNurse.isWorker)
-                .map((row) => {
-                    const workerId = String(row.shiftNurse.shiftNurseId);
-                    const cells = row.wardShiftList.map((value) => {
-                        if (value === null) return null;
+    const rows = shift.divisionShiftNurses.flatMap((division, divisionIdx) =>
+        division
+            .filter((row) => row.shiftNurse.isWorker)
+            .map((row) => {
+                const workerId = String(row.shiftNurse.shiftNurseId);
+                const cells = row.wardShiftList.map((value) => {
+                    if (value === null) return null;
 
-                        const type = idToType.get(value);
+                    const type = idToType.get(value);
 
-                        return type?.shortName ?? null;
-                    });
-                    const lastCells = resolveLastShiftIds(row, options.previousConfirmedShift).map((value) => {
-                        if (value === null) return null;
+                    return type?.shortName ?? null;
+                });
+                const lastCells = resolveLastShiftIds(row, options.previousConfirmedShift).map((value) => {
+                    if (value === null) return null;
 
-                        const type = idToType.get(value);
+                    const type = idToType.get(value);
 
-                        return type?.shortName ?? null;
-                    });
+                    return type?.shortName ?? null;
+                });
 
-                    workerMeta[workerId] = {
-                        name: row.shiftNurse.name,
-                        nurseId: row.shiftNurse.nurseId,
-                        priority: row.shiftNurse.priority,
-                        divisionNum: divisionIdx + 1,
-                    };
+                workerMeta[workerId] = {
+                    name: row.shiftNurse.name,
+                    nurseId: row.shiftNurse.nurseId,
+                    priority: row.shiftNurse.priority,
+                    divisionNum: divisionIdx + 1,
+                };
 
-                    return {workerId, lastCells, cells};
-                }),
-        );
+                return {workerId, lastCells, cells};
+            }),
+    );
 
     return {columns, rows, workerMeta, fixedCells: {}, requestCells: {}};
 }
@@ -167,7 +171,9 @@ function resolveSnapshotCellSource(params: {fixed: boolean; requested: boolean; 
     const {fixed, requested, cell} = params;
 
     if (fixed) return 'FIXED';
+
     if (requested) return 'REQUEST';
+
     if (cell === null || cell === '') return 'EMPTY';
 
     return 'DRAFT';
@@ -271,14 +277,16 @@ export function docToSnapshotRowOrderDTO(doc: TDutyDoc): TSnapshotRowOrderDTO[] 
 export function buildWorkKeyMap(shift?: TShift): TWorkKeyMap {
     if (!shift) return {};
 
-    return shift.wardShiftTypes.reduce<TWorkKeyMap>((acc, shiftType) => {
-        const normalizedShortName = shiftType.shortName.trim();
-        const key = getShiftShortNameEntryKey(normalizedShortName);
+    return shift.wardShiftTypes
+        .filter((shiftType) => shiftType.isActive !== false)
+        .reduce<TWorkKeyMap>((acc, shiftType) => {
+            const normalizedShortName = shiftType.shortName.trim();
+            const key = getShiftShortNameEntryKey(normalizedShortName);
 
-        if (!key || acc[key] !== undefined) return acc;
+            if (!key || acc[key] !== undefined) return acc;
 
-        acc[key] = normalizedShortName;
+            acc[key] = normalizedShortName;
 
-        return acc;
-    }, {});
+            return acc;
+        }, {});
 }

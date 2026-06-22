@@ -27,6 +27,7 @@ import {
     normalizeContactPhoneForStorage,
     sanitizeContactPhoneInput,
 } from '@/shared/lib/contact-phone';
+import {isValidNurseName, NURSE_NAME_MAX_LENGTH, normalizeNurseNameForRequest, sanitizeNurseNameInput} from '@/shared/lib/nurse-name';
 import Card from '@/shared/ui/Card';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
@@ -41,21 +42,17 @@ type TProfileContentProps = {
     layout?: 'page' | 'modal';
 };
 
-const NURSE_NAME_MAX_LENGTH = 20;
-const NURSE_NAME_ALLOWED_REGEXP = /^[A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]+$/u;
-const NURSE_NAME_INPUT_SANITIZE_REGEXP = /[^A-Za-zㄱ-ㅎㅏ-ㅣ가-힣ぁ-ゟ゠-ヿ一-龯々\s'’\-·・]/gu;
 const FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors placeholder:text-gray-4 focus-visible:bg-main-light';
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
-const sanitizeNurseNameInput = (rawValue: string) => rawValue.replace(NURSE_NAME_INPUT_SANITIZE_REGEXP, '').slice(0, NURSE_NAME_MAX_LENGTH);
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
-    const trimmed = value.trim();
+    const requestName = normalizeNurseNameForRequest(value);
 
-    if (!trimmed) return messages.required;
+    if (!requestName) return messages.required;
 
-    if (trimmed.length > NURSE_NAME_MAX_LENGTH || !NURSE_NAME_ALLOWED_REGEXP.test(trimmed)) {
+    if (!isValidNurseName(value)) {
         return messages.invalid;
     }
 
@@ -227,7 +224,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     });
     const isAccountFormDirty =
         Boolean(profileImg) ||
-        draftName.trim() !== (accountMe?.name ?? '').trim() ||
+        normalizeNurseNameForRequest(draftName) !== normalizeNurseNameForRequest(accountMe?.name ?? '') ||
         normalizeContactPhoneForStorage(draftPhoneNum) !== normalizeContactPhoneForStorage(accountMe?.phoneNum ?? '');
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
@@ -274,7 +271,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         return !nextErrors.name && !nextErrors.phoneNum;
     };
     const validateAccountForm = () => {
-        const nextName = (draftName.trim() || accountMe?.name) ?? '';
+        const nextName = normalizeNurseNameForRequest(draftName) || normalizeNurseNameForRequest(accountMe?.name ?? '');
         const nextErrors: TProfileErrors = {
             name: validateName(nextName, {
                 required: validationMessages.nameRequired,
@@ -338,7 +335,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     hasEditedPhoneNum ? (writeNurse.phoneNum ?? '') : getProfilePhoneNum(writeNurse, accountMe),
                 );
 
-                isProfileSaved = await handleEditProfile({...writeNurse, phoneNum}, currentProfileImage);
+                isProfileSaved = await handleEditProfile(
+                    {...writeNurse, name: normalizeNurseNameForRequest(writeNurse.name ?? ''), phoneNum},
+                    currentProfileImage,
+                );
             } else {
                 const {isValid, name, phoneNum} = validateAccountForm();
 
@@ -719,11 +719,7 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                     )}
                     <div className={cn('grid grid-cols-1', isModalLayout ? 'gap-4' : 'mt-4 gap-3')}>
                         <div className={fieldContainerClassName}>
-                            <label
-                                id="preferredLanguage-label"
-                                htmlFor="preferredLanguage"
-                                className="sr-only"
-                            >
+                            <label id="preferredLanguage-label" htmlFor="preferredLanguage" className="sr-only">
                                 {t('page.profile.languageLabel')}
                             </label>
                             <LanguageSelect

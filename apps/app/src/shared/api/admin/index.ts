@@ -1,11 +1,13 @@
 import axiosInstance, {adminAxiosInstance} from '../client';
 import type {
     TAdminMeResponse,
+    TAdminMonthlyMemoResponse,
     TCreateAdminWorkspaceDTO,
     TCreateAdminWorkspaceResponse,
     TJoinAdminWardByCodeDTO,
     TJoinAdminWardByCodeResponse,
     TUpdateAdminProfileDTO,
+    TUpsertAdminMonthlyMemoDTO,
 } from './type';
 
 class AdminAPI {
@@ -13,6 +15,19 @@ class AdminAPI {
 
     updateMe = async (profile: TUpdateAdminProfileDTO) =>
         (await adminAxiosInstance.patch<TAdminMeResponse>('/admin/accounts/me', profile)).data;
+
+    getMonthlyMemo = async (wardId: number, year: number, month: number) => {
+        const query = new URLSearchParams({
+            wardId: String(wardId),
+            year: String(year),
+            month: String(month),
+        }).toString();
+
+        return (await adminAxiosInstance.get<TAdminMonthlyMemoResponse>(`/admin/accounts/me/monthly-memos?${query}`)).data;
+    };
+
+    upsertMonthlyMemo = async (memo: TUpsertAdminMonthlyMemoDTO) =>
+        (await adminAxiosInstance.put<TAdminMonthlyMemoResponse>('/admin/accounts/me/monthly-memos', memo)).data;
 
     deleteMe = async () => (await adminAxiosInstance.delete<void>('/admin/accounts/me')).data;
 

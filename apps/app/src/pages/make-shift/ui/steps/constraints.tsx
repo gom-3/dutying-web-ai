@@ -72,6 +72,7 @@ type TShiftTypeLike = {
     color?: string;
     isOff?: boolean;
     classification?: string;
+    isActive?: boolean;
 };
 type TNurseLike = {nurseId?: number; name?: string; isPreceptor?: boolean};
 
@@ -845,14 +846,20 @@ function uniqueByValue(options: TSelectOption[]) {
 }
 
 function normalizeShiftTypes(input: unknown): TShiftTypeLike[] {
-    if (Array.isArray(input)) return input as TShiftTypeLike[];
+    if (Array.isArray(input)) {
+        return (input as TShiftTypeLike[]).filter((shiftType) => shiftType.isActive !== false);
+    }
 
     if (input && typeof input === 'object') {
         const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
 
-        if (Array.isArray(maybe.shiftTypes)) return maybe.shiftTypes as TShiftTypeLike[];
+        if (Array.isArray(maybe.shiftTypes)) {
+            return (maybe.shiftTypes as TShiftTypeLike[]).filter((shiftType) => shiftType.isActive !== false);
+        }
 
-        if (Array.isArray(maybe.wardShiftTypes)) return maybe.wardShiftTypes as TShiftTypeLike[];
+        if (Array.isArray(maybe.wardShiftTypes)) {
+            return (maybe.wardShiftTypes as TShiftTypeLike[]).filter((shiftType) => shiftType.isActive !== false);
+        }
     }
 
     return EMPTY_SHIFT_TYPES;

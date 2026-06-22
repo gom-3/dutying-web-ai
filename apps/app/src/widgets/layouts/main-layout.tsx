@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router';
@@ -77,6 +78,7 @@ export const MainLayout = () => {
     const wardTitle = createdWardGuidePayload?.wardTitle ?? getWardDisplayTitle(wardQuery.data);
     const shouldFoldNavigation = shouldAutoFoldNavigation(location.pathname, viewportWidth);
     const shouldUseCompactNavigation = shouldFoldNavigation || (viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH && isNavigationFolded);
+    const shouldKeepStableVerticalScroll = location.pathname === ROUTE.WARD_SETTINGS;
 
     useEffect(() => {
         const guidePayload = locationGuidePayload ?? readStoredWardCreatedGuidePayload();
@@ -153,7 +155,7 @@ export const MainLayout = () => {
                 onClose={() => setCreatedWardGuidePayload(null)}
             />
             <NavigationBar compactMode={shouldUseCompactNavigation} />
-            <main className="min-w-0 flex-1 overflow-x-auto">
+            <main className={cn('min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
                 <Outlet />
             </main>
             <WardChatWidget />

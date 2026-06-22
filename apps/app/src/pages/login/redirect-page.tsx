@@ -36,6 +36,26 @@ const getStringQueryValue = (query: Record<string, unknown>, keys: string[]) => 
     return undefined;
 };
 const getRedirectAccessToken = (query: Record<string, unknown>) => getStringQueryValue(query, ACCESS_TOKEN_QUERY_KEYS);
+const getRedirectTarget = (query: Record<string, unknown>) => {
+    const nextPageUrlValue = getStringQueryValue(query, ['nextPageUrl', 'next', 'redirect']);
+    const resolvedNextPageUrl = nextPageUrlValue ? resolveSafeRedirectTarget(nextPageUrlValue) : undefined;
+    const nextPageUrl = resolvedNextPageUrl === ROUTE.ONBOARDING ? ROUTE.REGISTER : resolvedNextPageUrl;
+    const socialSignupProfile = getSocialSignupProfileFromQuery(query);
+    const isSocialSignupRequired =
+        getIsSocialSignupRequired(query) ||
+        getIsSocialSignupPath(nextPageUrl ?? '') ||
+        (resolvedNextPageUrl === ROUTE.ONBOARDING && socialSignupProfile !== null);
+
+    return {
+        hasNextPageUrl: Boolean(nextPageUrlValue),
+        nextPageUrl,
+        socialSignupProfile,
+        isSocialSignupRequired,
+    };
+};
+const buildRedirectNextPageUrl = (nextPageUrl: string | undefined, isSocialSignupRequired: boolean) =>
+    isSocialSignupRequired ? buildSocialSignupRegisterPath() : nextPageUrl;
+const buildRefreshRedirectPath = (nextPageUrl: string) => `${ROUTE.REFRESH}?next=${encodeURIComponent(nextPageUrl)}`;
 const RedirectPage = () => {
     const {t} = useTypedTranslation();
     const [redirectError, setRedirectError] = useState<string | null>(null);
@@ -55,8 +75,19 @@ const RedirectPage = () => {
 
         const query = getOAuthRedirectQuery();
         const accessToken = getRedirectAccessToken(query);
+        const {hasNextPageUrl, nextPageUrl, socialSignupProfile, isSocialSignupRequired} = getRedirectTarget(query);
+        const redirectNextPageUrl = buildRedirectNextPageUrl(nextPageUrl, isSocialSignupRequired);
 
         if (!accessToken) {
+            if (redirectNextPageUrl || hasNextPageUrl) {
+                saveSocialSignupProfile(socialSignupProfile ?? (isSocialSignupRequired ? {capturedAt: new Date().toISOString()} : null));
+                hasHandledRedirectRef.current = true;
+                clearStoredOAuthRedirectPayload();
+                location.replace(buildRefreshRedirectPath(redirectNextPageUrl ?? ROUTE.HOME));
+
+                return;
+            }
+
             hasHandledRedirectRef.current = true;
             clearStoredOAuthRedirectPayload();
             setRedirectError(t('page.login.redirect.adminTokenMissing'));
@@ -67,15 +98,6 @@ const RedirectPage = () => {
         if (!_loaded) {
             return;
         }
-
-        const nextPageUrlValue = getStringQueryValue(query, ['nextPageUrl', 'next', 'redirect']);
-        const resolvedNextPageUrl = nextPageUrlValue ? resolveSafeRedirectTarget(nextPageUrlValue) : undefined;
-        const nextPageUrl = resolvedNextPageUrl === ROUTE.ONBOARDING ? ROUTE.REGISTER : resolvedNextPageUrl;
-        const socialSignupProfile = getSocialSignupProfileFromQuery(query);
-        const isSocialSignupRequired =
-            getIsSocialSignupRequired(query) ||
-            getIsSocialSignupPath(nextPageUrl ?? '') ||
-            (resolvedNextPageUrl === ROUTE.ONBOARDING && socialSignupProfile !== null);
 
         saveSocialSignupProfile(socialSignupProfile ?? (isSocialSignupRequired ? {capturedAt: new Date().toISOString()} : null));
 
@@ -89,7 +111,7 @@ const RedirectPage = () => {
         }
 
         clearStoredOAuthRedirectPayload();
-        handleLogin(accessToken, isSocialSignupRequired ? buildSocialSignupRegisterPath() : nextPageUrl);
+        handleLogin(accessToken, redirectNextPageUrl);
     }, [_loaded, handleLogin, t]);
 
     if (redirectError) {

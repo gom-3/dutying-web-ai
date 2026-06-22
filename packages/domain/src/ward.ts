@@ -39,6 +39,7 @@ export type TWardShiftType = {
     isOff: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    isActive?: boolean;
 };
 
 export type TShiftNurse = {

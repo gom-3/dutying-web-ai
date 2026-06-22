@@ -1,3 +1,4 @@
+import {MonthlyMemoButton} from '@/features/monthly-memo';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth, isMakeShiftPreviousMonthDisabled} from '@/shared/lib/shift-calendar-month-policy';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
@@ -5,6 +6,7 @@ import {useMakeShiftStore} from '../model/make-shift-store';
 
 export function MakeShiftHeader() {
     const {t} = useTypedTranslation();
+    const wardId = useMakeShiftStore((s) => s.wardId);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
@@ -16,21 +18,24 @@ export function MakeShiftHeader() {
     const nextMonthDisabled = isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth(year, month);
 
     return (
-        <DutyManagementMonthTeamHeader
-            year={year}
-            month={month}
-            prevLabel={t('page.duty.prevMonth')}
-            nextLabel={t('page.duty.nextMonth')}
-            shiftTeams={shiftTeams}
-            currentShiftTeamId={currentShiftTeamId}
-            onPrevMonth={goPrevMonth}
-            onNextMonth={goNextMonth}
-            onSelectShiftTeam={setCurrentShiftTeamId}
-            emptyLabel={t('page.makeShift.overview.noTeamsLabel')}
-            formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
-            prevMonthDisabled={prevMonthDisabled}
-            nextMonthDisabled={nextMonthDisabled}
-            teamTone="darkSegmented"
-        />
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+            <DutyManagementMonthTeamHeader
+                year={year}
+                month={month}
+                prevLabel={t('page.duty.prevMonth')}
+                nextLabel={t('page.duty.nextMonth')}
+                shiftTeams={shiftTeams}
+                currentShiftTeamId={currentShiftTeamId}
+                onPrevMonth={goPrevMonth}
+                onNextMonth={goNextMonth}
+                onSelectShiftTeam={setCurrentShiftTeamId}
+                emptyLabel={t('page.makeShift.overview.noTeamsLabel')}
+                formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
+                prevMonthDisabled={prevMonthDisabled}
+                nextMonthDisabled={nextMonthDisabled}
+                teamTone="darkSegmented"
+            />
+            <MonthlyMemoButton wardId={wardId} year={year} month={month} />
+        </div>
     );
 }

@@ -20,7 +20,11 @@ export default function useRefresh() {
         try {
             axiosInstance.defaults.headers.common['Authorization'] = undefined;
 
-            const refreshResponse = await withTimeout(axiosInstance.post('/token/refresh'), REFRESH_TIMEOUT_MS, 'refresh_timeout');
+            const refreshResponse = await withTimeout(
+                axiosInstance.post('/auth/admin/token/refresh'),
+                REFRESH_TIMEOUT_MS,
+                'refresh_timeout',
+            );
             const accessToken = refreshResponse.data.accessToken;
 
             // 여기서는 "세션만 갱신"하고, 이동은 호출자(RefreshPage)가 담당한다.

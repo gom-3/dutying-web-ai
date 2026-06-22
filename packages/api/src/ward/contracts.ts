@@ -28,6 +28,29 @@ export type TWardReqShiftPendingCountResponse = {
     totalPendingCount: number;
 };
 
+export type TReqShiftReceptionSettingsResponse = {
+    enabled: boolean;
+    startDay: number;
+    startTime: string;
+    endDay: number;
+    endTime: string;
+    notifyOnOpen: boolean;
+    notifyBeforeDeadline: boolean;
+    notifyBeforeDeadlineHours: number;
+    updatedAt?: string | null;
+};
+
+export type TUpdateReqShiftReceptionSettingsDTO = {
+    enabled: boolean;
+    startDay: number;
+    startTime: string;
+    endDay: number;
+    endTime: string;
+    notifyOnOpen: boolean;
+    notifyBeforeDeadline: boolean;
+    notifyBeforeDeadlineHours: number;
+};
+
 export type TWardChatMessageResponse = {
     messageId: number;
     moimId: number;
@@ -306,6 +329,7 @@ export type TScheduleShiftTypeDto = {
     startTime: string;
     endTime: string;
     color: string;
+    isActive?: boolean;
 };
 
 export type TScheduleRowDto = {
@@ -555,6 +579,11 @@ export interface IWardAPI {
     getShift: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftResponse>;
     getRequestList: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TDutyRequestResponse[]>;
     getReqShiftPendingCount: (wardId: number) => Promise<TWardReqShiftPendingCountResponse>;
+    getReqShiftReceptionSettings: (wardId: number) => Promise<TReqShiftReceptionSettingsResponse>;
+    updateReqShiftReceptionSettings: (
+        wardId: number,
+        settings: TUpdateReqShiftReceptionSettingsDTO,
+    ) => Promise<TReqShiftReceptionSettingsResponse>;
     updateShift: (
         wardId: number,
         year: number,
