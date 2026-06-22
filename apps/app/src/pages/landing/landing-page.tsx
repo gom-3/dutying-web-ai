@@ -26,6 +26,22 @@ const softPurpleBackground = 'bg-[linear-gradient(135deg,#FEFDFF_0%,#FBF9FF_48%,
 const landingViewPreferenceKey = 'dutying:landing-view-preference';
 const desktopViewportMetaContent = 'width=1180';
 const languageOptions = SUPPORTED_LANGUAGES;
+const landingHeroImageByLanguage: Record<TPreferredLanguage, string> = {
+    ko: '/img/landing-hero-kr.png',
+    ja: '/img/landing-hero-jp.png',
+    en: '/img/landing-hero-en.png',
+    zh: '/img/landing-hero-cn.png',
+    th: '/img/landing-hero-en.png',
+    vi: '/img/landing-hero-en.png',
+};
+const landingWorkScheduleImageByLanguage: Record<TPreferredLanguage, string> = {
+    ko: '/img/landing-work-schedule-2.png',
+    ja: '/img/landing-work-schedule-jp.png',
+    en: '/img/landing-work-schedule-en.png',
+    zh: '/img/landing-work-schedule-cn.png',
+    th: '/img/landing-work-schedule-th.png',
+    vi: '/img/landing-work-schedule-vn.png',
+};
 const heroTitlePhraseKeys = ['page.landing.hero.phraseSchedule', 'page.landing.hero.phraseWard'] as const;
 const mobileHeroPhraseSpecs = [
     {
@@ -214,6 +230,18 @@ function writeLandingViewPreference(preference: TLandingViewPreference) {
     }
 }
 
+function getLandingHeroImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+
+    return landingHeroImageByLanguage[normalizedLanguage];
+}
+
+function getLandingWorkScheduleImageSrc(language?: string | null) {
+    const normalizedLanguage = normalizePreferredLanguage(language) ?? 'en';
+
+    return landingWorkScheduleImageByLanguage[normalizedLanguage];
+}
+
 function useLandingViewportMode() {
     const [viewPreference, setViewPreference] = useState<TLandingViewPreference>(getInitialLandingViewPreference);
     const isPhoneViewport = usePhoneViewport();
@@ -356,9 +384,10 @@ type TAppFeatureSection = {
     background: string;
 };
 
-function buildFeatureSections(t: TLandingTranslator): TFeatureSection[] {
+function buildFeatureSections(t: TLandingTranslator, language?: string | null): TFeatureSection[] {
     return featureSectionSpecs.map((section) => ({
         ...section,
+        image: section.id === 'integration' ? getLandingWorkScheduleImageSrc(language) : section.image,
         label: t(section.labelKey),
         title: t(section.titleKey),
         titleHighlights: 'titleHighlightKeys' in section ? section.titleHighlightKeys.map((key) => t(key)) : undefined,
@@ -1020,6 +1049,7 @@ function MobileAppLanding() {
 
 function LandingPage() {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const {
         state: {accountMe, isAuth},
         actions: {handleLogout},
@@ -1027,7 +1057,9 @@ function LandingPage() {
     const webMakeLink = getWebMakeLink(isAuth);
     const {isDesktopVersionForced, selectAutomaticVersion, showMobileAppLanding} = useLandingViewportMode();
     const heroTitlePhrases = heroTitlePhraseKeys.map((key) => t(key));
-    const featureSections = buildFeatureSections(t);
+    const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
+    const heroImageSrc = getLandingHeroImageSrc(currentLanguage);
+    const featureSections = buildFeatureSections(t, currentLanguage);
     const visibleFeatureSections = featureSections.filter((section) => section.id !== 'review');
     const appFeatureSections = buildAppFeatureSections(t);
 
@@ -1096,7 +1128,7 @@ function LandingPage() {
                         aria-hidden="true"
                     >
                         <img
-                            src="/img/image-999-1.png"
+                            src={heroImageSrc}
                             alt=""
                             className="w-[92vw] max-w-[520px] object-contain object-center md:w-[118%] md:max-w-none md:translate-x-8 lg:w-[131%] lg:translate-x-14"
                         />

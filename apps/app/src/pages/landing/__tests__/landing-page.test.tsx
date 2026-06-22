@@ -80,6 +80,46 @@ describe('LandingPage', () => {
         expect(await screen.findByRole('button', {name: 'Select language'})).toHaveAttribute('aria-expanded', 'false');
     });
 
+    it.each([
+        ['ko', '/img/landing-hero-kr.png'],
+        ['ja', '/img/landing-hero-jp.png'],
+        ['en', '/img/landing-hero-en.png'],
+        ['zh', '/img/landing-hero-cn.png'],
+        ['th', '/img/landing-hero-en.png'],
+        ['vi', '/img/landing-hero-en.png'],
+    ])('uses the localized desktop hero image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        expect(document.querySelector('picture[aria-hidden="true"] img')).toHaveAttribute('src', expectedSrc);
+    });
+
+    it.each([
+        ['ko', '/img/landing-work-schedule-2.png'],
+        ['ja', '/img/landing-work-schedule-jp.png'],
+        ['en', '/img/landing-work-schedule-en.png'],
+        ['zh', '/img/landing-work-schedule-cn.png'],
+        ['th', '/img/landing-work-schedule-th.png'],
+        ['vi', '/img/landing-work-schedule-vn.png'],
+    ])('uses the localized work schedule image for %s', async (language, expectedSrc) => {
+        await i18n.changeLanguage(language);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        const imageSources = Array.from(document.querySelectorAll('img')).map((image) => image.getAttribute('src'));
+
+        expect(imageSources).toContain(expectedSrc);
+    });
+
     it('shows profile menu actions instead of my page text when already authenticated', async () => {
         mockUseAuthState(true, {
             accountId: 1,
