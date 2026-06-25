@@ -1,6 +1,7 @@
 import {useCallback} from 'react';
 import {type TShift} from '@/entities';
 import {getShiftEditorDraftStorageKey, useShiftEditorCommands, useShiftEditorStore} from '@/features/shift-editor';
+import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showValidationFeedback} from '@/shared/util/feedback';
 import {clearMakeShiftProgress, loadDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
@@ -25,6 +26,16 @@ export function useMakeShiftUseCase() {
     const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
     const editConfirmedSchedule = useMakeShiftStore((s) => s.editConfirmedSchedule);
     const requestReload = useMakeShiftStore((s) => s.requestReload);
+    const persistCurrentWorkflowStep = useCallback(() => {
+        const s = useMakeShiftStore.getState();
+
+        if (!s.wardId || !s.currentShiftTeamId || s.currentStep >= 6) return;
+
+        void WardAPI.updateShiftWorkflow(s.wardId, s.currentShiftTeamId, s.year, s.month, {
+            workflowStatus: 'IN_PROGRESS',
+            workflowStep: s.currentStep,
+        }).catch(() => undefined);
+    }, []);
     const syncEditorPersistenceKey = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
@@ -57,7 +68,8 @@ export function useMakeShiftUseCase() {
         const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : saved === 6 ? 1 : (saved ?? 1);
 
         startFromStep({step, openRestoreDraftModal: step === 6 ? false : persisted !== null});
-    }, [editor, startFromStep, syncEditorPersistenceKey]);
+        persistCurrentWorkflowStep();
+    }, [editor, persistCurrentWorkflowStep, startFromStep, syncEditorPersistenceKey]);
     const confirmRestoreDraft = useCallback(() => {
         syncEditorPersistenceKey();
 
@@ -80,8 +92,9 @@ export function useMakeShiftUseCase() {
 
         clearPersistedStep();
         useMakeShiftStore.setState({currentStep: 1, maxReachedStep: 1});
+        persistCurrentWorkflowStep();
         closeRestoreDraftModal();
-    }, [closeRestoreDraftModal, editor, syncEditorPersistenceKey]);
+    }, [closeRestoreDraftModal, editor, persistCurrentWorkflowStep, syncEditorPersistenceKey]);
     const complete = useCallback(() => {
         clearProgressState();
         editor.discardPersisted();
@@ -97,14 +110,16 @@ export function useMakeShiftUseCase() {
     const editConfirmed = useCallback(() => {
         editor.discardPersisted();
         editConfirmedSchedule();
-    }, [editConfirmedSchedule, editor]);
+        persistCurrentWorkflowStep();
+    }, [editConfirmedSchedule, editor, persistCurrentWorkflowStep]);
     const prev = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
         if (!canGoPrev(s)) return;
 
         goPrev();
-    }, [goPrev]);
+        persistCurrentWorkflowStep();
+    }, [goPrev, persistCurrentWorkflowStep]);
     const next = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
@@ -117,7 +132,8 @@ export function useMakeShiftUseCase() {
         }
 
         goNext();
-    }, [goNext, t]);
+        persistCurrentWorkflowStep();
+    }, [goNext, persistCurrentWorkflowStep, t]);
     const jump = useCallback(
         (step: TMakeShiftStep) => {
             const state = useMakeShiftStore.getState();
@@ -138,8 +154,9 @@ export function useMakeShiftUseCase() {
             }
 
             goToStep(step);
+            persistCurrentWorkflowStep();
         },
-        [goToStep, t],
+        [goToStep, persistCurrentWorkflowStep, t],
     );
     const closeModal = useCallback(() => {
         closeRestoreDraftModal();

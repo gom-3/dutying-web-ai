@@ -444,6 +444,20 @@ describe('@dutying/api public entry', () => {
         expect(deleteMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/schedule/snapshots/99');
     });
 
+    it('builds the shift workflow update endpoint', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+        const payload = {workflowStatus: 'IN_PROGRESS' as const, workflowStep: 3};
+
+        patchMock.mockResolvedValueOnce({data: payload});
+
+        const wardApi = createWardApi(client);
+
+        await expect(wardApi.updateShiftWorkflow(7, 3, 2026, 7, payload)).resolves.toEqual(payload);
+
+        expect(patchMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/duty/workflow?year=2026&month=7', payload);
+    });
+
     it('builds the tutorial seen endpoint', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;

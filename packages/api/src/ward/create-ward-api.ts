@@ -22,6 +22,7 @@ import type {
     TShiftConstraintRuleCandidatesResponse,
     TShiftConstraintRulesResponse,
     TShiftResponse,
+    TShiftWorkflowResponse,
     TShiftTeamResponse,
     TSnapshotDetailRes,
     TSnapshotListRes,
@@ -30,6 +31,7 @@ import type {
     TUpdateOnboardingWardDraftDTO,
     TUpdateReqShiftReceptionSettingsDTO,
     TUpdateShiftConstraintRulesDTO,
+    TUpdateShiftWorkflowDTO,
     TUpdateShiftTeamDTO,
     TValidationRes,
     TWaitingNurseResponse,
@@ -444,6 +446,19 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
             (
                 await client.get<TWorkspaceScheduleResponse>(
                     wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/workspace?${toYearMonthQuery(year, month)}`),
+                )
+            ).data,
+        updateShiftWorkflow: async (
+            wardId: number,
+            shiftTeamId: number,
+            year: number,
+            month: number,
+            workflowDTO: TUpdateShiftWorkflowDTO,
+        ) =>
+            (
+                await client.patch<TShiftWorkflowResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/duty/workflow?${toYearMonthQuery(year, month)}`),
+                    workflowDTO,
                 )
             ).data,
         validateSnapshot: async (wardId, shiftTeamId, validateSnapshotDTO) =>

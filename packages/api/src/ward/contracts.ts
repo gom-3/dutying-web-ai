@@ -3,6 +3,7 @@ import type {
     TDutyRequest,
     TRequestShift,
     TShift,
+    TShiftWorkflowStatus,
     TShiftNurse,
     TShiftTeam,
     TWaitingNurse,
@@ -398,6 +399,19 @@ export type TWorkspaceScheduleResponse = {
     rules: TScheduleRuleDto[];
     rulesHash: string;
     latestSnapshot: TSnapshotSummaryDto | null;
+    confirmedSnapshot?: TSnapshotSummaryDto | null;
+    workflowStatus?: TShiftWorkflowStatus | null;
+    workflowStep?: number | null;
+};
+
+export type TUpdateShiftWorkflowDTO = {
+    workflowStatus: TShiftWorkflowStatus;
+    workflowStep?: number | null;
+};
+
+export type TShiftWorkflowResponse = {
+    workflowStatus: TShiftWorkflowStatus;
+    workflowStep: number | null;
 };
 
 export type TValidationSummaryDto = {
@@ -617,6 +631,13 @@ export interface IWardAPI {
     deleteShiftType: (wardId: number, shiftTypeId: number) => Promise<void>;
 
     getWorkspaceSchedule: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TWorkspaceScheduleResponse>;
+    updateShiftWorkflow: (
+        wardId: number,
+        shiftTeamId: number,
+        year: number,
+        month: number,
+        workflowDTO: TUpdateShiftWorkflowDTO,
+    ) => Promise<TShiftWorkflowResponse>;
     validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TValidationRes>;
     autofillSchedule: (wardId: number, shiftTeamId: number, autofillDTO: TAutofillDTO) => Promise<TAutofillResponse>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
