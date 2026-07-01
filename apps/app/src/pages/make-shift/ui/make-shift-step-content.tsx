@@ -1,9 +1,11 @@
+import {useNavigate} from 'react-router-dom';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
+import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../model/make-shift-events';
-import {type TMakeShiftStep} from '../model/make-shift-store';
+import {type TMakeShiftStep, useMakeShiftStore} from '../model/make-shift-store';
 import {MAKE_SHIFT_STEP_CONFIG} from './make-shift-step-config';
 import {
     MAKE_SHIFT_STEP_HEADING_PADDING_CLASS,
@@ -34,6 +36,8 @@ function ImportantIntroBadge() {
 
 function StepIntroDescription({currentStep, description}: {currentStep: TMakeShiftStep; description: string}) {
     const {t} = useTypedTranslation();
+    const navigate = useNavigate();
+    const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
 
     if (currentStep === 2) {
         return (
@@ -44,6 +48,32 @@ function StepIntroDescription({currentStep, description}: {currentStep: TMakeShi
                 </p>
             </div>
         );
+    }
+
+    if (currentStep === 1) {
+        const memberManagementLabel = '근무자 관리';
+        const memberManagementIndex = description.indexOf(memberManagementLabel);
+
+        if (memberManagementIndex !== -1) {
+            const beforeLabel = description.slice(0, memberManagementIndex);
+            const afterLabel = description.slice(memberManagementIndex + memberManagementLabel.length);
+
+            return (
+                <p className={`${MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS} whitespace-pre-line`}>
+                    {beforeLabel}
+                    <button
+                        type="button"
+                        className="cursor-pointer font-bold underline-offset-2 hover:underline focus-visible:rounded-[2px] focus-visible:outline-2 focus-visible:outline-main-1"
+                        onClick={() => {
+                            navigate(currentShiftTeamId === null ? ROUTE.MEMBER : `${ROUTE.MEMBER}?shiftTeamId=${currentShiftTeamId}`);
+                        }}
+                    >
+                        {memberManagementLabel}
+                    </button>
+                    {afterLabel}
+                </p>
+            );
+        }
     }
 
     return <p className={`${MAKE_SHIFT_STEP_INTRO_SUBTITLE_CLASS} whitespace-pre-line`}>{description}</p>;

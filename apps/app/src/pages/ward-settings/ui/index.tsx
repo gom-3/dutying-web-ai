@@ -52,12 +52,20 @@ const SHIFT_COLOR_OPTIONS = [
 ] as const;
 const COLOR_PICKER_WIDTH = 126;
 const COLOR_PICKER_VIEWPORT_PADDING = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[52px_minmax(150px,1.15fr)_82px_112px_minmax(250px,1.5fr)_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(150px,1.15fr)_82px_112px_minmax(250px,1.5fr)_52px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_NAME_MAX_LENGTH = 12;
+const SHIFT_TYPE_CLASSIFICATION_ORDER: Record<TWardSettingsShiftType['classification'], number> = {
+    DAY: 0,
+    EVENING: 1,
+    NIGHT: 2,
+    OTHER_WORK: 3,
+    OFF: 4,
+    OTHER_LEAVE: 5,
+};
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const REQUEST_RECEPTION_MIN_DAY = 1;
 const REQUEST_RECEPTION_MAX_DAY = 31;
@@ -109,6 +117,19 @@ function getShiftTypeClassification(shiftType: TWardSettingsShiftType): TCreateS
     }
 
     return shiftType.classification;
+}
+
+function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSettingsShiftType) {
+    const restOrder = Number(a.isOff) - Number(b.isOff);
+
+    if (restOrder !== 0) return restOrder;
+
+    const classificationOrder =
+        SHIFT_TYPE_CLASSIFICATION_ORDER[a.classification] - SHIFT_TYPE_CLASSIFICATION_ORDER[b.classification];
+
+    if (classificationOrder !== 0) return classificationOrder;
+
+    return a.wardShiftTypeId - b.wardShiftTypeId;
 }
 
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
@@ -349,7 +370,7 @@ function ShiftTypeTable({
     const tempShiftTypeIdRef = useRef(-1);
 
     useEffect(() => {
-        setDraftShiftTypes(shiftTypes);
+        setDraftShiftTypes([...shiftTypes].sort(compareShiftTypesForSettings));
         setDeletedShiftTypeIds([]);
         setShowValidationHighlight(false);
     }, [shiftTypes]);
@@ -589,69 +610,16 @@ function ShiftTypeTable({
                     <div
                         className={`grid ${SHIFT_TYPE_GRID_COLS} items-center gap-3 px-3 py-2.5 text-center font-apple text-[12px] font-semibold text-gray-3`}
                     >
-                        <span>{t('page.wardSettings.shiftTypes.column.color')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.name')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.shortName')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.type')}</span>
                         <span>{t('page.wardSettings.shiftTypes.column.workTime')}</span>
+                        <span>{t('page.wardSettings.shiftTypes.column.color')}</span>
                         <span />
                     </div>
                     <div className="mt-1">
                         {draftShiftTypes.map((shiftType) => (
                             <div key={shiftType.wardShiftTypeId} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-3 px-3 py-3.5`}>
-                                <div
-                                    className="relative flex justify-center self-start"
-                                    ref={openedColorShiftTypeId === shiftType.wardShiftTypeId ? openedColorContainerRef : null}
-                                >
-                                    <button
-                                        type="button"
-                                        aria-label={t('page.wardSettings.shiftTypes.colorSelectAria', {
-                                            name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
-                                        })}
-                                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-[#F1F3F5] transition-colors hover:bg-[#E9ECEF]"
-                                        onClick={(event) => handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)}
-                                    >
-                                        <span
-                                            className="h-6 w-6 rounded-[7px] ring-1 ring-black/10"
-                                            style={{backgroundColor: shiftType.color}}
-                                        />
-                                    </button>
-                                    {openedColorShiftTypeId === shiftType.wardShiftTypeId &&
-                                    colorPickerPosition &&
-                                    typeof document !== 'undefined'
-                                        ? createPortal(
-                                              <div
-                                                  ref={openedColorMenuRef}
-                                                  style={{
-                                                      left: `${colorPickerPosition.left}px`,
-                                                      top: `${colorPickerPosition.top}px`,
-                                                  }}
-                                                  className="fixed z-[1000] grid w-[126px] grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]"
-                                              >
-                                                  {SHIFT_COLOR_OPTIONS.map((color) => {
-                                                      const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
-
-                                                      return (
-                                                          <button
-                                                              key={color}
-                                                              type="button"
-                                                              aria-label={t('page.wardSettings.shiftTypes.colorOptionAria', {color})}
-                                                              className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
-                                                              style={{backgroundColor: color}}
-                                                              onClick={() => {
-                                                                  patchDraft(shiftType.wardShiftTypeId, {color});
-                                                                  closeColorPicker();
-                                                              }}
-                                                          >
-                                                              {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
-                                                          </button>
-                                                      );
-                                                  })}
-                                              </div>,
-                                              document.body,
-                                          )
-                                        : null}
-                                </div>
                                 <div className="flex flex-col gap-1">
                                     <Input
                                         data-shift-name-input={shiftType.wardShiftTypeId}
@@ -859,6 +827,59 @@ function ShiftTypeTable({
                                             {shiftType.isOff ? '' : formatShiftDuration(shiftType.startTime, shiftType.endTime)}
                                         </span>
                                     </div>
+                                </div>
+                                <div
+                                    className="relative flex justify-center self-start"
+                                    ref={openedColorShiftTypeId === shiftType.wardShiftTypeId ? openedColorContainerRef : null}
+                                >
+                                    <button
+                                        type="button"
+                                        aria-label={t('page.wardSettings.shiftTypes.colorSelectAria', {
+                                            name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
+                                        })}
+                                        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-[#F1F3F5] transition-colors hover:bg-[#E9ECEF]"
+                                        onClick={(event) => handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)}
+                                    >
+                                        <span
+                                            className="h-6 w-6 rounded-[7px] ring-1 ring-black/10"
+                                            style={{backgroundColor: shiftType.color}}
+                                        />
+                                    </button>
+                                    {openedColorShiftTypeId === shiftType.wardShiftTypeId &&
+                                    colorPickerPosition &&
+                                    typeof document !== 'undefined'
+                                        ? createPortal(
+                                              <div
+                                                  ref={openedColorMenuRef}
+                                                  style={{
+                                                      left: `${colorPickerPosition.left}px`,
+                                                      top: `${colorPickerPosition.top}px`,
+                                                  }}
+                                                  className="fixed z-[1000] grid w-[126px] grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]"
+                                              >
+                                                  {SHIFT_COLOR_OPTIONS.map((color) => {
+                                                      const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
+
+                                                      return (
+                                                          <button
+                                                              key={color}
+                                                              type="button"
+                                                              aria-label={t('page.wardSettings.shiftTypes.colorOptionAria', {color})}
+                                                              className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
+                                                              style={{backgroundColor: color}}
+                                                              onClick={() => {
+                                                                  patchDraft(shiftType.wardShiftTypeId, {color});
+                                                                  closeColorPicker();
+                                                              }}
+                                                          >
+                                                              {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
+                                                          </button>
+                                                      );
+                                                  })}
+                                              </div>,
+                                              document.body,
+                                          )
+                                        : null}
                                 </div>
                                 {shiftType.isDefault ? (
                                     <div className="h-10 w-10" aria-hidden="true" />

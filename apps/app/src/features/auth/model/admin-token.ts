@@ -1,5 +1,6 @@
 type TJwtPayload = {
     principalType?: string;
+    wardAdminAccountId?: number;
 };
 
 const decodeBase64Url = (value: string) => {
@@ -25,3 +26,19 @@ export const getAccessTokenPrincipalType = (accessToken: string | null | undefin
 
 export const isWardAdminAccessToken = (accessToken: string | null | undefined) =>
     getAccessTokenPrincipalType(accessToken) === 'WARD_ADMIN';
+
+export const getWardAdminAccountIdFromAccessToken = (accessToken: string | null | undefined) => {
+    if (!accessToken) return null;
+
+    try {
+        const [, payload] = accessToken.split('.');
+
+        if (!payload) return null;
+
+        const wardAdminAccountId = (JSON.parse(decodeBase64Url(payload)) as TJwtPayload).wardAdminAccountId;
+
+        return typeof wardAdminAccountId === 'number' ? wardAdminAccountId : null;
+    } catch {
+        return null;
+    }
+};

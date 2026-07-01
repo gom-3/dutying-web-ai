@@ -494,6 +494,35 @@ describe('OnboardingWardCreatePage adapter', () => {
         ]);
     });
 
+    it('treats observed off aliases as the same off type even when classified as other leave', () => {
+        const response: TOnboardingWardParseApiResponse = {
+            wardShiftTypes: [
+                {name: '?ㅽ봽', shortName: 'O', isDefault: true, isOff: true, classification: 'OFF'},
+                {name: '?ㅽ봽', shortName: '/', isOff: true, classification: 'OTHER_LEAVE'},
+            ],
+            nurse_candidates: [
+                {
+                    raw_name: 'Nurse A',
+                    assignments: {'2026-05-01': '/', '2026-05-02': '/'},
+                    monthly_counts: {'/': 2},
+                },
+            ],
+        };
+        const {parsedWardData} = buildOnboardingParseDraftInjection(response, 'ward.xlsx');
+        const nextDraft = applyParsedWardData(createInitialDraft(), parsedWardData);
+        const payload = buildCreateWardPayload(nextDraft);
+
+        expect(parsedWardData.shiftTypes?.map((shiftType) => shiftType.shortName)).toEqual(['/']);
+        expect(payload.wardShiftTypes).toHaveLength(1);
+        expect(payload.wardShiftTypes[0]).toEqual(
+            expect.objectContaining({shortName: '/', isDefault: true, isOff: true, classification: 'OFF'}),
+        );
+        expect(payload.shiftTeams[0]?.nurses?.[0]?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: '/'},
+            {date: '2026-05-02', shiftShortName: '/'},
+        ]);
+    });
+
     it('uses the selected upload month to preserve day-number assignments', () => {
         const response: TOnboardingWardParseApiResponse = {
             nurse_candidates: [

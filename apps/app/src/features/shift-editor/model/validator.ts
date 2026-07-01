@@ -203,15 +203,23 @@ export function buildViolationMapAll(violations: TViolation[], doc: TDutyDoc): M
     for (const v of violations) {
         if (v.scope === 'team') continue;
 
-        const startCell = v.cells[0];
+        const startCellsByRow = new Map<number, TCellPos>();
 
-        if (!startCell) continue;
+        for (const cell of v.cells) {
+            const current = startCellsByRow.get(cell.row);
 
-        const workerId = doc.rows[startCell.row]?.workerId;
+            if (!current || cell.col < current.col) {
+                startCellsByRow.set(cell.row, cell);
+            }
+        }
 
-        if (!workerId) continue;
+        for (const startCell of startCellsByRow.values()) {
+            const workerId = doc.rows[startCell.row]?.workerId;
 
-        map.set(`${workerId},${startCell.col},${v.ruleId}`, v);
+            if (!workerId) continue;
+
+            map.set(`${workerId},${startCell.col},${v.ruleId}`, v);
+        }
     }
 
     return map;

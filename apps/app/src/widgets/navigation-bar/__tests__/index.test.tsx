@@ -426,7 +426,8 @@ describe('NavigationBar', () => {
         await userEvent.hover(navigationBar);
 
         expect(navigationBar).toHaveClass('w-[216px]');
-        expect(screen.getByText('병동')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '근무표 만들기'})).toHaveClass('pl-[13px]');
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '사이드바 펼치기'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '사이드바 접기'})).not.toBeInTheDocument();
 
@@ -454,7 +455,8 @@ describe('NavigationBar', () => {
         await userEvent.hover(navigationBar);
 
         expect(navigationBar).toHaveClass('w-[216px]');
-        expect(screen.getByText('병동')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '근무표 만들기'})).toHaveClass('pl-[13px]');
+        expect(screen.queryByText('병동')).not.toBeInTheDocument();
 
         await userEvent.click(screen.getByRole('button', {name: '게시판'}));
 

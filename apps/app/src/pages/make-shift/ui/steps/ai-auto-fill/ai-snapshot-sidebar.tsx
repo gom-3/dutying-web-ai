@@ -1,10 +1,10 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {ChevronRight, Clock, Loader2, PanelRightClose, RotateCcw, Trash2} from 'lucide-react';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import i18n from '@/i18n';
-import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getLocaleForLanguage} from '@/shared/i18n/locale';
 
 type TAiSnapshotSidebarProps = {
     open: boolean;
@@ -66,8 +66,26 @@ export function AiSnapshotSidebar({
     const {t} = useTypedTranslation();
     const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const orderedSnapshots = useMemo(() => snapshots, [snapshots]);
+    const sidebarRef = useRef<HTMLElement | null>(null);
     const [draftTitles, setDraftTitles] = useState<Record<number, string>>({});
     const [renamingSnapshotId, setRenamingSnapshotId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const closeOnOutsidePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof Node) || sidebarRef.current?.contains(target)) return;
+
+            onClose();
+        };
+
+        document.addEventListener('pointerdown', closeOnOutsidePointerDown);
+
+        return () => document.removeEventListener('pointerdown', closeOnOutsidePointerDown);
+    }, [onClose, open]);
+
     const commitTitle = async (snapshotId: number, currentTitle: string, nextTitle: string) => {
         const trimmedTitle = nextTitle.trim() || currentTitle;
 
@@ -93,6 +111,7 @@ export function AiSnapshotSidebar({
 
     return (
         <aside
+            ref={sidebarRef}
             id="make_ai_snapshot_sidebar"
             className="ai-snapshot-sidebar fixed top-0 right-0 z-[998] flex h-screen w-[304px] animate-in flex-col overflow-hidden border-l border-gray-6 bg-[#FBFCFF] shadow-[-10px_0_30px_rgba(61,70,88,0.08)] duration-200 fade-in slide-in-from-right-4"
             role="complementary"

@@ -468,8 +468,9 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                     validateSnapshotDTO,
                 )
             ).data,
-        autofillSchedule: async (wardId, shiftTeamId, autofillDTO) =>
-            (await client.post<TAutofillResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`), autofillDTO)).data,
+        autofillSchedule: async (wardId, shiftTeamId, autofillDTO, options) =>
+            (await client.post<TAutofillResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`), autofillDTO, options))
+                .data,
         getSnapshots: async (wardId, shiftTeamId, year, month) =>
             (
                 await client.get<TSnapshotListRes>(

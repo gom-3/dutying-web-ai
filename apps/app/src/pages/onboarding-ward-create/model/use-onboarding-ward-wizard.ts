@@ -248,12 +248,43 @@ const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewRe
         };
     });
 const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
+const PREVIEW_OFF_SHIFT_ALIASES = new Set(['O', 'OFF', '/', '-', '\uC624\uD504', '\uD734', '\uD734\uBB34']);
+const PREVIEW_SYMBOL_OFF_SHIFT_ALIASES = new Set(['/', '-']);
+const getPreviewOffShortName = (value: string): string | null => {
+    const normalized = normalizeOnboardingShiftCode(value);
+
+    if (!PREVIEW_OFF_SHIFT_ALIASES.has(normalized)) return null;
+
+    return PREVIEW_SYMBOL_OFF_SHIFT_ALIASES.has(normalized) ? normalized : 'O';
+};
+const getSchedulePreviewOffShortName = (schedule: TOnboardingTeamScheduleDraft): string | null => {
+    for (const row of schedule.rows) {
+        const orderedShifts = Object.entries(row.shifts).sort(([leftDay], [rightDay]) => Number(leftDay) - Number(rightDay));
+
+        for (const [, value] of orderedShifts) {
+            const offShortName = getPreviewOffShortName(value);
+
+            if (offShortName) return offShortName;
+        }
+    }
+
+    return null;
+};
+const remapPreviewOffShortName = (shortName: string | null | undefined, preferredOffShortName: string | null) => {
+    if (!shortName || !preferredOffShortName || preferredOffShortName === 'O') return shortName ?? undefined;
+
+    return getPreviewOffShortName(shortName) ? preferredOffShortName : shortName;
+};
 const mergeSchedulePreviewShiftTypes = (
     draft: TOnboardingWardDraft,
     response: TOnboardingScheduleInputPreviewResponse,
+    preferredOffShortName: string | null,
 ): TOnboardingParsedShiftType[] => {
     const draftShiftTypes = draft.shiftTypes.map(toParsedShiftType);
-    const previewShiftTypes = toSchedulePreviewShiftTypes(response);
+    const previewShiftTypes: TOnboardingParsedShiftType[] = toSchedulePreviewShiftTypes(response).map((shiftType) => ({
+        ...shiftType,
+        shortName: remapPreviewOffShortName(shiftType.shortName, preferredOffShortName),
+    }));
     const draftByShortName = new Map(
         draftShiftTypes
             .map((shiftType) => [normalizeShiftTypeMergeKey(shiftType.shortName), shiftType] as const)
@@ -329,14 +360,15 @@ const applySchedulePreviewToDraft = (
     schedule: TOnboardingTeamScheduleDraft,
     response: TOnboardingScheduleInputPreviewResponse,
 ): TOnboardingWardDraft => {
+    const preferredOffShortName = getSchedulePreviewOffShortName(schedule);
     const draftWithShiftTypes = applyParsedWardData(draft, {
-        shiftTypes: mergeSchedulePreviewShiftTypes(draft, response),
+        shiftTypes: mergeSchedulePreviewShiftTypes(draft, response, preferredOffShortName),
     });
     const shiftIdByShortName = new Map(
         draftWithShiftTypes.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => [shiftType.shortName, shiftType.id]),
     );
     const possibleShiftTypeIds = response.wardShiftTypes
-        .map((shiftType) => shiftIdByShortName.get(shiftType.shortName))
+        .map((shiftType) => shiftIdByShortName.get(remapPreviewOffShortName(shiftType.shortName, preferredOffShortName) ?? shiftType.shortName))
         .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
     const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes
         .filter(isOnboardingShiftTypeActive)
@@ -364,7 +396,13 @@ const applySchedulePreviewToDraft = (
             employmentDate: existingNurse?.employmentDate ?? defaultEmploymentDate,
             possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : fallbackPossibleShiftTypeIds,
             level: existingNurse?.level ?? null,
-            initialShifts: mergeInitialShifts(existingNurse?.initialShifts, nurse.initialShifts),
+            initialShifts: mergeInitialShifts(
+                existingNurse?.initialShifts,
+                nurse.initialShifts?.map((shift) => ({
+                    ...shift,
+                    shiftShortName: remapPreviewOffShortName(shift.shiftShortName, preferredOffShortName) ?? shift.shiftShortName,
+                })),
+            ),
         };
     });
     const preservedTeamNurses = existingTeamNurses.filter(

@@ -1,3 +1,4 @@
+import {MemoryRouter} from 'react-router-dom';
 import {describe, expect, it, vi} from 'vitest';
 import {render, screen} from '@/shared/util/test-utils';
 import {MakeShiftStepContent} from '../make-shift-step-content';
@@ -38,7 +39,11 @@ vi.mock('../make-shift-step-config', () => ({
 
 describe('MakeShiftStepContent layout', () => {
     it('lets narrow steps use natural height', () => {
-        render(<MakeShiftStepContent currentStep={1} canPrev={false} canNext onPrev={vi.fn()} onNext={vi.fn()} />);
+        render(
+            <MemoryRouter>
+                <MakeShiftStepContent currentStep={1} canPrev={false} canNext onPrev={vi.fn()} onNext={vi.fn()} />
+            </MemoryRouter>,
+        );
 
         const content = screen.getByTestId('narrow-step').closest('.make-shift-step-content');
 
@@ -48,7 +53,11 @@ describe('MakeShiftStepContent layout', () => {
     });
 
     it('lets wide steps use natural height', () => {
-        render(<MakeShiftStepContent currentStep={3} canPrev canNext onPrev={vi.fn()} onNext={vi.fn()} />);
+        render(
+            <MemoryRouter>
+                <MakeShiftStepContent currentStep={3} canPrev canNext onPrev={vi.fn()} onNext={vi.fn()} />
+            </MemoryRouter>,
+        );
 
         const content = screen.getByTestId('wide-step').closest('.make-shift-step-content');
 
@@ -58,7 +67,11 @@ describe('MakeShiftStepContent layout', () => {
     });
 
     it('keeps the next button disabled while the current step is saving', () => {
-        render(<MakeShiftStepContent currentStep={1} canPrev={false} canNext nextBusy onPrev={vi.fn()} onNext={vi.fn()} />);
+        render(
+            <MemoryRouter>
+                <MakeShiftStepContent currentStep={1} canPrev={false} canNext nextBusy onPrev={vi.fn()} onNext={vi.fn()} />
+            </MemoryRouter>,
+        );
 
         expect(screen.getByRole('button', {name: /page\.makeShift\.navigation\.saving/})).toBeDisabled();
     });

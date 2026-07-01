@@ -3,7 +3,7 @@ import {buildAutofillDTO} from '@/features/shift-editor/model/schedule-authoring
 import type {TAiScheduleProvider} from './ai-schedule-contract';
 
 export const apiAiScheduleProvider: TAiScheduleProvider = {
-    generate: async ({wardId, shiftTeamId, year, month, doc, originalShift, draftRevision, rulesHash, prompt}) => {
+    generate: async ({wardId, shiftTeamId, year, month, doc, originalShift, draftRevision, rulesHash, prompt, signal}) => {
         const dto = buildAutofillDTO({
             year,
             month,
@@ -14,6 +14,6 @@ export const apiAiScheduleProvider: TAiScheduleProvider = {
             prompt,
         });
 
-        return WardAPI.autofillSchedule(wardId, shiftTeamId, dto);
+        return WardAPI.autofillSchedule(wardId, shiftTeamId, dto, {signal});
     },
 };

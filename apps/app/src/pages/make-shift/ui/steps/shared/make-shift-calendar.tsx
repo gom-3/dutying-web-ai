@@ -1,5 +1,14 @@
 import {cn} from '@dutying/utils/style';
-import {type CSSProperties, type PointerEvent as ReactPointerEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    type CSSProperties,
+    type PointerEvent as ReactPointerEvent,
+    type ReactNode,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import {createPortal} from 'react-dom';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
@@ -61,6 +70,7 @@ type TMakeShiftCalendarProps = {
     isShimmering?: boolean;
     skillColumn?: TSkillColumnConfig;
     restCheckByShiftNurseId?: Record<number, TRestCheckSummary>;
+    restPolicyControl?: ReactNode;
 };
 
 /**
@@ -99,8 +109,8 @@ const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2,
 const NAME_COL = 'clamp(64px,4.4cqw,76px)';
 const MIN_SKILL_COL = '40px';
 const CARRY_COL = 'clamp(26px,1.8cqw,32px)';
-const REST_CHECK_COL = 'clamp(36px,2.5cqw,42px)';
-const LAST_COL = 'clamp(64px,4.5cqw,84px)';
+const REST_CHECK_COL = 'clamp(48px,3.1cqw,56px)';
+const LAST_COL = 'clamp(70px,4.75cqw,88px)';
 const ROW_SKILL_BADGE_CLASS = 'make-shift-calendar__row-skill-badge min-h-[18px] min-w-10 px-1.5 text-[10px] whitespace-nowrap';
 /**
  * 행의 좌측(카드 안에 들어가는) 그리드.
@@ -175,7 +185,7 @@ function getSkillColumnWidth(config: TSkillLevelConfig | undefined) {
         1,
     );
 
-    return `minmax(${MIN_SKILL_COL}, calc(${longestLabelWidth}ch + 18px))`;
+    return `minmax(${MIN_SKILL_COL}, calc(${longestLabelWidth}ch + 4px))`;
 }
 
 function formatSignedDays(value: number | undefined) {
@@ -260,6 +270,7 @@ const LEGACY_OFF_AFTER_NIGHT_PATTERN =
 const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
 const MIN_NIGHT_INTERVAL_TEMPLATE_PATTERN = /MIN_(?:NIGHT|N)_INTERVAL/i;
 const MIN_NIGHT_INTERVAL_RULE_PATTERN = /minNightInterval|MIN_(?:NIGHT|N)_INTERVAL/i;
+const MIN_PROFICIENCY_STAFF_TEMPLATE_CODE = 'MIN_PROFICIENCY_STAFF_BY_SHIFT';
 const MIN_NIGHT_INTERVAL_MESSAGE_PATTERNS = [
     /N\s*\uADFC\uBB34\s*\uAC04\uACA9/,
     /N\s*\uADFC\uBB34\s*\uC0AC\uC774/,
@@ -309,6 +320,7 @@ type TShiftTypeDropdownState = {
 type TViolationReasonPopoverProps = {
     popover: TViolationPopover | null;
     activeViolationKey: string | null;
+    skillConfig?: TSkillLevelConfig;
     onActiveViolationChange: (violationKey: string | null) => void;
     onClose: () => void;
 };
@@ -399,11 +411,23 @@ function formatMinNightIntervalSentence(violation: TViolation, message: string):
         : i18n.t('feature.shiftEditor.validation.legacy.minNightIntervalFallback');
 }
 
-function getViolationProblemSentence(violation: TViolation): string {
+function formatProficiencyViolationMessage(violation: TViolation, message: string, skillConfig?: TSkillLevelConfig): string {
+    if (violation.templateCode !== MIN_PROFICIENCY_STAFF_TEMPLATE_CODE || !skillConfig) return message;
+
+    return message.replace(/LV\.?\s*(\d+)/gi, (match, levelValue: string) => {
+        const level = Number(levelValue);
+
+        if (!Number.isInteger(level) || level < 1 || level > skillConfig.levelCount) return match;
+
+        return getSkillLevelLabel(skillConfig, level);
+    });
+}
+
+function getViolationProblemSentence(violation: TViolation, skillConfig?: TSkillLevelConfig): string {
     const [rawTitle, ...detailParts] = violation.message.split(': ');
     const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
     const detail = detailParts.join(': ').trim();
-    const source = detail || fallback || violation.message.trim();
+    const source = formatProficiencyViolationMessage(violation, detail || fallback || violation.message.trim(), skillConfig);
     const withoutName = source.replace(KOREAN_NURSE_SUBJECT_PATTERN, '');
     const offAfterNightMatch = withoutName.match(LEGACY_OFF_AFTER_NIGHT_PATTERN);
 
@@ -683,7 +707,13 @@ function hasDateContext(value: string | undefined): boolean {
     return KOREAN_DAY_CONTEXT_PATTERN.test(value);
 }
 
-function ViolationReasonPopover({popover, activeViolationKey, onActiveViolationChange, onClose}: TViolationReasonPopoverProps) {
+function ViolationReasonPopover({
+    popover,
+    activeViolationKey,
+    skillConfig,
+    onActiveViolationChange,
+    onClose,
+}: TViolationReasonPopoverProps) {
     useEffect(() => {
         if (!popover) return;
 
@@ -791,7 +821,7 @@ function ViolationReasonPopover({popover, activeViolationKey, onActiveViolationC
                                         {levelLabel}
                                     </span>
                                     <p className="min-w-0 flex-1 text-[13px] leading-[1.45] font-semibold whitespace-normal text-sub-1">
-                                        {getViolationProblemSentence(violation)}
+                                        {getViolationProblemSentence(violation, skillConfig)}
                                     </p>
                                 </div>
                                 {metaLabel && <p className="mt-1 text-[11px] leading-none font-medium text-sub-3">{metaLabel}</p>}
@@ -990,6 +1020,7 @@ export function MakeShiftCalendar({
     isShimmering = false,
     skillColumn,
     restCheckByShiftNurseId,
+    restPolicyControl,
 }: TMakeShiftCalendarProps) {
     const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
@@ -1277,7 +1308,8 @@ export function MakeShiftCalendar({
     const isSimplified = variant === 'simplified';
     const showSkillColumn = !isSimplified && skillColumn?.config.enabled === true;
     const showRestCheckColumn = !isSimplified && restCheckByShiftNurseId !== undefined;
-    const showCarryColumn = showRestCheckColumn;
+    const showCarryColumn =
+        showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
     const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn;
     const skillColumnWidth = useMemo(
         () => (showSkillColumn ? getSkillColumnWidth(skillColumn?.config) : MIN_SKILL_COL),
@@ -1459,13 +1491,14 @@ export function MakeShiftCalendar({
                             <div
                                 className={cn(
                                     'make-shift-calendar__rest-check-header',
-                                    'grid place-items-center font-apple text-[clamp(10px,0.78cqw,13px)] leading-none font-medium text-sub-3',
+                                    'flex items-center justify-center gap-0.5 font-apple text-[clamp(10px,0.78cqw,13px)] leading-none font-medium text-sub-3',
                                     SUMMARY_CELL_HEIGHT,
                                 )}
                                 style={{width: REST_CHECK_COL}}
                                 title={t('page.makeShift.calendar.restCheck')}
                             >
-                                {t('page.makeShift.calendar.restCheckCompact')}
+                                <span>{t('page.makeShift.calendar.restCheckCompact')}</span>
+                                {restPolicyControl}
                             </div>
                         ) : null}
                     </div>
@@ -1617,6 +1650,7 @@ export function MakeShiftCalendar({
             <ViolationReasonPopover
                 popover={violationPopover}
                 activeViolationKey={activeViolationKey}
+                skillConfig={skillColumn?.config}
                 onActiveViolationChange={setActiveViolationKey}
                 onClose={closeViolationPopover}
             />
@@ -1858,7 +1892,7 @@ function CalendarRowLeft({
                         ) : null}
 
                         <div
-                            className="make-shift-calendar__row-last-shifts flex min-h-0 min-w-0 flex-nowrap items-center justify-center overflow-hidden"
+                            className="make-shift-calendar__row-last-shifts flex min-h-0 min-w-0 flex-nowrap items-center justify-center overflow-visible"
                             style={{gap: LAST_SHIFTS_GAP}}
                         >
                             {displayLastShifts.map((t, i) => {

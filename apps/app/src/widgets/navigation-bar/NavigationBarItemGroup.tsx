@@ -103,6 +103,7 @@ const accountItem: TNavItem = {
 
 type TNavigationBarItemGroupsProps = {
     collapsed?: boolean;
+    stableCollapsedLayout?: boolean;
     onItemNavigate?: () => void;
 };
 
@@ -187,7 +188,7 @@ const WardIdentity = ({collapsed, onItemNavigate, ward}: TWardIdentityProps) => 
         </>
     );
 };
-const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigationBarItemGroupsProps) => {
+const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = false, onItemNavigate}: TNavigationBarItemGroupsProps) => {
     const {t} = useTypedTranslation();
     const {
         state: {ward, watingNurses},
@@ -200,11 +201,11 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
             aria-label={t('page.navigationBar.ariaLabel')}
             className={cn(
                 'flex min-h-0 w-full flex-1 flex-col',
-                collapsed ? 'mt-5 [@media(max-height:720px)]:mt-3' : 'mt-6 [@media(max-height:760px)]:mt-4',
+                collapsed || stableCollapsedLayout ? 'mt-5 [@media(max-height:720px)]:mt-3' : 'mt-6 [@media(max-height:760px)]:mt-4',
             )}
         >
             <div>
-                {collapsed ? (
+                {collapsed || stableCollapsedLayout ? (
                     <div className="mb-4 [@media(max-height:720px)]:mb-3">
                         <NavigationBarItem
                             path={homeItem.path}
@@ -212,19 +213,20 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                             icon={homeItem.icon}
                             text={homeItem.text ?? t(homeItem.textKey!)}
                             collapsed={collapsed}
+                            alignWithCollapsedIcon={stableCollapsedLayout}
                             disabled={homeItem.disabled}
                             onNavigate={onItemNavigate}
                         />
                     </div>
                 ) : null}
-                <WardIdentity collapsed={collapsed} onItemNavigate={onItemNavigate} ward={ward} />
+                {stableCollapsedLayout ? null : <WardIdentity collapsed={collapsed} onItemNavigate={onItemNavigate} ward={ward} />}
                 {sections.map((section, sectionIndex) => (
                     <div
                         key={section.labelKey}
                         className={cn(
                             sectionIndex === 0
                                 ? 'mt-0'
-                                : collapsed
+                                : collapsed || stableCollapsedLayout
                                   ? 'mt-4 [@media(max-height:720px)]:mt-3'
                                   : 'mt-7 [@media(max-height:760px)]:mt-4',
                         )}
@@ -232,12 +234,12 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                         <div
                             className={cn(
                                 'h-px bg-gray-6',
-                                collapsed
+                                collapsed || stableCollapsedLayout
                                     ? 'mx-auto mb-4 w-8 [@media(max-height:720px)]:mb-3'
                                     : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
                             )}
                         />
-                        {collapsed ? null : (
+                        {collapsed || stableCollapsedLayout ? null : (
                             <div className="px-3 pb-2 text-[12px] font-semibold text-gray-4 [@media(max-height:760px)]:pb-1 [@media(max-height:760px)]:text-[11px]">
                                 {t(section.labelKey)}
                             </div>
@@ -245,7 +247,9 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                         <div
                             className={cn(
                                 'flex flex-col',
-                                collapsed ? 'gap-2 [@media(max-height:720px)]:gap-1' : 'gap-1.5 [@media(max-height:760px)]:gap-1',
+                                collapsed || stableCollapsedLayout
+                                    ? 'gap-2 [@media(max-height:720px)]:gap-1'
+                                    : 'gap-1.5 [@media(max-height:760px)]:gap-1',
                             )}
                         >
                             {section.items.map((item) => (
@@ -256,6 +260,7 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                                     icon={item.icon}
                                     text={item.text ?? t(item.textKey!)}
                                     collapsed={collapsed}
+                                    alignWithCollapsedIcon={stableCollapsedLayout}
                                     disabled={item.disabled}
                                     badgeCount={
                                         item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
@@ -268,7 +273,7 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                                     <div
                                         className={cn(
                                             'h-px bg-gray-6',
-                                            collapsed
+                                            collapsed || stableCollapsedLayout
                                                 ? 'mx-auto my-4 w-8 [@media(max-height:720px)]:my-2.5'
                                                 : 'my-4 w-full [@media(max-height:760px)]:my-2.5',
                                         )}
@@ -279,6 +284,7 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
                                         icon={accountItem.icon}
                                         text={accountItem.text ?? t(accountItem.textKey!)}
                                         collapsed={collapsed}
+                                        alignWithCollapsedIcon={stableCollapsedLayout}
                                         disabled={accountItem.disabled}
                                         onNavigate={onItemNavigate}
                                     />
@@ -291,13 +297,15 @@ const NavigationBarItemGroups = ({collapsed = false, onItemNavigate}: TNavigatio
             <div
                 className={cn(
                     'mt-auto shrink-0',
-                    collapsed ? 'pt-4 [@media(max-height:720px)]:pt-2' : 'pt-5 [@media(max-height:760px)]:pt-3',
+                    collapsed || stableCollapsedLayout ? 'pt-4 [@media(max-height:720px)]:pt-2' : 'pt-5 [@media(max-height:760px)]:pt-3',
                 )}
             >
                 <div
                     className={cn(
                         'h-px bg-gray-6',
-                        collapsed ? 'mx-auto mb-4 w-8 [@media(max-height:720px)]:mb-3' : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
+                        collapsed || stableCollapsedLayout
+                            ? 'mx-auto mb-4 w-8 [@media(max-height:720px)]:mb-3'
+                            : 'mb-4 w-full [@media(max-height:760px)]:mb-3',
                     )}
                 />
                 <Link

@@ -1178,7 +1178,7 @@ export const ko = {
                     },
                     "SOFT_MAX_CONSECUTIVE_N": {
                         "label": "금지 패턴 규칙",
-                        "sentence": "{target}은 연속으로 N을 {count}번까지 할 수 있어요"
+                        "sentence": "{target}은 연속 N나이트 근무를 최대 {count}번까지만 할 수 있어요."
                     },
                     "SOFT_MAX_CONSECUTIVE_WORK": {
                         "label": "연속 근무 / 휴식 규칙",
@@ -1222,15 +1222,15 @@ export const ko = {
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "금지 패턴 규칙",
-                        "sentence": "{target}은 E 다음날 D 근무를 피해요"
+                        "sentence": "{target}은 E이브닝 다음 날 D데이 근무를 피해요."
                     },
                     "SOFT_NO_N_TO_D": {
                         "label": "금지 패턴 규칙",
-                        "sentence": "{target}은 N 다음날 D 근무를 피해요"
+                        "sentence": "{target}은 N나이트 다음 날 D데이 근무를 피해요."
                     },
                     "SOFT_NO_N_TO_E": {
                         "label": "금지 패턴 규칙",
-                        "sentence": "{target}은 N 다음날 E 근무를 피해요"
+                        "sentence": "{target}은 N나이트 다음 날 E이브닝 근무를 피해요."
                     },
                     "SOFT_NO_SAME_DUTY_PAIR": {
                         "label": "근무자 조합",

@@ -112,6 +112,7 @@ describe('MakeShiftCalendar', () => {
                         targetDays: 10,
                         assignedDays: 1,
                         carriedDays: 2,
+                        carryOverApplied: true,
                         differenceDays: -9,
                     },
                 }}
@@ -119,11 +120,37 @@ describe('MakeShiftCalendar', () => {
         );
 
         expect(screen.getByText('이월')).toBeInTheDocument();
-        expect(screen.getByTitle('지난달에서 넘어온 쉬는 날 +2일')).toBeInTheDocument();
+        expect(screen.getByTitle(/\+2/)).toBeInTheDocument();
         expect(screen.getByText('+2')).toBeInTheDocument();
         expect(screen.getByText('휴무')).toBeInTheDocument();
         expect(screen.getByTitle('휴무 체크')).toBeInTheDocument();
         expect(screen.getByText('-9')).toBeInTheDocument();
+    });
+
+    it('hides the carry column when rest checks are shown without carry-over', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                restCheckByShiftNurseId={{
+                    2: {
+                        targetDays: 10,
+                        assignedDays: 7,
+                        carriedDays: 0,
+                        carryOverApplied: false,
+                        differenceDays: -3,
+                    },
+                }}
+            />,
+        );
+
+        expect(screen.queryByText('?댁썡')).not.toBeInTheDocument();
+        expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
+        expect(screen.getByTitle('휴무 체크')).toBeInTheDocument();
+        expect(screen.getByText('-3')).toBeInTheDocument();
     });
 
     it('includes off shift types in row and daily summaries when they are assigned', () => {
@@ -562,6 +589,51 @@ describe('MakeShiftCalendar', () => {
         expect(popoverContent.getAllByText('D 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(popoverContent.getAllByText('E 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(screen.queryByRole('dialog', {name: '제약조건 위반 20개'})).not.toBeInTheDocument();
+    });
+
+    it('shows worker-management skill labels in proficiency staffing violations', async () => {
+        const user = userEvent.setup();
+        const violation: TViolation = {
+            ruleId: 'proficiency-staffing',
+            templateCode: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
+            message: 'N 근무에는 LV5 이상 간호사가 0명이에요. 최소 1명이 필요해요.',
+            level: 'warning',
+            cells: [{row: 0, col: 1}],
+            scope: 'team',
+        };
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                teamViolations={[violation]}
+                showFaults
+                readonly
+                skillColumn={{
+                    config: {
+                        ...DEFAULT_SKILL_LEVEL_CONFIG,
+                        levelCount: 5,
+                        levelLabels: {5: '전담'},
+                    },
+                    levelsByNurseId: {100: 5},
+                }}
+            />,
+        );
+
+        const dayHeader = document.querySelector<HTMLButtonElement>('[data-day-header-index="1"]');
+
+        expect(dayHeader).not.toBeNull();
+
+        await act(async () => {
+            await user.click(dayHeader!);
+        });
+
+        const popover = await screen.findByRole('dialog');
+        const popoverContent = within(popover);
+
+        expect(popoverContent.getByText('N 근무에는 전담 이상 간호사가 0명이에요. 최소 1명이 필요해요.')).toBeInTheDocument();
+        expect(popoverContent.queryByText(/LV5/)).not.toBeInTheDocument();
     });
 
     it('shows N interval violations as one concise issue without repeated N labels', async () => {

@@ -1,5 +1,6 @@
 import type {TValidationRes} from '@dutying/api/ward';
 import {describe, expect, it} from 'vitest';
+import {buildViolationMapAll} from '../../validator';
 import type {TDutyDoc} from '../../types';
 import {violationsFromSpringValidation} from '../convert-spring-validation';
 
@@ -121,6 +122,55 @@ describe('violationsFromSpringValidation', () => {
                 {row: 1, col: 2},
             ],
         });
+    });
+
+    it('maps nurse-pair same-shift violations to the affected nurse cells', () => {
+        const validation: TValidationRes = {
+            draftRevision: 1,
+            rulesHash: 'hash',
+            summary: {valid: false, hardCount: 0, softCount: 1, totalCount: 1},
+            violations: [
+                {
+                    violationId: 'v-pair',
+                    ruleId: 9004,
+                    templateCode: 'NURSE_PAIR_NOT_SAME_SHIFT',
+                    severity: 'SOFT',
+                    message: '오지현님과 윤정은님은 같은 근무를 할 수 없어요.',
+                    affectedCells: [
+                        {
+                            cellKey: '8753:2026-05-03',
+                            shiftNurseId: 8753,
+                            nurseName: '오지현',
+                            date: '2026-05-03',
+                            wardShiftTypeId: 101,
+                            shiftCode: 'D',
+                        },
+                        {
+                            cellKey: '8754:2026-05-03',
+                            shiftNurseId: 8754,
+                            nurseName: '윤정은',
+                            date: '2026-05-03',
+                            wardShiftTypeId: 101,
+                            shiftCode: 'D',
+                        },
+                    ],
+                    fixable: true,
+                },
+            ],
+        };
+        const violations = violationsFromSpringValidation(validation, doc);
+        const map = buildViolationMapAll(violations, doc);
+
+        expect(violations[0]).toMatchObject({
+            level: 'warning',
+            scope: 'nurse',
+            cells: [
+                {row: 0, col: 2},
+                {row: 1, col: 2},
+            ],
+        });
+        expect(map.get('8753,2,9004')).toBe(violations[0]);
+        expect(map.get('8754,2,9004')).toBeDefined();
     });
 
     it('preserves display context cells separately from violating cells', () => {

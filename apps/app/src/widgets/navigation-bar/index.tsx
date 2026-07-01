@@ -25,6 +25,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
     const closePreviewTimeoutRef = useRef<number | null>(null);
     const isPreviewExpanded = compactMode && (isHoverExpanded || isFocusExpanded);
     const isCollapsed = compactMode ? !isPreviewExpanded : isFold;
+    const stableCollapsedLayout = compactMode && isPreviewExpanded;
 
     useEffect(() => {
         return () => {
@@ -84,15 +85,16 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
             <div
                 className={cn(
                     'flex h-full min-h-0 shrink-0 flex-col',
-                    isCollapsed
+                    isCollapsed || stableCollapsedLayout
                         ? 'w-[64px] px-2 py-3 [@media(max-height:720px)]:py-2'
                         : 'w-[216px] px-3 py-4 [@media(max-height:760px)]:py-3',
+                    stableCollapsedLayout ? 'w-[216px]' : undefined,
                 )}
             >
                 <div
                     className={cn(
                         'flex min-h-11 items-center [@media(max-height:760px)]:min-h-10',
-                        isCollapsed ? 'flex-col gap-2' : 'justify-between',
+                        isCollapsed || stableCollapsedLayout ? 'flex-col gap-2' : 'justify-between',
                     )}
                 >
                     <Link
@@ -100,7 +102,7 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                         aria-label={t('page.navigationBar.home')}
                         className="shrink-0 rounded-[8px] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
                     >
-                        {isCollapsed ? (
+                        {isCollapsed || stableCollapsedLayout ? (
                             <img
                                 src="/img/image-43-2.png"
                                 alt=""
@@ -137,7 +139,11 @@ const NavigationBar = ({compactMode = false}: TNavigationBarProps) => {
                     )}
                 </div>
 
-                <NavigationBarItemGroups collapsed={isCollapsed} onItemNavigate={compactMode ? closePreview : undefined} />
+                <NavigationBarItemGroups
+                    collapsed={isCollapsed}
+                    stableCollapsedLayout={stableCollapsedLayout}
+                    onItemNavigate={compactMode ? closePreview : undefined}
+                />
             </div>
         </aside>
     );

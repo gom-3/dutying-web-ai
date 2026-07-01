@@ -223,8 +223,8 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(2);
         expect(savedDraft.currentStep).toBe(3);
         expect(result.current.draft.currentStep).toBe(3);
-        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', 'O', 'A', 'R', 'Y', 'Z']);
-        expect(result.current.draft.shiftTypes.slice(4).every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
+        expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '/', 'A', 'R', 'Y', 'Z']);
+        expect(result.current.draft.shiftTypes.slice(3).every((shiftType) => shiftType.source === 'schedule-input')).toBe(true);
 
         const customShiftColors = result.current.draft.shiftTypes.slice(4).map((shiftType) => shiftType.color);
 
@@ -242,7 +242,7 @@ describe('useOnboardingWardWizard upload flow', () => {
             {date: '2026-05-02', shiftShortName: 'Z'},
             {date: '2026-05-03', shiftShortName: 'A'},
             {date: '2026-05-04', shiftShortName: 'Y'},
-            {date: '2026-05-05', shiftShortName: 'O'},
+            {date: '2026-05-05', shiftShortName: '/'},
         ]);
     });
 

@@ -56,7 +56,9 @@ export type TWardChatMessageResponse = {
     messageId: number;
     moimId: number;
     wardId: number;
-    senderAccountId: number;
+    senderAccountId: number | null;
+    senderWardAdminAccountId?: number | null;
+    senderType?: 'ACCOUNT' | 'WARD_ADMIN';
     senderName: string;
     text: string;
     sentAt: string;
@@ -639,7 +641,12 @@ export interface IWardAPI {
         workflowDTO: TUpdateShiftWorkflowDTO,
     ) => Promise<TShiftWorkflowResponse>;
     validateSnapshot: (wardId: number, shiftTeamId: number, validateSnapshotDTO: TValidateSnapshotDTO) => Promise<TValidationRes>;
-    autofillSchedule: (wardId: number, shiftTeamId: number, autofillDTO: TAutofillDTO) => Promise<TAutofillResponse>;
+    autofillSchedule: (
+        wardId: number,
+        shiftTeamId: number,
+        autofillDTO: TAutofillDTO,
+        options?: {signal?: AbortSignal},
+    ) => Promise<TAutofillResponse>;
     getSnapshots: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TSnapshotListRes>;
     saveSnapshot: (wardId: number, shiftTeamId: number, saveSnapshotDTO: TSaveSnapshotDTO) => Promise<TSnapshotSaveRes>;
     getSnapshot: (wardId: number, shiftTeamId: number, snapshotId: number) => Promise<TSnapshotDetailRes>;

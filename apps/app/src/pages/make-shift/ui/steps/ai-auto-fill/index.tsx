@@ -23,6 +23,7 @@ import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-au
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
+import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
 import {
@@ -35,8 +36,9 @@ import {
     useInvalidateScheduleSnapshots,
     useScheduleSnapshots,
 } from '../../../model/use-schedule-snapshots';
+import {RestLeavePolicySummaryButton} from '../rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
-import {maskDutyDocNonFixedCells} from '../shared/mask-duty-doc-non-fixed';
+import {maskDutyDocFixedCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
@@ -138,8 +140,7 @@ export function AiAutofill() {
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
     const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
-    /** true: AI·기타로 채운 표 포함 전체 표시. false: 고정 근무 칸만 표시. */
-    const [autoFillEnabled, setAutoFillEnabled] = useState(true);
+    const [showFixedShifts, setShowFixedShifts] = useState(true);
     const [showFaults, setShowFaults] = useState(true);
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
@@ -187,6 +188,7 @@ export function AiAutofill() {
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const aiRequestSeqRef = useRef(0);
+    const aiAbortControllerRef = useRef<AbortController | null>(null);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
@@ -220,7 +222,13 @@ export function AiAutofill() {
         setSnapshotLimitContext(null);
         setLastShiftBlankWarningOpen(false);
         setLastShiftBlankWarningAcknowledged(false);
-    }, [wardId, currentShiftTeamId, year, month]);
+        aiAbortControllerRef.current?.abort();
+        aiAbortControllerRef.current = null;
+        aiRequestSeqRef.current += 1;
+        setIsAiGenerating(false);
+        resetAiStatus();
+        toast.dismiss('make-shift-ai-fill-progress');
+    }, [wardId, currentShiftTeamId, year, month, resetAiStatus]);
 
     useEffect(() => {
         setLastShiftBlankWarningAcknowledged(false);
@@ -240,10 +248,7 @@ export function AiAutofill() {
         };
     }, [isSnapshotSidebarOpen]);
 
-    const calendarDoc = useMemo(
-        () => (autoFillEnabled ? hydratedDoc : maskDutyDocNonFixedCells(hydratedDoc)),
-        [autoFillEnabled, hydratedDoc],
-    );
+    const calendarDoc = useMemo(() => (showFixedShifts ? hydratedDoc : maskDutyDocFixedCells(hydratedDoc)), [hydratedDoc, showFixedShifts]);
     const restCheckByShiftNurseId = useMemo(
         () =>
             dutyQuery.data
@@ -337,11 +342,34 @@ export function AiAutofill() {
             workflowStatus: 'CONFIRMED' as const,
             workflowStep: 6,
         };
+        const confirmedRestCheckByShiftNurseId = calculateRestCheckByShiftNurse({
+            shift: nextShift,
+            doc: editorDoc,
+            policy,
+            year,
+            month,
+            adjustmentDays,
+        });
         const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
 
         useCase.confirm(nextShift);
         queryClient.setQueryData(queryKey, nextShift);
         void queryClient.invalidateQueries({queryKey});
+
+        try {
+            await syncNextMonthRestCarryOver({
+                wardId,
+                shiftTeamId: currentShiftTeamId,
+                year,
+                month,
+                shift: nextShift,
+                policy,
+                restCheckByShiftNurseId: confirmedRestCheckByShiftNurseId,
+                queryClient,
+            });
+        } catch {
+            toast.error(t('page.makeShift.aiRefill.restCarryOverSyncFailed'));
+        }
     };
     const handleSaveSnapshot = async () => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
@@ -585,7 +613,10 @@ export function AiAutofill() {
 
         const requestSeq = aiRequestSeqRef.current + 1;
         const requestContext = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+        const abortController = new AbortController();
 
+        aiAbortControllerRef.current?.abort();
+        aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
         setIsAiGenerating(true);
         setAiStatus('loading');
@@ -604,9 +635,16 @@ export function AiAutofill() {
                 originalShift: dutyQuery.data,
                 draftRevision,
                 rulesHash,
+                signal: abortController.signal,
             });
 
             if (aiRequestSeqRef.current !== requestSeq) return;
+
+            if (!result.ok && result.canceled) {
+                resetAiStatus();
+
+                return;
+            }
 
             const currentContext = currentAiContextRef.current;
 
@@ -639,6 +677,7 @@ export function AiAutofill() {
             toast.dismiss(progressToastId);
 
             if (aiRequestSeqRef.current === requestSeq) {
+                aiAbortControllerRef.current = null;
                 setIsAiGenerating(false);
             }
         }
@@ -666,8 +705,8 @@ export function AiAutofill() {
                 tabIndex={0}
             >
                 <AiAutofillToolbar
-                    autoFillEnabled={autoFillEnabled}
-                    onToggleAutoFill={() => setAutoFillEnabled((prev) => !prev)}
+                    showFixedShifts={showFixedShifts}
+                    onToggleFixedShifts={() => setShowFixedShifts((prev) => !prev)}
                     showFaults={showFaults}
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
@@ -716,6 +755,9 @@ export function AiAutofill() {
                         isShimmering={isAiGenerating}
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
+                        restPolicyControl={
+                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
+                        }
                     />
                 )}
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (
