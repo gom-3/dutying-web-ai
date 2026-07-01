@@ -6,6 +6,7 @@ export type TRestCheckSummary = {
     targetDays: number;
     assignedDays: number;
     carriedDays: number;
+    carryOverApplied: boolean;
     differenceDays: number;
 };
 
@@ -48,6 +49,7 @@ export function calculateRestCheckByShiftNurse(params: {
                 targetDays,
                 assignedDays,
                 carriedDays,
+                carryOverApplied: policy.carryOverEnabled,
                 differenceDays: assignedDays - targetDays,
             };
         });

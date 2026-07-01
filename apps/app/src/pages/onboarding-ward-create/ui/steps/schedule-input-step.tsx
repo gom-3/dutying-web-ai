@@ -213,7 +213,9 @@ const getCanonicalShiftColorTerm = (value: string) => {
         return '';
     }
 
-    return OFF_SHIFT_TERMS.has(term) || SYMBOL_OFF_SHIFT_TERMS.has(term) ? 'O' : term;
+    if (SYMBOL_OFF_SHIFT_TERMS.has(term)) return term;
+
+    return OFF_SHIFT_TERMS.has(term) ? 'O' : term;
 };
 const isCoreShiftTerm = (value: string) => CORE_SHIFT_TERMS.has(getCanonicalShiftColorTerm(value));
 const normalizeColorKey = (color: string) => color.trim().toUpperCase();

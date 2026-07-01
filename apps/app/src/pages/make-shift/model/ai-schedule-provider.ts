@@ -37,6 +37,8 @@ export async function requestAiSchedule(request: TAiScheduleRequest): Promise<TA
 
         return {ok: true, response, validation: response.validation};
     } catch (error) {
+        if (request.signal?.aborted) return {ok: false, message: '', canceled: true};
+
         return {ok: false, message: toErrorMessage(error)};
     }
 }

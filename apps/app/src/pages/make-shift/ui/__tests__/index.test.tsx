@@ -166,7 +166,7 @@ describe('MakeShiftPageView layout', () => {
         expect(stepContentWrapper).not.toHaveClass('flex-1');
     });
 
-    it('keeps the bounded layout outside the stepping flow', () => {
+    it('uses the stepping-width frame outside the stepping flow', () => {
         makeShiftState = {
             ...makeShiftState,
             phase: 'overview',
@@ -179,7 +179,8 @@ describe('MakeShiftPageView layout', () => {
         const contentCard = screen.getByTestId('make-shift-header').nextElementSibling;
 
         expect(pageRoot).toHaveClass('overflow-x-hidden');
-        expect(pageFrame).toHaveClass('max-w-[1640px]');
+        expect(pageFrame).toHaveClass('max-w-[1680px]');
+        expect(pageFrame).toHaveClass('min-w-0');
         expect(pageFrame).not.toHaveClass('min-w-[1510px]');
         expect(contentCard).toHaveClass('overflow-hidden');
         expect(contentCard).toHaveClass('min-h-0');

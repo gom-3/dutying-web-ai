@@ -586,10 +586,10 @@ describe('OnboardingWardCreatePage model', () => {
 
         expect(nurse?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: 'D'},
-            {date: '2026-05-02', shiftShortName: 'O'},
-            {date: '2026-05-03', shiftShortName: 'O'},
-            {date: '2026-05-04', shiftShortName: 'O'},
-            {date: '2026-05-05', shiftShortName: 'O'},
+            {date: '2026-05-02', shiftShortName: '/'},
+            {date: '2026-05-03', shiftShortName: '/'},
+            {date: '2026-05-04', shiftShortName: '/'},
+            {date: '2026-05-05', shiftShortName: '/'},
             {date: '2026-05-06', shiftShortName: '교육'},
         ]);
         expect(customShiftType).toEqual(
@@ -603,6 +603,31 @@ describe('OnboardingWardCreatePage model', () => {
         );
         expect(customShiftType?.color).not.toBe('#BFC7D4');
         expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.nurseId).toBe(nurse?.id);
+    });
+
+    it('uses the uploaded off symbol as the representative off shift type', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const {draft: nextDraft} = applyUploadedScheduleTemplateDraft(draft, {
+            fileName: 'schedule-template.xlsx',
+            year: 2026,
+            month: 5,
+            teamSchedules: [
+                {
+                    teamName: 'Team A',
+                    rows: [
+                        {
+                            name: 'Nurse A',
+                            shifts: {'1': '/', '2': '/', '3': '-'},
+                        },
+                    ],
+                },
+            ],
+        });
+
+        expect(nextDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'O')).toBe(false);
+        expect(nextDraft.shiftTypes.find((shiftType) => shiftType.shortName === '/')).toEqual(
+            expect.objectContaining({shortName: '/', isDefault: true, isOff: true, classification: 'OFF'}),
+        );
     });
 
     it('syncs custom shift types discovered only from an uploaded schedule template', () => {

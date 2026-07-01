@@ -2,7 +2,7 @@ import {type ReactNode} from 'react';
 import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
-import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
+import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {useMakeShiftStore} from '../make-shift-store';
@@ -294,29 +294,29 @@ describe('useMakeShiftBootstrap', () => {
         expect(window.localStorage.getItem('make-shift:max-step:1:10:2026:6')).toBe('3');
     });
 
-    it('starts on the current month when there is no saved month', async () => {
-        const currentYearMonth = getCalendarYearMonthNow();
+    it('starts on the next month when there is no saved month', async () => {
+        const nextYearMonth = getNextCalendarYearMonth();
 
         renderHook(() => useMakeShiftBootstrap(1), {wrapper});
 
         await waitFor(() => {
-            expect(useMakeShiftStore.getState()).toMatchObject(currentYearMonth);
+            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
         });
     });
 
-    it('starts on the current month even when a saved month exists', async () => {
-        const currentYearMonth = getCalendarYearMonthNow();
+    it('starts on the next month even when a saved month exists', async () => {
+        const nextYearMonth = getNextCalendarYearMonth();
         const savedYearMonth =
-            currentYearMonth.month === 1
-                ? {year: currentYearMonth.year - 1, month: 12}
-                : {year: currentYearMonth.year, month: currentYearMonth.month - 1};
+            nextYearMonth.month === 1
+                ? {year: nextYearMonth.year - 1, month: 12}
+                : {year: nextYearMonth.year, month: nextYearMonth.month - 1};
 
         useMakeShiftStore.getState().setYearMonth(savedYearMonth);
 
         renderHook(() => useMakeShiftBootstrap(1), {wrapper});
 
         await waitFor(() => {
-            expect(useMakeShiftStore.getState()).toMatchObject(currentYearMonth);
+            expect(useMakeShiftStore.getState()).toMatchObject(nextYearMonth);
         });
     });
 

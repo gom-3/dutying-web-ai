@@ -38,6 +38,16 @@ function affectedCellsToPositions(doc: TDutyDoc, affectedCells: TScheduleViolati
     return cells;
 }
 
+const NURSE_PAIR_TEMPLATE_CODES = new Set(['NURSE_PAIR_NOT_SAME_SHIFT', 'NURSE_PAIR_PREFER_SAME_SHIFT']);
+
+function resolveViolationScope(item: TScheduleViolationDto): TViolation['scope'] {
+    if (item.templateCode && NURSE_PAIR_TEMPLATE_CODES.has(item.templateCode)) return 'nurse';
+
+    const uniqueNurses = new Set(item.affectedCells.map((c) => c.shiftNurseId));
+
+    return uniqueNurses.size > 1 ? 'team' : 'nurse';
+}
+
 function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | null {
     const cells = affectedCellsToPositions(doc, item.affectedCells);
 
@@ -47,8 +57,7 @@ function toViolation(item: TScheduleViolationDto, doc: TDutyDoc): TViolation | n
         ? affectedCellsToPositions(doc, item.displayContext.affectedCells)
         : [];
     const level: TViolation['level'] = item.severity === 'HARD' ? 'error' : 'warning';
-    const uniqueNurses = new Set(item.affectedCells.map((c) => c.shiftNurseId));
-    const scope: TViolation['scope'] = uniqueNurses.size > 1 ? 'team' : 'nurse';
+    const scope = resolveViolationScope(item);
     const violation: TViolation = {
         ruleId: String(item.ruleId),
         violationId: item.violationId,

@@ -91,6 +91,17 @@ describe('requestAiSchedule', () => {
         expect(result).toEqual({ok: false, message: 'AI 생성 실패'});
     });
 
+    it('marks aborted requests as canceled', async () => {
+        const abortController = new AbortController();
+
+        abortController.abort();
+        apiGenerate.mockRejectedValue(new Error('canceled'));
+
+        const result = await requestAiSchedule({...request, signal: abortController.signal});
+
+        expect(result).toEqual({ok: false, message: '', canceled: true});
+    });
+
     it('returns the first unmet instruction when the server applies no AI changes', async () => {
         apiGenerate.mockResolvedValue({
             ...response,

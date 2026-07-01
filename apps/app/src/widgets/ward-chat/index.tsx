@@ -1,14 +1,16 @@
 import type {TWardChatMessageResponse, TWardChatUnreadCountResponse} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {ChevronUp, Loader2, MessageCircle, RefreshCcw, SendHorizontal, Users, X} from 'lucide-react';
 import type {AnimationItem} from 'lottie-web';
+import {ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
 import {Fragment, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
-import i18n from '@/i18n';
 import useAuth from '@/features/auth';
-import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
+import {getWardAdminAccountIdFromAccessToken} from '@/features/auth/model/admin-token';
+import i18n from '@/i18n';
 import {WardAPI} from '@/shared/api';
+import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
+import wardCodeChatImage from '@/shared/assets/images/ward-code-chat.png';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
@@ -25,6 +27,31 @@ const wardChatQueryKeys = {
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
     unread: (wardId: number) => ['ward-chat', 'unread', wardId] as const,
 };
+
+function isMyMessage(message: TWardChatMessageResponse, accountId: number | null, wardAdminAccountId: number | null) {
+    return (
+        (accountId != null && message.senderAccountId === accountId) ||
+        (wardAdminAccountId != null && message.senderWardAdminAccountId === wardAdminAccountId)
+    );
+}
+
+function isWardAdminMessage(message: TWardChatMessageResponse) {
+    return message.senderType === 'WARD_ADMIN' || message.senderWardAdminAccountId != null;
+}
+
+function WardChatImageIcon({className}: {className?: string}) {
+    return (
+        <img
+            src={wardCodeChatImage}
+            alt=""
+            aria-hidden="true"
+            width={156}
+            height={160}
+            decoding="async"
+            className={cn('object-contain', className)}
+        />
+    );
+}
 
 function createClientMessageId() {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -76,6 +103,20 @@ function getSenderInitial(senderName: string) {
     return senderName.trim().slice(0, 1) || '?';
 }
 
+function SenderName({message}: {message: TWardChatMessageResponse}) {
+    return (
+        <span className="flex min-w-0 items-center gap-1.5 px-1 text-[12px] font-semibold text-gray-3">
+            {isWardAdminMessage(message) ? (
+                <span className="inline-flex h-5 shrink-0 items-center gap-0.5 rounded-full border border-[#F4CF6A] bg-[#FFF4CC] px-1.5 text-[10px] leading-none font-bold text-[#9A6100]">
+                    <ShieldCheck className="size-3" strokeWidth={2.3} aria-hidden="true" />
+                    <span>운영자</span>
+                </span>
+            ) : null}
+            <span className="truncate">{message.senderName}</span>
+        </span>
+    );
+}
+
 function ChatMessage({
     message,
     isMine,
@@ -96,7 +137,7 @@ function ChatMessage({
                 </div>
             )}
             <div className={cn('flex max-w-[78%] flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
-                {isMine ? null : <span className="px-1 text-[12px] font-semibold text-gray-3">{message.senderName}</span>}
+                {isMine ? null : <SenderName message={message} />}
                 <div className={cn('flex items-end gap-1.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
                     <p
                         className={cn(
@@ -135,6 +176,7 @@ function recolorLottieShapesWhite(value: unknown) {
 
     if (Array.isArray(value)) {
         value.forEach(recolorLottieShapesWhite);
+
         return;
     }
 
@@ -181,6 +223,7 @@ function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
         let isDisposed = false;
 
         if (!containerRef.current) return;
+
         if (import.meta.env.MODE === 'test') return;
 
         void import('lottie-web/build/player/lottie_light').then(({default: lottiePlayer}) => {
@@ -203,6 +246,7 @@ function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
 
             if (isPlayingRef.current) {
                 animation.playSegments(WARD_CHAT_ICON_HOVER_SEGMENT, true);
+
                 return;
             }
 
@@ -223,6 +267,7 @@ function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
 
         if (isPlaying) {
             animation.playSegments(WARD_CHAT_ICON_HOVER_SEGMENT, true);
+
             return;
         }
 
@@ -264,7 +309,7 @@ function WardChatFloatingIcon({isPlaying}: {isPlaying: boolean}) {
 export default function WardChatWidget() {
     const {t} = useTypedTranslation();
     const {
-        state: {accountId, isDemoExpired, wardId},
+        state: {accessToken, accountId, isDemoExpired, wardId},
     } = useAuth();
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
@@ -329,6 +374,7 @@ export default function WardChatWidget() {
     const hasOlderMessages = typeof nextCursorMessageId === 'number' && nextCursorMessageId > 0;
     const newestMessageId = useMemo(() => getNewestMessageId(messages), [messages]);
     const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const wardAdminAccountId = useMemo(() => getWardAdminAccountIdFromAccessToken(accessToken), [accessToken]);
     const timeFormatter = useMemo(
         () =>
             new Intl.DateTimeFormat(locale, {
@@ -440,8 +486,8 @@ export default function WardChatWidget() {
                     <header className="flex shrink-0 items-center justify-between gap-3 border-b border-[#EDF0F4] bg-white px-5 py-4">
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <span className="flex size-8 items-center justify-center rounded-full bg-main-light text-main-1">
-                                    <MessageCircle className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
+                                <span className="flex size-8 items-center justify-center">
+                                    <WardChatImageIcon className="size-7" />
                                 </span>
                                 <h2 className="truncate text-[17px] font-bold text-[#17171C]">{t('widget.wardChat.title')}</h2>
                             </div>
@@ -484,7 +530,7 @@ export default function WardChatWidget() {
                         {!messagesQuery.isLoading && !messagesQuery.isError && messages.length === 0 ? (
                             <div className="flex h-full flex-col items-center justify-center px-6 text-center">
                                 <div className="flex size-14 items-center justify-center rounded-full bg-white text-main-1 shadow-sm">
-                                    <MessageCircle className="size-6" strokeWidth={2.1} aria-hidden="true" />
+                                    <WardChatImageIcon className="size-8" />
                                 </div>
                                 <p className="mt-4 text-[15px] font-bold text-sub-1">{t('widget.wardChat.state.emptyTitle')}</p>
                                 <p className="mt-1 text-[13px] font-medium text-gray-3">{t('widget.wardChat.state.emptyDescription')}</p>
@@ -531,7 +577,7 @@ export default function WardChatWidget() {
                                             ) : null}
                                             <ChatMessage
                                                 message={message}
-                                                isMine={message.senderAccountId === accountId}
+                                                isMine={isMyMessage(message, accountId, wardAdminAccountId)}
                                                 formatTime={formatMessageTime}
                                             />
                                         </Fragment>

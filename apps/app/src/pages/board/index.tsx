@@ -19,6 +19,7 @@ import {
     X,
 } from 'lucide-react';
 import {type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import useAuth from '@/features/auth';
 import i18n from '@/i18n';
 import {BoardAPI} from '@/shared/api';
@@ -1222,9 +1223,9 @@ function WardScheduleModal({
         });
     };
 
-    return (
+    const modal = (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6"
+            className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/45 px-4 py-6"
             role="presentation"
             onMouseDown={onClose}
         >
@@ -1422,6 +1423,10 @@ function WardScheduleModal({
             </form>
         </div>
     );
+
+    if (typeof document === 'undefined') return modal;
+
+    return createPortal(modal, document.body);
 }
 
 function DeadlineCalendar({

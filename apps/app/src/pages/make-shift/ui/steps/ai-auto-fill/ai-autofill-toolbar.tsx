@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {AnimationItem} from 'lottie-web';
-import {AlertTriangle, Check, Eye, EyeOff, History, Redo2, Save, Undo2, type LucideIcon} from 'lucide-react';
+import {AlertTriangle, Check, History, Pin, Redo2, Save, Undo2} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
@@ -16,8 +16,8 @@ import {
 } from '../../make-shift-step-layout';
 
 type TAiAutofillToolbarProps = {
-    autoFillEnabled: boolean;
-    onToggleAutoFill: () => void;
+    showFixedShifts: boolean;
+    onToggleFixedShifts: () => void;
     showFaults: boolean;
     onToggleFaults: () => void;
     canUndo: boolean;
@@ -45,8 +45,8 @@ const AI_ACTION_LABEL_KEYS = {
 } as const;
 
 export function AiAutofillToolbar({
-    autoFillEnabled,
-    onToggleAutoFill,
+    showFixedShifts,
+    onToggleFixedShifts,
     showFaults,
     onToggleFaults,
     canUndo,
@@ -103,22 +103,35 @@ export function AiAutofillToolbar({
                     <div
                         id="make_ai_view_tools"
                         className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
+                        aria-label={t('page.makeShift.aiRefill.viewOptions')}
                     >
-                        <ToggleIconButton
-                            className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--auto-fill"
-                            active={autoFillEnabled}
-                            onClick={onToggleAutoFill}
-                            ariaLabel={t(autoFillEnabled ? 'page.makeShift.aiRefill.viewAll' : 'page.makeShift.aiRefill.fixedOnly')}
-                            icon={autoFillEnabled ? Eye : EyeOff}
-                        />
+                        <ToggleTextButton
+                            className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--fixed"
+                            active={showFixedShifts}
+                            onClick={onToggleFixedShifts}
+                            ariaLabel={t(
+                                showFixedShifts ? 'page.makeShift.aiRefill.fixedDisplayShown' : 'page.makeShift.aiRefill.fixedDisplayHidden',
+                            )}
+                            activeClassName="bg-white text-sub-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                            hoverClassName="hover:text-sub-1"
+                        >
+                            <Pin className="size-3.5" aria-hidden />
+                            {t('page.makeShift.aiRefill.fixedDisplay')}
+                        </ToggleTextButton>
 
-                        <ToggleIconButton
+                        <span aria-hidden="true" className="mx-1 h-5 w-px bg-gray-5" />
+
+                        <ToggleTextButton
                             className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--faults"
                             active={showFaults}
                             onClick={onToggleFaults}
-                            ariaLabel={t(showFaults ? 'page.makeShift.aiRefill.showingFaults' : 'page.makeShift.aiRefill.hidingFaults')}
-                            icon={AlertTriangle}
-                        />
+                            ariaLabel={t(showFaults ? 'page.makeShift.aiRefill.violationsShown' : 'page.makeShift.aiRefill.violationsHidden')}
+                            activeClassName="bg-white text-[#B86E00] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                            hoverClassName="hover:text-[#B86E00]"
+                        >
+                            <AlertTriangle className="size-3.5" aria-hidden />
+                            {t('page.makeShift.aiRefill.showViolations')}
+                        </ToggleTextButton>
                     </div>
 
                     <span id="make_ai_history_tools" className="ai-autofill-toolbar__history flex min-h-[43px] items-center gap-2">
@@ -284,18 +297,22 @@ function ValidationCheckingLottie() {
     );
 }
 
-function ToggleIconButton({
+function ToggleTextButton({
     active,
     onClick,
     ariaLabel,
     className,
-    icon: Icon,
+    activeClassName,
+    hoverClassName,
+    children,
 }: {
     active: boolean;
     onClick: () => void;
     ariaLabel: string;
     className?: string;
-    icon: LucideIcon;
+    activeClassName?: string;
+    hoverClassName?: string;
+    children: ReactNode;
 }) {
     return (
         <button
@@ -304,13 +321,15 @@ function ToggleIconButton({
             aria-label={ariaLabel}
             aria-pressed={active}
             className={cn(
-                'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] transition-colors duration-150',
-                'hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-                active ? 'bg-white text-sub-1' : 'text-gray-3',
+                'inline-flex h-9 shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-[10px] px-2.5',
+                'font-apple text-[12px] leading-none font-bold whitespace-nowrap transition-colors duration-150',
+                'focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                hoverClassName,
+                active ? activeClassName : 'text-gray-3',
                 className,
             )}
         >
-            <Icon className="size-3.5" aria-hidden />
+            {children}
         </button>
     );
 }

@@ -2,7 +2,7 @@ import {useEffect, useMemo, useRef} from 'react';
 import {useSearchParams} from 'react-router';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments, useShiftEditorCommands} from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
-import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
+import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 import {clearPersistedStep, isMakeShiftTeamReadyForWard, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
@@ -105,7 +105,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         if (primaryOnboardingScheduleTarget) {
             setYearMonth({year: primaryOnboardingScheduleTarget.year, month: primaryOnboardingScheduleTarget.month});
         } else if (!hasExplicitYearMonth) {
-            setYearMonth(getCalendarYearMonthNow());
+            setYearMonth(getNextCalendarYearMonth());
         }
 
         setHydrated();
@@ -148,7 +148,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         initializedWardIdRef.current = wardId;
 
-        const currentCalendarYearMonth = getCalendarYearMonthNow();
+        const defaultMakeShiftYearMonth = getNextCalendarYearMonth();
         const queryYear = parsePositiveInt(searchParams.get('year'));
         const queryMonth = parsePositiveInt(searchParams.get('month'));
         const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
@@ -158,8 +158,8 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         if (targetYear !== null || targetMonth !== null) {
             const hasValidTargetMonth = targetMonth !== null && targetMonth >= 1 && targetMonth <= 12;
-            const nextYear = targetYear ?? currentCalendarYearMonth.year;
-            const nextMonth = hasValidTargetMonth ? targetMonth : currentCalendarYearMonth.month;
+            const nextYear = targetYear ?? defaultMakeShiftYearMonth.year;
+            const nextMonth = hasValidTargetMonth ? targetMonth : defaultMakeShiftYearMonth.month;
 
             setYearMonth({year: nextYear, month: nextMonth});
         }

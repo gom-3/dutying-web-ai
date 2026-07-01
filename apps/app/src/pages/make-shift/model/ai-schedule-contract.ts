@@ -12,6 +12,7 @@ export type TAiScheduleRequest = {
     draftRevision: number;
     rulesHash: string;
     prompt?: string;
+    signal?: AbortSignal;
 };
 
 export type TAiScheduleProvider = {
@@ -27,4 +28,5 @@ export type TAiScheduleResult =
     | {
           ok: false;
           message: string;
+          canceled?: boolean;
       };

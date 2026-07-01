@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getAccessTokenPrincipalType, isWardAdminAccessToken} from '../admin-token';
+import {getAccessTokenPrincipalType, getWardAdminAccountIdFromAccessToken, isWardAdminAccessToken} from '../admin-token';
 
 const createJwt = (payload: Record<string, unknown>) =>
     `header.${btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}.signature`;
@@ -9,6 +9,7 @@ describe('admin-token', () => {
         const accessToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 123});
 
         expect(getAccessTokenPrincipalType(accessToken)).toBe('WARD_ADMIN');
+        expect(getWardAdminAccountIdFromAccessToken(accessToken)).toBe(123);
         expect(isWardAdminAccessToken(accessToken)).toBe(true);
     });
 
@@ -16,6 +17,7 @@ describe('admin-token', () => {
         const accessToken = createJwt({principalType: 'ACCOUNT', accountId: 123});
 
         expect(getAccessTokenPrincipalType(accessToken)).toBe('ACCOUNT');
+        expect(getWardAdminAccountIdFromAccessToken(accessToken)).toBeNull();
         expect(isWardAdminAccessToken(accessToken)).toBe(false);
     });
 });

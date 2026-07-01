@@ -28,6 +28,7 @@ interface INavigationBarItemProps {
     icon: TNavigationBarItemIcon;
     text: string;
     collapsed?: boolean;
+    alignWithCollapsedIcon?: boolean;
     disabled?: boolean;
     badgeCount?: number;
     onNavigate?: () => void;
@@ -39,6 +40,7 @@ const NavigationBarItem = ({
     icon,
     text,
     collapsed = false,
+    alignWithCollapsedIcon = false,
     disabled = false,
     badgeCount = 0,
     onNavigate,
@@ -95,7 +97,11 @@ const NavigationBarItem = ({
             className={cn(
                 'group relative flex min-h-[clamp(38px,5.6vh,44px)] w-full items-center rounded-[10px] font-apple text-[15px] leading-normal font-semibold transition-colors duration-150',
                 'focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
-                collapsed ? 'justify-center px-0' : 'justify-start gap-3 px-3',
+                collapsed
+                    ? 'justify-center px-0'
+                    : alignWithCollapsedIcon
+                      ? 'justify-start gap-3 pr-3 pl-[13px]'
+                      : 'justify-start gap-3 px-3',
                 isSelected ? 'bg-main-light text-[#844AFF]' : 'text-gray-3 hover:bg-gray-7 hover:text-sub-1',
                 isDisabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-gray-3' : 'cursor-pointer',
             )}
@@ -123,7 +129,10 @@ const NavigationBarItem = ({
             {isSelected ? (
                 <span
                     aria-hidden="true"
-                    className={cn('absolute left-0 w-[3px] rounded-r-full bg-[#844AFF]', collapsed ? 'top-[11px] h-[22px]' : 'top-2.5 h-6')}
+                    className={cn(
+                        'absolute left-0 w-[3px] rounded-r-full bg-[#844AFF]',
+                        collapsed || alignWithCollapsedIcon ? 'top-[11px] h-[22px]' : 'top-2.5 h-6',
+                    )}
                 />
             ) : null}
             {icon.kind === 'image' ? (

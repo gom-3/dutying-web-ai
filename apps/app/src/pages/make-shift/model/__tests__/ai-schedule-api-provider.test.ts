@@ -130,6 +130,7 @@ describe('apiAiScheduleProvider', () => {
                     }),
                 ],
             }),
+            {signal: undefined},
         );
         expect(result).toEqual(response);
     });

@@ -1,7 +1,7 @@
 import {create} from 'zustand';
 import {devtools} from 'zustand/middleware';
 import {type TShift, type TShiftTeam} from '@/entities';
-import {getCalendarYearMonthNow} from '@/shared/lib/shift-calendar-month-policy';
+import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {bumpMaxReachedStep, loadDraftStep, loadMaxReachedStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 
 export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5 | 6;
@@ -13,7 +13,7 @@ export type TWorkerConfirmationStatus = 'idle' | 'pending' | 'success' | 'error'
 const STEP_STORAGE_KEY = 'make-shift:draft-step';
 const YEAR_STORAGE_KEY = 'make-shift:draft-year';
 const MONTH_STORAGE_KEY = 'make-shift:draft-month';
-const initialYearMonth = getCalendarYearMonthNow();
+const initialYearMonth = getNextCalendarYearMonth();
 
 function persistYearMonth(year: number, month: number) {
     if (typeof window === 'undefined') return;

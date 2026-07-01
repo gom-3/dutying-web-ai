@@ -1,9 +1,9 @@
 import type {TDutyDoc} from '@/features/shift-editor/model';
 
 /**
- * `fixedCells`가 아닌 일자는 null로 두어 캘린더에서만 ‘고정 근무’를 보이게 할 때 사용.
+ * 고정 근무 셀만 숨기고 나머지 배정은 그대로 보이게 할 때 사용.
  */
-export function maskDutyDocNonFixedCells(doc: TDutyDoc): TDutyDoc {
+export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
     return {
         ...doc,
         rows: doc.rows.map((row) => ({
@@ -14,7 +14,7 @@ export function maskDutyDocNonFixedCells(doc: TDutyDoc): TDutyDoc {
 
                 const key = `${row.workerId}|${date}`;
 
-                return doc.fixedCells[key] === true ? cell : null;
+                return doc.fixedCells[key] === true ? null : cell;
             }),
         })),
     };

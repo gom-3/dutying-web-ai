@@ -157,7 +157,7 @@ const getPayloadShiftClassification = (
     shiftType: TCreateWardDTO['wardShiftTypes'][number],
 ): TCreateWardDTO['wardShiftTypes'][number]['classification'] => {
     if (shiftType.isOff) {
-        return shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE';
+        return shiftType.classification === 'OFF' || isOffShiftShortName(shiftType.shortName) ? 'OFF' : 'OTHER_LEAVE';
     }
 
     if (isOvernightShiftType(shiftType)) {
@@ -633,6 +633,21 @@ const getParsedShiftClassification = (shiftType: TOnboardingParsedShiftType): TO
     return shiftType.classification ?? normalizeShiftClassification(undefined, shortName);
 };
 
+const getPrimaryShiftClassification = (
+    shiftType: TOnboardingParsedShiftType,
+): TOnboardingWardShiftType['classification'] | undefined => {
+    const shortName = normalizeShiftShortName(shiftType.shortName) ?? '';
+    const classification = getParsedShiftClassification(shiftType);
+
+    if (classification === 'OFF' || isOffShiftShortName(shortName)) {
+        return 'OFF';
+    }
+
+    return PRIMARY_SHIFT_CLASSIFICATIONS.has(classification) ? classification : undefined;
+};
+
+const isPrimaryOffShiftType = (shiftType: TOnboardingParsedShiftType) => getPrimaryShiftClassification(shiftType) === 'OFF';
+
 const getObservedShiftStat = (shiftType: TOnboardingParsedShiftType, observedStats: Map<string, TObservedShiftCodeStat>) => {
     const shortName = normalizeShiftShortName(shiftType.shortName);
 
@@ -691,19 +706,20 @@ const normalizeParsedShiftTypeList = (
     const observedClassifications = new Set(
         uniqueShiftTypes
             .filter((shiftType) => isObservedShiftType(shiftType, observedStats))
-            .map(getParsedShiftClassification)
-            .filter((classification) => PRIMARY_SHIFT_CLASSIFICATIONS.has(classification)),
+            .map(getPrimaryShiftClassification)
+            .filter((classification): classification is TOnboardingWardShiftType['classification'] => Boolean(classification)),
     );
     const withoutUnobservedDefaults = uniqueShiftTypes.filter((shiftType) => {
-        const classification = getParsedShiftClassification(shiftType);
+        const classification = getPrimaryShiftClassification(shiftType);
 
         return !(
             isDefaultCoreFallbackShiftType(shiftType) &&
             !isObservedShiftType(shiftType, observedStats) &&
+            classification &&
             observedClassifications.has(classification)
         );
     });
-    const primaryOffShiftTypes = withoutUnobservedDefaults.filter((shiftType) => getParsedShiftClassification(shiftType) === 'OFF');
+    const primaryOffShiftTypes = withoutUnobservedDefaults.filter(isPrimaryOffShiftType);
     const primaryOffShiftType =
         primaryOffShiftTypes.length > 1 ? pickPrimaryOffShiftType(primaryOffShiftTypes, observedStats) : primaryOffShiftTypes[0];
     const primaryOffShortName = normalizeShiftShortName(primaryOffShiftType?.shortName);
@@ -714,14 +730,16 @@ const normalizeParsedShiftTypeList = (
     );
     const normalizedShiftTypes = withoutUnobservedDefaults.filter((shiftType) => {
         const shortName = normalizeShiftShortName(shiftType.shortName);
-        const classification = getParsedShiftClassification(shiftType);
+        const classification = getPrimaryShiftClassification(shiftType);
 
-        if (!shortName || classification !== 'OFF' || !primaryOffShortName || shortName === primaryOffShortName) {
-            return true;
-        }
+        if (!shortName || classification !== 'OFF' || !primaryOffShortName || shortName === primaryOffShortName) return true;
 
         shortNameAliases.set(shortName, primaryOffShortName);
         return false;
+    }).map((shiftType) => {
+        const shortName = normalizeShiftShortName(shiftType.shortName);
+
+        return shortName === primaryOffShortName && isPrimaryOffShiftType(shiftType) ? {...shiftType, isDefault: true} : shiftType;
     }).sort((left, right) => {
         const leftShortName = normalizeShiftShortName(left.shortName);
         const rightShortName = normalizeShiftShortName(right.shortName);

@@ -1,7 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
-import {Check, Loader2, RotateCcw, StickyNote, X} from 'lucide-react';
+import {Check, Loader2, RotateCcw, X} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {AdminAPI} from '@/shared/api';
 import type {TUpsertAdminMonthlyMemoDTO} from '@/shared/api/admin';
@@ -90,9 +90,7 @@ export function MonthlyMemoButton({wardId, year, month}: TMonthlyMemoButtonProps
                         open && 'bg-main-light text-main-1 ring-main-3',
                     )}
                 >
-                    <span className="grid size-6 shrink-0 place-items-center rounded-[6px] bg-[#FFF3BF] text-[#B7791F]" aria-hidden="true">
-                        <StickyNote className="size-4" strokeWidth={2.2} />
-                    </span>
+                    <img src="/img/memo.png" alt="" className="size-6 shrink-0 object-contain" aria-hidden="true" />
                     <span>{t('page.makeShift.monthlyMemo.button')}</span>
                     {hasMemo ? (
                         <span

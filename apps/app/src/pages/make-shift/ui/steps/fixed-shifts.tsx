@@ -6,12 +6,15 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {docToWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
 import {type TViolation} from '@/features/shift-editor/model';
+import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
+import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {
     MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
     MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS,
@@ -21,6 +24,7 @@ import {
 } from '../make-shift-step-layout';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
+import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
@@ -69,6 +73,8 @@ export function FixedShifts() {
         hydratePreviousLastShifts: true,
     });
     const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
+    const {policy} = useRestLeavePolicy(wardId);
+    const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const handleNext = useCallback(async () => {
         if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
 
@@ -122,6 +128,20 @@ export function FixedShifts() {
             })),
         }),
         [editorDoc],
+    );
+    const restCheckByShiftNurseId = useMemo(
+        () =>
+            dutyQuery.data
+                ? calculateRestCheckByShiftNurse({
+                      shift: dutyQuery.data,
+                      doc: fixedOnlyDoc,
+                      policy,
+                      year,
+                      month,
+                      adjustmentDays,
+                  })
+                : undefined,
+        [adjustmentDays, dutyQuery.data, fixedOnlyDoc, month, policy, year],
     );
 
     return (
@@ -194,6 +214,10 @@ export function FixedShifts() {
                         onCellClick={focusEditor}
                         editableLastShifts
                         skillColumn={skillColumn}
+                        restCheckByShiftNurseId={restCheckByShiftNurseId}
+                        restPolicyControl={
+                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
+                        }
                     />
                 </div>
             )}

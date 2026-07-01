@@ -1,6 +1,6 @@
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {ChevronDown, Plus, X} from 'lucide-react';
-import {memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {type TShiftTeam} from '@/entities';
@@ -97,12 +97,22 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     IMPORTANT: 'page.makeShift.constraints.category.recommended',
 };
 
+function ConstraintModalPortal({children}: {children: ReactNode}) {
+    if (typeof document === 'undefined') return <>{children}</>;
+
+    return createPortal(children, document.body);
+}
+
 function getCategoryLabel(t: TTypedT, category: TModalCategory) {
     if (category === RECOMMENDED_MODAL_CATEGORY) return t('page.makeShift.constraints.category.recommended');
 
     const key = CATEGORY_LABEL_KEY_BY_CATEGORY[category];
 
     return key ? t(key) : category;
+}
+
+function isSkillConstraintCategory(category: string) {
+    return category === 'SKILL' || category === 'PROFICIENCY';
 }
 
 function resolveDutyStyle(optionOrCode: TSelectOption) {
@@ -137,7 +147,6 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
         <span className="inline-flex h-8 shrink-0 items-center overflow-hidden rounded-[9px] bg-gray-7 ring-1 ring-gray-6">
             {options.map((option, index) => {
                 const style = resolveDutyStyle(option);
-                const showName = style.name && style.name !== style.code;
 
                 return (
                     <span key={`${option.value}-${index}`} className="inline-flex h-full items-center">
@@ -145,9 +154,9 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
                         <span
                             className="inline-flex h-7 items-center gap-1 rounded-[8px] px-2 font-apple text-white"
                             style={{backgroundColor: style.color}}
+                            title={style.name && style.name !== style.code ? `${style.code} ${style.name}` : style.code}
                         >
                             <span className="text-[14px] font-semibold">{style.code}</span>
-                            {showName ? <span className="text-[12px] font-medium opacity-90">{style.name}</span> : null}
                         </span>
                     </span>
                 );
@@ -160,13 +169,26 @@ const ALL_CONSTRAINT_TARGET_OPTION: TShiftConstraintOption = {type: 'ALL'};
 const RECOMMENDED_DEFAULT_RULE_CODES = [
     'CORE_MAX_CONTINUOUS_WORK',
     'CORE_MIN_NIGHT_INTERVAL',
+    'FORBID_N_THEN_D',
+    'FORBID_N_THEN_E',
+    'FORBID_E_THEN_D',
     'CORE_MAX_CONTINUOUS_NIGHT',
-    'CORE_MIN_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
-    'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
 ] as const;
 const RECOMMENDED_DEFAULT_RULE_IDS = new Set<string>(RECOMMENDED_DEFAULT_RULE_CODES);
+const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
+    'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
+    'CORE_FORBIDDEN_DUTY_PATTERNS',
+    'IMPORTANT_FORBIDDEN_DUTY_PATTERNS',
+]);
+const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
+    CORE_MAX_CONTINUOUS_WORK: 'WORK_REST',
+    CORE_MIN_NIGHT_INTERVAL: 'WORK_REST',
+    CORE_MAX_CONTINUOUS_NIGHT: 'FORBIDDEN_PATTERN',
+    CORE_MIN_OFF_AFTER_NIGHT: 'WORK_REST',
+    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: 'FORBIDDEN_PATTERN',
+};
 
 function hasFinalConsonant(value: unknown) {
     const trimmed = String(value ?? '').trim();
@@ -380,6 +402,9 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {target: ALL_CONSTRAINT_TARGET_OPTION},
     CORE_NO_NIGHT_BEFORE_REQUEST_OFF: {target: ALL_CONSTRAINT_TARGET_OPTION},
     CORE_FORBIDDEN_DUTY_PATTERNS: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    FORBID_N_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    FORBID_N_THEN_E: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    FORBID_E_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
     MIN_STAFF_BY_SHIFT: {count: '1'},
     MAX_STAFF_BY_SHIFT: {count: '1'},
     MIN_STAFF_BY_DATE_SHIFT: {count: '1'},
@@ -433,6 +458,12 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     SHIFT_TYPES: 'duty',
     SHIFTS_WITH_ALL: 'duty',
 };
+const LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE: Record<string, string> = {
+    FORBID_N_THEN_D: 'SOFT_NO_N_TO_D',
+    FORBID_N_THEN_E: 'SOFT_NO_N_TO_E',
+    FORBID_E_THEN_D: 'SOFT_NO_E_TO_D',
+    MAX_CONSECUTIVE_N: 'SOFT_MAX_CONSECUTIVE_N',
+};
 const DUTY_PATTERN_CODES: Record<string, string[]> = {
     ND: ['N', 'D'],
     ED: ['E', 'D'],
@@ -441,6 +472,8 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
 };
 
 function isRecommendedTemplateCode(templateCode: string, category?: string) {
+    if (HIDDEN_RECOMMENDED_RULE_IDS.has(templateCode)) return false;
+
     const normalizedCategory = category?.toUpperCase();
 
     return (
@@ -448,8 +481,21 @@ function isRecommendedTemplateCode(templateCode: string, category?: string) {
         templateCode.startsWith('IMPORTANT_') ||
         templateCode.startsWith('CORE_') ||
         normalizedCategory === 'CORE' ||
-        normalizedCategory === 'IMPORTANT'
+        normalizedCategory === 'IMPORTANT' ||
+        normalizedCategory === RECOMMENDED_MODAL_CATEGORY
     );
+}
+
+function isHiddenAddModalTemplate(templateCode: string) {
+    return HIDDEN_RECOMMENDED_RULE_IDS.has(templateCode);
+}
+
+function getTemplateModalCategory(templateCode: string, category: TTemplateCategory) {
+    return MODAL_CATEGORY_BY_TEMPLATE_CODE[templateCode] ?? category;
+}
+
+function isRecommendedOnlyCategory(category: TModalCategory) {
+    return category === RECOMMENDED_MODAL_CATEGORY || category === 'CORE' || category === 'IMPORTANT';
 }
 
 function isRecommendedDefaultRuleCode(templateCode: string) {
@@ -546,7 +592,14 @@ function getLeadingParticle(text: string) {
     return particlePairs.find((particle) => particle.withBatchim === firstChar || particle.withoutBatchim === firstChar) ?? null;
 }
 
+function normalizeLevelDisplayTemplate(displayTemplate: string, controls: TControlDef[]) {
+    if (!controls.some((control) => control.key === 'level')) return displayTemplate;
+
+    return displayTemplate.replace(/LV\.?\s*\{level\}/gi, '{level}');
+}
+
 function createSentenceFromPattern(displayTemplate: string, controls: TControlDef[]): TSentencePart[] {
+    const normalizedDisplayTemplate = normalizeLevelDisplayTemplate(displayTemplate, controls);
     const parts: TSentencePart[] = [];
     const controlKeys = new Set(controls.map((control) => control.key));
     const pattern = /\{([^}]+)\}/g;
@@ -554,9 +607,9 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = pattern.exec(displayTemplate))) {
+    while ((match = pattern.exec(normalizedDisplayTemplate))) {
         if (match.index > lastIndex) {
-            parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex, match.index)));
+            parts.push(...createTextSentenceParts(normalizedDisplayTemplate.slice(lastIndex, match.index)));
         }
 
         const key = match[1]?.trim() ?? '';
@@ -564,7 +617,7 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
         if (controlKeys.has(key)) {
             parts.push({type: 'control', key});
 
-            const particle = getLeadingParticle(displayTemplate.slice(match.index + match[0].length));
+            const particle = getLeadingParticle(normalizedDisplayTemplate.slice(match.index + match[0].length));
 
             if (particle) {
                 parts.push({type: 'particle', key, ...particle});
@@ -579,11 +632,11 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
         lastIndex = match.index + match[0].length;
     }
 
-    if (lastIndex < displayTemplate.length) {
-        parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex)));
+    if (lastIndex < normalizedDisplayTemplate.length) {
+        parts.push(...createTextSentenceParts(normalizedDisplayTemplate.slice(lastIndex)));
     }
 
-    return parts.length ? parts : [{type: 'text', text: displayTemplate}];
+    return parts.length ? parts : [{type: 'text', text: normalizedDisplayTemplate}];
 }
 
 function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls: TControlDef[]): TSentencePart[] {
@@ -602,8 +655,8 @@ function canUseLegacySentence(legacyTemplate: TSoftRuleTemplate | undefined, con
     return legacyTemplate.sentence.every((part) => part.type !== 'control' || controlKeys.has(part.key));
 }
 
-function interpolateDisplayTemplate(template: TShiftConstraintTemplate, params: Record<string, string>) {
-    return template.displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
+function interpolateDisplayTemplate(displayTemplate: string, controls: TControlDef[], params: Record<string, string>) {
+    return normalizeLevelDisplayTemplate(displayTemplate, controls).replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
 }
 
 function createLocalizedSoftRuleTemplate(definition: TSoftRuleTemplateDefinition, t: TTypedT): TSoftRuleTemplate {
@@ -623,18 +676,20 @@ function createSoftRuleTemplates(templates: TShiftConstraintTemplate[], t: TType
 
     return templates.filter(isTemplateSelectable).map<TSoftRuleTemplate>((template) => {
         const controls = template.slots.map(createControlFromSlot);
-        const legacyTemplate = legacyTemplates.find((item) => item.id === template.templateCode);
+        const legacyTemplate = legacyTemplates.find(
+            (item) => item.id === (LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE[template.templateCode] ?? template.templateCode),
+        );
         const sentence = canUseLegacySentence(legacyTemplate, controls)
             ? legacyTemplate!.sentence
             : createSentenceFromTemplate(template, controls);
 
         return {
             id: template.templateCode,
-            category: template.category,
+            category: getTemplateModalCategory(template.templateCode, template.category),
             label: legacyTemplate?.label ?? getCategoryLabel(t, template.category),
             controls,
             sentence,
-            buildText: legacyTemplate?.buildText ?? ((params) => interpolateDisplayTemplate(template, params)),
+            buildText: legacyTemplate?.buildText ?? ((params) => interpolateDisplayTemplate(template.displayTemplate, controls, params)),
             isRecommended: isRecommendedTemplateCode(template.templateCode, template.category),
             sourceTemplate: template,
         };
@@ -690,13 +745,35 @@ function getDefaultParams(template: TSoftRuleTemplate, optionMap: Record<string,
     return params;
 }
 
-function toSavedRule(rule: TShiftConstraintRuleDraft, index: number) {
+function normalizeNumberParams(template: TSoftRuleTemplate | undefined, params: Record<string, unknown>) {
+    if (!template) return params;
+
+    const next = {...params};
+
+    template.controls.forEach((control) => {
+        if (control.kind !== 'number') return;
+
+        const value = next[control.key];
+
+        if (typeof value === 'number') return;
+
+        const numericValue = typeof value === 'string' && value.trim() ? Number(value) : Number.NaN;
+
+        if (Number.isFinite(numericValue)) {
+            next[control.key] = numericValue;
+        }
+    });
+
+    return next;
+}
+
+function toSavedRule(rule: TShiftConstraintRuleDraft, index: number, template?: TSoftRuleTemplate) {
     return {
         shiftConstraintRuleId: rule.shiftConstraintRuleId,
         templateCode: rule.templateCode,
         severity: rule.severity,
         sortOrder: index + 1,
-        params: rule.params,
+        params: normalizeNumberParams(template, rule.params),
         selected: rule.selected !== false,
         isImportant: rule.severity === 'HARD',
     };
@@ -1242,7 +1319,7 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                           ref={menuRef}
                           role="listbox"
                           style={menuStyle}
-                          className={`fixed z-[70] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                          className={`fixed z-[1400] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
                           }`}
                       >
@@ -1596,7 +1673,8 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
             </button>
 
             {open ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+                <ConstraintModalPortal>
+                    <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
                     <div
                         role="dialog"
                         aria-modal="true"
@@ -1671,7 +1749,8 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
                             </button>
                         </div>
                     </div>
-                </div>
+                    </div>
+                </ConstraintModalPortal>
             ) : null}
         </>
     );
@@ -1698,7 +1777,9 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
     const {t} = useTypedTranslation();
     const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
     const categories = useMemo<TModalCategory[]>(() => {
-        const normalCategories = Array.from(new Set(templates.filter((template) => !template.isRecommended).map((t) => t.category)));
+        const normalCategories = Array.from(
+            new Set(templates.map((template) => template.category).filter((category) => !isRecommendedOnlyCategory(category))),
+        );
 
         return recommendedTemplates.length ? [RECOMMENDED_MODAL_CATEGORY, ...normalCategories] : normalCategories;
     }, [recommendedTemplates.length, templates]);
@@ -1724,11 +1805,12 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
     const visibleTemplates = templates.filter((template) =>
         selectedCategory === RECOMMENDED_MODAL_CATEGORY
             ? template.isRecommended
-            : !template.isRecommended && template.category === selectedCategory,
+            : template.category === selectedCategory,
     );
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <ConstraintModalPortal>
+            <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
             <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <div className="flex items-start justify-between px-6 pt-6 pb-4">
                     <div>
@@ -1806,7 +1888,8 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
                     })}
                 </div>
             </div>
-        </div>
+            </div>
+        </ConstraintModalPortal>
     );
 }
 
@@ -1829,7 +1912,8 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
     const isDelete = warning.action === 'delete';
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+        <ConstraintModalPortal>
+            <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
             <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
                 <p className="font-apple text-[20px] font-bold text-sub-1">
                     {isDelete ? t('page.makeShift.constraints.warning.deleteTitle') : t('page.makeShift.constraints.warning.unmarkTitle')}
@@ -1859,7 +1943,8 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
                     </button>
                 </div>
             </div>
-        </div>
+            </div>
+        </ConstraintModalPortal>
     );
 }
 
@@ -1938,6 +2023,14 @@ export function Constraints({
     const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
     const skillConfig = useMemo(() => getWardSkillSettings(wardId)?.config ?? DEFAULT_SKILL_LEVEL_CONFIG, [wardId]);
+    const addableSoftTemplates = useMemo(
+        () =>
+            softTemplates.filter(
+                (template) =>
+                    !isHiddenAddModalTemplate(template.id) && (skillConfig.enabled || !isSkillConstraintCategory(template.category)),
+            ),
+        [skillConfig.enabled, softTemplates],
+    );
     const optionMap = useMemo(() => {
         const dutyOptions = uniqueByValue([
             {value: 'ALL_DUTY', label: t('page.makeShift.constraints.option.all'), raw: {type: 'ALL'}},
@@ -1985,7 +2078,10 @@ export function Constraints({
             dutyStrict: dutyOptions.filter((option) => option.value !== 'ALL_DUTY'),
         } as Record<string, TSelectOption[]>;
 
-        return mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t);
+        return {
+            ...mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t),
+            level: fallbackOptionMap.level,
+        };
     }, [nurses, options, shiftTypes, skillConfig, t, year, month]);
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
@@ -1995,7 +2091,7 @@ export function Constraints({
             }
 
             return putShiftConstraintRules(wardId, currentShiftTeamId, {
-                rules: rules.map(toSavedRule),
+                rules: rules.map((rule, index) => toSavedRule(rule, index, softTemplateByCode.get(rule.templateCode))),
             });
         },
         onMutate: async ({rules}) => {
@@ -2125,7 +2221,7 @@ export function Constraints({
         [highlightedRuleId, softRules, softTemplateByCode, templateByCode],
     );
     const addSoftRule = (template: TSoftRuleTemplate, params: Record<string, unknown>) => {
-        const normalizedParams = normalizeCombinationParams(template, params, optionMap);
+        const normalizedParams = normalizeNumberParams(template, normalizeCombinationParams(template, params, optionMap));
         const displayParams = normalizeSoftRuleParams(template, normalizedParams, optionMap);
         const isRecommended = Boolean(template.isRecommended);
         const nextRule: TShiftConstraintRuleDraft = {
@@ -2361,7 +2457,7 @@ export function Constraints({
 
             <SoftRuleModal
                 open={softModalOpen}
-                templates={softTemplates}
+                templates={addableSoftTemplates}
                 optionMap={optionMap}
                 onClose={() => setSoftModalOpen(false)}
                 onAdd={addSoftRule}

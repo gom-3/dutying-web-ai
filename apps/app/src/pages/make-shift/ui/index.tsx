@@ -80,12 +80,7 @@ export const MakeShiftPageView = () => {
             style={{paddingRight: isStepping ? 'var(--make-ai-snapshot-sidebar-offset, 0px)' : 0}}
         >
             <div
-                className={cn(
-                    'mx-auto flex min-h-full w-full flex-col pt-4 pb-3',
-                    isStepping
-                        ? 'max-w-[1680px] min-w-0 px-3 min-[1600px]:px-10 lg:px-4'
-                        : 'max-w-[1640px] px-3 min-[1600px]:px-10 sm:px-4 lg:px-5',
-                )}
+                className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col px-3 pt-4 pb-3 min-[1600px]:px-10 lg:px-4"
             >
                 <MakeShiftHeader />
 

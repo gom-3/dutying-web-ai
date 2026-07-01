@@ -848,19 +848,19 @@ export const ko = {
                     },
                     SOFT_NO_N_TO_D: {
                         label: '금지 패턴 규칙',
-                        sentence: '{target}은 N 다음날 D 근무를 피해요',
+                        sentence: '{target}은 N나이트 다음 날 D데이 근무를 피해요.',
                     },
                     SOFT_NO_N_TO_E: {
                         label: '금지 패턴 규칙',
-                        sentence: '{target}은 N 다음날 E 근무를 피해요',
+                        sentence: '{target}은 N나이트 다음 날 E이브닝 근무를 피해요.',
                     },
                     SOFT_NO_E_TO_D: {
                         label: '금지 패턴 규칙',
-                        sentence: '{target}은 E 다음날 D 근무를 피해요',
+                        sentence: '{target}은 E이브닝 다음 날 D데이 근무를 피해요.',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: '금지 패턴 규칙',
-                        sentence: '{target}은 연속으로 N을 {count}번까지 할 수 있어요',
+                        sentence: '{target}은 연속 N나이트 근무를 최대 {count}번까지만 할 수 있어요.',
                     },
                     SOFT_MAX_CONSECUTIVE_WORK: {
                         label: '연속 근무 / 휴식 규칙',
@@ -963,6 +963,17 @@ export const ko = {
                 fixedOnly: '고정만 보기',
                 showingFaults: '오류 표시 중',
                 hidingFaults: '오류 숨김',
+                viewOptions: '표시 옵션',
+                viewComplete: '전체 배정 보기',
+                viewBaseline: '신청·고정만 보기',
+                viewCompleteTooltip: '전체 배정을 보고 있어요. 클릭하면 신청·고정만 봅니다.',
+                viewBaselineTooltip: '신청·고정만 보고 있어요. 클릭하면 전체 배정을 봅니다.',
+                fixedDisplay: '고정 표시',
+                fixedDisplayShown: '고정근무 표시 중',
+                fixedDisplayHidden: '고정근무 숨김',
+                showViolations: '위반 표시',
+                violationsShown: '제약조건 위반 표시 중',
+                violationsHidden: '제약조건 위반 숨김',
                 validationStatus: {
                     checking: '제약조건 검토 중',
                 },
@@ -975,6 +986,7 @@ export const ko = {
                 savingSnapshot: '임시 저장 중…',
                 saveSnapshotSuccess: '임시 저장했어요.',
                 saveSnapshotFailed: '임시 저장하지 못했어요.',
+                restCarryOverSyncFailed: '근무표는 확정됐지만 다음 달 이월 반영에 실패했어요.',
                 snapshotLimitReached: '히스토리는 최대 10개까지 저장할 수 있어요.',
                 snapshotLimitDialog: {
                     title: '히스토리는 10개까지만 저장돼요',

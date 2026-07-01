@@ -204,6 +204,54 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('-')).toBeInTheDocument();
     });
 
+    it('renders work shift types before off shift types even when the API returns off first', () => {
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: [
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 1,
+                            name: 'Off',
+                            shortName: 'O',
+                            startTime: null,
+                            endTime: null,
+                            isOff: true,
+                            isCounted: false,
+                            classification: 'OFF',
+                        },
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 2,
+                            name: 'Night',
+                            shortName: 'N',
+                            startTime: '23:00',
+                            endTime: '07:00',
+                            classification: 'NIGHT',
+                        },
+                        {
+                            ...baseValue().state.shiftTypes[0],
+                            wardShiftTypeId: 3,
+                            name: 'Day',
+                            shortName: 'D',
+                            startTime: '07:00',
+                            endTime: '15:00',
+                            classification: 'DAY',
+                        },
+                    ],
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map(
+            (input) => input.value,
+        );
+
+        expect(names).toEqual(['Day', 'Night', 'Off']);
+    });
+
     it('allows overnight shift times and preserves payload classifications on save', async () => {
         const user = userEvent.setup();
         const updateShiftType = vi.fn();
