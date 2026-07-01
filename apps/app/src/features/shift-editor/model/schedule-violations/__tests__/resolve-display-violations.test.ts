@@ -48,7 +48,7 @@ describe('resolveScheduleDisplayViolations', () => {
         ]);
     });
 
-    it('falls back to legacy violations when snapshot is absent', () => {
+    it('does not show legacy violations when snapshot is absent', () => {
         const legacy: TViolation[] = [
             {
                 ruleId: 'legacy',
@@ -58,6 +58,6 @@ describe('resolveScheduleDisplayViolations', () => {
             },
         ];
 
-        expect(resolveScheduleDisplayViolations(doc, null, legacy)).toEqual(legacy);
+        expect(resolveScheduleDisplayViolations(doc, null, legacy)).toEqual([]);
     });
 });

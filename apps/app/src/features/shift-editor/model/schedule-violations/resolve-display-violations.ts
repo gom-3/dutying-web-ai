@@ -11,48 +11,37 @@ export function createScheduleValidationSnapshot(
     };
 }
 
-/**
- * 스냅샷이 있으면 현재 doc 기준으로 재변환(행 매핑·팀 열 span 갱신).
- * 없으면 구 드래프트 legacy 캐시를 그대로 쓴다.
- */
+/** Uses backend validation snapshots as the only source for visible schedule violations. */
 export function resolveScheduleDisplayViolations(
     doc: TDutyDoc,
     validationSnapshot: TScheduleValidationSnapshot | null,
-    legacyDisplayViolations: TViolation[],
+    _legacyDisplayViolations: TViolation[],
 ): TViolation[] {
     if (validationSnapshot) {
         return violationsFromSpringValidation(validationSnapshot.validation, doc);
     }
 
-    return legacyDisplayViolations;
+    return [];
 }
 
 export function toScheduleViolationPersisted(
     validationSnapshot: TScheduleValidationSnapshot | null,
-    legacyDisplayViolations: TViolation[],
+    _legacyDisplayViolations: TViolation[],
 ): TScheduleViolationPersisted {
     if (validationSnapshot) {
         return {validationSnapshot};
     }
 
-    if (legacyDisplayViolations.length > 0) {
-        return {validationSnapshot: null, legacyDisplayViolations};
-    }
-
     return {validationSnapshot: null};
 }
 
-/** 구 TPersisted.llmViolations 필드 → 신규 persisted 형태 */
+/** Keeps old drafts loadable while dropping pre-snapshot legacy violation displays. */
 export function migratePersistedViolations(persisted: {
     scheduleViolations?: TScheduleViolationPersisted;
     llmViolations?: TViolation[];
 }): TScheduleViolationPersisted {
     if (persisted.scheduleViolations) {
         return persisted.scheduleViolations;
-    }
-
-    if (persisted.llmViolations && persisted.llmViolations.length > 0) {
-        return {validationSnapshot: null, legacyDisplayViolations: persisted.llmViolations};
     }
 
     return {validationSnapshot: null};
