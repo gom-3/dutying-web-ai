@@ -1,7 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {createScheduleValidationSnapshot} from '../schedule-violations';
 import {createShiftEditorPersistence} from '../persistence';
-import {type TDutyDoc, type THistoryState, type TViolation} from '../types';
+import {type TDutyDoc, type THistoryState} from '../types';
 import type {TValidationRes} from '@dutying/api/ward';
 
 const storageKey = 'shift-editor:draft:test';
@@ -36,15 +36,6 @@ const mockValidation: TValidationRes = {
 const mockScheduleViolations = {
     validationSnapshot: createScheduleValidationSnapshot(mockValidation),
 };
-const mockLegacyViolations: TViolation[] = [
-    {
-        ruleId: 'llm.test',
-        message: 'test violation',
-        level: 'warning',
-        cells: [{row: 0, col: 0}],
-    },
-];
-
 describe('createShiftEditorPersistence', () => {
     beforeEach(() => {
         vi.useFakeTimers();
@@ -99,7 +90,14 @@ describe('createShiftEditorPersistence', () => {
             JSON.stringify({
                 doc: mockDoc,
                 history: JSON.stringify(mockHistory),
-                llmViolations: mockLegacyViolations,
+                llmViolations: [
+                    {
+                        ruleId: 'llm.test',
+                        message: 'test violation',
+                        level: 'warning',
+                        cells: [{row: 0, col: 0}],
+                    },
+                ],
                 savedAt: Date.now(),
             }),
         );
@@ -109,7 +107,6 @@ describe('createShiftEditorPersistence', () => {
 
         expect(loaded?.scheduleViolations).toEqual({
             validationSnapshot: null,
-            legacyDisplayViolations: mockLegacyViolations,
         });
     });
 
