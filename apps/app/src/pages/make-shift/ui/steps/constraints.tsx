@@ -3,6 +3,7 @@ import {ChevronDown, Plus, X} from 'lucide-react';
 import {type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
+import {useTranslation} from 'react-i18next';
 import {type TShiftTeam} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
@@ -1999,6 +2000,7 @@ export function Constraints({
     variant = 'flow',
 }: TConstraintsProps = {}) {
     const {t} = useTypedTranslation();
+    const {i18n} = useTranslation();
     const queryClient = useQueryClient();
     const authWardId = useAuthStore((s) => s.wardId);
     const storeWardId = useMakeShiftStore((s) => s.wardId);
@@ -2035,9 +2037,10 @@ export function Constraints({
     const [recommendedWarning, setRecommendedWarning] = useState<TRecommendedRuleWarning | null>(null);
     const [importingShiftTeamId, setImportingShiftTeamId] = useState<number | null>(null);
     const saveRulesRequestSeqRef = useRef(0);
-    const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1);
+    const languageQueryKey = i18n.resolvedLanguage ?? i18n.language ?? 'default';
+    const rulesQueryKey = shiftConstraintRuleQueryKeys.rules(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey);
     const candidatesQuery = useQuery({
-        queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1),
+        queryKey: shiftConstraintRuleQueryKeys.candidates(wardId ?? -1, currentShiftTeamId ?? -1, languageQueryKey),
         queryFn: () => getShiftConstraintRuleCandidates(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
         retry: false,

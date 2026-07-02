@@ -39,9 +39,10 @@ export type TShiftConstraintRulesSavePayload = TUpdateShiftConstraintRulesDTO;
 
 export const shiftConstraintRuleQueryKeys = {
     all: () => ['shiftConstraintRules'] as const,
-    candidates: (wardId: number, shiftTeamId: number) =>
-        [...shiftConstraintRuleQueryKeys.all(), 'candidates', wardId, shiftTeamId] as const,
-    rules: (wardId: number, shiftTeamId: number) => [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId] as const,
+    candidates: (wardId: number, shiftTeamId: number, language?: string) =>
+        [...shiftConstraintRuleQueryKeys.all(), 'candidates', wardId, shiftTeamId, language ?? 'default'] as const,
+    rules: (wardId: number, shiftTeamId: number, language?: string) =>
+        [...shiftConstraintRuleQueryKeys.all(), 'rules', wardId, shiftTeamId, language ?? 'default'] as const,
     save: (wardId: number | null | undefined, shiftTeamId: number | null | undefined) =>
         [...shiftConstraintRuleQueryKeys.all(), 'save', wardId, shiftTeamId] as const,
 };
