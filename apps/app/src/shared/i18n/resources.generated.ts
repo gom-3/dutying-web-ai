@@ -1439,6 +1439,17 @@ export const ko = {
                     "shiftTypes": "가능 근무"
                 },
                 "dragHandleAria": "드래그하여 순서 변경",
+                "restPolicy": {
+                    "adjustmentMinus": "{{count}}일 차감",
+                    "adjustmentNone": "추가 조정 없음",
+                    "adjustmentPlus": "+{{count}}일 추가",
+                    "dayUnit": "일",
+                    "decreaseTarget": "목표 쉬는 날 줄이기",
+                    "fixedTarget": "월 {{count}}일",
+                    "increaseTarget": "목표 쉬는 날 늘리기",
+                    "targetLabel": "목표 쉬는 날",
+                    "weeklyTarget": "주 {{days}}일 × {{weeks}}주 = {{count}}일"
+                },
                 "emptyDescription": "근무 투입이 설정된 인원을 먼저 확인해 주세요.",
                 "emptyTitle": "근무자를 확정하면 시작할 수 있어요.",
                 "goMemberManagement": "근무자 관리로 이동",
@@ -4099,6 +4110,17 @@ export const en: TLocale = {
                     "shiftTypes": "Available shifts"
                 },
                 "dragHandleAria": "Drag to reorder",
+                "restPolicy": {
+                    "adjustmentMinus": "{{count}} day removed",
+                    "adjustmentNone": "No additional adjustment",
+                    "adjustmentPlus": "+{{count}} day added",
+                    "dayUnit": "d",
+                    "decreaseTarget": "Decrease target days off",
+                    "fixedTarget": "Monthly {{count}} days",
+                    "increaseTarget": "Increase target days off",
+                    "targetLabel": "Target days off",
+                    "weeklyTarget": "{{days}} days/week × {{weeks}} weeks = {{count}} days"
+                },
                 "emptyDescription": "Check the staff marked for duty first.",
                 "emptyTitle": "No confirmed workers yet.",
                 "goMemberManagement": "Go to member management",
@@ -6757,6 +6779,17 @@ export const ja: TLocale = {
                     "shiftTypes": "可能勤務"
                 },
                 "dragHandleAria": "ドラッグして順序を変更",
+                "restPolicy": {
+                    "adjustmentMinus": "{{count}}日減算",
+                    "adjustmentNone": "追加調整なし",
+                    "adjustmentPlus": "+{{count}}日追加",
+                    "dayUnit": "日",
+                    "decreaseTarget": "目標休日数を減らす",
+                    "fixedTarget": "月 {{count}}日",
+                    "increaseTarget": "目標休日数を増やす",
+                    "targetLabel": "目標休日数",
+                    "weeklyTarget": "週{{days}}日 × {{weeks}}週 = {{count}}日"
+                },
                 "emptyDescription": "勤務投入に設定された人数を先に確認してください。",
                 "emptyTitle": "看護師を確定すると開始できます。",
                 "goMemberManagement": "看護師管理へ移動",
@@ -9415,6 +9448,17 @@ export const zh: TLocale = {
                     "shiftTypes": "可用的工作"
                 },
                 "dragHandleAria": "通过拖动更改顺序",
+                "restPolicy": {
+                    "adjustmentMinus": "减少 {{count}} 天",
+                    "adjustmentNone": "无额外调整",
+                    "adjustmentPlus": "增加 {{count}} 天",
+                    "dayUnit": "天",
+                    "decreaseTarget": "减少目标休息天数",
+                    "fixedTarget": "每月 {{count}} 天",
+                    "increaseTarget": "增加目标休息天数",
+                    "targetLabel": "目标休息天数",
+                    "weeklyTarget": "每周 {{days}} 天 × {{weeks}} 周 = {{count}} 天"
+                },
                 "emptyDescription": "请首先检查分配工作的人数。",
                 "emptyTitle": "确认好人员后，就可以开始了。",
                 "goMemberManagement": "进入排班人员管理",
@@ -12073,6 +12117,17 @@ export const th: TLocale = {
                     "shiftTypes": "กะที่มีอยู่"
                 },
                 "dragHandleAria": "ลากเพื่อเรียงลำดับใหม่",
+                "restPolicy": {
+                    "adjustmentMinus": "ลด {{count}} วัน",
+                    "adjustmentNone": "ไม่มีการปรับเพิ่มเติม",
+                    "adjustmentPlus": "เพิ่ม {{count}} วัน",
+                    "dayUnit": "วัน",
+                    "decreaseTarget": "ลดจำนวนวันหยุดเป้าหมาย",
+                    "fixedTarget": "รายเดือน {{count}} วัน",
+                    "increaseTarget": "เพิ่มจำนวนวันหยุดเป้าหมาย",
+                    "targetLabel": "วันหยุดเป้าหมาย",
+                    "weeklyTarget": "{{days}} วัน/สัปดาห์ × {{weeks}} สัปดาห์ = {{count}} วัน"
+                },
                 "emptyDescription": "ตรวจสอบเจ้าหน้าที่ที่ทำเครื่องหมายไว้ปฏิบัติหน้าที่ก่อน",
                 "emptyTitle": "ยังไม่มีคนงานยืนยัน",
                 "goMemberManagement": "ไปที่การจัดการสมาชิก",
@@ -14731,6 +14786,17 @@ export const vi: TLocale = {
                     "shiftTypes": "ca có sẵn"
                 },
                 "dragHandleAria": "Kéo để sắp xếp lại",
+                "restPolicy": {
+                    "adjustmentMinus": "Giảm {{count}} ngày",
+                    "adjustmentNone": "Không điều chỉnh thêm",
+                    "adjustmentPlus": "Thêm {{count}} ngày",
+                    "dayUnit": "ngày",
+                    "decreaseTarget": "Giảm số ngày nghỉ mục tiêu",
+                    "fixedTarget": "Hằng tháng {{count}} ngày",
+                    "increaseTarget": "Tăng số ngày nghỉ mục tiêu",
+                    "targetLabel": "Số ngày nghỉ mục tiêu",
+                    "weeklyTarget": "{{days}} ngày/tuần × {{weeks}} tuần = {{count}} ngày"
+                },
                 "emptyDescription": "Trước tiên hãy kiểm tra nhân sự được đánh dấu tham gia trực.",
                 "emptyTitle": "Chưa có công nhân nào được xác nhận.",
                 "goMemberManagement": "Vào quản lý thành viên",
