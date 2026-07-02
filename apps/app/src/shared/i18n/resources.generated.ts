@@ -1029,6 +1029,8 @@ export const ko = {
                 "name": "이름",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "전달 근무",
+                "restCheck": "휴무 확인",
+                "restCheckCompact": "휴무",
                 "shiftTypeDropdownAria": "근무유형 선택",
                 "violationCount": {
                     "error": "중요 {{count}}",
@@ -1247,6 +1249,7 @@ export const ko = {
                 },
                 "toast": {
                     "added": "제약조건을 추가했어요.",
+                    "duplicateSkipped": "중복 제약조건은 삭제하고 기존 조건만 남겼어요.",
                     "duplicatesRemoved": "중복 제약조건 {{count}}개를 정리했어요.",
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
@@ -3601,6 +3604,8 @@ export const en: TLocale = {
                 "name": "Name",
                 "nurseDayLabel": "{{name}} · day {{day}}",
                 "previousShifts": "Prev",
+                "restCheck": "Rest check",
+                "restCheckCompact": "Rest",
                 "shiftTypeDropdownAria": "Select shift type",
                 "violationCount": {
                     "error": "Important {{count}}",
@@ -3819,6 +3824,7 @@ export const en: TLocale = {
                 },
                 "toast": {
                     "added": "Constraint added.",
+                    "duplicateSkipped": "Duplicate constraint removed; the existing one was kept.",
                     "duplicatesRemoved": "Cleaned up {{count}} duplicate constraints.",
                     "importantUnmarked": "Important mark removed.",
                     "imported": "Imported constraints from {{teamName}}.",
@@ -6171,6 +6177,8 @@ export const ja: TLocale = {
                 "name": "名前",
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
+                "restCheck": "休み確認",
+                "restCheckCompact": "休み",
                 "shiftTypeDropdownAria": "勤務区分を選択",
                 "violationCount": {
                     "error": "重要 {{count}}",
@@ -6389,6 +6397,7 @@ export const ja: TLocale = {
                 },
                 "toast": {
                     "added": "制約条件を追加しました。",
+                    "duplicateSkipped": "重複する制約条件を削除し、既存の条件だけを残しました。",
                     "duplicatesRemoved": "重複する制約条件{{count}}件を整理しました。",
                     "importantUnmarked": "重要マークを外しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
@@ -8741,6 +8750,8 @@ export const zh: TLocale = {
                 "name": "姓名",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "送货工作",
+                "restCheck": "休假检查",
+                "restCheckCompact": "休",
                 "shiftTypeDropdownAria": "选择班次类型",
                 "violationCount": {
                     "error": "重要{{count}}",
@@ -8959,6 +8970,7 @@ export const zh: TLocale = {
                 },
                 "toast": {
                     "added": "添加了约束条件。",
+                    "duplicateSkipped": "已删除重复约束，仅保留现有约束。",
                     "duplicatesRemoved": "已整理 {{count}} 重复约束。",
                     "importantUnmarked": "未将其标记为重要。",
                     "imported": "{{teamName}} 约束按原样加载。",
@@ -11311,6 +11323,8 @@ export const th: TLocale = {
                 "name": "ชื่อ",
                 "nurseDayLabel": "{{name}} · วัน {{day}}",
                 "previousShifts": "ก่อนหน้า",
+                "restCheck": "ตรวจวันหยุด",
+                "restCheckCompact": "พัก",
                 "shiftTypeDropdownAria": "เลือกประเภทกะ",
                 "violationCount": {
                     "error": "สำคัญ {{count}}",
@@ -11529,6 +11543,7 @@ export const th: TLocale = {
                 },
                 "toast": {
                     "added": "เพิ่มข้อจำกัดแล้ว",
+                    "duplicateSkipped": "ลบข้อจำกัดที่ซ้ำกันแล้ว และเก็บข้อจำกัดเดิมไว้",
                     "duplicatesRemoved": "ทำความสะอาดข้อจำกัดที่ซ้ำกันของ {{count}}",
                     "importantUnmarked": "เครื่องหมายสำคัญถูกลบออก",
                     "imported": "ข้อจำกัดที่นำเข้าจาก {{teamName}}",
@@ -13881,6 +13896,8 @@ export const vi: TLocale = {
                 "name": "Tên",
                 "nurseDayLabel": "{{name}} · ngày {{day}}",
                 "previousShifts": "Trước đó",
+                "restCheck": "Kiểm tra ngày nghỉ",
+                "restCheckCompact": "Nghỉ",
                 "shiftTypeDropdownAria": "Chọn loại ca",
                 "violationCount": {
                     "error": "Quan trọng {{count}}",
@@ -14099,6 +14116,7 @@ export const vi: TLocale = {
                 },
                 "toast": {
                     "added": "Đã thêm hạn chế.",
+                    "duplicateSkipped": "Đã xóa ràng buộc trùng lặp và giữ lại ràng buộc hiện có.",
                     "duplicatesRemoved": "Đã dọn sạch {{count}} các hạn chế trùng lặp.",
                     "importantUnmarked": "Dấu quan trọng đã bị xóa.",
                     "imported": "Đã nhập các ràng buộc từ {{teamName}}.",

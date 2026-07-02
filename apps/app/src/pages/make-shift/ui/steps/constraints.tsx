@@ -32,6 +32,8 @@ type TSelectOption = {
     shortName?: string;
     name?: string;
     color?: string;
+    classification?: TShiftTypeLike['classification'];
+    isOff?: boolean;
     raw?: TShiftConstraintOption;
 };
 type TTemplateCategory = string;
@@ -546,7 +548,7 @@ function isAsciiLetter(value: string | undefined) {
 
 function createTextSentenceParts(text: string): TSentencePart[] {
     const parts: TSentencePart[] = [];
-    const tokenPattern = /(NOD|OFF|ND|ED|NE|D|E|N)/g;
+    const tokenPattern = /(NOD|OFF|\/?오프|ND|ED|NE|N나이트|D데이|E이브닝|D|E|N)/g;
 
     let lastIndex = 0;
     let match: RegExpExecArray | null;
@@ -564,10 +566,12 @@ function createTextSentenceParts(text: string): TSentencePart[] {
             parts.push({type: 'text', text: text.slice(lastIndex, start)});
         }
 
-        if (DUTY_PATTERN_CODES[token]) {
-            parts.push({type: 'dutyPattern', codes: DUTY_PATTERN_CODES[token]});
+        const dutyCode = getLegacyDutyCode(token);
+
+        if (DUTY_PATTERN_CODES[dutyCode]) {
+            parts.push({type: 'dutyPattern', codes: DUTY_PATTERN_CODES[dutyCode]});
         } else {
-            parts.push({type: 'duty', code: token});
+            parts.push({type: 'duty', code: dutyCode});
         }
 
         lastIndex = end;
@@ -578,6 +582,15 @@ function createTextSentenceParts(text: string): TSentencePart[] {
     }
 
     return parts.length ? parts : [{type: 'text', text}];
+}
+
+function getLegacyDutyCode(token: string) {
+    if (token.includes('오프')) return 'OFF';
+    if (token.startsWith('N')) return 'N';
+    if (token.startsWith('D')) return 'D';
+    if (token.startsWith('E')) return 'E';
+
+    return token;
 }
 
 function getLeadingParticle(text: string) {
@@ -994,8 +1007,8 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
         };
     }
 
-    const shortName = option.code ?? shiftType?.shortName ?? label.split(' ')[0] ?? label;
-    const name = option.name ?? shiftType?.name ?? label;
+    const shortName = shiftType?.shortName ?? option.code ?? label.split(' ')[0] ?? label;
+    const name = shiftType?.name ?? option.name ?? label;
 
     return {
         value: getCandidateOptionValue(option),
@@ -1004,6 +1017,8 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
         shortName,
         name,
         color: shiftType?.color,
+        classification: shiftType?.classification,
+        isOff: shiftType?.isOff,
         raw: option,
     };
 }
@@ -1015,12 +1030,15 @@ function getCandidateOptions(
     fallback: TSelectOption[],
     shiftTypes: TShiftTypeLike[],
     t: TTypedT,
+    options?: {includeFallback?: boolean},
 ) {
     const serverOptions = candidateKeys.flatMap((key) => candidates[key] ?? []);
 
     if (!serverOptions.length) return fallback;
 
-    return uniqueByValue(serverOptions.map((option) => toSelectOption(option, optionMapKey, shiftTypes, t)));
+    const resolvedServerOptions = serverOptions.map((option) => toSelectOption(option, optionMapKey, shiftTypes, t));
+
+    return uniqueByValue(options?.includeFallback ? [...resolvedServerOptions, ...fallback] : resolvedServerOptions);
 }
 
 function mergeCandidateOptionMap(
@@ -1036,6 +1054,7 @@ function mergeCandidateOptionMap(
         fallback.duty,
         shiftTypes,
         t,
+        {includeFallback: true},
     );
     const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes, t);
 
@@ -1063,13 +1082,24 @@ function findDutyOptionByCode(options: TSelectOption[], code: string) {
 
     if (normalizedCode === 'OFF') {
         return (
+            options.find((option) => option.classification === 'OFF') ??
+            options.find((option) => option.isOff === true) ??
             options.find((option) => option.shortName?.toUpperCase() === 'OFF') ??
             options.find((option) => option.shortName?.toUpperCase() === 'O') ??
             options.find((option) => Boolean(option.name?.includes(LEGACY_OFF_NAME)) || option.name?.toUpperCase() === 'OFF')
         );
     }
 
-    return options.find((option) => option.shortName?.toUpperCase() === normalizedCode);
+    const classificationByCode: Record<string, TShiftTypeLike['classification']> = {
+        D: 'DAY',
+        E: 'EVENING',
+        N: 'NIGHT',
+    };
+
+    return (
+        options.find((option) => option.classification === classificationByCode[normalizedCode]) ??
+        options.find((option) => option.shortName?.toUpperCase() === normalizedCode)
+    );
 }
 
 function getOptionsForControl(
@@ -2044,6 +2074,8 @@ export function Constraints({
                     name: shiftType.name,
                     color: shiftType.color,
                     raw: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: shiftType.wardShiftTypeId},
+                    classification: shiftType.classification,
+                    isOff: shiftType.isOff,
                 })),
         ]);
         const dateOptions = [{value: 'ALL_DATE', label: t('page.makeShift.constraints.option.allDays'), raw: {type: 'ALL'}}].concat(
@@ -2237,6 +2269,21 @@ export function Constraints({
             isValid: true,
             invalidReason: null,
         };
+        const duplicateRule = rulesRef.current
+            .filter((rule) => rule.selected !== false)
+            .find((rule) => getConstraintDuplicateKey(rule) === getConstraintDuplicateKey(nextRule));
+
+        if (duplicateRule) {
+            setHighlightedRuleId(duplicateRule.clientId);
+            setSoftModalOpen(false);
+            toast.success(t('page.makeShift.constraints.toast.duplicateSkipped'));
+
+            window.setTimeout(() => {
+                setHighlightedRuleId((current) => (current === duplicateRule.clientId ? null : current));
+            }, 1800);
+
+            return;
+        }
 
         updateRules((prev) => {
             const selected = prev.filter((r) => r.selected !== false);
