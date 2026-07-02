@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {AnimationItem} from 'lottie-web';
-import {AlertTriangle, Check, History, Pin, Redo2, Save, Undo2} from 'lucide-react';
+import {AlertTriangle, CalendarCheck, Check, History, Pin, Redo2, Save, Undo2} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
@@ -18,6 +18,8 @@ import {
 type TAiAutofillToolbarProps = {
     showFixedShifts: boolean;
     onToggleFixedShifts: () => void;
+    showRequestShifts: boolean;
+    onToggleRequestShifts: () => void;
     showFaults: boolean;
     onToggleFaults: () => void;
     canUndo: boolean;
@@ -47,6 +49,8 @@ const AI_ACTION_LABEL_KEYS = {
 export function AiAutofillToolbar({
     showFixedShifts,
     onToggleFixedShifts,
+    showRequestShifts,
+    onToggleRequestShifts,
     showFaults,
     onToggleFaults,
     canUndo,
@@ -105,6 +109,22 @@ export function AiAutofillToolbar({
                         className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
                         aria-label={t('page.makeShift.aiRefill.viewOptions')}
                     >
+                        <ToggleTextButton
+                            className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--requests"
+                            active={showRequestShifts}
+                            onClick={onToggleRequestShifts}
+                            ariaLabel={t(
+                                showRequestShifts
+                                    ? 'page.makeShift.aiRefill.requestDisplayShown'
+                                    : 'page.makeShift.aiRefill.requestDisplayHidden',
+                            )}
+                            activeClassName="bg-white text-[#2877CC] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                            hoverClassName="hover:text-[#2877CC]"
+                        >
+                            <CalendarCheck className="size-3.5" aria-hidden />
+                            {t('page.makeShift.aiRefill.requestDisplay')}
+                        </ToggleTextButton>
+
                         <ToggleTextButton
                             className="ai-autofill-toolbar__toggle ai-autofill-toolbar__toggle--fixed"
                             active={showFixedShifts}

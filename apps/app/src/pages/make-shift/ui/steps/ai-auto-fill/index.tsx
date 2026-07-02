@@ -38,7 +38,7 @@ import {
 } from '../../../model/use-schedule-snapshots';
 import {RestLeavePolicySummaryButton} from '../rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
-import {maskDutyDocFixedCells} from '../shared/mask-duty-doc-non-fixed';
+import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
@@ -141,6 +141,7 @@ export function AiAutofill() {
     const useCase = useMakeShiftUseCase();
     const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     const [showFixedShifts, setShowFixedShifts] = useState(true);
+    const [showRequestShifts, setShowRequestShifts] = useState(true);
     const [showFaults, setShowFaults] = useState(true);
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
@@ -248,7 +249,13 @@ export function AiAutofill() {
         };
     }, [isSnapshotSidebarOpen]);
 
-    const calendarDoc = useMemo(() => (showFixedShifts ? hydratedDoc : maskDutyDocFixedCells(hydratedDoc)), [hydratedDoc, showFixedShifts]);
+    const calendarDoc = useMemo(
+        () =>
+            showFixedShifts && showRequestShifts
+                ? hydratedDoc
+                : maskDutyDocCells(hydratedDoc, {hideFixed: !showFixedShifts, hideRequests: !showRequestShifts}),
+        [hydratedDoc, showFixedShifts, showRequestShifts],
+    );
     const restCheckByShiftNurseId = useMemo(
         () =>
             dutyQuery.data
@@ -707,6 +714,8 @@ export function AiAutofill() {
                 <AiAutofillToolbar
                     showFixedShifts={showFixedShifts}
                     onToggleFixedShifts={() => setShowFixedShifts((prev) => !prev)}
+                    showRequestShifts={showRequestShifts}
+                    onToggleRequestShifts={() => setShowRequestShifts((prev) => !prev)}
                     showFaults={showFaults}
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
