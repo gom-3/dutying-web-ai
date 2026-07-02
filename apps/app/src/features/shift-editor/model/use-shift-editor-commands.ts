@@ -144,10 +144,6 @@ export function useShiftEditorCommands() {
                 continue;
             }
 
-            if (editorMode === 'fixed' && key !== null && !prevFixed && value === null) {
-                continue;
-            }
-
             const cellChanged = prev !== value;
             const nextFixed = key !== null && editorMode === 'fixed' ? value !== null : prevFixed;
             const fixedChanged = prevFixed !== nextFixed;
@@ -556,19 +552,6 @@ export function useShiftEditorCommands() {
                 if (source === 'user' && skippedByRequest > 0) {
                     notifyRequestLocked();
                 }
-
-                const kept: typeof filteredCells = [];
-
-                for (const cell of filteredCells) {
-                    const key = getDutyCellLockKey(doc, cell.row, cell.col);
-                    const prevFixed = key !== null && doc.fixedCells[key] === true;
-
-                    if (key !== null && !prevFixed && cell.next === null) continue;
-
-                    kept.push(cell);
-                }
-
-                filteredCells = kept;
             }
 
             const fixedDelta: Array<{key: string; prev: boolean; next: boolean}> = [];

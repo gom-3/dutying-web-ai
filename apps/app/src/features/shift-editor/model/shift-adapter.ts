@@ -239,28 +239,6 @@ export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: TShift): TWardS
     return dto;
 }
 
-export function docToFixedWardShiftsDTO(doc: TDutyDoc, originalShift: TShift): TWardShiftsDTO {
-    const maps = buildWardShiftTypeMaps(originalShift);
-    const dto: TWardShiftsDTO = [];
-
-    for (const row of doc.rows) {
-        const shiftNurseId = Number(row.workerId);
-        const originalRow = findShiftRowByShiftNurseId(originalShift, shiftNurseId);
-
-        for (let colIdx = 0; colIdx < doc.columns.length; colIdx += 1) {
-            const date = doc.columns[colIdx]!;
-            const lockKey = `${row.workerId}|${date}`;
-            const fixed = doc.fixedCells[lockKey] === true;
-            const cell = fixed ? (row.cells[colIdx] ?? null) : null;
-            const wardShiftTypeId = fixed ? cellToWardShiftTypeIdPreservingOriginal(cell, originalRow?.wardShiftList[colIdx], maps) : null;
-
-            dto.push({shiftNurseId, date, wardShiftTypeId});
-        }
-    }
-
-    return dto;
-}
-
 export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSnapshotCellDTO[] {
     const maps = buildWardShiftTypeMaps(originalShift);
     const dto: TSnapshotCellDTO[] = [];

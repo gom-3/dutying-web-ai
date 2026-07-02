@@ -115,10 +115,7 @@ describe('useShiftEditorCommands', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const doc: TDutyDoc = {
             ...createDoc(),
-            rows: [
-                {...createDoc().rows[0]!, lastCells: [null, 'D']},
-                {...createDoc().rows[1]!, lastCells: ['E', null]},
-            ],
+            rows: [{...createDoc().rows[0]!, lastCells: [null, 'D']}, {...createDoc().rows[1]!, lastCells: ['E', null]}],
         };
 
         act(() => {
@@ -134,55 +131,11 @@ describe('useShiftEditorCommands', () => {
         expect(state.history.past).toHaveLength(0);
     });
 
-    it('preserves hidden non-fixed draft cells when clearing in fixed mode', () => {
-        const {result} = renderHook(() => useShiftEditorCommands());
-
-        act(() => {
-            result.current.init(createDoc());
-            useShiftEditorStore.getState().setEditorMode('fixed');
-            useShiftEditorStore.getState().setSelection({type: 'range', from: {row: 0, col: 0}, to: {row: 1, col: 1}});
-            result.current.setSelectionValue(null);
-        });
-
-        const state = useShiftEditorStore.getState();
-
-        expect(state.doc.rows.map((row) => row.cells)).toEqual([
-            ['D', null, 'N'],
-            [null, 'E', null],
-        ]);
-        expect(state.doc.fixedCells).toEqual({});
-        expect(state.history.past).toHaveLength(0);
-    });
-
-    it('clears visible fixed cells when clearing in fixed mode', () => {
-        const {result} = renderHook(() => useShiftEditorCommands());
-        const doc: TDutyDoc = {
-            ...createDoc(),
-            fixedCells: {'2|2026-03-01': true},
-        };
-
-        act(() => {
-            result.current.init(doc);
-            useShiftEditorStore.getState().setEditorMode('fixed');
-            useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}});
-            result.current.setSelectionValue(null);
-        });
-
-        const state = useShiftEditorStore.getState();
-
-        expect(state.doc.rows[0]?.cells[0]).toBeNull();
-        expect(state.doc.fixedCells).toEqual({});
-        expect(state.history.past).toHaveLength(0);
-    });
-
     it('pastes previous-shift cells in fixed mode', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const doc: TDutyDoc = {
             ...createDoc(),
-            rows: [
-                {...createDoc().rows[0]!, lastCells: [null, 'D']},
-                {...createDoc().rows[1]!, lastCells: ['E', null]},
-            ],
+            rows: [{...createDoc().rows[0]!, lastCells: [null, 'D']}, {...createDoc().rows[1]!, lastCells: ['E', null]}],
         };
         const payload: TClipboardPayload = {
             width: 2,
