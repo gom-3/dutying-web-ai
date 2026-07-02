@@ -822,6 +822,54 @@ export const ko = {
                         label: '중요 기본 조건',
                         sentence: '{target}는 신청한 OFF 전날에는 N 근무를 하면 안 돼요',
                     },
+                    MIN_STAFF_BY_SHIFT: {
+                        label: '인원 조건',
+                        sentence: '{shift} 근무에는 최소 {count}명이 있어야 해요',
+                    },
+                    MAX_STAFF_BY_SHIFT: {
+                        label: '인원 조건',
+                        sentence: '{shift} 근무는 최대 {count}명까지만 배정할 수 있어요',
+                    },
+                    MIN_STAFF_BY_DATE_SHIFT: {
+                        label: '인원 조건',
+                        sentence: '매월 {date}일에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    },
+                    MIN_STAFF_WEEKEND_HOLIDAY_SHIFT: {
+                        label: '인원 조건',
+                        sentence: '주말/공휴일에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    },
+                    MAX_CONSECUTIVE_WORK_DAYS: {
+                        label: '근무·휴식 조건',
+                        sentence: '{target}는 {count}일 이상 연속으로 근무하면 안 돼요',
+                    },
+                    OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: '근무·휴식 조건',
+                        sentence: '{target}는 {count}일 연속 근무 후 OFF가 필요해요',
+                    },
+                    MIN_OFF_AFTER_N: {
+                        label: '근무·휴식 조건',
+                        sentence: '{target}는 N 근무 후 최소 {count}일의 OFF가 필요해요',
+                    },
+                    MIN_MONTHLY_OFF: {
+                        label: '근무·휴식 조건',
+                        sentence: '{target}는 한 달에 최소 {count}일의 OFF가 필요해요',
+                    },
+                    NURSE_FORBID_WEEKEND: {
+                        label: '개인 조건',
+                        sentence: '{nurse}는 주말 근무를 하면 안 돼요',
+                    },
+                    NEW_NURSE_NOT_ALONE_N: {
+                        label: '숙련도 조건',
+                        sentence: '{nurse}는 혼자 N 근무를 하면 안 돼요',
+                    },
+                    PRECEPTEE_NOT_ALONE_N: {
+                        label: '숙련도 조건',
+                        sentence: '{preceptee}는 혼자 N 근무를 하면 안 돼요',
+                    },
+                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
+                        label: '숙련도 조건',
+                        sentence: '{shift} 근무에는 LV{level} 이상 간호사가 최소 {count}명 필요해요',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '중요 기본 조건',
                         sentence: '연속 근무는 {days}일까지 할 수 있어요',

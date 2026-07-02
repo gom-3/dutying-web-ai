@@ -825,6 +825,54 @@ export const en: TLocale = {
                         label: 'Default Important constraint',
                         sentence: '{target} cannot work N on the day before a requested OFF',
                     },
+                    MIN_STAFF_BY_SHIFT: {
+                        label: 'Staffing constraint',
+                        sentence: '{shift} needs at least {count} staff',
+                    },
+                    MAX_STAFF_BY_SHIFT: {
+                        label: 'Staffing constraint',
+                        sentence: '{shift} can have up to {count} staff',
+                    },
+                    MIN_STAFF_BY_DATE_SHIFT: {
+                        label: 'Staffing constraint',
+                        sentence: 'On day {date} each month, {shift} needs at least {count} staff',
+                    },
+                    MIN_STAFF_WEEKEND_HOLIDAY_SHIFT: {
+                        label: 'Staffing constraint',
+                        sentence: 'On weekends and holidays, {shift} needs at least {count} staff',
+                    },
+                    MAX_CONSECUTIVE_WORK_DAYS: {
+                        label: 'Work-rest constraint',
+                        sentence: '{target} cannot work {count} or more consecutive days',
+                    },
+                    OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: 'Work-rest constraint',
+                        sentence: '{target} needs OFF after {count} consecutive work days',
+                    },
+                    MIN_OFF_AFTER_N: {
+                        label: 'Work-rest constraint',
+                        sentence: '{target} needs at least {count} OFF days after an N shift',
+                    },
+                    MIN_MONTHLY_OFF: {
+                        label: 'Work-rest constraint',
+                        sentence: '{target} needs at least {count} OFF days per month',
+                    },
+                    NURSE_FORBID_WEEKEND: {
+                        label: 'Personal constraint',
+                        sentence: '{nurse} cannot work weekends',
+                    },
+                    NEW_NURSE_NOT_ALONE_N: {
+                        label: 'Skill constraint',
+                        sentence: '{nurse} cannot work N alone',
+                    },
+                    PRECEPTEE_NOT_ALONE_N: {
+                        label: 'Skill constraint',
+                        sentence: '{preceptee} cannot work N alone',
+                    },
+                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
+                        label: 'Skill constraint',
+                        sentence: '{shift} needs at least {count} nurses at LV{level} or higher',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'Default Important constraint',
                         sentence: 'Consecutive work is allowed up to {days} days',

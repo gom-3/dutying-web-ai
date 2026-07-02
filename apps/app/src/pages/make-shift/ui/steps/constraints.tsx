@@ -264,6 +264,95 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
     },
     {
+        id: 'MIN_STAFF_BY_SHIFT',
+        category: 'STAFFING',
+        controls: [
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'count', kind: 'number', min: 1, max: 100},
+        ],
+    },
+    {
+        id: 'MAX_STAFF_BY_SHIFT',
+        category: 'STAFFING',
+        controls: [
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'count', kind: 'number', min: 1, max: 100},
+        ],
+    },
+    {
+        id: 'MIN_STAFF_BY_DATE_SHIFT',
+        category: 'STAFFING',
+        controls: [
+            {key: 'date', kind: 'select', optionsKey: 'date'},
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'count', kind: 'number', min: 1, max: 100},
+        ],
+    },
+    {
+        id: 'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
+        category: 'STAFFING',
+        controls: [
+            {key: 'shift', kind: 'select', optionsKey: 'duty'},
+            {key: 'count', kind: 'number', min: 1, max: 100},
+        ],
+    },
+    {
+        id: 'MAX_CONSECUTIVE_WORK_DAYS',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'OFF_AFTER_CONSECUTIVE_WORK',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'MIN_OFF_AFTER_N',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'MIN_MONTHLY_OFF',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'NURSE_FORBID_WEEKEND',
+        category: 'PERSONAL',
+        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
+    },
+    {
+        id: 'NEW_NURSE_NOT_ALONE_N',
+        category: 'SKILL',
+        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
+    },
+    {
+        id: 'PRECEPTEE_NOT_ALONE_N',
+        category: 'SKILL',
+        controls: [{key: 'preceptee', kind: 'select', optionsKey: 'preceptee'}],
+    },
+    {
+        id: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
+        category: 'SKILL',
+        controls: [
+            {key: 'shift', kind: 'select', optionsKey: 'dutyStrict'},
+            {key: 'level', kind: 'select', optionsKey: 'level'},
+            {key: 'count', kind: 'number', min: 1, max: 100},
+        ],
+    },
+    {
         id: 'IMPORTANT_MAX_WORK_STREAK',
         category: 'WORK_REST',
         controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6]}],

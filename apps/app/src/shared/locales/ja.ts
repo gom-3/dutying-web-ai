@@ -1468,6 +1468,54 @@ export const ja: TLocale = {
                         label: '重要な基本条件',
                         sentence: '{target}は申請したOFFの前日にN勤務をしてはいけません',
                     },
+                    MIN_STAFF_BY_SHIFT: {
+                        label: '人数条件',
+                        sentence: '{shift}勤務には最低{count}名が必要です',
+                    },
+                    MAX_STAFF_BY_SHIFT: {
+                        label: '人数条件',
+                        sentence: '{shift}勤務は最大{count}名まで割り当てられます',
+                    },
+                    MIN_STAFF_BY_DATE_SHIFT: {
+                        label: '人数条件',
+                        sentence: '毎月{date}日は{shift}勤務に最低{count}名が必要です',
+                    },
+                    MIN_STAFF_WEEKEND_HOLIDAY_SHIFT: {
+                        label: '人数条件',
+                        sentence: '週末・祝日は{shift}勤務に最低{count}名が必要です',
+                    },
+                    MAX_CONSECUTIVE_WORK_DAYS: {
+                        label: '勤務・休み条件',
+                        sentence: '{target}は{count}日以上連続で勤務できません',
+                    },
+                    OFF_AFTER_CONSECUTIVE_WORK: {
+                        label: '勤務・休み条件',
+                        sentence: '{target}は{count}日連続勤務後にOFFが必要です',
+                    },
+                    MIN_OFF_AFTER_N: {
+                        label: '勤務・休み条件',
+                        sentence: '{target}はN勤務後に最低{count}日のOFFが必要です',
+                    },
+                    MIN_MONTHLY_OFF: {
+                        label: '勤務・休み条件',
+                        sentence: '{target}は月に最低{count}日のOFFが必要です',
+                    },
+                    NURSE_FORBID_WEEKEND: {
+                        label: '個人条件',
+                        sentence: '{nurse}は週末勤務をしてはいけません',
+                    },
+                    NEW_NURSE_NOT_ALONE_N: {
+                        label: '熟練度条件',
+                        sentence: '{nurse}は単独でN勤務をしてはいけません',
+                    },
+                    PRECEPTEE_NOT_ALONE_N: {
+                        label: '熟練度条件',
+                        sentence: '{preceptee}は単独でN勤務をしてはいけません',
+                    },
+                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
+                        label: '熟練度条件',
+                        sentence: '{shift}勤務にはLV{level}以上の看護師が最低{count}名必要です',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '重要な基本条件',
                         sentence: '連続勤務は{days}日まで可能です',
