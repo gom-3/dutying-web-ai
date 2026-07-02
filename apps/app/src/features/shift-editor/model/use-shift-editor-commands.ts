@@ -382,8 +382,8 @@ export function useShiftEditorCommands() {
                 if (doc.fixedCells[key] === true || doc.requestCells[key] === true) continue;
 
                 const resolvedNext =
-                    (cell.shiftCode && cell.shiftCode.length > 0 ? cell.shiftCode : null) ??
-                    (cell.wardShiftTypeId != null ? (idToType.get(cell.wardShiftTypeId)?.shortName ?? null) : null);
+                    (cell.wardShiftTypeId != null ? (idToType.get(cell.wardShiftTypeId)?.shortName ?? null) : null) ??
+                    (cell.shiftCode && cell.shiftCode.length > 0 ? cell.shiftCode : null);
                 const row = doc.rows[rowIdx]!;
                 const prev = row.cells[colIdx] ?? null;
 

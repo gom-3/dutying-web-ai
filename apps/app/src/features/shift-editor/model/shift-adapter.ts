@@ -163,6 +163,18 @@ function cellToWardShiftTypeId(cell: TCellValue, maps: TWardShiftTypeMaps): numb
     return type?.wardShiftTypeId ?? null;
 }
 
+function cellToWardShiftTypeIdPreservingOriginal(
+    cell: TCellValue,
+    originalWardShiftTypeId: number | null | undefined,
+    maps: TWardShiftTypeMaps,
+): number | null {
+    const nextId = cellToWardShiftTypeId(cell, maps);
+
+    if (nextId !== null || cell === null || cell === '') return nextId;
+
+    return originalWardShiftTypeId != null && maps.idToType.has(originalWardShiftTypeId) ? originalWardShiftTypeId : null;
+}
+
 function buildSnapshotCellKey(shiftNurseId: number, date: string): string {
     return `${shiftNurseId}:${date}`;
 }
@@ -192,7 +204,7 @@ export function docToShift(doc: TDutyDoc, originalShift: TShift): TShift {
 
             const nextWardShiftList = row.wardShiftList.map((_current, index) => {
                 const cell = docRow.cells[index] ?? null;
-                const nextId = cellToWardShiftTypeId(cell, maps);
+                const nextId = cellToWardShiftTypeIdPreservingOriginal(cell, row.wardShiftList[index], maps);
 
                 return nextId ?? null;
             });
@@ -217,7 +229,8 @@ export function docToWardShiftsDTO(doc: TDutyDoc, originalShift: TShift): TWardS
         for (let colIdx = 0; colIdx < doc.columns.length; colIdx += 1) {
             const date = doc.columns[colIdx]!;
             const cell = row.cells[colIdx] ?? null;
-            const wardShiftTypeId = cellToWardShiftTypeId(cell, maps);
+            const originalRow = findShiftRowByShiftNurseId(originalShift, shiftNurseId);
+            const wardShiftTypeId = cellToWardShiftTypeIdPreservingOriginal(cell, originalRow?.wardShiftList[colIdx], maps);
 
             dto.push({shiftNurseId, date, wardShiftTypeId});
         }
@@ -237,7 +250,8 @@ export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSn
         for (let colIdx = 0; colIdx < doc.columns.length; colIdx += 1) {
             const date = doc.columns[colIdx]!;
             const cell = row.cells[colIdx] ?? null;
-            const wardShiftTypeId = cellToWardShiftTypeId(cell, maps);
+            const originalRow = findShiftRowByShiftNurseId(originalShift, shiftNurseId);
+            const wardShiftTypeId = cellToWardShiftTypeIdPreservingOriginal(cell, originalRow?.wardShiftList[colIdx], maps);
             const lockKey = `${row.workerId}|${date}`;
             const fixed = doc.fixedCells[lockKey] === true;
             const requested = doc.requestCells[lockKey] === true;

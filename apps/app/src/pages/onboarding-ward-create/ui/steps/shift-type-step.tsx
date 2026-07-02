@@ -2,7 +2,7 @@
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
-    getShiftShortNameValueKey,
+    getShiftShortNameEntryKey,
     hasInvalidShiftShortNameEntryKey,
     hasInvalidShiftShortNameLengthInput,
     normalizeShiftShortNameInput,
@@ -110,7 +110,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
         const countByShortNameKey = new Map<string, number>();
 
         shiftTypes.forEach((shiftType) => {
-            const normalizedShortNameKey = getShiftShortNameValueKey(shiftType.shortName);
+            const normalizedShortNameKey = getShiftShortNameEntryKey(shiftType.shortName);
 
             if (!normalizedShortNameKey) return;
 
@@ -134,7 +134,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             return t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey');
         }
 
-        if (duplicatedShiftShortNameKeys.has(getShiftShortNameValueKey(normalizedShortName))) {
+        if (duplicatedShiftShortNameKeys.has(getShiftShortNameEntryKey(normalizedShortName))) {
             return t('page.onboardingWardCreate.shiftType.validation.shortNameDuplicate');
         }
 

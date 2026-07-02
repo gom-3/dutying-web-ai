@@ -4,6 +4,7 @@ import {createPortal} from 'react-dom';
 import {CancelIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
+    getShiftShortNameEntryKey,
     hasInvalidShiftShortNameEntryKey,
     normalizeShiftShortNameInput,
     SHIFT_SHORT_NAME_MAX_LENGTH,
@@ -19,6 +20,7 @@ interface ICreateShiftModalProps {
     close: () => void;
     onSubmit: (shiftType: TCreateShiftTypeDTO) => void;
     onDelete: () => void;
+    existingShortNames?: string[];
 }
 
 const initialValue: TCreateShiftTypeDTO = {
@@ -33,7 +35,7 @@ const initialValue: TCreateShiftTypeDTO = {
     classification: 'OTHER_WORK',
 };
 
-function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateShiftModalProps) {
+function CreateShiftModal({open, shiftType, close, onSubmit, onDelete, existingShortNames = []}: ICreateShiftModalProps) {
     const {t} = useTypedTranslation();
     const [writeShift, setWriteShift] = useState(initialValue);
     const [validationMessage, setValidationMessage] = useState<string | null>(null);
@@ -62,6 +64,23 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete}: ICreateS
 
         if (hasInvalidShiftShortNameEntryKey(shortName)) {
             setValidationMessage(t('feature.createShiftModal.validation.shortNameFirstKey'));
+
+            return;
+        }
+
+        const shortNameEntryKey = getShiftShortNameEntryKey(shortName);
+        const hasDuplicateEntryKey = existingShortNames.some((existingShortName) => {
+            const normalizedExistingShortName = normalizeShiftShortNameInput(existingShortName);
+
+            if (shiftType && normalizedExistingShortName === normalizeShiftShortNameInput(shiftType.shortName)) {
+                return false;
+            }
+
+            return getShiftShortNameEntryKey(normalizedExistingShortName) === shortNameEntryKey;
+        });
+
+        if (hasDuplicateEntryKey) {
+            setValidationMessage(t('page.wardSettings.shiftTypes.validation.shortNameDuplicate'));
 
             return;
         }

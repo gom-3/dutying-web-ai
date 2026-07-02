@@ -3,7 +3,135 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import {initReactI18next} from 'react-i18next';
 import {getLocaleForLanguage, normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
-import {resources} from '@/shared/i18n/resources.generated';
+import {
+    en as generatedEn,
+    ja as generatedJa,
+    ko as generatedKo,
+    th as generatedTh,
+    vi as generatedVi,
+    zh as generatedZh,
+} from '@/shared/i18n/resources.generated';
+import {en} from '@/shared/locales/en';
+import {ja} from '@/shared/locales/ja';
+import {ko} from '@/shared/locales/ko';
+import {th} from '@/shared/locales/th';
+import {vi} from '@/shared/locales/vi';
+import {zh} from '@/shared/locales/zh';
+
+const fillMissingTranslations = <TPrimary, TFallback>(primary: TPrimary, fallback: TFallback): TPrimary & TFallback => {
+    if (typeof primary !== 'object' || primary === null || Array.isArray(primary)) {
+        return (primary ?? fallback) as TPrimary & TFallback;
+    }
+
+    const result = {...(primary as Record<string, unknown>)};
+
+    Object.entries(fallback as Record<string, unknown>).forEach(([key, fallbackValue]) => {
+        const primaryValue = result[key];
+
+        if (primaryValue === undefined) {
+            result[key] = fallbackValue;
+            return;
+        }
+
+        if (
+            typeof primaryValue === 'object' &&
+            primaryValue !== null &&
+            !Array.isArray(primaryValue) &&
+            typeof fallbackValue === 'object' &&
+            fallbackValue !== null &&
+            !Array.isArray(fallbackValue)
+        ) {
+            result[key] = fillMissingTranslations(primaryValue, fallbackValue);
+        }
+    });
+
+    return result as TPrimary & TFallback;
+};
+
+const supplementalKo = {
+    page: {
+        makeShift: {
+            workers: {
+                restPolicy: {
+                    targetLabel: '목표 쉬는 날',
+                    adjustmentNone: '추가 조정 없음',
+                    adjustmentPlus: '+{{count}}일 추가',
+                    adjustmentMinus: '{{count}}일 차감',
+                    weeklyTarget: '주 {{days}}일 × {{weeks}}주 = {{count}}일',
+                    fixedTarget: '월 {{count}}일',
+                    decreaseTarget: '목표 쉬는 날 줄이기',
+                    increaseTarget: '목표 쉬는 날 늘리기',
+                    dayUnit: '일',
+                },
+            },
+        },
+        wardSettings: {
+            restLeavePolicy: {
+                availability: {
+                    title: '쉬는 날 계산 사용',
+                },
+                simpleSubtitle: '근무표를 만들 때 목표 쉬는 날과 포함할 휴무 근무유형을 기준으로 계산해요.',
+                previewLabel: '{{month}}월 예상 목표',
+                unit: {
+                    day: '일',
+                },
+                target: {
+                    title: '목표 쉬는 날 설정',
+                    weekly: {
+                        title: '주 단위로 계산',
+                        description: '한 주에 필요한 쉬는 날 수를 기준으로 월 목표를 자동 계산해요.',
+                        stepperLabel: '{{count}}주 기준 주간 쉬는 날 수',
+                    },
+                    fixed: {
+                        title: '월 고정값으로 계산',
+                        description: '매월 동일한 쉬는 날 목표를 직접 지정해요.',
+                        stepperLabel: '월 고정 쉬는 날 수',
+                    },
+                },
+                holiday: {
+                    title: '공휴일 포함 여부',
+                    include: {
+                        title: '공휴일 포함',
+                        description: '공휴일도 목표 쉬는 날 계산에 포함해요.',
+                    },
+                    exclude: {
+                        title: '공휴일 제외',
+                        description: '공휴일은 별도로 보고 목표 쉬는 날 계산에서 제외해요.',
+                    },
+                },
+                carryOver: {
+                    title: '이월 쉬는 날 처리',
+                    toggle: '부족분 이월',
+                    toggleHint: '이번 달에 채우지 못한 쉬는 날을 다음 달 계산에 반영해요.',
+                    offTitle: '이월하지 않음',
+                    offHint: '매월 설정한 목표만 기준으로 계산해요.',
+                },
+                countedLeaves: {
+                    sectionTitle: '쉬는 날로 계산할 근무유형',
+                    hint: 'OFF, 연차처럼 쉬는 날로 인정할 근무유형을 선택해요.',
+                    toggleAria: '{{name}} 쉬는 날 계산 포함 여부 변경',
+                    empty: '쉬는 날로 설정할 휴무 근무유형이 없어요.',
+                },
+                toast: {
+                    saved: '쉬는 날 계산 설정을 저장했어요.',
+                },
+                save: '저장',
+            },
+            requestReception: {
+                notificationTitle: '알림 설정',
+            },
+        },
+    },
+} as const;
+
+const resources = {
+    ko: {translation: fillMissingTranslations(fillMissingTranslations(generatedKo, ko), supplementalKo)},
+    en: {translation: fillMissingTranslations(generatedEn, en)},
+    ja: {translation: fillMissingTranslations(generatedJa, ja)},
+    zh: {translation: fillMissingTranslations(generatedZh, zh)},
+    th: {translation: fillMissingTranslations(generatedTh, th)},
+    vi: {translation: fillMissingTranslations(generatedVi, vi)},
+} as const;
 
 const syncDocumentLocale = (lng?: string) => {
     const language = normalizePreferredLanguage(lng) ?? 'en';

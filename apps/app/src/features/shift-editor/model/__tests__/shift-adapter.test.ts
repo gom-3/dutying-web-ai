@@ -9,6 +9,7 @@ import {
     isDutyShiftWithoutAssignments,
     shiftToDoc,
 } from '../shift-adapter';
+import {snapshotDetailToDoc} from '../snapshot-to-doc';
 
 function createShift(): TShift {
     return {
@@ -177,6 +178,35 @@ describe('shift-adapter', () => {
         expect(doc.rows[0]?.lastCells).toEqual(['O', 'TR', 'D', 'O']);
     });
 
+    it('renders snapshot cells with the current short name when the shift type id is unchanged', () => {
+        const shift = createShift();
+
+        shift.wardShiftTypes = shift.wardShiftTypes.map((shiftType) =>
+            shiftType.wardShiftTypeId === 20 ? {...shiftType, shortName: '-'} : shiftType,
+        );
+
+        const doc = snapshotDetailToDoc(
+            {
+                rowOrder: [{shiftNurseId: 1, nurseId: 100, displayOrder: 1, priority: 0, divisionNum: 1}],
+                cells: [
+                    {
+                        shiftNurseId: 1,
+                        nurseId: 100,
+                        date: '2026-03-01',
+                        wardShiftTypeId: 20,
+                        shiftCode: 'O',
+                    },
+                ],
+            },
+            shift,
+            2026,
+            3,
+            {fixedCells: {}, requestCells: {}},
+        );
+
+        expect(doc.rows[0]?.cells).toEqual(['-', null]);
+    });
+
     it('converts editor doc back to ward shifts dto', () => {
         const shift = createShift();
         const doc = {
@@ -288,18 +318,22 @@ describe('shift-adapter', () => {
         expect(nextShift.divisionShiftNurses[0]?.[1]?.wardShiftList).toEqual([20, 10]);
     });
 
-    it('falls back to null when editor cells do not map to a known ward shift type', () => {
+    it('preserves the original shift type id when a stale editor cell no longer maps by short name', () => {
         const shift = createShift();
+        shift.divisionShiftNurses[0]![0]!.wardShiftList = [20, 10];
+        shift.wardShiftTypes = shift.wardShiftTypes.map((shiftType) =>
+            shiftType.wardShiftTypeId === 20 ? {...shiftType, shortName: '-'} : shiftType,
+        );
         const doc = {
             columns: ['2026-03-01', '2026-03-02'],
-            rows: [{workerId: '1', cells: ['UNKNOWN', 'D']}],
+            rows: [{workerId: '1', cells: ['O', 'D']}],
             workerMeta: {1: {name: 'Kim'}},
             fixedCells: {},
             requestCells: {},
         };
 
         expect(docToWardShiftsDTO(doc, shift)).toEqual([
-            {shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: null},
+            {shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 20},
             {shiftNurseId: 1, date: '2026-03-02', wardShiftTypeId: 10},
         ]);
     });

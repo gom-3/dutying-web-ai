@@ -935,6 +935,9 @@ export const ko = {
                 "error": "근무표를 불러오지 못했어요",
                 "firstFill": "자동 채우기",
                 "fixedOnly": "고정만 보기",
+                "fixedDisplay": "고정 표시",
+                "fixedDisplayHidden": "고정근무 숨김",
+                "fixedDisplayShown": "고정근무 표시 중",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
@@ -956,6 +959,7 @@ export const ko = {
                 "saveSnapshotFailed": "임시 저장하지 못했어요.",
                 "saveSnapshotSuccess": "임시 저장했어요.",
                 "savingSnapshot": "임시 저장 중…",
+                "showViolations": "위반 표시",
                 "showingFaults": "오류 표시 중",
                 "snapshotLimitDialog": {
                     "cancel": "취소",
@@ -1011,11 +1015,13 @@ export const ko = {
                 "validationStatus": {
                     "checking": "제약조건 검토 중"
                 },
-                "viewAll": "전체 보기"
+                "viewAll": "전체 보기",
+                "viewOptions": "표시 옵션",
+                "violationsHidden": "제약조건 위반 숨김",
+                "violationsShown": "제약조건 위반 표시 중"
             },
             "calendar": {
                 "carried": "이월",
-                "carriedDetail": "지난달에서 넘어온 쉬는 날 {{count}}일",
                 "clearCell": "비우기",
                 "closePopover": "팝업 닫기",
                 "dateOthers": "외 {{count}}일",
@@ -1023,12 +1029,6 @@ export const ko = {
                 "name": "이름",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "전달 근무",
-                "restCheck": "휴무 체크",
-                "restCheckCompact": "휴무",
-                "restCheckDetail": "기준 {{target}}일 · 배정 {{assigned}}일 · 이월 {{carried}}일",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "근무유형 선택",
                 "violationCount": {
                     "error": "중요 {{count}}",
@@ -1278,21 +1278,6 @@ export const ko = {
             },
             "monthRangeDescription": "듀팅에서는 이번 달과 다음 달의 근무표만 생성할 수 있어요.",
             "monthRangeTitle": "이 기간에는 근무표를 만들 수 없어요",
-            "monthlyMemo": {
-                "button": "메모",
-                "buttonAria": "{{year}}년 {{month}}월 개인 메모 열기",
-                "buttonWithMemoAria": "메모 있음 {{year}}년 {{month}}월 개인 메모 열기",
-                "closeAria": "월별 메모 닫기",
-                "loadFailed": "메모를 불러오지 못했어요.",
-                "loading": "메모를 불러오는 중이에요",
-                "placeholder": "이번 달에 기억할 내용을 적어두세요.",
-                "retry": "다시 시도",
-                "saveFailed": "저장하지 못했어요.",
-                "saved": "저장됨",
-                "saving": "저장 중…",
-                "textareaAria": "{{year}}년 {{month}}월 개인 메모",
-                "title": "{{year}}년 {{month}}월 메모"
-            },
             "navigation": {
                 "complete": "완료",
                 "moving": "이동 중…",
@@ -1454,49 +1439,26 @@ export const ko = {
                 "noNurseDescription": "근무표를 만들려면 먼저 간호사를 추가해 주세요. 근무자 관리에서 바로 시작할 수 있어요",
                 "noNurseTitle": "{{teamName}}에는 아직 간호사가 없어요",
                 "preceptorActive": "해당",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}일",
-                    "adjustmentNone": "조정 없음",
-                    "adjustmentPlus": "+{{count}}일",
-                    "baseTargetLabel": "기본 기준",
-                    "carryOverLabel": "못 쉰 날",
-                    "carryOverOff": "반영 안 함",
-                    "carryOverOn": "다음 달 반영",
-                    "countAllLeaves": "쉬는 날 전체",
-                    "countOffOnly": "기본 쉬는 날만",
-                    "countedLeaveFallback": "선택 없음",
-                    "countedLeaveLabel": "포함 항목",
-                    "dayUnit": "일",
-                    "decreaseButton": "1일 줄이기",
-                    "decreaseTarget": "목표 쉬는 날 1일 줄이기",
-                    "description": "간호사별 부족/초과를 확인할 기준이에요. 필요하면 이달만 보정해요.",
-                    "edit": "기본 설정 바꾸기",
-                    "fixedTarget": "월 {{count}}일",
-                    "holidayCountryLabel": "공휴일",
-                    "holidaysExcluded": "그대로 둬요",
-                    "holidaysIncluded": "늘려요",
-                    "increaseButton": "1일 늘리기",
-                    "increaseTarget": "목표 쉬는 날 1일 늘리기",
-                    "monthTargetDescription": "기본 {{count}}일에서 이달만 보정해요.",
-                    "monthTargetLabel": "이번 달 보정",
-                    "resetAdjustment": "초기화",
-                    "shortageBlock": "확정 전 확인",
-                    "shortageCarryOver": "다음 달에 쉬게 함",
-                    "shortageLabel": "부족 처리",
-                    "shortageWarn": "표시만 함",
-                    "surplusAnnualLeave": "연차 처리",
-                    "surplusExtraOff": "추가 OFF",
-                    "surplusLabel": "초과 처리",
-                    "surplusManual": "직접 확인",
-                    "targetLabel": "목표 쉬는 날",
-                    "title": "쉬는 날 계산",
-                    "weeklyTarget": "주 {{days}}일 × {{weeks}}주 = {{count}}일"
-                },
                 "sortByName": "가나다순",
                 "sortBySavedOrder": "임의순",
                 "sortBySkill": "숙련도 순",
                 "sortListMenuAria": "근무자 정렬 기준 열기",
                 "totalCount": "총 {{count}}명"
+            },
+            "monthlyMemo": {
+                "button": "메모",
+                "buttonAria": "{{year}}년 {{month}}월 개인 메모 열기",
+                "buttonWithMemoAria": "메모 있음 {{year}}년 {{month}}월 개인 메모 열기",
+                "title": "{{year}}년 {{month}}월 메모",
+                "closeAria": "월별 메모 닫기",
+                "loading": "메모를 불러오는 중이에요",
+                "loadFailed": "메모를 불러오지 못했어요.",
+                "retry": "다시 시도",
+                "placeholder": "이번 달에 기억할 내용을 적어두세요.",
+                "textareaAria": "{{year}}년 {{month}}월 개인 메모",
+                "saving": "저장 중…",
+                "saved": "저장됨",
+                "saveFailed": "저장하지 못했어요."
             }
         },
         "member": {
@@ -2383,7 +2345,6 @@ export const ko = {
                 "noTeamsLabel": "팀을 등록하면 신청 근무를 쓸 수 있어요",
                 "readonlyDescription": "필요하면 수정하기로 신청 근무를 다시 조정할 수 있어요.",
                 "readonlyTitle": "{{month}}월 신청 근무",
-                "settingsAction": "접수 설정",
                 "saveAction": "저장하기",
                 "savedDescription": "최근 변경 사항을 저장했어요.",
                 "saveError": "최근 변경 사항을 저장하지 못했어요. 다시 저장해 주세요.",
@@ -2483,165 +2444,7 @@ export const ko = {
             },
             "description": {
                 "constraints": "근무 규칙을 관리해요.",
-                "requestReception": "신청근무 접수 기간을 관리해요.",
-                "restLeavePolicy": "쉬는 날 기준과 이월을 관리해요.",
                 "shiftTypes": "근무 유형을 관리해요."
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "근무표에서 이월과 휴무 체크를 숨겨요.",
-                        "title": "사용하지 않아요"
-                    },
-                    "enabled": {
-                        "description": "근무표에서 이월, 부족, 초과를 함께 확인해요.",
-                        "title": "사용해요"
-                    },
-                    "title": "쉬는 날 계산을 사용할까요?"
-                },
-                "carryOver": {
-                    "title": "간호사별로 못 쉰 날을 다음 달 기준에 더할까요?",
-                    "toggle": "네, 다음 달에 쉬게 해줘요",
-                    "toggleHint": "예: A 간호사 1일 부족 → 다음 달 A 기준 +1일",
-                    "offTitle": "아니요, 다음 달엔 반영하지 않아요",
-                    "offHint": "예: A 간호사 1일 부족만 표시하고 기준은 그대로예요.",
-                    "simpleHint": "예: A 간호사 1일 부족 → 다음 달 A 기준 +1일"
-                },
-                "countedLeaves": {
-                    "empty": "근무유형 탭에서 휴무 유형을 먼저 만들어 주세요.",
-                    "hint": "선택한 항목만 쉬는 날로 계산해요.",
-                    "loading": "근무유형을 불러오는 중이에요.",
-                    "noneSelected": "선택된 항목이 없어요.",
-                    "notSelectedBadge": "제외",
-                    "selected": "현재 {{names}}를 쉬는 날로 계산해요.",
-                    "selectedBadge": "포함",
-                    "sectionTitle": "쉬는 날에 넣을 항목",
-                    "title": "쉬는 날로 계산할 근무유형",
-                    "toggleAria": "{{name}}을 쉬는 날 계산에 포함"
-                },
-                "holidayAuto": {
-                    "description": "공휴일을 쉬는 날 기준에 더할지 정해요.",
-                    "title": "공휴일 처리"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "예: 공휴일 2일이어도 기준은 그대로예요.",
-                        "title": "아니요, 그대로 둬요"
-                    },
-                    "include": {
-                        "description": "예: 공휴일 2일 → 기준 +2일",
-                        "title": "네, 공휴일만큼 늘려요"
-                    },
-                    "title": "공휴일을 쉬는 날 기준에 더할까요?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "OFF, 연차, 공가를 모두 쉰 날에 넣어요.",
-                        "title": "네, 같이 계산해요"
-                    },
-                    "offOnly": {
-                        "description": "연차/공가는 따로 보고 OFF만 쉰 날에 넣어요.",
-                        "title": "아니요, OFF만 계산해요"
-                    },
-                    "title": "연차/공가도 쉰 날로 계산할까요?"
-                },
-                "preview": "기준 {{count}}일",
-                "previewLabel": "{{month}}월 미리보기",
-                "previewWithHoliday": "기준 {{count}}일 + 공휴일",
-                "previewWithHolidayCountry": "기준 {{count}}일 + 공휴일",
-                "disabledPreview": "사용 안 함",
-                "disabledSummary": "휴무 체크를 표시하지 않아요.",
-                "save": "저장하기",
-                "saved": "저장되어 있어요.",
-                "shortage": {
-                    "block": {
-                        "description": "부족하면 확정 전 확인이 필요해요.",
-                        "title": "확정 전 확인"
-                    },
-                    "carryOver": {
-                        "description": "부족분을 다음 달 쉬는 날로 넘겨요.",
-                        "title": "다음 달 이월"
-                    },
-                    "warn": {
-                        "description": "부족한 사람만 표시하고 진행은 허용해요.",
-                        "title": "경고만 표시"
-                    }
-                },
-                "simpleSubtitle": "근무표에서 간호사별로 쉬는 날이 부족한지, 더 배정됐는지 확인할 때 쓰는 기준이에요.",
-                "subtitle": "기준일, 포함 항목, 이월 반영 여부를 병동 기준에 맞게 정해요.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "목표보다 많이 쉰 날을 연차 사용으로 봐요.",
-                        "title": "연차로 처리"
-                    },
-                    "extraOff": {
-                        "description": "초과분을 그대로 추가 쉬는 날로 둬요.",
-                        "title": "추가 쉬는 날 유지"
-                    },
-                    "manual": {
-                        "description": "확정 전 관리자가 직접 선택해요.",
-                        "title": "직접 확인"
-                    },
-                    "title": "초과 휴무 처리"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "예: 매달 6일 쉬는 것으로 계산해요.",
-                        "stepperLabel": "월 쉬는 날",
-                        "title": "한 달 개수로 정해요"
-                    },
-                    "includeHolidays": "공휴일만큼 기준일 늘리기",
-                    "includeHolidaysHint": "공휴일이 있는 달은 기준일이 늘어나요.",
-                    "title": "기본 쉬는 날 기준을 어떻게 정할까요?",
-                    "weekly": {
-                        "description": "예: 주 2일 쉬는 것을 기준으로 계산해요.",
-                        "stepperLabel": "주당 쉬는 날",
-                        "title": "주마다 정해요"
-                    }
-                },
-                "title": "쉬는 날 계산 설정",
-                "toast": {
-                    "saved": "저장했어요."
-                },
-                "unit": {
-                    "day": "일"
-                },
-                "unsaved": "저장하지 않은 변경이 있어요."
-            },
-            "requestReception": {
-                "daySuffix": "일",
-                "endDay": "마감",
-                "endTime": "마감 시간",
-                "error": "신청 기간 설정을 불러오지 못했어요",
-                "loading": "신청 기간 설정을 불러오는 중이에요",
-                "notificationTitle": "알림 받기",
-                "notifyBeforeDeadline": "마감 전 알림",
-                "notifyBeforeDeadlineDescription": "마감 24시간 전에 한 번 더 알려요.",
-                "notifyOnOpen": "시작 알림",
-                "notifyOnOpenDescription": "신청이 시작되면 간호사에게 알려요.",
-                "save": "저장하기",
-                "sectionTitle": "신청받는 날짜",
-                "startDay": "시작",
-                "startTime": "시작 시간",
-                "status": {
-                    "disabled": "사용 안 함",
-                    "enabled": "사용 중"
-                },
-                "summary": {
-                    "disabled": "기간 제한 없이 언제든 신청받아요.",
-                    "enabled": "다음 달 신청근무를 매월 {{startDay}}일~{{endDay}}일에 받아요."
-                },
-                "toast": {
-                    "saveSuccess": "신청근무 접수 설정을 저장했어요.",
-                    "updateFailed": "신청근무 접수 설정을 저장하지 못했어요."
-                },
-                "toggleDescription": "켜면 정한 기간에만 앱에서 신청하거나 수정할 수 있어요.",
-                "toggleTitle": "신청 기간을 정할까요?",
-                "validation": {
-                    "day": "1일부터 31일 사이로 입력해 주세요.",
-                    "range": "마감일은 시작일과 같거나 늦어야 해요.",
-                    "time": "시간은 00:00 형식으로 입력해 주세요."
-                }
             },
             "shiftTypes": {
                 "add": "근무 유형 추가하기",
@@ -2682,8 +2485,6 @@ export const ko = {
             },
             "tabs": {
                 "constraints": "제약 조건",
-                "requestReception": "신청근무 접수",
-                "restLeavePolicy": "쉬는 날 계산",
                 "shiftTypes": "근무 유형"
             },
             "title": "근무 설정",
@@ -3706,6 +3507,9 @@ export const en: TLocale = {
                 "error": "Failed to load the duty schedule",
                 "firstFill": "Autofill",
                 "fixedOnly": "Fixed only",
+                "fixedDisplay": "Show fixed",
+                "fixedDisplayHidden": "Fixed shifts hidden",
+                "fixedDisplayShown": "Fixed shifts shown",
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
@@ -3727,6 +3531,7 @@ export const en: TLocale = {
                 "saveSnapshotFailed": "Failed to save draft.",
                 "saveSnapshotSuccess": "Draft saved.",
                 "savingSnapshot": "Saving draft…",
+                "showViolations": "Show violations",
                 "showingFaults": "Showing errors",
                 "snapshotLimitDialog": {
                     "cancel": "Cancel",
@@ -3782,11 +3587,13 @@ export const en: TLocale = {
                 "validationStatus": {
                     "checking": "Checking constraints"
                 },
-                "viewAll": "View all"
+                "viewAll": "View all",
+                "viewOptions": "Display options",
+                "violationsHidden": "Constraint violations hidden",
+                "violationsShown": "Constraint violations shown"
             },
             "calendar": {
                 "carried": "Carry",
-                "carriedDetail": "Carried rest {{count}}d",
                 "clearCell": "Clear",
                 "closePopover": "Close popover",
                 "dateOthers": "+{{count}} more day",
@@ -3794,12 +3601,6 @@ export const en: TLocale = {
                 "name": "Name",
                 "nurseDayLabel": "{{name}} · day {{day}}",
                 "previousShifts": "Prev",
-                "restCheck": "Rest check",
-                "restCheckCompact": "Rest",
-                "restCheckDetail": "Target {{target}}d · Assigned {{assigned}}d · Carry {{carried}}d",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "Select shift type",
                 "violationCount": {
                     "error": "Important {{count}}",
@@ -4049,21 +3850,6 @@ export const en: TLocale = {
             },
             "monthRangeDescription": "On Dutying, you can only create schedules for this month and the next month.",
             "monthRangeTitle": "You can’t create a schedule for this period",
-            "monthlyMemo": {
-                "button": "Memo",
-                "buttonAria": "Open personal memo for {{year}} {{month}}",
-                "buttonWithMemoAria": "Open personal memo with content for {{year}} {{month}}",
-                "closeAria": "Close monthly memo",
-                "loadFailed": "Could not load memo.",
-                "loading": "Loading memo",
-                "placeholder": "Write what to remember this month.",
-                "retry": "Retry",
-                "saveFailed": "Could not save memo.",
-                "saved": "Saved",
-                "saving": "Saving…",
-                "textareaAria": "Personal memo for {{year}} {{month}}",
-                "title": "{{year}} {{month}} memo"
-            },
             "navigation": {
                 "complete": "Complete",
                 "moving": "Moving…",
@@ -4225,49 +4011,26 @@ export const en: TLocale = {
                 "noNurseDescription": "Add nurses before creating a schedule. You can start from member management.",
                 "noNurseTitle": "{{teamName}} has no nurses yet",
                 "preceptorActive": "Yes",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}d",
-                    "adjustmentNone": "No change",
-                    "adjustmentPlus": "+{{count}}d",
-                    "baseTargetLabel": "Base rule",
-                    "carryOverLabel": "Missed rest",
-                    "carryOverOff": "Not applied",
-                    "carryOverOn": "Apply next month",
-                    "countAllLeaves": "OFF + leave",
-                    "countOffOnly": "Base OFF only",
-                    "countedLeaveFallback": "Base OFF",
-                    "countedLeaveLabel": "Counts as rest",
-                    "dayUnit": "d",
-                    "decreaseButton": "-1d",
-                    "decreaseTarget": "Decrease this month's adjustment",
-                    "description": "Rest-counting rules applied to this monthly schedule.",
-                    "edit": "Edit base rule",
-                    "fixedTarget": "{{count}}d/month",
-                    "holidayCountryLabel": "Holidays",
-                    "holidaysExcluded": "Holidays excluded",
-                    "holidaysIncluded": "Holidays included",
-                    "increaseButton": "+1d",
-                    "increaseTarget": "Increase this month's adjustment",
-                    "monthTargetDescription": "Adjust this month only from base {{count}}d.",
-                    "monthTargetLabel": "This month adjustment",
-                    "resetAdjustment": "Reset",
-                    "shortageBlock": "Review before publish",
-                    "shortageCarryOver": "Give next month",
-                    "shortageLabel": "Shortage",
-                    "shortageWarn": "Show only",
-                    "surplusAnnualLeave": "Use leave",
-                    "surplusExtraOff": "Extra OFF",
-                    "surplusLabel": "Surplus",
-                    "surplusManual": "Manual review",
-                    "targetLabel": "Rest target",
-                    "title": "Rest policy",
-                    "weeklyTarget": "{{days}}/week × {{weeks}}w = {{count}}d"
-                },
                 "sortByName": "Name",
                 "sortBySavedOrder": "Custom order",
                 "sortBySkill": "Skill level",
                 "sortListMenuAria": "Open worker sort options",
                 "totalCount": "Total {{count}}"
+            },
+            "monthlyMemo": {
+                "button": "Memo",
+                "buttonAria": "Open personal memo for {{year}} {{month}}",
+                "buttonWithMemoAria": "Open personal memo with content for {{year}} {{month}}",
+                "title": "{{year}} {{month}} memo",
+                "closeAria": "Close monthly memo",
+                "loading": "Loading memo",
+                "loadFailed": "Could not load memo.",
+                "retry": "Retry",
+                "placeholder": "Write what to remember this month.",
+                "textareaAria": "Personal memo for {{year}} {{month}}",
+                "saving": "Saving…",
+                "saved": "Saved",
+                "saveFailed": "Could not save memo."
             }
         },
         "member": {
@@ -5154,7 +4917,6 @@ export const en: TLocale = {
                 "noTeamsLabel": "No registered teams",
                 "readonlyDescription": "Press Edit to adjust the requested shifts right away.",
                 "readonlyTitle": "Confirmed requested shifts for {{month}}",
-                "settingsAction": "Intake settings",
                 "saveAction": "Save",
                 "savedDescription": "Your latest changes have been saved.",
                 "saveError": "Failed to save the latest changes. Please try saving again.",
@@ -5254,165 +5016,7 @@ export const en: TLocale = {
             },
             "description": {
                 "constraints": "Manage scheduling constraints.",
-                "requestReception": "Manage request reception windows.",
-                "restLeavePolicy": "Manage how days off and leaves are counted.",
                 "shiftTypes": "Manage shift types."
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "Hide carried days and rest checks on schedules.",
-                        "title": "Do not use it"
-                    },
-                    "enabled": {
-                        "description": "Show carried days, shortages, and surplus on schedules.",
-                        "title": "Use it"
-                    },
-                    "title": "Use rest day calculation?"
-                },
-                "carryOver": {
-                    "title": "Give missed rest days next month?",
-                    "toggle": "Yes, give them next month",
-                    "toggleHint": "If a nurse rests less than the target this month, increase next month's rest target by that amount.",
-                    "offTitle": "No, do not apply it next month",
-                    "offHint": "Only show who is short. Use this when the ward settles missed rest days separately, such as with pay.",
-                    "simpleHint": "Example: if a nurse misses 1 rest day this month, next month's target increases by 1."
-                },
-                "countedLeaves": {
-                    "empty": "No leave types yet.",
-                    "hint": "Only shift types marked as rest in Shift types are shown.",
-                    "loading": "Loading leave types.",
-                    "noneSelected": "No items count toward the target.",
-                    "notSelectedBadge": "Excluded",
-                    "selected": "{{names}} count toward the target.",
-                    "selectedBadge": "Included",
-                    "sectionTitle": "Rest items",
-                    "title": "Shift types counted as rest",
-                    "toggleAria": "Count {{name}} as rest"
-                },
-                "holidayAuto": {
-                    "description": "Choose whether holidays are added to the target OFF count.",
-                    "title": "Holiday inclusion"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "Do not add holidays to the target OFF count.",
-                        "title": "No, exclude them"
-                    },
-                    "include": {
-                        "description": "Months with holidays require more target OFF days.",
-                        "title": "Yes, add them"
-                    },
-                    "title": "Add holidays to the target OFF count?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "Count leave types shown as rest days on the schedule.",
-                        "title": "OFF + leave"
-                    },
-                    "offOnly": {
-                        "description": "Keep annual and official leave separate from the rest target.",
-                        "title": "Base OFF only"
-                    },
-                    "title": "What counts as rest"
-                },
-                "preview": "Target {{count}}d",
-                "previewLabel": "For {{month}}",
-                "previewWithHoliday": "Target {{count}}d + holidays",
-                "previewWithHolidayCountry": "Target {{count}}d + {{country}} holidays",
-                "disabledPreview": "Off",
-                "disabledSummary": "Rest checks are hidden.",
-                "save": "Save policy",
-                "saved": "Rest policy is saved.",
-                "shortage": {
-                    "block": {
-                        "description": "Require review before publishing.",
-                        "title": "Review before publish"
-                    },
-                    "carryOver": {
-                        "description": "Carry the shortage to next month's OFF.",
-                        "title": "Carry to next month"
-                    },
-                    "warn": {
-                        "description": "Show who is short, but allow progress.",
-                        "title": "Warning only"
-                    }
-                },
-                "simpleSubtitle": "Choose only the common rules. You can decide whether holidays are added.",
-                "subtitle": "Set how base OFF, annual leave, and official leave are counted and handled.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "Treat extra rest days as annual leave.",
-                        "title": "Use annual leave"
-                    },
-                    "extraOff": {
-                        "description": "Keep the extra days as additional OFF.",
-                        "title": "Keep extra OFF"
-                    },
-                    "manual": {
-                        "description": "Let an admin decide before publishing.",
-                        "title": "Review manually"
-                    },
-                    "title": "Surplus handling"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "Use the same base OFF target every month.",
-                        "stepperLabel": "Monthly base OFF",
-                        "title": "Fixed monthly count"
-                    },
-                    "includeHolidays": "Add holidays to target",
-                    "includeHolidaysHint": "Months with holidays require more rest days.",
-                    "title": "Monthly rest target",
-                    "weekly": {
-                        "description": "Convert weekly OFF days into a monthly target.",
-                        "stepperLabel": "{{count}} weeks · OFF per week",
-                        "title": "Weekly OFF basis"
-                    }
-                },
-                "title": "Rest/leave policy",
-                "toast": {
-                    "saved": "Saved rest policy."
-                },
-                "unit": {
-                    "day": "d"
-                },
-                "unsaved": "You have unsaved changes."
-            },
-            "requestReception": {
-                "daySuffix": "day",
-                "endDay": "End day",
-                "endTime": "End time",
-                "error": "Failed to load request reception settings.",
-                "loading": "Loading request reception settings.",
-                "notificationTitle": "Notifications",
-                "notifyBeforeDeadline": "Notify before deadline",
-                "notifyBeforeDeadlineDescription": "Notify members 24 hours before the deadline.",
-                "notifyOnOpen": "Notify when opened",
-                "notifyOnOpenDescription": "Notify members when the request window opens.",
-                "save": "Save",
-                "sectionTitle": "Request reception window",
-                "startDay": "Start day",
-                "startTime": "Start time",
-                "status": {
-                    "disabled": "Off",
-                    "enabled": "On"
-                },
-                "summary": {
-                    "disabled": "Request reception is not used.",
-                    "enabled": "Requests are open every month from day {{startDay}} to day {{endDay}}."
-                },
-                "toast": {
-                    "saveSuccess": "Saved request reception settings.",
-                    "updateFailed": "Could not save request reception settings."
-                },
-                "toggleDescription": "When on, requests can be submitted only during the selected window.",
-                "toggleTitle": "Receive requests?",
-                "validation": {
-                    "day": "Enter a day from 1 to 31.",
-                    "range": "The end must be later than the start.",
-                    "time": "Enter time in 00:00 format."
-                }
             },
             "shiftTypes": {
                 "add": "Add shift type",
@@ -5453,8 +5057,6 @@ export const en: TLocale = {
             },
             "tabs": {
                 "constraints": "Constraints",
-                "requestReception": "Requests",
-                "restLeavePolicy": "Rest policy",
                 "shiftTypes": "Shift types"
             },
             "title": "Duty management",
@@ -6475,6 +6077,9 @@ export const ja: TLocale = {
                 "error": "勤務表を読み込めませんでした",
                 "firstFill": "自動入力",
                 "fixedOnly": "固定のみ表示",
+                "fixedDisplay": "固定表示",
+                "fixedDisplayHidden": "固定勤務を非表示",
+                "fixedDisplayShown": "固定勤務を表示中",
                 "generating": "入力中...",
                 "hidingFaults": "エラー非表示",
                 "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
@@ -6496,6 +6101,7 @@ export const ja: TLocale = {
                 "saveSnapshotFailed": "一時保存できませんでした。",
                 "saveSnapshotSuccess": "一時保存しました。",
                 "savingSnapshot": "一時保存中…",
+                "showViolations": "違反を表示",
                 "showingFaults": "エラー表示中",
                 "snapshotLimitDialog": {
                     "cancel": "キャンセル",
@@ -6551,11 +6157,13 @@ export const ja: TLocale = {
                 "validationStatus": {
                     "checking": "制約条件を確認中"
                 },
-                "viewAll": "すべて表示"
+                "viewAll": "すべて表示",
+                "viewOptions": "表示オプション",
+                "violationsHidden": "制約違反を非表示",
+                "violationsShown": "制約違反を表示中"
             },
             "calendar": {
                 "carried": "繰越",
-                "carriedDetail": "Carried rest {{count}}d",
                 "clearCell": "クリア",
                 "closePopover": "ポップアップを閉じる",
                 "dateOthers": "ほか{{count}}日",
@@ -6563,12 +6171,6 @@ export const ja: TLocale = {
                 "name": "名前",
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
-                "restCheck": "Rest check",
-                "restCheckCompact": "Rest",
-                "restCheckDetail": "Target {{target}}d · Assigned {{assigned}}d · Carry {{carried}}d",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "勤務区分を選択",
                 "violationCount": {
                     "error": "重要 {{count}}",
@@ -6818,21 +6420,6 @@ export const ja: TLocale = {
             },
             "monthRangeDescription": "Dutyingでは今月と来月の勤務表のみ作成できます。",
             "monthRangeTitle": "この期間の勤務表は作成できません",
-            "monthlyMemo": {
-                "button": "メモ",
-                "buttonAria": "{{year}}年{{month}}月の個人メモを開く",
-                "buttonWithMemoAria": "メモあり {{year}}年{{month}}月の個人メモを開く",
-                "closeAria": "月別メモを閉じる",
-                "loadFailed": "メモを読み込めませんでした。",
-                "loading": "メモを読み込み中です",
-                "placeholder": "今月覚えておく内容を書いてください。",
-                "retry": "再試行",
-                "saveFailed": "メモを保存できませんでした。",
-                "saved": "保存済み",
-                "saving": "保存中…",
-                "textareaAria": "{{year}}年{{month}}月の個人メモ",
-                "title": "{{year}}年{{month}}月のメモ"
-            },
             "navigation": {
                 "complete": "完了",
                 "moving": "移動中...",
@@ -6994,49 +6581,26 @@ export const ja: TLocale = {
                 "noNurseDescription": "勤務表を作成するには、先に看護師を追加してください。看護師管理からすぐに開始できます。",
                 "noNurseTitle": "{{teamName}}にはまだ看護師がいません",
                 "preceptorActive": "該当",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}d",
-                    "adjustmentNone": "No change",
-                    "adjustmentPlus": "+{{count}}d",
-                    "baseTargetLabel": "Base rule",
-                    "carryOverLabel": "Missed rest",
-                    "carryOverOff": "Not applied",
-                    "carryOverOn": "Apply next month",
-                    "countAllLeaves": "OFF + leave",
-                    "countOffOnly": "Base OFF only",
-                    "countedLeaveFallback": "Base OFF",
-                    "countedLeaveLabel": "Counts as rest",
-                    "dayUnit": "d",
-                    "decreaseButton": "-1d",
-                    "decreaseTarget": "Decrease this month's adjustment",
-                    "description": "Rest-counting rules applied to this monthly schedule.",
-                    "edit": "Edit base rule",
-                    "fixedTarget": "{{count}}d/month",
-                    "holidayCountryLabel": "Holidays",
-                    "holidaysExcluded": "Holidays excluded",
-                    "holidaysIncluded": "Holidays included",
-                    "increaseButton": "+1d",
-                    "increaseTarget": "Increase this month's adjustment",
-                    "monthTargetDescription": "Adjust this month only from base {{count}}d.",
-                    "monthTargetLabel": "This month adjustment",
-                    "resetAdjustment": "Reset",
-                    "shortageBlock": "Review before publish",
-                    "shortageCarryOver": "Give next month",
-                    "shortageLabel": "Shortage",
-                    "shortageWarn": "Show only",
-                    "surplusAnnualLeave": "Use leave",
-                    "surplusExtraOff": "Extra OFF",
-                    "surplusLabel": "Surplus",
-                    "surplusManual": "Manual review",
-                    "targetLabel": "Rest target",
-                    "title": "Rest policy",
-                    "weeklyTarget": "{{days}}/week × {{weeks}}w = {{count}}d"
-                },
                 "sortByName": "五十音順",
                 "sortBySavedOrder": "任意順",
                 "sortBySkill": "熟練度順",
                 "sortListMenuAria": "看護師の並び順を開く",
                 "totalCount": "合計 {{count}}名"
+            },
+            "monthlyMemo": {
+                "button": "メモ",
+                "buttonAria": "{{year}}年{{month}}月の個人メモを開く",
+                "buttonWithMemoAria": "メモあり {{year}}年{{month}}月の個人メモを開く",
+                "title": "{{year}}年{{month}}月のメモ",
+                "closeAria": "月別メモを閉じる",
+                "loading": "メモを読み込み中です",
+                "loadFailed": "メモを読み込めませんでした。",
+                "retry": "再試行",
+                "placeholder": "今月覚えておく内容を書いてください。",
+                "textareaAria": "{{year}}年{{month}}月の個人メモ",
+                "saving": "保存中…",
+                "saved": "保存済み",
+                "saveFailed": "メモを保存できませんでした。"
             }
         },
         "member": {
@@ -7923,7 +7487,6 @@ export const ja: TLocale = {
                 "noTeamsLabel": "チームを登録すると勤務希望を入力できます",
                 "readonlyDescription": "必要に応じて「編集する」から勤務希望を調整できます。",
                 "readonlyTitle": "{{month}}月の確定勤務希望",
-                "settingsAction": "受付設定",
                 "saveAction": "保存する",
                 "savedDescription": "最新の変更内容を保存しました。",
                 "saveError": "最新の変更内容を保存できませんでした。もう一度保存してください。",
@@ -8023,165 +7586,7 @@ export const ja: TLocale = {
             },
             "description": {
                 "constraints": "勤務条件を管理します。",
-                "requestReception": "Manage request reception windows.",
-                "restLeavePolicy": "Manage how days off and leaves are counted.",
                 "shiftTypes": "勤務区分を管理します。"
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "Hide carried days and rest checks on schedules.",
-                        "title": "Do not use it"
-                    },
-                    "enabled": {
-                        "description": "Show carried days, shortages, and surplus on schedules.",
-                        "title": "Use it"
-                    },
-                    "title": "Use rest day calculation?"
-                },
-                "carryOver": {
-                    "title": "Give missed rest days next month?",
-                    "toggle": "Yes, give them next month",
-                    "toggleHint": "If a nurse rests less than the target this month, increase next month's rest target by that amount.",
-                    "offTitle": "No, do not apply it next month",
-                    "offHint": "Only show who is short. Use this when the ward settles missed rest days separately, such as with pay.",
-                    "simpleHint": "Example: if a nurse misses 1 rest day this month, next month's target increases by 1."
-                },
-                "countedLeaves": {
-                    "empty": "No leave types yet.",
-                    "hint": "Only shift types marked as rest in Shift types are shown.",
-                    "loading": "Loading leave types.",
-                    "noneSelected": "No items count toward the target.",
-                    "notSelectedBadge": "Excluded",
-                    "selected": "{{names}} count toward the target.",
-                    "selectedBadge": "Included",
-                    "sectionTitle": "Rest items",
-                    "title": "Shift types counted as rest",
-                    "toggleAria": "Count {{name}} as rest"
-                },
-                "holidayAuto": {
-                    "description": "Choose whether holidays are added to the target OFF count.",
-                    "title": "Holiday inclusion"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "Do not add holidays to the target OFF count.",
-                        "title": "No, exclude them"
-                    },
-                    "include": {
-                        "description": "Months with holidays require more target OFF days.",
-                        "title": "Yes, add them"
-                    },
-                    "title": "Add holidays to the target OFF count?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "Count leave types shown as rest days on the schedule.",
-                        "title": "OFF + leave"
-                    },
-                    "offOnly": {
-                        "description": "Keep annual and official leave separate from the rest target.",
-                        "title": "Base OFF only"
-                    },
-                    "title": "What counts as rest"
-                },
-                "preview": "Target {{count}}d",
-                "previewLabel": "For {{month}}",
-                "previewWithHoliday": "Target {{count}}d + holidays",
-                "previewWithHolidayCountry": "Target {{count}}d + {{country}} holidays",
-                "disabledPreview": "Off",
-                "disabledSummary": "Rest checks are hidden.",
-                "save": "Save policy",
-                "saved": "Rest policy is saved.",
-                "shortage": {
-                    "block": {
-                        "description": "Require review before publishing.",
-                        "title": "Review before publish"
-                    },
-                    "carryOver": {
-                        "description": "Carry the shortage to next month's OFF.",
-                        "title": "Carry to next month"
-                    },
-                    "warn": {
-                        "description": "Show who is short, but allow progress.",
-                        "title": "Warning only"
-                    }
-                },
-                "simpleSubtitle": "Choose only the common rules. You can decide whether holidays are added.",
-                "subtitle": "Set how base OFF, annual leave, and official leave are counted and handled.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "Treat extra rest days as annual leave.",
-                        "title": "Use annual leave"
-                    },
-                    "extraOff": {
-                        "description": "Keep the extra days as additional OFF.",
-                        "title": "Keep extra OFF"
-                    },
-                    "manual": {
-                        "description": "Let an admin decide before publishing.",
-                        "title": "Review manually"
-                    },
-                    "title": "Surplus handling"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "Use the same base OFF target every month.",
-                        "stepperLabel": "Monthly base OFF",
-                        "title": "Fixed monthly count"
-                    },
-                    "includeHolidays": "Add holidays to target",
-                    "includeHolidaysHint": "Months with holidays require more rest days.",
-                    "title": "Monthly rest target",
-                    "weekly": {
-                        "description": "Convert weekly OFF days into a monthly target.",
-                        "stepperLabel": "{{count}} weeks · OFF per week",
-                        "title": "Weekly OFF basis"
-                    }
-                },
-                "title": "Rest/leave policy",
-                "toast": {
-                    "saved": "Saved rest policy."
-                },
-                "unit": {
-                    "day": "d"
-                },
-                "unsaved": "You have unsaved changes."
-            },
-            "requestReception": {
-                "daySuffix": "day",
-                "endDay": "End day",
-                "endTime": "End time",
-                "error": "Failed to load request reception settings.",
-                "loading": "Loading request reception settings.",
-                "notificationTitle": "Notifications",
-                "notifyBeforeDeadline": "Notify before deadline",
-                "notifyBeforeDeadlineDescription": "Notify members 24 hours before the deadline.",
-                "notifyOnOpen": "Notify when opened",
-                "notifyOnOpenDescription": "Notify members when the request window opens.",
-                "save": "Save",
-                "sectionTitle": "Request reception window",
-                "startDay": "Start day",
-                "startTime": "Start time",
-                "status": {
-                    "disabled": "Off",
-                    "enabled": "On"
-                },
-                "summary": {
-                    "disabled": "Request reception is not used.",
-                    "enabled": "Requests are open every month from day {{startDay}} to day {{endDay}}."
-                },
-                "toast": {
-                    "saveSuccess": "Saved request reception settings.",
-                    "updateFailed": "Could not save request reception settings."
-                },
-                "toggleDescription": "When on, requests can be submitted only during the selected window.",
-                "toggleTitle": "Receive requests?",
-                "validation": {
-                    "day": "Enter a day from 1 to 31.",
-                    "range": "The end must be later than the start.",
-                    "time": "Enter time in 00:00 format."
-                }
             },
             "shiftTypes": {
                 "add": "勤務区分を追加",
@@ -8222,8 +7627,6 @@ export const ja: TLocale = {
             },
             "tabs": {
                 "constraints": "制約条件",
-                "requestReception": "Requests",
-                "restLeavePolicy": "Rest policy",
                 "shiftTypes": "勤務区分"
             },
             "title": "勤務設定",
@@ -9244,6 +8647,9 @@ export const zh: TLocale = {
                 "error": "无法加载时间表",
                 "firstFill": "自动填充",
                 "fixedOnly": "仅查看引脚",
+                "fixedDisplay": "显示固定",
+                "fixedDisplayHidden": "已隐藏固定班次",
+                "fixedDisplayShown": "已显示固定班次",
                 "generating": "填充...",
                 "hidingFaults": "错误隐藏",
                 "intro": "即使失败，当前编辑的版本也会保留。\n您可以返回上一步并重新查看条件，或在此处重试并确认。",
@@ -9265,6 +8671,7 @@ export const zh: TLocale = {
                 "saveSnapshotFailed": "暂时保存失败。",
                 "saveSnapshotSuccess": "就暂时保存下来了。",
                 "savingSnapshot": "暂时保存...",
+                "showViolations": "显示违规",
                 "showingFaults": "显示错误",
                 "snapshotLimitDialog": {
                     "cancel": "消除",
@@ -9320,11 +8727,13 @@ export const zh: TLocale = {
                 "validationStatus": {
                     "checking": "审查约束条件"
                 },
-                "viewAll": "查看全部"
+                "viewAll": "查看全部",
+                "viewOptions": "显示选项",
+                "violationsHidden": "已隐藏约束违规",
+                "violationsShown": "已显示约束违规"
             },
             "calendar": {
                 "carried": "结转到",
-                "carriedDetail": "Carried rest {{count}}d",
                 "clearCell": "空的",
                 "closePopover": "关闭弹出窗口",
                 "dateOthers": "等{{count}}天",
@@ -9332,12 +8741,6 @@ export const zh: TLocale = {
                 "name": "姓名",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "送货工作",
-                "restCheck": "Rest check",
-                "restCheckCompact": "Rest",
-                "restCheckDetail": "Target {{target}}d · Assigned {{assigned}}d · Carry {{carried}}d",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "选择班次类型",
                 "violationCount": {
                     "error": "重要{{count}}",
@@ -9587,21 +8990,6 @@ export const zh: TLocale = {
             },
             "monthRangeDescription": "在Dutying中，您只能创建本月和下个月的排班表。",
             "monthRangeTitle": "在此期间无法创建排班表。",
-            "monthlyMemo": {
-                "button": "备注",
-                "buttonAria": "打开 {{year}} 年 {{month}} 月个人备注",
-                "buttonWithMemoAria": "打开已有内容的 {{year}} 年 {{month}} 月个人备注",
-                "closeAria": "关闭月度备注",
-                "loadFailed": "无法加载备注。",
-                "loading": "正在加载备注",
-                "placeholder": "写下本月需要记住的内容。",
-                "retry": "重试",
-                "saveFailed": "无法保存备注。",
-                "saved": "已保存",
-                "saving": "正在保存…",
-                "textareaAria": "{{year}} 年 {{month}} 月个人备注",
-                "title": "{{year}} 年 {{month}} 月备注"
-            },
             "navigation": {
                 "complete": "完全的",
                 "moving": "在移动中...",
@@ -9763,49 +9151,26 @@ export const zh: TLocale = {
                 "noNurseDescription": "要创建排班表，首先添加护士。您可以立即开始排班人员管理。",
                 "noNurseTitle": "{{teamName}} 还没有护士。",
                 "preceptorActive": "相应的",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}d",
-                    "adjustmentNone": "No change",
-                    "adjustmentPlus": "+{{count}}d",
-                    "baseTargetLabel": "Base rule",
-                    "carryOverLabel": "Missed rest",
-                    "carryOverOff": "Not applied",
-                    "carryOverOn": "Apply next month",
-                    "countAllLeaves": "OFF + leave",
-                    "countOffOnly": "Base OFF only",
-                    "countedLeaveFallback": "Base OFF",
-                    "countedLeaveLabel": "Counts as rest",
-                    "dayUnit": "d",
-                    "decreaseButton": "-1d",
-                    "decreaseTarget": "Decrease this month's adjustment",
-                    "description": "Rest-counting rules applied to this monthly schedule.",
-                    "edit": "Edit base rule",
-                    "fixedTarget": "{{count}}d/month",
-                    "holidayCountryLabel": "Holidays",
-                    "holidaysExcluded": "Holidays excluded",
-                    "holidaysIncluded": "Holidays included",
-                    "increaseButton": "+1d",
-                    "increaseTarget": "Increase this month's adjustment",
-                    "monthTargetDescription": "Adjust this month only from base {{count}}d.",
-                    "monthTargetLabel": "This month adjustment",
-                    "resetAdjustment": "Reset",
-                    "shortageBlock": "Review before publish",
-                    "shortageCarryOver": "Give next month",
-                    "shortageLabel": "Shortage",
-                    "shortageWarn": "Show only",
-                    "surplusAnnualLeave": "Use leave",
-                    "surplusExtraOff": "Extra OFF",
-                    "surplusLabel": "Surplus",
-                    "surplusManual": "Manual review",
-                    "targetLabel": "Rest target",
-                    "title": "Rest policy",
-                    "weeklyTarget": "{{days}}/week × {{weeks}}w = {{count}}d"
-                },
                 "sortByName": "按字母顺序",
                 "sortBySavedOrder": "随机顺序",
                 "sortBySkill": "按照熟练程度的顺序",
                 "sortListMenuAria": "按排班人员开放排序",
                 "totalCount": "总计 {{count}} 人"
+            },
+            "monthlyMemo": {
+                "button": "备注",
+                "buttonAria": "打开 {{year}} 年 {{month}} 月个人备注",
+                "buttonWithMemoAria": "打开已有内容的 {{year}} 年 {{month}} 月个人备注",
+                "title": "{{year}} 年 {{month}} 月备注",
+                "closeAria": "关闭月度备注",
+                "loading": "正在加载备注",
+                "loadFailed": "无法加载备注。",
+                "retry": "重试",
+                "placeholder": "写下本月需要记住的内容。",
+                "textareaAria": "{{year}} 年 {{month}} 月个人备注",
+                "saving": "正在保存…",
+                "saved": "已保存",
+                "saveFailed": "无法保存备注。"
             }
         },
         "member": {
@@ -10692,7 +10057,6 @@ export const zh: TLocale = {
                 "noTeamsLabel": "如果你注册了一个团队，你就可以班次申请。",
                 "readonlyDescription": "如有必要，您可以通过编辑来重新调整请求的排班表。",
                 "readonlyTitle": "{{month}} 月班次申请",
-                "settingsAction": "接收设置",
                 "saveAction": "节省",
                 "savedDescription": "您最近的更改已保存。",
                 "saveError": "无法保存您最近的更改。请再次保存。",
@@ -10792,165 +10156,7 @@ export const zh: TLocale = {
             },
             "description": {
                 "constraints": "管理工作规则。",
-                "requestReception": "Manage request reception windows.",
-                "restLeavePolicy": "Manage how days off and leaves are counted.",
                 "shiftTypes": "管理班次类型。"
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "Hide carried days and rest checks on schedules.",
-                        "title": "Do not use it"
-                    },
-                    "enabled": {
-                        "description": "Show carried days, shortages, and surplus on schedules.",
-                        "title": "Use it"
-                    },
-                    "title": "Use rest day calculation?"
-                },
-                "carryOver": {
-                    "title": "Give missed rest days next month?",
-                    "toggle": "Yes, give them next month",
-                    "toggleHint": "If a nurse rests less than the target this month, increase next month's rest target by that amount.",
-                    "offTitle": "No, do not apply it next month",
-                    "offHint": "Only show who is short. Use this when the ward settles missed rest days separately, such as with pay.",
-                    "simpleHint": "Example: if a nurse misses 1 rest day this month, next month's target increases by 1."
-                },
-                "countedLeaves": {
-                    "empty": "No leave types yet.",
-                    "hint": "Only shift types marked as rest in Shift types are shown.",
-                    "loading": "Loading leave types.",
-                    "noneSelected": "No items count toward the target.",
-                    "notSelectedBadge": "Excluded",
-                    "selected": "{{names}} count toward the target.",
-                    "selectedBadge": "Included",
-                    "sectionTitle": "Rest items",
-                    "title": "Shift types counted as rest",
-                    "toggleAria": "Count {{name}} as rest"
-                },
-                "holidayAuto": {
-                    "description": "Choose whether holidays are added to the target OFF count.",
-                    "title": "Holiday inclusion"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "Do not add holidays to the target OFF count.",
-                        "title": "No, exclude them"
-                    },
-                    "include": {
-                        "description": "Months with holidays require more target OFF days.",
-                        "title": "Yes, add them"
-                    },
-                    "title": "Add holidays to the target OFF count?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "Count leave types shown as rest days on the schedule.",
-                        "title": "OFF + leave"
-                    },
-                    "offOnly": {
-                        "description": "Keep annual and official leave separate from the rest target.",
-                        "title": "Base OFF only"
-                    },
-                    "title": "What counts as rest"
-                },
-                "preview": "Target {{count}}d",
-                "previewLabel": "For {{month}}",
-                "previewWithHoliday": "Target {{count}}d + holidays",
-                "previewWithHolidayCountry": "Target {{count}}d + {{country}} holidays",
-                "disabledPreview": "Off",
-                "disabledSummary": "Rest checks are hidden.",
-                "save": "Save policy",
-                "saved": "Rest policy is saved.",
-                "shortage": {
-                    "block": {
-                        "description": "Require review before publishing.",
-                        "title": "Review before publish"
-                    },
-                    "carryOver": {
-                        "description": "Carry the shortage to next month's OFF.",
-                        "title": "Carry to next month"
-                    },
-                    "warn": {
-                        "description": "Show who is short, but allow progress.",
-                        "title": "Warning only"
-                    }
-                },
-                "simpleSubtitle": "Choose only the common rules. You can decide whether holidays are added.",
-                "subtitle": "Set how base OFF, annual leave, and official leave are counted and handled.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "Treat extra rest days as annual leave.",
-                        "title": "Use annual leave"
-                    },
-                    "extraOff": {
-                        "description": "Keep the extra days as additional OFF.",
-                        "title": "Keep extra OFF"
-                    },
-                    "manual": {
-                        "description": "Let an admin decide before publishing.",
-                        "title": "Review manually"
-                    },
-                    "title": "Surplus handling"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "Use the same base OFF target every month.",
-                        "stepperLabel": "Monthly base OFF",
-                        "title": "Fixed monthly count"
-                    },
-                    "includeHolidays": "Add holidays to target",
-                    "includeHolidaysHint": "Months with holidays require more rest days.",
-                    "title": "Monthly rest target",
-                    "weekly": {
-                        "description": "Convert weekly OFF days into a monthly target.",
-                        "stepperLabel": "{{count}} weeks · OFF per week",
-                        "title": "Weekly OFF basis"
-                    }
-                },
-                "title": "Rest/leave policy",
-                "toast": {
-                    "saved": "Saved rest policy."
-                },
-                "unit": {
-                    "day": "d"
-                },
-                "unsaved": "You have unsaved changes."
-            },
-            "requestReception": {
-                "daySuffix": "day",
-                "endDay": "End day",
-                "endTime": "End time",
-                "error": "Failed to load request reception settings.",
-                "loading": "Loading request reception settings.",
-                "notificationTitle": "Notifications",
-                "notifyBeforeDeadline": "Notify before deadline",
-                "notifyBeforeDeadlineDescription": "Notify members 24 hours before the deadline.",
-                "notifyOnOpen": "Notify when opened",
-                "notifyOnOpenDescription": "Notify members when the request window opens.",
-                "save": "Save",
-                "sectionTitle": "Request reception window",
-                "startDay": "Start day",
-                "startTime": "Start time",
-                "status": {
-                    "disabled": "Off",
-                    "enabled": "On"
-                },
-                "summary": {
-                    "disabled": "Request reception is not used.",
-                    "enabled": "Requests are open every month from day {{startDay}} to day {{endDay}}."
-                },
-                "toast": {
-                    "saveSuccess": "Saved request reception settings.",
-                    "updateFailed": "Could not save request reception settings."
-                },
-                "toggleDescription": "When on, requests can be submitted only during the selected window.",
-                "toggleTitle": "Receive requests?",
-                "validation": {
-                    "day": "Enter a day from 1 to 31.",
-                    "range": "The end must be later than the start.",
-                    "time": "Enter time in 00:00 format."
-                }
             },
             "shiftTypes": {
                 "add": "添加班次类型",
@@ -10991,8 +10197,6 @@ export const zh: TLocale = {
             },
             "tabs": {
                 "constraints": "限制条件",
-                "requestReception": "Requests",
-                "restLeavePolicy": "Rest policy",
                 "shiftTypes": "班次类型"
             },
             "title": "班次设置",
@@ -12013,6 +11217,9 @@ export const th: TLocale = {
                 "error": "ไม่สามารถโหลดตารางการปฏิบัติหน้าที่ได้",
                 "firstFill": "ป้อนอัตโนมัติ",
                 "fixedOnly": "คงที่เท่านั้น",
+                "fixedDisplay": "Show fixed",
+                "fixedDisplayHidden": "Fixed shifts hidden",
+                "fixedDisplayShown": "Fixed shifts shown",
                 "generating": "กำลังกรอก...",
                 "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
                 "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
@@ -12034,6 +11241,7 @@ export const th: TLocale = {
                 "saveSnapshotFailed": "บันทึกฉบับร่างไม่สำเร็จ",
                 "saveSnapshotSuccess": "บันทึกฉบับร่างแล้ว",
                 "savingSnapshot": "กำลังบันทึกฉบับร่าง...",
+                "showViolations": "Show violations",
                 "showingFaults": "กำลังแสดงข้อผิดพลาด",
                 "snapshotLimitDialog": {
                     "cancel": "ยกเลิก",
@@ -12089,11 +11297,13 @@ export const th: TLocale = {
                 "validationStatus": {
                     "checking": "การตรวจสอบข้อจำกัด"
                 },
-                "viewAll": "ดูทั้งหมด"
+                "viewAll": "ดูทั้งหมด",
+                "viewOptions": "Display options",
+                "violationsHidden": "Constraint violations hidden",
+                "violationsShown": "Constraint violations shown"
             },
             "calendar": {
                 "carried": "พก",
-                "carriedDetail": "Carried rest {{count}}d",
                 "clearCell": "ชัดเจน",
                 "closePopover": "ปิดป๊อปโอเวอร์",
                 "dateOthers": "+{{count}} อีกวัน",
@@ -12101,12 +11311,6 @@ export const th: TLocale = {
                 "name": "ชื่อ",
                 "nurseDayLabel": "{{name}} · วัน {{day}}",
                 "previousShifts": "ก่อนหน้า",
-                "restCheck": "Rest check",
-                "restCheckCompact": "Rest",
-                "restCheckDetail": "Target {{target}}d · Assigned {{assigned}}d · Carry {{carried}}d",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "เลือกประเภทกะ",
                 "violationCount": {
                     "error": "สำคัญ {{count}}",
@@ -12356,21 +11560,6 @@ export const th: TLocale = {
             },
             "monthRangeDescription": "ใน Dutying คุณสามารถสร้างตารางเวลาสำหรับเดือนนี้และเดือนถัดไปเท่านั้น",
             "monthRangeTitle": "คุณไม่สามารถสร้างกำหนดการสำหรับช่วงเวลานี้ได้",
-            "monthlyMemo": {
-                "button": "บันทึก",
-                "buttonAria": "เปิดบันทึกส่วนตัว {{month}}/{{year}}",
-                "buttonWithMemoAria": "เปิดบันทึกส่วนตัวที่มีเนื้อหา {{month}}/{{year}}",
-                "closeAria": "ปิดบันทึกรายเดือน",
-                "loadFailed": "ไม่สามารถโหลดบันทึกได้",
-                "loading": "กำลังโหลดบันทึก",
-                "placeholder": "เขียนสิ่งที่ต้องจำในเดือนนี้",
-                "retry": "ลองอีกครั้ง",
-                "saveFailed": "ไม่สามารถบันทึกบันทึกได้",
-                "saved": "บันทึกแล้ว",
-                "saving": "กำลังบันทึก…",
-                "textareaAria": "บันทึกส่วนตัว {{month}}/{{year}}",
-                "title": "บันทึก {{month}}/{{year}}"
-            },
             "navigation": {
                 "complete": "สมบูรณ์",
                 "moving": "กำลังย้าย...",
@@ -12532,49 +11721,26 @@ export const th: TLocale = {
                 "noNurseDescription": "เพิ่มพยาบาลก่อนที่จะสร้างตารางเวลา คุณสามารถเริ่มต้นจากการจัดการสมาชิก",
                 "noNurseTitle": "{{teamName}} ยังไม่มีพยาบาล",
                 "preceptorActive": "ใช่",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}d",
-                    "adjustmentNone": "No change",
-                    "adjustmentPlus": "+{{count}}d",
-                    "baseTargetLabel": "Base rule",
-                    "carryOverLabel": "Missed rest",
-                    "carryOverOff": "Not applied",
-                    "carryOverOn": "Apply next month",
-                    "countAllLeaves": "OFF + leave",
-                    "countOffOnly": "Base OFF only",
-                    "countedLeaveFallback": "Base OFF",
-                    "countedLeaveLabel": "Counts as rest",
-                    "dayUnit": "d",
-                    "decreaseButton": "-1d",
-                    "decreaseTarget": "Decrease this month's adjustment",
-                    "description": "Rest-counting rules applied to this monthly schedule.",
-                    "edit": "Edit base rule",
-                    "fixedTarget": "{{count}}d/month",
-                    "holidayCountryLabel": "Holidays",
-                    "holidaysExcluded": "Holidays excluded",
-                    "holidaysIncluded": "Holidays included",
-                    "increaseButton": "+1d",
-                    "increaseTarget": "Increase this month's adjustment",
-                    "monthTargetDescription": "Adjust this month only from base {{count}}d.",
-                    "monthTargetLabel": "This month adjustment",
-                    "resetAdjustment": "Reset",
-                    "shortageBlock": "Review before publish",
-                    "shortageCarryOver": "Give next month",
-                    "shortageLabel": "Shortage",
-                    "shortageWarn": "Show only",
-                    "surplusAnnualLeave": "Use leave",
-                    "surplusExtraOff": "Extra OFF",
-                    "surplusLabel": "Surplus",
-                    "surplusManual": "Manual review",
-                    "targetLabel": "Rest target",
-                    "title": "Rest policy",
-                    "weeklyTarget": "{{days}}/week × {{weeks}}w = {{count}}d"
-                },
                 "sortByName": "ชื่อ",
                 "sortBySavedOrder": "คำสั่งซื้อที่กำหนดเอง",
                 "sortBySkill": "ระดับทักษะ",
                 "sortListMenuAria": "เปิดตัวเลือกการเรียงลำดับผู้ปฏิบัติงาน",
                 "totalCount": "รวม {{count}}"
+            },
+            "monthlyMemo": {
+                "button": "บันทึก",
+                "buttonAria": "เปิดบันทึกส่วนตัว {{month}}/{{year}}",
+                "buttonWithMemoAria": "เปิดบันทึกส่วนตัวที่มีเนื้อหา {{month}}/{{year}}",
+                "title": "บันทึก {{month}}/{{year}}",
+                "closeAria": "ปิดบันทึกรายเดือน",
+                "loading": "กำลังโหลดบันทึก",
+                "loadFailed": "ไม่สามารถโหลดบันทึกได้",
+                "retry": "ลองอีกครั้ง",
+                "placeholder": "เขียนสิ่งที่ต้องจำในเดือนนี้",
+                "textareaAria": "บันทึกส่วนตัว {{month}}/{{year}}",
+                "saving": "กำลังบันทึก…",
+                "saved": "บันทึกแล้ว",
+                "saveFailed": "ไม่สามารถบันทึกบันทึกได้"
             }
         },
         "member": {
@@ -13461,7 +12627,6 @@ export const th: TLocale = {
                 "noTeamsLabel": "ไม่มีทีมที่ลงทะเบียน",
                 "readonlyDescription": "กดแก้ไขเพื่อปรับกะที่ร้องขอทันที",
                 "readonlyTitle": "ยืนยันการเปลี่ยนแปลงที่ร้องขอสำหรับ {{month}}",
-                "settingsAction": "ตั้งค่าการรับคำขอ",
                 "saveAction": "บันทึก",
                 "savedDescription": "บันทึกการเปลี่ยนแปลงล่าสุดของคุณแล้ว",
                 "saveError": "ไม่สามารถบันทึกการเปลี่ยนแปลงล่าสุด โปรดลองบันทึกอีกครั้ง",
@@ -13561,165 +12726,7 @@ export const th: TLocale = {
             },
             "description": {
                 "constraints": "จัดการข้อจำกัดในการจัดกำหนดการ",
-                "requestReception": "Manage request reception windows.",
-                "restLeavePolicy": "Manage how days off and leaves are counted.",
                 "shiftTypes": "จัดการประเภทกะ"
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "Hide carried days and rest checks on schedules.",
-                        "title": "Do not use it"
-                    },
-                    "enabled": {
-                        "description": "Show carried days, shortages, and surplus on schedules.",
-                        "title": "Use it"
-                    },
-                    "title": "Use rest day calculation?"
-                },
-                "carryOver": {
-                    "title": "Give missed rest days next month?",
-                    "toggle": "Yes, give them next month",
-                    "toggleHint": "If a nurse rests less than the target this month, increase next month's rest target by that amount.",
-                    "offTitle": "No, do not apply it next month",
-                    "offHint": "Only show who is short. Use this when the ward settles missed rest days separately, such as with pay.",
-                    "simpleHint": "Example: if a nurse misses 1 rest day this month, next month's target increases by 1."
-                },
-                "countedLeaves": {
-                    "empty": "No leave types yet.",
-                    "hint": "Only shift types marked as rest in Shift types are shown.",
-                    "loading": "Loading leave types.",
-                    "noneSelected": "No items count toward the target.",
-                    "notSelectedBadge": "Excluded",
-                    "selected": "{{names}} count toward the target.",
-                    "selectedBadge": "Included",
-                    "sectionTitle": "Rest items",
-                    "title": "Shift types counted as rest",
-                    "toggleAria": "Count {{name}} as rest"
-                },
-                "holidayAuto": {
-                    "description": "Choose whether holidays are added to the target OFF count.",
-                    "title": "Holiday inclusion"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "Do not add holidays to the target OFF count.",
-                        "title": "No, exclude them"
-                    },
-                    "include": {
-                        "description": "Months with holidays require more target OFF days.",
-                        "title": "Yes, add them"
-                    },
-                    "title": "Add holidays to the target OFF count?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "Count leave types shown as rest days on the schedule.",
-                        "title": "OFF + leave"
-                    },
-                    "offOnly": {
-                        "description": "Keep annual and official leave separate from the rest target.",
-                        "title": "Base OFF only"
-                    },
-                    "title": "What counts as rest"
-                },
-                "preview": "Target {{count}}d",
-                "previewLabel": "For {{month}}",
-                "previewWithHoliday": "Target {{count}}d + holidays",
-                "previewWithHolidayCountry": "Target {{count}}d + {{country}} holidays",
-                "disabledPreview": "Off",
-                "disabledSummary": "Rest checks are hidden.",
-                "save": "Save policy",
-                "saved": "Rest policy is saved.",
-                "shortage": {
-                    "block": {
-                        "description": "Require review before publishing.",
-                        "title": "Review before publish"
-                    },
-                    "carryOver": {
-                        "description": "Carry the shortage to next month's OFF.",
-                        "title": "Carry to next month"
-                    },
-                    "warn": {
-                        "description": "Show who is short, but allow progress.",
-                        "title": "Warning only"
-                    }
-                },
-                "simpleSubtitle": "Choose only the common rules. You can decide whether holidays are added.",
-                "subtitle": "Set how base OFF, annual leave, and official leave are counted and handled.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "Treat extra rest days as annual leave.",
-                        "title": "Use annual leave"
-                    },
-                    "extraOff": {
-                        "description": "Keep the extra days as additional OFF.",
-                        "title": "Keep extra OFF"
-                    },
-                    "manual": {
-                        "description": "Let an admin decide before publishing.",
-                        "title": "Review manually"
-                    },
-                    "title": "Surplus handling"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "Use the same base OFF target every month.",
-                        "stepperLabel": "Monthly base OFF",
-                        "title": "Fixed monthly count"
-                    },
-                    "includeHolidays": "Add holidays to target",
-                    "includeHolidaysHint": "Months with holidays require more rest days.",
-                    "title": "Monthly rest target",
-                    "weekly": {
-                        "description": "Convert weekly OFF days into a monthly target.",
-                        "stepperLabel": "{{count}} weeks · OFF per week",
-                        "title": "Weekly OFF basis"
-                    }
-                },
-                "title": "Rest/leave policy",
-                "toast": {
-                    "saved": "Saved rest policy."
-                },
-                "unit": {
-                    "day": "d"
-                },
-                "unsaved": "You have unsaved changes."
-            },
-            "requestReception": {
-                "daySuffix": "day",
-                "endDay": "End day",
-                "endTime": "End time",
-                "error": "Failed to load request reception settings.",
-                "loading": "Loading request reception settings.",
-                "notificationTitle": "Notifications",
-                "notifyBeforeDeadline": "Notify before deadline",
-                "notifyBeforeDeadlineDescription": "Notify members 24 hours before the deadline.",
-                "notifyOnOpen": "Notify when opened",
-                "notifyOnOpenDescription": "Notify members when the request window opens.",
-                "save": "Save",
-                "sectionTitle": "Request reception window",
-                "startDay": "Start day",
-                "startTime": "Start time",
-                "status": {
-                    "disabled": "Off",
-                    "enabled": "On"
-                },
-                "summary": {
-                    "disabled": "Request reception is not used.",
-                    "enabled": "Requests are open every month from day {{startDay}} to day {{endDay}}."
-                },
-                "toast": {
-                    "saveSuccess": "Saved request reception settings.",
-                    "updateFailed": "Could not save request reception settings."
-                },
-                "toggleDescription": "When on, requests can be submitted only during the selected window.",
-                "toggleTitle": "Receive requests?",
-                "validation": {
-                    "day": "Enter a day from 1 to 31.",
-                    "range": "The end must be later than the start.",
-                    "time": "Enter time in 00:00 format."
-                }
             },
             "shiftTypes": {
                 "add": "เพิ่มประเภทกะ",
@@ -13760,8 +12767,6 @@ export const th: TLocale = {
             },
             "tabs": {
                 "constraints": "ข้อจำกัด",
-                "requestReception": "Requests",
-                "restLeavePolicy": "Rest policy",
                 "shiftTypes": "ประเภทกะ"
             },
             "title": "การจัดการหน้าที่",
@@ -14782,6 +13787,9 @@ export const vi: TLocale = {
                 "error": "Không tải được lịch trực",
                 "firstFill": "Tự động điền",
                 "fixedOnly": "Chỉ cố định",
+                "fixedDisplay": "Hiển thị cố định",
+                "fixedDisplayHidden": "Đã ẩn ca cố định",
+                "fixedDisplayShown": "Đang hiển thị ca cố định",
                 "generating": "Làm đầy...",
                 "hidingFaults": "Lỗi ẩn",
                 "intro": "Các chỉnh sửa hiện tại của bạn vẫn được giữ nguyên ngay cả khi AI bị lỗi.\nBạn có thể quay lại bước trước để xem lại các điều kiện hoặc thử lại và xác nhận tại đây.",
@@ -14803,6 +13811,7 @@ export const vi: TLocale = {
                 "saveSnapshotFailed": "Không lưu được bản nháp.",
                 "saveSnapshotSuccess": "Đã lưu bản nháp.",
                 "savingSnapshot": "Đang lưu bản nháp…",
+                "showViolations": "Hiển thị vi phạm",
                 "showingFaults": "Hiển thị lỗi",
                 "snapshotLimitDialog": {
                     "cancel": "Hủy bỏ",
@@ -14858,11 +13867,13 @@ export const vi: TLocale = {
                 "validationStatus": {
                     "checking": "Kiểm tra các ràng buộc"
                 },
-                "viewAll": "Xem tất cả"
+                "viewAll": "Xem tất cả",
+                "viewOptions": "Tùy chọn hiển thị",
+                "violationsHidden": "Đã ẩn vi phạm ràng buộc",
+                "violationsShown": "Đang hiển thị vi phạm ràng buộc"
             },
             "calendar": {
                 "carried": "Mang theo",
-                "carriedDetail": "Carried rest {{count}}d",
                 "clearCell": "Xóa",
                 "closePopover": "Đóng cửa sổ bật lên",
                 "dateOthers": "+{{count}} thêm ngày",
@@ -14870,12 +13881,6 @@ export const vi: TLocale = {
                 "name": "Tên",
                 "nurseDayLabel": "{{name}} · ngày {{day}}",
                 "previousShifts": "Trước đó",
-                "restCheck": "Rest check",
-                "restCheckCompact": "Rest",
-                "restCheckDetail": "Target {{target}}d · Assigned {{assigned}}d · Carry {{carried}}d",
-                "restCheckExact": "0",
-                "restCheckShortage": "-{{count}}",
-                "restCheckSurplus": "+{{count}}",
                 "shiftTypeDropdownAria": "Chọn loại ca",
                 "violationCount": {
                     "error": "Quan trọng {{count}}",
@@ -15125,21 +14130,6 @@ export const vi: TLocale = {
             },
             "monthRangeDescription": "Trên Dutying, bạn chỉ có thể tạo lịch cho tháng này và tháng tiếp theo.",
             "monthRangeTitle": "Bạn không thể tạo lịch cho khoảng thời gian này",
-            "monthlyMemo": {
-                "button": "Ghi chú",
-                "buttonAria": "Mở ghi chú cá nhân tháng {{month}}/{{year}}",
-                "buttonWithMemoAria": "Mở ghi chú cá nhân có nội dung tháng {{month}}/{{year}}",
-                "closeAria": "Đóng ghi chú tháng",
-                "loadFailed": "Không thể tải ghi chú.",
-                "loading": "Đang tải ghi chú",
-                "placeholder": "Viết điều cần nhớ trong tháng này.",
-                "retry": "Thử lại",
-                "saveFailed": "Không thể lưu ghi chú.",
-                "saved": "Đã lưu",
-                "saving": "Đang lưu…",
-                "textareaAria": "Ghi chú cá nhân tháng {{month}}/{{year}}",
-                "title": "Ghi chú tháng {{month}}/{{year}}"
-            },
             "navigation": {
                 "complete": "Hoàn thành",
                 "moving": "Đang di chuyển…",
@@ -15301,49 +14291,26 @@ export const vi: TLocale = {
                 "noNurseDescription": "Thêm điều dưỡng trước khi tạo lịch. Bạn có thể bắt đầu từ việc quản lý thành viên.",
                 "noNurseTitle": "{{teamName}} chưa có điều dưỡng nào",
                 "preceptorActive": "Có",
-                "restPolicy": {
-                    "adjustmentMinus": "-{{count}}d",
-                    "adjustmentNone": "No change",
-                    "adjustmentPlus": "+{{count}}d",
-                    "baseTargetLabel": "Base rule",
-                    "carryOverLabel": "Missed rest",
-                    "carryOverOff": "Not applied",
-                    "carryOverOn": "Apply next month",
-                    "countAllLeaves": "OFF + leave",
-                    "countOffOnly": "Base OFF only",
-                    "countedLeaveFallback": "Base OFF",
-                    "countedLeaveLabel": "Counts as rest",
-                    "dayUnit": "d",
-                    "decreaseButton": "-1d",
-                    "decreaseTarget": "Decrease this month's adjustment",
-                    "description": "Rest-counting rules applied to this monthly schedule.",
-                    "edit": "Edit base rule",
-                    "fixedTarget": "{{count}}d/month",
-                    "holidayCountryLabel": "Holidays",
-                    "holidaysExcluded": "Holidays excluded",
-                    "holidaysIncluded": "Holidays included",
-                    "increaseButton": "+1d",
-                    "increaseTarget": "Increase this month's adjustment",
-                    "monthTargetDescription": "Adjust this month only from base {{count}}d.",
-                    "monthTargetLabel": "This month adjustment",
-                    "resetAdjustment": "Reset",
-                    "shortageBlock": "Review before publish",
-                    "shortageCarryOver": "Give next month",
-                    "shortageLabel": "Shortage",
-                    "shortageWarn": "Show only",
-                    "surplusAnnualLeave": "Use leave",
-                    "surplusExtraOff": "Extra OFF",
-                    "surplusLabel": "Surplus",
-                    "surplusManual": "Manual review",
-                    "targetLabel": "Rest target",
-                    "title": "Rest policy",
-                    "weeklyTarget": "{{days}}/week × {{weeks}}w = {{count}}d"
-                },
                 "sortByName": "Tên",
                 "sortBySavedOrder": "Thứ tự tùy chỉnh",
                 "sortBySkill": "Cấp độ kỹ năng",
                 "sortListMenuAria": "Mở tùy chọn sắp xếp nhân viên",
                 "totalCount": "Tổng cộng {{count}}"
+            },
+            "monthlyMemo": {
+                "button": "Ghi chú",
+                "buttonAria": "Mở ghi chú cá nhân tháng {{month}}/{{year}}",
+                "buttonWithMemoAria": "Mở ghi chú cá nhân có nội dung tháng {{month}}/{{year}}",
+                "title": "Ghi chú tháng {{month}}/{{year}}",
+                "closeAria": "Đóng ghi chú tháng",
+                "loading": "Đang tải ghi chú",
+                "loadFailed": "Không thể tải ghi chú.",
+                "retry": "Thử lại",
+                "placeholder": "Viết điều cần nhớ trong tháng này.",
+                "textareaAria": "Ghi chú cá nhân tháng {{month}}/{{year}}",
+                "saving": "Đang lưu…",
+                "saved": "Đã lưu",
+                "saveFailed": "Không thể lưu ghi chú."
             }
         },
         "member": {
@@ -16230,7 +15197,6 @@ export const vi: TLocale = {
                 "noTeamsLabel": "Không có đội đăng ký",
                 "readonlyDescription": "Nhấn Edit để điều chỉnh ngay ca làm việc được yêu cầu.",
                 "readonlyTitle": "Đã xác nhận ca làm việc được yêu cầu cho {{month}}",
-                "settingsAction": "Cài đặt tiếp nhận",
                 "saveAction": "Lưu",
                 "savedDescription": "Những thay đổi mới nhất của bạn đã được lưu.",
                 "saveError": "Không lưu được những thay đổi mới nhất. Vui lòng thử lưu lại.",
@@ -16330,165 +15296,7 @@ export const vi: TLocale = {
             },
             "description": {
                 "constraints": "Quản lý các hạn chế về lịch.",
-                "requestReception": "Manage request reception windows.",
-                "restLeavePolicy": "Manage how days off and leaves are counted.",
                 "shiftTypes": "Quản lý các loại ca làm việc."
-            },
-            "restLeavePolicy": {
-                "availability": {
-                    "disabled": {
-                        "description": "Hide carried days and rest checks on schedules.",
-                        "title": "Do not use it"
-                    },
-                    "enabled": {
-                        "description": "Show carried days, shortages, and surplus on schedules.",
-                        "title": "Use it"
-                    },
-                    "title": "Use rest day calculation?"
-                },
-                "carryOver": {
-                    "title": "Give missed rest days next month?",
-                    "toggle": "Yes, give them next month",
-                    "toggleHint": "If a nurse rests less than the target this month, increase next month's rest target by that amount.",
-                    "offTitle": "No, do not apply it next month",
-                    "offHint": "Only show who is short. Use this when the ward settles missed rest days separately, such as with pay.",
-                    "simpleHint": "Example: if a nurse misses 1 rest day this month, next month's target increases by 1."
-                },
-                "countedLeaves": {
-                    "empty": "No leave types yet.",
-                    "hint": "Only shift types marked as rest in Shift types are shown.",
-                    "loading": "Loading leave types.",
-                    "noneSelected": "No items count toward the target.",
-                    "notSelectedBadge": "Excluded",
-                    "selected": "{{names}} count toward the target.",
-                    "selectedBadge": "Included",
-                    "sectionTitle": "Rest items",
-                    "title": "Shift types counted as rest",
-                    "toggleAria": "Count {{name}} as rest"
-                },
-                "holidayAuto": {
-                    "description": "Choose whether holidays are added to the target OFF count.",
-                    "title": "Holiday inclusion"
-                },
-                "holiday": {
-                    "exclude": {
-                        "description": "Do not add holidays to the target OFF count.",
-                        "title": "No, exclude them"
-                    },
-                    "include": {
-                        "description": "Months with holidays require more target OFF days.",
-                        "title": "Yes, add them"
-                    },
-                    "title": "Add holidays to the target OFF count?"
-                },
-                "leaveMode": {
-                    "allLeaves": {
-                        "description": "Count leave types shown as rest days on the schedule.",
-                        "title": "OFF + leave"
-                    },
-                    "offOnly": {
-                        "description": "Keep annual and official leave separate from the rest target.",
-                        "title": "Base OFF only"
-                    },
-                    "title": "What counts as rest"
-                },
-                "preview": "Target {{count}}d",
-                "previewLabel": "For {{month}}",
-                "previewWithHoliday": "Target {{count}}d + holidays",
-                "previewWithHolidayCountry": "Target {{count}}d + {{country}} holidays",
-                "disabledPreview": "Off",
-                "disabledSummary": "Rest checks are hidden.",
-                "save": "Save policy",
-                "saved": "Rest policy is saved.",
-                "shortage": {
-                    "block": {
-                        "description": "Require review before publishing.",
-                        "title": "Review before publish"
-                    },
-                    "carryOver": {
-                        "description": "Carry the shortage to next month's OFF.",
-                        "title": "Carry to next month"
-                    },
-                    "warn": {
-                        "description": "Show who is short, but allow progress.",
-                        "title": "Warning only"
-                    }
-                },
-                "simpleSubtitle": "Choose only the common rules. You can decide whether holidays are added.",
-                "subtitle": "Set how base OFF, annual leave, and official leave are counted and handled.",
-                "surplus": {
-                    "annualLeave": {
-                        "description": "Treat extra rest days as annual leave.",
-                        "title": "Use annual leave"
-                    },
-                    "extraOff": {
-                        "description": "Keep the extra days as additional OFF.",
-                        "title": "Keep extra OFF"
-                    },
-                    "manual": {
-                        "description": "Let an admin decide before publishing.",
-                        "title": "Review manually"
-                    },
-                    "title": "Surplus handling"
-                },
-                "target": {
-                    "fixed": {
-                        "description": "Use the same base OFF target every month.",
-                        "stepperLabel": "Monthly base OFF",
-                        "title": "Fixed monthly count"
-                    },
-                    "includeHolidays": "Add holidays to target",
-                    "includeHolidaysHint": "Months with holidays require more rest days.",
-                    "title": "Monthly rest target",
-                    "weekly": {
-                        "description": "Convert weekly OFF days into a monthly target.",
-                        "stepperLabel": "{{count}} weeks · OFF per week",
-                        "title": "Weekly OFF basis"
-                    }
-                },
-                "title": "Rest/leave policy",
-                "toast": {
-                    "saved": "Saved rest policy."
-                },
-                "unit": {
-                    "day": "d"
-                },
-                "unsaved": "You have unsaved changes."
-            },
-            "requestReception": {
-                "daySuffix": "day",
-                "endDay": "End day",
-                "endTime": "End time",
-                "error": "Failed to load request reception settings.",
-                "loading": "Loading request reception settings.",
-                "notificationTitle": "Notifications",
-                "notifyBeforeDeadline": "Notify before deadline",
-                "notifyBeforeDeadlineDescription": "Notify members 24 hours before the deadline.",
-                "notifyOnOpen": "Notify when opened",
-                "notifyOnOpenDescription": "Notify members when the request window opens.",
-                "save": "Save",
-                "sectionTitle": "Request reception window",
-                "startDay": "Start day",
-                "startTime": "Start time",
-                "status": {
-                    "disabled": "Off",
-                    "enabled": "On"
-                },
-                "summary": {
-                    "disabled": "Request reception is not used.",
-                    "enabled": "Requests are open every month from day {{startDay}} to day {{endDay}}."
-                },
-                "toast": {
-                    "saveSuccess": "Saved request reception settings.",
-                    "updateFailed": "Could not save request reception settings."
-                },
-                "toggleDescription": "When on, requests can be submitted only during the selected window.",
-                "toggleTitle": "Receive requests?",
-                "validation": {
-                    "day": "Enter a day from 1 to 31.",
-                    "range": "The end must be later than the start.",
-                    "time": "Enter time in 00:00 format."
-                }
             },
             "shiftTypes": {
                 "add": "Thêm loại ca",
@@ -16529,8 +15337,6 @@ export const vi: TLocale = {
             },
             "tabs": {
                 "constraints": "Ràng buộc",
-                "requestReception": "Requests",
-                "restLeavePolicy": "Rest policy",
                 "shiftTypes": "Các loại ca"
             },
             "title": "Quản lý nhiệm vụ",

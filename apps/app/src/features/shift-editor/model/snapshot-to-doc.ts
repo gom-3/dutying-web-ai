@@ -9,9 +9,11 @@ function cellValueFromSnapshotCell(
 ): string | null {
     if (!cell || cell.wardShiftTypeId == null) return null;
 
-    if (cell.shiftCode) return cell.shiftCode;
+    const currentShortName = idToType.get(cell.wardShiftTypeId)?.shortName;
 
-    return idToType.get(cell.wardShiftTypeId)?.shortName ?? null;
+    if (currentShortName) return currentShortName;
+
+    return cell.shiftCode ?? null;
 }
 
 /**

@@ -430,16 +430,25 @@ function OnboardingWardCreatePage() {
                     draft.currentStep === 1 ? 'max-w-[480px]' : isScheduleInputStep ? 'max-w-[1200px]' : 'max-w-[1120px]',
                 )}
             >
-                {draft.currentStep === 1 ? (
-                    <button
-                        type="button"
-                        className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 font-apple text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7"
-                        onClick={() => navigate(ROUTE.REGISTER)}
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                        {t('page.onboardingWardCreate.backToWardSelect')}
-                    </button>
-                ) : null}
+                <button
+                    type="button"
+                    className="mb-6 flex h-10 w-fit cursor-pointer items-center gap-2 rounded-[12px] bg-white px-3 font-apple text-sm font-medium text-gray-3 transition-colors hover:bg-gray-7 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={actionsDisabled}
+                    onClick={() => {
+                        if (draft.currentStep === 1) {
+                            navigate(ROUTE.REGISTER);
+
+                            return;
+                        }
+
+                        goPreviousStep();
+                    }}
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    {draft.currentStep === 1
+                        ? t('page.onboardingWardCreate.backToWardSelect')
+                        : t('page.onboardingWardCreate.action.previous')}
+                </button>
                 <SectionHeader step={draft.currentStep} aside={headerAside} />
                 <OnboardingStepLayout
                     step={draft.currentStep}

@@ -61,9 +61,11 @@ function createDeferred<T>() {
 function makeShift({
     wardShiftList = [10],
     wardReqShiftList = [null],
+    shortName = 'D',
 }: {
     wardShiftList?: (number | null)[];
     wardReqShiftList?: (number | null)[];
+    shortName?: string;
 } = {}): TShift {
     return {
         lastDays: [],
@@ -72,7 +74,7 @@ function makeShift({
             {
                 wardShiftTypeId: 10,
                 name: 'Day',
-                shortName: 'D',
+                shortName,
                 startTime: '07:00',
                 endTime: '15:00',
                 color: '#4B7BEC',
@@ -257,6 +259,32 @@ describe('useDutyEditorStep', () => {
         });
 
         expect(useShiftEditorStore.getState().doc.requestCells).toEqual({});
+    });
+
+    it('rebases stale persisted short names to the current server shift value', async () => {
+        window.localStorage.setItem(
+            'shift-editor:draft:1:10:2026:5',
+            JSON.stringify({
+                doc: {
+                    columns: ['2026-05-01'],
+                    rows: [{workerId: '2', lastCells: [], cells: ['O']}],
+                    workerMeta: {2: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+                    fixedCells: {},
+                    requestCells: {},
+                },
+                history: JSON.stringify({past: [], future: [], maxDepth: 100}),
+                scheduleViolations: {validationSnapshot: null},
+                savedAt: Date.now(),
+            }),
+        );
+        wardApiMocks.getShift.mockResolvedValue(makeShift({shortName: '-', wardShiftList: [10]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(makeWorkspaceSchedule({fixed: false}));
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('-');
+        });
     });
 
     it('does not request duty data until the selected team belongs to the current ward context', async () => {
