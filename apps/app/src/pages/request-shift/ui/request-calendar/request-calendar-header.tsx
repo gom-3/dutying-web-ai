@@ -20,13 +20,11 @@ export default function RequestCalendarHeader({days, focusDay, separateWeekendCo
                     {t('page.request.calendar.nameColumn')}
                 </div>
                 {showSkillColumn ? (
-                    <div className="w-11 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">
+                    <div className={`w-11 shrink-0 ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>
                         {t('page.request.calendar.skillColumn')}
                     </div>
                 ) : null}
-                <div className="w-6 shrink-0 text-center font-apple text-[12px] font-semibold text-gray-4">
-                    {t('page.request.calendar.linkColumn')}
-                </div>
+                <div className={`w-6 shrink-0 ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>{t('page.request.calendar.linkColumn')}</div>
                 <div className="flex flex-1 rounded-[12px] bg-gray-7 px-1 py-0.5">
                     {days.map((day, index) => (
                         <p

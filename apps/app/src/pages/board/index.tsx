@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import {type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
+import {useSearchParams} from 'react-router';
 import useAuth from '@/features/auth';
 import i18n from '@/i18n';
 import {BoardAPI} from '@/shared/api';
@@ -32,8 +33,9 @@ import {
     type TWardBoardSchedule,
     type TUpdateWardBoardScheduleDTO,
 } from '@/shared/api/board';
-import PageState from '@/shared/ui/PageState';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import PageState from '@/shared/ui/PageState';
+import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
 const POST_PAGE_SIZE = 40;
@@ -155,6 +157,11 @@ const parseDateKey = (dateKey: string) => {
     const [year, month, day] = dateKey.split('-').map(Number);
 
     return new Date(year, month - 1, day);
+};
+const isDateKeyInMonth = (dateKey: string, year: number, month: number) => {
+    const date = parseDateKey(dateKey);
+
+    return !Number.isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() + 1 === month;
 };
 const compareDateKey = (a: string, b: string) => a.localeCompare(b);
 const addDays = (date: Date, days: number) => {
@@ -503,9 +510,7 @@ function CommentThread({
                 return (
                     <div key={`${commentId}-${comment.createdAt ?? comment.content}`} className="rounded-[8px] bg-gray-7 px-3 py-2.5">
                         <div className="flex items-center justify-between gap-2">
-                            <span className="text-[13px] font-semibold text-sub-1">
-                                {comment.authorName ?? boardT('common.author')}
-                            </span>
+                            <span className="text-[13px] font-semibold text-sub-1">{comment.authorName ?? boardT('common.author')}</span>
                             <span className="text-[11px] font-medium text-gray-4">{formatDateTime(comment.createdAt)}</span>
                         </div>
                         <p className="mt-1.5 text-[13px] leading-[18px] whitespace-pre-line text-sub-2">{comment.content}</p>
@@ -1222,7 +1227,6 @@ function WardScheduleModal({
             endTime: allDay ? '' : draft.endTime || '10:00',
         });
     };
-
     const modal = (
         <div
             className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/45 px-4 py-6"
@@ -1359,13 +1363,9 @@ function WardScheduleModal({
                             <div className="grid gap-1.5">
                                 <ScheduleTimeRangePicker draft={draft} disabled={false} onChange={onChange} />
                                 {isTimeMissingInvalid ? (
-                                    <span className="text-[11px] font-medium text-[#E85D75]">
-                                        {boardT('schedule.timeMissing')}
-                                    </span>
+                                    <span className="text-[11px] font-medium text-[#E85D75]">{boardT('schedule.timeMissing')}</span>
                                 ) : isTimeRangeInvalid ? (
-                                    <span className="text-[11px] font-medium text-[#E85D75]">
-                                        {boardT('schedule.timeRangeInvalid')}
-                                    </span>
+                                    <span className="text-[11px] font-medium text-[#E85D75]">{boardT('schedule.timeRangeInvalid')}</span>
                                 ) : null}
                             </div>
                         ) : null}
@@ -1432,6 +1432,7 @@ function WardScheduleModal({
 function DeadlineCalendar({
     year,
     month,
+    selectedDateKey,
     deadlines,
     schedules,
     onMoveMonth,
@@ -1441,6 +1442,7 @@ function DeadlineCalendar({
 }: {
     year: number;
     month: number;
+    selectedDateKey?: string | null;
     deadlines: TWardBoardDeadline[];
     schedules: TWardBoardSchedule[];
     onMoveMonth: (delta: number) => void;
@@ -1537,8 +1539,8 @@ function DeadlineCalendar({
     const visibleEvents = selectedDate ? (eventsByDate.get(selectedDate) ?? []) : monthEvents;
 
     useEffect(() => {
-        setSelectedDate(null);
-    }, [month, year]);
+        setSelectedDate(selectedDateKey && isDateKeyInMonth(selectedDateKey, year, month) ? selectedDateKey : null);
+    }, [month, selectedDateKey, year]);
 
     return (
         <aside className="min-w-0 rounded-[8px] bg-white p-3">
@@ -1654,9 +1656,13 @@ function DeadlineCalendar({
                 <div className="min-w-0">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[13px] font-semibold text-sub-1">
-                            {selectedDate ? boardT('schedule.selectedDateTitle', {date: formatDate(selectedDate)}) : boardT('schedule.monthEventsTitle')}
+                            {selectedDate
+                                ? boardT('schedule.selectedDateTitle', {date: formatDate(selectedDate)})
+                                : boardT('schedule.monthEventsTitle')}
                         </h3>
-                        <span className="text-[11px] font-semibold text-gray-4">{boardT('common.count', {count: visibleEvents.length})}</span>
+                        <span className="text-[11px] font-semibold text-gray-4">
+                            {boardT('common.count', {count: visibleEvents.length})}
+                        </span>
                     </div>
                     <div className="mt-2.5 space-y-1.5">
                         {visibleEvents.length === 0 ? (
@@ -1715,12 +1721,26 @@ function DeadlineCalendar({
 
 function BoardPage() {
     useTypedTranslation();
+
     const {
         state: {wardId, accountId, accountMeStatus, _loaded, isAuth},
         actions: {handleGetAccountMe},
     } = useAuth();
     const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
     const today = new Date();
+    const notificationPostId = useMemo(() => {
+        const value = Number(searchParams.get('postId'));
+
+        return Number.isFinite(value) && value > 0 ? value : null;
+    }, [searchParams]);
+    const notificationCalendarDate = useMemo(() => {
+        const value = searchParams.get('calendarDate');
+
+        if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+
+        return Number.isNaN(parseDateKey(value).getTime()) ? null : value;
+    }, [searchParams]);
     const [keywordInput, setKeywordInput] = useState('');
     const [keyword, setKeyword] = useState('');
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -1786,6 +1806,22 @@ function BoardPage() {
         queryFn: () => BoardAPI.getSchedules(activeWardId!, startDate, endDate),
         enabled: Boolean(activeWardId),
     });
+
+    useEffect(() => {
+        if (!notificationPostId || selectedPostId === notificationPostId) return;
+
+        setIsComposerOpen(false);
+        setSelectedPostId(notificationPostId);
+    }, [notificationPostId, selectedPostId]);
+
+    useEffect(() => {
+        if (!notificationCalendarDate) return;
+
+        const date = parseDateKey(notificationCalendarDate);
+
+        setCalendarMonth({year: date.getFullYear(), month: date.getMonth() + 1});
+    }, [notificationCalendarDate]);
+
     const posts = postsQuery.data?.posts ?? [];
     const schedules = schedulesQuery.data ?? [];
     const selectedPost = selectedPostQuery.data ?? posts.find((post) => getPostId(post) === selectedPostId) ?? null;
@@ -2150,8 +2186,7 @@ function BoardPage() {
         const nextFiles = selectedFiles.slice(0, availableCount);
         const validFiles: File[] = [];
 
-        let nextError =
-            selectedFiles.length > availableCount ? boardT('composer.maxImageCount', {count: POST_IMAGE_MAX_COUNT}) : '';
+        let nextError = selectedFiles.length > availableCount ? boardT('composer.maxImageCount', {count: POST_IMAGE_MAX_COUNT}) : '';
 
         nextFiles.forEach((file) => {
             if (!file.type.startsWith('image/')) {
@@ -2321,19 +2356,22 @@ function BoardPage() {
                 <h1 className="text-[28px] font-semibold text-sub-1 sm:text-[32px]">{boardT('title')}</h1>
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <p className="min-w-0 text-[14px] leading-6 text-gray-3">{boardT('description')}</p>
-                    <button
-                        id="board_create_button"
-                        type="button"
-                        className="inline-flex h-10 items-center justify-center rounded-[8px] bg-sub-1 px-4 text-[14px] font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#3A3A42]"
-                        onClick={() => {
-                            setPostDraftSubmitAttempted(false);
-                            setIsComposerOpen(true);
-                            setSelectedPostId(null);
-                        }}
-                    >
-                        <Plus className="mr-1.5 size-4" aria-hidden="true" />
-                        {boardT('common.write')}
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <NotificationBell />
+                        <button
+                            id="board_create_button"
+                            type="button"
+                            className="inline-flex h-10 items-center justify-center rounded-[8px] bg-sub-1 px-4 text-[14px] font-semibold whitespace-nowrap text-white transition-colors hover:bg-[#3A3A42]"
+                            onClick={() => {
+                                setPostDraftSubmitAttempted(false);
+                                setIsComposerOpen(true);
+                                setSelectedPostId(null);
+                            }}
+                        >
+                            <Plus className="mr-1.5 size-4" aria-hidden="true" />
+                            {boardT('common.write')}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -2798,6 +2836,7 @@ function BoardPage() {
                     <DeadlineCalendar
                         year={calendarMonth.year}
                         month={calendarMonth.month}
+                        selectedDateKey={notificationCalendarDate}
                         deadlines={deadlinesQuery.data ?? []}
                         schedules={schedules}
                         onMoveMonth={moveCalendarMonth}

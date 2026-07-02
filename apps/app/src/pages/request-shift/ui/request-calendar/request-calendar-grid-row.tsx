@@ -1,4 +1,5 @@
-﻿import {type DraggableProvided} from '@hello-pangea/dnd';
+﻿import {cn} from '@dutying/utils/style';
+import {type DraggableProvided} from '@hello-pangea/dnd';
 import {type RefObject} from 'react';
 import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
 import {type TWardShiftType} from '@/entities/ward';
@@ -68,7 +69,15 @@ export default function RequestCalendarGridRow({
                     <DragIcon className="h-5 w-5 cursor-grab active:cursor-grabbing" />
                 </div>
             ) : null}
-            <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS}`}>{row.shiftNurse.name}</div>
+            <div
+                className={cn(
+                    REQUEST_CALENDAR_NAME_COLUMN_CLASS,
+                    REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS,
+                    isFocusedRow && 'font-semibold text-main-1',
+                )}
+            >
+                {row.shiftNurse.name}
+            </div>
             {showSkillColumn ? (
                 <div className="flex w-11 shrink-0 justify-center">
                     <SkillBadge level={skillLevel} config={skillConfig} className="min-h-[18px] min-w-10 px-1.5 text-[10px]" />

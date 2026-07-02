@@ -1,6 +1,6 @@
 import type {TWardChatMessageResponse, TWardChatUnreadCountResponse} from '@dutying/api/ward';
 import {cn} from '@dutying/utils/style';
-import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {AnimationItem} from 'lottie-web';
 import {ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
 import {Fragment, type FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState} from 'react';
@@ -12,6 +12,7 @@ import {WardAPI} from '@/shared/api';
 import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
 import wardCodeChatImage from '@/shared/assets/images/ward-code-chat.png';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Button} from '@/shared/ui/primitives/button';
@@ -20,6 +21,8 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared
 const CHAT_PAGE_SIZE = 30;
 const OPEN_REFETCH_INTERVAL_MS = 5000;
 const UNREAD_REFETCH_INTERVAL_MS = 15000;
+const REALTIME_RECONNECT_DELAY_MS = 3000;
+const WARD_CHAT_REALTIME_EVENT_TYPE = 'WARD_CHAT_MESSAGE_CREATED';
 const WARD_CHAT_ICON_REST_FRAME = 40;
 const WARD_CHAT_ICON_HOVER_SEGMENT: [number, number] = [40, 80];
 const WARD_CHAT_ICON_HOVER_SPEED = 0.45;
@@ -27,6 +30,160 @@ const wardChatQueryKeys = {
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
     unread: (wardId: number) => ['ward-chat', 'unread', wardId] as const,
 };
+const homeWardChatUnreadQueryKey = (wardId: number) => ['home', 'ward-chat-unread', wardId] as const;
+
+type TWardChatRealtimePayload = Record<string, unknown>;
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+    return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+
+    if (typeof value === 'string' && value.trim()) {
+        const numberValue = Number(value);
+
+        return Number.isFinite(numberValue) ? numberValue : null;
+    }
+
+    return null;
+}
+
+function toNullableNumber(value: unknown): number | null {
+    return value == null ? null : toFiniteNumber(value);
+}
+
+function toUnreadCount(value: unknown): number | null {
+    const unreadCount = toFiniteNumber(value);
+
+    if (unreadCount == null) return null;
+
+    return Math.max(0, Math.trunc(unreadCount));
+}
+
+function setWardChatUnreadCount(queryClient: QueryClient, wardId: number, unreadCount: number) {
+    const updater = (prev: TWardChatUnreadCountResponse | undefined): TWardChatUnreadCountResponse => ({
+        moimId: prev?.moimId ?? 0,
+        wardId,
+        unreadCount,
+    });
+
+    queryClient.setQueryData<TWardChatUnreadCountResponse>(wardChatQueryKeys.unread(wardId), updater);
+    queryClient.setQueryData<TWardChatUnreadCountResponse>(homeWardChatUnreadQueryKey(wardId), updater);
+}
+
+function parseSseBlock(block: string) {
+    const dataLines: string[] = [];
+
+    let eventName = '';
+
+    block.split(/\r?\n/).forEach((line) => {
+        if (!line || line.startsWith(':')) return;
+
+        const separatorIndex = line.indexOf(':');
+        const field = separatorIndex >= 0 ? line.slice(0, separatorIndex) : line;
+
+        let value = separatorIndex >= 0 ? line.slice(separatorIndex + 1) : '';
+
+        if (value.startsWith(' ')) value = value.slice(1);
+
+        if (field === 'event') eventName = value;
+
+        if (field === 'data') dataLines.push(value);
+    });
+
+    if (dataLines.length === 0) return null;
+
+    return {eventName, data: dataLines.join('\n')};
+}
+
+function parseWardChatRealtimePayload(block: string): TWardChatRealtimePayload | null {
+    const parsedBlock = parseSseBlock(block);
+
+    if (!parsedBlock) return null;
+
+    try {
+        const eventData = asRecord(JSON.parse(parsedBlock.data));
+        const eventType = typeof eventData?.type === 'string' ? eventData.type : parsedBlock.eventName;
+
+        if (eventType !== WARD_CHAT_REALTIME_EVENT_TYPE) return null;
+
+        return asRecord(eventData?.payload) ?? eventData;
+    } catch {
+        return null;
+    }
+}
+
+function toWardChatMessage(payload: TWardChatRealtimePayload): TWardChatMessageResponse | null {
+    const messageId = toFiniteNumber(payload.messageId);
+    const wardId = toFiniteNumber(payload.wardId);
+
+    if (messageId == null || messageId <= 0 || wardId == null || wardId <= 0) return null;
+
+    return {
+        messageId,
+        moimId: toFiniteNumber(payload.moimId) ?? 0,
+        wardId,
+        senderAccountId: toNullableNumber(payload.senderAccountId),
+        senderWardAdminAccountId: toNullableNumber(payload.senderWardAdminAccountId),
+        senderType: payload.senderType === 'WARD_ADMIN' ? 'WARD_ADMIN' : 'ACCOUNT',
+        senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
+        text: typeof payload.text === 'string' ? payload.text : '',
+        sentAt: typeof payload.sentAt === 'string' ? payload.sentAt : new Date().toISOString(),
+        isDeleted: payload.isDeleted === true,
+    };
+}
+
+async function readRealtimeEventStream(response: Response, onPayload: (payload: TWardChatRealtimePayload) => void, signal: AbortSignal) {
+    const reader = response.body?.getReader();
+
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+
+    let buffer = '';
+
+    while (!signal.aborted) {
+        const {done, value} = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream: true});
+
+        const blocks = buffer.split(/\r?\n\r?\n/);
+
+        buffer = blocks.pop() ?? '';
+
+        blocks.forEach((block) => {
+            const payload = parseWardChatRealtimePayload(block);
+
+            if (payload) onPayload(payload);
+        });
+    }
+
+    buffer += decoder.decode();
+
+    const payload = parseWardChatRealtimePayload(buffer);
+
+    if (payload) onPayload(payload);
+}
+
+function waitForRealtimeReconnect(signal: AbortSignal) {
+    return new Promise<void>((resolve) => {
+        const handleAbort = () => {
+            window.clearTimeout(timerId);
+            resolve();
+        };
+        const handleTimeout = () => {
+            signal.removeEventListener('abort', handleAbort);
+            resolve();
+        };
+        const timerId = window.setTimeout(handleTimeout, REALTIME_RECONNECT_DELAY_MS);
+
+        signal.addEventListener('abort', handleAbort, {once: true});
+    });
+}
 
 function isMyMessage(message: TWardChatMessageResponse, accountId: number | null, wardAdminAccountId: number | null) {
     return (
@@ -319,6 +476,7 @@ export default function WardChatWidget() {
     const [nextCursorMessageId, setNextCursorMessageId] = useState<number | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const isOpenRef = useRef(isOpen);
     const acknowledgedMessageIdRef = useRef<number | null>(null);
     const effectiveWardId = wardId ?? 0;
     const isWidgetAvailable = Boolean(wardId) && !isDemoExpired && isWardChatEnabled();
@@ -350,9 +508,7 @@ export default function WardChatWidget() {
     const readMutation = useMutation({
         mutationFn: (lastReadMessageId: number) => WardAPI.readWardChat(effectiveWardId, {lastReadMessageId}),
         onSuccess: () => {
-            queryClient.setQueryData<TWardChatUnreadCountResponse>(wardChatQueryKeys.unread(effectiveWardId), (prev) =>
-                prev ? {...prev, unreadCount: 0} : prev,
-            );
+            setWardChatUnreadCount(queryClient, effectiveWardId, 0);
         },
     });
     const sendMutation = useMutation({
@@ -396,6 +552,10 @@ export default function WardChatWidget() {
     const formatDateLabel = (value: string) => getDateLabel(value, dateFormatter);
 
     useEffect(() => {
+        isOpenRef.current = isOpen;
+    }, [isOpen]);
+
+    useEffect(() => {
         setMessages([]);
         setNextCursorMessageId(null);
         setDraft('');
@@ -409,6 +569,59 @@ export default function WardChatWidget() {
 
         return () => window.removeEventListener('dutying:open-ward-chat', handleOpenWardChat);
     }, []);
+
+    useEffect(() => {
+        if (!isWidgetAvailable || !accessToken || typeof fetch !== 'function') return;
+
+        const abortController = new AbortController();
+        const streamUrl = new URL('/events/stream', `${RUNTIME_CONFIG.serverUrl()}/`).toString();
+        const handleRealtimePayload = (payload: TWardChatRealtimePayload) => {
+            const eventWardId = toFiniteNumber(payload.wardId);
+
+            if (eventWardId !== effectiveWardId) return;
+
+            const unreadCount = toUnreadCount(payload.unreadCount);
+
+            if (unreadCount != null) {
+                setWardChatUnreadCount(queryClient, effectiveWardId, unreadCount);
+            } else {
+                void queryClient.invalidateQueries({queryKey: wardChatQueryKeys.unread(effectiveWardId)});
+                void queryClient.invalidateQueries({queryKey: homeWardChatUnreadQueryKey(effectiveWardId)});
+            }
+
+            const message = toWardChatMessage(payload);
+
+            if (message && isOpenRef.current) {
+                setMessages((prev) => mergeMessages(prev, [message]));
+            }
+        };
+
+        void (async () => {
+            while (!abortController.signal.aborted) {
+                try {
+                    const response = await fetch(streamUrl, {
+                        cache: 'no-store',
+                        credentials: 'include',
+                        headers: {
+                            Accept: 'text/event-stream',
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        signal: abortController.signal,
+                    });
+
+                    if (!response.ok) return;
+
+                    await readRealtimeEventStream(response, handleRealtimePayload, abortController.signal);
+                } catch {
+                    if (abortController.signal.aborted) return;
+                }
+
+                await waitForRealtimeReconnect(abortController.signal);
+            }
+        })();
+
+        return () => abortController.abort();
+    }, [accessToken, effectiveWardId, isWidgetAvailable, queryClient]);
 
     useEffect(() => {
         if (!messagesQuery.data) return;

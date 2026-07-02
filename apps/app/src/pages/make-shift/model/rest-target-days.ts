@@ -1,6 +1,10 @@
 import type {TShift} from '@/entities';
 import type {TDutyDoc} from '@/features/shift-editor/model';
-import {calculateRestTarget, resolveCountedRestShiftTypeIds, type TRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
+import {
+    calculateBaseRestTarget,
+    resolveCountedRestShiftTypeIds,
+    type TRestLeavePolicy,
+} from '@/pages/ward-settings/model/rest-leave-policy';
 
 export type TRestCheckSummary = {
     targetDays: number;
@@ -9,10 +13,6 @@ export type TRestCheckSummary = {
     carryOverApplied: boolean;
     differenceDays: number;
 };
-
-function countHolidayDays(days: TShift['days']) {
-    return days.filter((day) => String(day.dayType).toLowerCase() === 'holiday').length;
-}
 
 export function calculateRestCheckByShiftNurse(params: {
     shift: TShift;
@@ -26,7 +26,8 @@ export function calculateRestCheckByShiftNurse(params: {
 
     if (!policy.enabled) return undefined;
 
-    const monthlyTarget = calculateRestTarget(policy, year, month, countHolidayDays(shift.days)) + adjustmentDays;
+    // /make uses the ward setting as the initial target; only the make-page +/- adjustment changes the final target.
+    const monthlyTarget = calculateBaseRestTarget(policy, year, month) + adjustmentDays;
     const countedRestShiftTypeIds = new Set(resolveCountedRestShiftTypeIds(policy, shift.wardShiftTypes));
     const shiftTypeByShortName = new Map(shift.wardShiftTypes.map((shiftType) => [shiftType.shortName, shiftType]));
     const restCheckByShiftNurseId: Record<number, TRestCheckSummary> = {};

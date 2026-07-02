@@ -123,7 +123,7 @@ describe('MakeShiftCalendar', () => {
         expect(screen.getByTitle(/\+2/)).toBeInTheDocument();
         expect(screen.getByText('+2')).toBeInTheDocument();
         expect(screen.getByText('휴무')).toBeInTheDocument();
-        expect(screen.getByTitle('휴무 체크')).toBeInTheDocument();
+        expect(screen.getByTitle('휴무 확인')).toBeInTheDocument();
         expect(screen.getByText('-9')).toBeInTheDocument();
     });
 
@@ -149,7 +149,7 @@ describe('MakeShiftCalendar', () => {
 
         expect(screen.queryByText('?댁썡')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
-        expect(screen.getByTitle('휴무 체크')).toBeInTheDocument();
+        expect(screen.getByTitle('휴무 확인')).toBeInTheDocument();
         expect(screen.getByText('-3')).toBeInTheDocument();
     });
 
@@ -227,6 +227,29 @@ describe('MakeShiftCalendar', () => {
         expect(firstCell?.querySelector('.opacity-60')).not.toBeInTheDocument();
     });
 
+    it('renders fixed and requested status pins on day shift badges when enabled', () => {
+        const statusDoc: TDutyDoc = {
+            ...doc,
+            rows: [{...doc.rows[0]!, cells: ['D', 'D']}],
+            fixedCells: {'2|2026-05-01': true},
+            requestCells: {'2|2026-05-02': true},
+        };
+
+        render(<MakeShiftCalendar shift={shift} doc={statusDoc} violationMap={new Map()} showFaults={false} readonly showCellStatusPins />);
+
+        const fixedCell = document.querySelector<HTMLElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+        const requestedCell = document.querySelector<HTMLElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+        const fixedPin = fixedCell?.querySelector<HTMLElement>('[data-cell-status-pin="fixed"]');
+        const requestPin = requestedCell?.querySelector<HTMLElement>('[data-cell-status-pin="request"]');
+
+        expect(fixedCell).toHaveAttribute('data-fixed-cell', 'true');
+        expect(requestedCell).toHaveAttribute('data-request-cell', 'true');
+        expect(fixedPin).toHaveAttribute('title', '고정 근무');
+        expect(requestPin).toHaveAttribute('title', '신청 근무');
+        expect(fixedCell?.querySelector('[data-cell-status-pin="request"]')).not.toBeInTheDocument();
+        expect(requestedCell?.querySelector('[data-cell-status-pin="fixed"]')).not.toBeInTheDocument();
+    });
+
     it('shows a busy shimmer layer while auto fill is loading', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly isShimmering />);
 
@@ -241,6 +264,29 @@ describe('MakeShiftCalendar', () => {
         expect(document.querySelector('.make-shift-calendar__header .make-shift-calendar__shimmer')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-daily-summary .make-shift-calendar__shimmer')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__shimmer-sweep')).toBeInTheDocument();
+    });
+
+    it('keeps the shimmer positioned when the skill column is visible', () => {
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                readonly
+                isShimmering
+                skillColumn={{
+                    config: DEFAULT_SKILL_LEVEL_CONFIG,
+                    levelsByNurseId: {100: 3},
+                }}
+            />,
+        );
+
+        const shimmer = document.querySelector<HTMLElement>('.make-shift-calendar__shimmer');
+
+        expect(shimmer).toBeInTheDocument();
+        expect(shimmer?.style.left).not.toBe('');
+        expect(shimmer?.style.left).not.toContain('minmax');
     });
 
     it('hides the carry column by default', () => {
@@ -978,7 +1024,7 @@ describe('MakeShiftCalendar', () => {
         const rowDays = trigger!.closest('.make-shift-calendar__row-days');
         const marker = trigger!.querySelector('.make-shift-calendar__violation-marker');
 
-        expect(rowDays?.querySelector('[data-selection-layer="true"]')).toHaveClass('z-[1]');
+        expect(rowDays?.querySelector('[data-selection-layer="true"]')).toHaveClass('z-[2]');
         expect(rowDays?.querySelector('.make-shift-calendar__violation')).toHaveClass('z-[6]');
         expect(marker).toHaveClass('top-[clamp(2px,0.18cqw,3px)]', 'right-[clamp(2px,0.18cqw,3px)]');
         expect(marker).not.toHaveClass('translate-x-1/2', '-translate-y-1/2');
@@ -1122,9 +1168,89 @@ describe('MakeShiftCalendar', () => {
         expect(firstCell).not.toHaveClass('bg-main-4/70');
         expect(secondCell).not.toHaveClass('bg-main-4/70');
         expect(firstCell!.closest('[data-shift-nurse-id]')?.querySelectorAll('[data-selection-layer="true"]')).toHaveLength(2);
+        expect(firstCell!.closest('[data-shift-nurse-id]')?.querySelector('[data-selection-row-layer="true"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-selection-column-layer="true"]')).not.toBeInTheDocument();
         expect(document.querySelector('[data-day-header-index="0"]')).toHaveAttribute('data-selected-column', 'true');
         expect(document.querySelector('[data-day-header-index="1"]')).toHaveAttribute('data-selected-column', 'true');
         expect(firstCell!.closest('[data-shift-nurse-id]')?.querySelector('[data-selected-row-label="true"]')).toBeInTheDocument();
+    });
+
+    it('draws same-cell-size row and column highlights when a make calendar cell is clicked', async () => {
+        const user = userEvent.setup();
+        const secondRow = {
+            ...shift.divisionShiftNurses[1]![0]!,
+            shiftNurse: {
+                ...shift.divisionShiftNurses[1]![0]!.shiftNurse,
+                shiftNurseId: 3,
+                nurseId: 101,
+                name: 'Lee',
+            },
+            wardShiftList: [10, null],
+            wardReqShiftList: [null, null],
+        };
+        const twoRowShift: TShift = {
+            ...shift,
+            divisionShiftNurses: [[], [shift.divisionShiftNurses[1]![0]!, secondRow]],
+        };
+        const twoRowDoc: TDutyDoc = {
+            ...doc,
+            rows: [
+                doc.rows[0]!,
+                {
+                    workerId: '3',
+                    lastCells: [null, null, null, null],
+                    cells: ['D', null],
+                },
+            ],
+            workerMeta: {
+                ...doc.workerMeta,
+                '3': {name: 'Lee', nurseId: 101},
+            },
+        };
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(twoRowDoc);
+        });
+
+        render(<MakeShiftCalendar shift={twoRowShift} doc={twoRowDoc} violationMap={new Map()} showFaults={false} />);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+
+        expect(trigger).not.toBeNull();
+        await act(async () => {
+            await user.click(trigger!);
+        });
+
+        const selectedRow = trigger!.closest('[data-shift-nurse-id]');
+        const columnLayers = Array.from(document.querySelectorAll<HTMLElement>('[data-selection-column-layer="true"]'));
+
+        expect(selectedRow?.querySelector('[data-selection-row-layer="true"]')).toHaveStyle({gridColumn: '1 / span 2'});
+        expect(columnLayers).toHaveLength(2);
+        expect(columnLayers.map((layer) => layer.style.gridColumn)).toEqual(['1', '1']);
+        expect(selectedRow?.querySelector('[data-selection-layer="true"]')).toHaveClass('bg-main-4/70');
+        expect(document.querySelector('[data-day-header-index="0"]')).toHaveAttribute('data-selected-column', 'true');
+    });
+
+    it('draws row and column highlights for readonly make calendars without editing selection', async () => {
+        const user = userEvent.setup();
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+
+        expect(trigger).not.toBeNull();
+        await act(async () => {
+            await user.click(trigger!);
+        });
+
+        expect(useShiftEditorStore.getState().selection).toBeNull();
+        expect(trigger!.closest('[data-shift-nurse-id]')?.querySelector('[data-selection-row-layer="true"]')).toBeInTheDocument();
+        expect(trigger!.closest('[data-shift-nurse-id]')?.querySelector('[data-selection-column-layer="true"]')).toBeInTheDocument();
+        expect(trigger!.closest('[data-shift-nurse-id]')?.querySelector('[data-selected-row-label="true"]')).toHaveClass('text-main-1');
     });
 
     it('clears the selected cell when clicking outside duty cells', async () => {

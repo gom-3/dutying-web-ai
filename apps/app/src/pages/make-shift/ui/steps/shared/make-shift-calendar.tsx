@@ -1,4 +1,5 @@
 import {cn} from '@dutying/utils/style';
+import {Pin} from 'lucide-react';
 import {
     type CSSProperties,
     type PointerEvent as ReactPointerEvent,
@@ -68,6 +69,10 @@ type TMakeShiftCalendarProps = {
      * true면 캘린더 위에 자동 채우기 진행 shimmer를 표시한다.
      */
     isShimmering?: boolean;
+    /**
+     * true면 날짜 셀의 근무유형 칩 왼쪽 상단에 고정/신청 상태 핀을 표시한다.
+     */
+    showCellStatusPins?: boolean;
     skillColumn?: TSkillColumnConfig;
     restCheckByShiftNurseId?: Record<number, TRestCheckSummary>;
     restPolicyControl?: ReactNode;
@@ -177,15 +182,23 @@ function getSkillLevelLabel(config: TSkillLevelConfig, level: number) {
     return config.levelLabels?.[level] ?? `LV. ${level}`;
 }
 
-function getSkillColumnWidth(config: TSkillLevelConfig | undefined) {
-    if (!config) return MIN_SKILL_COL;
+function getSkillColumnContentWidth(config: TSkillLevelConfig | undefined) {
+    if (!config) return '1ch';
 
     const longestLabelWidth = Array.from({length: config.levelCount}, (_, index) => getSkillLevelLabel(config, index + 1)).reduce(
         (maxWidth, label) => Math.max(maxWidth, estimateLabelWidthCh(label)),
         1,
     );
 
-    return `minmax(${MIN_SKILL_COL}, calc(${longestLabelWidth}ch + 4px))`;
+    return `calc(${longestLabelWidth}ch + 4px)`;
+}
+
+function getSkillColumnWidth(config: TSkillLevelConfig | undefined) {
+    return `minmax(${MIN_SKILL_COL}, ${getSkillColumnContentWidth(config)})`;
+}
+
+function getSkillColumnInsetWidth(config: TSkillLevelConfig | undefined) {
+    return `max(${MIN_SKILL_COL}, ${getSkillColumnContentWidth(config)})`;
 }
 
 function formatSignedDays(value: number | undefined) {
@@ -202,9 +215,10 @@ const ABSOLUTE_SELECTION_BACKGROUND_LAYER_CLASS = cn(
     SELECTED_CELL_BACKGROUND_CLASS,
 );
 const GRID_SELECTION_BACKGROUND_LAYER_CLASS = cn(
-    'make-shift-calendar__selection-bg pointer-events-none z-[1]',
+    'make-shift-calendar__selection-bg pointer-events-none z-[2]',
     SELECTED_CELL_BACKGROUND_CLASS,
 );
+const GRID_SELECTION_CROSSHAIR_LAYER_CLASS = 'make-shift-calendar__selection-crosshair pointer-events-none z-[1] bg-main-light';
 const SELECTED_DAY_HEADER_BASE_CLASS = 'text-white font-semibold';
 const SELECTED_DAY_HEADER_PURPLE_CLASS = cn(SELECTED_DAY_HEADER_BASE_CLASS, 'bg-[#8D7CF6]');
 const SELECTED_DAY_HEADER_RED_CLASS = cn(SELECTED_DAY_HEADER_BASE_CLASS, 'bg-[#FF8491]');
@@ -244,6 +258,10 @@ const SHIFT_BADGE_CELL_WRAP =
     'make-shift-calendar__shift-badge-wrap relative z-[20] flex size-[clamp(16px,1.45vw,26px)] min-w-0 shrink-0 items-center justify-center';
 const SHIFT_BADGE_CELL_BADGE =
     'make-shift-calendar__shift-badge relative z-[20] !h-full !w-full min-h-0 min-w-0 rounded-[.375rem] text-[clamp(9px,0.82vw,18px)] leading-none';
+const SHIFT_BADGE_STATUS_PIN_BASE =
+    'make-shift-calendar__cell-status-pin pointer-events-none absolute z-[32] flex items-center justify-center';
+const SHIFT_BADGE_STATUS_PIN_ICON = 'size-[clamp(8px,0.62cqw,11px)]';
+const STATUS_PIN_FILTER = 'drop-shadow(0 0 1px rgba(255,255,255,0.95)) drop-shadow(0 1px 1px rgba(15,23,42,0.32))';
 /**
  * 전달 근무 컬럼(LAST_COL)에 4개가 동시에 들어가는 좁은 영역용 배지.
  * 큰 화면에서도 LAST_COL을 넘지 않도록 max를 22px로 제한.
@@ -308,6 +326,11 @@ type TShiftTypeDropdownPosition = {
     width: number;
     placement: 'top' | 'bottom';
 };
+type TSelectionRect = {top: number; left: number; bottom: number; right: number};
+
+function isSingleCellSelectionRect(rect: TSelectionRect | null): rect is TSelectionRect {
+    return rect !== null && rect.top === rect.bottom && rect.left === rect.right;
+}
 
 type TShiftTypeDropdownState = {
     target: HTMLElement;
@@ -563,6 +586,57 @@ function ViolationMarker({
         >
             {label}
         </span>
+    );
+}
+
+function CellStatusPins({
+    fixed,
+    requested,
+    fixedLabel,
+    requestedLabel,
+}: {
+    fixed: boolean;
+    requested: boolean;
+    fixedLabel: string;
+    requestedLabel: string;
+}) {
+    if (!fixed && !requested) return null;
+
+    const statuses = [
+        fixed
+            ? {
+                  key: 'fixed',
+                  label: fixedLabel,
+                  className: '-top-[clamp(2px,0.2cqw,3px)] -left-[clamp(2px,0.2cqw,3px)] text-[#374151]',
+              }
+            : null,
+        requested
+            ? {
+                  key: 'request',
+                  label: requestedLabel,
+                  className: cn(
+                      '-top-[clamp(2px,0.2cqw,3px)] text-[#2563EB]',
+                      fixed ? 'left-[clamp(6px,0.52cqw,8px)]' : '-left-[clamp(2px,0.2cqw,3px)]',
+                  ),
+              }
+            : null,
+    ].filter((status): status is {key: 'fixed' | 'request'; label: string; className: string} => status !== null);
+
+    return (
+        <>
+            {statuses.map((status) => (
+                <span
+                    key={status.key}
+                    aria-hidden
+                    title={status.label}
+                    data-cell-status-pin={status.key}
+                    className={cn(SHIFT_BADGE_STATUS_PIN_BASE, status.className)}
+                    style={{filter: STATUS_PIN_FILTER}}
+                >
+                    <Pin className={SHIFT_BADGE_STATUS_PIN_ICON} strokeWidth={3} fill="currentColor" />
+                </span>
+            ))}
+        </>
     );
 }
 
@@ -1018,6 +1092,7 @@ export function MakeShiftCalendar({
     disableInitialSelection = false,
     editableLastShifts = false,
     isShimmering = false,
+    showCellStatusPins = false,
     skillColumn,
     restCheckByShiftNurseId,
     restPolicyControl,
@@ -1026,6 +1101,9 @@ export function MakeShiftCalendar({
     const commands = useShiftEditorCommands();
     const selection = useShiftEditorStore((s) => s.selection);
     const selectionRect = useMemo(() => (selection ? normalizeSelection(selection) : null), [selection]);
+    const [readonlySelectionRect, setReadonlySelectionRect] = useState<TSelectionRect | null>(null);
+    const displaySelectionRect = readonly ? readonlySelectionRect : selectionRect;
+    const crosshairSelectionRect = isSingleCellSelectionRect(displaySelectionRect) ? displaySelectionRect : null;
     const didClearInitialSelection = useRef(false);
     const dragSelectionRef = useRef<{from: TCellPos; pointerId: number} | null>(null);
     const violationHoverTimerRef = useRef<number | null>(null);
@@ -1162,6 +1240,10 @@ export function MakeShiftCalendar({
     }, [closeShiftTypeDropdown, readonly]);
 
     useEffect(() => {
+        if (!readonly) setReadonlySelectionRect(null);
+    }, [readonly]);
+
+    useEffect(() => {
         const finishDragSelection = () => {
             dragSelectionRef.current = null;
         };
@@ -1205,6 +1287,8 @@ export function MakeShiftCalendar({
     const handleCellClick = (rowIndex: number, colIndex: number) => {
         if (!readonly) {
             commands.select({row: rowIndex, col: colIndex});
+        } else {
+            setReadonlySelectionRect({top: rowIndex, left: colIndex, bottom: rowIndex, right: colIndex});
         }
 
         onCellClick?.(rowIndex, colIndex);
@@ -1315,10 +1399,14 @@ export function MakeShiftCalendar({
         () => (showSkillColumn ? getSkillColumnWidth(skillColumn?.config) : MIN_SKILL_COL),
         [showSkillColumn, skillColumn?.config],
     );
+    const skillColumnInsetWidth = useMemo(
+        () => (showSkillColumn ? getSkillColumnInsetWidth(skillColumn?.config) : MIN_SKILL_COL),
+        [showSkillColumn, skillColumn?.config],
+    );
     const leftGridTemplateColumns = isSimplified
         ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED
         : getLeftGridTemplateColumns(showSkillColumn, showCarryColumn, skillColumnWidth);
-    const shimmerInsetLeft = getShimmerInsetLeft(isSimplified, showSkillColumn, showCarryColumn, skillColumnWidth);
+    const shimmerInsetLeft = getShimmerInsetLeft(isSimplified, showSkillColumn, showCarryColumn, skillColumnInsetWidth);
 
     let didAssignTutorialCell = false;
 
@@ -1395,7 +1483,7 @@ export function MakeShiftCalendar({
                             const activeDayViolationTone = activeDayViolation ? VIOLATION_TONE[activeDayViolation.level] : null;
                             const isDayViolationDimmed = activeViolationKey !== null && hasDayViolations && !activeDayViolation;
                             const isColumnSelected =
-                                !readonly && selectionRect !== null && j >= selectionRect.left && j <= selectionRect.right;
+                                displaySelectionRect !== null && j >= displaySelectionRect.left && j <= displaySelectionRect.right;
                             const normalizedDayType = normalizeDayType(d.dayType);
                             const dayViolationPopoverTitle = t('page.makeShift.calendar.fullDayLabel', {day: d.day});
 
@@ -1567,6 +1655,7 @@ export function MakeShiftCalendar({
                                                 days={shift.days}
                                                 columns={doc.columns}
                                                 cells={docEntry.row.cells}
+                                                fixedCells={doc.fixedCells}
                                                 requestCells={doc.requestCells}
                                                 rowIndex={docEntry.index}
                                                 shiftNurseId={row.shiftNurse.shiftNurseId}
@@ -1577,12 +1666,14 @@ export function MakeShiftCalendar({
                                                 showFaults={showFaults}
                                                 activeViolationKey={activeViolationKey}
                                                 simplified={isSimplified}
+                                                showCellStatusPins={showCellStatusPins}
                                                 showSkillColumn={showSkillColumn}
                                                 showCarryColumn={showCarryColumn}
                                                 leftGridTemplateColumns={leftGridTemplateColumns}
                                                 readonly={readonly}
                                                 editableLastShifts={editableLastShifts}
-                                                selectionRect={selectionRect}
+                                                selectionRect={displaySelectionRect}
+                                                crosshairSelectionRect={crosshairSelectionRect}
                                                 tutorialCellId={rowTutorialCellId}
                                                 onCellClick={handleCellClick}
                                                 onCellPointerDown={handleCellPointerDown}
@@ -1683,6 +1774,7 @@ type TCalendarRowLeftProps = {
     days: TShift['days'];
     columns: TDutyDoc['columns'];
     cells: TDutyDoc['rows'][number]['cells'];
+    fixedCells: TDutyDoc['fixedCells'];
     requestCells: TDutyDoc['requestCells'];
     rowIndex: number;
     shiftNurseId: number;
@@ -1693,12 +1785,14 @@ type TCalendarRowLeftProps = {
     showFaults: boolean;
     activeViolationKey: string | null;
     simplified: boolean;
+    showCellStatusPins: boolean;
     showSkillColumn: boolean;
     showCarryColumn: boolean;
     leftGridTemplateColumns: string;
     readonly: boolean;
     editableLastShifts: boolean;
-    selectionRect: {top: number; left: number; bottom: number; right: number} | null;
+    selectionRect: TSelectionRect | null;
+    crosshairSelectionRect: TSelectionRect | null;
     tutorialCellId?: string;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
     onCellPointerDown: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
@@ -1722,6 +1816,7 @@ function CalendarRowLeft({
     days,
     columns,
     cells,
+    fixedCells,
     requestCells,
     rowIndex,
     shiftNurseId,
@@ -1732,12 +1827,14 @@ function CalendarRowLeft({
     showFaults,
     activeViolationKey,
     simplified,
+    showCellStatusPins,
     showSkillColumn,
     showCarryColumn,
     leftGridTemplateColumns,
     readonly,
     editableLastShifts,
     selectionRect,
+    crosshairSelectionRect,
     tutorialCellId,
     onCellClick,
     onCellPointerDown,
@@ -1835,7 +1932,9 @@ function CalendarRowLeft({
     const displayLastShifts = displayLastShiftCells
         ? displayLastShiftCells.map((cell) => (cell ? (shortNameToType.get(cell) ?? null) : null))
         : lastShifts;
-    const isRowSelected = !readonly && selectionRect !== null && rowIndex >= selectionRect.top && rowIndex <= selectionRect.bottom;
+    const isRowSelected = selectionRect !== null && rowIndex >= selectionRect.top && rowIndex <= selectionRect.bottom;
+    const isCrosshairRowSelected =
+        crosshairSelectionRect !== null && rowIndex >= crosshairSelectionRect.top && rowIndex <= crosshairSelectionRect.bottom;
     const carriedLabel = formatSignedDays(carriedDays);
     const carriedTitle =
         carriedDays !== undefined
@@ -1843,6 +1942,8 @@ function CalendarRowLeft({
                   count: carriedLabel,
               })
             : undefined;
+    const fixedStatusPinLabel = t('page.makeShift.calendar.fixedStatusPin');
+    const requestStatusPinLabel = t('page.makeShift.calendar.requestStatusPin');
 
     return (
         <>
@@ -1968,16 +2069,36 @@ function CalendarRowLeft({
                     className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
                     style={{gridTemplateColumns: getDayGridTemplateColumns(days.length)}}
                 >
-                    {!readonly &&
-                        selectionRect !== null &&
-                        rowIndex >= selectionRect.top &&
-                        rowIndex <= selectionRect.bottom &&
+                    {crosshairSelectionRect !== null && isCrosshairRowSelected ? (
+                        <span
+                            aria-hidden
+                            data-selection-row-layer="true"
+                            style={{gridRow: 1, gridColumn: `1 / span ${days.length}`}}
+                            className={GRID_SELECTION_CROSSHAIR_LAYER_CLASS}
+                        />
+                    ) : null}
+                    {crosshairSelectionRect !== null &&
+                        days.map((_, j) => {
+                            if (j < crosshairSelectionRect.left || j > crosshairSelectionRect.right) return null;
+
+                            return (
+                                <span
+                                    key={`selected-col-${j}`}
+                                    aria-hidden
+                                    data-selection-column-layer="true"
+                                    style={{gridRow: 1, gridColumn: j + 1}}
+                                    className={GRID_SELECTION_CROSSHAIR_LAYER_CLASS}
+                                />
+                            );
+                        })}
+                    {selectionRect !== null &&
+                        isRowSelected &&
                         days.map((_, j) => {
                             if (j < selectionRect.left || j > selectionRect.right) return null;
 
                             return (
                                 <span
-                                    key={`selected-${j}`}
+                                    key={`selected-cell-${j}`}
                                     aria-hidden
                                     data-selection-layer="true"
                                     style={{gridRow: 1, gridColumn: j + 1}}
@@ -1988,8 +2109,10 @@ function CalendarRowLeft({
                     {days.map((day, j) => {
                         const shiftType = getCellShiftType(j);
                         const date = columns[j];
-                        const requestCellKey = date ? `${shiftNurseId}|${date}` : null;
-                        const reqId = requestCellKey && requestCells[requestCellKey] === true ? (wardReqShiftList[j] ?? null) : null;
+                        const cellLockKey = date ? `${shiftNurseId}|${date}` : null;
+                        const isFixedCell = cellLockKey !== null && fixedCells[cellLockKey] === true;
+                        const isRequestedCell = cellLockKey !== null && requestCells[cellLockKey] === true;
+                        const reqId = isRequestedCell ? (wardReqShiftList[j] ?? null) : null;
                         const reqType = reqId != null ? idToType.get(reqId) : null;
                         const cellViolationList = showFaults ? violationsByDayCol.get(j) : undefined;
                         const cellViolations = getUniqueViolationsForDisplay(cellViolationList ?? []);
@@ -2027,6 +2150,8 @@ function CalendarRowLeft({
                                 data-violation-count={hasCellViolations ? cellViolations.length : undefined}
                                 data-active-violation-cell={activeCellViolation ? 'true' : undefined}
                                 data-dimmed-violation-cell={isCellViolationDimmed ? 'true' : undefined}
+                                data-fixed-cell={showCellStatusPins && isFixedCell ? 'true' : undefined}
+                                data-request-cell={showCellStatusPins && isRequestedCell ? 'true' : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);
@@ -2066,7 +2191,7 @@ function CalendarRowLeft({
                                 className={cn(
                                     'make-shift-calendar__day-cell',
                                     'group relative z-[10] flex h-full min-w-0 items-center justify-center',
-                                    hasCellViolations || !readonly ? 'cursor-pointer' : 'cursor-default',
+                                    'cursor-pointer',
                                     activeCellViolation && 'z-[50]',
                                     weekendBg,
                                 )}
@@ -2095,6 +2220,14 @@ function CalendarRowLeft({
                                         isOnlyRequest={shiftType === null && reqType !== null}
                                         className={SHIFT_BADGE_CELL_BADGE}
                                     />
+                                    {showCellStatusPins && (
+                                        <CellStatusPins
+                                            fixed={isFixedCell}
+                                            requested={isRequestedCell}
+                                            fixedLabel={fixedStatusPinLabel}
+                                            requestedLabel={requestStatusPinLabel}
+                                        />
+                                    )}
                                 </span>
                             </button>
                         );

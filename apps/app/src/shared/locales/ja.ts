@@ -1281,6 +1281,8 @@ export const ja: TLocale = {
                 clearCell: 'クリア',
                 fullDayLabel: '{{day}}日 全体',
                 nurseDayLabel: '{{name}} · {{day}}日',
+                fixedStatusPin: '固定勤務',
+                requestStatusPin: '希望勤務',
             },
             tutorial: {
                 stepper: {

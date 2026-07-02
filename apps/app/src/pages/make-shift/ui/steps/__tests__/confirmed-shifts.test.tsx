@@ -1,6 +1,8 @@
 import {useQuery} from '@tanstack/react-query';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent, within} from '@/shared/util/test-utils';
+import type * as MakeShiftStoreModule from '../../../model/make-shift-store';
 import {ConfirmedShifts} from '../confirmed-shifts';
 
 const editConfirmedMock = vi.fn();
@@ -51,7 +53,7 @@ vi.mock('@/features/shift-editor', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {default: i18n} = await vi.importActual<typeof import('@/i18n')>('@/i18n');
+    const {default: i18n} = await vi.importActual<typeof I18nModule>('@/i18n');
 
     return {
         useTypedTranslation: () => ({
@@ -61,7 +63,7 @@ vi.mock('@/shared/hook/use-typed-translation', async () => {
 });
 
 vi.mock('../../../model/make-shift-store', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('../../../model/make-shift-store')>();
+    const actual = await importOriginal<typeof MakeShiftStoreModule>();
 
     return {
         ...actual,
@@ -116,5 +118,40 @@ describe('ConfirmedShifts', () => {
 
         expect(within(dialog).getByText('듀팅병원 중환자실 병동코드')).toBeInTheDocument();
         expect(within(dialog).getByText('ABC123')).toBeInTheDocument();
+    });
+
+    it('확정 근무표를 불러오는 동안 캘린더 스켈레톤을 보여준다', () => {
+        mockedUseQuery.mockImplementation((options: {queryKey?: readonly unknown[]}) => {
+            const key = options.queryKey ?? [];
+
+            if (key.includes('id')) {
+                return {
+                    data: {
+                        hospitalName: '듀팅병원',
+                        name: '중환자실',
+                        code: 'ABC123',
+                    },
+                    isLoading: false,
+                    isError: false,
+                    refetch: vi.fn(),
+                } as unknown as ReturnType<typeof useQuery>;
+            }
+
+            return {
+                data: null,
+                isLoading: true,
+                isError: false,
+                refetch: vi.fn(),
+            } as unknown as ReturnType<typeof useQuery>;
+        });
+
+        render(<ConfirmedShifts />);
+
+        expect(screen.getByText('병동과 연동한 간호사는 앱에서 확정 근무표를 바로 볼 수 있어요!')).toBeInTheDocument();
+        expect(screen.getByRole('status', {name: '확정 근무표를 불러오는 중이에요'})).toHaveAttribute(
+            'data-testid',
+            'make-shift-calendar-skeleton',
+        );
+        expect(screen.queryByText('잠시만 기다려 주세요.')).not.toBeInTheDocument();
     });
 });

@@ -38,6 +38,7 @@ import {
 } from '../../../model/use-schedule-snapshots';
 import {RestLeavePolicySummaryButton} from '../rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
+import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
@@ -46,6 +47,7 @@ import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {hasBlankLastShiftCells} from './last-shift-warning';
 
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
+const AI_CALENDAR_EFFECT_SETTLE_MS = 900;
 
 type TSnapshotLimitContext = {
     snapshots: TSnapshotSummaryDto[];
@@ -146,6 +148,7 @@ export function AiAutofill() {
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [isAiEffectVisible, setIsAiEffectVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
@@ -190,9 +193,31 @@ export function AiAutofill() {
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const aiRequestSeqRef = useRef(0);
     const aiAbortControllerRef = useRef<AbortController | null>(null);
+    const aiEffectDismissTimerRef = useRef<number | null>(null);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+
+    const clearAiEffectDismissTimer = useCallback(() => {
+        if (aiEffectDismissTimerRef.current === null) return;
+
+        window.clearTimeout(aiEffectDismissTimerRef.current);
+        aiEffectDismissTimerRef.current = null;
+    }, []);
+    const hideAiEffect = useCallback(() => {
+        clearAiEffectDismissTimer();
+        setIsAiEffectVisible(false);
+    }, [clearAiEffectDismissTimer]);
+    const scheduleAiEffectDismiss = useCallback(() => {
+        clearAiEffectDismissTimer();
+
+        aiEffectDismissTimerRef.current = window.setTimeout(() => {
+            aiEffectDismissTimerRef.current = null;
+            setIsAiEffectVisible(false);
+        }, AI_CALENDAR_EFFECT_SETTLE_MS);
+    }, [clearAiEffectDismissTimer]);
+
+    useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
     const isStepNavigationBusy =
         isWorking || isSavingSnapshot || isAiGenerating || loadingSnapshotId !== null || deletingSnapshotId !== null;
@@ -227,9 +252,10 @@ export function AiAutofill() {
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
         setIsAiGenerating(false);
+        hideAiEffect();
         resetAiStatus();
         toast.dismiss('make-shift-ai-fill-progress');
-    }, [wardId, currentShiftTeamId, year, month, resetAiStatus]);
+    }, [wardId, currentShiftTeamId, year, month, hideAiEffect, resetAiStatus]);
 
     useEffect(() => {
         setLastShiftBlankWarningAcknowledged(false);
@@ -626,9 +652,13 @@ export function AiAutofill() {
         aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
         setIsAiGenerating(true);
+        clearAiEffectDismissTimer();
+        setIsAiEffectVisible(true);
         setAiStatus('loading');
 
         const progressToastId = 'make-shift-ai-fill-progress';
+
+        let shouldKeepAiEffectVisible = false;
 
         toast.loading(t('page.makeShift.aiRefill.progressToast'), {id: progressToastId, duration: Infinity});
 
@@ -678,6 +708,8 @@ export function AiAutofill() {
             commands.applyChangedCells(result.response.changedCells, dutyQuery.data, 'ai');
             commands.setScheduleValidationFromApi(result.validation);
 
+            shouldKeepAiEffectVisible = true;
+            scheduleAiEffectDismiss();
             setAiStatus('success');
             setHasCompletedAiFill(true);
         } finally {
@@ -686,6 +718,8 @@ export function AiAutofill() {
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
                 setIsAiGenerating(false);
+
+                if (!shouldKeepAiEffectVisible) hideAiEffect();
             }
         }
     };
@@ -736,12 +770,7 @@ export function AiAutofill() {
                 />
 
                 {(dutyQuery.isLoading || isHydratingEditor) && (
-                    <PageState
-                        tone="loading"
-                        loadingColor="purple"
-                        title={t('page.makeShift.aiRefill.loading')}
-                        description={t('page.state.loadingDescription')}
-                    />
+                    <MakeShiftCalendarSkeleton ariaLabel={t('page.makeShift.aiRefill.loading')} />
                 )}
                 {dutyQuery.isError && (
                     <PageState
@@ -761,7 +790,8 @@ export function AiAutofill() {
                         onCellClick={isAiGenerating ? undefined : focusEditor}
                         readonly={isAiGenerating}
                         editableLastShifts={!isAiGenerating}
-                        isShimmering={isAiGenerating}
+                        isShimmering={isAiEffectVisible}
+                        showCellStatusPins
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         restPolicyControl={

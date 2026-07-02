@@ -5,8 +5,26 @@ export const th = {
     ...generatedTh,
     page: {
         ...generatedTh.page,
+        notifications: {
+            openAria: 'เปิดการแจ้งเตือน',
+            panelAria: 'รายการแจ้งเตือน',
+            title: 'การแจ้งเตือน',
+            unreadCount: 'การแจ้งเตือนที่ยังไม่ได้อ่าน {{count}} รายการ',
+            unreadShort: 'ยังไม่อ่าน {{count}}',
+            justNow: 'เมื่อสักครู่',
+            minutesAgo: '{{count}} นาทีที่แล้ว',
+            hoursAgo: '{{count}} ชั่วโมงที่แล้ว',
+            loadFailed: 'ไม่สามารถโหลดการแจ้งเตือนได้',
+            retry: 'ลองอีกครั้ง',
+            empty: 'ไม่มีการแจ้งเตือนใหม่',
+        },
         makeShift: {
             ...generatedTh.page.makeShift,
+            calendar: {
+                ...generatedTh.page.makeShift.calendar,
+                fixedStatusPin: 'เวรคงที่',
+                requestStatusPin: 'เวรที่ขอ',
+            },
             constraints: {
                 ...generatedTh.page.makeShift.constraints,
                 templates: {

@@ -132,8 +132,11 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        expect(screen.getByText('신청 근무 화면을 준비하고 있어요')).toBeInTheDocument();
-        expect(screen.getByText('근무 팀과 신청 근무표를 순서대로 불러오고 있어요.')).toBeInTheDocument();
+        expect(screen.getByRole('status', {name: '신청 근무 화면을 준비하고 있어요'})).toHaveAttribute(
+            'data-testid',
+            'request-calendar-skeleton',
+        );
+        expect(screen.queryByText('근무 팀과 신청 근무표를 순서대로 불러오고 있어요.')).not.toBeInTheDocument();
     });
 
     it('계정 정보를 확인하는 중이면 부트스트랩 로딩 상태를 보여준다', () => {
@@ -147,8 +150,11 @@ describe('RequestShiftPage', () => {
 
         render(<RequestShiftPage />);
 
-        expect(screen.getByText('계정 정보를 확인하고 있어요')).toBeInTheDocument();
-        expect(screen.getByText('병동 정보를 확인한 뒤 신청 근무 화면을 준비하고 있어요.')).toBeInTheDocument();
+        expect(screen.getByRole('status', {name: '계정 정보를 확인하고 있어요'})).toHaveAttribute(
+            'data-testid',
+            'request-calendar-skeleton',
+        );
+        expect(screen.queryByText('병동 정보를 확인한 뒤 신청 근무 화면을 준비하고 있어요.')).not.toBeInTheDocument();
     });
 
     it('신청 근무표 조회 실패 시 재시도를 노출하고 실행한다', async () => {

@@ -10,6 +10,7 @@ import {
     getMoveNurseOrderPayload,
     getRequestCalendarCellState,
     getRequestCalendarDivisionAction,
+    getRequestCalendarRowClassName,
     getRequestFocus,
 } from '../utils';
 
@@ -233,6 +234,11 @@ describe('request-calendar utils', () => {
         expect(getDayCellClass('sunday', false, false)).toBe('bg-red/5');
         expect(getDayCellClass('holiday', true, false)).toBe('bg-red/5 bg-main-light');
         expect(getDayCellClass('workday', false, false)).toBe('');
+    });
+
+    it('/make 확정 근무표와 같은 스케일로 신청근무 행 높이를 잡는다', () => {
+        expect(getRequestCalendarRowClassName({isFocusedRow: false})).toContain('h-[clamp(28px,2.4cqw,40px)]');
+        expect(getRequestCalendarRowClassName({isFocusedRow: false})).not.toContain('h-11');
     });
 
     it('요청만 있는 셀 상태를 계산한다', () => {

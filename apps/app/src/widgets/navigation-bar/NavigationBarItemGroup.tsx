@@ -1,7 +1,9 @@
 import {cn} from '@dutying/utils/style';
+import {useQuery} from '@tanstack/react-query';
 import {CircleUserRound} from 'lucide-react';
 import {useState} from 'react';
 import {Link} from 'react-router';
+import {notificationQueryOptions} from '@/entities/notification';
 import {getWardDisplayCode, getWardDisplayIdentity, getWardDisplayTitle} from '@/entities/ward';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
@@ -195,6 +197,12 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
     } = useEditWard();
     const waitingCount = watingNurses?.length ?? 0;
     const pendingRequestCount = useTotalPendingRequestCount();
+    const boardUnreadCountQuery = useQuery({
+        ...notificationQueryOptions.unreadCount('BOARD'),
+        refetchInterval: 30_000,
+        retry: 1,
+    });
+    const hasBoardUnreadNotification = (boardUnreadCountQuery.data ?? 0) > 0;
 
     return (
         <nav
@@ -265,6 +273,7 @@ const NavigationBarItemGroups = ({collapsed = false, stableCollapsedLayout = fal
                                     badgeCount={
                                         item.path === ROUTE.MEMBER ? waitingCount : item.path === ROUTE.REQUEST ? pendingRequestCount : 0
                                     }
+                                    badgeDot={item.path === ROUTE.BOARD && hasBoardUnreadNotification}
                                     onNavigate={onItemNavigate}
                                 />
                             ))}

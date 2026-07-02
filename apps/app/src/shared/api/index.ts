@@ -4,5 +4,6 @@ export {default as AuthAPI} from './auth';
 export {default as BoardAPI} from './board';
 export {default as FileAPI} from './file';
 export {default as NurseAPI} from './nurse';
+export {default as NotificationAPI} from './notification';
 export {default as NoticeAPI} from './notice';
 export {AdminWardAPI, default as WardAPI} from './ward';

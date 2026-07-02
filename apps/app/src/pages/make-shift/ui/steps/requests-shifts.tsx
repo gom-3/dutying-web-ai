@@ -3,6 +3,7 @@ import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import useRequestShift from '@/features/request-shift';
 import {useRequestShiftStore} from '@/features/request-shift/model/store';
 import RequestCalendar from '@/pages/request-shift/ui/request-calendar';
+import {RequestCalendarSkeleton} from '@/pages/request-shift/ui/request-calendar-skeleton';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
@@ -142,8 +143,10 @@ export function RequestsShifts() {
                     </div>
                 </div>
 
-                {pageState ? (
-                    <PageState {...pageState} loadingColor={pageState.tone === 'loading' ? 'purple' : undefined} className="py-0">
+                {pageState?.tone === 'loading' ? (
+                    <RequestCalendarSkeleton ariaLabel={pageState.title} />
+                ) : pageState ? (
+                    <PageState {...pageState} className="py-0">
                         {pageState.tone === 'empty' && !requestShift && shiftTeamCount > 0 ? (
                             <div className="mt-1 flex justify-center">
                                 <Button

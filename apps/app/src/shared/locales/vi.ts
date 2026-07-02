@@ -5,8 +5,26 @@ export const vi = {
     ...generatedVi,
     page: {
         ...generatedVi.page,
+        notifications: {
+            openAria: 'Mở thông báo',
+            panelAria: 'Danh sách thông báo',
+            title: 'Thông báo',
+            unreadCount: '{{count}} thông báo chưa đọc',
+            unreadShort: 'Chưa đọc {{count}}',
+            justNow: 'Vừa xong',
+            minutesAgo: '{{count}} phút trước',
+            hoursAgo: '{{count}} giờ trước',
+            loadFailed: 'Không thể tải thông báo.',
+            retry: 'Thử lại',
+            empty: 'Không có thông báo mới.',
+        },
         makeShift: {
             ...generatedVi.page.makeShift,
+            calendar: {
+                ...generatedVi.page.makeShift.calendar,
+                fixedStatusPin: 'Ca cố định',
+                requestStatusPin: 'Ca đã đăng ký',
+            },
             constraints: {
                 ...generatedVi.page.makeShift.constraints,
                 templates: {
