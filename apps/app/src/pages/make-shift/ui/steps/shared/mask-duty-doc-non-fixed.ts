@@ -12,16 +12,22 @@ export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
 export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests = false}: TMaskDutyDocOptions): TDutyDoc {
     return {
         ...doc,
+        fixedCells: hideFixed ? {} : doc.fixedCells,
         requestCells: hideRequests ? {} : doc.requestCells,
         rows: doc.rows.map((row) => ({
             ...row,
             cells: row.cells.map((cell, colIdx) => {
                 const date = doc.columns[colIdx];
+
                 if (!date) return cell;
 
                 const key = `${row.workerId}|${date}`;
 
-                return hideFixed && doc.fixedCells[key] === true ? null : cell;
+                if (hideFixed && doc.fixedCells[key] === true) return null;
+
+                if (hideRequests && doc.requestCells[key] === true) return null;
+
+                return cell;
             }),
         })),
     };

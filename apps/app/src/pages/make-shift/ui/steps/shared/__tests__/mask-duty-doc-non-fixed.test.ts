@@ -1,5 +1,5 @@
-import type {TDutyDoc} from '@/features/shift-editor/model';
 import {describe, expect, it} from 'vitest';
+import type {TDutyDoc} from '@/features/shift-editor/model';
 import {maskDutyDocCells, maskDutyDocFixedCells} from '../mask-duty-doc-non-fixed';
 
 describe('maskDutyDocFixedCells', () => {
@@ -16,11 +16,13 @@ describe('maskDutyDocFixedCells', () => {
             fixedCells: {'10|2026-07-01': true},
             requestCells: {'10|2026-07-02': true},
         };
+        const masked = maskDutyDocFixedCells(doc);
 
-        expect(maskDutyDocFixedCells(doc).rows[0]?.cells).toEqual([null, 'E', 'N']);
+        expect(masked.rows[0]?.cells).toEqual([null, 'E', 'N']);
+        expect(masked.fixedCells).toEqual({});
     });
 
-    it('hides requested shift display flags while keeping assigned cells visible', () => {
+    it('hides requested shift cells and display flags', () => {
         const doc: TDutyDoc = {
             columns: ['2026-07-01', '2026-07-02'],
             rows: [
@@ -33,10 +35,9 @@ describe('maskDutyDocFixedCells', () => {
             fixedCells: {},
             requestCells: {'10|2026-07-02': true},
         };
-
         const masked = maskDutyDocCells(doc, {hideRequests: true});
 
-        expect(masked.rows[0]?.cells).toEqual(['D', 'E']);
+        expect(masked.rows[0]?.cells).toEqual(['D', null]);
         expect(masked.requestCells).toEqual({});
     });
 });

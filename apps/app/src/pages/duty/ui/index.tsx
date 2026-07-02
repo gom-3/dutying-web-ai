@@ -1,5 +1,6 @@
 import {type TViolation} from '@/features/shift-editor/model';
 import {MakeShiftCalendar} from '@/pages/make-shift/ui/steps/shared/make-shift-calendar';
+import {MakeShiftCalendarSkeleton} from '@/pages/make-shift/ui/steps/shared/make-shift-calendar-skeleton';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementMonthTeamHeader, DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
@@ -85,12 +86,7 @@ export const DutyPageView = ({duty}: TDutyPageViewProps) => {
                     />
                 )}
                 {!showBootstrapLoadingState && !showBootstrapErrorState && showLoadingState && (
-                    <PageState
-                        tone="loading"
-                        title={t('page.duty.loading')}
-                        description={t('page.state.loadingDescription')}
-                        className="py-0"
-                    />
+                    <MakeShiftCalendarSkeleton ariaLabel={t('page.duty.loading')} />
                 )}
                 {!showBootstrapLoadingState && !showBootstrapErrorState && teamsReady && !state.isDutyViewAllowed && (
                     <DutyManagementStatusCard

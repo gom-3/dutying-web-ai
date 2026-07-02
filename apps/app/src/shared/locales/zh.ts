@@ -5,8 +5,26 @@ export const zh = {
     ...generatedZh,
     page: {
         ...generatedZh.page,
+        notifications: {
+            openAria: '打开通知',
+            panelAria: '通知列表',
+            title: '通知',
+            unreadCount: '{{count}} 条未读通知',
+            unreadShort: '未读 {{count}}',
+            justNow: '刚刚',
+            minutesAgo: '{{count}} 分钟前',
+            hoursAgo: '{{count}} 小时前',
+            loadFailed: '无法加载通知。',
+            retry: '重试',
+            empty: '没有新通知。',
+        },
         makeShift: {
             ...generatedZh.page.makeShift,
+            calendar: {
+                ...generatedZh.page.makeShift.calendar,
+                fixedStatusPin: '固定班次',
+                requestStatusPin: '申请班次',
+            },
             constraints: {
                 ...generatedZh.page.makeShift.constraints,
                 templates: {

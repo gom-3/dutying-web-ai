@@ -48,6 +48,19 @@ export const en: TLocale = {
                 account: 'Account',
             },
         },
+        notifications: {
+            openAria: 'Open notifications',
+            panelAria: 'Notifications',
+            title: 'Notifications',
+            unreadCount: '{{count}} unread notifications',
+            unreadShort: '{{count}} unread',
+            justNow: 'Just now',
+            minutesAgo: '{{count}} min ago',
+            hoursAgo: '{{count}} hr ago',
+            loadFailed: 'Could not load notifications.',
+            retry: 'Retry',
+            empty: 'No new notifications.',
+        },
         board: {
             title: 'Board',
             description: 'Share important updates with nurses in the same ward.',
@@ -628,6 +641,8 @@ export const en: TLocale = {
                 clearCell: 'Clear',
                 fullDayLabel: 'Day {{day}} · all',
                 nurseDayLabel: '{{name}} · day {{day}}',
+                fixedStatusPin: 'Fixed shift',
+                requestStatusPin: 'Requested shift',
             },
             tutorial: {
                 stepper: {

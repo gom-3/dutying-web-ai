@@ -1025,6 +1025,7 @@ export const ko = {
             },
             "calendar": {
                 "carried": "이월",
+                "carriedDetail": "이월 {{count}}일",
                 "clearCell": "비우기",
                 "closePopover": "팝업 닫기",
                 "dateOthers": "외 {{count}}일",
@@ -1034,6 +1035,7 @@ export const ko = {
                 "previousShifts": "전달 근무",
                 "restCheck": "휴무 확인",
                 "restCheckCompact": "휴무",
+                "restCheckDetail": "휴무 기준 {{target}}일 · 배정 {{assigned}}일 · 이월 {{carried}}일",
                 "shiftTypeDropdownAria": "근무유형 선택",
                 "violationCount": {
                     "error": "중요 {{count}}",
@@ -3696,6 +3698,7 @@ export const en: TLocale = {
             },
             "calendar": {
                 "carried": "Carry",
+                "carriedDetail": "Carry {{count}} days",
                 "clearCell": "Clear",
                 "closePopover": "Close popover",
                 "dateOthers": "+{{count}} more day",
@@ -3705,6 +3708,7 @@ export const en: TLocale = {
                 "previousShifts": "Prev",
                 "restCheck": "Rest check",
                 "restCheckCompact": "Rest",
+                "restCheckDetail": "Rest target {{target}} days · assigned {{assigned}} days · carry {{carried}} days",
                 "shiftTypeDropdownAria": "Select shift type",
                 "violationCount": {
                     "error": "Important {{count}}",
@@ -6365,6 +6369,7 @@ export const ja: TLocale = {
             },
             "calendar": {
                 "carried": "繰越",
+                "carriedDetail": "繰越 {{count}}日",
                 "clearCell": "クリア",
                 "closePopover": "ポップアップを閉じる",
                 "dateOthers": "ほか{{count}}日",
@@ -6374,6 +6379,7 @@ export const ja: TLocale = {
                 "previousShifts": "前月",
                 "restCheck": "休み確認",
                 "restCheckCompact": "休み",
+                "restCheckDetail": "休み基準 {{target}}日 · 割当 {{assigned}}日 · 繰越 {{carried}}日",
                 "shiftTypeDropdownAria": "勤務区分を選択",
                 "violationCount": {
                     "error": "重要 {{count}}",
@@ -9034,6 +9040,7 @@ export const zh: TLocale = {
             },
             "calendar": {
                 "carried": "结转到",
+                "carriedDetail": "结转 {{count}} 天",
                 "clearCell": "空的",
                 "closePopover": "关闭弹出窗口",
                 "dateOthers": "等{{count}}天",
@@ -9043,6 +9050,7 @@ export const zh: TLocale = {
                 "previousShifts": "送货工作",
                 "restCheck": "休假检查",
                 "restCheckCompact": "休",
+                "restCheckDetail": "休假目标 {{target}} 天 · 已排 {{assigned}} 天 · 结转 {{carried}} 天",
                 "shiftTypeDropdownAria": "选择班次类型",
                 "violationCount": {
                     "error": "重要{{count}}",
@@ -11703,6 +11711,7 @@ export const th: TLocale = {
             },
             "calendar": {
                 "carried": "พก",
+                "carriedDetail": "สะสม {{count}} วัน",
                 "clearCell": "ชัดเจน",
                 "closePopover": "ปิดป๊อปโอเวอร์",
                 "dateOthers": "+{{count}} อีกวัน",
@@ -11712,6 +11721,7 @@ export const th: TLocale = {
                 "previousShifts": "ก่อนหน้า",
                 "restCheck": "ตรวจวันหยุด",
                 "restCheckCompact": "พัก",
+                "restCheckDetail": "เป้าพัก {{target}} วัน · จัดแล้ว {{assigned}} วัน · สะสม {{carried}} วัน",
                 "shiftTypeDropdownAria": "เลือกประเภทกะ",
                 "violationCount": {
                     "error": "สำคัญ {{count}}",
@@ -14372,6 +14382,7 @@ export const vi: TLocale = {
             },
             "calendar": {
                 "carried": "Mang theo",
+                "carriedDetail": "Mang theo {{count}} ngày",
                 "clearCell": "Xóa",
                 "closePopover": "Đóng cửa sổ bật lên",
                 "dateOthers": "+{{count}} thêm ngày",
@@ -14381,6 +14392,7 @@ export const vi: TLocale = {
                 "previousShifts": "Trước đó",
                 "restCheck": "Kiểm tra ngày nghỉ",
                 "restCheckCompact": "Nghỉ",
+                "restCheckDetail": "Mục tiêu nghỉ {{target}} ngày · đã xếp {{assigned}} ngày · mang theo {{carried}} ngày",
                 "shiftTypeDropdownAria": "Chọn loại ca",
                 "violationCount": {
                     "error": "Quan trọng {{count}}",

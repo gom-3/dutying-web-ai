@@ -5,6 +5,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import RequestCalendar from './ui/request-calendar';
+import {RequestCalendarSkeleton} from './ui/request-calendar-skeleton';
 import Toolbar from './ui/toolbar';
 
 const RequestShiftPageContent = () => {
@@ -74,7 +75,9 @@ const RequestShiftPageContent = () => {
             <div className="flex min-h-0 flex-1 flex-col">
                 {shouldShowToolbar ? <Toolbar /> : null}
 
-                {pageState ? (
+                {pageState?.tone === 'loading' ? (
+                    <RequestCalendarSkeleton ariaLabel={pageState.title} />
+                ) : pageState ? (
                     <PageState {...pageState} className={shouldShowToolbar ? 'py-0 pt-14' : 'py-0'}>
                         {pageState.tone === 'empty' && !requestShift && shiftTeamCount > 0 ? (
                             <div className="mt-1 flex justify-center">

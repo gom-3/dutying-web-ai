@@ -312,6 +312,7 @@ export default function RequestDutyRequestPanel({
     };
     const decideRequest = async (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
         if (isRequestActionLocked) return;
+
         if (dutyRequest.isAccepted === nextAccepted) return;
 
         const accepted = await acceptRequest(dutyRequest.wardReqShiftId, nextAccepted);
@@ -361,7 +362,7 @@ export default function RequestDutyRequestPanel({
             <div
                 key={dutyRequest.wardReqShiftId}
                 className={twMerge(
-                    'flex min-w-0 items-center gap-1.5 rounded-[12px] px-2 py-2 transition-colors min-[1440px]:gap-2 min-[1440px]:px-2.5',
+                    'flex min-w-0 items-center gap-1.5 rounded-[12px] px-2 py-1.5 transition-colors min-[1440px]:gap-2 min-[1440px]:px-2.5',
                     REVIEW_ROW_SURFACE_CLASS_NAME,
                     requestFocus && 'hover:bg-[#FBFDFF]',
                     (isUpdating || isExitingPendingRequest) && 'opacity-70',

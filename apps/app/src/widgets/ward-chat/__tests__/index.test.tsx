@@ -42,6 +42,26 @@ function renderWithQueryClient(children: ReactNode) {
 
 const createJwt = (payload: Record<string, unknown>) =>
     `header.${btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}.signature`;
+const pendingFetch = () => new Promise<Response>(() => undefined);
+
+function createRealtimeChatResponse(payload: Record<string, unknown>) {
+    const eventData = {
+        eventId: `chat-message-${payload.messageId}`,
+        type: 'WARD_CHAT_MESSAGE_CREATED',
+        payload,
+    };
+    const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+            controller.enqueue(new TextEncoder().encode(`event: WARD_CHAT_MESSAGE_CREATED\ndata: ${JSON.stringify(eventData)}\n\n`));
+            controller.close();
+        },
+    });
+
+    return new Response(stream, {
+        status: 200,
+        headers: {'Content-Type': 'text/event-stream'},
+    });
+}
 
 describe('WardChatWidget', () => {
     beforeAll(() => {
@@ -56,6 +76,10 @@ describe('WardChatWidget', () => {
         authStateMock.wardId = 1;
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', '');
         vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.net');
+        vi.stubGlobal(
+            'fetch',
+            vi.fn(() => pendingFetch()),
+        );
         wardApiMock.getWardChatUnreadCount.mockResolvedValue({moimId: 1, wardId: 1, unreadCount: 5});
         wardApiMock.getWardChatMessages.mockResolvedValue({
             messages: [
@@ -93,6 +117,7 @@ describe('WardChatWidget', () => {
 
     afterEach(() => {
         vi.unstubAllEnvs();
+        vi.unstubAllGlobals();
     });
 
     it('shows the floating button with unread count', async () => {
@@ -100,6 +125,44 @@ describe('WardChatWidget', () => {
 
         expect(await screen.findByRole('button')).toBeInTheDocument();
         expect(await screen.findByText('5')).toBeInTheDocument();
+    });
+
+    it('updates the floating unread badge from realtime ward chat events', async () => {
+        authStateMock.accessToken = 'access-token';
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+
+        const fetchMock = vi.fn(() => pendingFetch());
+
+        fetchMock.mockResolvedValueOnce(
+            createRealtimeChatResponse({
+                messageId: 7,
+                moimId: null,
+                wardId: 1,
+                senderAccountId: 101,
+                senderWardAdminAccountId: null,
+                senderType: 'ACCOUNT',
+                senderName: 'Other Nurse',
+                text: 'New realtime message',
+                sentAt: '2026-05-25T05:00:01.462Z',
+                isDeleted: false,
+                unreadCount: 3,
+            }),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        expect(await screen.findByRole('button')).toBeInTheDocument();
+        expect(await screen.findByText('3')).toBeInTheDocument();
+        expect(fetchMock).toHaveBeenCalledWith(
+            'https://dev.api.dutying.net/events/stream',
+            expect.objectContaining({
+                headers: expect.objectContaining({
+                    Accept: 'text/event-stream',
+                    Authorization: 'Bearer access-token',
+                }),
+            }),
+        );
     });
 
     it('opens messages and sends a chat message', async () => {
@@ -113,10 +176,13 @@ describe('WardChatWidget', () => {
         await waitFor(() => expect(wardApiMock.readWardChat).toHaveBeenCalledWith(1, {lastReadMessageId: 1}));
 
         const textarea = document.querySelector('textarea');
+
         expect(textarea).not.toBeNull();
 
         await user.type(textarea as HTMLTextAreaElement, 'Reply message');
+
         const buttons = screen.getAllByRole('button');
+
         await user.click(buttons[buttons.length - 1] as HTMLButtonElement);
 
         await waitFor(() =>
@@ -132,6 +198,7 @@ describe('WardChatWidget', () => {
 
     it('renders ward admin messages from the current admin as mine', async () => {
         const user = userEvent.setup();
+
         authStateMock.accessToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9});
         authStateMock.accountId = null;
         wardApiMock.getWardChatMessages.mockResolvedValueOnce({
@@ -164,6 +231,7 @@ describe('WardChatWidget', () => {
 
     it('shows an operator badge before another ward admin sender name', async () => {
         const user = userEvent.setup();
+
         authStateMock.accessToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9});
         authStateMock.accountId = null;
         wardApiMock.getWardChatMessages.mockResolvedValueOnce({

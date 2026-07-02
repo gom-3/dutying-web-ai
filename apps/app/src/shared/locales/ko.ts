@@ -46,6 +46,19 @@ export const ko = {
                 account: '마이페이지',
             },
         },
+        notifications: {
+            openAria: '알림 열기',
+            panelAria: '알림 목록',
+            title: '알림',
+            unreadCount: '읽지 않은 알림 {{count}}개',
+            unreadShort: '안 읽음 {{count}}',
+            justNow: '방금',
+            minutesAgo: '{{count}}분 전',
+            hoursAgo: '{{count}}시간 전',
+            loadFailed: '알림을 불러오지 못했어요.',
+            retry: '다시 시도',
+            empty: '새 알림이 없어요.',
+        },
         board: {
             title: '게시판',
             description: '같은 병동 간호사에게 필요한 내용을 공유할 수 있어요.',
@@ -625,6 +638,8 @@ export const ko = {
                 clearCell: '비우기',
                 fullDayLabel: '{{day}}일 전체',
                 nurseDayLabel: '{{name}} · {{day}}일',
+                fixedStatusPin: '고정 근무',
+                requestStatusPin: '신청 근무',
             },
             tutorial: {
                 stepper: {

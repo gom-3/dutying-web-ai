@@ -12,6 +12,7 @@ const translations: Record<string, string> = {
     'page.request.calendar.noNurseDescription': '신청 근무를 확인하려면 먼저 근무자 관리에서 팀 간호사를 추가해 주세요.',
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
     'page.request.calendar.skillColumn': '숙련도',
+    'page.makeShift.calendar.requestStatusPin': '신청 근무',
 };
 
 vi.mock('@/features/request-shift', () => ({
@@ -93,7 +94,17 @@ function renderRequestCalendar() {
     );
 }
 
-function createUseRequestShiftValue({hasNurses = false}: {hasNurses?: boolean} = {}) {
+function createUseRequestShiftValue({
+    hasNurses = false,
+    hasRequest = false,
+    requestAccepted = true,
+    focus = null,
+}: {
+    hasNurses?: boolean;
+    hasRequest?: boolean;
+    requestAccepted?: boolean | null;
+    focus?: {shiftNurseName: string; shiftNurseId: number; day: number} | null;
+} = {}) {
     const nurse = {
         nurseId: 10,
         accountId: null,
@@ -114,6 +125,18 @@ function createUseRequestShiftValue({hasNurses = false}: {hasNurses?: boolean} =
         priority: 100,
     };
     const nurses = hasNurses ? [nurse] : [];
+    const dayShiftType = {
+        wardShiftTypeId: 10,
+        name: 'Day',
+        shortName: 'D',
+        startTime: '07:00',
+        endTime: '15:00',
+        color: '#4B7BEC',
+        isDefault: true,
+        isOff: false,
+        isCounted: true,
+        classification: 'DAY',
+    };
 
     return {
         state: {
@@ -121,7 +144,7 @@ function createUseRequestShiftValue({hasNurses = false}: {hasNurses?: boolean} =
             month: 6,
             requestShift: {
                 days: [{day: 1, dayType: 'workday'}],
-                wardShiftTypes: [],
+                wardShiftTypes: hasRequest ? [dayShiftType] : [],
                 divisionShiftNurses: hasNurses
                     ? [
                           [
@@ -136,17 +159,33 @@ function createUseRequestShiftValue({hasNurses = false}: {hasNurses?: boolean} =
                                       priority: 100,
                                   },
                                   carry: 0,
-                                  wardReqShiftList: [null],
+                                  wardReqShiftList: [hasRequest ? dayShiftType.wardShiftTypeId : null],
                               },
                           ],
                       ]
                     : [],
             },
-            dutyRequestList: [],
+            dutyRequestList:
+                hasNurses && hasRequest
+                    ? [
+                          {
+                              wardReqShiftId: 1,
+                              nurseId: nurse.nurseId,
+                              nurseName: nurse.name,
+                              date: 1,
+                              requestDate: '2026-06-01',
+                              wardShiftTypeId: dayShiftType.wardShiftTypeId,
+                              wardShiftTypeShortName: dayShiftType.shortName,
+                              wardShiftTypeColor: dayShiftType.color,
+                              isRead: false,
+                              isAccepted: requestAccepted,
+                          },
+                      ]
+                    : [],
             dutyRequestStatus: 'success',
             updatingRequestId: null,
-            focus: null,
-            wardShiftTypeMap: new Map(),
+            focus,
+            wardShiftTypeMap: hasRequest ? new Map([[dayShiftType.wardShiftTypeId, dayShiftType]]) : new Map(),
             currentShiftTeam: {
                 shiftTeamId: 3,
                 name: 'A팀',
@@ -208,5 +247,68 @@ describe('RequestCalendar', () => {
         expect(screen.getByText('연동')).toBeInTheDocument();
         expect(screen.getByText('Kim')).toBeInTheDocument();
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
+    });
+
+    it('신청 근무가 있는 셀의 근무유형 칩에 파란 핀을 표시한다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, hasRequest: true}));
+
+        renderRequestCalendar();
+
+        const requestPin = document.querySelector<HTMLElement>('[data-request-shift-status-pin="true"]');
+
+        expect(requestPin).toBeInTheDocument();
+        expect(requestPin).toHaveAttribute('title', '신청 근무');
+        expect(screen.getByText('D')).toBeInTheDocument();
+    });
+
+    it('캘린더 셀을 클릭하면 기존 focus 하이라이팅 상태를 요청한다', async () => {
+        const user = userEvent.setup();
+        const requestShiftValue = createUseRequestShiftValue({hasNurses: true, hasRequest: true});
+
+        mockUseRequestShift.mockReturnValue(requestShiftValue);
+
+        renderRequestCalendar();
+
+        await user.click(screen.getByText('D'));
+
+        expect(requestShiftValue.actions.changeFocus).toHaveBeenCalledWith({
+            shiftNurseName: 'Kim',
+            shiftNurseId: 20,
+            day: 0,
+        });
+    });
+
+    it('선택된 날짜 세로 컬럼과 간호사 이름을 하이라이팅한다', () => {
+        mockUseRequestShift.mockReturnValue(
+            createUseRequestShiftValue({
+                hasNurses: true,
+                hasRequest: true,
+                focus: {
+                    shiftNurseName: 'Kim',
+                    shiftNurseId: 20,
+                    day: 0,
+                },
+            }),
+        );
+
+        renderRequestCalendar();
+
+        expect(screen.getByText('Kim')).toHaveClass('text-main-1');
+        expect(screen.getByText('D').closest('button')).toHaveClass('bg-main-light');
+    });
+
+    it('수락하지 않은 신청 근무에는 핀을 표시하지 않는다', () => {
+        mockUseRequestShift.mockReturnValue(
+            createUseRequestShiftValue({
+                hasNurses: true,
+                hasRequest: true,
+                requestAccepted: null,
+            }),
+        );
+
+        renderRequestCalendar();
+
+        expect(document.querySelector('[data-request-shift-status-pin="true"]')).not.toBeInTheDocument();
+        expect(screen.getByText('D')).toBeInTheDocument();
     });
 });

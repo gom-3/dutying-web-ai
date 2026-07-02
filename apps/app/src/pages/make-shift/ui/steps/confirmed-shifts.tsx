@@ -18,6 +18,7 @@ import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
+import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
 import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
@@ -180,11 +181,9 @@ export function ConfirmedShifts() {
                 </div>
 
                 {!shift && dutyQuery.isLoading && (
-                    <PageState
-                        tone="loading"
-                        loadingColor="purple"
-                        title={t('page.makeShift.confirmedShifts.loading')}
-                        description={t('page.state.loadingDescription')}
+                    <MakeShiftCalendarSkeleton
+                        className="confirmed-shifts-calendar-wrap"
+                        ariaLabel={t('page.makeShift.confirmedShifts.loading')}
                     />
                 )}
                 {!shift && dutyQuery.isError && (

@@ -31,6 +31,7 @@ interface INavigationBarItemProps {
     alignWithCollapsedIcon?: boolean;
     disabled?: boolean;
     badgeCount?: number;
+    badgeDot?: boolean;
     onNavigate?: () => void;
 }
 
@@ -43,6 +44,7 @@ const NavigationBarItem = ({
     alignWithCollapsedIcon = false,
     disabled = false,
     badgeCount = 0,
+    badgeDot = false,
     onNavigate,
 }: INavigationBarItemProps) => {
     const navigate = useNavigate();
@@ -190,6 +192,14 @@ const NavigationBarItem = ({
                 >
                     {badgeLabel}
                 </span>
+            ) : badgeDot ? (
+                <span
+                    className={cn(
+                        'absolute size-2.5 rounded-full border-2 border-white bg-[#E55C6E]',
+                        collapsed ? 'top-2 right-2' : 'top-[9px] right-3',
+                    )}
+                    aria-hidden="true"
+                />
             ) : null}
         </button>
     );

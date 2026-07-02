@@ -26,6 +26,7 @@ import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
 import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
+import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
@@ -187,12 +188,7 @@ export function FixedShifts() {
             </div>
 
             {(dutyQuery.isLoading || isHydratingEditor) && (
-                <PageState
-                    tone="loading"
-                    loadingColor="purple"
-                    title={t('page.makeShift.fixedShifts.loading')}
-                    description={t('page.state.loadingDescription')}
-                />
+                <MakeShiftCalendarSkeleton className="fixed-shifts-calendar-wrap" ariaLabel={t('page.makeShift.fixedShifts.loading')} />
             )}
             {dutyQuery.isError && (
                 <PageState
@@ -213,6 +209,7 @@ export function FixedShifts() {
                         tutorialCellId="make_fixed_shift_sample_cell"
                         onCellClick={focusEditor}
                         editableLastShifts
+                        showCellStatusPins
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         restPolicyControl={
