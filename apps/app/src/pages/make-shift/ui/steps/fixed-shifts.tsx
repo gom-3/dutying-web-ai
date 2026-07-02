@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
-import {docToWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
+import {docToFixedWardShiftsDTO, useShiftEditorStore} from '@/features/shift-editor';
 import {type TViolation} from '@/features/shift-editor/model';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
@@ -85,7 +85,7 @@ export function FixedShifts() {
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            const dto = docToWardShiftsDTO(editorDoc, dutyQuery.data);
+            const dto = docToFixedWardShiftsDTO(editorDoc, dutyQuery.data);
 
             await WardAPI.updateShifts(wardId, dto);
             await queryClient.invalidateQueries({
