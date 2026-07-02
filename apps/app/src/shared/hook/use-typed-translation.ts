@@ -1,7 +1,8 @@
 import type React from 'react';
 import {useCallback} from 'react';
 import {useTranslation} from 'react-i18next';
-import {type ko} from '../i18n/resources.generated';
+import {type ko as generatedKo} from '../i18n/resources.generated';
+import {type ko as localeKo} from '../locales/ko';
 
 type TJoin<K, P> = K extends string | number ? (P extends string | number ? `${K}.${P}` : never) : never;
 
@@ -15,7 +16,7 @@ type TPaths<T> = T extends string
                 : never;
       }[Extract<keyof T, string | number>];
 
-export type TI18nKey = TPaths<typeof ko> & string;
+export type TI18nKey = TPaths<typeof generatedKo> | TPaths<typeof localeKo> | (string & {});
 
 type TValueType = string | number | React.JSX.Element;
 

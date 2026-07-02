@@ -102,6 +102,19 @@ type TPersistedOnboardingWardDraft = {
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const shouldResetStepFromHistoryState = () => {
+    if (typeof window === 'undefined' || !isRecord(window.history.state)) {
+        return false;
+    }
+
+    if (window.history.state.resetOnboardingWardCreateStep === true) {
+        return true;
+    }
+
+    const routerState = window.history.state.usr;
+
+    return isRecord(routerState) && routerState.resetOnboardingWardCreateStep === true;
+};
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
     value === 1 || value === 2 || value === 3 || value === 4;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name' || value === 'skill';
@@ -654,6 +667,7 @@ function useOnboardingWardWizard() {
         [t],
     );
     const draftTouchedRef = useRef(false);
+    const shouldResetStepOnRestoreRef = useRef(shouldResetStepFromHistoryState());
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
@@ -694,7 +708,14 @@ function useOnboardingWardWizard() {
                     setDraftCreationStatus('created');
 
                     if (restoredDraftState) {
-                        setDraft(restoredDraftState.draft);
+                        setDraft(
+                            shouldResetStepOnRestoreRef.current
+                                ? {
+                                      ...restoredDraftState.draft,
+                                      currentStep: 1,
+                                  }
+                                : restoredDraftState.draft,
+                        );
                         setSelectedTeamId(restoredDraftState.selectedTeamId);
                         setSortModeState(restoredDraftState.sortMode);
                     } else {

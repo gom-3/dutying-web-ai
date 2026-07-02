@@ -95,6 +95,7 @@ function RegisterWardShiftTypesSection({wardShiftTypes, setWardShiftTypes}: IReg
                     setOpenModal(false);
                 }}
                 shiftType={tempShiftType}
+                existingShortNames={wardShiftTypes.map((shiftType) => shiftType.shortName)}
                 onSubmit={(shiftType: TCreateShiftTypeDTO) => {
                     if (tempShiftType) {
                         setWardShiftTypes(

@@ -116,7 +116,8 @@ describe('WardChatWidget', () => {
         expect(textarea).not.toBeNull();
 
         await user.type(textarea as HTMLTextAreaElement, 'Reply message');
-        await user.click(screen.getAllByRole('button').at(-1) as HTMLButtonElement);
+        const buttons = screen.getAllByRole('button');
+        await user.click(buttons[buttons.length - 1] as HTMLButtonElement);
 
         await waitFor(() =>
             expect(wardApiMock.createWardChatMessage).toHaveBeenCalledWith(

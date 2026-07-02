@@ -41,7 +41,7 @@ function SelectEnterOrCreate({onBack}: ISelectEnterOrCreateProps) {
                 <button
                     type="button"
                     className="group flex min-h-36 w-full cursor-pointer items-center gap-4 rounded-[24px] bg-white p-6 text-left transition-colors hover:bg-gray-7"
-                    onClick={() => navigate(ROUTE.ONBOARDING_WARD_CREATE)}
+                    onClick={() => navigate(ROUTE.ONBOARDING_WARD_CREATE, {state: {resetOnboardingWardCreateStep: true}})}
                 >
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-main-light text-main-1">
                         <Building2 className="h-6 w-6" />

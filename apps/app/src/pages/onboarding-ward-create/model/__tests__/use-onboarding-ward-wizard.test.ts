@@ -101,6 +101,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         mockParseOnboardingWardExcel.mockReset();
         toastSuccess.mockReset();
         toastError.mockReset();
+        window.history.replaceState(null, '', window.location.pathname);
     });
 
     it('creates a draft ward before moving from identity to upload step', async () => {
@@ -391,6 +392,36 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.draft.hospitalName).toBe('듀팅병원');
         expect(result.current.draft.wardName).toBe('중환자실');
         expect(result.current.draftCreationStatus).toBe('created');
+    });
+
+    it('starts from identity when entering create flow with reset state even if a later draft exists', async () => {
+        const savedDraft = {
+            ...createInitialDraft(),
+            currentStep: 2 as const,
+            hospitalName: 'Hospital',
+            wardName: 'Ward',
+        };
+
+        window.history.replaceState({usr: {resetOnboardingWardCreateStep: true}}, '', window.location.pathname);
+        mockGetOnboardingWardDraft.mockResolvedValueOnce({
+            ward: draftWardResponse,
+            draftPayload: {
+                draft: savedDraft,
+                draftWardId: 10,
+                isSkillLevelEnabled: false,
+                selectedTeamId: savedDraft.teams[1]?.id ?? '',
+                sortMode: 'manual',
+            },
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        await waitFor(() => expect(result.current.draftCreationStatus).toBe('created'));
+
+        expect(result.current.draft.currentStep).toBe(1);
+        expect(result.current.draft.hospitalName).toBe('Hospital');
+        expect(result.current.draft.wardName).toBe('Ward');
+        expect(result.current.activeTeamId).toBe(savedDraft.teams[1]?.id);
     });
 
     it('saves changed draft payload to the existing server draft', async () => {
