@@ -938,6 +938,9 @@ export const ko = {
                 "fixedDisplay": "고정 표시",
                 "fixedDisplayHidden": "고정근무 숨김",
                 "fixedDisplayShown": "고정근무 표시 중",
+                "requestDisplay": "신청근무 표시",
+                "requestDisplayHidden": "신청근무 숨김",
+                "requestDisplayShown": "신청근무 표시 중",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
@@ -1029,6 +1032,8 @@ export const ko = {
                 "name": "이름",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "전달 근무",
+                "restCheck": "휴무 확인",
+                "restCheckCompact": "휴무",
                 "shiftTypeDropdownAria": "근무유형 선택",
                 "violationCount": {
                     "error": "중요 {{count}}",
@@ -1247,6 +1252,7 @@ export const ko = {
                 },
                 "toast": {
                     "added": "제약조건을 추가했어요.",
+                    "duplicateSkipped": "중복 제약조건은 삭제하고 기존 조건만 남겼어요.",
                     "duplicatesRemoved": "중복 제약조건 {{count}}개를 정리했어요.",
                     "importantUnmarked": "중요 표시를 해제했어요.",
                     "imported": "{{teamName}} 제약조건을 그대로 불러왔어요.",
@@ -2444,7 +2450,9 @@ export const ko = {
             },
             "description": {
                 "constraints": "근무 규칙을 관리해요.",
-                "shiftTypes": "근무 유형을 관리해요."
+                "shiftTypes": "근무 유형을 관리해요.",
+                "restLeavePolicy": "목표 쉬는 날과 포함 항목을 관리해요.",
+                "requestReception": "신청근무 접수 기간을 관리해요."
             },
             "shiftTypes": {
                 "add": "근무 유형 추가하기",
@@ -2485,12 +2493,92 @@ export const ko = {
             },
             "tabs": {
                 "constraints": "제약 조건",
-                "shiftTypes": "근무 유형"
+                "shiftTypes": "근무 유형",
+                "restLeavePolicy": "쉬는 날 계산",
+                "requestReception": "신청근무 접수"
             },
             "title": "근무 설정",
             "type": {
                 "leave": "휴무",
                 "work": "근무"
+            },
+            "requestReception": {
+                "loading": "신청근무 접수 설정을 불러오는 중이에요",
+                "error": "신청근무 접수 설정을 불러오지 못했어요",
+                "sectionTitle": "다음 달 신청근무 접수 기간",
+                "toggleTitle": "접수 기간 제한 사용",
+                "toggleDescription": "켜면 설정한 기간에만 앱에서 신청근무를 제출하거나 수정할 수 있어요.",
+                "startDay": "접수 시작일",
+                "endDay": "접수 종료일",
+                "daySuffix": "일",
+                "notifyOnOpen": "접수 시작 알림",
+                "notifyOnOpenDescription": "접수 시작 시 앱으로 알려요.",
+                "notifyBeforeDeadline": "마감 전 알림",
+                "notifyBeforeDeadlineDescription": "마감 24시간 전에 앱으로 알려요.",
+                "notificationTitle": "알림 설정",
+                "save": "저장하기",
+                "summary": {
+                    "enabled": "매월 전월 {{startDay}}일 {{startTime}}부터 전월 {{endDay}}일 {{endTime}}까지 받아요."
+                },
+                "validation": {
+                    "day": "1일부터 31일 사이로 입력해 주세요.",
+                    "range": "종료 시점은 시작 시점보다 뒤여야 해요."
+                },
+                "toast": {
+                    "saveSuccess": "신청근무 접수 설정을 저장했어요.",
+                    "updateFailed": "신청근무 접수 설정을 저장하지 못했어요."
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "쉬는 날 계산을 사용할까요?"
+                },
+                "simpleSubtitle": "목표 쉬는 날을 정하고 어떤 휴무 유형을 실제 쉬는 날로 계산할지 선택해요.",
+                "previewLabel": "{{month}}월 목표 쉬는 날",
+                "unit": {
+                    "day": "일"
+                },
+                "target": {
+                    "title": "목표 쉬는 날",
+                    "weekly": {
+                        "title": "주 단위로 계산",
+                        "description": "한 주에 필요한 쉬는 날을 기준으로 월 목표를 계산해요.",
+                        "stepperLabel": "{{count}}주 기준 주당 쉬는 날"
+                    },
+                    "fixed": {
+                        "title": "월 고정으로 계산",
+                        "description": "매월 필요한 쉬는 날 수를 직접 정해요.",
+                        "stepperLabel": "월 목표 쉬는 날"
+                    }
+                },
+                "holiday": {
+                    "title": "공휴일 포함 여부",
+                    "include": {
+                        "title": "공휴일 포함",
+                        "description": "월 목표 쉬는 날에 공휴일을 함께 계산해요."
+                    },
+                    "exclude": {
+                        "title": "공휴일 제외",
+                        "description": "근무표 안의 휴무 유형만 쉬는 날로 계산해요."
+                    }
+                },
+                "carryOver": {
+                    "title": "부족한 쉬는 날 이월",
+                    "toggle": "이월 사용",
+                    "toggleHint": "이번 달에 부족한 쉬는 날을 다음 달 목표에 더해요.",
+                    "offTitle": "이월 안 함",
+                    "offHint": "매월 목표 쉬는 날을 독립적으로 계산해요."
+                },
+                "countedLeaves": {
+                    "sectionTitle": "쉬는 날에 넣을 항목",
+                    "hint": "선택한 휴무 유형만 실제 쉬는 날로 계산해요.",
+                    "toggleAria": "{{name}} 쉬는 날 계산 포함 여부",
+                    "empty": "아직 휴무 유형이 없어요."
+                },
+                "save": "저장하기",
+                "toast": {
+                    "saved": "쉬는 날 계산 설정을 저장했어요."
+                }
             }
         }
     },
@@ -3510,6 +3598,9 @@ export const en: TLocale = {
                 "fixedDisplay": "Show fixed",
                 "fixedDisplayHidden": "Fixed shifts hidden",
                 "fixedDisplayShown": "Fixed shifts shown",
+                "requestDisplay": "Show requests",
+                "requestDisplayHidden": "Requested shifts hidden",
+                "requestDisplayShown": "Requested shifts shown",
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
@@ -3601,6 +3692,8 @@ export const en: TLocale = {
                 "name": "Name",
                 "nurseDayLabel": "{{name}} · day {{day}}",
                 "previousShifts": "Prev",
+                "restCheck": "Rest check",
+                "restCheckCompact": "Rest",
                 "shiftTypeDropdownAria": "Select shift type",
                 "violationCount": {
                     "error": "Important {{count}}",
@@ -3819,6 +3912,7 @@ export const en: TLocale = {
                 },
                 "toast": {
                     "added": "Constraint added.",
+                    "duplicateSkipped": "Duplicate constraint removed; the existing one was kept.",
                     "duplicatesRemoved": "Cleaned up {{count}} duplicate constraints.",
                     "importantUnmarked": "Important mark removed.",
                     "imported": "Imported constraints from {{teamName}}.",
@@ -5016,7 +5110,9 @@ export const en: TLocale = {
             },
             "description": {
                 "constraints": "Manage scheduling constraints.",
-                "shiftTypes": "Manage shift types."
+                "shiftTypes": "Manage shift types.",
+                "restLeavePolicy": "Manage target rest days and counted shift types.",
+                "requestReception": "Manage requested shift intake periods."
             },
             "shiftTypes": {
                 "add": "Add shift type",
@@ -5057,12 +5153,92 @@ export const en: TLocale = {
             },
             "tabs": {
                 "constraints": "Constraints",
-                "shiftTypes": "Shift types"
+                "shiftTypes": "Shift types",
+                "restLeavePolicy": "Rest day rules",
+                "requestReception": "Request intake"
             },
             "title": "Duty management",
             "type": {
                 "leave": "Leave",
                 "work": "Work"
+            },
+            "requestReception": {
+                "loading": "Loading request intake settings",
+                "error": "Failed to load request intake settings.",
+                "sectionTitle": "Next-month request intake period",
+                "toggleTitle": "Limit request intake period",
+                "toggleDescription": "When enabled nurses can submit or edit app requests only during this period.",
+                "startDay": "Start day",
+                "endDay": "End day",
+                "daySuffix": "day",
+                "notifyOnOpen": "Opening notification",
+                "notifyOnOpenDescription": "Notify the app when intake opens.",
+                "notifyBeforeDeadline": "Deadline reminder",
+                "notifyBeforeDeadlineDescription": "Notify the app 24 hours before closing.",
+                "notificationTitle": "Notification settings",
+                "save": "Save",
+                "summary": {
+                    "enabled": "Every month intake runs from previous month day {{startDay}} {{startTime}} to day {{endDay}} {{endTime}}."
+                },
+                "validation": {
+                    "day": "Enter a day from 1 to 31.",
+                    "range": "The end must be later than the start."
+                },
+                "toast": {
+                    "saveSuccess": "Saved request intake settings.",
+                    "updateFailed": "Could not save request intake settings."
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "Use rest day rules?"
+                },
+                "simpleSubtitle": "Set target rest days and choose which leave types count as rest days.",
+                "previewLabel": "{{month}} target rest days",
+                "unit": {
+                    "day": "days"
+                },
+                "target": {
+                    "title": "Target rest days",
+                    "weekly": {
+                        "title": "Calculate by week",
+                        "description": "Calculate the monthly target from required rest days per week.",
+                        "stepperLabel": "Rest days per week across {{count}} weeks"
+                    },
+                    "fixed": {
+                        "title": "Use fixed monthly target",
+                        "description": "Set the required rest days for each month directly.",
+                        "stepperLabel": "Monthly target rest days"
+                    }
+                },
+                "holiday": {
+                    "title": "Include public holidays",
+                    "include": {
+                        "title": "Include holidays",
+                        "description": "Count public holidays toward the monthly rest target."
+                    },
+                    "exclude": {
+                        "title": "Exclude holidays",
+                        "description": "Count only leave shift types in the schedule as rest days."
+                    }
+                },
+                "carryOver": {
+                    "title": "Carry over missing rest days",
+                    "toggle": "Use carryover",
+                    "toggleHint": "Add this month missing rest days to next month target.",
+                    "offTitle": "Do not carry over",
+                    "offHint": "Calculate each month target independently."
+                },
+                "countedLeaves": {
+                    "sectionTitle": "Items counted as rest days",
+                    "hint": "Only selected leave types count as actual rest days.",
+                    "toggleAria": "Toggle {{name}} in rest day rules",
+                    "empty": "No leave types yet."
+                },
+                "save": "Save",
+                "toast": {
+                    "saved": "Saved rest day rule settings."
+                }
             }
         }
     },
@@ -6080,6 +6256,9 @@ export const ja: TLocale = {
                 "fixedDisplay": "固定表示",
                 "fixedDisplayHidden": "固定勤務を非表示",
                 "fixedDisplayShown": "固定勤務を表示中",
+                "requestDisplay": "申請勤務を表示",
+                "requestDisplayHidden": "申請勤務を非表示",
+                "requestDisplayShown": "申請勤務を表示中",
                 "generating": "入力中...",
                 "hidingFaults": "エラー非表示",
                 "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
@@ -6171,6 +6350,8 @@ export const ja: TLocale = {
                 "name": "名前",
                 "nurseDayLabel": "{{name}} · {{day}}日",
                 "previousShifts": "前月",
+                "restCheck": "休み確認",
+                "restCheckCompact": "休み",
                 "shiftTypeDropdownAria": "勤務区分を選択",
                 "violationCount": {
                     "error": "重要 {{count}}",
@@ -6389,6 +6570,7 @@ export const ja: TLocale = {
                 },
                 "toast": {
                     "added": "制約条件を追加しました。",
+                    "duplicateSkipped": "重複する制約条件を削除し、既存の条件だけを残しました。",
                     "duplicatesRemoved": "重複する制約条件{{count}}件を整理しました。",
                     "importantUnmarked": "重要マークを外しました。",
                     "imported": "{{teamName}}の制約条件を読み込みました。",
@@ -7586,7 +7768,9 @@ export const ja: TLocale = {
             },
             "description": {
                 "constraints": "勤務条件を管理します。",
-                "shiftTypes": "勤務区分を管理します。"
+                "shiftTypes": "勤務区分を管理します。",
+                "restLeavePolicy": "目標の休日日数と集計対象の勤務区分を管理します。",
+                "requestReception": "希望勤務の受付期間を管理します。"
             },
             "shiftTypes": {
                 "add": "勤務区分を追加",
@@ -7627,12 +7811,92 @@ export const ja: TLocale = {
             },
             "tabs": {
                 "constraints": "制約条件",
-                "shiftTypes": "勤務区分"
+                "shiftTypes": "勤務区分",
+                "restLeavePolicy": "休日計算",
+                "requestReception": "希望勤務受付"
             },
             "title": "勤務設定",
             "type": {
                 "leave": "休み",
                 "work": "勤務"
+            },
+            "requestReception": {
+                "loading": "希望勤務受付設定を読み込んでいます",
+                "error": "希望勤務受付設定を読み込めませんでした。",
+                "sectionTitle": "翌月分の希望勤務受付期間",
+                "toggleTitle": "受付期間の制限を使用",
+                "toggleDescription": "オンにすると設定した期間だけアプリで希望勤務を提出または編集できます。",
+                "startDay": "受付開始日",
+                "endDay": "受付終了日",
+                "daySuffix": "日",
+                "notifyOnOpen": "受付開始通知",
+                "notifyOnOpenDescription": "受付開始時にアプリへ通知します。",
+                "notifyBeforeDeadline": "締切前通知",
+                "notifyBeforeDeadlineDescription": "締切24時間前にアプリへ通知します。",
+                "notificationTitle": "通知設定",
+                "save": "保存",
+                "summary": {
+                    "enabled": "毎月前月{{startDay}}日{{startTime}}から前月{{endDay}}日{{endTime}}まで受け付けます。"
+                },
+                "validation": {
+                    "day": "1日から31日の間で入力してください。",
+                    "range": "終了時点は開始時点より後にしてください。"
+                },
+                "toast": {
+                    "saveSuccess": "希望勤務受付設定を保存しました。",
+                    "updateFailed": "希望勤務受付設定を保存できませんでした。"
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "休日計算を使用しますか？"
+                },
+                "simpleSubtitle": "目標休日日数を決めて実際の休日として数える休み区分を選びます。",
+                "previewLabel": "{{month}}月の目標休日日数",
+                "unit": {
+                    "day": "日"
+                },
+                "target": {
+                    "title": "目標休日日数",
+                    "weekly": {
+                        "title": "週単位で計算",
+                        "description": "1週間に必要な休日日数から月間目標を計算します。",
+                        "stepperLabel": "{{count}}週間基準の週あたり休日日数"
+                    },
+                    "fixed": {
+                        "title": "月固定で計算",
+                        "description": "毎月必要な休日日数を直接設定します。",
+                        "stepperLabel": "月間目標休日日数"
+                    }
+                },
+                "holiday": {
+                    "title": "祝日を含めるか",
+                    "include": {
+                        "title": "祝日を含める",
+                        "description": "月間目標休日に祝日も含めて計算します。"
+                    },
+                    "exclude": {
+                        "title": "祝日を除外",
+                        "description": "勤務表内の休み区分だけを休日として計算します。"
+                    }
+                },
+                "carryOver": {
+                    "title": "不足休日の繰り越し",
+                    "toggle": "繰り越しを使用",
+                    "toggleHint": "今月不足した休日を翌月の目標に加えます。",
+                    "offTitle": "繰り越ししない",
+                    "offHint": "各月の目標休日日数を独立して計算します。"
+                },
+                "countedLeaves": {
+                    "sectionTitle": "休日として数える項目",
+                    "hint": "選択した休み区分だけを実際の休日として計算します。",
+                    "toggleAria": "{{name}}を休日計算に含めるか切り替え",
+                    "empty": "休み区分がまだありません。"
+                },
+                "save": "保存",
+                "toast": {
+                    "saved": "休日計算設定を保存しました。"
+                }
             }
         }
     },
@@ -8650,6 +8914,9 @@ export const zh: TLocale = {
                 "fixedDisplay": "显示固定",
                 "fixedDisplayHidden": "已隐藏固定班次",
                 "fixedDisplayShown": "已显示固定班次",
+                "requestDisplay": "显示申请班次",
+                "requestDisplayHidden": "已隐藏申请班次",
+                "requestDisplayShown": "已显示申请班次",
                 "generating": "填充...",
                 "hidingFaults": "错误隐藏",
                 "intro": "即使失败，当前编辑的版本也会保留。\n您可以返回上一步并重新查看条件，或在此处重试并确认。",
@@ -8741,6 +9008,8 @@ export const zh: TLocale = {
                 "name": "姓名",
                 "nurseDayLabel": "{{name}} · {{day}}일",
                 "previousShifts": "送货工作",
+                "restCheck": "休假检查",
+                "restCheckCompact": "休",
                 "shiftTypeDropdownAria": "选择班次类型",
                 "violationCount": {
                     "error": "重要{{count}}",
@@ -8959,6 +9228,7 @@ export const zh: TLocale = {
                 },
                 "toast": {
                     "added": "添加了约束条件。",
+                    "duplicateSkipped": "已删除重复约束，仅保留现有约束。",
                     "duplicatesRemoved": "已整理 {{count}} 重复约束。",
                     "importantUnmarked": "未将其标记为重要。",
                     "imported": "{{teamName}} 约束按原样加载。",
@@ -10156,7 +10426,9 @@ export const zh: TLocale = {
             },
             "description": {
                 "constraints": "管理工作规则。",
-                "shiftTypes": "管理班次类型。"
+                "shiftTypes": "管理班次类型。",
+                "restLeavePolicy": "管理目标休息天数和计入的班次类型。",
+                "requestReception": "管理申请班次的接收期间。"
             },
             "shiftTypes": {
                 "add": "添加班次类型",
@@ -10197,12 +10469,92 @@ export const zh: TLocale = {
             },
             "tabs": {
                 "constraints": "限制条件",
-                "shiftTypes": "班次类型"
+                "shiftTypes": "班次类型",
+                "restLeavePolicy": "休息日规则",
+                "requestReception": "申请接收"
             },
             "title": "班次设置",
             "type": {
                 "leave": "关闭",
                 "work": "在职的"
+            },
+            "requestReception": {
+                "loading": "正在加载申请接收设置",
+                "error": "无法加载申请接收设置。",
+                "sectionTitle": "下个月申请接收期间",
+                "toggleTitle": "限制申请接收期间",
+                "toggleDescription": "启用后护士只能在该期间内通过应用提交或编辑申请。",
+                "startDay": "开始日期",
+                "endDay": "结束日期",
+                "daySuffix": "日",
+                "notifyOnOpen": "开始通知",
+                "notifyOnOpenDescription": "接收开始时通过应用通知。",
+                "notifyBeforeDeadline": "截止前提醒",
+                "notifyBeforeDeadlineDescription": "截止前24小时通过应用通知。",
+                "notificationTitle": "通知设置",
+                "save": "保存",
+                "summary": {
+                    "enabled": "每月从上月{{startDay}}日{{startTime}}到上月{{endDay}}日{{endTime}}接收。"
+                },
+                "validation": {
+                    "day": "请输入1到31之间的日期。",
+                    "range": "结束时间必须晚于开始时间。"
+                },
+                "toast": {
+                    "saveSuccess": "已保存申请接收设置。",
+                    "updateFailed": "无法保存申请接收设置。"
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "是否使用休息日规则？"
+                },
+                "simpleSubtitle": "设置目标休息天数并选择哪些休假类型计为休息日。",
+                "previewLabel": "{{month}}月目标休息天数",
+                "unit": {
+                    "day": "天"
+                },
+                "target": {
+                    "title": "目标休息天数",
+                    "weekly": {
+                        "title": "按周计算",
+                        "description": "根据每周所需休息天数计算月目标。",
+                        "stepperLabel": "按{{count}}周计算的每周休息天数"
+                    },
+                    "fixed": {
+                        "title": "按每月固定值计算",
+                        "description": "直接设置每月所需休息天数。",
+                        "stepperLabel": "每月目标休息天数"
+                    }
+                },
+                "holiday": {
+                    "title": "是否包含法定假日",
+                    "include": {
+                        "title": "包含假日",
+                        "description": "将法定假日计入每月休息目标。"
+                    },
+                    "exclude": {
+                        "title": "排除假日",
+                        "description": "仅将排班表中的休假类型计为休息日。"
+                    }
+                },
+                "carryOver": {
+                    "title": "结转不足休息日",
+                    "toggle": "使用结转",
+                    "toggleHint": "将本月不足的休息天数加入下月目标。",
+                    "offTitle": "不结转",
+                    "offHint": "每个月独立计算目标休息天数。"
+                },
+                "countedLeaves": {
+                    "sectionTitle": "计为休息日的项目",
+                    "hint": "只有选择的休假类型会计为实际休息日。",
+                    "toggleAria": "切换{{name}}是否计入休息日规则",
+                    "empty": "还没有休假类型。"
+                },
+                "save": "保存",
+                "toast": {
+                    "saved": "已保存休息日规则设置。"
+                }
             }
         }
     },
@@ -11220,6 +11572,9 @@ export const th: TLocale = {
                 "fixedDisplay": "Show fixed",
                 "fixedDisplayHidden": "Fixed shifts hidden",
                 "fixedDisplayShown": "Fixed shifts shown",
+                "requestDisplay": "Show requests",
+                "requestDisplayHidden": "Requested shifts hidden",
+                "requestDisplayShown": "Requested shifts shown",
                 "generating": "กำลังกรอก...",
                 "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
                 "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
@@ -11311,6 +11666,8 @@ export const th: TLocale = {
                 "name": "ชื่อ",
                 "nurseDayLabel": "{{name}} · วัน {{day}}",
                 "previousShifts": "ก่อนหน้า",
+                "restCheck": "ตรวจวันหยุด",
+                "restCheckCompact": "พัก",
                 "shiftTypeDropdownAria": "เลือกประเภทกะ",
                 "violationCount": {
                     "error": "สำคัญ {{count}}",
@@ -11529,6 +11886,7 @@ export const th: TLocale = {
                 },
                 "toast": {
                     "added": "เพิ่มข้อจำกัดแล้ว",
+                    "duplicateSkipped": "ลบข้อจำกัดที่ซ้ำกันแล้ว และเก็บข้อจำกัดเดิมไว้",
                     "duplicatesRemoved": "ทำความสะอาดข้อจำกัดที่ซ้ำกันของ {{count}}",
                     "importantUnmarked": "เครื่องหมายสำคัญถูกลบออก",
                     "imported": "ข้อจำกัดที่นำเข้าจาก {{teamName}}",
@@ -12726,7 +13084,9 @@ export const th: TLocale = {
             },
             "description": {
                 "constraints": "จัดการข้อจำกัดในการจัดกำหนดการ",
-                "shiftTypes": "จัดการประเภทกะ"
+                "shiftTypes": "จัดการประเภทกะ",
+                "restLeavePolicy": "จัดการวันหยุดเป้าหมายและประเภทกะที่นับรวม",
+                "requestReception": "จัดการช่วงเวลารับคำขอกะ"
             },
             "shiftTypes": {
                 "add": "เพิ่มประเภทกะ",
@@ -12767,12 +13127,92 @@ export const th: TLocale = {
             },
             "tabs": {
                 "constraints": "ข้อจำกัด",
-                "shiftTypes": "ประเภทกะ"
+                "shiftTypes": "ประเภทกะ",
+                "restLeavePolicy": "กฎวันหยุด",
+                "requestReception": "รับคำขอกะ"
             },
             "title": "การจัดการหน้าที่",
             "type": {
                 "leave": "ออกจาก",
                 "work": "งาน"
+            },
+            "requestReception": {
+                "loading": "กำลังโหลดการตั้งค่ารับคำขอกะ",
+                "error": "ไม่สามารถโหลดการตั้งค่ารับคำขอกะได้",
+                "sectionTitle": "ช่วงรับคำขอกะของเดือนถัดไป",
+                "toggleTitle": "จำกัดช่วงเวลารับคำขอกะ",
+                "toggleDescription": "เมื่อเปิดใช้ พยาบาลจะส่งหรือแก้ไขคำขอในแอปได้เฉพาะช่วงนี้",
+                "startDay": "วันเริ่มรับ",
+                "endDay": "วันสิ้นสุดรับ",
+                "daySuffix": "วัน",
+                "notifyOnOpen": "แจ้งเตือนเมื่อเริ่มรับ",
+                "notifyOnOpenDescription": "แจ้งในแอปเมื่อเริ่มรับคำขอ",
+                "notifyBeforeDeadline": "แจ้งเตือนก่อนปิดรับ",
+                "notifyBeforeDeadlineDescription": "แจ้งในแอป 24 ชั่วโมงก่อนปิดรับ",
+                "notificationTitle": "การตั้งค่าการแจ้งเตือน",
+                "save": "บันทึก",
+                "summary": {
+                    "enabled": "รับทุกเดือนตั้งแต่วันที่ {{startDay}} เวลา {{startTime}} ของเดือนก่อน ถึงวันที่ {{endDay}} เวลา {{endTime}} ของเดือนก่อน"
+                },
+                "validation": {
+                    "day": "กรุณาใส่วันที่ตั้งแต่ 1 ถึง 31",
+                    "range": "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่มต้น"
+                },
+                "toast": {
+                    "saveSuccess": "บันทึกการตั้งค่ารับคำขอกะแล้ว",
+                    "updateFailed": "ไม่สามารถบันทึกการตั้งค่ารับคำขอกะได้"
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "ใช้กฎวันหยุดหรือไม่?"
+                },
+                "simpleSubtitle": "ตั้งค่าวันหยุดเป้าหมายและเลือกประเภทวันลาที่นับเป็นวันหยุด",
+                "previewLabel": "วันหยุดเป้าหมายเดือน {{month}}",
+                "unit": {
+                    "day": "วัน"
+                },
+                "target": {
+                    "title": "วันหยุดเป้าหมาย",
+                    "weekly": {
+                        "title": "คำนวณรายสัปดาห์",
+                        "description": "คำนวณเป้าหมายรายเดือนจากวันหยุดที่ต้องมีต่อสัปดาห์",
+                        "stepperLabel": "วันหยุดต่อสัปดาห์จากทั้งหมด {{count}} สัปดาห์"
+                    },
+                    "fixed": {
+                        "title": "ใช้เป้าหมายรายเดือนคงที่",
+                        "description": "กำหนดจำนวนวันหยุดที่ต้องมีในแต่ละเดือนโดยตรง",
+                        "stepperLabel": "วันหยุดเป้าหมายรายเดือน"
+                    }
+                },
+                "holiday": {
+                    "title": "รวมวันหยุดนักขัตฤกษ์หรือไม่",
+                    "include": {
+                        "title": "รวมวันหยุด",
+                        "description": "นับวันหยุดนักขัตฤกษ์รวมในเป้าหมายวันหยุดรายเดือน"
+                    },
+                    "exclude": {
+                        "title": "ไม่รวมวันหยุด",
+                        "description": "นับเฉพาะประเภทวันลาในตารางเป็นวันหยุด"
+                    }
+                },
+                "carryOver": {
+                    "title": "ยกยอดวันหยุดที่ขาด",
+                    "toggle": "ใช้การยกยอด",
+                    "toggleHint": "เพิ่มวันหยุดที่ขาดเดือนนี้ในเป้าหมายเดือนถัดไป",
+                    "offTitle": "ไม่ยกยอด",
+                    "offHint": "คำนวณเป้าหมายแต่ละเดือนแยกกัน"
+                },
+                "countedLeaves": {
+                    "sectionTitle": "รายการที่นับเป็นวันหยุด",
+                    "hint": "นับเฉพาะประเภทวันลาที่เลือกเป็นวันหยุดจริง",
+                    "toggleAria": "เปิดปิดการนับ {{name}} ในกฎวันหยุด",
+                    "empty": "ยังไม่มีประเภทวันลา"
+                },
+                "save": "บันทึก",
+                "toast": {
+                    "saved": "บันทึกการตั้งค่ากฎวันหยุดแล้ว"
+                }
             }
         }
     },
@@ -13790,6 +14230,9 @@ export const vi: TLocale = {
                 "fixedDisplay": "Hiển thị cố định",
                 "fixedDisplayHidden": "Đã ẩn ca cố định",
                 "fixedDisplayShown": "Đang hiển thị ca cố định",
+                "requestDisplay": "Hiển thị ca yêu cầu",
+                "requestDisplayHidden": "Đã ẩn ca yêu cầu",
+                "requestDisplayShown": "Đang hiển thị ca yêu cầu",
                 "generating": "Làm đầy...",
                 "hidingFaults": "Lỗi ẩn",
                 "intro": "Các chỉnh sửa hiện tại của bạn vẫn được giữ nguyên ngay cả khi AI bị lỗi.\nBạn có thể quay lại bước trước để xem lại các điều kiện hoặc thử lại và xác nhận tại đây.",
@@ -13881,6 +14324,8 @@ export const vi: TLocale = {
                 "name": "Tên",
                 "nurseDayLabel": "{{name}} · ngày {{day}}",
                 "previousShifts": "Trước đó",
+                "restCheck": "Kiểm tra ngày nghỉ",
+                "restCheckCompact": "Nghỉ",
                 "shiftTypeDropdownAria": "Chọn loại ca",
                 "violationCount": {
                     "error": "Quan trọng {{count}}",
@@ -14099,6 +14544,7 @@ export const vi: TLocale = {
                 },
                 "toast": {
                     "added": "Đã thêm hạn chế.",
+                    "duplicateSkipped": "Đã xóa ràng buộc trùng lặp và giữ lại ràng buộc hiện có.",
                     "duplicatesRemoved": "Đã dọn sạch {{count}} các hạn chế trùng lặp.",
                     "importantUnmarked": "Dấu quan trọng đã bị xóa.",
                     "imported": "Đã nhập các ràng buộc từ {{teamName}}.",
@@ -15296,7 +15742,9 @@ export const vi: TLocale = {
             },
             "description": {
                 "constraints": "Quản lý các hạn chế về lịch.",
-                "shiftTypes": "Quản lý các loại ca làm việc."
+                "shiftTypes": "Quản lý các loại ca làm việc.",
+                "restLeavePolicy": "Quản lý số ngày nghỉ mục tiêu và loại ca được tính.",
+                "requestReception": "Quản lý thời gian nhận đăng ký ca."
             },
             "shiftTypes": {
                 "add": "Thêm loại ca",
@@ -15337,12 +15785,92 @@ export const vi: TLocale = {
             },
             "tabs": {
                 "constraints": "Ràng buộc",
-                "shiftTypes": "Các loại ca"
+                "shiftTypes": "Các loại ca",
+                "restLeavePolicy": "Quy tắc ngày nghỉ",
+                "requestReception": "Nhận đăng ký ca"
             },
             "title": "Quản lý nhiệm vụ",
             "type": {
                 "leave": "Rời khỏi",
                 "work": "công việc"
+            },
+            "requestReception": {
+                "loading": "Đang tải cài đặt nhận đăng ký ca",
+                "error": "Không thể tải cài đặt nhận đăng ký ca.",
+                "sectionTitle": "Kỳ nhận đăng ký ca cho tháng sau",
+                "toggleTitle": "Giới hạn thời gian nhận đăng ký",
+                "toggleDescription": "Khi bật y tá chỉ có thể gửi hoặc sửa đăng ký trên app trong thời gian này.",
+                "startDay": "Ngày bắt đầu",
+                "endDay": "Ngày kết thúc",
+                "daySuffix": "ngày",
+                "notifyOnOpen": "Thông báo khi mở nhận",
+                "notifyOnOpenDescription": "Thông báo trong app khi mở nhận.",
+                "notifyBeforeDeadline": "Nhắc trước hạn chót",
+                "notifyBeforeDeadlineDescription": "Thông báo trong app trước khi đóng 24 giờ.",
+                "notificationTitle": "Cài đặt thông báo",
+                "save": "Lưu",
+                "summary": {
+                    "enabled": "Hàng tháng nhận từ ngày {{startDay}} lúc {{startTime}} của tháng trước đến ngày {{endDay}} lúc {{endTime}} của tháng trước."
+                },
+                "validation": {
+                    "day": "Nhập ngày từ 1 đến 31.",
+                    "range": "Thời điểm kết thúc phải sau thời điểm bắt đầu."
+                },
+                "toast": {
+                    "saveSuccess": "Đã lưu cài đặt nhận đăng ký ca.",
+                    "updateFailed": "Không thể lưu cài đặt nhận đăng ký ca."
+                }
+            },
+            "restLeavePolicy": {
+                "availability": {
+                    "title": "Dùng quy tắc ngày nghỉ?"
+                },
+                "simpleSubtitle": "Đặt ngày nghỉ mục tiêu và chọn loại nghỉ được tính là ngày nghỉ.",
+                "previewLabel": "Số ngày nghỉ mục tiêu tháng {{month}}",
+                "unit": {
+                    "day": "ngày"
+                },
+                "target": {
+                    "title": "Số ngày nghỉ mục tiêu",
+                    "weekly": {
+                        "title": "Tính theo tuần",
+                        "description": "Tính mục tiêu tháng từ số ngày nghỉ cần mỗi tuần.",
+                        "stepperLabel": "Số ngày nghỉ mỗi tuần theo {{count}} tuần"
+                    },
+                    "fixed": {
+                        "title": "Dùng mục tiêu cố định theo tháng",
+                        "description": "Đặt trực tiếp số ngày nghỉ cần có mỗi tháng.",
+                        "stepperLabel": "Số ngày nghỉ mục tiêu mỗi tháng"
+                    }
+                },
+                "holiday": {
+                    "title": "Tính cả ngày lễ?",
+                    "include": {
+                        "title": "Tính ngày lễ",
+                        "description": "Tính ngày lễ vào mục tiêu ngày nghỉ tháng."
+                    },
+                    "exclude": {
+                        "title": "Không tính ngày lễ",
+                        "description": "Chỉ tính các loại nghỉ trong lịch là ngày nghỉ."
+                    }
+                },
+                "carryOver": {
+                    "title": "Chuyển ngày nghỉ còn thiếu",
+                    "toggle": "Dùng chuyển tiếp",
+                    "toggleHint": "Cộng ngày nghỉ còn thiếu tháng này vào mục tiêu tháng sau.",
+                    "offTitle": "Không chuyển tiếp",
+                    "offHint": "Tính mục tiêu từng tháng độc lập."
+                },
+                "countedLeaves": {
+                    "sectionTitle": "Mục được tính là ngày nghỉ",
+                    "hint": "Chỉ các loại nghỉ đã chọn được tính là ngày nghỉ thực tế.",
+                    "toggleAria": "Bật tắt tính {{name}} trong quy tắc ngày nghỉ",
+                    "empty": "Chưa có loại nghỉ nào."
+                },
+                "save": "Lưu",
+                "toast": {
+                    "saved": "Đã lưu cài đặt quy tắc ngày nghỉ."
+                }
             }
         }
     },

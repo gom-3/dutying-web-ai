@@ -406,7 +406,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('신청받는 날짜')).toBeInTheDocument();
+        expect(screen.getByText('다음 달 신청근무 접수 기간')).toBeInTheDocument();
         expect(screen.queryByText('시작 시간')).not.toBeInTheDocument();
         expect(screen.queryByText('마감 시간')).not.toBeInTheDocument();
 

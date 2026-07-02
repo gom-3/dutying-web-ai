@@ -1,11 +1,18 @@
 import type {TDutyDoc} from '@/features/shift-editor/model';
 
-/**
- * 고정 근무 셀만 숨기고 나머지 배정은 그대로 보이게 할 때 사용.
- */
+type TMaskDutyDocOptions = {
+    hideFixed?: boolean;
+    hideRequests?: boolean;
+};
+
 export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
+    return maskDutyDocCells(doc, {hideFixed: true});
+}
+
+export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests = false}: TMaskDutyDocOptions): TDutyDoc {
     return {
         ...doc,
+        requestCells: hideRequests ? {} : doc.requestCells,
         rows: doc.rows.map((row) => ({
             ...row,
             cells: row.cells.map((cell, colIdx) => {
@@ -14,7 +21,7 @@ export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
 
                 const key = `${row.workerId}|${date}`;
 
-                return doc.fixedCells[key] === true ? null : cell;
+                return hideFixed && doc.fixedCells[key] === true ? null : cell;
             }),
         })),
     };

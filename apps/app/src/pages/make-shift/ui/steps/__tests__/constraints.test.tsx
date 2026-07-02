@@ -1,8 +1,16 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
+import toast from 'react-hot-toast';
 import {saveWardSkillSettings} from '@/features/ward-skill/model/skill-level';
 import {WardAPI} from '@/shared/api';
 import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import {Constraints} from '../constraints';
+
+vi.mock('react-hot-toast', () => ({
+    default: {
+        success: vi.fn(),
+        error: vi.fn(),
+    },
+}));
 
 vi.mock('@/features/auth/model/store', () => ({
     default: (selector: (state: {wardId: number}) => unknown) => selector({wardId: 1}),
@@ -203,6 +211,66 @@ describe('Constraints', () => {
         expect(await screen.findByText('VISIBLE_RECOMMENDED_SENTINEL')).toBeInTheDocument();
         expect(screen.queryByText('LEGACY_BUNDLE_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('CORE')).not.toBeInTheDocument();
+    });
+
+    it('shows a toast instead of silently removing a duplicate added constraint', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+            },
+            templates: [
+                {
+                    templateCode: 'CORE_VISIBLE_SENTINEL',
+                    category: 'CORE',
+                    displayTemplate: 'VISIBLE_RECOMMENDED_SENTINEL',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const openAddModal = async () => {
+            const addButton = await waitFor(() => {
+                const button = document.getElementById('make_constraint_add_button');
+
+                expect(button).toBeInTheDocument();
+
+                return button as HTMLButtonElement;
+            });
+
+            await userEvent.click(addButton);
+        };
+
+        await openAddModal();
+        {
+            const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+            await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+        }
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledTimes(1);
+        });
+
+        await openAddModal();
+        {
+            const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+            await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+        }
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith('중복 제약조건은 삭제하고 기존 조건만 남겼어요.');
+        });
+        expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledTimes(1);
     });
 
     it('shows recommended templates in their original modal categories too', async () => {
@@ -587,5 +655,155 @@ describe('Constraints', () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
         expect(await screen.findByRole('button', {name: 'Nurse A'})).toBeInTheDocument();
+    });
+
+    it('renders legacy forbidden pattern duty chips from configured ward shift types', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+            },
+            templates: [
+                {
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    displayTemplate: '{target}은 N나이트 다음 날 D데이 근무를 피해요.',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 21,
+                    templateCode: 'FORBID_N_THEN_D',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        });
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([
+            {
+                wardShiftTypeId: 101,
+                name: '야간전담',
+                shortName: 'Y',
+                color: '#263238',
+                isOff: false,
+                classification: 'NIGHT',
+                startTime: '21:00',
+                endTime: '06:00',
+                isDefault: false,
+                isCounted: true,
+            },
+            {
+                wardShiftTypeId: 102,
+                name: '오전근무',
+                shortName: 'M',
+                color: '#1976D2',
+                isOff: false,
+                classification: 'DAY',
+                startTime: '07:00',
+                endTime: '15:00',
+                isDefault: false,
+                isCounted: true,
+            },
+        ]);
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => {
+            expect(document.body.textContent).toContain('야간전담');
+            expect(document.body.textContent).toContain('오전근무');
+            expect(document.body.textContent).not.toContain('N나이트');
+            expect(document.body.textContent).not.toContain('D데이');
+        });
+    });
+
+    it('renders slash-prefixed Korean off text as the configured off shift type chip', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [{type: 'ALL', label: '전체'}],
+            },
+            templates: [
+                {
+                    templateCode: 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+                    category: 'FORBIDDEN_PATTERN',
+                    displayTemplate: '신청한 /오프 전날에는 N나이트 근무를 하면 안 돼요.',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 22,
+                    templateCode: 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+                    category: 'FORBIDDEN_PATTERN',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {target: {type: 'ALL'}},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        });
+        wardApiMocks.getShiftTypes.mockResolvedValueOnce([
+            {
+                wardShiftTypeId: 201,
+                name: '휴무',
+                shortName: 'R',
+                color: '#6B7280',
+                isOff: true,
+                classification: 'OFF',
+                startTime: '',
+                endTime: '',
+                isDefault: false,
+                isCounted: false,
+            },
+            {
+                wardShiftTypeId: 202,
+                name: '야간전담',
+                shortName: 'Y',
+                color: '#263238',
+                isOff: false,
+                classification: 'NIGHT',
+                startTime: '21:00',
+                endTime: '06:00',
+                isDefault: false,
+                isCounted: true,
+            },
+        ]);
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => {
+            expect(document.body.textContent).toContain('휴무');
+            expect(document.body.textContent).toContain('야간전담');
+            expect(document.body.textContent).not.toContain('/오프');
+            expect(document.body.textContent).not.toContain('N나이트');
+        });
     });
 });
