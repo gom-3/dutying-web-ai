@@ -805,6 +805,26 @@ export const en: TLocale = {
                     loadError: 'Could not load constraints. Please try again shortly.',
                 },
                 templates: {
+                    CORE_MAX_CONTINUOUS_WORK: {
+                        label: 'Default Important constraint',
+                        sentence: '{target} cannot work {count} or more consecutive days',
+                    },
+                    CORE_MIN_NIGHT_INTERVAL: {
+                        label: 'Default Important constraint',
+                        sentence: '{target} needs at least {count} days between N shifts',
+                    },
+                    CORE_MAX_CONTINUOUS_NIGHT: {
+                        label: 'Default Important constraint',
+                        sentence: '{target} can work up to {count} consecutive N shifts',
+                    },
+                    CORE_MIN_OFF_AFTER_NIGHT: {
+                        label: 'Default Important constraint',
+                        sentence: '{target} needs at least {count} OFF days after an N shift',
+                    },
+                    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
+                        label: 'Default Important constraint',
+                        sentence: '{target} cannot work N on the day before a requested OFF',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'Default Important constraint',
                         sentence: 'Consecutive work is allowed up to {days} days',

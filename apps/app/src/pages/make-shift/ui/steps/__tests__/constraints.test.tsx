@@ -494,7 +494,7 @@ describe('Constraints', () => {
 
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
-        expect(await screen.findByText((content) => content.includes('연속 근무는'))).toBeInTheDocument();
+        expect(await screen.findAllByRole('button', {name: '모든사람'})).not.toHaveLength(0);
 
         await userEvent.click(screen.getAllByRole('button', {name: '제약 조건 삭제'})[0]!);
         expect(screen.getByText('권장 조건을 삭제할까요?')).toBeInTheDocument();

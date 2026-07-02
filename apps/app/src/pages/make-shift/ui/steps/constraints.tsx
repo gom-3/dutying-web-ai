@@ -227,6 +227,43 @@ type TSoftRuleTemplateDefinition = Pick<TSoftRuleTemplate, 'id' | 'category' | '
 
 const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
     {
+        id: 'CORE_MAX_CONTINUOUS_WORK',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'CORE_MIN_NIGHT_INTERVAL',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'CORE_MAX_CONTINUOUS_NIGHT',
+        category: 'FORBIDDEN_PATTERN',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'CORE_MIN_OFF_AFTER_NIGHT',
+        category: 'WORK_REST',
+        controls: [
+            {key: 'target', kind: 'select', optionsKey: 'target'},
+            {key: 'count', kind: 'number', min: 1, max: 31},
+        ],
+    },
+    {
+        id: 'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
+        category: 'FORBIDDEN',
+        controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
+    },
+    {
         id: 'IMPORTANT_MAX_WORK_STREAK',
         category: 'WORK_REST',
         controls: [{key: 'days', kind: 'number', values: [3, 4, 5, 6]}],
@@ -466,6 +503,8 @@ const LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE: Record<string, string> = {
     FORBID_N_THEN_E: 'SOFT_NO_N_TO_E',
     FORBID_E_THEN_D: 'SOFT_NO_E_TO_D',
     MAX_CONSECUTIVE_N: 'SOFT_MAX_CONSECUTIVE_N',
+    NURSE_PAIR_NOT_SAME_SHIFT: 'SOFT_NO_SAME_DUTY_PAIR',
+    NURSE_PAIR_PREFER_SAME_SHIFT: 'SOFT_PREFER_SAME_DUTY_PAIR',
 };
 const DUTY_PATTERN_CODES: Record<string, string[]> = {
     ND: ['N', 'D'],

@@ -1448,6 +1448,26 @@ export const ja: TLocale = {
                     loadError: '制約条件を読み込めませんでした。しばらくしてからもう一度お試しください。',
                 },
                 templates: {
+                    CORE_MAX_CONTINUOUS_WORK: {
+                        label: '重要な基本条件',
+                        sentence: '{target}は{count}日以上連続で勤務できません',
+                    },
+                    CORE_MIN_NIGHT_INTERVAL: {
+                        label: '重要な基本条件',
+                        sentence: '{target}はN勤務の間に最低{count}日の間隔が必要です',
+                    },
+                    CORE_MAX_CONTINUOUS_NIGHT: {
+                        label: '重要な基本条件',
+                        sentence: '{target}は連続N勤務を最大{count}回までにします',
+                    },
+                    CORE_MIN_OFF_AFTER_NIGHT: {
+                        label: '重要な基本条件',
+                        sentence: '{target}はN勤務後に最低{count}日のOFFが必要です',
+                    },
+                    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
+                        label: '重要な基本条件',
+                        sentence: '{target}は申請したOFFの前日にN勤務をしてはいけません',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '重要な基本条件',
                         sentence: '連続勤務は{days}日まで可能です',

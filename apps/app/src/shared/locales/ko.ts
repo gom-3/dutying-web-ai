@@ -802,6 +802,26 @@ export const ko = {
                     loadError: '제약조건을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
                 },
                 templates: {
+                    CORE_MAX_CONTINUOUS_WORK: {
+                        label: '중요 기본 조건',
+                        sentence: '{target}는 {count}일 이상 연속으로 근무하면 안 돼요',
+                    },
+                    CORE_MIN_NIGHT_INTERVAL: {
+                        label: '중요 기본 조건',
+                        sentence: '{target}는 N 근무 사이에 최소 {count}일의 간격이 필요해요',
+                    },
+                    CORE_MAX_CONTINUOUS_NIGHT: {
+                        label: '중요 기본 조건',
+                        sentence: '{target}는 연속 N 근무를 최대 {count}번까지만 할 수 있어요',
+                    },
+                    CORE_MIN_OFF_AFTER_NIGHT: {
+                        label: '중요 기본 조건',
+                        sentence: '{target}는 N 근무 후 최소 {count}일의 OFF가 필요해요',
+                    },
+                    CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
+                        label: '중요 기본 조건',
+                        sentence: '{target}는 신청한 OFF 전날에는 N 근무를 하면 안 돼요',
+                    },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '중요 기본 조건',
                         sentence: '연속 근무는 {days}일까지 할 수 있어요',
