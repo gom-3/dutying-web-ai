@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
 import {
     buildWorkKeyMap,
+    docToFixedWardShiftsDTO,
     docToShift,
     docToSnapshotCellsDTO,
     docToWardShiftsDTO,
@@ -223,6 +224,22 @@ describe('shift-adapter', () => {
         ]);
     });
 
+    it('converts only fixed cells for the fixed-shifts step dto', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-03-01', '2026-03-02'],
+            rows: [{workerId: '1', cells: ['O', 'D']}],
+            workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {'1|2026-03-01': true as const},
+            requestCells: {'1|2026-03-02': true as const},
+        };
+
+        expect(docToFixedWardShiftsDTO(doc, shift)).toEqual([
+            {shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: 20},
+            {shiftNurseId: 1, date: '2026-03-02', wardShiftTypeId: null},
+        ]);
+    });
+
     it('builds rich snapshot cells for Spring schedule authoring', () => {
         const shift = createShift();
         const doc = {
@@ -320,10 +337,12 @@ describe('shift-adapter', () => {
 
     it('preserves the original shift type id when a stale editor cell no longer maps by short name', () => {
         const shift = createShift();
+
         shift.divisionShiftNurses[0]![0]!.wardShiftList = [20, 10];
         shift.wardShiftTypes = shift.wardShiftTypes.map((shiftType) =>
             shiftType.wardShiftTypeId === 20 ? {...shiftType, shortName: '-'} : shiftType,
         );
+
         const doc = {
             columns: ['2026-03-01', '2026-03-02'],
             rows: [{workerId: '1', cells: ['O', 'D']}],
