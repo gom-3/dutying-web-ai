@@ -5,6 +5,7 @@ import {type TShift} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {
+    buildWardShiftTypeMaps,
     buildWorkKeyMap,
     getShiftEditorDraftStorageKey,
     isDutyShiftFullyAssigned,
@@ -44,6 +45,35 @@ function mergeLastCells(persisted: TCellValue[] | undefined, base: TCellValue[] 
     if (!base || base.length === 0) return persisted.slice();
 
     return base.map((_cell, index) => persisted[index] ?? null);
+}
+
+function rebasePersistedCell(cell: TCellValue, baseCell: TCellValue, currentShortNames: Set<string>): TCellValue {
+    if (cell === null || currentShortNames.has(cell)) return cell;
+
+    return baseCell;
+}
+
+function rebaseDocRowsToCurrentShiftTypes(doc: TDutyDoc, baseDoc: TDutyDoc, currentShortNames: Set<string>): TDutyDoc | null {
+    let changed = false;
+    const rows = doc.rows.map((row, rowIdx) => {
+            const baseRow = baseDoc.rows[rowIdx];
+            const cells = row.cells.map((cell, colIdx) => {
+                const nextCell = rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
+
+                if (nextCell !== cell) changed = true;
+
+                return nextCell;
+            });
+
+            return changed ? {...row, cells} : row;
+        });
+
+    if (!changed) return null;
+
+    return {
+        ...doc,
+        rows,
+            };
 }
 
 function deriveRequestCells(
@@ -174,7 +204,22 @@ export function useDutyEditorStep({
             hydratedDraftRevisionRef.current !== null &&
             useShiftEditorStore.getState().draftRevision > hydratedDraftRevisionRef.current;
 
+        const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
+        const currentShortNames = new Set(buildWardShiftTypeMaps(dutyQuery.data).shortNameToType.keys());
+
         if (!hasContextChanged && hasDutyDataChanged && hasLocalChangesSinceHydration && !isStoreEmpty) {
+            const rebasedDoc = rebaseDocRowsToCurrentShiftTypes(editorDoc, baseDoc, currentShortNames);
+
+            if (rebasedDoc) {
+                commands.hydrate({
+                    doc: rebasedDoc,
+                    history: JSON.stringify(useShiftEditorStore.getState().history),
+                    scheduleViolations: {validationSnapshot: null},
+                    savedAt: Date.now(),
+                });
+                commands.persistImmediate();
+            }
+
             lastHydratedDutyDataRef.current = dutyQuery.data;
             setHydratedEditorContextKey(currentContextKey);
 
@@ -187,7 +232,6 @@ export function useDutyEditorStep({
             return;
         }
 
-        const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
         const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
         const requestValueMap = deriveRequestCells(dutyQuery.data, workspaceQuery.data?.requestShifts);
         const requestCells: Record<string, true> = {};
@@ -228,7 +272,7 @@ export function useDutyEditorStep({
                             return baseRow?.cells[colIdx] ?? null;
                         }
 
-                        return cell;
+                        return rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
                     }),
                 };
             });

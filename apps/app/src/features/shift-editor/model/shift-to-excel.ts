@@ -128,7 +128,7 @@ export const shiftToExcel = async (month: number, shift: TShift) => {
 
     shift.wardShiftTypes.map((shiftType) => {
         worksheet.addRow({
-            lastShift: shiftType.shortName,
+            lastShift: shiftType.name,
             ...shift.days.reduce(
                 (acc, _, i) => {
                     acc[i + 1] = flatRows.filter((item) => item.wardShiftList[i] === shiftType.wardShiftTypeId).length;
