@@ -956,6 +956,8 @@ function normalizeShiftTypes(input: unknown): TShiftTypeLike[] {
 }
 
 function getCandidateOptionValue(option: TShiftConstraintOption) {
+    if (isAllCandidateOption(option)) return 'ALL';
+
     if (option.nurseId != null) return String(option.nurseId);
 
     if (option.wardShiftTypeId != null) return String(option.wardShiftTypeId);
@@ -977,7 +979,17 @@ function isAllCandidateOption(option: TShiftConstraintOption) {
     return values.some((value) => value === 'ALL' || value.includes('ALL_') || LEGACY_ALL_LABELS.has(value));
 }
 
-function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, shiftType?: TShiftTypeLike) {
+function getLocalizedAllOptionLabel(t: TTypedT, optionMapKey: string) {
+    if (optionMapKey === 'target') return t('page.makeShift.constraints.option.allPeople');
+
+    if (optionMapKey === 'date') return t('page.makeShift.constraints.option.allDays');
+
+    return t('page.makeShift.constraints.option.all');
+}
+
+function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, optionMapKey: string, shiftType?: TShiftTypeLike) {
+    if (isAllCandidateOption(option)) return getLocalizedAllOptionLabel(t, optionMapKey);
+
     if (option.label) return option.label;
 
     if (option.name) return option.name;
@@ -997,7 +1009,7 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
     const shiftType =
         option.wardShiftTypeId != null ? shiftTypes.find((item) => item.wardShiftTypeId === option.wardShiftTypeId) : undefined;
     const isDuty = optionMapKey === 'duty' || optionMapKey === 'dutyStrict';
-    const label = getCandidateOptionLabel(t, option, shiftType);
+    const label = getCandidateOptionLabel(t, option, optionMapKey, shiftType);
 
     if (!isDuty) {
         return {
