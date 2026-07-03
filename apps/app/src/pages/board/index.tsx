@@ -35,7 +35,6 @@ import {
 } from '@/shared/api/board';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
-import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
 const POST_PAGE_SIZE = 40;
@@ -2357,7 +2356,6 @@ function BoardPage() {
                 <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <p className="min-w-0 text-[14px] leading-6 text-gray-3">{boardT('description')}</p>
                     <div className="flex shrink-0 items-center gap-2">
-                        <NotificationBell />
                         <button
                             id="board_create_button"
                             type="button"
