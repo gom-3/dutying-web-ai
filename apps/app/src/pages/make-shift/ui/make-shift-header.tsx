@@ -1,3 +1,5 @@
+import useAuth from '@/features/auth';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {MonthlyMemoButton} from '@/features/monthly-memo';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth, isMakeShiftPreviousMonthDisabled} from '@/shared/lib/shift-calendar-month-policy';
@@ -6,6 +8,9 @@ import {useMakeShiftStore} from '../model/make-shift-store';
 
 export function MakeShiftHeader() {
     const {t} = useTypedTranslation();
+    const {
+        state: {accessToken},
+    } = useAuth();
     const wardId = useMakeShiftStore((s) => s.wardId);
     const year = useMakeShiftStore((s) => s.year);
     const month = useMakeShiftStore((s) => s.month);
@@ -16,6 +21,7 @@ export function MakeShiftHeader() {
     const setCurrentShiftTeamId = useMakeShiftStore((s) => s.setCurrentShiftTeamId);
     const prevMonthDisabled = isMakeShiftPreviousMonthDisabled();
     const nextMonthDisabled = isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth(year, month);
+    const shouldReserveNotificationSpace = isWardAdminAccessToken(accessToken);
 
     return (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
@@ -35,7 +41,12 @@ export function MakeShiftHeader() {
                 nextMonthDisabled={nextMonthDisabled}
                 teamTone="darkSegmented"
             />
-            <MonthlyMemoButton wardId={wardId} year={year} month={month} />
+            <MonthlyMemoButton
+                wardId={wardId}
+                year={year}
+                month={month}
+                className={shouldReserveNotificationSpace ? 'mr-[68px]' : undefined}
+            />
         </div>
     );
 }

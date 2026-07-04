@@ -17,6 +17,32 @@ const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
 const WORKSPACE_NAV_AUTO_FOLD_WIDTH = 1536;
 const DEFAULT_NAV_AUTO_FOLD_WIDTH = 1280;
 const NAV_AUTO_FOLD_ROUTES = new Set<string>([ROUTE.MAKE, ROUTE.MEMBER]);
+const DEFAULT_NOTIFICATION_FRAME = {
+    topClassName: 'top-4',
+    innerClassName: 'mx-auto flex w-full max-w-[1680px] justify-end px-4 lg:px-8',
+};
+const NOTIFICATION_FRAME_BY_ROUTE = [
+    {
+        route: ROUTE.MAKE,
+        topClassName: 'top-4',
+        innerClassName: 'mx-auto flex w-full max-w-[1680px] justify-end px-3 min-[1600px]:px-10 lg:px-4',
+    },
+    {
+        route: ROUTE.REQUEST,
+        topClassName: 'top-4',
+        innerClassName: 'mx-auto flex w-full max-w-[1640px] min-w-[1160px] justify-end px-10',
+    },
+    {
+        route: ROUTE.BOARD,
+        topClassName: 'top-4 sm:top-5 lg:top-6 2xl:top-7',
+        innerClassName: 'mx-auto flex w-full max-w-[1520px] min-w-[1120px] justify-end px-4 sm:px-5 lg:px-6 2xl:px-10',
+    },
+    {
+        route: ROUTE.HOME,
+        topClassName: 'top-6',
+        innerClassName: 'mx-auto flex w-full max-w-[1480px] min-w-[1080px] justify-end px-8',
+    },
+] as const;
 
 type TWardCreatedGuidePayload = {
     wardCode?: string | null;
@@ -53,6 +79,9 @@ const readStoredWardCreatedGuidePayload = () => {
 };
 const shouldAutoFoldNavigation = (pathname: string, viewportWidth: number) =>
     viewportWidth < DEFAULT_NAV_AUTO_FOLD_WIDTH || (NAV_AUTO_FOLD_ROUTES.has(pathname) && viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH);
+const isRouteMatch = (pathname: string, route: string) => pathname === route || pathname.startsWith(`${route}/`);
+const getNotificationFrameConfig = (pathname: string) =>
+    NOTIFICATION_FRAME_BY_ROUTE.find((config) => isRouteMatch(pathname, config.route)) ?? DEFAULT_NOTIFICATION_FRAME;
 
 export const MainLayout = () => {
     const {t} = useTypedTranslation();
@@ -82,6 +111,7 @@ export const MainLayout = () => {
     const shouldUseCompactNavigation = shouldFoldNavigation || (viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH && isNavigationFolded);
     const shouldKeepStableVerticalScroll = location.pathname === ROUTE.WARD_SETTINGS;
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
+    const notificationFrameConfig = getNotificationFrameConfig(location.pathname);
 
     useEffect(() => {
         const guidePayload = locationGuidePayload ?? readStoredWardCreatedGuidePayload();
@@ -158,10 +188,16 @@ export const MainLayout = () => {
                 onClose={() => setCreatedWardGuidePayload(null)}
             />
             <NavigationBar compactMode={shouldUseCompactNavigation} />
-            <main className={cn('min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
+            <main className={cn('relative min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
                 <Outlet />
+                {shouldShowNotificationBell ? (
+                    <div className={cn('pointer-events-none absolute inset-x-0 z-[1002]', notificationFrameConfig.topClassName)}>
+                        <div className={notificationFrameConfig.innerClassName}>
+                            <NotificationBell />
+                        </div>
+                    </div>
+                ) : null}
             </main>
-            {shouldShowNotificationBell ? <NotificationBell /> : null}
             <WardChatWidget />
         </div>
     );

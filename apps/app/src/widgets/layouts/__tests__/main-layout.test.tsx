@@ -7,6 +7,9 @@ import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar
 import {MainLayout} from '../main-layout';
 
 const mockUseQuery = vi.fn();
+const mockAuthState = vi.hoisted(() => ({
+    accessToken: null as string | null,
+}));
 
 vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual('@tanstack/react-query');
@@ -20,9 +23,22 @@ vi.mock('@tanstack/react-query', async () => {
 vi.mock('@/features/auth', () => ({
     default: () => ({
         state: {
+            accessToken: mockAuthState.accessToken,
             wardId: 10,
         },
     }),
+}));
+
+vi.mock('@/features/auth/model/admin-token', () => ({
+    isWardAdminAccessToken: (accessToken?: string | null) => accessToken === 'ward-admin-token',
+}));
+
+vi.mock('@/widgets/notifications/notification-bell', () => ({
+    NotificationBell: () => (
+        <button type="button" aria-label="notification bell">
+            bell
+        </button>
+    ),
 }));
 
 vi.mock('@/widgets/navigation-bar', async () => {
@@ -77,6 +93,7 @@ describe('MainLayout', () => {
                 code: 'ABC123',
             },
         });
+        mockAuthState.accessToken = null;
         window.sessionStorage.clear();
         useNavigationBarFoldStore.getState().reset();
         setViewportWidth(1600);
@@ -150,6 +167,27 @@ describe('MainLayout', () => {
         });
         expect(screen.getByTestId('navigation-bar')).toHaveAttribute('data-compact-mode', 'true');
         expect(screen.queryByRole('button', {name: 'toggle navigation'})).not.toBeInTheDocument();
+    });
+
+    it('positions the ward admin notification bell inside the make workspace frame', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationFrame = notificationBell.parentElement;
+        const notificationLayer = notificationFrame?.parentElement;
+
+        expect(notificationLayer).toHaveClass('pointer-events-none', 'absolute', 'inset-x-0', 'top-4');
+        expect(notificationFrame).toHaveClass('mx-auto', 'max-w-[1680px]', 'justify-end', 'px-3', 'lg:px-4', 'min-[1600px]:px-10');
     });
 
     it('keeps the navigation expanded on non-workspace pages at the same width', () => {

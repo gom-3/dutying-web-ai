@@ -1,15 +1,15 @@
 import {cn} from '@dutying/utils/style';
 import {AlertCircle, CheckCircle2, Loader2, Settings} from 'lucide-react';
-import {useNavigate} from 'react-router-dom';
+import {useState} from 'react';
 import {events, sendEvent} from '@/analytics';
 import useRequestShift from '@/features/request-shift';
-import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
+import RequestReceptionSettingsModal from './request-reception-settings-modal';
 
 function Toolbar() {
     const {t} = useTypedTranslation();
-    const navigate = useNavigate();
+    const [isReceptionSettingsOpen, setIsReceptionSettingsOpen] = useState(false);
     const {
         state: {year, month, changeStatus, currentShiftTeam, shiftTeams, teamPendingRequestCountByTeamId, editAvailability},
         actions: {changeMonth, changeShiftTeam},
@@ -62,59 +62,62 @@ function Toolbar() {
     );
 
     return (
-        <div id="toolbar" className="mx-auto flex w-full max-w-none flex-col gap-2">
-            <DutyManagementMonthTeamHeader
-                year={year}
-                month={month}
-                prevLabel={t('page.duty.prevMonth')}
-                nextLabel={t('page.duty.nextMonth')}
-                shiftTeams={headerShiftTeams}
-                currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
-                onPrevMonth={() => {
-                    if (!changeMonth('prev')) return;
+        <>
+            <div id="toolbar" className="mx-auto flex w-full max-w-none flex-col gap-2">
+                <DutyManagementMonthTeamHeader
+                    year={year}
+                    month={month}
+                    prevLabel={t('page.duty.prevMonth')}
+                    nextLabel={t('page.duty.nextMonth')}
+                    shiftTeams={headerShiftTeams}
+                    currentShiftTeamId={currentShiftTeam?.shiftTeamId ?? null}
+                    onPrevMonth={() => {
+                        if (!changeMonth('prev')) return;
 
-                    sendEvent(events.requestPage.toolbar.changeMonth);
-                }}
-                onNextMonth={() => {
-                    if (!changeMonth('next')) return;
+                        sendEvent(events.requestPage.toolbar.changeMonth);
+                    }}
+                    onNextMonth={() => {
+                        if (!changeMonth('next')) return;
 
-                    sendEvent(events.requestPage.toolbar.changeMonth);
-                }}
-                onSelectShiftTeam={(shiftTeamId) => {
-                    const nextTeam = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
+                        sendEvent(events.requestPage.toolbar.changeMonth);
+                    }}
+                    onSelectShiftTeam={(shiftTeamId) => {
+                        const nextTeam = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === shiftTeamId);
 
-                    if (!nextTeam) return;
+                        if (!nextTeam) return;
 
-                    if (!changeShiftTeam(nextTeam)) return;
+                        if (!changeShiftTeam(nextTeam)) return;
 
-                    sendEvent(events.requestPage.toolbar.changeShiftTeam);
-                }}
-                emptyLabel={t('page.request.toolbar.noTeamsLabel')}
-                formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
-                disabled={isSaving}
-                teamTone="darkSegmented"
-            />
+                        sendEvent(events.requestPage.toolbar.changeShiftTeam);
+                    }}
+                    emptyLabel={t('page.request.toolbar.noTeamsLabel')}
+                    formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
+                    disabled={isSaving}
+                    teamTone="darkSegmented"
+                />
 
-            <div className="flex flex-col gap-2 py-3 md:flex-row md:items-end md:justify-between">
-                <div className="min-w-0">
-                    <h1 className="font-apple text-[30px] font-semibold text-sub-1">{title}</h1>
-                    {shouldShowFeedback ? (
-                        <p className={cn('mt-2', feedbackClassName)} aria-live="polite">
-                            {feedbackIcon}
-                            {feedback.message}
-                        </p>
-                    ) : null}
+                <div className="flex flex-col gap-2 py-3 md:flex-row md:items-end md:justify-between">
+                    <div className="min-w-0">
+                        <h1 className="font-apple text-[30px] font-semibold text-sub-1">{title}</h1>
+                        {shouldShowFeedback ? (
+                            <p className={cn('mt-2', feedbackClassName)} aria-live="polite">
+                                {feedbackIcon}
+                                {feedback.message}
+                            </p>
+                        ) : null}
+                    </div>
+                    <button
+                        type="button"
+                        className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-[10px] bg-white px-3.5 font-apple text-[13px] font-semibold text-sub-1 shadow-[0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-gray-6 transition-colors hover:bg-gray-7 hover:text-sub-1 hover:ring-gray-5 focus-visible:ring-2 focus-visible:ring-main-1/40 focus-visible:outline-none md:self-auto"
+                        onClick={() => setIsReceptionSettingsOpen(true)}
+                    >
+                        <Settings className="h-4 w-4" aria-hidden="true" />
+                        {t('page.request.toolbar.settingsAction')}
+                    </button>
                 </div>
-                <button
-                    type="button"
-                    className="inline-flex h-10 shrink-0 items-center gap-2 self-start rounded-[10px] bg-white px-3.5 font-apple text-[13px] font-semibold text-sub-1 shadow-[0_1px_3px_rgba(15,23,42,0.08)] ring-1 ring-gray-6 transition-colors hover:bg-gray-7 hover:text-sub-1 hover:ring-gray-5 focus-visible:ring-2 focus-visible:ring-main-1/40 focus-visible:outline-none md:self-auto"
-                    onClick={() => navigate(`${ROUTE.WARD_SETTINGS}?tab=requestReception`)}
-                >
-                    <Settings className="h-4 w-4" aria-hidden="true" />
-                    {t('page.request.toolbar.settingsAction')}
-                </button>
             </div>
-        </div>
+            <RequestReceptionSettingsModal open={isReceptionSettingsOpen} onOpenChange={setIsReceptionSettingsOpen} />
+        </>
     );
 }
 
