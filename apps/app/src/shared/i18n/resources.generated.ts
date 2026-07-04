@@ -1516,7 +1516,7 @@ export const ko = {
                 },
                 "result": {
                     "failure": {
-                        "addDescription": "{{waitingNurseName}}{{objectParticle}} {{targetLabel}}에 추가하지 못했어요. 다시 시도하거나 이전 단계로 돌아가 주세요.",
+                        "addDescription": "{{waitingNurseName}}{{objectParticle}} {{targetLabel}}에 추가하지 못했어요.\n다시 시도하거나 이전 단계로 돌아가 주세요.",
                         "addTitle": "팀에 추가하지 못했어요",
                         "linkDescription": "{{targetLabel}} 계정에 연결하지 못했어요. 다시 시도해 주세요.",
                         "linkNoTargetDescription": "선택한 간호사 계정에 연결하지 못했어요. 다시 시도해 주세요.",

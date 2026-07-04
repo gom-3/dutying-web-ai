@@ -8,6 +8,15 @@ import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
+function isWaitingNurseNotFoundError(error: unknown) {
+    return (
+        typeof error === 'object' &&
+        error !== null &&
+        'serverCode' in error &&
+        (error as {serverCode?: unknown}).serverCode === 'WAITING_NURSE_NOT_FOUND'
+    );
+}
+
 const useEditWard = () => {
     const {t} = useTypedTranslation();
     const {
@@ -28,6 +37,15 @@ const useEditWard = () => {
         ...wardWaitingNursesQueryOptions,
         enabled: !!wardId,
     });
+    const invalidateWardMemberQueries = useCallback(async () => {
+        await queryClient.invalidateQueries({queryKey: wardQueryKey});
+        await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
+        await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+    }, [queryClient, shiftTeamsQueryKey, wardQueryKey, wardWaitingNursesQueryKey]);
+    const invalidateWaitingNurseQueries = useCallback(async () => {
+        await queryClient.invalidateQueries({queryKey: wardQueryKey});
+        await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+    }, [queryClient, wardQueryKey, wardWaitingNursesQueryKey]);
     const editWardSetting = useCallback(
         async (editWardDTO: TEditWardDTO) => {
             if (!wardId) return;
@@ -75,20 +93,21 @@ const useEditWard = () => {
 
             try {
                 await WardAPI.approveWaitingNurses(wardId, waitingNurseId, shiftTeamId);
-                await queryClient.invalidateQueries({queryKey: wardQueryKey});
-                await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
-                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+                await invalidateWardMemberQueries();
 
                 toast.success(t('feature.editWard.approveWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
+                if (isWaitingNurseNotFoundError(error)) {
+                    await invalidateWardMemberQueries();
+                }
                 showActionErrorFeedback(error, t('feature.editWard.approveWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, shiftTeamsQueryKey, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [invalidateWardMemberQueries, t, wardId],
     );
     const connectWaitingNurses = useCallback(
         async (waitingNurseId: number, targetNurseId: number) => {
@@ -96,20 +115,21 @@ const useEditWard = () => {
 
             try {
                 await WardAPI.connectWaitingNurses(wardId, waitingNurseId, targetNurseId);
-                await queryClient.invalidateQueries({queryKey: wardQueryKey});
-                await queryClient.invalidateQueries({queryKey: shiftTeamsQueryKey});
-                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+                await invalidateWardMemberQueries();
 
                 toast.success(t('feature.editWard.connectWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
+                if (isWaitingNurseNotFoundError(error)) {
+                    await invalidateWardMemberQueries();
+                }
                 showActionErrorFeedback(error, t('feature.editWard.connectWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, shiftTeamsQueryKey, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [invalidateWardMemberQueries, t, wardId],
     );
     const cancelWaiting = useCallback(
         async (waitingNurseId: number) => {
@@ -117,19 +137,21 @@ const useEditWard = () => {
 
             try {
                 await WardAPI.deleteWaitingNurseRequest(wardId, waitingNurseId);
-                await queryClient.invalidateQueries({queryKey: wardQueryKey});
-                await queryClient.invalidateQueries({queryKey: wardWaitingNursesQueryKey});
+                await invalidateWaitingNurseQueries();
 
                 toast.success(t('feature.editWard.rejectWaitingNurseSuccess'));
 
                 return true;
             } catch (error) {
+                if (isWaitingNurseNotFoundError(error)) {
+                    await invalidateWaitingNurseQueries();
+                }
                 showActionErrorFeedback(error, t('feature.editWard.rejectWaitingNurseFailed'));
 
                 return false;
             }
         },
-        [queryClient, t, wardId, wardQueryKey, wardWaitingNursesQueryKey],
+        [invalidateWaitingNurseQueries, t, wardId],
     );
 
     return {

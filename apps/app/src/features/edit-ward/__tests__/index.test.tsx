@@ -122,6 +122,26 @@ describe('useEditWard', () => {
         expect(mockToastError).not.toHaveBeenCalled();
     });
 
+    it('refreshes member queries when approveWaitingNurses cannot find a stale waiting nurse', async () => {
+        mockApproveWaitingNurses.mockRejectedValue({code: 404, serverCode: 'WAITING_NURSE_NOT_FOUND'});
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.approveWaitingNurses(7, 20);
+        });
+
+        expect(isSuccess).toBe(false);
+        expect(mockApproveWaitingNurses).toHaveBeenCalledWith(1, 7, 20);
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.shiftTeams(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(3, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockToastSuccess).not.toHaveBeenCalled();
+        expect(mockToastError).not.toHaveBeenCalled();
+    });
+
     it('returns false and surfaces a generic feedback toast when connectWaitingNurses rejects with an unknown error shape', async () => {
         mockConnectWaitingNurses.mockRejectedValue({response: {status: 500}});
 
@@ -138,6 +158,26 @@ describe('useEditWard', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
         expect(mockToastSuccess).not.toHaveBeenCalled();
         expect(mockToastError).toHaveBeenCalledWith('기존 간호사 계정에 연결하지 못했어요.');
+    });
+
+    it('refreshes member queries when connectWaitingNurses cannot find a stale waiting nurse', async () => {
+        mockConnectWaitingNurses.mockRejectedValue({code: 404, serverCode: 'WAITING_NURSE_NOT_FOUND'});
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.connectWaitingNurses(7, 99);
+        });
+
+        expect(isSuccess).toBe(false);
+        expect(mockConnectWaitingNurses).toHaveBeenCalledWith(1, 7, 99);
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.shiftTeams(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(3, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockToastSuccess).not.toHaveBeenCalled();
+        expect(mockToastError).not.toHaveBeenCalled();
     });
 
     it('deletes a waiting nurse request by waitingNurseId and refreshes the waiting list', async () => {
@@ -175,5 +215,24 @@ describe('useEditWard', () => {
         expect(mockInvalidateQueries).not.toHaveBeenCalled();
         expect(mockToastSuccess).not.toHaveBeenCalled();
         expect(mockToastError).toHaveBeenCalledWith('연동 대기 요청을 거절하지 못했어요.');
+    });
+
+    it('refreshes waiting nurse queries when deleting cannot find a stale waiting nurse', async () => {
+        mockDeleteWaitingNurseRequest.mockRejectedValue({code: 404, serverCode: 'WAITING_NURSE_NOT_FOUND'});
+
+        const {result} = renderHook(() => useEditWard());
+
+        let isSuccess: boolean | undefined;
+
+        await act(async () => {
+            isSuccess = await result.current.actions.cancelWaiting(7);
+        });
+
+        expect(isSuccess).toBe(false);
+        expect(mockDeleteWaitingNurseRequest).toHaveBeenCalledWith(1, 7);
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(1, {queryKey: wardQueryKeys.id(1)});
+        expect(mockInvalidateQueries).toHaveBeenNthCalledWith(2, {queryKey: wardQueryKeys.waitingNurses(1)});
+        expect(mockToastSuccess).not.toHaveBeenCalled();
+        expect(mockToastError).not.toHaveBeenCalled();
     });
 });

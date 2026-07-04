@@ -126,7 +126,7 @@ describe('getConnectionManageResultCopy', () => {
                 targetLabel: 'B팀',
                 t,
             }).description,
-        ).toContain('다시 시도하거나 이전 단계로 돌아가');
+        ).toBe('박신청을 B팀에 추가하지 못했어요.\n다시 시도하거나 이전 단계로 돌아가 주세요.');
     });
 
     it('keeps the loading copy specific to add mode', () => {
