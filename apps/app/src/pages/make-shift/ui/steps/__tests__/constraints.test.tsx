@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, it, vi} from 'vitest';
 import toast from 'react-hot-toast';
+import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {saveWardSkillSettings} from '@/features/ward-skill/model/skill-level';
 import {WardAPI} from '@/shared/api';
 import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
@@ -164,7 +164,7 @@ describe('Constraints', () => {
         expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
 
-    it('hides legacy bundled forbidden-pattern templates from the recommended add modal', async () => {
+    it('hides legacy bundled and fully duplicated templates from the add modal', async () => {
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
@@ -193,6 +193,46 @@ describe('Constraints', () => {
                     supportedInValidator: true,
                     slots: [],
                 },
+                {
+                    templateCode: 'MAX_CONSECUTIVE_WORK_DAYS',
+                    category: 'WORK_REST',
+                    displayTemplate: 'DUPLICATE_MAX_WORK_SHOULD_HIDE',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
+                {
+                    templateCode: 'MAX_CONSECUTIVE_N',
+                    category: 'WORK_REST',
+                    displayTemplate: 'DUPLICATE_MAX_NIGHT_SHOULD_HIDE',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
+                {
+                    templateCode: 'MIN_OFF_AFTER_N',
+                    category: 'WORK_REST',
+                    displayTemplate: 'DUPLICATE_OFF_AFTER_NIGHT_SHOULD_HIDE',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
+                {
+                    templateCode: 'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: 'DUPLICATE_WEEKEND_STAFFING_SHOULD_HIDE',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
             ],
         });
 
@@ -210,6 +250,10 @@ describe('Constraints', () => {
 
         expect(await screen.findByText('VISIBLE_RECOMMENDED_SENTINEL')).toBeInTheDocument();
         expect(screen.queryByText('LEGACY_BUNDLE_SHOULD_HIDE')).not.toBeInTheDocument();
+        expect(screen.queryByText('DUPLICATE_MAX_WORK_SHOULD_HIDE')).not.toBeInTheDocument();
+        expect(screen.queryByText('DUPLICATE_MAX_NIGHT_SHOULD_HIDE')).not.toBeInTheDocument();
+        expect(screen.queryByText('DUPLICATE_OFF_AFTER_NIGHT_SHOULD_HIDE')).not.toBeInTheDocument();
+        expect(screen.queryByText('DUPLICATE_WEEKEND_STAFFING_SHOULD_HIDE')).not.toBeInTheDocument();
         expect(screen.queryByText('CORE')).not.toBeInTheDocument();
     });
 
@@ -271,6 +315,73 @@ describe('Constraints', () => {
             expect(toast.success).toHaveBeenCalledWith('중복 제약조건은 삭제하고 기존 조건만 남겼어요.');
         });
         expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats the same template and params as a duplicate even when severity differs', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 1,
+                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    severity: 'HARD',
+                    sortOrder: 1,
+                    params: {shift: {type: 'ALL', label: '모든'}, count: 1},
+                    selected: true,
+                    isImportant: true,
+                    displayText: '모든 근무에 최소 1명이 필요해요',
+                    isValid: true,
+                    invalidReason: null,
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+            },
+            templates: [
+                {
+                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: '{shift} 근무에 최소 {count}명이 필요해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+        await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith('중복 제약조건은 삭제하고 기존 조건만 남겼어요.');
+        });
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
     });
 
     it('shows recommended templates in their original modal categories too', async () => {
@@ -411,6 +522,267 @@ describe('Constraints', () => {
                 }),
             );
         });
+    });
+
+    it('shows day-type staffing options above the add modal and saves the selected option', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                dayTypes: [
+                    {type: 'ALL', label: '모든날'},
+                    {type: 'WEEKDAY', label: '평일'},
+                    {type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'},
+                ],
+                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+            },
+            templates: [
+                {
+                    templateCode: 'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: '{date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'dayTypes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '평일'}));
+
+        const listbox = await screen.findByRole('listbox');
+
+        expect(listbox).toHaveClass('z-[2147483647]');
+        expect(within(listbox).queryByRole('option', {name: '모든날'})).not.toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '평일'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '주말/공휴일'})).toBeInTheDocument();
+
+        await userEvent.click(within(listbox).getByRole('option', {name: '주말/공휴일'}));
+
+        const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+        await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({
+                            templateCode: 'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+                            params: expect.objectContaining({
+                                date: expect.objectContaining({type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'}),
+                                shift: expect.objectContaining({type: 'ALL', label: '모든'}),
+                                count: 1,
+                            }),
+                        }),
+                    ]),
+                }),
+            );
+        });
+    });
+
+    it('removes the all-days option from date staffing dropdowns', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                dates: [
+                    {type: 'ALL', label: '모든날'},
+                    {type: 'DAY_OF_MONTH', day: 1, label: '1일'},
+                    {type: 'DAY_OF_MONTH', day: 2, label: '2일'},
+                ],
+                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+            },
+            templates: [
+                {
+                    templateCode: 'MIN_STAFF_BY_DATE_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: '{date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'DATES'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '1일'}));
+
+        const listbox = await screen.findByRole('listbox');
+
+        expect(within(listbox).queryByRole('option', {name: '모든날'})).not.toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '1일'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '2일'})).toBeInTheDocument();
+    });
+
+    it('shows preceptor and preceptee badges in person target dropdowns using member-role details', async () => {
+        wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([
+            {nurseId: 1, name: '오지헌', isWardManager: true, memo: '__PRECEPTEE__'},
+        ] as never);
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                targets: [
+                    {type: 'ALL', label: '전체'},
+                    {type: 'NURSE', nurseId: 1, label: '오지헌', name: '오지헌'},
+                ],
+            },
+            templates: [
+                {
+                    templateCode: 'CORE_MAX_CONTINUOUS_WORK',
+                    category: 'CORE',
+                    displayTemplate: '{target}은 {count}일 이상 연속으로 근무하면 안 돼요.',
+                    severity: 'HARD',
+                    allowedSeverities: ['HARD', 'SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'target', label: 'Target', inputType: 'SELECT', optionGroup: 'TARGETS'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 31},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '모든사람'}));
+
+        const listbox = await screen.findByRole('listbox');
+        const preceptorBadge = within(listbox).getByText('프리셉터');
+        const allPeopleOption = within(listbox).getByRole('option', {name: '모든사람'});
+
+        expect(allPeopleOption).toHaveClass('justify-start');
+        expect(allPeopleOption).toHaveClass('text-left');
+        expect(within(listbox).getByText('오지헌')).toBeInTheDocument();
+        expect(preceptorBadge).toBeInTheDocument();
+        expect(preceptorBadge).not.toHaveClass('ring-1');
+        expect(within(listbox).getByText('프리셉티')).toBeInTheDocument();
+
+        await userEvent.click(within(listbox).getByRole('option', {name: /오지헌/}));
+
+        const selectedButton = screen.getByRole('button', {name: '오지헌'});
+
+        expect(within(selectedButton).queryByText('프리셉터')).not.toBeInTheDocument();
+        expect(within(selectedButton).queryByText('프리셉티')).not.toBeInTheDocument();
+    });
+
+    it('shows nurse skill and preceptor badges in constraint dropdown options', async () => {
+        saveWardSkillSettings(1, {
+            config: {
+                enabled: true,
+                levelCount: 2,
+                paletteId: 'warm',
+                autoAssign: false,
+                levelLabels: {1: '전담', 2: '리더'},
+            },
+            frozenLevelsByNurseId: {},
+        });
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                nurses: [
+                    {
+                        type: 'NURSE',
+                        nurseId: 1,
+                        label: '오지현',
+                        name: '오지현',
+                        proficiency: 2,
+                        isPreceptor: true,
+                        isPreceptee: true,
+                    },
+                ],
+            },
+            templates: [
+                {
+                    templateCode: 'NURSE_NOT_ALONE_N',
+                    category: 'PROFICIENCY',
+                    displayTemplate: '{nurse}는 혼자 N 근무를 하면 안 돼요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'nurse', label: 'Nurse', inputType: 'SELECT', optionGroup: 'NURSES'}],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        const selectedButton = screen.getByRole('button', {name: '오지현'});
+
+        expect(within(selectedButton).queryByText('리더')).not.toBeInTheDocument();
+        expect(within(selectedButton).queryByText('프리셉터')).not.toBeInTheDocument();
+        expect(within(selectedButton).queryByText('프리셉티')).not.toBeInTheDocument();
+
+        await userEvent.click(selectedButton);
+
+        const listbox = await screen.findByRole('listbox');
+
+        expect(within(listbox).getByText('오지현')).toBeInTheDocument();
+        expect(within(listbox).getByText('리더')).toBeInTheDocument();
+        expect(within(listbox).getByText('프리셉터')).toBeInTheDocument();
+        expect(within(listbox).getByText('프리셉티')).toBeInTheDocument();
     });
 
     it('hides proficiency constraints from the add modal when worker skill is disabled', async () => {

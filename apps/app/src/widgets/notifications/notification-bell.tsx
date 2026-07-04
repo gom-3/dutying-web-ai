@@ -114,7 +114,7 @@ export function NotificationBell() {
     };
 
     return (
-        <div ref={rootRef} className="fixed top-4 right-5 z-[1002] font-apple">
+        <div ref={rootRef} className="pointer-events-auto relative font-apple">
             <button
                 type="button"
                 className={cn(

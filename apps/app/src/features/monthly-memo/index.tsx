@@ -18,9 +18,10 @@ type TMonthlyMemoButtonProps = {
     wardId: number | null;
     year: number;
     month: number;
+    className?: string;
 };
 
-export function MonthlyMemoButton({wardId, year, month}: TMonthlyMemoButtonProps) {
+export function MonthlyMemoButton({wardId, year, month, className}: TMonthlyMemoButtonProps) {
     const {t} = useTypedTranslation();
     const queryClient = useQueryClient();
     const [open, setOpen] = useState(false);
@@ -88,6 +89,7 @@ export function MonthlyMemoButton({wardId, year, month}: TMonthlyMemoButtonProps
                     className={cn(
                         'relative inline-flex h-10 shrink-0 cursor-pointer items-center gap-2 rounded-[10px] bg-white px-3.5 font-apple text-[14px] font-semibold text-sub-2 shadow-[0_1px_0_rgba(15,23,42,0.06)] ring-1 ring-gray-6 transition hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50',
                         open && 'bg-main-light text-main-1 ring-main-3',
+                        className,
                     )}
                 >
                     <img src="/img/memo.png" alt="" className="size-6 shrink-0 object-contain" aria-hidden="true" />

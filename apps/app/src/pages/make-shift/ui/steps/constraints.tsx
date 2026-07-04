@@ -1,3 +1,4 @@
+import {cn} from '@dutying/utils/style';
 import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {ChevronDown, Plus, X} from 'lucide-react';
 import {type ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState} from 'react';
@@ -7,7 +8,9 @@ import {useTranslation} from 'react-i18next';
 import {type TShiftTeam} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
-import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings} from '@/features/ward-skill/model/skill-level';
+import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings, type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
+import SkillBadge from '@/features/ward-skill/ui/skill-badge';
+import {hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
@@ -29,12 +32,15 @@ import {
 type TSelectOption = {
     value: string;
     label: string;
-    kind?: 'duty';
+    kind?: 'duty' | 'nurse';
     shortName?: string;
     name?: string;
     color?: string;
     classification?: TShiftTypeLike['classification'];
     isOff?: boolean;
+    skillLevel?: number | null;
+    isPreceptor?: boolean;
+    isPreceptee?: boolean;
     raw?: TShiftConstraintOption;
 };
 type TTemplateCategory = string;
@@ -77,11 +83,33 @@ type TShiftTypeLike = {
     classification?: string;
     isActive?: boolean;
 };
-type TNurseLike = {nurseId?: number; name?: string; isPreceptor?: boolean};
+type TNurseLike = {
+    nurseId?: number;
+    name?: string;
+    proficiency?: number | null;
+    isPreceptor?: boolean | null;
+    isPreceptee?: boolean | null;
+    isWardManager?: boolean | null;
+    memo?: string | null;
+};
+type TNurseRoleLike = {
+    isPreceptor?: boolean | null;
+    isPreceptee?: boolean | null;
+    isWardManager?: boolean | null;
+    memo?: string | null;
+};
 
 const EMPTY_NURSES: TNurseLike[] = [];
 const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
+
+function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
+    return nurse?.isPreceptor === true || nurse?.isWardManager === true;
+}
+
+function hasPrecepteeRole(nurse: TNurseRoleLike | null | undefined) {
+    return nurse?.isPreceptee === true || hasPrecepteeMemo(nurse?.memo);
+}
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
 const RECOMMENDED_MODAL_CATEGORY = 'RECOMMENDED';
 const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
@@ -168,6 +196,56 @@ function DutyPatternBadge({options}: {options: TSelectOption[]}) {
     );
 }
 
+function RoleBadge({children}: {children: ReactNode}) {
+    return (
+        <span className="inline-flex h-5 shrink-0 items-center rounded-full bg-[#EEF2FF] px-2 font-apple text-[10px] leading-none font-semibold text-[#4F46E5]">
+            {children}
+        </span>
+    );
+}
+
+function SelectOptionContent({
+    option,
+    skillConfig,
+    compact = false,
+}: {
+    option: TSelectOption;
+    skillConfig?: TSkillLevelConfig;
+    compact?: boolean;
+}) {
+    const {t} = useTypedTranslation();
+
+    if (option.kind === 'duty') {
+        return <DutyTypeBadge option={option} />;
+    }
+
+    if (option.kind !== 'nurse') {
+        return <span className={compact ? 'max-w-[120px] truncate' : 'truncate'}>{option.label}</span>;
+    }
+
+    if (compact) {
+        return <span className="max-w-[120px] truncate">{option.label}</span>;
+    }
+
+    const showSkill = skillConfig?.enabled === true && option.skillLevel != null;
+    const hasBadges = [showSkill, option.isPreceptor, option.isPreceptee].some(Boolean);
+
+    return (
+        <span className={cn('flex min-w-0 items-center gap-2', compact ? 'max-w-[240px]' : 'w-full justify-between gap-3')}>
+            <span className="min-w-0 truncate">{option.label}</span>
+            {hasBadges ? (
+                <span className="flex shrink-0 items-center gap-1">
+                    {showSkill && skillConfig ? (
+                        <SkillBadge level={option.skillLevel} config={skillConfig} className="min-h-5 min-w-0 px-1.5 text-[10px]" />
+                    ) : null}
+                    {option.isPreceptor ? <RoleBadge>{t('page.makeShift.workers.column.preceptor')}</RoleBadge> : null}
+                    {option.isPreceptee ? <RoleBadge>{t('page.makeShift.workers.column.preceptee')}</RoleBadge> : null}
+                </span>
+            ) : null}
+        </span>
+    );
+}
+
 const ALL_CONSTRAINT_TARGET_OPTION: TShiftConstraintOption = {type: 'ALL'};
 const RECOMMENDED_DEFAULT_RULE_CODES = [
     'CORE_MAX_CONTINUOUS_WORK',
@@ -184,6 +262,12 @@ const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
     'CORE_EXCLUDE_CERTAIN_WORK_TYPES',
     'CORE_FORBIDDEN_DUTY_PATTERNS',
     'IMPORTANT_FORBIDDEN_DUTY_PATTERNS',
+    'MAX_CONSECUTIVE_WORK_DAYS',
+    'MAX_CONSECUTIVE_N',
+    'MIN_OFF_AFTER_N',
+    'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
+    'NEW_NURSE_NOT_ALONE_N',
+    'PRECEPTEE_NOT_ALONE_N',
 ]);
 const MODAL_CATEGORY_BY_TEMPLATE_CODE: Record<string, TTemplateCategory> = {
     CORE_MAX_CONTINUOUS_WORK: 'WORK_REST',
@@ -332,16 +416,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         id: 'NURSE_FORBID_WEEKEND',
         category: 'PERSONAL',
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
-    },
-    {
-        id: 'NEW_NURSE_NOT_ALONE_N',
-        category: 'SKILL',
-        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
-    },
-    {
-        id: 'PRECEPTEE_NOT_ALONE_N',
-        category: 'SKILL',
-        controls: [{key: 'preceptee', kind: 'select', optionsKey: 'preceptee'}],
     },
     {
         id: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
@@ -578,6 +652,12 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     days: 'date',
     DAY: 'date',
     DAYS: 'date',
+    dayType: 'dayType',
+    dayTypes: 'dayType',
+    daytypes: 'dayType',
+    DAY_TYPE: 'dayType',
+    DAY_TYPES: 'dayType',
+    DAYTYPES: 'dayType',
     shift: 'duty',
     shifts: 'duty',
     shiftsWithAll: 'duty',
@@ -715,8 +795,11 @@ function createTextSentenceParts(text: string): TSentencePart[] {
 
 function getLegacyDutyCode(token: string) {
     if (token.includes('오프')) return 'OFF';
+
     if (token.startsWith('N')) return 'N';
+
     if (token.startsWith('D')) return 'D';
+
     if (token.startsWith('E')) return 'E';
 
     return token;
@@ -1003,7 +1086,7 @@ function stringifyDuplicateParams(params: Record<string, unknown>) {
 }
 
 function getConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
-    return [rule.severity, rule.category, rule.templateCode, stringifyDuplicateParams(rule.params)].join('|');
+    return [rule.templateCode, stringifyDuplicateParams(rule.params)].join('|');
 }
 
 function compactDuplicateRules(rules: TShiftConstraintRuleDraft[]) {
@@ -1026,11 +1109,13 @@ function compactDuplicateRules(rules: TShiftConstraintRuleDraft[]) {
         removedCount += 1;
 
         const existingRule = compacted[existingIndex];
+        const isImportant = [existingRule.isImportant, rule.isImportant].some(Boolean);
 
         compacted[existingIndex] = {
             ...existingRule,
             shiftConstraintRuleId: existingRule.shiftConstraintRuleId ?? rule.shiftConstraintRuleId,
-            isImportant: [existingRule.isImportant, rule.isImportant].some(Boolean),
+            severity: isImportant ? 'HARD' : existingRule.severity,
+            isImportant,
             isValid: existingRule.isValid ?? rule.isValid,
             invalidReason: existingRule.invalidReason ?? rule.invalidReason,
         };
@@ -1058,10 +1143,48 @@ function uniqueByValue(options: TSelectOption[]) {
     const map = new Map<string, TSelectOption>();
 
     options.forEach((option) => {
-        if (!map.has(option.value)) map.set(option.value, option);
+        const existing = map.get(option.value);
+
+        map.set(option.value, existing ? mergeSelectOptionDetails(existing, option) : option);
     });
 
     return Array.from(map.values());
+}
+
+function mergeConstraintOptionDetails(left: TShiftConstraintOption | undefined, right: TShiftConstraintOption | undefined) {
+    if (!left) return right;
+
+    if (!right) return left;
+
+    return {
+        ...left,
+        label: left.label ?? right.label,
+        name: left.name ?? right.name,
+        nurseId: left.nurseId ?? right.nurseId,
+        wardShiftTypeId: left.wardShiftTypeId ?? right.wardShiftTypeId,
+        code: left.code ?? right.code,
+        day: left.day ?? right.day,
+        level: left.level ?? right.level,
+        proficiency: left.proficiency ?? right.proficiency,
+        isPreceptor: left.isPreceptor === true || right.isPreceptor === true ? true : (left.isPreceptor ?? right.isPreceptor),
+        isPreceptee: left.isPreceptee === true || right.isPreceptee === true ? true : (left.isPreceptee ?? right.isPreceptee),
+    };
+}
+
+function mergeSelectOptionDetails(left: TSelectOption, right: TSelectOption): TSelectOption {
+    return {
+        ...left,
+        kind: left.kind ?? right.kind,
+        shortName: left.shortName ?? right.shortName,
+        name: left.name ?? right.name,
+        color: left.color ?? right.color,
+        classification: left.classification ?? right.classification,
+        isOff: left.isOff ?? right.isOff,
+        skillLevel: left.skillLevel ?? right.skillLevel,
+        isPreceptor: left.isPreceptor === true || right.isPreceptor === true ? true : (left.isPreceptor ?? right.isPreceptor),
+        isPreceptee: left.isPreceptee === true || right.isPreceptee === true ? true : (left.isPreceptee ?? right.isPreceptee),
+        raw: mergeConstraintOptionDetails(left.raw, right.raw),
+    };
 }
 
 function normalizeShiftTypes(input: unknown): TShiftTypeLike[] {
@@ -1108,10 +1231,18 @@ function isAllCandidateOption(option: TShiftConstraintOption) {
     return values.some((value) => value === 'ALL' || value.includes('ALL_') || LEGACY_ALL_LABELS.has(value));
 }
 
+function isAllSelectOption(option: TSelectOption) {
+    return isAllCandidateOption(option.raw ?? {type: option.value, label: option.label, code: option.shortName, name: option.name});
+}
+
+function withoutAllSelectOptions(options: TSelectOption[]) {
+    return options.filter((option) => !isAllSelectOption(option));
+}
+
 function getLocalizedAllOptionLabel(t: TTypedT, optionMapKey: string) {
     if (optionMapKey === 'target') return t('page.makeShift.constraints.option.allPeople');
 
-    if (optionMapKey === 'date') return t('page.makeShift.constraints.option.allDays');
+    if (optionMapKey === 'date' || optionMapKey === 'dayType') return t('page.makeShift.constraints.option.allDays');
 
     return t('page.makeShift.constraints.option.all');
 }
@@ -1141,9 +1272,15 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
     const label = getCandidateOptionLabel(t, option, optionMapKey, shiftType);
 
     if (!isDuty) {
+        const isNurse = option.nurseId != null;
+
         return {
             value: getCandidateOptionValue(option),
             label,
+            kind: isNurse ? 'nurse' : undefined,
+            skillLevel: isNurse ? (option.proficiency ?? null) : undefined,
+            isPreceptor: isNurse ? hasPreceptorRole(option) : undefined,
+            isPreceptee: isNurse ? hasPrecepteeRole(option) : undefined,
             raw: option,
         };
     }
@@ -1198,14 +1335,29 @@ function mergeCandidateOptionMap(
         {includeFallback: true},
     );
     const nurse = getCandidateOptions(candidates, 'nurse', ['nurses', 'NURSES'], fallback.nurse, shiftTypes, t);
+    const target = getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t, {
+        includeFallback: true,
+    });
+    const date = withoutAllSelectOptions(getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes, t));
+    const dayType = withoutAllSelectOptions(
+        getCandidateOptions(
+            candidates,
+            'dayType',
+            ['dayTypes', 'dayType', 'daytypes', 'DAY_TYPES', 'DAY_TYPE', 'DAYTYPES'],
+            fallback.dayType ?? [],
+            shiftTypes,
+            t,
+        ),
+    );
 
     return {
-        target: getCandidateOptions(candidates, 'target', ['targets', 'TARGETS'], fallback.target, shiftTypes, t),
+        target,
         duty,
-        date: getCandidateOptions(candidates, 'date', ['dates', 'DATES'], fallback.date, shiftTypes, t),
+        date: date.length ? date : fallback.date,
+        dayType,
         nurse,
         preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
-        preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee ?? nurse, shiftTypes, t),
+        preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee, shiftTypes, t),
         level: getCandidateOptions(
             candidates,
             'level',
@@ -1214,7 +1366,7 @@ function mergeCandidateOptionMap(
             shiftTypes,
             t,
         ),
-        dutyStrict: duty.filter((option) => !isAllCandidateOption({type: option.value, label: option.label, code: option.shortName})),
+        dutyStrict: duty.filter((option) => !isAllSelectOption(option)),
     };
 }
 
@@ -1400,16 +1552,18 @@ type TInlineDropdownProps = {
     value: string;
     options: TSelectOption[];
     minWidth?: number;
+    skillConfig?: TSkillLevelConfig;
     onChange: (option: TSelectOption) => void;
 };
 
-function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdownProps) {
+function InlineDropdown({value, options, minWidth = 72, skillConfig, onChange}: TInlineDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
     const ref = useRef<HTMLDivElement>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const selected = options.find((option) => option.label === value || option.value === value) ?? options[0];
+    const alignOptionsLeft = options.some((option) => option.kind === 'nurse');
     const buttonClassName =
         'inline-flex h-8 cursor-pointer items-center justify-between gap-1.5 rounded-[8px] bg-white px-2.5 font-apple text-[14px] font-semibold text-main-1 ring-1 ring-main-4 transition-[box-shadow,background-color] hover:bg-[#FBFAFF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none';
     const updateMenuPosition = useCallback(() => {
@@ -1476,10 +1630,10 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                 className={buttonClassName}
                 style={{minWidth}}
             >
-                {selected?.kind === 'duty' ? (
-                    <DutyTypeBadge option={selected} />
+                {selected ? (
+                    <SelectOptionContent option={selected} skillConfig={skillConfig} compact />
                 ) : (
-                    <span className="max-w-[120px] truncate">{selected?.label ?? value}</span>
+                    <span className="max-w-[120px] truncate">{value}</span>
                 )}
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -1490,7 +1644,7 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                           ref={menuRef}
                           role="listbox"
                           style={menuStyle}
-                          className={`fixed z-[1400] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
+                          className={`fixed z-[2147483647] max-h-[220px] animate-in overflow-y-auto rounded-[10px] border border-gray-6 bg-white py-1 shadow-[0px_10px_28px_rgba(95,100,135,0.16)] duration-150 fade-in-0 zoom-in-95 ${
                               openUpward ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1'
                           }`}
                       >
@@ -1503,15 +1657,17 @@ function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdo
                                       type="button"
                                       role="option"
                                       aria-selected={isSelected}
-                                      className={`flex w-full cursor-pointer items-center justify-center px-3 py-2 text-center font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1 ${
-                                          isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1'
-                                      }`}
+                                      className={cn(
+                                          'flex w-full cursor-pointer items-center px-3 py-2 font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                          alignOptionsLeft ? 'justify-start text-left' : 'justify-center text-center',
+                                          isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
+                                      )}
                                       onClick={() => {
                                           onChange(option);
                                           setOpen(false);
                                       }}
                                   >
-                                      {option.kind === 'duty' ? <DutyTypeBadge option={option} /> : option.label}
+                                      <SelectOptionContent option={option} skillConfig={skillConfig} />
                                   </button>
                               );
                           })}
@@ -1527,10 +1683,11 @@ type TSoftSentenceProps = {
     template: TSoftRuleTemplate;
     params: Record<string, unknown>;
     optionMap: Record<string, TSelectOption[]>;
+    skillConfig?: TSkillLevelConfig;
     onParamChange: (key: string, value: unknown) => void;
 };
 
-function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenceProps) {
+function SoftSentence({template, params, optionMap, skillConfig, onParamChange}: TSoftSentenceProps) {
     const displayParams = useMemo(() => normalizeSoftRuleParams(template, params, optionMap), [optionMap, params, template]);
 
     return (
@@ -1600,7 +1757,14 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                         key={`${template.id}-${control.key}-${idx}`}
                         value={selected}
                         options={options}
-                        minWidth={control.optionsKey === 'date' ? 88 : control.optionsKey === 'target' ? 104 : 72}
+                        minWidth={
+                            control.optionsKey === 'date' || control.optionsKey === 'dayType'
+                                ? 104
+                                : control.optionsKey === 'target'
+                                  ? 104
+                                  : 72
+                        }
+                        skillConfig={skillConfig}
                         onChange={(nextOption) => onParamChange(control.key, getSelectOptionParamValue(nextOption))}
                     />
                 );
@@ -1656,6 +1820,7 @@ type TRuleRowProps = {
     softTemplate?: TSoftRuleTemplate;
     options: TShiftConstraintOptions;
     optionMap: Record<string, TSelectOption[]>;
+    skillConfig: TSkillLevelConfig;
     highlighted?: boolean;
     isImportant: boolean;
     isRecommended: boolean;
@@ -1705,6 +1870,7 @@ const RuleRow = memo(function RuleRow({
     softTemplate,
     options,
     optionMap,
+    skillConfig,
     highlighted = false,
     isImportant,
     isRecommended,
@@ -1729,6 +1895,7 @@ const RuleRow = memo(function RuleRow({
                         template={softTemplate}
                         params={rule.params}
                         optionMap={optionMap}
+                        skillConfig={skillConfig}
                         onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
                     />
                 ) : (
@@ -1846,80 +2013,80 @@ function ConstraintImportButton({teams, currentShiftTeamId, importingShiftTeamId
             {open ? (
                 <ConstraintModalPortal>
                     <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
-                    <div
-                        role="dialog"
-                        aria-modal="true"
-                        aria-labelledby="constraint-import-title"
-                        className="w-full max-w-[400px] rounded-[16px] bg-white p-5"
-                    >
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="min-w-0">
-                                <p id="constraint-import-title" className="font-apple text-[20px] font-bold text-sub-1">
-                                    {t('page.makeShift.constraints.import.modalTitle')}
+                        <div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-labelledby="constraint-import-title"
+                            className="w-full max-w-[400px] rounded-[16px] bg-white p-5"
+                        >
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0">
+                                    <p id="constraint-import-title" className="font-apple text-[20px] font-bold text-sub-1">
+                                        {t('page.makeShift.constraints.import.modalTitle')}
+                                    </p>
+                                    <p className="mt-1 truncate font-apple text-[13px] text-gray-4">
+                                        {t('page.makeShift.constraints.import.currentTeam', {
+                                            teamName: currentTeam?.name ?? t('page.makeShift.constraints.import.selectedTeamFallback'),
+                                        })}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                                    aria-label={t('page.makeShift.constraints.modal.close')}
+                                >
+                                    <X className="size-5" />
+                                </button>
+                            </div>
+
+                            <div className="mt-5">
+                                <p className="mb-2 font-apple text-[12px] font-bold text-gray-4">
+                                    {t('page.makeShift.constraints.import.teamLabel')}
                                 </p>
-                                <p className="mt-1 truncate font-apple text-[13px] text-gray-4">
-                                    {t('page.makeShift.constraints.import.currentTeam', {
-                                        teamName: currentTeam?.name ?? t('page.makeShift.constraints.import.selectedTeamFallback'),
+                                <div className="space-y-1.5">
+                                    {sourceTeams.map((team) => {
+                                        const selected = team.shiftTeamId === selectedShiftTeamId;
+
+                                        return (
+                                            <button
+                                                key={team.shiftTeamId}
+                                                type="button"
+                                                className={`flex h-10 w-full cursor-pointer items-center justify-between rounded-[9px] px-3 text-left font-apple transition-colors focus-visible:outline-2 focus-visible:outline-main-1 ${
+                                                    selected
+                                                        ? 'bg-[#F3F4F6] text-main-1'
+                                                        : 'bg-[#F3F4F6] text-sub-2 hover:bg-[#EEF0F4] hover:text-sub-1'
+                                                }`}
+                                                onClick={() => setSelectedShiftTeamId(team.shiftTeamId)}
+                                            >
+                                                <span className="truncate text-[14px] font-semibold">{team.name}</span>
+                                                {selected ? <span className="ml-3 size-1.5 shrink-0 rounded-full bg-main-1" /> : null}
+                                            </button>
+                                        );
                                     })}
-                                </p>
+                                </div>
                             </div>
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                                aria-label={t('page.makeShift.constraints.modal.close')}
-                            >
-                                <X className="size-5" />
-                            </button>
-                        </div>
 
-                        <div className="mt-5">
-                            <p className="mb-2 font-apple text-[12px] font-bold text-gray-4">
-                                {t('page.makeShift.constraints.import.teamLabel')}
-                            </p>
-                            <div className="space-y-1.5">
-                                {sourceTeams.map((team) => {
-                                    const selected = team.shiftTeamId === selectedShiftTeamId;
-
-                                    return (
-                                        <button
-                                            key={team.shiftTeamId}
-                                            type="button"
-                                            className={`flex h-10 w-full cursor-pointer items-center justify-between rounded-[9px] px-3 text-left font-apple transition-colors focus-visible:outline-2 focus-visible:outline-main-1 ${
-                                                selected
-                                                    ? 'bg-[#F3F4F6] text-main-1'
-                                                    : 'bg-[#F3F4F6] text-sub-2 hover:bg-[#EEF0F4] hover:text-sub-1'
-                                            }`}
-                                            onClick={() => setSelectedShiftTeamId(team.shiftTeamId)}
-                                        >
-                                            <span className="truncate text-[14px] font-semibold">{team.name}</span>
-                                            {selected ? <span className="ml-3 size-1.5 shrink-0 rounded-full bg-main-1" /> : null}
-                                        </button>
-                                    );
-                                })}
+                            <div className="mt-5 flex gap-2">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                                >
+                                    {t('page.makeShift.constraints.import.cancel')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => void confirmImport()}
+                                    disabled={selectedShiftTeamId === null || importingShiftTeamId !== null}
+                                    className="h-11 flex-1 cursor-pointer rounded-[10px] bg-main-1 px-6 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-[#5948F5] disabled:cursor-not-allowed disabled:bg-gray-5"
+                                >
+                                    {importingShiftTeamId !== null
+                                        ? t('page.makeShift.constraints.import.loading')
+                                        : t('page.makeShift.constraints.import.confirm')}
+                                </button>
                             </div>
                         </div>
-
-                        <div className="mt-5 flex gap-2">
-                            <button
-                                type="button"
-                                onClick={closeModal}
-                                className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[15px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                            >
-                                {t('page.makeShift.constraints.import.cancel')}
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => void confirmImport()}
-                                disabled={selectedShiftTeamId === null || importingShiftTeamId !== null}
-                                className="h-11 flex-1 cursor-pointer rounded-[10px] bg-main-1 px-6 font-apple text-[15px] font-semibold text-white transition-colors hover:bg-[#5948F5] disabled:cursor-not-allowed disabled:bg-gray-5"
-                            >
-                                {importingShiftTeamId !== null
-                                    ? t('page.makeShift.constraints.import.loading')
-                                    : t('page.makeShift.constraints.import.confirm')}
-                            </button>
-                        </div>
-                    </div>
                     </div>
                 </ConstraintModalPortal>
             ) : null}
@@ -1940,11 +2107,12 @@ type TSoftModalProps = {
     open: boolean;
     templates: TSoftRuleTemplate[];
     optionMap: Record<string, TSelectOption[]>;
+    skillConfig: TSkillLevelConfig;
     onClose: () => void;
     onAdd: (template: TSoftRuleTemplate, params: Record<string, unknown>) => void;
 };
 
-function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
+function SoftRuleModal({open, templates, optionMap, skillConfig, onClose, onAdd}: TSoftModalProps) {
     const {t} = useTypedTranslation();
     const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
     const categories = useMemo<TModalCategory[]>(() => {
@@ -1974,91 +2142,90 @@ function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalP
     if (!open) return null;
 
     const visibleTemplates = templates.filter((template) =>
-        selectedCategory === RECOMMENDED_MODAL_CATEGORY
-            ? template.isRecommended
-            : template.category === selectedCategory,
+        selectedCategory === RECOMMENDED_MODAL_CATEGORY ? template.isRecommended : template.category === selectedCategory,
     );
 
     return (
         <ConstraintModalPortal>
             <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
-            <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
-                <div className="flex items-start justify-between px-6 pt-6 pb-4">
-                    <div>
-                        <p className="font-apple text-[28px] font-bold text-sub-1">{t('page.makeShift.constraints.modal.title')}</p>
-                        <p className="mt-1 font-apple text-[13px] font-medium text-gray-4">
-                            {t('page.makeShift.constraints.modal.description')}
-                        </p>
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="grid size-8 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
-                        aria-label={t('page.makeShift.constraints.modal.close')}
-                    >
-                        <X className="size-5" />
-                    </button>
-                </div>
-
-                <div className="mx-6 flex flex-wrap gap-2 border-b border-gray-6 pb-3">
-                    {categories.map((category) => (
+                <div className="flex min-h-[640px] w-full max-w-[820px] flex-col overflow-hidden rounded-[18px] bg-white shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
+                    <div className="flex items-start justify-between px-6 pt-6 pb-4">
+                        <div>
+                            <p className="font-apple text-[28px] font-bold text-sub-1">{t('page.makeShift.constraints.modal.title')}</p>
+                            <p className="mt-1 font-apple text-[13px] font-medium text-gray-4">
+                                {t('page.makeShift.constraints.modal.description')}
+                            </p>
+                        </div>
                         <button
-                            key={category}
                             type="button"
-                            onClick={() => setSelectedCategory(category)}
-                            className={`h-8 shrink-0 rounded-full px-3 font-apple text-[13px] font-semibold transition-colors ${
-                                selectedCategory === category
-                                    ? 'bg-main-light text-main-1'
-                                    : 'bg-gray-7 text-gray-4 hover:bg-gray-6/60 hover:text-sub-1'
-                            }`}
+                            onClick={onClose}
+                            className="grid size-8 cursor-pointer place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1"
+                            aria-label={t('page.makeShift.constraints.modal.close')}
                         >
-                            {getCategoryLabel(t, category)}
+                            <X className="size-5" />
                         </button>
-                    ))}
-                </div>
+                    </div>
 
-                <div className="mt-4 min-h-[430px] flex-1 space-y-2 overflow-y-auto px-6 pb-6">
-                    {visibleTemplates.map((template) => {
-                        const templateParams = draftParams[template.id] ?? {};
-
-                        return (
-                            <div
-                                key={template.id}
-                                className="flex items-center gap-3 rounded-[12px] bg-gray-7 px-4 py-3 transition-colors hover:bg-gray-6/70"
+                    <div className="mx-6 flex flex-wrap gap-2 border-b border-gray-6 pb-3">
+                        {categories.map((category) => (
+                            <button
+                                key={category}
+                                type="button"
+                                onClick={() => setSelectedCategory(category)}
+                                className={`h-8 shrink-0 rounded-full px-3 font-apple text-[13px] font-semibold transition-colors ${
+                                    selectedCategory === category
+                                        ? 'bg-main-light text-main-1'
+                                        : 'bg-gray-7 text-gray-4 hover:bg-gray-6/60 hover:text-sub-1'
+                                }`}
                             >
-                                <div className="min-w-0 flex-1">
-                                    <SoftSentence
-                                        template={template}
-                                        params={templateParams}
-                                        optionMap={optionMap}
-                                        onParamChange={(key, value) =>
-                                            setDraftParams((prev) => ({
-                                                ...prev,
-                                                [template.id]: normalizeCombinationParams(
-                                                    template,
-                                                    {...(prev[template.id] ?? {}), [key]: value},
-                                                    optionMap,
-                                                ),
-                                            }))
-                                        }
-                                    />
+                                {getCategoryLabel(t, category)}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-4 min-h-[430px] flex-1 space-y-2 overflow-y-auto px-6 pb-6">
+                        {visibleTemplates.map((template) => {
+                            const templateParams = draftParams[template.id] ?? {};
+
+                            return (
+                                <div
+                                    key={template.id}
+                                    className="flex items-center gap-3 rounded-[12px] bg-gray-7 px-4 py-3 transition-colors hover:bg-gray-6/70"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <SoftSentence
+                                            template={template}
+                                            params={templateParams}
+                                            optionMap={optionMap}
+                                            skillConfig={skillConfig}
+                                            onParamChange={(key, value) =>
+                                                setDraftParams((prev) => ({
+                                                    ...prev,
+                                                    [template.id]: normalizeCombinationParams(
+                                                        template,
+                                                        {...(prev[template.id] ?? {}), [key]: value},
+                                                        optionMap,
+                                                    ),
+                                                }))
+                                            }
+                                        />
+                                    </div>
+                                    <div className="shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => onAdd(template, templateParams)}
+                                            className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-1-hover focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
+                                            aria-label={t('page.makeShift.constraints.modal.addAria')}
+                                            title={t('page.makeShift.constraints.modal.addTitle')}
+                                        >
+                                            <Plus className="size-4" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="shrink-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => onAdd(template, templateParams)}
-                                        className="grid size-8 cursor-pointer place-items-center rounded-full bg-main-1 text-white transition-colors hover:bg-main-1-hover focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
-                                        aria-label={t('page.makeShift.constraints.modal.addAria')}
-                                        title={t('page.makeShift.constraints.modal.addTitle')}
-                                    >
-                                        <Plus className="size-4" />
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
             </div>
         </ConstraintModalPortal>
     );
@@ -2085,35 +2252,37 @@ function RecommendedRuleWarningModal({warning, onClose, onConfirm}: TRecommended
     return (
         <ConstraintModalPortal>
             <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/30 px-4">
-            <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
-                <p className="font-apple text-[20px] font-bold text-sub-1">
-                    {isDelete ? t('page.makeShift.constraints.warning.deleteTitle') : t('page.makeShift.constraints.warning.unmarkTitle')}
-                </p>
-                <p className="mt-2 font-apple text-[14px] leading-6 text-gray-4">
-                    {t('page.makeShift.constraints.warning.description')}{' '}
-                    {isDelete
-                        ? t('page.makeShift.constraints.warning.deleteDescription')
-                        : t('page.makeShift.constraints.warning.unmarkDescription')}
-                </p>
-                <div className="mt-5 flex gap-2">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
-                    >
-                        {t('page.makeShift.constraints.warning.keep')}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={onConfirm}
-                        className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
-                    >
+                <div className="w-full max-w-[420px] rounded-[18px] bg-white p-5 shadow-[0_24px_56px_rgba(15,23,42,0.22)]">
+                    <p className="font-apple text-[20px] font-bold text-sub-1">
                         {isDelete
-                            ? t('page.makeShift.constraints.warning.deleteConfirm')
-                            : t('page.makeShift.constraints.warning.unmarkConfirm')}
-                    </button>
+                            ? t('page.makeShift.constraints.warning.deleteTitle')
+                            : t('page.makeShift.constraints.warning.unmarkTitle')}
+                    </p>
+                    <p className="mt-2 font-apple text-[14px] leading-6 text-gray-4">
+                        {t('page.makeShift.constraints.warning.description')}{' '}
+                        {isDelete
+                            ? t('page.makeShift.constraints.warning.deleteDescription')
+                            : t('page.makeShift.constraints.warning.unmarkDescription')}
+                    </p>
+                    <div className="mt-5 flex gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#F3F4F6] px-6 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"
+                        >
+                            {t('page.makeShift.constraints.warning.keep')}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={onConfirm}
+                            className="h-11 flex-1 cursor-pointer rounded-[10px] bg-[#D14343] px-6 font-apple text-[16px] font-semibold text-white transition-colors hover:bg-[#BD3434]"
+                        >
+                            {isDelete
+                                ? t('page.makeShift.constraints.warning.deleteConfirm')
+                                : t('page.makeShift.constraints.warning.unmarkConfirm')}
+                        </button>
+                    </div>
                 </div>
-            </div>
             </div>
         </ConstraintModalPortal>
     );
@@ -2221,19 +2390,33 @@ export function Constraints({
                     isOff: shiftType.isOff,
                 })),
         ]);
-        const dateOptions = [{value: 'ALL_DATE', label: t('page.makeShift.constraints.option.allDays'), raw: {type: 'ALL'}}].concat(
-            Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
-                value: String(idx + 1),
-                label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
-                raw: {type: 'DAY_OF_MONTH', day: idx + 1},
-            })),
-        );
-        const nurseOptions = nurses
-            .filter((nurse) => nurse.nurseId != null && nurse.name)
-            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name), raw: {type: 'NURSE', nurseId: nurse.nurseId}}));
-        const preceptorOptions = nurses
-            .filter((nurse) => nurse.nurseId != null && nurse.name && nurse.isPreceptor)
-            .map((nurse) => ({value: String(nurse.nurseId), label: String(nurse.name), raw: {type: 'NURSE', nurseId: nurse.nurseId}}));
+        const dateOptions = Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
+            value: String(idx + 1),
+            label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
+            raw: {type: 'DAY_OF_MONTH', day: idx + 1},
+        }));
+        const toNurseOption = (nurse: TNurseLike): TSelectOption => {
+            const proficiency = typeof nurse.proficiency === 'number' ? nurse.proficiency : undefined;
+
+            return {
+                value: String(nurse.nurseId),
+                label: String(nurse.name),
+                kind: 'nurse',
+                skillLevel: proficiency ?? null,
+                isPreceptor: hasPreceptorRole(nurse),
+                isPreceptee: hasPrecepteeRole(nurse),
+                raw: {
+                    type: 'NURSE',
+                    nurseId: nurse.nurseId,
+                    ...(proficiency != null ? {proficiency} : {}),
+                    isPreceptor: hasPreceptorRole(nurse),
+                    isPreceptee: hasPrecepteeRole(nurse),
+                },
+            };
+        };
+        const nurseOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name).map(toNurseOption);
+        const preceptorOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name && hasPreceptorRole(nurse)).map(toNurseOption);
+        const precepteeOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse)).map(toNurseOption);
         const fallbackOptionMap = {
             target: [
                 {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
@@ -2241,9 +2424,10 @@ export function Constraints({
             ],
             duty: dutyOptions,
             date: dateOptions,
+            dayType: [],
             nurse: nurseOptions,
-            preceptor: preceptorOptions.length ? preceptorOptions : nurseOptions,
-            preceptee: nurseOptions,
+            preceptor: preceptorOptions,
+            preceptee: precepteeOptions,
             level: Array.from({length: skillConfig.levelCount}, (_, index) => {
                 const level = skillConfig.levelCount - index;
                 const label = skillConfig.levelLabels?.[level] ?? `LV. ${level}`;
@@ -2624,6 +2808,7 @@ export function Constraints({
                                         softTemplate={softTemplate}
                                         options={options}
                                         optionMap={optionMap}
+                                        skillConfig={skillConfig}
                                         highlighted={highlighted}
                                         isImportant={isImportant}
                                         isRecommended={isRecommended}
@@ -2649,6 +2834,7 @@ export function Constraints({
                 open={softModalOpen}
                 templates={addableSoftTemplates}
                 optionMap={optionMap}
+                skillConfig={skillConfig}
                 onClose={() => setSoftModalOpen(false)}
                 onAdd={addSoftRule}
             />

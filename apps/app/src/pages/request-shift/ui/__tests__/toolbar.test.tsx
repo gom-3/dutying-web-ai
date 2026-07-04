@@ -1,9 +1,7 @@
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
 import Toolbar from '../toolbar';
 
-const mockNavigate = vi.hoisted(() => vi.fn());
 const mockUseRequestShift = vi.fn();
 const mockSendEvent = vi.fn();
 const translations: Record<string, string> = {
@@ -38,15 +36,6 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     }),
 }));
 
-vi.mock('react-router-dom', async () => {
-    const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-
-    return {
-        ...actual,
-        useNavigate: () => mockNavigate,
-    };
-});
-
 vi.mock('@/analytics', () => ({
     events: {
         requestPage: {
@@ -57,6 +46,17 @@ vi.mock('@/analytics', () => ({
         },
     },
     sendEvent: (...args: unknown[]) => mockSendEvent(...args),
+}));
+
+vi.mock('../request-reception-settings-modal', () => ({
+    default: ({open, onOpenChange}: {open: boolean; onOpenChange: (open: boolean) => void}) =>
+        open ? (
+            <div role="dialog" aria-label="신청근무 접수">
+                <button type="button" onClick={() => onOpenChange(false)}>
+                    닫기
+                </button>
+            </div>
+        ) : null,
 }));
 
 type TMockState = {
@@ -130,7 +130,6 @@ describe('RequestShiftPage Toolbar', () => {
     beforeEach(() => {
         mockUseRequestShift.mockReset();
         mockSendEvent.mockReset();
-        mockNavigate.mockReset();
     });
 
     it('수정 가능한 달은 신청 정리 화면으로 바로 보여준다', () => {
@@ -202,7 +201,7 @@ describe('RequestShiftPage Toolbar', () => {
         expect(screen.getByText('이 달은 신청 근무를 수정할 수 없어요.')).toBeInTheDocument();
     });
 
-    it('접수 설정 버튼을 누르면 신청근무 접수 설정 탭으로 이동한다', async () => {
+    it('접수 설정 버튼을 누르면 신청근무 접수 설정 모달을 연다', async () => {
         const user = userEvent.setup();
 
         mockUseRequestShift.mockReturnValue(createUseRequestShiftValue());
@@ -211,7 +210,7 @@ describe('RequestShiftPage Toolbar', () => {
 
         await user.click(screen.getByRole('button', {name: '접수 설정'}));
 
-        expect(mockNavigate).toHaveBeenCalledWith(`${ROUTE.WARD_SETTINGS}?tab=requestReception`);
+        expect(screen.getByRole('dialog', {name: '신청근무 접수'})).toBeInTheDocument();
     });
 
     it('저장 성공과 실패 피드백을 상태에 따라 보여준다', () => {
