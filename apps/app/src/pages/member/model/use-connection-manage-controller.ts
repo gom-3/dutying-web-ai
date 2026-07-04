@@ -16,9 +16,11 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
     const [toAddShiftTeamId, setToAddShiftTeamId] = useState<number | null>(null);
     const [submitStatus, setSubmitStatus] = useState<TConnectionManageSubmitStatus>('idle');
     const submitRequestIdRef = useRef(0);
+    const isSubmittingRef = useRef(false);
     const isActiveSubmitRequest = useCallback((requestId: number) => submitRequestIdRef.current === requestId, []);
     const initialize = useCallback(() => {
         submitRequestIdRef.current += 1;
+        isSubmittingRef.current = false;
         setStep(0);
         setCurrentWaitingNurse(null);
         setConnectMode('link');
@@ -30,6 +32,7 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
         initialize();
     };
     const goToMethodSelection = () => {
+        isSubmittingRef.current = false;
         setToLinkNurseId(null);
         setToAddShiftTeamId(null);
         setSubmitStatus('idle');
@@ -49,9 +52,12 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
     };
     const handleAutoConnectWaitingNurse = useCallback(
         async (waitingNurse: TWaitingNurse, matchedNurseId: number) => {
+            if (isSubmittingRef.current) return;
+
             const requestId = submitRequestIdRef.current + 1;
 
             submitRequestIdRef.current = requestId;
+            isSubmittingRef.current = true;
             setCurrentWaitingNurse(waitingNurse);
             setConnectMode('link');
             setToLinkNurseId(matchedNurseId);
@@ -59,20 +65,28 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
             setStep(3);
             setSubmitStatus('loading');
 
-            const isSuccess = await connectWaitingNurses(waitingNurse.waitingNurseId, matchedNurseId);
+            try {
+                const isSuccess = await connectWaitingNurses(waitingNurse.waitingNurseId, matchedNurseId);
 
-            if (isActiveSubmitRequest(requestId)) {
-                setSubmitStatus(isSuccess ? 'success' : 'error');
+                if (isActiveSubmitRequest(requestId)) {
+                    setSubmitStatus(isSuccess ? 'success' : 'error');
+                }
+            } finally {
+                if (isActiveSubmitRequest(requestId)) {
+                    isSubmittingRef.current = false;
+                }
             }
         },
         [connectWaitingNurses, isActiveSubmitRequest],
     );
     const handleCompleteSelection = useCallback(async () => {
         if (!currentWaitingNurse) return;
+        if (isSubmittingRef.current) return;
 
         const requestId = submitRequestIdRef.current + 1;
 
         submitRequestIdRef.current = requestId;
+        isSubmittingRef.current = true;
         setStep(3);
         setSubmitStatus('loading');
 
@@ -80,15 +94,22 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
             if (!toLinkNurseId) {
                 if (isActiveSubmitRequest(requestId)) {
                     setSubmitStatus('error');
+                    isSubmittingRef.current = false;
                 }
 
                 return;
             }
 
-            const isSuccess = await connectWaitingNurses(currentWaitingNurse.waitingNurseId, toLinkNurseId);
+            try {
+                const isSuccess = await connectWaitingNurses(currentWaitingNurse.waitingNurseId, toLinkNurseId);
 
-            if (isActiveSubmitRequest(requestId)) {
-                setSubmitStatus(isSuccess ? 'success' : 'error');
+                if (isActiveSubmitRequest(requestId)) {
+                    setSubmitStatus(isSuccess ? 'success' : 'error');
+                }
+            } finally {
+                if (isActiveSubmitRequest(requestId)) {
+                    isSubmittingRef.current = false;
+                }
             }
 
             return;
@@ -96,15 +117,22 @@ function useConnectionManageController({open, approveWaitingNurses, connectWaiti
             if (!toAddShiftTeamId) {
                 if (isActiveSubmitRequest(requestId)) {
                     setSubmitStatus('error');
+                    isSubmittingRef.current = false;
                 }
 
                 return;
             }
 
-            const isSuccess = await approveWaitingNurses(currentWaitingNurse.waitingNurseId, toAddShiftTeamId);
+            try {
+                const isSuccess = await approveWaitingNurses(currentWaitingNurse.waitingNurseId, toAddShiftTeamId);
 
-            if (isActiveSubmitRequest(requestId)) {
-                setSubmitStatus(isSuccess ? 'success' : 'error');
+                if (isActiveSubmitRequest(requestId)) {
+                    setSubmitStatus(isSuccess ? 'success' : 'error');
+                }
+            } finally {
+                if (isActiveSubmitRequest(requestId)) {
+                    isSubmittingRef.current = false;
+                }
             }
         }
     }, [

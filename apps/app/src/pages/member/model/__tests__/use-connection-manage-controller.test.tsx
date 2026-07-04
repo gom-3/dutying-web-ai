@@ -66,6 +66,50 @@ describe('useConnectionManageController', () => {
         expect(result.current.state.submitStatus).toBe('success');
     });
 
+    it('ignores duplicate add submissions while the first request is still in flight', async () => {
+        let resolveApprove: ((value: boolean | undefined) => void) | null = null;
+        const connectWaitingNurses = vi.fn();
+        const approveWaitingNurses = vi.fn(
+            () =>
+                new Promise<boolean | undefined>((resolve) => {
+                    resolveApprove = resolve;
+                }),
+        );
+        const {result} = renderHook(() =>
+            useConnectionManageController({
+                open: true,
+                approveWaitingNurses,
+                connectWaitingNurses,
+            }),
+        );
+
+        act(() => {
+            result.current.actions.handleSelectWaitingNurse(waitingNurse);
+            result.current.actions.setConnectMode('add');
+            result.current.actions.setToAddShiftTeamId(20);
+        });
+
+        let firstSubmit: Promise<void> | undefined;
+        let duplicateSubmit: Promise<void> | undefined;
+
+        act(() => {
+            firstSubmit = result.current.actions.handleCompleteSelection();
+            duplicateSubmit = result.current.actions.handleCompleteSelection();
+        });
+
+        expect(approveWaitingNurses).toHaveBeenCalledTimes(1);
+        expect(result.current.state.submitStatus).toBe('loading');
+
+        await act(async () => {
+            resolveApprove?.(true);
+            await firstSubmit;
+            await duplicateSubmit;
+        });
+
+        expect(result.current.state.submitStatus).toBe('success');
+        expect(connectWaitingNurses).not.toHaveBeenCalled();
+    });
+
     it('enters the error state when add mode completes without a selected team', async () => {
         const connectWaitingNurses = vi.fn();
         const approveWaitingNurses = vi.fn();
