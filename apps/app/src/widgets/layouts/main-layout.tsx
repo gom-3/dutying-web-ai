@@ -42,6 +42,27 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
         topClassName: 'top-6',
         innerClassName: 'mx-auto flex w-full max-w-[1480px] min-w-[1080px] justify-end px-8',
     },
+    {
+        route: ROUTE.MEMBER,
+        topClassName: 'top-5 min-[1400px]:top-6 min-[1600px]:top-[52px]',
+        innerClassName:
+            'mx-auto flex w-full max-w-[1560px] min-w-0 justify-end px-3 min-[1400px]:px-4 min-[1600px]:min-w-[1360px] min-[1600px]:px-10',
+    },
+    {
+        route: ROUTE.WARD_SETTINGS,
+        topClassName: 'top-8',
+        innerClassName: 'mx-auto flex w-full max-w-[1040px] justify-end px-4',
+    },
+    {
+        route: ROUTE.WARD_INFO_SETTINGS,
+        topClassName: 'top-8',
+        innerClassName: 'mx-auto flex w-full max-w-[560px] justify-end px-4 md:px-0',
+    },
+    {
+        route: ROUTE.PROFILE,
+        topClassName: 'top-8',
+        innerClassName: 'mx-auto flex w-full max-w-[560px] justify-end px-4 md:px-0',
+    },
 ] as const;
 
 type TWardCreatedGuidePayload = {

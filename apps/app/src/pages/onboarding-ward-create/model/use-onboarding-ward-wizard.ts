@@ -680,6 +680,7 @@ function useOnboardingWardWizard() {
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
+    const draftSaveChainRef = useRef<Promise<unknown>>(Promise.resolve());
     const fallbackWardName = t('page.onboardingWardCreate.fallback.wardName');
     const onboardingWardCreateExecutor = useMemo(
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
@@ -759,65 +760,76 @@ function useOnboardingWardWizard() {
         }
     }, [isSkillLevelEnabled, sortMode]);
 
+    const enqueueDraftSave = useCallback((save: () => Promise<boolean>) => {
+        const nextSave = draftSaveChainRef.current.catch(() => undefined).then(save);
+
+        draftSaveChainRef.current = nextSave.catch(() => undefined);
+
+        return nextSave;
+    }, []);
+
     const saveDraftSnapshot = useCallback(
-        async ({showErrorToast = false, draftOverride}: {showErrorToast?: boolean; draftOverride?: TOnboardingWardDraft} = {}) => {
+        ({showErrorToast = false, draftOverride}: {showErrorToast?: boolean; draftOverride?: TOnboardingWardDraft} = {}) => {
             if (submissionStatus === 'success' || draftCreationStatus === 'creating') {
-                return true;
+                return Promise.resolve(true);
             }
 
             const targetDraft = draftOverride ?? draft;
             const identityPayload = buildDraftWardIdentityPayload(targetDraft, fallbackWardName);
             const draftPayload = buildServerOnboardingWardDraftPayload(targetDraft, draftWardId, selectedTeamId, sortMode);
 
-            try {
-                if (draftWardId) {
-                    await saveOnboardingWardDraft(draftWardId, {
+            return enqueueDraftSave(async () => {
+                try {
+                    if (draftWardId) {
+                        await saveOnboardingWardDraft(draftWardId, {
+                            ...identityPayload,
+                            draftPayload,
+                        });
+                        setDraftCreationStatus('created');
+
+                        return true;
+                    }
+
+                    if (!draftTouchedRef.current || !hasServerSavableDraftSignal(targetDraft)) {
+                        return true;
+                    }
+
+                    setDraftCreationStatus('creating');
+
+                    const draftWard = await createOnboardingWardDraft({
                         ...identityPayload,
                         draftPayload,
                     });
+
+                    if (!draftWard?.wardId) {
+                        throw new Error('Onboarding draft ward id missing.');
+                    }
+
+                    setDraftWardId(draftWard.wardId);
                     setDraftCreationStatus('created');
 
                     return true;
+                } catch (error) {
+                    Sentry.captureException(error, {
+                        tags: {feature: 'onboarding-ward-create'},
+                        extra: {step: targetDraft.currentStep, phase: draftWardId ? 'save-draft' : 'create-draft'},
+                    });
+                    setDraftCreationStatus('error');
+
+                    if (showErrorToast) {
+                        toast.error(t('page.onboardingWardCreate.toast.saveDraftError'));
+                    }
+
+                    return false;
                 }
-
-                if (!draftTouchedRef.current || !hasServerSavableDraftSignal(targetDraft)) {
-                    return true;
-                }
-
-                setDraftCreationStatus('creating');
-
-                const draftWard = await createOnboardingWardDraft({
-                    ...identityPayload,
-                    draftPayload,
-                });
-
-                if (!draftWard?.wardId) {
-                    throw new Error('Onboarding draft ward id missing.');
-                }
-
-                setDraftWardId(draftWard.wardId);
-                setDraftCreationStatus('created');
-
-                return true;
-            } catch (error) {
-                Sentry.captureException(error, {
-                    tags: {feature: 'onboarding-ward-create'},
-                    extra: {step: targetDraft.currentStep, phase: draftWardId ? 'save-draft' : 'create-draft'},
-                });
-                setDraftCreationStatus('error');
-
-                if (showErrorToast) {
-                    toast.error(t('page.onboardingWardCreate.toast.saveDraftError'));
-                }
-
-                return false;
-            }
+            });
         },
         [
             createOnboardingWardDraft,
             draft,
             draftCreationStatus,
             draftWardId,
+            enqueueDraftSave,
             fallbackWardName,
             saveOnboardingWardDraft,
             selectedTeamId,
@@ -974,6 +986,17 @@ function useOnboardingWardWizard() {
         }
 
         markDraftTouched();
+        if (draft.currentStep === 3) {
+            const nextDraft = goNextStepDraft(draft);
+            const isSaved = await saveDraftSnapshot({showErrorToast: true, draftOverride: nextDraft});
+
+            if (isSaved) {
+                setDraft(nextDraft);
+            }
+
+            return;
+        }
+
         setDraft((prev) => goNextStepDraft(prev));
     };
     const goPreviousStep = () => {

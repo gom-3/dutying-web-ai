@@ -25,6 +25,9 @@ export const th = {
                 fixedStatusPin: 'เวรคงที่',
                 requestStatusPin: 'เวรที่ขอ',
             },
+            context: {
+                switchToast: 'ย้ายไป {{month}}/{{year}} · {{teamName}} แล้ว',
+            },
             constraints: {
                 ...generatedTh.page.makeShift.constraints,
                 templates: {
@@ -84,6 +87,10 @@ export const th = {
                         label: 'เงื่อนไขรายบุคคล',
                         sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์',
                     },
+                    NURSE_NOT_ALONE_N: {
+                        label: 'เงื่อนไขทักษะ',
+                        sentence: '{nurse}ห้ามทำเวร N คนเดียว',
+                    },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: 'เงื่อนไขทักษะ',
                         sentence: '{nurse}ห้ามทำเวร N คนเดียว',
@@ -122,7 +129,7 @@ export const th = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
-                        sentence: 'หลีกเลี่ยงรูปแบบ ND / ED / NE / NOD',
+                        sentence: 'หลีกเลี่ยงรูปแบบ ND / NE / ED / EN / NOD',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: 'เงื่อนไขจำนวนคน',
@@ -151,6 +158,10 @@ export const th = {
                     SOFT_NO_E_TO_D: {
                         label: 'เงื่อนไขห้ามรูปแบบ',
                         sentence: '{target}ควรหลีกเลี่ยงเวร D ในวันถัดจากเวร E',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: 'เงื่อนไขห้ามรูปแบบ',
+                        sentence: '{target}ควรหลีกเลี่ยงเวร N ในวันถัดจากเวร E',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: 'เงื่อนไขห้ามรูปแบบ',

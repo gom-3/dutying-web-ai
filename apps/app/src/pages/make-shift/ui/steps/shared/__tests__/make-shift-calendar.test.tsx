@@ -250,6 +250,24 @@ describe('MakeShiftCalendar', () => {
         expect(requestedCell?.querySelector('[data-cell-status-pin="fixed"]')).not.toBeInTheDocument();
     });
 
+    it('shows only the request status pin when a requested cell also exists in fixed cells', () => {
+        const statusDoc: TDutyDoc = {
+            ...doc,
+            rows: [{...doc.rows[0]!, cells: ['D', 'D']}],
+            fixedCells: {'2|2026-05-01': true},
+            requestCells: {'2|2026-05-01': true},
+        };
+
+        render(<MakeShiftCalendar shift={shift} doc={statusDoc} violationMap={new Map()} showFaults={false} readonly showCellStatusPins />);
+
+        const requestedCell = document.querySelector<HTMLElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+
+        expect(requestedCell).not.toHaveAttribute('data-fixed-cell');
+        expect(requestedCell).toHaveAttribute('data-request-cell', 'true');
+        expect(requestedCell?.querySelector('[data-cell-status-pin="request"]')).toHaveAttribute('title', '신청 근무');
+        expect(requestedCell?.querySelector('[data-cell-status-pin="fixed"]')).not.toBeInTheDocument();
+    });
+
     it('shows a busy shimmer layer while auto fill is loading', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly isShimmering />);
 
@@ -315,7 +333,7 @@ describe('MakeShiftCalendar', () => {
         expect(screen.queryByText('이월')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('LV. 3');
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass('min-h-[18px]', 'min-w-10', 'text-[10px]');
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass('min-h-[18px]', 'w-full', 'min-w-0', 'text-[10px]');
     });
 
     it('keeps custom skill badge labels visible', () => {

@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
-import {beforeEach, describe, expect, it, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {saveWardSkillSettings} from '@/features/ward-skill/model/skill-level';
+import i18n from '@/i18n';
 import {WardAPI} from '@/shared/api';
 import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import {Constraints} from '../constraints';
@@ -50,6 +51,7 @@ const recommendedTemplateCodes = [
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
@@ -63,12 +65,14 @@ const recommendedDefaultParamsByTemplateCode: Record<string, Record<string, unkn
     FORBID_N_THEN_D: {target: {type: 'ALL'}},
     FORBID_N_THEN_E: {target: {type: 'ALL'}},
     FORBID_E_THEN_D: {target: {type: 'ALL'}},
+    FORBID_E_THEN_N: {target: {type: 'ALL'}},
     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {target: {type: 'ALL'}},
 };
 const recommendedCategoryByTemplateCode: Record<string, string> = {
     FORBID_N_THEN_D: 'FORBIDDEN_PATTERN',
     FORBID_N_THEN_E: 'FORBIDDEN_PATTERN',
     FORBID_E_THEN_D: 'FORBIDDEN_PATTERN',
+    FORBID_E_THEN_N: 'FORBIDDEN_PATTERN',
 };
 const recommendedTemplates = recommendedTemplateCodes.map((templateCode, index) => ({
     templateCode,
@@ -153,6 +157,22 @@ describe('Constraints', () => {
             {nurseId: 2, name: 'Nurse B', isPreceptor: false},
         ] as never);
         wardApiMocks.getShiftTypes.mockResolvedValue([]);
+    });
+
+    afterEach(async () => {
+        await i18n.changeLanguage('ko');
+    });
+
+    it('shows a constraint-shaped skeleton while rules are loading', () => {
+        wardApiMocks.getShiftConstraintRules.mockReturnValueOnce(new Promise(() => {}));
+        wardApiMocks.getShiftConstraintRuleCandidates.mockReturnValueOnce(new Promise(() => {}));
+
+        render(<Constraints wardId={999} shiftTeamId={9990} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const skeleton = screen.getByTestId('make-shift-constraints-skeleton');
+
+        expect(skeleton).toHaveAttribute('role', 'status');
+        expect(skeleton).toHaveAttribute('aria-busy', 'true');
     });
 
     it('keeps the rule list empty when the server has no saved rules', async () => {
@@ -652,6 +672,55 @@ describe('Constraints', () => {
         expect(within(listbox).getByRole('option', {name: '2일'})).toBeInTheDocument();
     });
 
+    it('does not duplicate monthly wording in date staffing sentences', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                dates: [
+                    {type: 'ALL', label: '모든날'},
+                    {type: 'DAY_OF_MONTH', day: 1, label: '매월 1일'},
+                ],
+                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+            },
+            templates: [
+                {
+                    templateCode: 'MIN_STAFF_BY_DATE_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: '매월 {date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'DATES'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        expect(screen.getByRole('button', {name: '1일'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '매월 1일'})).not.toBeInTheDocument();
+        expect(document.body.textContent).toContain('매월 1일에는');
+        expect(document.body.textContent).not.toContain('매월 매월');
+        expect(document.body.textContent).not.toContain('1일일에는');
+    });
+
     it('shows preceptor and preceptee badges in person target dropdowns using member-role details', async () => {
         wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([
             {nurseId: 1, name: '오지헌', isWardManager: true, memo: '__PRECEPTEE__'},
@@ -1027,6 +1096,55 @@ describe('Constraints', () => {
         render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
 
         expect(await screen.findByRole('button', {name: 'Nurse A'})).toBeInTheDocument();
+    });
+
+    it('uses localized client text for NURSE_NOT_ALONE_N instead of the Korean server template', async () => {
+        await i18n.changeLanguage('en');
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                nurses: [{type: 'NURSE', nurseId: 1, label: 'Nurse A', name: 'Nurse A'}],
+            },
+            templates: [
+                {
+                    templateCode: 'NURSE_NOT_ALONE_N',
+                    category: 'PROFICIENCY',
+                    displayTemplate: '{nurse}은 혼자 N나이트 근무를 하면 안 돼요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [{key: 'nurse', label: 'Nurse', inputType: 'SELECT', optionGroup: 'NURSES'}],
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 22,
+                    templateCode: 'NURSE_NOT_ALONE_N',
+                    category: 'PROFICIENCY',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {nurse: {type: 'NURSE', nurseId: 1, label: 'Nurse A', name: 'Nurse A'}},
+                    selected: true,
+                    isImportant: false,
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        await waitFor(() => {
+            expect(document.body.textContent).toContain('cannot work');
+            expect(document.body.textContent).not.toContain('혼자');
+            expect(document.body.textContent).not.toContain('나이트 근무');
+        });
     });
 
     it('renders legacy forbidden pattern duty chips from configured ward shift types', async () => {

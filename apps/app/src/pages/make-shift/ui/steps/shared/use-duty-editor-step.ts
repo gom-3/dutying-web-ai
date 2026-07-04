@@ -116,6 +116,18 @@ function deriveRequestCells(
     return result;
 }
 
+function excludeRequestCellsFromFixedCells(fixedCells: Record<string, true>, requestCells: Record<string, true>): Record<string, true> {
+    const nextFixedCells: Record<string, true> = {};
+
+    for (const key of Object.keys(fixedCells)) {
+        if (requestCells[key] === true) continue;
+
+        nextFixedCells[key] = true;
+    }
+
+    return nextFixedCells;
+}
+
 type TUseDutyEditorStepOptions = {
     onContextChanged?: () => void;
     hydratePreviousLastShifts?: boolean;
@@ -232,7 +244,6 @@ export function useDutyEditorStep({
             return;
         }
 
-        const workspaceFixedCells = workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {};
         const requestValueMap = deriveRequestCells(dutyQuery.data, workspaceQuery.data?.requestShifts);
         const requestCells: Record<string, true> = {};
 
@@ -248,6 +259,10 @@ export function useDutyEditorStep({
             }
         }
 
+        const workspaceFixedCells = excludeRequestCellsFromFixedCells(
+            workspaceQuery.data ? workspaceCellsToFixedCells(workspaceQuery.data.wardShiftBase) : {},
+            requestCells,
+        );
         const nextDoc: TDutyDoc = {...baseDoc, fixedCells: {...workspaceFixedCells}, requestCells};
         const persisted = commands.getPersisted();
 
@@ -282,7 +297,7 @@ export function useDutyEditorStep({
                 doc: {
                     ...persisted.doc,
                     rows: mergedRows,
-                    fixedCells: persisted.doc.fixedCells ?? {},
+                    fixedCells: excludeRequestCellsFromFixedCells(persisted.doc.fixedCells ?? {}, requestCells),
                     requestCells,
                 },
             });

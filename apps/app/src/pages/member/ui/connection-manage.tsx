@@ -63,7 +63,7 @@ function ConnectionManage({open, setOpen}: IConnectionManageProps) {
     return open
         ? createPortal(
               <div
-                  className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px] [&_button:not(:disabled)]:cursor-pointer"
+                  className="fixed inset-0 z-[100002] flex items-center justify-center bg-black/45 px-4 py-4 backdrop-blur-[1px] [&_button:not(:disabled)]:cursor-pointer"
                   onClick={handleClose}
               >
                   {match(step)

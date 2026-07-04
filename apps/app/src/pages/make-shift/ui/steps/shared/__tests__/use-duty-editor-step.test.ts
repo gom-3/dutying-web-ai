@@ -233,6 +233,35 @@ describe('useDutyEditorStep', () => {
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
     });
 
+    it('keeps accepted request cells out of fixed cells when workspace base also marks them fixed', async () => {
+        wardApiMocks.getShift.mockResolvedValue(makeShift({wardShiftList: [null], wardReqShiftList: [10]}));
+        wardApiMocks.getWorkspaceSchedule.mockResolvedValue(
+            makeWorkspaceSchedule({
+                fixed: true,
+                requestShifts: [
+                    {
+                        shiftNurseId: 2,
+                        nurseId: 100,
+                        date: '2026-05-01',
+                        wardShiftTypeId: 10,
+                        shiftCode: 'D',
+                        isAccepted: true,
+                        isRequested: true,
+                    },
+                ],
+            }),
+        );
+
+        renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper()});
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'2|2026-05-01': true});
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({});
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
+    });
+
     it('does not hydrate rejected workspace requests into fixed request cells', async () => {
         wardApiMocks.getShift.mockResolvedValue(makeShift({wardShiftList: [null], wardReqShiftList: [10]}));
         wardApiMocks.getWorkspaceSchedule.mockResolvedValue(

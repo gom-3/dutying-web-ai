@@ -129,7 +129,7 @@ function SkillBadge({level, config, className = '', label, backgroundColor, text
     return (
         <div
             className={cn(
-                'inline-flex min-h-5 min-w-10 items-center justify-center rounded-full px-2 py-0.5 font-apple text-[11px] leading-none font-semibold tabular-nums',
+                'inline-flex min-h-5 min-w-10 max-w-full items-center justify-center overflow-hidden rounded-full px-2 py-0.5 font-apple text-[11px] leading-none font-semibold whitespace-nowrap tabular-nums',
                 className,
             )}
             style={{backgroundColor: resolvedBackground, color: resolvedTextColor}}

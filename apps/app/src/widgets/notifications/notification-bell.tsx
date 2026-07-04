@@ -4,13 +4,16 @@ import {Bell, Loader2} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {useNavigate} from 'react-router';
 import {notificationQueryKeys, notificationQueryOptions} from '@/entities/notification';
+import useAuth from '@/features/auth';
 import {NotificationAPI} from '@/shared/api';
 import type {TNotification} from '@/shared/api/notification';
+import {RUNTIME_CONFIG} from '@/shared/config/runtime';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 
 const NOTIFICATION_LIST_SIZE = 20;
 const UNREAD_REFETCH_INTERVAL_MS = 30_000;
+const REALTIME_RECONNECT_DELAY_MS = 3000;
 const fallbackPathByDomain = (domain?: string | null) => {
     if (domain === 'BOARD' || domain === 'CALENDAR') {
         return ROUTE.BOARD;
@@ -61,11 +64,96 @@ const formatTime = (value: string | undefined, t: ReturnType<typeof useTypedTran
 
     return `${date.getMonth() + 1}.${date.getDate()}`;
 };
+const waitForRealtimeReconnect = (signal: AbortSignal) =>
+    new Promise<void>((resolve) => {
+        const timeoutId = window.setTimeout(resolve, REALTIME_RECONNECT_DELAY_MS);
+
+        signal.addEventListener(
+            'abort',
+            () => {
+                window.clearTimeout(timeoutId);
+                resolve();
+            },
+            {once: true},
+        );
+    });
+const parseSseBlock = (block: string) => {
+    const dataLines: string[] = [];
+
+    let eventName = '';
+
+    block.split(/\r?\n/).forEach((line) => {
+        if (!line || line.startsWith(':')) return;
+
+        const separatorIndex = line.indexOf(':');
+        const field = separatorIndex >= 0 ? line.slice(0, separatorIndex) : line;
+
+        let value = separatorIndex >= 0 ? line.slice(separatorIndex + 1) : '';
+
+        if (value.startsWith(' ')) value = value.slice(1);
+
+        if (field === 'event') eventName = value;
+
+        if (field === 'data') dataLines.push(value);
+    });
+
+    if (dataLines.length === 0) return null;
+
+    return {eventName, data: dataLines.join('\n')};
+};
+const isNotificationRealtimeBlock = (block: string) => {
+    const parsedBlock = parseSseBlock(block);
+
+    if (!parsedBlock) return false;
+
+    try {
+        const eventData = JSON.parse(parsedBlock.data) as {payload?: unknown; type?: unknown};
+        const payload = eventData.payload;
+
+        return Boolean(
+            payload && typeof payload === 'object' && 'id' in payload && 'classification' in payload && eventData.type !== 'CONNECTED',
+        );
+    } catch {
+        return false;
+    }
+};
+
+async function readNotificationRealtimeStream(response: Response, onNotification: () => void, signal: AbortSignal) {
+    const reader = response.body?.getReader();
+
+    if (!reader) return;
+
+    const decoder = new TextDecoder();
+
+    let buffer = '';
+
+    while (!signal.aborted) {
+        const {done, value} = await reader.read();
+
+        if (done) break;
+
+        buffer += decoder.decode(value, {stream: true});
+
+        const blocks = buffer.split(/\r?\n\r?\n/);
+
+        buffer = blocks.pop() ?? '';
+        blocks.forEach((block) => {
+            if (isNotificationRealtimeBlock(block)) onNotification();
+        });
+    }
+
+    buffer += decoder.decode();
+
+    if (isNotificationRealtimeBlock(buffer)) onNotification();
+}
 
 export function NotificationBell() {
     const {t} = useTypedTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
+    const {
+        state: {accessToken},
+    } = useAuth();
     const rootRef = useRef<HTMLDivElement>(null);
     const [isOpen, setIsOpen] = useState(false);
     const unreadCountQuery = useQuery({
@@ -103,6 +191,42 @@ export function NotificationBell() {
 
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!accessToken) return;
+
+        const abortController = new AbortController();
+        const streamUrl = `${RUNTIME_CONFIG.serverUrl()}/events/stream`;
+        const refreshNotifications = () => {
+            void queryClient.invalidateQueries({queryKey: notificationQueryKeys.all()});
+        };
+
+        void (async () => {
+            while (!abortController.signal.aborted) {
+                try {
+                    const response = await fetch(streamUrl, {
+                        cache: 'no-store',
+                        credentials: 'include',
+                        headers: {
+                            Accept: 'text/event-stream',
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                        signal: abortController.signal,
+                    });
+
+                    if (!response.ok) return;
+
+                    await readNotificationRealtimeStream(response, refreshNotifications, abortController.signal);
+                } catch {
+                    if (abortController.signal.aborted) return;
+                }
+
+                await waitForRealtimeReconnect(abortController.signal);
+            }
+        })();
+
+        return () => abortController.abort();
+    }, [accessToken, queryClient]);
 
     const handleNotificationClick = async (notification: TNotification) => {
         if (!notification.isRead) {

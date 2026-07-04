@@ -26,6 +26,7 @@ const normalizeText = (value?: string | null) => (value ?? '').trim();
 const normalizePhone = (value?: string | null) => (value ?? '').replace(/\D/g, '');
 const formatPhone = (phone?: string | null) => {
     const normalized = normalizePhone(phone);
+
     if (normalized.length !== 11) return phone ?? '-';
 
     return `${normalized.slice(0, 3)}-${normalized.slice(3, 7)}-${normalized.slice(7, 11)}`;
@@ -46,10 +47,10 @@ function ConnectionManageTargetStep({
     const {t} = useTypedTranslation();
     const [searchKeyword, setSearchKeyword] = useState('');
     const [linkFilter, setLinkFilter] = useState<TLinkFilter>('all');
-
     const waitingName = normalizeText(currentWaitingNurse?.name);
     const waitingPhone = normalizePhone(currentWaitingNurse?.phoneNum);
-    const teamTabs = shiftTeams?.map((team) => ({key: `team:${team.shiftTeamId}` as const, label: team.name, teamId: team.shiftTeamId})) ?? [];
+    const teamTabs =
+        shiftTeams?.map((team) => ({key: `team:${team.shiftTeamId}` as const, label: team.name, teamId: team.shiftTeamId})) ?? [];
     const allFilterLabel = t('page.member.connectionManage.target.all');
     const modalWidth = useMemo(() => {
         if (connectMode !== 'link') {
@@ -94,14 +95,12 @@ function ConnectionManageTargetStep({
     const filteredRows = useMemo(() => {
         const keyword = normalizeText(searchKeyword).toLowerCase();
         const keywordDigits = keyword.replace(/\D/g, '');
-
         const unconnectedRows = allNurseRows.filter((row) => !row.isConnected);
         const recommendedNurseIdSet = new Set(recommendedRows.map((row) => row.nurseId));
         const baseByFilter =
             linkFilter === 'all'
                 ? unconnectedRows
                 : unconnectedRows.filter((row) => row.shiftTeamId === Number(linkFilter.replace('team:', '')));
-
         const filteredByKeyword = !keyword
             ? baseByFilter
             : baseByFilter.filter((row) => {
@@ -125,11 +124,11 @@ function ConnectionManageTargetStep({
 
     return (
         <div
-            className="w-full rounded-[16px] bg-white px-6 py-5"
+            className="flex max-h-[calc(100dvh-32px)] w-full flex-col overflow-hidden rounded-[16px] bg-white px-6 py-5"
             style={{maxWidth: `${modalWidth}px`}}
             onClick={(event) => event.stopPropagation()}
         >
-            <div className="flex items-center justify-between">
+            <div className="flex shrink-0 items-center justify-between">
                 <h1 className="font-apple text-[22px] font-semibold text-sub-1">
                     {connectMode === 'link'
                         ? t('page.member.connectionManage.target.linkTitle')
@@ -140,8 +139,8 @@ function ConnectionManageTargetStep({
             </div>
 
             {connectMode === 'link' ? (
-                <div className="mt-4">
-                    <div className="relative">
+                <div className="mt-4 flex min-h-0 flex-1 flex-col">
+                    <div className="relative shrink-0">
                         <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-[#93A0B5]" />
                         <input
                             value={searchKeyword}
@@ -154,7 +153,7 @@ function ConnectionManageTargetStep({
                         />
                     </div>
 
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex shrink-0 gap-2 overflow-x-auto pb-1">
                         <button
                             type="button"
                             onClick={() => setLinkFilter('all')}
@@ -180,7 +179,7 @@ function ConnectionManageTargetStep({
                         ))}
                     </div>
 
-                    <div className="mt-3 space-y-2">
+                    <div className="mt-2 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                         {filteredRows.length === 0 ? (
                             <div className="rounded-[10px] bg-[#F7F9FC] px-3 py-6 text-center font-apple text-[14px] text-gray-3">
                                 {searchKeyword
@@ -201,14 +200,16 @@ function ConnectionManageTargetStep({
                                     <span className="w-[120px] truncate font-apple text-[14px] font-semibold text-sub-1">{row.name}</span>
                                     <span className="w-[120px] font-poppins text-[13px] text-[#6E7A90]">{formatPhone(row.phoneNum)}</span>
                                     <span className="truncate font-apple text-[13px] text-[#7F8AA0]">{row.shiftTeamName}</span>
-                                    {toLinkNurseId === row.nurseId ? <Check className="ml-auto h-4 w-4 text-main-1" strokeWidth={3} /> : null}
+                                    {toLinkNurseId === row.nurseId ? (
+                                        <Check className="ml-auto h-4 w-4 text-main-1" strokeWidth={3} />
+                                    ) : null}
                                 </button>
                             ))
                         )}
                     </div>
                 </div>
             ) : (
-                <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="mt-4 grid min-h-0 flex-1 grid-cols-2 gap-2 overflow-y-auto pr-1">
                     {shiftTeams?.map((shiftTeam) => (
                         <button
                             key={shiftTeam.shiftTeamId}
@@ -248,7 +249,7 @@ function ConnectionManageTargetStep({
                 </div>
             )}
 
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex shrink-0 items-center gap-3">
                 <button
                     type="button"
                     className="h-11 w-[34%] rounded-[10px] bg-[#F3F4F6] px-4 font-apple text-[16px] font-semibold text-gray-3 transition-colors hover:bg-[#EAECEF]"

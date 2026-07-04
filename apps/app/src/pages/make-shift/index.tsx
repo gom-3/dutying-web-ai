@@ -6,6 +6,7 @@ import useAuth from '@/features/auth';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {useMakeShiftBootstrap} from './model/use-bootstrap';
+import {useMakeShiftRouteSync} from './model/use-route-sync';
 import {MakeShiftPageView} from './ui';
 import MakeTutorial from './ui/make-tutorial';
 
@@ -133,6 +134,8 @@ const MakeShiftPage = () => {
         nextSearchParams.delete(ONBOARDING_INITIAL_SCHEDULE_SEARCH_PARAM);
         setSearchParams(nextSearchParams, {replace: true});
     }, [searchParams, setSearchParams]);
+
+    useMakeShiftRouteSync();
 
     return (
         <>

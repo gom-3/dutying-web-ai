@@ -628,6 +628,9 @@ export const ko = {
                 sequentialRequired: '앞 단계부터 차례대로 진행해 주세요.',
                 workerRequired: '근무표에 포함할 간호사가 한 명 이상 필요해요.',
             },
+            context: {
+                switchToast: '{{year}}년 {{month}}월 · {{teamName}}으로 이동했어요.',
+            },
             calendar: {
                 name: '이름',
                 carried: '이월',
@@ -847,7 +850,7 @@ export const ko = {
                     },
                     MIN_STAFF_BY_DATE_SHIFT: {
                         label: '인원 조건',
-                        sentence: '매월 {date}일에는 {shift} 근무에 최소 {count}명이 필요해요',
+                        sentence: '매월 {date}에는 {shift} 근무에 최소 {count}명이 필요해요',
                     },
                     MIN_STAFF_WEEKEND_HOLIDAY_SHIFT: {
                         label: '인원 조건',
@@ -872,6 +875,10 @@ export const ko = {
                     NURSE_FORBID_WEEKEND: {
                         label: '개인 조건',
                         sentence: '{nurse}는 주말 근무를 하면 안 돼요',
+                    },
+                    NURSE_NOT_ALONE_N: {
+                        label: '숙련도 조건',
+                        sentence: '{nurse}는 혼자 N 근무를 하면 안 돼요',
                     },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: '숙련도 조건',
@@ -911,7 +918,7 @@ export const ko = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: '중요 기본 조건',
-                        sentence: 'ND / ED / NE / NOD 근무 패턴은 피해요',
+                        sentence: 'ND / NE / ED / EN / NOD 근무 패턴은 피해요',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: '인원수 규칙',
@@ -940,6 +947,10 @@ export const ko = {
                     SOFT_NO_E_TO_D: {
                         label: '금지 패턴 규칙',
                         sentence: '{target}은 E이브닝 다음 날 D데이 근무를 피해요.',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: '금지 패턴 규칙',
+                        sentence: '{target}은 E이브닝 다음 날 N나이트 근무를 피해요.',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: '금지 패턴 규칙',
@@ -995,7 +1006,7 @@ export const ko = {
                     maxContinuousNight: {label: '연속 나이트'},
                     minContinuousNight: {label: '연속 나이트'},
                     minOffAssignAfterNight: {label: '나이트 근무 후 오프 배정'},
-                    excludeCertainWorkTypes: {label: 'ND / ED / NE / NOD 근무 패턴 피하기'},
+                    excludeCertainWorkTypes: {label: 'ND / NE / ED / EN / NOD 근무 패턴 피하기'},
                     excludeNightBeforeReqOff: {label: '신청 오프 전날 나이트 피하기'},
                 },
             },
@@ -1238,7 +1249,7 @@ export const ko = {
                     message: '나이트 근무 후에는 OFF를 {{count}}일 이상 권장해요.',
                 },
                 excludeCertainWorkTypes: {
-                    label: 'ND / ED / NE / NOD 근무 패턴 피하기',
+                    label: 'ND / NE / ED / EN / NOD 근무 패턴 피하기',
                     message: 'ND/ED/NE/NOD 형태의 근무는 피하는 게 좋아요.',
                 },
                 excludeNightBeforeReqOff: {

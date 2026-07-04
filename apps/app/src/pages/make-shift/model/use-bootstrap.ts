@@ -5,7 +5,14 @@ import WardAPI from '@/shared/api/ward';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
-import {clearPersistedStep, isMakeShiftTeamReadyForWard, loadPersistedStep, loadPersistedYearMonth, useMakeShiftStore} from './make-shift-store';
+import {
+    clearPersistedStep,
+    isMakeShiftTeamReadyForWard,
+    loadPersistedStep,
+    loadPersistedYearMonth,
+    type TMakeShiftStep,
+    useMakeShiftStore,
+} from './make-shift-store';
 
 function parsePositiveInt(raw: string | null): number | null {
     if (!raw) return null;
@@ -13,6 +20,12 @@ function parsePositiveInt(raw: string | null): number | null {
     const n = Number(raw);
 
     return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+function parseMakeShiftStep(raw: string | null): TMakeShiftStep | null {
+    const n = parsePositiveInt(raw);
+
+    return n !== null && n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
 }
 
 type TInitialScheduleTarget = {
@@ -62,6 +75,8 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     const editorRef = useRef(editor);
     const initializedWardIdRef = useRef<number | null>(null);
     const initialQueryShiftTeamIdRef = useRef<number | null>(null);
+    const initialQueryStepRef = useRef<TMakeShiftStep | null>(null);
+    const didApplyInitialQueryStepRef = useRef(false);
 
     onboardingScheduleTargetsRef.current = onboardingScheduleTargets;
     editorRef.current = editor;
@@ -84,6 +99,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
     const setHydrated = useMakeShiftStore((s) => s.setHydrated);
     const setWardId = useMakeShiftStore((s) => s.setWardId);
     const confirmSchedule = useMakeShiftStore((s) => s.confirmSchedule);
+    const startFromStep = useMakeShiftStore((s) => s.startFromStep);
     const shiftExists = useMakeShiftStore((s) => s.shiftExists);
     const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const storeWardId = useMakeShiftStore((s) => s.wardId);
@@ -140,6 +156,8 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         if (!wardId) {
             initializedWardIdRef.current = null;
             initialQueryShiftTeamIdRef.current = null;
+            initialQueryStepRef.current = null;
+            didApplyInitialQueryStepRef.current = false;
 
             return;
         }
@@ -147,11 +165,13 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         if (initializedWardIdRef.current === wardId) return;
 
         initializedWardIdRef.current = wardId;
+        didApplyInitialQueryStepRef.current = false;
 
         const defaultMakeShiftYearMonth = getNextCalendarYearMonth();
         const queryYear = parsePositiveInt(searchParams.get('year'));
         const queryMonth = parsePositiveInt(searchParams.get('month'));
         const queryShiftTeamId = parsePositiveInt(searchParams.get('shiftTeamId'));
+        const queryStep = parseMakeShiftStep(searchParams.get('step'));
         const targetYear = primaryOnboardingScheduleTarget?.year ?? queryYear;
         const targetMonth = primaryOnboardingScheduleTarget?.month ?? queryMonth;
         const targetShiftTeamId = primaryOnboardingScheduleTarget?.shiftTeamId ?? queryShiftTeamId;
@@ -165,6 +185,7 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         }
 
         initialQueryShiftTeamIdRef.current = targetShiftTeamId;
+        initialQueryStepRef.current = queryStep;
     }, [primaryOnboardingScheduleTarget, searchParams, setYearMonth, wardId]);
 
     useEffect(() => {
@@ -358,6 +379,20 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         if (saved === 6 && !shiftFullyAssigned && wardId) {
             clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
             setCurrentShiftTeamId(currentShiftTeamId);
+
+            if (shiftExists) {
+                startFromStep({step: 1, openRestoreDraftModal: false});
+            }
+
+            return;
+        }
+
+        if (saved !== null || shiftExists) {
+            const state = useMakeShiftStore.getState();
+
+            if (state.phase !== 'stepping') {
+                startFromStep({step: saved ?? 1, openRestoreDraftModal: false});
+            }
         }
     }, [
         confirmSchedule,
@@ -367,9 +402,36 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         shiftFullyAssigned,
         shiftStatus,
         setCurrentShiftTeamId,
+        startFromStep,
         wardId,
         year,
     ]);
+
+    useEffect(() => {
+        if (didApplyInitialQueryStepRef.current) return;
+
+        if (shiftStatus !== 'success' || !wardId || !currentShiftTeamId) return;
+
+        const queryStep = initialQueryStepRef.current;
+
+        didApplyInitialQueryStepRef.current = true;
+
+        if (!queryStep) return;
+
+        const state = useMakeShiftStore.getState();
+
+        if (queryStep === 6 || state.shiftFullyAssigned) {
+            if (queryStep === 6 && state.shiftFullyAssigned) {
+                confirmSchedule();
+            }
+
+            return;
+        }
+
+        if (queryStep > state.maxReachedStep) return;
+
+        startFromStep({step: queryStep, openRestoreDraftModal: false});
+    }, [confirmSchedule, currentShiftTeamId, shiftStatus, startFromStep, wardId]);
 
     useEffect(() => {
         let cancelled = false;

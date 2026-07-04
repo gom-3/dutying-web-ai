@@ -9,28 +9,12 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {loadDraftStep} from '../model/make-shift-progress-storage';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
-
-const PlayActionIcon = () => (
-    <span aria-hidden="true" className="relative inline-flex size-[17px] shrink-0 items-center justify-center overflow-visible">
-        <svg viewBox="0 0 24 24" fill="none" className="size-[17px] overflow-visible">
-            <path
-                className="origin-center fill-current opacity-0 motion-safe:group-hover:animate-[make-shift-play-echo_720ms_ease-out_both]"
-                d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
-            />
-            <path
-                className="origin-center fill-current motion-safe:group-hover:animate-[make-shift-play-nudge_720ms_cubic-bezier(0.22,1,0.36,1)_both]"
-                d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"
-            />
-        </svg>
-    </span>
-);
 
 export const MakeShiftPageView = () => {
     const {t} = useTypedTranslation();
@@ -41,8 +25,6 @@ export const MakeShiftPageView = () => {
     const maxReachedStep = useMakeShiftStore((s) => s.maxReachedStep);
     const year = useMakeShiftStore((s) => s.year);
     const shiftStatus = useMakeShiftStore((s) => s.shiftStatus);
-    const shiftExists = useMakeShiftStore((s) => s.shiftExists);
-    const shiftFullyAssigned = useMakeShiftStore((s) => s.shiftFullyAssigned);
     const month = useMakeShiftStore((s) => s.month);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
@@ -64,8 +46,6 @@ export const MakeShiftPageView = () => {
     const currentShiftTeamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
     const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
-    const draftStep = wardId && currentShiftTeamId ? loadDraftStep(wardId, currentShiftTeamId, year, month) : null;
-    const hasProgress = shiftStatus === 'success' && (draftStep !== null || shiftExists || shiftFullyAssigned);
     const isStepping = phase === 'stepping';
     const handleCreateCurrentMonth = () => {
         useCase.start();
@@ -139,46 +119,6 @@ export const MakeShiftPageView = () => {
                                     action={{label: t('page.state.retry'), onClick: useCase.retryOverview}}
                                     className="min-h-0 py-0"
                                 />
-                            ) : hasProgress ? (
-                                <PageState
-                                    tone="empty"
-                                    title={
-                                        <Trans
-                                            i18nKey="page.makeShift.overview.shiftDraft"
-                                            values={{teamName: currentShiftTeamName, month}}
-                                            components={{
-                                                team: <span className="text-main-1" />,
-                                                month: <span className="text-main-1" />,
-                                            }}
-                                        />
-                                    }
-                                    description={t('page.makeShift.overview.shiftDraftDescription')}
-                                    className="min-h-0 py-0"
-                                    contentClassName="max-w-[34rem]"
-                                    titleClassName="mx-auto max-w-full break-normal whitespace-normal [overflow-wrap:anywhere] [text-wrap:balance]"
-                                    visual={
-                                        <img
-                                            src="/img/continue-schedule-nurse.webp"
-                                            alt=""
-                                            aria-hidden="true"
-                                            decoding="async"
-                                            className="h-[clamp(120px,20vh,160px)] w-auto object-contain select-none sm:h-[clamp(128px,24vh,192px)]"
-                                        />
-                                    }
-                                >
-                                    <div className="mt-1 flex justify-center">
-                                        <ManagementActionButton
-                                            variant="primary"
-                                            size="md"
-                                            onClick={handleCreateCurrentMonth}
-                                            disabled={currentShiftTeamId === null}
-                                            className="group h-12 min-w-[168px] cursor-pointer rounded-[14px] px-6 font-apple text-[15px] leading-none font-semibold active:scale-[0.99] disabled:cursor-not-allowed"
-                                        >
-                                            <PlayActionIcon />
-                                            {t('page.makeShift.overview.continueShift')}
-                                        </ManagementActionButton>
-                                    </div>
-                                </PageState>
                             ) : (
                                 <PageState
                                     tone="empty"

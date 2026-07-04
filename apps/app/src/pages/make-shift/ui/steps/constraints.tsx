@@ -12,7 +12,7 @@ import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings, type TSkillLevelConfig
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import PageState from '@/shared/ui/PageState';
+import {Skeleton} from '@/shared/ui/primitives/skeleton';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {
@@ -110,6 +110,7 @@ function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
 function hasPrecepteeRole(nurse: TNurseRoleLike | null | undefined) {
     return nurse?.isPreceptee === true || hasPrecepteeMemo(nurse?.memo);
 }
+
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';
 const RECOMMENDED_MODAL_CATEGORY = 'RECOMMENDED';
 const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
@@ -253,6 +254,7 @@ const RECOMMENDED_DEFAULT_RULE_CODES = [
     'FORBID_N_THEN_D',
     'FORBID_N_THEN_E',
     'FORBID_E_THEN_D',
+    'FORBID_E_THEN_N',
     'CORE_MAX_CONTINUOUS_NIGHT',
     'CORE_MIN_OFF_AFTER_NIGHT',
     'CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF',
@@ -418,6 +420,11 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
     },
     {
+        id: 'NURSE_NOT_ALONE_N',
+        category: 'SKILL',
+        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
+    },
+    {
         id: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
         category: 'SKILL',
         controls: [
@@ -506,6 +513,11 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
     },
     {
         id: 'SOFT_NO_E_TO_D',
+        category: 'FORBIDDEN',
+        controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
+    },
+    {
+        id: 'SOFT_NO_E_TO_N',
         category: 'FORBIDDEN',
         controls: [{key: 'target', kind: 'select', optionsKey: 'target'}],
     },
@@ -608,6 +620,7 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     FORBID_N_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_N_THEN_E: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_E_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    FORBID_E_THEN_N: {target: ALL_CONSTRAINT_TARGET_OPTION},
     MIN_STAFF_BY_SHIFT: {count: '1'},
     MAX_STAFF_BY_SHIFT: {count: '1'},
     MIN_STAFF_BY_DATE_SHIFT: {count: '1'},
@@ -671,6 +684,7 @@ const LEGACY_TEMPLATE_ALIAS_BY_TEMPLATE_CODE: Record<string, string> = {
     FORBID_N_THEN_D: 'SOFT_NO_N_TO_D',
     FORBID_N_THEN_E: 'SOFT_NO_N_TO_E',
     FORBID_E_THEN_D: 'SOFT_NO_E_TO_D',
+    FORBID_E_THEN_N: 'SOFT_NO_E_TO_N',
     MAX_CONSECUTIVE_N: 'SOFT_MAX_CONSECUTIVE_N',
     NURSE_PAIR_NOT_SAME_SHIFT: 'SOFT_NO_SAME_DUTY_PAIR',
     NURSE_PAIR_PREFER_SAME_SHIFT: 'SOFT_PREFER_SAME_DUTY_PAIR',
@@ -679,6 +693,7 @@ const DUTY_PATTERN_CODES: Record<string, string[]> = {
     ND: ['N', 'D'],
     ED: ['E', 'D'],
     NE: ['N', 'E'],
+    EN: ['E', 'N'],
     NOD: ['N', 'OFF', 'D'],
 };
 
@@ -1249,6 +1264,8 @@ function getLocalizedAllOptionLabel(t: TTypedT, optionMapKey: string) {
 
 function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, optionMapKey: string, shiftType?: TShiftTypeLike) {
     if (isAllCandidateOption(option)) return getLocalizedAllOptionLabel(t, optionMapKey);
+
+    if (optionMapKey === 'date' && option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});
 
     if (option.label) return option.label;
 
@@ -1951,6 +1968,48 @@ function Section({action, children}: TSectionProps) {
     );
 }
 
+function ConstraintsSkeleton() {
+    const {t} = useTypedTranslation();
+    const rowWidths = ['w-10/12', 'w-8/12', 'w-9/12', 'w-7/12'];
+
+    return (
+        <section
+            role="status"
+            aria-busy="true"
+            aria-label={t('page.makeShift.constraints.state.loading')}
+            data-testid="make-shift-constraints-skeleton"
+            className="mb-4"
+        >
+            <div className="rounded-[18px] bg-[#F8F9FB] px-3 pt-5 pb-8">
+                <div className="mb-5 flex min-h-8 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-3">
+                    <Skeleton className="h-4 w-24 rounded-full bg-gray-6" />
+                    <div className="flex shrink-0 items-center gap-2">
+                        <Skeleton className="size-9 rounded-full bg-white" />
+                        <Skeleton className="h-9 w-24 rounded-full bg-main-4/70" />
+                    </div>
+                </div>
+                <div className="space-y-2.5">
+                    {rowWidths.map((widthClassName, index) => (
+                        <div
+                            key={index}
+                            className="grid min-h-[52px] grid-cols-[minmax(0,1fr)_34px] items-center gap-3 rounded-[10px] bg-white px-3 py-2.5"
+                        >
+                            <div className="flex min-w-0 items-center gap-3 pl-2">
+                                <Skeleton className="h-6 w-10 shrink-0 rounded-full bg-[#FFF3D6]" />
+                                <div className="min-w-0 flex-1">
+                                    <Skeleton className={cn('h-4 rounded-full bg-gray-6', widthClassName)} />
+                                    {index % 2 === 0 ? <Skeleton className="mt-2 h-3 w-5/12 rounded-full bg-gray-6/70" /> : null}
+                                </div>
+                            </div>
+                            <Skeleton className="size-7 rounded-full bg-gray-7" />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+}
+
 type TConstraintImportButtonProps = {
     teams: TShiftTeam[];
     currentShiftTeamId: number | null | undefined;
@@ -2415,8 +2474,12 @@ export function Constraints({
             };
         };
         const nurseOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name).map(toNurseOption);
-        const preceptorOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name && hasPreceptorRole(nurse)).map(toNurseOption);
-        const precepteeOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse)).map(toNurseOption);
+        const preceptorOptions = nurses
+            .filter((nurse) => nurse.nurseId != null && nurse.name && hasPreceptorRole(nurse))
+            .map(toNurseOption);
+        const precepteeOptions = nurses
+            .filter((nurse) => nurse.nurseId != null && nurse.name && hasPrecepteeRole(nurse))
+            .map(toNurseOption);
         const fallbackOptionMap = {
             target: [
                 {value: 'ALL', label: t('page.makeShift.constraints.option.allPeople'), raw: ALL_CONSTRAINT_TARGET_OPTION},
@@ -2748,14 +2811,10 @@ export function Constraints({
     if (isLoading) {
         return (
             <div className={frameClassName}>
-                <div className={`flex min-h-[180px] ${surfaceWidthClassName} items-center justify-center rounded-[18px] bg-white`}>
-                    <PageState
-                        tone="loading"
-                        layout="inline"
-                        loadingColor="purple"
-                        title={t('page.makeShift.constraints.state.loading')}
-                        className="min-h-[180px] py-0"
-                    />
+                <div
+                    className={`${surfaceWidthClassName} min-w-0 rounded-[18px] bg-white px-[clamp(14px,1.5vw,22px)] ${surfacePaddingYClassName}`}
+                >
+                    <ConstraintsSkeleton />
                 </div>
             </div>
         );
