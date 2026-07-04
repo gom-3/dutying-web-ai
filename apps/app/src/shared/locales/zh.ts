@@ -25,6 +25,9 @@ export const zh = {
                 fixedStatusPin: '固定班次',
                 requestStatusPin: '申请班次',
             },
+            context: {
+                switchToast: '已切换到 {{year}}年{{month}}月 · {{teamName}}。',
+            },
             constraints: {
                 ...generatedZh.page.makeShift.constraints,
                 templates: {
@@ -84,6 +87,10 @@ export const zh = {
                         label: '个人条件',
                         sentence: '{nurse}不能在周末工作',
                     },
+                    NURSE_NOT_ALONE_N: {
+                        label: '熟练度条件',
+                        sentence: '{nurse}不能单独上N班',
+                    },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: '熟练度条件',
                         sentence: '{nurse}不能单独上N班',
@@ -122,7 +129,7 @@ export const zh = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: '重要基础条件',
-                        sentence: '避免ND / ED / NE / NOD组合',
+                        sentence: '避免ND / NE / ED / EN / NOD组合',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: '人数条件',
@@ -151,6 +158,10 @@ export const zh = {
                     SOFT_NO_E_TO_D: {
                         label: '禁止模式条件',
                         sentence: '{target}避免E班次日安排D班',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: '禁止模式条件',
+                        sentence: '{target}避免E班次日安排N班',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: '禁止模式条件',

@@ -240,6 +240,23 @@ describe('shift-adapter', () => {
         ]);
     });
 
+    it('does not convert requested cells as fixed when a cell is marked both fixed and requested', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-03-01'],
+            rows: [{workerId: '1', cells: ['O']}],
+            workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {'1|2026-03-01': true as const},
+            requestCells: {'1|2026-03-01': true as const},
+        };
+
+        expect(docToFixedWardShiftsDTO(doc, shift)).toEqual([{shiftNurseId: 1, date: '2026-03-01', wardShiftTypeId: null}]);
+        expect(docToSnapshotCellsDTO(doc, shift)[0]).toMatchObject({
+            source: 'REQUEST',
+            fixed: false,
+        });
+    });
+
     it('builds rich snapshot cells for Spring schedule authoring', () => {
         const shift = createShift();
         const doc = {

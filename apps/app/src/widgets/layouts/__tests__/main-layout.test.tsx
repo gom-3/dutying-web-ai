@@ -190,6 +190,56 @@ describe('MainLayout', () => {
         expect(notificationFrame).toHaveClass('mx-auto', 'max-w-[1680px]', 'justify-end', 'px-3', 'lg:px-4', 'min-[1600px]:px-10');
     });
 
+    it.each([
+        {
+            route: ROUTE.MEMBER,
+            routeLabel: 'member',
+            pageText: 'member page',
+            layerClasses: ['top-5', 'min-[1600px]:top-[52px]'],
+            frameClasses: ['max-w-[1560px]', 'px-3', 'min-[1600px]:px-10'],
+        },
+        {
+            route: ROUTE.WARD_SETTINGS,
+            routeLabel: 'ward settings',
+            pageText: 'ward settings page',
+            layerClasses: ['top-8'],
+            frameClasses: ['max-w-[1040px]', 'px-4'],
+        },
+        {
+            route: ROUTE.WARD_INFO_SETTINGS,
+            routeLabel: 'ward info settings',
+            pageText: 'ward info settings page',
+            layerClasses: ['top-8'],
+            frameClasses: ['max-w-[560px]', 'px-4', 'md:px-0'],
+        },
+        {
+            route: ROUTE.PROFILE,
+            routeLabel: 'profile',
+            pageText: 'profile page',
+            layerClasses: ['top-8'],
+            frameClasses: ['max-w-[560px]', 'px-4', 'md:px-0'],
+        },
+    ])('positions the ward admin notification bell inside the $routeLabel page frame', ({route, pageText, layerClasses, frameClasses}) => {
+        mockAuthState.accessToken = 'ward-admin-token';
+
+        render(
+            <MemoryRouter initialEntries={[route]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={route} element={<div>{pageText}</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationFrame = notificationBell.parentElement;
+        const notificationLayer = notificationFrame?.parentElement;
+
+        expect(notificationLayer).toHaveClass('pointer-events-none', 'absolute', 'inset-x-0', ...layerClasses);
+        expect(notificationFrame).toHaveClass('mx-auto', 'justify-end', ...frameClasses);
+    });
+
     it('keeps the navigation expanded on non-workspace pages at the same width', () => {
         setViewportWidth(1512);
 

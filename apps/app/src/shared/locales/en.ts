@@ -631,6 +631,9 @@ export const en: TLocale = {
                 sequentialRequired: 'Please complete the steps in order.',
                 workerRequired: 'At least one nurse must be included to create a schedule.',
             },
+            context: {
+                switchToast: 'Moved to {{year}} {{month}} · {{teamName}}.',
+            },
             calendar: {
                 name: 'Name',
                 carried: 'Carry',
@@ -876,6 +879,10 @@ export const en: TLocale = {
                         label: 'Personal constraint',
                         sentence: '{nurse} cannot work weekends',
                     },
+                    NURSE_NOT_ALONE_N: {
+                        label: 'Skill constraint',
+                        sentence: '{nurse} cannot work N alone',
+                    },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: 'Skill constraint',
                         sentence: '{nurse} cannot work N alone',
@@ -914,7 +921,7 @@ export const en: TLocale = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: 'Default Important constraint',
-                        sentence: 'Avoid ND / ED / NE / NOD shift patterns',
+                        sentence: 'Avoid ND / NE / ED / EN / NOD shift patterns',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: 'Staffing constraint',
@@ -943,6 +950,10 @@ export const en: TLocale = {
                     SOFT_NO_E_TO_D: {
                         label: 'Forbidden pattern constraint',
                         sentence: 'Avoid D the day after E for {target}',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: 'Forbidden pattern constraint',
+                        sentence: 'Avoid N the day after E for {target}',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: 'Forbidden pattern constraint',
@@ -998,7 +1009,7 @@ export const en: TLocale = {
                     maxContinuousNight: {label: 'Max consecutive nights'},
                     minContinuousNight: {label: 'Min consecutive nights'},
                     minOffAssignAfterNight: {label: 'Recommended OFF after night'},
-                    excludeCertainWorkTypes: {label: 'Avoid ND / ED / NE / NOD patterns'},
+                    excludeCertainWorkTypes: {label: 'Avoid ND / NE / ED / EN / NOD patterns'},
                     excludeNightBeforeReqOff: {label: 'Avoid night before requested OFF'},
                 },
             },
@@ -1241,7 +1252,7 @@ export const en: TLocale = {
                     message: 'After a night shift, at least {{count}} OFF days are recommended.',
                 },
                 excludeCertainWorkTypes: {
-                    label: 'Avoid ND / ED / NE / NOD patterns',
+                    label: 'Avoid ND / NE / ED / EN / NOD patterns',
                     message: 'Avoid ND/ED/NE/NOD shift patterns.',
                 },
                 excludeNightBeforeReqOff: {

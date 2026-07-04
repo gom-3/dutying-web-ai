@@ -2,6 +2,7 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ReactNode} from 'react';
+import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import BoardPage from '..';
 
@@ -93,7 +94,11 @@ function renderPage(children: ReactNode) {
         },
     });
 
-    return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+    return render(
+        <MemoryRouter>
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </MemoryRouter>,
+    );
 }
 
 describe('BoardPage', () => {
@@ -132,6 +137,22 @@ describe('BoardPage', () => {
 
         expect(contentTextarea).not.toBeNull();
         expect(contentTextarea).toHaveAttribute('maxLength', '5000');
+    });
+
+    it('shows post-shaped skeleton rows while posts are loading', () => {
+        mockGetPosts.mockReturnValue(new Promise(() => undefined));
+
+        renderPage(<BoardPage />);
+
+        const boardList = document.querySelector<HTMLElement>('#board_post_list');
+
+        expect(boardList).not.toBeNull();
+
+        const skeleton = within(boardList!).getByTestId('board-post-list-skeleton');
+
+        expect(skeleton).toHaveAttribute('role', 'status');
+        expect(skeleton).toHaveAttribute('aria-busy', 'true');
+        expect(within(skeleton).getAllByTestId('board-post-list-skeleton-item')).toHaveLength(5);
     });
 
     it('shows post list engagement metrics only when they have counts, except views', async () => {

@@ -113,10 +113,11 @@ const VIOLATION_CONTEXT_TONE: Record<TViolation['level'], {surface: string; acti
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const NAME_COL = 'clamp(64px,4.4cqw,76px)';
 const MIN_SKILL_COL = '40px';
+const SKILL_COL = 'clamp(40px,2.8cqw,48px)';
 const CARRY_COL = 'clamp(26px,1.8cqw,32px)';
 const REST_CHECK_COL = 'clamp(48px,3.1cqw,56px)';
 const LAST_COL = 'clamp(70px,4.75cqw,88px)';
-const ROW_SKILL_BADGE_CLASS = 'make-shift-calendar__row-skill-badge min-h-[18px] min-w-10 px-1.5 text-[10px] whitespace-nowrap';
+const ROW_SKILL_BADGE_CLASS = 'make-shift-calendar__row-skill-badge min-h-[18px] w-full min-w-0 px-1.5 text-[10px] whitespace-nowrap';
 /**
  * 행의 좌측(카드 안에 들어가는) 그리드.
  * 사진처럼 division 카드는 이 좌측만 감싸고, 우측 합계(row-summary-counts)는
@@ -170,35 +171,16 @@ const getShimmerInsetLeft = (isSimplified: boolean, showSkillColumn: boolean, sh
         ? `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X})`
         : `calc(${DIVISION_PADDING_X} + ${NAME_COL} + ${ROW_GAP_X}${showSkillColumn ? ` + ${skillColumnWidth} + ${ROW_GAP_X}` : ''}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
 
-function estimateLabelWidthCh(label: string) {
-    return Array.from(label).reduce((width, char) => {
-        const isAscii = /^[\u0020-\u007E]$/.test(char);
+function getSkillColumnWidth() {
+    return SKILL_COL;
+}
 
-        return width + (isAscii ? 1 : 2);
-    }, 0);
+function getSkillColumnInsetWidth() {
+    return SKILL_COL;
 }
 
 function getSkillLevelLabel(config: TSkillLevelConfig, level: number) {
     return config.levelLabels?.[level] ?? `LV. ${level}`;
-}
-
-function getSkillColumnContentWidth(config: TSkillLevelConfig | undefined) {
-    if (!config) return '1ch';
-
-    const longestLabelWidth = Array.from({length: config.levelCount}, (_, index) => getSkillLevelLabel(config, index + 1)).reduce(
-        (maxWidth, label) => Math.max(maxWidth, estimateLabelWidthCh(label)),
-        1,
-    );
-
-    return `calc(${longestLabelWidth}ch + 4px)`;
-}
-
-function getSkillColumnWidth(config: TSkillLevelConfig | undefined) {
-    return `minmax(${MIN_SKILL_COL}, ${getSkillColumnContentWidth(config)})`;
-}
-
-function getSkillColumnInsetWidth(config: TSkillLevelConfig | undefined) {
-    return `max(${MIN_SKILL_COL}, ${getSkillColumnContentWidth(config)})`;
 }
 
 function formatSignedDays(value: number | undefined) {
@@ -1396,12 +1378,12 @@ export function MakeShiftCalendar({
         showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
     const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn;
     const skillColumnWidth = useMemo(
-        () => (showSkillColumn ? getSkillColumnWidth(skillColumn?.config) : MIN_SKILL_COL),
-        [showSkillColumn, skillColumn?.config],
+        () => (showSkillColumn ? getSkillColumnWidth() : MIN_SKILL_COL),
+        [showSkillColumn],
     );
     const skillColumnInsetWidth = useMemo(
-        () => (showSkillColumn ? getSkillColumnInsetWidth(skillColumn?.config) : MIN_SKILL_COL),
-        [showSkillColumn, skillColumn?.config],
+        () => (showSkillColumn ? getSkillColumnInsetWidth() : MIN_SKILL_COL),
+        [showSkillColumn],
     );
     const leftGridTemplateColumns = isSimplified
         ? LEFT_GRID_TEMPLATE_COLUMNS_SIMPLIFIED
@@ -2112,6 +2094,7 @@ function CalendarRowLeft({
                         const cellLockKey = date ? `${shiftNurseId}|${date}` : null;
                         const isFixedCell = cellLockKey !== null && fixedCells[cellLockKey] === true;
                         const isRequestedCell = cellLockKey !== null && requestCells[cellLockKey] === true;
+                        const showFixedStatusPin = isFixedCell && !isRequestedCell;
                         const reqId = isRequestedCell ? (wardReqShiftList[j] ?? null) : null;
                         const reqType = reqId != null ? idToType.get(reqId) : null;
                         const cellViolationList = showFaults ? violationsByDayCol.get(j) : undefined;
@@ -2150,7 +2133,7 @@ function CalendarRowLeft({
                                 data-violation-count={hasCellViolations ? cellViolations.length : undefined}
                                 data-active-violation-cell={activeCellViolation ? 'true' : undefined}
                                 data-dimmed-violation-cell={isCellViolationDimmed ? 'true' : undefined}
-                                data-fixed-cell={showCellStatusPins && isFixedCell ? 'true' : undefined}
+                                data-fixed-cell={showCellStatusPins && showFixedStatusPin ? 'true' : undefined}
                                 data-request-cell={showCellStatusPins && isRequestedCell ? 'true' : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
@@ -2222,7 +2205,7 @@ function CalendarRowLeft({
                                     />
                                     {showCellStatusPins && (
                                         <CellStatusPins
-                                            fixed={isFixedCell}
+                                            fixed={showFixedStatusPin}
                                             requested={isRequestedCell}
                                             fixedLabel={fixedStatusPinLabel}
                                             requestedLabel={requestStatusPinLabel}

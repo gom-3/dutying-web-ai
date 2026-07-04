@@ -1184,7 +1184,7 @@ function MemberPage() {
                             aria-label={t('page.member.skillSettings')}
                             title={t('page.member.skillSettings')}
                             className={cn(
-                                'ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
+                                'ml-auto mr-12 flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
                                 selectedNurse
                                     ? 'min-[1600px]:w-[42px] min-[1600px]:px-0'
                                     : 'min-[1600px]:w-auto min-[1600px]:gap-1.5 min-[1600px]:px-4',

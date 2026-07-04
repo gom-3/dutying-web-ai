@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {MonthlyMemoButton} from '@/features/monthly-memo';
@@ -5,6 +6,14 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth, isMakeShiftPreviousMonthDisabled} from '@/shared/lib/shift-calendar-month-policy';
 import {DutyManagementMonthTeamHeader} from '@/widgets/duty-management/ui';
 import {useMakeShiftStore} from '../model/make-shift-store';
+
+function getPrevYearMonth(year: number, month: number) {
+    return month <= 1 ? {year: year - 1, month: 12} : {year, month: month - 1};
+}
+
+function getNextYearMonth(year: number, month: number) {
+    return month >= 12 ? {year: year + 1, month: 1} : {year, month: month + 1};
+}
 
 export function MakeShiftHeader() {
     const {t} = useTypedTranslation();
@@ -22,6 +31,34 @@ export function MakeShiftHeader() {
     const prevMonthDisabled = isMakeShiftPreviousMonthDisabled();
     const nextMonthDisabled = isMakeShiftMonthAtOrAfterMaxFutureCalendarMonth(year, month);
     const shouldReserveNotificationSpace = isWardAdminAccessToken(accessToken);
+    const currentShiftTeamName =
+        shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
+    const showContextToast = (nextYear: number, nextMonth: number, teamName: string) => {
+        toast.success(t('page.makeShift.context.switchToast', {year: nextYear, month: nextMonth, teamName}), {
+            id: 'make-shift-context-switch',
+        });
+    };
+    const handlePrevMonth = () => {
+        const next = getPrevYearMonth(year, month);
+
+        goPrevMonth();
+        showContextToast(next.year, next.month, currentShiftTeamName);
+    };
+    const handleNextMonth = () => {
+        const next = getNextYearMonth(year, month);
+
+        goNextMonth();
+        showContextToast(next.year, next.month, currentShiftTeamName);
+    };
+    const handleSelectShiftTeam = (shiftTeamId: number) => {
+        if (shiftTeamId === currentShiftTeamId) return;
+
+        const nextTeamName =
+            shiftTeams.find((team) => team.shiftTeamId === shiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
+
+        setCurrentShiftTeamId(shiftTeamId);
+        showContextToast(year, month, nextTeamName);
+    };
 
     return (
         <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
@@ -32,9 +69,9 @@ export function MakeShiftHeader() {
                 nextLabel={t('page.duty.nextMonth')}
                 shiftTeams={shiftTeams}
                 currentShiftTeamId={currentShiftTeamId}
-                onPrevMonth={goPrevMonth}
-                onNextMonth={goNextMonth}
-                onSelectShiftTeam={setCurrentShiftTeamId}
+                onPrevMonth={handlePrevMonth}
+                onNextMonth={handleNextMonth}
+                onSelectShiftTeam={handleSelectShiftTeam}
                 emptyLabel={t('page.makeShift.overview.noTeamsLabel')}
                 formatMonthLabel={(headerYear, headerMonth) => t('page.duty.monthHeader', {year: headerYear, month: headerMonth})}
                 prevMonthDisabled={prevMonthDisabled}

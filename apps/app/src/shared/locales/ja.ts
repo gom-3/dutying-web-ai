@@ -1506,6 +1506,10 @@ export const ja: TLocale = {
                         label: '個人条件',
                         sentence: '{nurse}は週末勤務をしてはいけません',
                     },
+                    NURSE_NOT_ALONE_N: {
+                        label: '熟練度条件',
+                        sentence: '{nurse}は単独でN勤務をしてはいけません',
+                    },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: '熟練度条件',
                         sentence: '{nurse}は単独でN勤務をしてはいけません',
@@ -1544,7 +1548,7 @@ export const ja: TLocale = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: '重要な基本条件',
-                        sentence: 'ND / ED / NE / NODの勤務パターンを避けます',
+                        sentence: 'ND / NE / ED / EN / NODの勤務パターンを避けます',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: '人数条件',
@@ -1573,6 +1577,10 @@ export const ja: TLocale = {
                     SOFT_NO_E_TO_D: {
                         label: '禁止パターン条件',
                         sentence: '{target}はEの翌日のD勤務を避けます',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: '禁止パターン条件',
+                        sentence: '{target}はEの翌日のN勤務を避けます',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: '禁止パターン条件',
@@ -1628,7 +1636,7 @@ export const ja: TLocale = {
                     maxContinuousNight: {label: '連続夜勤'},
                     minContinuousNight: {label: '連続夜勤'},
                     minOffAssignAfterNight: {label: '夜勤後のOFF割り当て'},
-                    excludeCertainWorkTypes: {label: 'ND / ED / NE / NOD勤務パターンを避ける'},
+                    excludeCertainWorkTypes: {label: 'ND / NE / ED / EN / NOD勤務パターンを避ける'},
                     excludeNightBeforeReqOff: {label: '希望OFF前日の夜勤を避ける'},
                 },
             },
@@ -1718,7 +1726,7 @@ export const ja: TLocale = {
                     message: '夜勤後はOFFを{{count}}日以上割り当てることを推奨します。',
                 },
                 excludeCertainWorkTypes: {
-                    label: 'ND / ED / NE / NOD勤務パターンを避ける',
+                    label: 'ND / NE / ED / EN / NOD勤務パターンを避ける',
                     message: 'ND/ED/NE/NOD形式の勤務は避けることを推奨します。',
                 },
                 excludeNightBeforeReqOff: {

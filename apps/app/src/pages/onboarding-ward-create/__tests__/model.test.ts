@@ -130,7 +130,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(duplicateDraft)).toBe(false);
     });
 
-    it('allows distinct shift short names that start with the same character', () => {
+    it('blocks shift short names that share the same keyboard entry key', () => {
         const initialDraft = createInitialDraft();
         const firstShift = initialDraft.shiftTypes[0];
         const secondShift = initialDraft.shiftTypes[1];
@@ -152,12 +152,13 @@ describe('OnboardingWardCreatePage model', () => {
         );
         const validation = getStepValidation(duplicateDraft, 3);
 
-        expect(validation.issues).not.toEqual(
+        expect(validation.issues).toEqual(
             expect.arrayContaining([
                 {code: 'duplicate-shift-short-name', step: 3, targetId: firstShift.id},
                 {code: 'duplicate-shift-short-name', step: 3, targetId: secondShift.id},
             ]),
         );
+        expect(canGoNext(duplicateDraft)).toBe(false);
     });
 
     it('allows three-character keyboard abbreviations and blocks invalid first keys', () => {

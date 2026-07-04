@@ -25,6 +25,9 @@ export const vi = {
                 fixedStatusPin: 'Ca cố định',
                 requestStatusPin: 'Ca đã đăng ký',
             },
+            context: {
+                switchToast: 'Đã chuyển đến {{month}}/{{year}} · {{teamName}}.',
+            },
             constraints: {
                 ...generatedVi.page.makeShift.constraints,
                 templates: {
@@ -84,6 +87,10 @@ export const vi = {
                         label: 'Điều kiện cá nhân',
                         sentence: '{nurse} không được làm việc cuối tuần',
                     },
+                    NURSE_NOT_ALONE_N: {
+                        label: 'Điều kiện kỹ năng',
+                        sentence: '{nurse} không được làm ca N một mình',
+                    },
                     NEW_NURSE_NOT_ALONE_N: {
                         label: 'Điều kiện kỹ năng',
                         sentence: '{nurse} không được làm ca N một mình',
@@ -122,7 +129,7 @@ export const vi = {
                     },
                     IMPORTANT_FORBIDDEN_DUTY_PATTERNS: {
                         label: 'Điều kiện cơ bản quan trọng',
-                        sentence: 'Tránh các mẫu ND / ED / NE / NOD',
+                        sentence: 'Tránh các mẫu ND / NE / ED / EN / NOD',
                     },
                     SOFT_MIN_STAFF_BY_DUTY: {
                         label: 'Điều kiện nhân sự',
@@ -151,6 +158,10 @@ export const vi = {
                     SOFT_NO_E_TO_D: {
                         label: 'Điều kiện cấm mẫu',
                         sentence: '{target} nên tránh ca D vào ngày sau ca E',
+                    },
+                    SOFT_NO_E_TO_N: {
+                        label: 'Điều kiện cấm mẫu',
+                        sentence: '{target} nên tránh ca N vào ngày sau ca E',
                     },
                     SOFT_MAX_CONSECUTIVE_N: {
                         label: 'Điều kiện cấm mẫu',

@@ -797,6 +797,64 @@ describe('useOnboardingWardWizard upload flow', () => {
         expect(result.current.canComplete).toBe(false);
     });
 
+    it('saves edited custom leave shift types before moving from shift types to nurses', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '응급실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        act(() => {
+            result.current.skipOrComplete();
+        });
+
+        await waitFor(() => expect(result.current.draft.currentStep).toBe(3));
+
+        act(() => {
+            result.current.addShiftType();
+        });
+
+        const rShiftTypeId = result.current.draft.shiftTypes[result.current.draft.shiftTypes.length - 1]?.id;
+
+        act(() => {
+            result.current.updateShiftType(rShiftTypeId ?? '', {
+                name: 'R',
+                shortName: 'R',
+                startTime: '',
+                endTime: '',
+                isOff: true,
+                classification: 'OTHER_LEAVE',
+            });
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const savedDraft =
+            mockSaveOnboardingWardDraft.mock.calls[mockSaveOnboardingWardDraft.mock.calls.length - 1]?.[1]?.draftPayload?.draft;
+        const savedRShiftType = savedDraft?.shiftTypes?.find((shiftType: {shortName?: string}) => shiftType.shortName === 'R');
+
+        expect(result.current.draft.currentStep).toBe(4);
+        expect(savedDraft.currentStep).toBe(4);
+        expect(savedRShiftType).toEqual(expect.objectContaining({isOff: true, classification: 'OTHER_LEAVE'}));
+    });
+
     it('preserves the draft and stores failure feedback when the parse request fails', async () => {
         mockParseOnboardingWardExcel.mockRejectedValue(new Error('업로드한 파일 형식이 올바르지 않습니다.'));
 

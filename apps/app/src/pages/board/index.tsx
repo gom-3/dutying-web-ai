@@ -35,11 +35,13 @@ import {
 } from '@/shared/api/board';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
+import {Skeleton} from '@/shared/ui/primitives/skeleton';
 import {BoardTutorial, type TBoardTutorialMode} from './ui/board-tutorial';
 
 const POST_PAGE_SIZE = 40;
 const POST_LIST_TITLE_MAX_LENGTH = 24;
 const POST_LIST_CONTENT_MAX_LENGTH = 72;
+const POST_LIST_SKELETON_COUNT = 5;
 const POST_CONTENT_MAX_LENGTH = 5000;
 const SCHEDULE_TITLE_MAX_LENGTH = 60;
 const SCHEDULE_CONTENT_MAX_LENGTH = 300;
@@ -465,6 +467,59 @@ function PostListItem({post, selected, onSelect}: {post: TWardBoardPost; selecte
                 ) : null}
             </div>
         </button>
+    );
+}
+
+function PostListSkeleton() {
+    return (
+        <div
+            role="status"
+            aria-busy="true"
+            aria-label={boardT('list.loading')}
+            data-testid="board-post-list-skeleton"
+            className="min-h-0 flex-1 overflow-hidden pr-1"
+        >
+            {Array.from({length: POST_LIST_SKELETON_COUNT}).map((_, index) => {
+                const hasThumbnail = index % 2 === 0;
+
+                return (
+                    <div
+                        key={index}
+                        data-testid="board-post-list-skeleton-item"
+                        className="flex w-full flex-col border-b border-gray-6 px-4 py-3 last:border-b-0"
+                    >
+                        <div className="flex min-w-0 gap-3">
+                            <div className="min-w-0 flex-1">
+                                <div className="mt-1 flex items-center justify-between gap-3">
+                                    <Skeleton
+                                        className={cn(
+                                            'h-5 rounded-full bg-gray-6',
+                                            index % 3 === 0 ? 'w-7/12' : index % 3 === 1 ? 'w-8/12' : 'w-6/12',
+                                        )}
+                                    />
+                                    {index % 3 === 0 ? <Skeleton className="h-6 w-12 shrink-0 rounded-full bg-gray-6" /> : null}
+                                </div>
+                                <div className="mt-3 space-y-2">
+                                    <Skeleton className="h-3.5 w-full rounded-full bg-gray-6/80" />
+                                    <Skeleton className={cn('h-3.5 rounded-full bg-gray-6/80', index % 2 === 0 ? 'w-9/12' : 'w-7/12')} />
+                                </div>
+                                <div className="mt-4 flex items-center justify-between gap-2">
+                                    <Skeleton className={cn('h-3.5 rounded-full bg-gray-6', index % 2 === 0 ? 'w-28' : 'w-36')} />
+                                    <div className="flex shrink-0 items-center gap-2">
+                                        <Skeleton className="h-3.5 w-7 rounded-full bg-gray-6" />
+                                        <Skeleton className="h-3.5 w-6 rounded-full bg-gray-6/80" />
+                                        <Skeleton className="h-3.5 w-6 rounded-full bg-gray-6/80" />
+                                    </div>
+                                </div>
+                            </div>
+                            {hasThumbnail ? (
+                                <Skeleton className="mt-1 h-[72px] w-[72px] shrink-0 rounded-[8px] bg-gray-6 sm:h-[86px] sm:w-[86px]" />
+                            ) : null}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
     );
 }
 
@@ -2421,7 +2476,7 @@ function BoardPage() {
                         </form>
                     ) : null}
                     {postsQuery.isPending ? (
-                        <PageState tone="loading" title={boardT('list.loading')} className="py-0" />
+                        <PostListSkeleton />
                     ) : postsQuery.isError ? (
                         <PageState
                             tone="error"
