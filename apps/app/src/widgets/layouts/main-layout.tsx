@@ -17,6 +17,8 @@ const WARD_CREATED_GUIDE_STORAGE_KEY = 'dutying:onboardingWardCreatedGuide';
 const WORKSPACE_NAV_AUTO_FOLD_WIDTH = 1536;
 const DEFAULT_NAV_AUTO_FOLD_WIDTH = 1280;
 const NAV_AUTO_FOLD_ROUTES = new Set<string>([ROUTE.MAKE, ROUTE.MEMBER]);
+const MEMBER_DETAIL_NOTIFICATION_OFFSET_CLASS_NAME =
+    'pr-[calc(0.75rem+300px+0.5rem)] min-[1400px]:pr-[calc(1rem+340px+0.75rem)] min-[1600px]:pr-[calc(2.5rem+400px+1.25rem)]';
 const DEFAULT_NOTIFICATION_FRAME = {
     topClassName: 'top-4',
     innerClassName: 'mx-auto flex w-full max-w-[1680px] justify-end px-4 lg:px-8',
@@ -51,7 +53,7 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
     {
         route: ROUTE.WARD_SETTINGS,
         topClassName: 'top-8',
-        innerClassName: 'mx-auto flex w-full max-w-[1040px] justify-end px-4',
+        innerClassName: 'mx-auto flex w-full max-w-[960px] justify-end px-4',
     },
     {
         route: ROUTE.WARD_INFO_SETTINGS,
@@ -61,7 +63,7 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
     {
         route: ROUTE.PROFILE,
         topClassName: 'top-8',
-        innerClassName: 'mx-auto flex w-full max-w-[560px] justify-end px-4 md:px-0',
+        innerClassName: 'mx-auto flex w-full max-w-[480px] justify-end px-4 md:px-0',
     },
 ] as const;
 
@@ -120,6 +122,7 @@ export const MainLayout = () => {
         [locationState?.onboardingWardCreated],
     );
     const [createdWardGuidePayload, setCreatedWardGuidePayload] = useState<TWardCreatedGuidePayload | null>(null);
+    const [isMemberDetailPanelOpen, setIsMemberDetailPanelOpen] = useState(false);
     const isNavigationFolded = useNavigationBarFoldStore((state) => state.isFold);
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
@@ -132,7 +135,15 @@ export const MainLayout = () => {
     const shouldUseCompactNavigation = shouldFoldNavigation || (viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH && isNavigationFolded);
     const shouldKeepStableVerticalScroll = location.pathname === ROUTE.WARD_SETTINGS;
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
+    const isMakeRoute = isRouteMatch(location.pathname, ROUTE.MAKE);
+    const isMemberRoute = isRouteMatch(location.pathname, ROUTE.MEMBER);
     const notificationFrameConfig = getNotificationFrameConfig(location.pathname);
+    const notificationFrameClassName = cn(
+        notificationFrameConfig.innerClassName,
+        isMakeRoute &&
+            'pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] transition-[padding-right] duration-300 ease-out lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)]',
+        isMemberRoute && isMemberDetailPanelOpen && MEMBER_DETAIL_NOTIFICATION_OFFSET_CLASS_NAME,
+    );
 
     useEffect(() => {
         const guidePayload = locationGuidePayload ?? readStoredWardCreatedGuidePayload();
@@ -200,6 +211,40 @@ export const MainLayout = () => {
         return () => document.removeEventListener('pointerdown', handlePointerDown);
     }, [shouldFoldNavigation]);
 
+    useEffect(() => {
+        if (!isMemberRoute) {
+            setIsMemberDetailPanelOpen(false);
+
+            return;
+        }
+
+        const layoutElement = layoutRef.current;
+
+        if (!layoutElement || typeof MutationObserver === 'undefined') {
+            return;
+        }
+
+        const syncMemberDetailPanelState = () => {
+            const detailPanel = layoutElement.querySelector<HTMLElement>('#nurse_edit_drawer');
+            const nextIsOpen = detailPanel?.getAttribute('aria-hidden') === 'false';
+
+            setIsMemberDetailPanelOpen((prevIsOpen) => (prevIsOpen === nextIsOpen ? prevIsOpen : nextIsOpen));
+        };
+
+        syncMemberDetailPanelState();
+
+        const observer = new MutationObserver(syncMemberDetailPanelState);
+
+        observer.observe(layoutElement, {
+            attributeFilter: ['aria-hidden'],
+            attributes: true,
+            childList: true,
+            subtree: true,
+        });
+
+        return () => observer.disconnect();
+    }, [isMemberRoute]);
+
     return (
         <div ref={layoutRef} className="flex h-full w-full bg-main-bg">
             <WardCodeGuideModal
@@ -213,7 +258,7 @@ export const MainLayout = () => {
                 <Outlet />
                 {shouldShowNotificationBell ? (
                     <div className={cn('pointer-events-none absolute inset-x-0 z-[1002]', notificationFrameConfig.topClassName)}>
-                        <div className={notificationFrameConfig.innerClassName}>
+                        <div className={notificationFrameClassName}>
                             <NotificationBell />
                         </div>
                     </div>

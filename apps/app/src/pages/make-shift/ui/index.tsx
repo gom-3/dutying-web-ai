@@ -1,6 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {useIsMutating} from '@tanstack/react-query';
 import {ArrowRight, CalendarPlus} from 'lucide-react';
+import {useCallback, useEffect} from 'react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
@@ -9,6 +10,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
+import {getAiAutofillExitGuardReason, useAiAutofillExitGuardStore} from '../model/ai-autofill-exit-guard';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
@@ -31,6 +33,8 @@ export const MakeShiftPageView = () => {
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const wardId = useMakeShiftStore((s) => s.wardId);
     const stepNavigationBusy = useMakeShiftStore((s) => s.stepNavigationBusy);
+    const hasAiAutofillUnsavedChanges = useAiAutofillExitGuardStore((s) => s.hasUnsavedChanges);
+    const isAiAutofillGenerating = useAiAutofillExitGuardStore((s) => s.isAiGenerating);
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
     const nurseSaveStatus = useEditNurseStore((s) => s.nurseSaveStatus);
@@ -50,19 +54,58 @@ export const MakeShiftPageView = () => {
     const handleCreateCurrentMonth = () => {
         useCase.start();
     };
+    const aiAutofillExitGuardReason = getAiAutofillExitGuardReason({
+        hasUnsavedChanges: hasAiAutofillUnsavedChanges,
+        isAiGenerating: isAiAutofillGenerating,
+    });
+    const aiAutofillExitGuardMessage =
+        aiAutofillExitGuardReason === 'aiGenerating'
+            ? t('page.makeShift.aiRefill.exitGuard.aiGeneratingMessage')
+            : aiAutofillExitGuardReason === 'unsavedChanges'
+              ? t('page.makeShift.aiRefill.exitGuard.unsavedMessage')
+              : null;
+    const confirmAiAutofillExit = useCallback(() => {
+        if (!aiAutofillExitGuardMessage) return true;
+
+        return window.confirm(aiAutofillExitGuardMessage);
+    }, [aiAutofillExitGuardMessage]);
+    const runWithAiAutofillExitGuard = useCallback(
+        (action: () => void) => {
+            if (!confirmAiAutofillExit()) return;
+
+            action();
+        },
+        [confirmAiAutofillExit],
+    );
+
+    useEffect(() => {
+        if (!aiAutofillExitGuardMessage) return;
+
+        const handleNavigationClick = (event: MouseEvent) => {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+            const target = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-navigation-path]') : null;
+            const navigationPath = target?.dataset.navigationPath;
+
+            if (!navigationPath || navigationPath === window.location.pathname) return;
+
+            if (window.confirm(aiAutofillExitGuardMessage)) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        document.addEventListener('click', handleNavigationClick, true);
+
+        return () => document.removeEventListener('click', handleNavigationClick, true);
+    }, [aiAutofillExitGuardMessage]);
 
     return (
         <div
-            className={cn(
-                'min-h-full w-full transition-[padding-right] duration-300 ease-out',
-                isStepping ? 'overflow-x-auto' : 'overflow-x-hidden',
-            )}
-            style={{paddingRight: isStepping ? 'var(--make-ai-snapshot-sidebar-offset, 0px)' : 0}}
+            className={cn('min-h-full w-full', isStepping ? 'overflow-x-auto' : 'overflow-x-hidden')}
         >
-            <div
-                className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col px-3 pt-4 pb-3 min-[1600px]:px-10 lg:px-4"
-            >
-                <MakeShiftHeader />
+            <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 transition-[padding-right] duration-300 ease-out lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4 min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10">
+                <MakeShiftHeader onBeforeContextChange={confirmAiAutofillExit} />
 
                 <div
                     className={cn(
@@ -109,7 +152,7 @@ export const MakeShiftPageView = () => {
                                             : t('page.makeShift.overview.checking')
                                     }
                                     description={t('page.state.loadingDescription')}
-                                    className="min-h-0 py-0"
+                                    className="min-h-[360px] py-0"
                                 />
                             ) : shiftStatus === 'error' ? (
                                 <PageState
@@ -170,7 +213,7 @@ export const MakeShiftPageView = () => {
                                 currentStep={currentStep}
                                 maxReachedStep={visibleMaxReachedStep}
                                 navigationDisabled={isCurrentStepNavigationBusy}
-                                onClickStep={useCase.goToStep}
+                                onClickStep={(step) => runWithAiAutofillExitGuard(() => useCase.goToStep(step))}
                             />
 
                             <div className="flex w-full min-w-0 px-3 pb-3 2xl:px-4">
@@ -179,8 +222,8 @@ export const MakeShiftPageView = () => {
                                     canPrev={canPrev}
                                     canNext={canNext}
                                     nextBusy={isCurrentStepNavigationBusy}
-                                    onPrev={useCase.prev}
-                                    onNext={useCase.next}
+                                    onPrev={() => runWithAiAutofillExitGuard(useCase.prev)}
+                                    onNext={() => runWithAiAutofillExitGuard(useCase.next)}
                                 />
                             </div>
                         </>

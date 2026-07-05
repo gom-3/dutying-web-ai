@@ -1,8 +1,10 @@
+import type * as ReactQuery from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes, useLocation} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
+import {useAiAutofillExitGuardStore} from '../../model/ai-autofill-exit-guard';
 import {MakeShiftPageView} from '../index';
 
 const queryMockState = vi.hoisted(() => ({
@@ -36,7 +38,7 @@ const mockUseCase = {
 let makeShiftState: TMockMakeShiftState;
 
 vi.mock('@tanstack/react-query', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@tanstack/react-query')>();
+    const actual = (await importOriginal()) as typeof ReactQuery;
 
     return {
         ...actual,
@@ -116,6 +118,8 @@ describe('MakeShiftPageView layout', () => {
         mockUseCase.next.mockClear();
         queryMockState.pendingMutations = 0;
         useEditNurseStore.getState().reset();
+        useAiAutofillExitGuardStore.getState().resetExitGuard();
+        vi.restoreAllMocks();
 
         makeShiftState = {
             phase: 'stepping',
@@ -148,9 +152,19 @@ describe('MakeShiftPageView layout', () => {
         const contentCard = screen.getByTestId('make-shift-stepper').parentElement;
 
         expect(pageRoot).toHaveClass('overflow-x-auto');
+        expect(pageRoot).not.toHaveClass('transition-[padding-right]');
+        expect(pageRoot).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(pageFrame).toHaveClass('min-w-0');
+        expect(pageFrame).toHaveClass(
+            'transition-[padding-right]',
+            'pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)]',
+            'lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)]',
+            'min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)]',
+        );
         expect(pageFrame).not.toHaveClass('min-w-[1510px]');
         expect(contentCard).toHaveClass('overflow-visible');
+        expect(contentCard).not.toHaveClass('transition-[padding-right]');
+        expect(contentCard).not.toHaveStyle({paddingRight: 'var(--make-ai-snapshot-sidebar-offset, 0px)'});
         expect(contentCard).not.toHaveClass('overflow-hidden');
         expect(contentCard).not.toHaveClass('min-h-0');
         expect(stepContentWrapper).toHaveClass('pb-3');
@@ -255,5 +269,43 @@ describe('MakeShiftPageView layout', () => {
         renderMakeShiftPageView();
 
         expect(screen.getByTestId('make-shift-stepper')).toBeDisabled();
+    });
+
+    it('blocks leaving step 5 through the stepper when editable changes are unsaved', async () => {
+        const user = userEvent.setup();
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+
+        useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: true, isAiGenerating: false});
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 5,
+            maxReachedStep: 5,
+        };
+
+        renderMakeShiftPageView();
+
+        await user.click(screen.getByTestId('make-shift-stepper'));
+
+        expect(confirmSpy).toHaveBeenCalledWith('page.makeShift.aiRefill.exitGuard.unsavedMessage');
+        expect(mockUseCase.goToStep).not.toHaveBeenCalled();
+    });
+
+    it('allows leaving step 5 when the user confirms the AI running warning', async () => {
+        const user = userEvent.setup();
+        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: false, isAiGenerating: true});
+        makeShiftState = {
+            ...makeShiftState,
+            currentStep: 5,
+            maxReachedStep: 5,
+        };
+
+        renderMakeShiftPageView();
+
+        await user.click(screen.getByTestId('make-shift-stepper'));
+
+        expect(confirmSpy).toHaveBeenCalledWith('page.makeShift.aiRefill.exitGuard.aiGeneratingMessage');
+        expect(mockUseCase.goToStep).toHaveBeenCalledWith(5);
     });
 });

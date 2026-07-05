@@ -3,13 +3,14 @@ import type {TDutyDoc} from '@/features/shift-editor/model';
 type TMaskDutyDocOptions = {
     hideFixed?: boolean;
     hideRequests?: boolean;
+    hideUnlocked?: boolean;
 };
 
 export function maskDutyDocFixedCells(doc: TDutyDoc): TDutyDoc {
     return maskDutyDocCells(doc, {hideFixed: true});
 }
 
-export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests = false}: TMaskDutyDocOptions): TDutyDoc {
+export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests = false, hideUnlocked = false}: TMaskDutyDocOptions): TDutyDoc {
     return {
         ...doc,
         fixedCells: hideFixed ? {} : doc.fixedCells,
@@ -26,6 +27,8 @@ export function maskDutyDocCells(doc: TDutyDoc, {hideFixed = false, hideRequests
                 if (hideFixed && doc.fixedCells[key] === true) return null;
 
                 if (hideRequests && doc.requestCells[key] === true) return null;
+
+                if (hideUnlocked && doc.fixedCells[key] !== true && doc.requestCells[key] !== true) return null;
 
                 return cell;
             }),

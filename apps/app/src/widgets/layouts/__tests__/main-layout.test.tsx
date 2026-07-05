@@ -95,6 +95,7 @@ describe('MainLayout', () => {
         });
         mockAuthState.accessToken = null;
         window.sessionStorage.clear();
+        document.documentElement.style.removeProperty('--make-ai-snapshot-sidebar-offset');
         useNavigationBarFoldStore.getState().reset();
         setViewportWidth(1600);
     });
@@ -188,6 +189,36 @@ describe('MainLayout', () => {
 
         expect(notificationLayer).toHaveClass('pointer-events-none', 'absolute', 'inset-x-0', 'top-4');
         expect(notificationFrame).toHaveClass('mx-auto', 'max-w-[1680px]', 'justify-end', 'px-3', 'lg:px-4', 'min-[1600px]:px-10');
+        expect(notificationFrame).toHaveClass('transition-[padding-right]', 'duration-300', 'ease-out');
+        expect(notificationFrame).toHaveClass(
+            'pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)]',
+            'lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)]',
+            'min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)]',
+        );
+    });
+
+    it('moves the make notification bell inward while the snapshot sidebar is open', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+        document.documentElement.style.setProperty('--make-ai-snapshot-sidebar-offset', '304px');
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MAKE]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={ROUTE.MAKE} element={<div>make page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationFrame = notificationBell.parentElement;
+
+        expect(notificationFrame).toHaveClass(
+            'pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)]',
+            'lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)]',
+            'min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)]',
+        );
     });
 
     it.each([
@@ -203,7 +234,7 @@ describe('MainLayout', () => {
             routeLabel: 'ward settings',
             pageText: 'ward settings page',
             layerClasses: ['top-8'],
-            frameClasses: ['max-w-[1040px]', 'px-4'],
+            frameClasses: ['max-w-[960px]', 'px-4'],
         },
         {
             route: ROUTE.WARD_INFO_SETTINGS,
@@ -217,7 +248,7 @@ describe('MainLayout', () => {
             routeLabel: 'profile',
             pageText: 'profile page',
             layerClasses: ['top-8'],
-            frameClasses: ['max-w-[560px]', 'px-4', 'md:px-0'],
+            frameClasses: ['max-w-[480px]', 'px-4', 'md:px-0'],
         },
     ])('positions the ward admin notification bell inside the $routeLabel page frame', ({route, pageText, layerClasses, frameClasses}) => {
         mockAuthState.accessToken = 'ward-admin-token';
@@ -238,6 +269,41 @@ describe('MainLayout', () => {
 
         expect(notificationLayer).toHaveClass('pointer-events-none', 'absolute', 'inset-x-0', ...layerClasses);
         expect(notificationFrame).toHaveClass('mx-auto', 'justify-end', ...frameClasses);
+    });
+
+    it('moves the member notification bell before the nurse detail drawer when the drawer is open', async () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.MEMBER]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route
+                            path={ROUTE.MEMBER}
+                            element={
+                                <div>
+                                    member page
+                                    <aside id="nurse_edit_drawer" aria-hidden="false">
+                                        nurse detail drawer
+                                    </aside>
+                                </div>
+                            }
+                        />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationFrame = notificationBell.parentElement;
+
+        await waitFor(() => {
+            expect(notificationFrame).toHaveClass(
+                'pr-[calc(0.75rem+300px+0.5rem)]',
+                'min-[1400px]:pr-[calc(1rem+340px+0.75rem)]',
+                'min-[1600px]:pr-[calc(2.5rem+400px+1.25rem)]',
+            );
+        });
     });
 
     it('keeps the navigation expanded on non-workspace pages at the same width', () => {

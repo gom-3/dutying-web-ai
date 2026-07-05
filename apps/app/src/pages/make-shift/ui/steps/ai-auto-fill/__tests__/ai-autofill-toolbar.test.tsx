@@ -13,18 +13,24 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
                     'page.makeShift.aiRefill.generating': 'Filling',
                     'page.makeShift.aiRefill.retry': 'Retry',
                     'page.makeShift.aiRefill.saveSnapshot': 'Save draft',
-                    'page.makeShift.aiRefill.fixedDisplay': 'Show fixed',
+                    'page.makeShift.aiRefill.fixedDisplay': 'Fixed shifts',
                     'page.makeShift.aiRefill.fixedDisplayHidden': 'Fixed shifts hidden',
                     'page.makeShift.aiRefill.fixedDisplayShown': 'Fixed shifts shown',
-                    'page.makeShift.aiRefill.requestDisplay': 'Show requests',
+                    'page.makeShift.aiRefill.fixedDisplayHighlight': 'Highlight fixed shifts',
+                    'page.makeShift.aiRefill.requestDisplay': 'Requested shifts',
                     'page.makeShift.aiRefill.requestDisplayHidden': 'Requested shifts hidden',
                     'page.makeShift.aiRefill.requestDisplayShown': 'Requested shifts shown',
+                    'page.makeShift.aiRefill.requestDisplayHighlight': 'Highlight requested shifts',
                     'page.makeShift.aiRefill.showViolations': 'Show violations',
                     'page.makeShift.aiRefill.snapshotSidebar.title': 'History',
                     'page.makeShift.aiRefill.toolbarSubTitle': 'Use AI Autofill',
                     'page.makeShift.aiRefill.toolbarTitle': 'Fill and confirm',
                     'page.makeShift.aiRefill.validationStatus.checking': 'Checking',
                     'page.makeShift.aiRefill.viewOptions': 'Display options',
+                    'page.makeShift.aiRefill.viewBaseline': 'Show requests and fixed shifts only',
+                    'page.makeShift.aiRefill.viewBaselineCompact': 'Requests/fixed',
+                    'page.makeShift.aiRefill.viewComplete': 'Show all assignments',
+                    'page.makeShift.aiRefill.viewCompleteCompact': 'All',
                     'page.makeShift.aiRefill.violationsHidden': 'Constraint violations hidden',
                     'page.makeShift.aiRefill.violationsShown': 'Constraint violations shown',
                     'page.makeShift.navigation.saving': 'Saving',
@@ -33,26 +39,26 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
 }));
 
 function renderToolbar({
-    showFixedShifts = true,
-    showRequestShifts = true,
     showFaults = true,
-    onToggleFixedShifts = vi.fn(),
-    onToggleRequestShifts = vi.fn(),
+    onFixedShiftsAttentionStart = vi.fn(),
+    onFixedShiftsAttentionEnd = vi.fn(),
+    onRequestShiftsAttentionStart = vi.fn(),
+    onRequestShiftsAttentionEnd = vi.fn(),
     onToggleFaults = vi.fn(),
 }: {
-    showFixedShifts?: boolean;
-    showRequestShifts?: boolean;
     showFaults?: boolean;
-    onToggleFixedShifts?: () => void;
-    onToggleRequestShifts?: () => void;
+    onFixedShiftsAttentionStart?: () => void;
+    onFixedShiftsAttentionEnd?: () => void;
+    onRequestShiftsAttentionStart?: () => void;
+    onRequestShiftsAttentionEnd?: () => void;
     onToggleFaults?: () => void;
 } = {}) {
     render(
         <AiAutofillToolbar
-            showFixedShifts={showFixedShifts}
-            onToggleFixedShifts={onToggleFixedShifts}
-            showRequestShifts={showRequestShifts}
-            onToggleRequestShifts={onToggleRequestShifts}
+            onFixedShiftsAttentionStart={onFixedShiftsAttentionStart}
+            onFixedShiftsAttentionEnd={onFixedShiftsAttentionEnd}
+            onRequestShiftsAttentionStart={onRequestShiftsAttentionStart}
+            onRequestShiftsAttentionEnd={onRequestShiftsAttentionEnd}
             showFaults={showFaults}
             onToggleFaults={onToggleFaults}
             canUndo={false}
@@ -75,52 +81,60 @@ function renderToolbar({
 }
 
 describe('AiAutofillToolbar', () => {
-    it('renders the display switches as labeled toggles', () => {
+    it('renders compact support tools', () => {
         renderToolbar();
 
-        const fixedButton = screen.getByRole('button', {name: 'Fixed shifts shown'});
-        const requestButton = screen.getByRole('button', {name: 'Requested shifts shown'});
+        const fixedButton = screen.getByRole('button', {name: 'Highlight fixed shifts'});
+        const requestButton = screen.getByRole('button', {name: 'Highlight requested shifts'});
+
+        expect(fixedButton).toHaveTextContent('');
+        expect(requestButton).toHaveTextContent('');
+        expect(screen.getByText('Fixed shifts')).toBeInTheDocument();
+        expect(screen.getByText('Requested shifts')).toBeInTheDocument();
+        expect(screen.getAllByRole('button').map((button) => button.textContent).filter(Boolean)).toEqual(['Autofill', 'Confirm']);
+        expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('');
+    });
+
+    it('keeps fixed shift positions highlighted while hovered', async () => {
+        const user = userEvent.setup();
+        const onFixedShiftsAttentionStart = vi.fn();
+        const onFixedShiftsAttentionEnd = vi.fn();
+
+        renderToolbar({onFixedShiftsAttentionStart, onFixedShiftsAttentionEnd});
+
+        const fixedButton = screen.getByRole('button', {name: 'Highlight fixed shifts'});
 
         expect(fixedButton).toHaveAttribute('aria-pressed', 'true');
-        expect(fixedButton).toHaveTextContent('Show fixed');
+
+        await user.hover(fixedButton);
+
+        expect(onFixedShiftsAttentionStart).toHaveBeenCalledTimes(1);
+        expect(onFixedShiftsAttentionEnd).not.toHaveBeenCalled();
+
+        await user.unhover(fixedButton);
+
+        expect(onFixedShiftsAttentionEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('keeps requested shift positions highlighted while hovered', async () => {
+        const user = userEvent.setup();
+        const onRequestShiftsAttentionStart = vi.fn();
+        const onRequestShiftsAttentionEnd = vi.fn();
+
+        renderToolbar({onRequestShiftsAttentionStart, onRequestShiftsAttentionEnd});
+
+        const requestButton = screen.getByRole('button', {name: 'Highlight requested shifts'});
+
         expect(requestButton).toHaveAttribute('aria-pressed', 'true');
-        expect(requestButton).toHaveTextContent('Show requests');
-        expect(screen.getAllByRole('button').map((button) => button.textContent).filter((label) => label?.startsWith('Show'))).toEqual([
-            'Show requests',
-            'Show fixed',
-            'Show violations',
-        ]);
-        expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('Show violations');
-    });
 
-    it('toggles fixed shift visibility', async () => {
-        const user = userEvent.setup();
-        const onToggleFixedShifts = vi.fn();
+        await user.hover(requestButton);
 
-        renderToolbar({showFixedShifts: false, onToggleFixedShifts});
+        expect(onRequestShiftsAttentionStart).toHaveBeenCalledTimes(1);
+        expect(onRequestShiftsAttentionEnd).not.toHaveBeenCalled();
 
-        const fixedButton = screen.getByRole('button', {name: 'Fixed shifts hidden'});
+        await user.unhover(requestButton);
 
-        expect(fixedButton).toHaveAttribute('aria-pressed', 'false');
-
-        await user.click(fixedButton);
-
-        expect(onToggleFixedShifts).toHaveBeenCalledTimes(1);
-    });
-
-    it('toggles requested shift visibility', async () => {
-        const user = userEvent.setup();
-        const onToggleRequestShifts = vi.fn();
-
-        renderToolbar({showRequestShifts: false, onToggleRequestShifts});
-
-        const requestButton = screen.getByRole('button', {name: 'Requested shifts hidden'});
-
-        expect(requestButton).toHaveAttribute('aria-pressed', 'false');
-
-        await user.click(requestButton);
-
-        expect(onToggleRequestShifts).toHaveBeenCalledTimes(1);
+        expect(onRequestShiftsAttentionEnd).toHaveBeenCalledTimes(1);
     });
 
     it('toggles constraint violation visibility', async () => {
@@ -132,7 +146,7 @@ describe('AiAutofillToolbar', () => {
         const violationsButton = screen.getByRole('button', {name: 'Constraint violations hidden'});
 
         expect(violationsButton).toHaveAttribute('aria-pressed', 'false');
-        expect(violationsButton).toHaveTextContent('Show violations');
+        expect(violationsButton).toHaveTextContent('');
 
         await user.click(violationsButton);
 

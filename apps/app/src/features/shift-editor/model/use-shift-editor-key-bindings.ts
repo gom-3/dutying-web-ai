@@ -155,10 +155,16 @@ export function useShiftEditorKeyBindings(opts: TShiftEditorKeyBindingsOptions =
                 return;
             }
 
-            // delete/backspace -> 선택 지우기
+            // delete -> 선택 지우기, backspace -> 지우고 이전 셀로 이동
             if (key === 'Backspace' || key === 'Delete') {
                 e.preventDefault();
+                const selBefore = useShiftEditorStore.getState().selection;
+
                 commands.clearSelectionCells();
+
+                if (key === 'Backspace' && selBefore?.type === 'single') {
+                    commands.moveSelection('left', false, false);
+                }
 
                 return;
             }

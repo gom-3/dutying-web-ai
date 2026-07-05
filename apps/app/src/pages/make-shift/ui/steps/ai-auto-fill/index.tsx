@@ -12,6 +12,7 @@ import {
     useAsyncScheduleValidation,
     useShiftEditorCommands,
     useShiftEditorStore,
+    type TDutyDoc,
 } from '@/features/shift-editor';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
@@ -19,6 +20,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {useNavigationBarFoldStore} from '@/widgets/navigation-bar/navigation-bar-fold-store';
+import {hasEditableDutyDocChanges, useAiAutofillExitGuardStore} from '../../../model/ai-autofill-exit-guard';
 import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-autofill-state';
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
@@ -39,12 +41,11 @@ import {
 import {RestLeavePolicySummaryButton} from '../rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
-import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
-import {hasBlankLastShiftCells} from './last-shift-warning';
+import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
 
 const AI_SNAPSHOT_SIDEBAR_WIDTH = 304;
 const AI_CALENDAR_EFFECT_SETTLE_MS = 900;
@@ -54,6 +55,7 @@ type TSnapshotLimitContext = {
     oldestSnapshot: TSnapshotSummaryDto;
     intent: 'save' | 'confirm';
 };
+type TLastShiftBlankWarningIntent = 'aiFill' | 'confirm';
 
 function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
     const updatedAt = new Date(snapshot.updatedAt).getTime();
@@ -142,8 +144,7 @@ export function AiAutofill() {
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
     const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
-    const [showFixedShifts, setShowFixedShifts] = useState(true);
-    const [showRequestShifts, setShowRequestShifts] = useState(true);
+    const [cellAttention, setCellAttention] = useState<{target: 'fixed' | 'request'; nonce: number} | null>(null);
     const [showFaults, setShowFaults] = useState(true);
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
@@ -157,8 +158,8 @@ export function AiAutofill() {
     const [snapshotLoadTarget, setSnapshotLoadTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
-    const [lastShiftBlankWarningOpen, setLastShiftBlankWarningOpen] = useState(false);
-    const [lastShiftBlankWarningAcknowledged, setLastShiftBlankWarningAcknowledged] = useState(false);
+    const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
+    const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -169,6 +170,10 @@ export function AiAutofill() {
         enabled: isSnapshotSidebarOpen && isCurrentShiftTeamReady,
     });
     const resetAiStatus = useCallback(() => setAiStatus('idle'), []);
+    const showCellAttention = useCallback((target: 'fixed' | 'request') => {
+        setCellAttention((current) => (current?.target === target ? current : {target, nonce: Date.now()}));
+    }, []);
+    const clearCellAttention = useCallback(() => setCellAttention(null), []);
     const openSnapshotSidebar = useCallback(() => {
         collapseNavigationBar();
         setIsSnapshotSidebarOpen(true);
@@ -195,9 +200,19 @@ export function AiAutofill() {
     const aiAbortControllerRef = useRef<AbortController | null>(null);
     const aiEffectDismissTimerRef = useRef<number | null>(null);
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
+    const savedEditableDocRef = useRef<TDutyDoc | null>(null);
+    const savedEditableContextKeyRef = useRef<string | null>(null);
+    const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
+    const setExitGuard = useAiAutofillExitGuardStore((s) => s.setExitGuard);
+    const resetExitGuard = useAiAutofillExitGuardStore((s) => s.resetExitGuard);
+    const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
 
     currentAiContextRef.current = {wardId, shiftTeamId: currentShiftTeamId, year, month};
 
+    const markEditableDocSaved = useCallback((doc: TDutyDoc = useShiftEditorStore.getState().doc) => {
+        savedEditableDocRef.current = doc;
+        setSavedEditableDocVersion((version) => version + 1);
+    }, []);
     const clearAiEffectDismissTimer = useCallback(() => {
         if (aiEffectDismissTimerRef.current === null) return;
 
@@ -246,8 +261,8 @@ export function AiAutofill() {
         setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
         setSnapshotLimitContext(null);
-        setLastShiftBlankWarningOpen(false);
-        setLastShiftBlankWarningAcknowledged(false);
+        setLastShiftBlankWarningIntent(null);
+        setLastShiftBlankWarningAcknowledgedKey(null);
         aiAbortControllerRef.current?.abort();
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
@@ -258,8 +273,10 @@ export function AiAutofill() {
     }, [wardId, currentShiftTeamId, year, month, hideAiEffect, resetAiStatus]);
 
     useEffect(() => {
-        setLastShiftBlankWarningAcknowledged(false);
-    }, [draftRevision]);
+        savedEditableContextKeyRef.current = null;
+        savedEditableDocRef.current = null;
+        setSavedEditableDocVersion((version) => version + 1);
+    }, [currentContextKey]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -275,26 +292,20 @@ export function AiAutofill() {
         };
     }, [isSnapshotSidebarOpen]);
 
-    const calendarDoc = useMemo(
-        () =>
-            showFixedShifts && showRequestShifts
-                ? hydratedDoc
-                : maskDutyDocCells(hydratedDoc, {hideFixed: !showFixedShifts, hideRequests: !showRequestShifts}),
-        [hydratedDoc, showFixedShifts, showRequestShifts],
-    );
+    const isCalendarReadonly = isAiGenerating;
     const restCheckByShiftNurseId = useMemo(
         () =>
             dutyQuery.data
                 ? calculateRestCheckByShiftNurse({
                       shift: dutyQuery.data,
-                      doc: calendarDoc,
+                      doc: hydratedDoc,
                       policy,
                       year,
                       month,
                       adjustmentDays,
                   })
                 : undefined,
-        [adjustmentDays, calendarDoc, dutyQuery.data, month, policy, year],
+        [adjustmentDays, dutyQuery.data, hydratedDoc, month, policy, year],
     );
     const canConfirm =
         !isWorking &&
@@ -306,10 +317,68 @@ export function AiAutofill() {
         Boolean(dutyQuery.data) &&
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
+    const hasUnsavedEditableChanges = useMemo(
+        () => hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
+        [editorDoc, savedEditableDocVersion],
+    );
+    const lastShiftBlankWarningKey = useMemo(() => getBlankLastShiftCellsWarningKey(editorDoc), [editorDoc]);
+    const shouldShowLastShiftBlankWarning =
+        lastShiftBlankWarningKey !== null && lastShiftBlankWarningAcknowledgedKey !== lastShiftBlankWarningKey;
+    const requestLastShiftBlankWarning = useCallback(
+        (intent: TLastShiftBlankWarningIntent) => {
+            if (!shouldShowLastShiftBlankWarning) return false;
+
+            setLastShiftBlankWarningIntent(intent);
+
+            return true;
+        },
+        [shouldShowLastShiftBlankWarning],
+    );
+
+    useEffect(() => {
+        if (isHydratingEditor || !dutyQuery.data || editorDoc.columns.length === 0) return;
+
+        if (savedEditableContextKeyRef.current === currentContextKey && savedEditableDocRef.current !== null) return;
+
+        savedEditableContextKeyRef.current = currentContextKey;
+        markEditableDocSaved(editorDoc);
+    }, [currentContextKey, dutyQuery.data, editorDoc, isHydratingEditor, markEditableDocSaved]);
+
+    useEffect(() => {
+        setExitGuard({hasUnsavedChanges: hasUnsavedEditableChanges, isAiGenerating});
+
+        return () => resetExitGuard();
+    }, [hasUnsavedEditableChanges, isAiGenerating, resetExitGuard, setExitGuard]);
+
+    useEffect(() => {
+        if (!hasUnsavedEditableChanges && !isAiGenerating) return;
+
+        const message = isAiGenerating
+            ? t('page.makeShift.aiRefill.exitGuard.aiGeneratingMessage')
+            : t('page.makeShift.aiRefill.exitGuard.unsavedMessage');
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = message;
+
+            return message;
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedEditableChanges, isAiGenerating, t]);
+
+    useEffect(() => {
+        if (lastShiftBlankWarningKey === null && lastShiftBlankWarningAcknowledgedKey !== null) {
+            setLastShiftBlankWarningAcknowledgedKey(null);
+        }
+    }, [lastShiftBlankWarningAcknowledgedKey, lastShiftBlankWarningKey]);
+
     const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
+        const docToSave = useShiftEditorStore.getState().doc;
 
         toast.loading(t('page.makeShift.aiRefill.savingSnapshot'), {id: progressToastId});
 
@@ -327,13 +396,14 @@ export function AiAutofill() {
                     title: getNextSnapshotTitle(snapshots),
                     year,
                     month,
-                    doc: editorDoc,
+                    doc: docToSave,
                     originalShift: dutyQuery.data,
                 }),
             );
 
             prependSnapshotToListCache(queryClient, wardId, currentShiftTeamId, year, month, saved);
             invalidateSnapshots(wardId, currentShiftTeamId, year, month);
+            markEditableDocSaved(docToSave);
             toast.success(t('page.makeShift.aiRefill.saveSnapshotSuccess'), {id: progressToastId});
         } finally {
             if (snapshotToDelete) {
@@ -343,6 +413,8 @@ export function AiAutofill() {
     };
     const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
+
+        const docToPublish = useShiftEditorStore.getState().doc;
 
         if (snapshotToDelete) {
             setDeletingSnapshotId(snapshotToDelete.snapshotId);
@@ -357,7 +429,7 @@ export function AiAutofill() {
                 title: getNextSnapshotTitle(snapshots),
                 year,
                 month,
-                doc: editorDoc,
+                doc: docToPublish,
                 originalShift: dutyQuery.data,
             }),
         );
@@ -371,13 +443,13 @@ export function AiAutofill() {
         });
 
         const nextShift = {
-            ...docToShift(editorDoc, dutyQuery.data),
+            ...docToShift(docToPublish, dutyQuery.data),
             workflowStatus: 'CONFIRMED' as const,
             workflowStep: 6,
         };
         const confirmedRestCheckByShiftNurseId = calculateRestCheckByShiftNurse({
             shift: nextShift,
-            doc: editorDoc,
+            doc: docToPublish,
             policy,
             year,
             month,
@@ -385,6 +457,7 @@ export function AiAutofill() {
         });
         const queryKey = wardQueryOptions.duty(wardId, currentShiftTeamId, year, month).queryKey;
 
+        markEditableDocSaved(docToPublish);
         useCase.confirm(nextShift);
         queryClient.setQueryData(queryKey, nextShift);
         void queryClient.invalidateQueries({queryKey});
@@ -452,6 +525,7 @@ export function AiAutofill() {
             });
 
             commands.init(nextDoc);
+            markEditableDocSaved(nextDoc);
             resetAiStatus();
 
             const stateAfterInit = useShiftEditorStore.getState();
@@ -533,17 +607,8 @@ export function AiAutofill() {
     const handleConfirm = () => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
 
-        if (!lastShiftBlankWarningAcknowledged && hasBlankLastShiftCells(editorDoc)) {
-            setLastShiftBlankWarningOpen(true);
+        if (requestLastShiftBlankWarning('confirm')) return;
 
-            return;
-        }
-
-        void confirmCurrentSchedule();
-    };
-    const handleConfirmLastShiftBlankWarning = () => {
-        setLastShiftBlankWarningOpen(false);
-        setLastShiftBlankWarningAcknowledged(true);
         void confirmCurrentSchedule();
     };
     const handleRenameSnapshot = async (snapshotId: number, title: string) => {
@@ -635,17 +700,27 @@ export function AiAutofill() {
             setDeletingSnapshotId(null);
         }
     };
-    const handleAiFill = async () => {
-        if (isAiGenerating) return;
+    const getAiFillReadyContext = () => {
+        if (isAiGenerating) return null;
 
         if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !dutyQuery.data) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
-            return;
+            return null;
         }
 
+        return {
+            originalShift: dutyQuery.data,
+            rulesHash,
+            shiftTeamId: currentShiftTeamId,
+            wardId,
+        };
+    };
+    const runAiFill = async (readyContext = getAiFillReadyContext()) => {
+        if (!readyContext) return;
+
         const requestSeq = aiRequestSeqRef.current + 1;
-        const requestContext = {wardId, shiftTeamId: currentShiftTeamId, year, month};
+        const requestContext = {wardId: readyContext.wardId, shiftTeamId: readyContext.shiftTeamId, year, month};
         const abortController = new AbortController();
 
         aiAbortControllerRef.current?.abort();
@@ -669,9 +744,9 @@ export function AiAutofill() {
                 year: requestContext.year,
                 month: requestContext.month,
                 doc: editorDoc,
-                originalShift: dutyQuery.data,
+                originalShift: readyContext.originalShift,
                 draftRevision,
-                rulesHash,
+                rulesHash: readyContext.rulesHash,
                 signal: abortController.signal,
             });
 
@@ -705,7 +780,7 @@ export function AiAutofill() {
 
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
-            commands.applyChangedCells(result.response.changedCells, dutyQuery.data, 'ai');
+            commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
             commands.setScheduleValidationFromApi(result.validation);
 
             shouldKeepAiEffectVisible = true;
@@ -723,6 +798,53 @@ export function AiAutofill() {
             }
         }
     };
+    const handleAiFill = () => {
+        const readyContext = getAiFillReadyContext();
+
+        if (!readyContext) return;
+
+        if (requestLastShiftBlankWarning('aiFill')) return;
+
+        void runAiFill(readyContext);
+    };
+    const handleConfirmLastShiftBlankWarning = () => {
+        const warningIntent = lastShiftBlankWarningIntent;
+
+        setLastShiftBlankWarningIntent(null);
+
+        if (lastShiftBlankWarningKey !== null) {
+            setLastShiftBlankWarningAcknowledgedKey(lastShiftBlankWarningKey);
+        }
+
+        if (warningIntent === 'aiFill') {
+            void runAiFill();
+
+            return;
+        }
+
+        if (warningIntent === 'confirm') {
+            void confirmCurrentSchedule();
+        }
+    };
+    const handleCancelLastShiftBlankWarning = () => {
+        const firstBlankLastShiftCell = findFirstBlankLastShiftCell(useShiftEditorStore.getState().doc);
+
+        setLastShiftBlankWarningIntent(null);
+
+        if (!firstBlankLastShiftCell) return;
+
+        commands.select(firstBlankLastShiftCell);
+
+        window.requestAnimationFrame(() => {
+            focusEditor();
+
+            document
+                .querySelector<HTMLElement>(
+                    `[data-row-index="${firstBlankLastShiftCell.row}"] [data-shift-col-index="${firstBlankLastShiftCell.col}"]`,
+                )
+                ?.scrollIntoView({block: 'center', inline: 'center', behavior: 'smooth'});
+        });
+    };
     const fallbackHistoryTitle = t('page.makeShift.aiRefill.snapshotSidebar.selectedHistory');
     const snapshotLoadTargetTitle = snapshotLoadTarget
         ? resolveSnapshotDisplayTitle({
@@ -735,6 +857,14 @@ export function AiAutofill() {
         : fallbackHistoryTitle;
     const snapshotDeleteTargetTitle = resolveHistoryTitle(snapshotDeleteTarget?.title, fallbackHistoryTitle);
     const limitOldestSnapshotTitle = resolveHistoryTitle(snapshotLimitContext?.oldestSnapshot.title, fallbackHistoryTitle);
+    const lastShiftBlankDialogDescription = (
+        <>
+            <span>{t('page.makeShift.aiRefill.lastShiftBlankDialog.descriptionLead')}</span>
+            <span className="mt-1 block font-semibold text-main-1">
+                {t('page.makeShift.aiRefill.lastShiftBlankDialog.descriptionHighlight')}
+            </span>
+        </>
+    );
 
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex w-full min-w-0">
@@ -746,10 +876,10 @@ export function AiAutofill() {
                 tabIndex={0}
             >
                 <AiAutofillToolbar
-                    showFixedShifts={showFixedShifts}
-                    onToggleFixedShifts={() => setShowFixedShifts((prev) => !prev)}
-                    showRequestShifts={showRequestShifts}
-                    onToggleRequestShifts={() => setShowRequestShifts((prev) => !prev)}
+                    onFixedShiftsAttentionStart={() => showCellAttention('fixed')}
+                    onFixedShiftsAttentionEnd={clearCellAttention}
+                    onRequestShiftsAttentionStart={() => showCellAttention('request')}
+                    onRequestShiftsAttentionEnd={clearCellAttention}
                     showFaults={showFaults}
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
@@ -783,15 +913,16 @@ export function AiAutofill() {
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && dutyQuery.data && (
                     <MakeShiftCalendar
                         shift={dutyQuery.data}
-                        doc={calendarDoc}
+                        doc={hydratedDoc}
                         violationMap={violationMap}
                         teamViolations={teamViolations}
                         showFaults={showFaults}
-                        onCellClick={isAiGenerating ? undefined : focusEditor}
-                        readonly={isAiGenerating}
-                        editableLastShifts={!isAiGenerating}
+                        onCellClick={isCalendarReadonly ? undefined : focusEditor}
+                        readonly={isCalendarReadonly}
+                        editableLastShifts={!isCalendarReadonly}
                         isShimmering={isAiEffectVisible}
                         showCellStatusPins
+                        cellAttention={cellAttention}
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         restPolicyControl={
@@ -818,12 +949,17 @@ export function AiAutofill() {
                 onRetry={() => void snapshotsQuery.refetch()}
             />
             <ConfirmActionDialog
-                open={lastShiftBlankWarningOpen}
+                open={lastShiftBlankWarningIntent !== null}
                 title={t('page.makeShift.aiRefill.lastShiftBlankDialog.title')}
-                description={t('page.makeShift.aiRefill.lastShiftBlankDialog.description')}
-                confirmLabel={t('page.makeShift.aiRefill.lastShiftBlankDialog.confirm')}
+                description={lastShiftBlankDialogDescription}
+                confirmLabel={t(
+                    lastShiftBlankWarningIntent === 'aiFill'
+                        ? 'page.makeShift.aiRefill.lastShiftBlankDialog.confirmAiFill'
+                        : 'page.makeShift.aiRefill.lastShiftBlankDialog.confirm',
+                )}
                 cancelLabel={t('page.makeShift.aiRefill.lastShiftBlankDialog.cancel')}
-                onClose={() => setLastShiftBlankWarningOpen(false)}
+                onClose={() => setLastShiftBlankWarningIntent(null)}
+                onCancel={handleCancelLastShiftBlankWarning}
                 onConfirm={handleConfirmLastShiftBlankWarning}
             />
             <ConfirmActionDialog

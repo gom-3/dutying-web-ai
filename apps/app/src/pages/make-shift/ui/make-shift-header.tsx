@@ -15,7 +15,11 @@ function getNextYearMonth(year: number, month: number) {
     return month >= 12 ? {year: year + 1, month: 1} : {year, month: month + 1};
 }
 
-export function MakeShiftHeader() {
+type TMakeShiftHeaderProps = {
+    onBeforeContextChange?: () => boolean;
+};
+
+export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps = {}) {
     const {t} = useTypedTranslation();
     const {
         state: {accessToken},
@@ -39,12 +43,16 @@ export function MakeShiftHeader() {
         });
     };
     const handlePrevMonth = () => {
+        if (onBeforeContextChange && !onBeforeContextChange()) return;
+
         const next = getPrevYearMonth(year, month);
 
         goPrevMonth();
         showContextToast(next.year, next.month, currentShiftTeamName);
     };
     const handleNextMonth = () => {
+        if (onBeforeContextChange && !onBeforeContextChange()) return;
+
         const next = getNextYearMonth(year, month);
 
         goNextMonth();
@@ -52,6 +60,8 @@ export function MakeShiftHeader() {
     };
     const handleSelectShiftTeam = (shiftTeamId: number) => {
         if (shiftTeamId === currentShiftTeamId) return;
+
+        if (onBeforeContextChange && !onBeforeContextChange()) return;
 
         const nextTeamName =
             shiftTeams.find((team) => team.shiftTeamId === shiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');

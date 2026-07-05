@@ -1,6 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import * as Dialog from '@radix-ui/react-dialog';
 import {AlertTriangle, X} from 'lucide-react';
+import type {ReactNode} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Button} from '@/shared/ui/primitives/button';
 
@@ -9,12 +10,13 @@ type TConfirmActionDialogTone = 'default' | 'danger';
 interface IConfirmActionDialogProps {
     open: boolean;
     title: string;
-    description: string;
+    description: ReactNode;
     confirmLabel: string;
     cancelLabel?: string;
     tone?: TConfirmActionDialogTone;
     onClose: () => void;
     onConfirm: () => void;
+    onCancel?: () => void;
 }
 
 function ConfirmActionDialog({
@@ -26,6 +28,7 @@ function ConfirmActionDialog({
     tone = 'default',
     onClose,
     onConfirm,
+    onCancel,
 }: IConfirmActionDialogProps) {
     const {t} = useTypedTranslation();
     const resolvedCancelLabel = cancelLabel ?? t('shared.confirmActionDialog.cancel');
@@ -65,7 +68,7 @@ function ConfirmActionDialog({
 
                     <div className="mt-6 grid grid-cols-2 gap-2">
                         <Dialog.Close asChild>
-                            <Button type="button" variant="soft" className="h-11 rounded-[12px] text-[15px]">
+                            <Button type="button" variant="soft" className="h-11 rounded-[12px] text-[15px]" onClick={onCancel}>
                                 {resolvedCancelLabel}
                             </Button>
                         </Dialog.Close>

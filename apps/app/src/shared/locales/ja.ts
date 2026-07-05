@@ -669,6 +669,7 @@ export const ja: TLocale = {
             hospitalNamePlaceholder: '病院名を入力してください',
             wardName: '病棟名',
             wardNamePlaceholder: '病棟名を入力してください',
+            quitWard: '病棟から退出',
             save: '変更を保存',
             saving: '保存中...',
             state: {
