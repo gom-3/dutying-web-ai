@@ -736,7 +736,7 @@ function ShiftTypeTable({
                                                 </InlineFieldError>
                                             ) : null}
                                         </div>
-                                        <span className="ml-2 flex h-10 min-w-[48px] items-center rounded-[8px] bg-[#F6F7F9] px-2 font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
+                                        <span className="ml-2 flex h-10 min-w-[48px] items-center justify-center rounded-[8px] bg-[#F6F7F9] px-2 font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
                                             {shiftType.isOff ? '' : formatShiftDuration(shiftType.startTime, shiftType.endTime)}
                                         </span>
                                     </div>
@@ -903,8 +903,8 @@ function ConstraintsContent({
                         <p className="mt-1 font-apple text-sm text-gray-3">{t('page.wardSettings.constraints.teamDescription')}</p>
                     </div>
 
-                    <div className="max-w-full rounded-[12px] bg-[#F2F4F6] p-1">
-                        <div className="scrollbar-hide flex max-w-full gap-1 overflow-x-auto whitespace-nowrap">
+                    <div className="max-w-full min-w-0 overflow-visible rounded-[12px] bg-[#3D4658] p-0.5">
+                        <div className="scrollbar-hide flex max-w-full min-w-0 gap-1 overflow-visible whitespace-nowrap">
                             {state.shiftTeams.map((team) => {
                                 const active = team.shiftTeamId === state.currentShiftTeamId;
 
@@ -913,12 +913,12 @@ function ConstraintsContent({
                                         key={team.shiftTeamId}
                                         type="button"
                                         className={cn(
-                                            'rounded-[9px] px-3 py-2 font-apple text-sm font-semibold transition-colors',
-                                            active ? 'bg-white text-sub-1' : 'text-gray-3 hover:text-sub-1',
+                                            'relative box-border grid h-8 max-h-8 min-h-8 min-w-[92px] shrink-0 place-items-center overflow-visible rounded-[9px] px-3 py-0 font-apple text-[12px] leading-none font-semibold transition-colors',
+                                            active ? 'bg-white text-sub-1' : 'text-[#B8C0CF] hover:text-white',
                                         )}
                                         onClick={() => actions.selectShiftTeam(team.shiftTeamId)}
                                     >
-                                        {team.name}
+                                        <span className="block leading-none">{team.name}</span>
                                     </button>
                                 );
                             })}

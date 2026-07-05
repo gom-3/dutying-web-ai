@@ -96,12 +96,21 @@ describe('useShiftEditorKeyBindings', () => {
         await result.current.onKeyDown(createKeyboardEvent('Z', {metaKey: true, shiftKey: true}));
         await result.current.onKeyDown(createKeyboardEvent('y', {ctrlKey: true}));
         await result.current.onKeyDown(createKeyboardEvent('Delete'));
-        await result.current.onKeyDown(createKeyboardEvent('Backspace'));
 
         expect(commands.selectAll).toHaveBeenCalledTimes(1);
         expect(commands.undo).toHaveBeenCalledTimes(1);
         expect(commands.redo).toHaveBeenCalledTimes(2);
-        expect(commands.clearSelectionCells).toHaveBeenCalledTimes(2);
+        expect(commands.clearSelectionCells).toHaveBeenCalledTimes(1);
+        expect(commands.moveSelection).not.toHaveBeenCalled();
+    });
+
+    it('clears the selected single cell and moves left on backspace', async () => {
+        const {result} = renderHook(() => useShiftEditorKeyBindings());
+
+        await result.current.onKeyDown(createKeyboardEvent('Backspace'));
+
+        expect(commands.clearSelectionCells).toHaveBeenCalledTimes(1);
+        expect(commands.moveSelection).toHaveBeenCalledWith('left', false, false);
     });
 
     it('moves the selection with Tab / Shift+Tab like spreadsheet column navigation', async () => {

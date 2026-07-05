@@ -73,10 +73,12 @@ type TMakeShiftCalendarProps = {
      * true면 날짜 셀의 근무유형 칩 왼쪽 상단에 고정/신청 상태 핀을 표시한다.
      */
     showCellStatusPins?: boolean;
+    cellAttention?: TCellAttention | null;
     skillColumn?: TSkillColumnConfig;
     restCheckByShiftNurseId?: Record<number, TRestCheckSummary>;
     restPolicyControl?: ReactNode;
 };
+type TCellAttention = {target: 'fixed' | 'request'; nonce: number};
 
 /**
  * 근무 만들기·/duty 공용 일자 캘린더. 스케일(transform)·내부 가로 스크롤 없음, 레이아웃은 `cqw`+`@container`.
@@ -1075,6 +1077,7 @@ export function MakeShiftCalendar({
     editableLastShifts = false,
     isShimmering = false,
     showCellStatusPins = false,
+    cellAttention = null,
     skillColumn,
     restCheckByShiftNurseId,
     restPolicyControl,
@@ -1649,6 +1652,7 @@ export function MakeShiftCalendar({
                                                 activeViolationKey={activeViolationKey}
                                                 simplified={isSimplified}
                                                 showCellStatusPins={showCellStatusPins}
+                                                cellAttention={cellAttention}
                                                 showSkillColumn={showSkillColumn}
                                                 showCarryColumn={showCarryColumn}
                                                 leftGridTemplateColumns={leftGridTemplateColumns}
@@ -1768,6 +1772,7 @@ type TCalendarRowLeftProps = {
     activeViolationKey: string | null;
     simplified: boolean;
     showCellStatusPins: boolean;
+    cellAttention: TCellAttention | null;
     showSkillColumn: boolean;
     showCarryColumn: boolean;
     leftGridTemplateColumns: string;
@@ -1810,6 +1815,7 @@ function CalendarRowLeft({
     activeViolationKey,
     simplified,
     showCellStatusPins,
+    cellAttention,
     showSkillColumn,
     showCarryColumn,
     leftGridTemplateColumns,
@@ -2095,6 +2101,14 @@ function CalendarRowLeft({
                         const isFixedCell = cellLockKey !== null && fixedCells[cellLockKey] === true;
                         const isRequestedCell = cellLockKey !== null && requestCells[cellLockKey] === true;
                         const showFixedStatusPin = isFixedCell && !isRequestedCell;
+                        const isModifiedCell = cellLockKey !== null && cells[j] != null && !isFixedCell && !isRequestedCell;
+                        const attentionKind =
+                            cellAttention?.target === 'request' && isRequestedCell
+                                ? 'request'
+                                : cellAttention?.target === 'fixed' && showFixedStatusPin
+                                  ? 'fixed'
+                                  : null;
+                        const isAttentionMuted = cellAttention !== null && attentionKind === null;
                         const reqId = isRequestedCell ? (wardReqShiftList[j] ?? null) : null;
                         const reqType = reqId != null ? idToType.get(reqId) : null;
                         const cellViolationList = showFaults ? violationsByDayCol.get(j) : undefined;
@@ -2135,6 +2149,10 @@ function CalendarRowLeft({
                                 data-dimmed-violation-cell={isCellViolationDimmed ? 'true' : undefined}
                                 data-fixed-cell={showCellStatusPins && showFixedStatusPin ? 'true' : undefined}
                                 data-request-cell={showCellStatusPins && isRequestedCell ? 'true' : undefined}
+                                data-modified-cell={isModifiedCell ? 'true' : undefined}
+                                data-attention-kind={attentionKind ?? undefined}
+                                data-attention-muted={isAttentionMuted ? 'true' : undefined}
+                                data-attention-nonce={attentionKind ? cellAttention?.nonce : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);

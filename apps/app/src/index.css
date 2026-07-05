@@ -213,11 +213,26 @@
     animation: make-shift-calendar-shimmer 2.05s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
+.make-shift-calendar__shift-badge-wrap,
+.make-shift-calendar__request-outline {
+    transition:
+        filter 180ms ease-out,
+        opacity 180ms ease-out,
+        transform 180ms ease-out;
+}
+
+.make-shift-calendar__day-cell[data-attention-muted='true'] .make-shift-calendar__shift-badge-wrap,
+.make-shift-calendar__day-cell[data-attention-muted='true'] .make-shift-calendar__request-outline {
+    filter: grayscale(1) saturate(0);
+    opacity: 0.32;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .make-shift-calendar__shimmer-sweep {
         animation: none;
         opacity: 0;
     }
+
 }
 
 /* 100 Thin */

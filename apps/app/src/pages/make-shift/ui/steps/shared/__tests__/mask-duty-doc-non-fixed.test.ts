@@ -40,4 +40,24 @@ describe('maskDutyDocFixedCells', () => {
         expect(masked.rows[0]?.cells).toEqual(['D', null]);
         expect(masked.requestCells).toEqual({});
     });
+
+    it('hides only editable assignments while keeping fixed and requested shifts visible', () => {
+        const doc: TDutyDoc = {
+            columns: ['2026-07-01', '2026-07-02', '2026-07-03'],
+            rows: [
+                {
+                    workerId: '10',
+                    cells: ['D', 'E', 'N'],
+                },
+            ],
+            workerMeta: {'10': {name: 'Kim'}},
+            fixedCells: {'10|2026-07-01': true},
+            requestCells: {'10|2026-07-02': true},
+        };
+        const masked = maskDutyDocCells(doc, {hideUnlocked: true});
+
+        expect(masked.rows[0]?.cells).toEqual(['D', 'E', null]);
+        expect(masked.fixedCells).toEqual(doc.fixedCells);
+        expect(masked.requestCells).toEqual(doc.requestCells);
+    });
 });
