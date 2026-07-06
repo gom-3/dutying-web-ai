@@ -69,6 +69,8 @@ import type {TSortMode} from './types';
 
 const MAX_STEP = 4;
 const ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS = 600;
+const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
+const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
 
 type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
@@ -154,6 +156,19 @@ const normalizeRestoredSkillLevelConfig = (value: unknown, legacyEnabled: unknow
         enabled: enabled ?? DEFAULT_SKILL_LEVEL_CONFIG.enabled,
     };
 };
+const normalizeRestoredNurses = (nurses: TOnboardingWardDraft['nurses']): TOnboardingWardDraft['nurses'] =>
+    nurses.map((nurse) => {
+        const trimmedMemo = nurse.memo.trim();
+        const hasPreceptorMemo = trimmedMemo === PRECEPTOR_MEMO;
+        const hasPrecepteeMemo = trimmedMemo === PRECEPTEE_MEMO;
+
+        return {
+            ...nurse,
+            memo: hasPreceptorMemo || hasPrecepteeMemo ? '' : nurse.memo,
+            isPreceptor: nurse.isPreceptor ?? hasPreceptorMemo,
+            isPreceptee: nurse.isPreceptee ?? hasPrecepteeMemo,
+        };
+    });
 const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
@@ -179,6 +194,7 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     return {
         draft: {
             ...restoredDraft,
+            nurses: normalizeRestoredNurses(restoredDraft.nurses),
             skillLevelConfig: normalizeRestoredSkillLevelConfig(restoredDraft.skillLevelConfig, payload.isSkillLevelEnabled),
             scheduleInputs: normalizeScheduleInputs(restoredDraft.scheduleInputs),
         },
@@ -405,6 +421,8 @@ const applySchedulePreviewToDraft = (
             teamId,
             name: nurse.name,
             memo: existingNurse?.memo ?? '',
+            isPreceptor: existingNurse?.isPreceptor ?? false,
+            isPreceptee: existingNurse?.isPreceptee ?? false,
             isWorker: existingNurse?.isWorker ?? true,
             employmentDate: existingNurse?.employmentDate ?? defaultEmploymentDate,
             possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : fallbackPossibleShiftTypeIds,

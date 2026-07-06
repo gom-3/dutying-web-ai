@@ -3,6 +3,19 @@ import {type TLocale} from './ko';
 
 export const zh = {
     ...generatedZh,
+    widget: {
+        ...generatedZh.widget,
+        wardChat: {
+            ...generatedZh.widget.wardChat,
+            enableAlertAria: '开启病区聊天新消息提醒',
+            disableAlertAria: '关闭病区聊天新消息提醒',
+            alertOnTooltip: '新消息提醒已开启',
+            alertOffTooltip: '新消息提醒已关闭',
+            previewOpenAria: '打开来自 {{sender}} 的新消息：{{text}}',
+            unknownSender: '病区聊天',
+            emptyPreview: '收到一条新消息。',
+        },
+    },
     page: {
         ...generatedZh.page,
         notifications: {

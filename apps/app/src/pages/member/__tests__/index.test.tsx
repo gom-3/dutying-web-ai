@@ -163,6 +163,18 @@ describe('MemberPage', () => {
         });
     });
 
+    it('상단 요약은 병원명과 병동명 없이 전체 인원부터 보여준다', () => {
+        render(
+            <MemoryRouter>
+                <MemberPage />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByText('전체 인원')).toBeInTheDocument();
+        expect(screen.queryByText('듀팅병원')).not.toBeInTheDocument();
+        expect(screen.queryByText('중환자실')).not.toBeInTheDocument();
+    });
+
     it('병동코드 박스를 클릭하면 병동코드 안내 모달을 연다', async () => {
         render(
             <MemoryRouter>

@@ -15,6 +15,8 @@ const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDra
     teamId,
     name: overrides.name ?? '홍길동',
     memo: overrides.memo ?? '',
+    isPreceptor: overrides.isPreceptor ?? false,
+    isPreceptee: overrides.isPreceptee ?? false,
     isWorker: overrides.isWorker ?? true,
     employmentDate: overrides.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: overrides.possibleShiftTypeIds ?? [],
@@ -133,6 +135,29 @@ describe('OnboardingWardCreatePage adapter', () => {
         });
 
         expect(payload.shiftTeams[0]?.nurses?.[0]?.level).toBeNull();
+    });
+
+    it('sends preceptor roles separately from nurse memo in the create payload', () => {
+        const initialDraft = createInitialDraft();
+        const firstTeamId = initialDraft.teams[0]?.id ?? '';
+        const payload = buildCreateWardPayload({
+            ...initialDraft,
+            nurses: [
+                createNurseDraft(firstTeamId, {
+                    name: 'Nurse A',
+                    memo: '프리셉터',
+                    isPreceptor: true,
+                }),
+            ],
+        });
+
+        expect(payload.shiftTeams[0]?.nurses?.[0]).toEqual(
+            expect.objectContaining({
+                memo: '',
+                isPreceptor: true,
+                isPreceptee: false,
+            }),
+        );
     });
 
     it('uses a safe fallback name when both ward and hospital names are blank', () => {

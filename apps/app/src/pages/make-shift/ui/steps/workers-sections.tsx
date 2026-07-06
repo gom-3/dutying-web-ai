@@ -1,9 +1,10 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
+import {Check} from 'lucide-react';
 import {type ComponentProps} from 'react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
 import {type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
-import {getMemoWithoutPrecepteeMarker, hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
+import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -98,6 +99,19 @@ function ShiftTypeBadge({badge}: {badge: TShiftTypeBadge}) {
         >
             {badge.code}
         </div>
+    );
+}
+
+function RoleCheckIndicator({label}: {label: string}) {
+    return (
+        <span
+            role="img"
+            aria-label={label}
+            title={label}
+            className="inline-grid size-[clamp(17px,1.25vw,20px)] shrink-0 place-items-center rounded-full bg-[#F1EDFF] text-[#8B5CF6]"
+        >
+            <Check className="size-[clamp(9px,0.75vw,12px)] stroke-[3]" aria-hidden="true" />
+        </span>
     );
 }
 
@@ -232,8 +246,9 @@ function WorkerRow({
 }: TWorkerRowProps) {
     const {t} = useTypedTranslation();
     const shiftTypeBadges = buildShiftTypeBadges(nurse, wardShiftTypes);
-    const isPreceptee = hasPrecepteeMemo(nurse.memo);
-    const memo = getMemoWithoutPrecepteeMarker(nurse.memo).trim();
+    const isPreceptor = hasNursePreceptorRole(nurse);
+    const isPreceptee = hasNursePrecepteeRole(nurse);
+    const memo = getMemoWithoutRoleMarkers(nurse.memo).trim();
     const memoPreview = memo ? formatMemoPreview(memo) : '';
     const fadedRowClass = isWorker ? '' : 'opacity-55';
 
@@ -290,19 +305,15 @@ function WorkerRow({
                             )}
                         </div>
                         <div className="make-shift-workers__row-preceptor flex items-center justify-center">
-                            {nurse.isWardManager ? (
-                                <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
-                                    {t('page.makeShift.workers.preceptorActive')}
-                                </span>
+                            {isPreceptor ? (
+                                <RoleCheckIndicator label={t('page.makeShift.workers.column.preceptor')} />
                             ) : (
                                 <span className={WORKERS_MUTED_TEXT_CLASS}>-</span>
                             )}
                         </div>
                         <div className="make-shift-workers__row-preceptee flex items-center justify-center">
                             {isPreceptee ? (
-                                <span className="inline-flex h-6 items-center rounded-full bg-main-light px-2.5 font-apple text-[12px] font-semibold text-main-1">
-                                    {t('page.makeShift.workers.preceptorActive')}
-                                </span>
+                                <RoleCheckIndicator label={t('page.makeShift.workers.column.preceptee')} />
                             ) : (
                                 <span className={WORKERS_MUTED_TEXT_CLASS}>-</span>
                             )}

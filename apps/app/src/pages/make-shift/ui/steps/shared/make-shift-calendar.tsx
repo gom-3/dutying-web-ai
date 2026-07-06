@@ -1453,6 +1453,7 @@ export function MakeShiftCalendar({
 
                     <div
                         className="make-shift-calendar__day-header-pill grid min-w-0 rounded-[12px] bg-gray-7 px-0 py-1"
+                        data-attention-active={cellAttention ? 'true' : undefined}
                         style={{gridTemplateColumns: getDayGridTemplateColumns(shift.days.length)}}
                     >
                         {shift.days.map((d, j) => {
@@ -2055,6 +2056,7 @@ function CalendarRowLeft({
 
                 <div
                     className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                    data-attention-active={cellAttention ? 'true' : undefined}
                     style={{gridTemplateColumns: getDayGridTemplateColumns(days.length)}}
                 >
                     {crosshairSelectionRect !== null && isCrosshairRowSelected ? (

@@ -2620,6 +2620,7 @@ export const ko = {
         },
         "wardChat": {
             "closeAria": "병동톡 닫기",
+            "connectedMemberCount": "{{count}}명",
             "conversationStart": "대화의 시작",
             "deletedMessage": "삭제된 메시지입니다",
             "inputPlaceholder": "메시지 입력",
@@ -5294,6 +5295,7 @@ export const en: TLocale = {
         },
         "wardChat": {
             "closeAria": "Close ward chat",
+            "connectedMemberCount": "{{count}} members",
             "conversationStart": "Start of conversation",
             "deletedMessage": "This message was deleted",
             "inputPlaceholder": "Enter a message",
@@ -7966,6 +7968,7 @@ export const ja: TLocale = {
         },
         "wardChat": {
             "closeAria": "病棟チャットを閉じる",
+            "connectedMemberCount": "{{count}}名",
             "conversationStart": "会話の始まり",
             "deletedMessage": "削除されたメッセージです",
             "inputPlaceholder": "メッセージを入力",
@@ -10638,6 +10641,7 @@ export const zh: TLocale = {
         },
         "wardChat": {
             "closeAria": "密切病区谈话",
+            "connectedMemberCount": "{{count}} 人",
             "conversationStart": "谈话开始",
             "deletedMessage": "此消息已被删除",
             "inputPlaceholder": "输入留言",
@@ -13310,6 +13314,7 @@ export const th: TLocale = {
         },
         "wardChat": {
             "closeAria": "ปิดการสนทนาวอร์ด",
+            "connectedMemberCount": "{{count}} คน",
             "conversationStart": "เริ่มการสนทนา",
             "deletedMessage": "ข้อความนี้ถูกลบแล้ว",
             "inputPlaceholder": "ป้อนข้อความ",
@@ -15982,6 +15987,7 @@ export const vi: TLocale = {
         },
         "wardChat": {
             "closeAria": "Đóng trò chuyện khoa",
+            "connectedMemberCount": "{{count}} người",
             "conversationStart": "Bắt đầu cuộc trò chuyện",
             "deletedMessage": "Tin nhắn này đã bị xóa",
             "inputPlaceholder": "Nhập tin nhắn",

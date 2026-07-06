@@ -35,7 +35,13 @@ import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
-import {NURSE_ROLE_HELP, hasPrecepteeMemo, setPrecepteeMemo, type TNurseRoleHelpType} from './model/nurse-role';
+import {
+    NURSE_ROLE_HELP,
+    getMemoWithoutRoleMarkers,
+    hasNursePrecepteeRole,
+    hasNursePreceptorRole,
+    type TNurseRoleHelpType,
+} from './model/nurse-role';
 import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
 import {createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
@@ -968,8 +974,6 @@ function MemberPage() {
     const totalNurseCount = allNurses.length;
     const connectedNurseCount = allNurses.filter((nurse) => nurse.isConnected).length;
     const unconnectedNurseCount = Math.max(0, totalNurseCount - connectedNurseCount);
-    const hospitalName = ward?.hospitalName?.trim() ?? '-';
-    const wardName = ward?.name?.trim() ?? '-';
     const wardGuideTitle = getWardDisplayTitle(ward);
     const wardGuideCode = getWardDisplayCode(ward, '-');
 
@@ -1076,23 +1080,9 @@ function MemberPage() {
                         </div>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 min-[1600px]:gap-2">
                             <div
-                                className={cn(
-                                    'flex h-10 items-center justify-center rounded-[10px] bg-white px-3 min-[1600px]:h-[46px] min-[1600px]:px-4',
-                                    selectedNurse
-                                        ? 'max-w-[300px] min-w-[240px] min-[1400px]:max-w-[320px] min-[1400px]:min-w-[250px] min-[1600px]:max-w-[340px] min-[1600px]:min-w-[300px]'
-                                        : 'max-w-[320px] min-w-[240px] min-[1400px]:max-w-[340px] min-[1400px]:min-w-[260px] min-[1600px]:max-w-none min-[1600px]:min-w-[370px]',
-                                )}
+                                className="flex h-10 shrink-0 items-center justify-center rounded-[10px] bg-white px-3 min-[1600px]:h-[46px] min-[1600px]:px-4"
                             >
-                                <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5 pr-3 min-[1600px]:gap-2 min-[1600px]:pr-4">
-                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1600px]:text-[16px]">
-                                        {hospitalName}
-                                    </span>
-                                    <span className="truncate font-apple text-[15px] leading-none font-semibold text-[#616C84] min-[1600px]:text-[16px]">
-                                        {wardName}
-                                    </span>
-                                </div>
-                                <span className="h-[20px] w-px shrink-0 bg-[#C8CFDB]" />
-                                <div className="flex shrink-0 items-center justify-center gap-2 pl-3 min-[1600px]:gap-3 min-[1600px]:pl-4">
+                                <div className="flex shrink-0 items-center justify-center gap-2 min-[1600px]:gap-3">
                                     <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1600px]:gap-2">
                                         <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1600px]:text-[14px]">
                                             {t('page.member.summary.totalNurses')}
@@ -1637,8 +1627,8 @@ function MemberNurseRow({
     const shiftTypeOptions = useMemo(() => {
         return resolveNurseShiftTypeOptions(nurse.nurseShiftTypes, wardShiftTypes);
     }, [nurse.nurseShiftTypes, wardShiftTypes]);
-    const isPreceptor = Boolean(nurse.isWardManager);
-    const isPreceptee = hasPrecepteeMemo(nurse.memo);
+    const isPreceptor = hasNursePreceptorRole(nurse);
+    const isPreceptee = hasNursePrecepteeRole(nurse);
     const fadedClass = isWorker ? '' : 'opacity-55';
     const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
     const unselectedSkillLabel = t('page.member.row.unselectedSkill');
@@ -1875,8 +1865,9 @@ function MemberNurseRow({
 
                             await onUpdateNurse(nurse.nurseId, {
                                 ...nurse,
-                                isWardManager: nextIsPreceptor,
-                                memo: nextIsPreceptor ? setPrecepteeMemo(nurse.memo, false) : nurse.memo,
+                                isPreceptor: nextIsPreceptor,
+                                isPreceptee: nextIsPreceptor ? false : nurse.isPreceptee === true,
+                                memo: getMemoWithoutRoleMarkers(nurse.memo),
                             });
                         }}
                     >
@@ -1903,8 +1894,9 @@ function MemberNurseRow({
 
                             await onUpdateNurse(nurse.nurseId, {
                                 ...nurse,
-                                isWardManager: nextIsPreceptee ? false : nurse.isWardManager,
-                                memo: setPrecepteeMemo(nurse.memo, nextIsPreceptee),
+                                isPreceptor: nextIsPreceptee ? false : nurse.isPreceptor === true,
+                                isPreceptee: nextIsPreceptee,
+                                memo: getMemoWithoutRoleMarkers(nurse.memo),
                             });
                         }}
                     >

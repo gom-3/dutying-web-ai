@@ -40,8 +40,6 @@ const SORT_OPTIONS: {value: TSortMode; labelKey: TI18nKey}[] = [
 ];
 const SKILL_UNSELECTED_BACKGROUND = '#E5E7EB';
 const SKILL_UNSELECTED_TEXT = '#6B7280';
-const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
-const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
 const NURSE_GRID_PADDING_X = 'px-6';
 const NURSE_GRID_GAP_CLASS = 'gap-x-3';
 const NURSE_GRID_COLS_STEP_3 =
@@ -383,8 +381,8 @@ function NurseStep({
                             <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
                                 {sortedNurses.map((nurse, index) => {
                                     const isSkillMenuOpen = openedSkillMenuNurseId === nurse.id;
-                                    const isPreceptor = nurse.memo.trim() === PRECEPTOR_MEMO;
-                                    const isPreceptee = nurse.memo.trim() === PRECEPTEE_MEMO;
+                                    const isPreceptor = nurse.isPreceptor;
+                                    const isPreceptee = nurse.isPreceptee;
                                     const isSkillUnselected = nurse.level == null;
                                     const skillBadgeLabel = isSkillUnselected
                                         ? t('page.onboardingWardCreate.nurse.skillUnselectedBadge')
@@ -579,7 +577,10 @@ function NurseStep({
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
                                                             onClick={() =>
-                                                                onNurseChange(nurse.id, {memo: isPreceptor ? '' : PRECEPTOR_MEMO})
+                                                                onNurseChange(nurse.id, {
+                                                                    isPreceptor: !isPreceptor,
+                                                                    isPreceptee: isPreceptor ? nurse.isPreceptee : false,
+                                                                })
                                                             }
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />
@@ -599,7 +600,10 @@ function NurseStep({
                                                                     : 'border-sub-4 bg-white text-transparent hover:border-main-1 hover:bg-main-light',
                                                             )}
                                                             onClick={() =>
-                                                                onNurseChange(nurse.id, {memo: isPreceptee ? '' : PRECEPTEE_MEMO})
+                                                                onNurseChange(nurse.id, {
+                                                                    isPreceptor: isPreceptee ? nurse.isPreceptor : false,
+                                                                    isPreceptee: !isPreceptee,
+                                                                })
                                                             }
                                                         >
                                                             <Check className="h-3.5 w-3.5 stroke-[3]" />

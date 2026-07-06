@@ -15,7 +15,7 @@ import TextField from '@/shared/ui/form-controls/TextField';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {hasNurseChanges, hasNurseProfileChanges} from '../model/nurse-edit';
-import {getMemoWithoutPrecepteeMarker, hasPrecepteeMemo, setPrecepteeMemo} from '../model/nurse-role';
+import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole, normalizeNurseRoleFields} from '../model/nurse-role';
 import {resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
 
 interface INurseDetailPanelProps {
@@ -65,12 +65,13 @@ function NurseDetailPanel({
     const isDirty = hasNurseChanges(selectedNurse, writeNurse);
     const isBusy = nurseSaveStatus === 'saving' || isDeletingNurse || isMovingTeam;
     const isCreateMode = selectedNurseDrawerMode === 'create';
-    const isPreceptee = hasPrecepteeMemo(writeNurse?.memo);
+    const isPreceptor = hasNursePreceptorRole(writeNurse);
+    const isPreceptee = hasNursePrecepteeRole(writeNurse);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
 
     useEffect(() => {
-        setWriteNurse(selectedNurse ?? null);
+        setWriteNurse(selectedNurse ? normalizeNurseRoleFields(selectedNurse) : null);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
         setIsMovingTeam(false);
@@ -174,7 +175,9 @@ function NurseDetailPanel({
                 phoneNum: writeNurse.phoneNum,
                 isWorker: writeNurse.isWorker,
                 isWardManager: writeNurse.isWardManager,
-                memo: writeNurse.memo ?? '',
+                memo: getMemoWithoutRoleMarkers(writeNurse.memo),
+                isPreceptor,
+                isPreceptee,
             });
 
             if (!saved) return false;
@@ -466,12 +469,12 @@ function NurseDetailPanel({
                                 <button
                                     type="button"
                                     role="checkbox"
-                                    aria-checked={Boolean(writeNurse.isWardManager)}
+                                    aria-checked={isPreceptor}
                                     aria-label={t('page.member.row.preceptorAria', {nurseName: nurseNameForAria})}
                                     disabled={isBusy}
                                     className={cn(
                                         'group flex h-6 w-6 items-center justify-center rounded-[7px] border transition-colors focus-visible:outline-2 focus-visible:outline-main-1 disabled:opacity-50',
-                                        writeNurse.isWardManager
+                                        isPreceptor
                                             ? 'border-main-1 bg-main-1 text-white'
                                             : 'border-sub-4 bg-white text-transparent hover:border-2 hover:border-main-1 hover:bg-main-light',
                                     )}
@@ -480,8 +483,9 @@ function NurseDetailPanel({
                                             prev
                                                 ? {
                                                       ...prev,
-                                                      isWardManager: !prev.isWardManager,
-                                                      memo: !prev.isWardManager ? setPrecepteeMemo(prev.memo, false) : prev.memo,
+                                                      isPreceptor: !hasNursePreceptorRole(prev),
+                                                      isPreceptee: hasNursePreceptorRole(prev) ? prev.isPreceptee === true : false,
+                                                      memo: getMemoWithoutRoleMarkers(prev.memo),
                                                   }
                                                 : prev,
                                         )
@@ -510,12 +514,13 @@ function NurseDetailPanel({
                                         setWriteNurse((prev) => {
                                             if (!prev) return prev;
 
-                                            const nextIsPreceptee = !hasPrecepteeMemo(prev.memo);
+                                            const nextIsPreceptee = !hasNursePrecepteeRole(prev);
 
                                             return {
                                                 ...prev,
-                                                isWardManager: nextIsPreceptee ? false : prev.isWardManager,
-                                                memo: setPrecepteeMemo(prev.memo, nextIsPreceptee),
+                                                isPreceptor: nextIsPreceptee ? false : prev.isPreceptor === true,
+                                                isPreceptee: nextIsPreceptee,
+                                                memo: getMemoWithoutRoleMarkers(prev.memo),
                                             };
                                         })
                                     }
@@ -558,12 +563,12 @@ function NurseDetailPanel({
                             ref={memoTextareaRef}
                             name="nurseMemo"
                             aria-label={t('page.member.detail.memo')}
-                            value={getMemoWithoutPrecepteeMarker(writeNurse.memo)}
+                            value={getMemoWithoutRoleMarkers(writeNurse.memo)}
                             disabled={isBusy}
                             className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1600px]:h-16 min-[1600px]:text-[14px]"
                             onChange={(event) =>
                                 setWriteNurse((prev) =>
-                                    prev ? {...prev, memo: setPrecepteeMemo(event.target.value, hasPrecepteeMemo(prev.memo))} : prev,
+                                    prev ? {...prev, memo: event.target.value} : prev,
                                 )
                             }
                         />

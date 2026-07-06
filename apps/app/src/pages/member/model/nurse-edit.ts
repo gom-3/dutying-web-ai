@@ -2,13 +2,20 @@ import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {getNurseShiftTypeKey} from './nurse-shift-types';
+import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from './nurse-role';
 
-const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager', 'memo'] as const;
+const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager'] as const;
 
 export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
 
-    return nurseProfileEditableKeys.some((key) => original[key] !== draft[key]);
+    if (nurseProfileEditableKeys.some((key) => original[key] !== draft[key])) return true;
+
+    return (
+        getMemoWithoutRoleMarkers(original.memo) !== getMemoWithoutRoleMarkers(draft.memo) ||
+        hasNursePreceptorRole(original) !== hasNursePreceptorRole(draft) ||
+        hasNursePrecepteeRole(original) !== hasNursePrecepteeRole(draft)
+    );
 }
 
 export function hasNurseChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {

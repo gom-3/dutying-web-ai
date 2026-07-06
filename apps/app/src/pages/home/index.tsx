@@ -9,10 +9,9 @@ import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments} from '@/features/shift-editor';
-import {BoardAPI, WardAPI} from '@/shared/api';
+import {BoardAPI} from '@/shared/api';
 import {type TWardBoardDeadline, type TWardBoardSchedule} from '@/shared/api/board';
 import {PersonIcon} from '@/shared/assets/svg';
-import {isWardChatEnabled} from '@/shared/config/feature-flags';
 import ROUTE, {MEMBER_CONNECTION_MANAGE_PATH} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
@@ -34,7 +33,6 @@ const SHIFT_CLASSIFICATION_ORDER: Partial<Record<TWardShiftClassification, numbe
 };
 
 type TScheduleStatus = 'checking' | 'error' | 'empty' | 'draft' | 'complete';
-type TTaskTone = 'danger' | 'warning' | 'info' | 'quiet';
 type TCalendarItemTone = 'today' | 'warning' | 'danger' | 'quiet';
 type TMonthlyTeamFilter = number | 'all';
 type TMonthlySortOption = 'default' | 'nameAsc' | 'todayShift';
@@ -63,15 +61,6 @@ type TTodayTeamDuty = {
     status: TScheduleStatus;
     actionPath: string;
     groups: TTodayShiftGroup[];
-};
-
-type TTaskItem = {
-    key: string;
-    tone: TTaskTone;
-    title: string;
-    description: string;
-    actionLabel: string;
-    path: string;
 };
 
 type TCalendarItem = {
@@ -176,15 +165,6 @@ const buildMakePath = ({year, month, shiftTeamId}: {year: number; month: number;
 
     return `${ROUTE.MAKE}?${params.toString()}`;
 };
-const getDeadlineBuckets = (deadlines: TWardBoardDeadline[], todayKey: string) => ({
-    overdue: deadlines.filter((deadline) => getDayDiff(deadline.deadlineDate, todayKey) < 0),
-    today: deadlines.filter((deadline) => getDayDiff(deadline.deadlineDate, todayKey) === 0),
-    soon: deadlines.filter((deadline) => {
-        const diff = getDayDiff(deadline.deadlineDate, todayKey);
-
-        return diff > 0 && diff <= TASK_LOOKAHEAD_DAYS;
-    }),
-});
 const readBooleanLike = (value: unknown) => {
     if (typeof value === 'boolean') return value;
 
@@ -394,16 +374,6 @@ const getScheduleStatusClassName = (status: TScheduleStatus) =>
                 : status === 'error'
                   ? 'bg-[#FFF0F0] text-[#C74343]'
                   : 'bg-[#F1F3F5] text-gray-3',
-    );
-const getTaskToneClassName = (tone: TTaskTone) =>
-    cn(
-        tone === 'danger'
-            ? 'bg-[#FFF0F0] text-[#C74343]'
-            : tone === 'warning'
-              ? 'bg-[#FFF6E8] text-[#A35F00]'
-              : tone === 'info'
-                ? 'bg-[#EDF3FF] text-[#2457B7]'
-                : 'bg-[#F1F3F5] text-gray-3',
     );
 const getCalendarToneClassName = (tone: TCalendarItemTone) =>
     cn(
@@ -868,26 +838,6 @@ function NextScheduleTaskRow({
                 </span>
             </span>
             <span className={cn('shrink-0', getScheduleStatusClassName(item.status))}>{getScheduleStatusLabel(item.status, t)}</span>
-        </button>
-    );
-}
-
-function TaskRow({task, onNavigate}: {task: TTaskItem; onNavigate: (path: string) => void}) {
-    return (
-        <button
-            type="button"
-            className="w-full cursor-pointer rounded-[8px] bg-[#F6F7F9] p-3 text-left transition hover:bg-[#ECEFF3] focus-visible:bg-main-light focus-visible:outline-none"
-            onClick={() => onNavigate(task.path)}
-        >
-            <div className="flex min-w-0 items-start justify-between gap-3">
-                <span className={cn('shrink-0 rounded-[8px] px-2 py-1 text-[11px] font-bold', getTaskToneClassName(task.tone))}>
-                    {task.actionLabel}
-                </span>
-                <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14px] font-bold text-sub-1">{task.title}</span>
-                    <span className="mt-1 block truncate text-[12px] font-semibold text-gray-3">{task.description}</span>
-                </span>
-            </div>
         </button>
     );
 }
@@ -1383,7 +1333,6 @@ function HomePage() {
     const monthEndKey = getMonthEndKey(currentYearMonth.year, currentYearMonth.month);
     const calendarEndKey = toDateKey(addDays(today, TASK_LOOKAHEAD_DAYS));
     const boardCalendarEndKey = getMaxDateKey(monthEndKey, calendarEndKey);
-    const isChatEnabled = isWardChatEnabled();
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
@@ -1402,12 +1351,6 @@ function HomePage() {
         ...wardQueryOptions.requestPendingCount(wardId ?? -1),
         enabled: wardId !== null,
         staleTime: 30_000,
-    });
-    const chatUnreadQuery = useQuery({
-        queryKey: ['home', 'ward-chat-unread', wardId],
-        queryFn: () => WardAPI.getWardChatUnreadCount(wardId!),
-        enabled: wardId !== null && isChatEnabled,
-        staleTime: 15_000,
     });
     const deadlinesQuery = useQuery({
         queryKey: ['home', 'board-deadlines', wardId, monthStartKey, boardCalendarEndKey],
@@ -1497,84 +1440,13 @@ function HomePage() {
     );
     const deadlines = deadlinesQuery.data ?? [];
     const schedules = schedulesQuery.data ?? [];
-    const deadlineBuckets = useMemo(() => getDeadlineBuckets(deadlines, todayKey), [deadlines, todayKey]);
     const calendarItems = useMemo(
         () => getCalendarItems(schedules, deadlines, todayKey, t, locale),
         [deadlines, locale, schedules, t, todayKey],
     );
     const waitingNurseCount = waitingNursesQuery.data?.length ?? 0;
     const pendingRequestCount = pendingRequestsQuery.data?.totalPendingCount ?? 0;
-    const unreadChatCount = chatUnreadQuery.data?.unreadCount ?? 0;
     const todayAssignedCount = todayDuties.reduce((total, duty) => total + duty.assignedCount, 0);
-    const taskItems = useMemo<TTaskItem[]>(() => {
-        const tasks: TTaskItem[] = [];
-
-        if (deadlineBuckets.overdue.length > 0) {
-            tasks.push({
-                key: 'deadline-overdue',
-                tone: 'danger',
-                title: t('page.home.tasks.overdueTitle', {count: deadlineBuckets.overdue.length}),
-                description: deadlineBuckets.overdue[0]?.postTitle ?? t('page.home.tasks.overdueFallback'),
-                actionLabel: t('page.home.tasks.overdueAction'),
-                path: ROUTE.BOARD,
-            });
-        }
-
-        if (deadlineBuckets.today.length > 0) {
-            tasks.push({
-                key: 'deadline-today',
-                tone: 'warning',
-                title: t('page.home.tasks.todayTitle', {count: deadlineBuckets.today.length}),
-                description: deadlineBuckets.today[0]?.postTitle ?? t('page.home.tasks.todayFallback'),
-                actionLabel: t('page.home.tasks.todayAction'),
-                path: ROUTE.BOARD,
-            });
-        }
-
-        if (pendingRequestCount > 0) {
-            tasks.push({
-                key: 'pending-requests',
-                tone: 'info',
-                title: t('page.home.tasks.pendingRequestsTitle', {count: pendingRequestCount}),
-                description: t('page.home.tasks.pendingRequestsDescription'),
-                actionLabel: t('page.home.tasks.pendingRequestsAction'),
-                path: ROUTE.REQUEST,
-            });
-        }
-
-        if (waitingNurseCount > 0) {
-            tasks.push({
-                key: 'waiting-nurses',
-                tone: 'info',
-                title: t('page.home.tasks.waitingNursesTitle', {count: waitingNurseCount}),
-                description: t('page.home.tasks.waitingNursesDescription'),
-                actionLabel: t('page.home.tasks.waitingNursesAction'),
-                path: MEMBER_CONNECTION_MANAGE_PATH,
-            });
-        }
-
-        if (unreadChatCount > 0) {
-            tasks.push({
-                key: 'unread-chat',
-                tone: 'quiet',
-                title: t('page.home.tasks.unreadChatTitle', {count: unreadChatCount}),
-                description: t('page.home.tasks.unreadChatDescription'),
-                actionLabel: t('page.home.tasks.unreadChatAction'),
-                path: '#ward-chat',
-            });
-        }
-
-        return tasks;
-    }, [deadlineBuckets.overdue, deadlineBuckets.today, pendingRequestCount, t, unreadChatCount, waitingNurseCount]);
-    const handleNavigate = (path: string) => {
-        if (path === '#ward-chat') {
-            window.dispatchEvent(new CustomEvent('dutying:open-ward-chat'));
-
-            return;
-        }
-
-        navigate(path);
-    };
     const isBootstrapLoading = wardId !== null && (wardQuery.isPending || shiftTeamsQuery.isPending);
     const isBootstrapError = wardId !== null && (wardQuery.isError || shiftTeamsQuery.isError);
     const wardTitle = wardQuery.data ? `${wardQuery.data.hospitalName} ${wardQuery.data.name}` : t('page.home.fallback.ward');
@@ -1704,20 +1576,8 @@ function HomePage() {
                                             item={item}
                                             year={nextYearMonth.year}
                                             month={nextYearMonth.month}
-                                            onNavigate={handleNavigate}
+                                            onNavigate={navigate}
                                         />
-                                    ))}
-                                </div>
-                            ) : null}
-                            {waitingNursesQuery.isPending || pendingRequestsQuery.isPending || deadlinesQuery.isPending ? (
-                                <div className="mt-3 rounded-[8px] bg-[#F6F7F9] px-3 py-2 text-[12px] font-bold text-gray-3">
-                                    {t('page.home.tasks.checking')}
-                                </div>
-                            ) : null}
-                            {taskItems.length > 0 ? (
-                                <div className="mt-3 grid gap-2">
-                                    {taskItems.slice(0, 5).map((task) => (
-                                        <TaskRow key={task.key} task={task} onNavigate={handleNavigate} />
                                     ))}
                                 </div>
                             ) : null}

@@ -3,15 +3,17 @@ import {wardQueryKeys} from '@/entities/ward';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import WardInfoSettingsPage from '..';
 
-const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, mockToastError, mockQuitWard, mockUseQuery} = vi.hoisted(() => ({
-    mockEditWard: vi.fn(),
-    mockInvalidateQueries: vi.fn(),
-    mockSetQueryData: vi.fn(),
-    mockToastSuccess: vi.fn(),
-    mockToastError: vi.fn(),
-    mockQuitWard: vi.fn(),
-    mockUseQuery: vi.fn(),
-}));
+const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, mockToastError, mockQuitWard, mockUseQuery} = vi.hoisted(
+    () => ({
+        mockEditWard: vi.fn(),
+        mockInvalidateQueries: vi.fn(),
+        mockSetQueryData: vi.fn(),
+        mockToastSuccess: vi.fn(),
+        mockToastError: vi.fn(),
+        mockQuitWard: vi.fn(),
+        mockUseQuery: vi.fn(),
+    }),
+);
 
 vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual('@tanstack/react-query');
@@ -94,8 +96,13 @@ describe('WardInfoSettingsPage', () => {
         expect(screen.queryByText('현재 병동')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '관리자'})).not.toBeInTheDocument();
         expect(screen.getByText('ward admins panel')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '병동 나가기'})).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: '변경사항 저장'})).toBeDisabled();
+        const quitWardButton = screen.getByRole('button', {name: '병동 나가기'});
+        const saveButton = screen.getByRole('button', {name: '변경사항 저장'});
+
+        expect(quitWardButton).toBeInTheDocument();
+        expect(quitWardButton.parentElement).toHaveClass('justify-end', 'px-1');
+        expect(quitWardButton.compareDocumentPosition(saveButton) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(saveButton).toBeDisabled();
     });
 
     it('opens the ward code guide from the ward code badge', async () => {

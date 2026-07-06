@@ -26,6 +26,8 @@ export type TNurse = {
     isWorker: boolean;
     isDutyManager: boolean;
     isWardManager: boolean;
+    isPreceptor?: boolean;
+    isPreceptee?: boolean;
     gender: string;
     employmentDate: string;
     memo: string;

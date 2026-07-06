@@ -3,6 +3,19 @@ import {type TLocale} from './ko';
 
 export const th = {
     ...generatedTh,
+    widget: {
+        ...generatedTh.widget,
+        wardChat: {
+            ...generatedTh.widget.wardChat,
+            enableAlertAria: 'เปิดการแจ้งเตือนข้อความใหม่ในแชตวอร์ด',
+            disableAlertAria: 'ปิดการแจ้งเตือนข้อความใหม่ในแชตวอร์ด',
+            alertOnTooltip: 'เปิดแจ้งเตือนข้อความใหม่',
+            alertOffTooltip: 'ปิดแจ้งเตือนข้อความใหม่',
+            previewOpenAria: 'เปิดข้อความใหม่จาก {{sender}}: {{text}}',
+            unknownSender: 'แชตวอร์ด',
+            emptyPreview: 'มีข้อความใหม่เข้ามา',
+        },
+    },
     page: {
         ...generatedTh.page,
         notifications: {

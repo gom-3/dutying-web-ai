@@ -1,6 +1,8 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {useQueryClient} from '@tanstack/react-query';
+import {LoaderCircle} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -117,6 +119,58 @@ function resolveSnapshotDisplayTitle(params: {
     return resolveHistoryTitle(detailTitle, fallbackTitle);
 }
 
+function getElapsedSeconds(startedAt: number | null) {
+    if (startedAt === null) return 0;
+
+    return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+}
+
+function AiAutofillLoadingOverlay({startedAt}: {startedAt: number | null}) {
+    const {t} = useTypedTranslation();
+    const [elapsedSeconds, setElapsedSeconds] = useState(() => getElapsedSeconds(startedAt));
+
+    useEffect(() => {
+        setElapsedSeconds(getElapsedSeconds(startedAt));
+
+        if (startedAt === null) return undefined;
+
+        const timerId = window.setInterval(() => {
+            setElapsedSeconds(getElapsedSeconds(startedAt));
+        }, 1000);
+
+        return () => window.clearInterval(timerId);
+    }, [startedAt]);
+
+    const portalContainer = typeof document === 'undefined' ? null : (document.getElementById('modal-root') ?? document.body);
+
+    if (portalContainer === null) return null;
+
+    return createPortal(
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ai-autofill-loading-title"
+            className="fixed inset-0 z-[100002] flex items-center justify-center bg-transparent px-4"
+        >
+            <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center shadow-[0_22px_80px_rgba(45,32,92,0.24)]">
+                <div className="mx-auto flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F3F4F6] text-main-1">
+                    <LoaderCircle className="h-[22px] w-[22px] animate-spin" aria-hidden />
+                </div>
+                <p id="ai-autofill-loading-title" className="mt-5 font-apple text-[24px] leading-[1.35] font-bold text-sub-1">
+                    {t('page.makeShift.aiRefill.loadingOverlay.title')}
+                </p>
+                <p className="mx-auto mt-3 max-w-[300px] font-apple text-[15px] leading-[1.6] font-medium whitespace-pre-line text-gray-3">
+                    {t('page.makeShift.aiRefill.loadingOverlay.description')}
+                </p>
+                <p className="mt-6 font-apple text-[13px] font-semibold text-main-1" aria-live="polite">
+                    {t('page.makeShift.aiRefill.loadingOverlay.elapsed', {seconds: elapsedSeconds})}
+                </p>
+            </div>
+        </div>,
+        portalContainer,
+    );
+}
+
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
@@ -149,6 +203,7 @@ export function AiAutofill() {
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [aiStartedAt, setAiStartedAt] = useState<number | null>(null);
     const [isAiEffectVisible, setIsAiEffectVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
@@ -203,6 +258,7 @@ export function AiAutofill() {
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
+    const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
     const setExitGuard = useAiAutofillExitGuardStore((s) => s.setExitGuard);
     const resetExitGuard = useAiAutofillExitGuardStore((s) => s.resetExitGuard);
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
@@ -211,6 +267,7 @@ export function AiAutofill() {
 
     const markEditableDocSaved = useCallback((doc: TDutyDoc = useShiftEditorStore.getState().doc) => {
         savedEditableDocRef.current = doc;
+        setHasAiGeneratedUnsavedChanges(false);
         setSavedEditableDocVersion((version) => version + 1);
     }, []);
     const clearAiEffectDismissTimer = useCallback(() => {
@@ -267,14 +324,15 @@ export function AiAutofill() {
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
         setIsAiGenerating(false);
+        setAiStartedAt(null);
         hideAiEffect();
         resetAiStatus();
-        toast.dismiss('make-shift-ai-fill-progress');
     }, [wardId, currentShiftTeamId, year, month, hideAiEffect, resetAiStatus]);
 
     useEffect(() => {
         savedEditableContextKeyRef.current = null;
         savedEditableDocRef.current = null;
+        setHasAiGeneratedUnsavedChanges(false);
         setSavedEditableDocVersion((version) => version + 1);
     }, [currentContextKey]);
 
@@ -318,8 +376,8 @@ export function AiAutofill() {
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
     const hasUnsavedEditableChanges = useMemo(
-        () => hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
-        [editorDoc, savedEditableDocVersion],
+        () => hasAiGeneratedUnsavedChanges || hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
+        [editorDoc, hasAiGeneratedUnsavedChanges, savedEditableDocVersion],
     );
     const lastShiftBlankWarningKey = useMemo(() => getBlankLastShiftCellsWarningKey(editorDoc), [editorDoc]);
     const shouldShowLastShiftBlankWarning =
@@ -728,14 +786,11 @@ export function AiAutofill() {
         aiRequestSeqRef.current = requestSeq;
         setIsAiGenerating(true);
         clearAiEffectDismissTimer();
+        setAiStartedAt(Date.now());
         setIsAiEffectVisible(true);
         setAiStatus('loading');
 
-        const progressToastId = 'make-shift-ai-fill-progress';
-
         let shouldKeepAiEffectVisible = false;
-
-        toast.loading(t('page.makeShift.aiRefill.progressToast'), {id: progressToastId, duration: Infinity});
 
         try {
             const result = await requestAiSchedule({
@@ -781,6 +836,7 @@ export function AiAutofill() {
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
             commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
+            setHasAiGeneratedUnsavedChanges(result.response.changedCells.length > 0);
             commands.setScheduleValidationFromApi(result.validation);
 
             shouldKeepAiEffectVisible = true;
@@ -788,11 +844,10 @@ export function AiAutofill() {
             setAiStatus('success');
             setHasCompletedAiFill(true);
         } finally {
-            toast.dismiss(progressToastId);
-
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
                 setIsAiGenerating(false);
+                setAiStartedAt(null);
 
                 if (!shouldKeepAiEffectVisible) hideAiEffect();
             }
@@ -996,6 +1051,7 @@ export function AiAutofill() {
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
+            {isAiGenerating ? <AiAutofillLoadingOverlay startedAt={aiStartedAt} /> : null}
         </div>
     );
 }

@@ -7,6 +7,8 @@ const createNurse = (params: Partial<TOnboardingNurseDraft>): TOnboardingNurseDr
     teamId: params.teamId ?? 'team-1',
     name: params.name ?? '',
     memo: params.memo ?? '',
+    isPreceptor: params.isPreceptor ?? false,
+    isPreceptee: params.isPreceptee ?? false,
     isWorker: params.isWorker ?? true,
     employmentDate: params.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: params.possibleShiftTypeIds ?? [],

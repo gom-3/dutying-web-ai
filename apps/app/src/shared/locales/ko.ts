@@ -1082,6 +1082,11 @@ export const ko = {
                 },
                 intro: '실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.',
                 loading: '근무표를 불러오는 중이에요',
+                loadingOverlay: {
+                    title: 'AI가 근무표를 채우고 있어요',
+                    description: '신청·고정근무는 유지하고,\n나머지 칸을 AI가 채워요.',
+                    elapsed: '{{seconds}}초째 진행 중',
+                },
                 error: '근무표를 불러오지 못했어요',
                 empty: '근무표 데이터를 불러오지 못했어요',
                 saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
@@ -1142,7 +1147,7 @@ export const ko = {
                     todayAt: '오늘 {{time}}',
                 },
                 exitGuard: {
-                    unsavedMessage: '수정한 내용이 저장되지 않을 수 있어요.\n임시 저장 또는 확정 후 이동해 주세요.\n그래도 나갈까요?',
+                    unsavedMessage: '수정한 내용이 저장되지 않을 수 있어요.\n임시저장 또는 근무표 확정 후 이동해 주세요.\n그래도 나갈까요?',
                     aiGeneratingMessage: 'AI 자동채우기 중이에요.\n나가면 결과가 반영되지 않을 수 있어요.\n그래도 나갈까요?',
                 },
                 cannotAutofillYet: '근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.',
@@ -2131,6 +2136,7 @@ export const ko = {
         wardChat: {
             title: '병동톡',
             subtitle: '병동 인원 채팅',
+            connectedMemberCount: '{{count}}명',
             deletedMessage: '삭제된 메시지입니다',
             closeAria: '병동톡 닫기',
             loadOlder: '이전 메시지',
@@ -2139,6 +2145,13 @@ export const ko = {
             sendAria: '메시지 보내기',
             openAria: '병동톡 열기',
             openWithUnreadAria: '병동톡 열기, 읽지 않은 메시지 {{count}}개',
+            enableAlertAria: '병동톡 새 메시지 알림 켜기',
+            disableAlertAria: '병동톡 새 메시지 알림 끄기',
+            alertOnTooltip: '새 메시지 알림 켬',
+            alertOffTooltip: '새 메시지 알림 끔',
+            previewOpenAria: '{{sender}}님의 새 메시지 열기: {{text}}',
+            unknownSender: '병동톡',
+            emptyPreview: '새 메시지가 도착했어요.',
             state: {
                 loadFailed: '대화를 불러오지 못했어요.',
                 retry: '다시 시도',

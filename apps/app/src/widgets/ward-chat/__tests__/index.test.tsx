@@ -1,5 +1,5 @@
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {render, screen, waitFor} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type {ReactNode} from 'react';
 import {afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
@@ -9,6 +9,7 @@ const wardApiMock = vi.hoisted(() => ({
     createWardChatMessage: vi.fn(),
     getWardChatMessages: vi.fn(),
     getWardChatUnreadCount: vi.fn(),
+    getShiftTeams: vi.fn(),
     readWardChat: vi.fn(),
 }));
 const authStateMock = vi.hoisted(() => ({
@@ -37,12 +38,16 @@ function renderWithQueryClient(children: ReactNode) {
         },
     });
 
-    return render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>);
+    return {
+        queryClient,
+        ...render(<QueryClientProvider client={queryClient}>{children}</QueryClientProvider>),
+    };
 }
 
 const createJwt = (payload: Record<string, unknown>) =>
     `header.${btoa(JSON.stringify(payload)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}.signature`;
 const pendingFetch = () => new Promise<Response>(() => undefined);
+const findOpenWardChatButton = () => screen.findByRole('button', {name: /병동톡 열기/});
 
 function createRealtimeChatResponse(payload: Record<string, unknown>) {
     const eventData = {
@@ -70,6 +75,7 @@ describe('WardChatWidget', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        window.localStorage.clear();
         authStateMock.accessToken = null;
         authStateMock.accountId = 100;
         authStateMock.isDemoExpired = false;
@@ -113,6 +119,18 @@ describe('WardChatWidget', () => {
             sentAt: '2026-05-25T04:57:01.462Z',
             isDeleted: false,
         });
+        wardApiMock.getShiftTeams.mockResolvedValue([
+            {
+                shiftTeamId: 10,
+                name: 'A Team',
+                nurseCnt: 3,
+                nurses: [
+                    {nurseId: 1, isConnected: true},
+                    {nurseId: 2, isConnected: false},
+                    {nurseId: 3, isConnected: true},
+                ],
+            },
+        ]);
     });
 
     afterEach(() => {
@@ -123,8 +141,10 @@ describe('WardChatWidget', () => {
     it('shows the floating button with unread count', async () => {
         renderWithQueryClient(<WardChatWidget />);
 
-        expect(await screen.findByRole('button')).toBeInTheDocument();
+        expect(await findOpenWardChatButton()).toBeInTheDocument();
         expect(await screen.findByText('5')).toBeInTheDocument();
+        expect(await screen.findByText('Incoming message')).toBeInTheDocument();
+        expect(screen.getByText('Other Nurse')).toBeInTheDocument();
     });
 
     it('updates the floating unread badge from realtime ward chat events', async () => {
@@ -152,8 +172,10 @@ describe('WardChatWidget', () => {
 
         renderWithQueryClient(<WardChatWidget />);
 
-        expect(await screen.findByRole('button')).toBeInTheDocument();
+        expect(await findOpenWardChatButton()).toBeInTheDocument();
         expect(await screen.findByText('3')).toBeInTheDocument();
+        expect(await screen.findByText('New realtime message')).toBeInTheDocument();
+        expect(screen.getByText('Other Nurse')).toBeInTheDocument();
         expect(fetchMock).toHaveBeenCalledWith(
             'https://dev.api.dutying.net/events/stream',
             expect.objectContaining({
@@ -165,12 +187,142 @@ describe('WardChatWidget', () => {
         );
     });
 
+    it('shows a message preview when unread count increases without a realtime payload', async () => {
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+        wardApiMock.getWardChatMessages.mockResolvedValueOnce({
+            messages: [
+                {
+                    messageId: 9,
+                    moimId: 1,
+                    wardId: 1,
+                    senderAccountId: 101,
+                    senderWardAdminAccountId: null,
+                    senderType: 'ACCOUNT',
+                    senderName: 'Charge Nurse',
+                    text: 'Fallback preview message with schedule details',
+                    sentAt: '2026-05-25T05:02:01.462Z',
+                    isDeleted: false,
+                },
+            ],
+            nextCursorMessageId: null,
+            lastReadMessageId: 0,
+            unreadCount: 1,
+        });
+
+        const {queryClient} = renderWithQueryClient(<WardChatWidget />);
+
+        await findOpenWardChatButton();
+        await waitFor(() => expect(queryClient.getQueryData(['ward-chat', 'unread', 1])).toMatchObject({unreadCount: 0}));
+
+        act(() => {
+            queryClient.setQueryData(['ward-chat', 'unread', 1], {moimId: 1, wardId: 1, unreadCount: 1});
+        });
+
+        expect(await screen.findByText('Fallback preview message with schedule details')).toBeInTheDocument();
+        expect(screen.getByText('Charge Nurse')).toBeInTheDocument();
+    });
+
+    it('ignores the previous preview alert storage key so stale off state does not block previews', async () => {
+        window.localStorage.setItem('dutying:ward-chat-alert-enabled', 'off');
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+        wardApiMock.getWardChatMessages.mockResolvedValueOnce({
+            messages: [
+                {
+                    messageId: 10,
+                    moimId: 1,
+                    wardId: 1,
+                    senderAccountId: 101,
+                    senderWardAdminAccountId: null,
+                    senderType: 'ACCOUNT',
+                    senderName: 'Night Nurse',
+                    text: 'Preview should still appear',
+                    sentAt: '2026-05-25T05:03:01.462Z',
+                    isDeleted: false,
+                },
+            ],
+            nextCursorMessageId: null,
+            lastReadMessageId: 0,
+            unreadCount: 1,
+        });
+
+        const {queryClient} = renderWithQueryClient(<WardChatWidget />);
+
+        await findOpenWardChatButton();
+        await waitFor(() => expect(queryClient.getQueryData(['ward-chat', 'unread', 1])).toMatchObject({unreadCount: 0}));
+
+        act(() => {
+            queryClient.setQueryData(['ward-chat', 'unread', 1], {moimId: 1, wardId: 1, unreadCount: 1});
+        });
+
+        expect(await screen.findByText('Preview should still appear')).toBeInTheDocument();
+        expect(screen.getByText('Night Nurse')).toBeInTheDocument();
+    });
+
+    it('turns off floating message previews from the alert toggle', async () => {
+        const user = userEvent.setup();
+
+        let resolveFetch: ((response: Response) => void) | undefined;
+
+        authStateMock.accessToken = 'access-token';
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+
+        const fetchMock = vi.fn(
+            () =>
+                new Promise<Response>((resolve) => {
+                    resolveFetch = resolve;
+                }),
+        );
+
+        vi.stubGlobal('fetch', fetchMock);
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+        await user.click(await screen.findByRole('button', {name: '병동톡 새 메시지 알림 끄기'}));
+
+        expect(screen.getByRole('button', {name: '병동톡 새 메시지 알림 켜기'})).toHaveAttribute('aria-pressed', 'false');
+
+        await user.click(screen.getByRole('button', {name: '병동톡 닫기'}));
+
+        await act(async () => {
+            resolveFetch?.(
+                createRealtimeChatResponse({
+                    messageId: 8,
+                    moimId: null,
+                    wardId: 1,
+                    senderAccountId: 101,
+                    senderWardAdminAccountId: null,
+                    senderType: 'ACCOUNT',
+                    senderName: 'Other Nurse',
+                    text: 'Muted realtime message',
+                    sentAt: '2026-05-25T05:01:01.462Z',
+                    isDeleted: false,
+                    unreadCount: 2,
+                }),
+            );
+        });
+
+        expect(await screen.findByText('2')).toBeInTheDocument();
+        expect(screen.queryByText('Muted realtime message')).not.toBeInTheDocument();
+    });
+
+    it('shows the connected ward member count in the header', async () => {
+        const user = userEvent.setup();
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+
+        expect(await screen.findByText('2명')).toBeInTheDocument();
+        expect(wardApiMock.getShiftTeams).toHaveBeenCalledWith(1);
+    });
+
     it('opens messages and sends a chat message', async () => {
         const user = userEvent.setup();
 
         renderWithQueryClient(<WardChatWidget />);
 
-        await user.click(await screen.findByRole('button'));
+        await user.click(await findOpenWardChatButton());
 
         expect(await screen.findByText('Incoming message')).toBeInTheDocument();
         await waitFor(() => expect(wardApiMock.readWardChat).toHaveBeenCalledWith(1, {lastReadMessageId: 1}));
@@ -201,6 +353,7 @@ describe('WardChatWidget', () => {
 
         authStateMock.accessToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9});
         authStateMock.accountId = null;
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
         wardApiMock.getWardChatMessages.mockResolvedValueOnce({
             messages: [
                 {
@@ -223,7 +376,7 @@ describe('WardChatWidget', () => {
 
         renderWithQueryClient(<WardChatWidget />);
 
-        await user.click(await screen.findByRole('button'));
+        await user.click(await findOpenWardChatButton());
 
         expect(await screen.findByText('Admin sent message')).toBeInTheDocument();
         expect(screen.queryByText('Ward Admin')).not.toBeInTheDocument();
@@ -234,6 +387,7 @@ describe('WardChatWidget', () => {
 
         authStateMock.accessToken = createJwt({principalType: 'WARD_ADMIN', wardAdminAccountId: 9});
         authStateMock.accountId = null;
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
         wardApiMock.getWardChatMessages.mockResolvedValueOnce({
             messages: [
                 {
@@ -256,7 +410,7 @@ describe('WardChatWidget', () => {
 
         renderWithQueryClient(<WardChatWidget />);
 
-        await user.click(await screen.findByRole('button'));
+        await user.click(await findOpenWardChatButton());
 
         expect(await screen.findByText('운영자')).toBeInTheDocument();
         expect(screen.getByText('Head Nurse')).toBeInTheDocument();
@@ -270,5 +424,6 @@ describe('WardChatWidget', () => {
 
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
         expect(wardApiMock.getWardChatUnreadCount).not.toHaveBeenCalled();
+        expect(wardApiMock.getShiftTeams).not.toHaveBeenCalled();
     });
 });

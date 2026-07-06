@@ -142,6 +142,8 @@ const createTabNurse = (teamId: string, id: string, name: string): TOnboardingNu
     teamId,
     name,
     memo: '',
+    isPreceptor: false,
+    isPreceptee: false,
     isWorker: true,
     employmentDate: '',
     possibleShiftTypeIds: [],

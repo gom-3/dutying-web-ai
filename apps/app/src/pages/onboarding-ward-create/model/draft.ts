@@ -28,6 +28,8 @@ export type TOnboardingNurseDraft = {
     teamId: string;
     name: string;
     memo: string;
+    isPreceptor: boolean;
+    isPreceptee: boolean;
     isWorker: boolean;
     employmentDate: string;
     possibleShiftTypeIds: string[];
@@ -284,13 +286,16 @@ const createScheduleInputShiftType = (shortName: string, color: string): TOnboar
     });
 };
 const createNurse = (
-    input: Omit<TOnboardingNurseDraft, 'id' | 'initialShifts'> & {
-        id?: string;
-        initialShifts?: TOnboardingNurseDraft['initialShifts'];
-    },
+    input: Omit<TOnboardingNurseDraft, 'id' | 'initialShifts' | 'isPreceptor' | 'isPreceptee'> &
+        Partial<Pick<TOnboardingNurseDraft, 'isPreceptor' | 'isPreceptee'>> & {
+            id?: string;
+            initialShifts?: TOnboardingNurseDraft['initialShifts'];
+        },
 ): TOnboardingNurseDraft => ({
     id: input.id ?? createId('nurse'),
     ...input,
+    isPreceptor: input.isPreceptor ?? false,
+    isPreceptee: input.isPreceptee ?? false,
     initialShifts: input.initialShifts ?? [],
 });
 const createScheduleRow = (

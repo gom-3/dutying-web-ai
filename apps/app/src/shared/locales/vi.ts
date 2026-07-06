@@ -3,6 +3,19 @@ import {type TLocale} from './ko';
 
 export const vi = {
     ...generatedVi,
+    widget: {
+        ...generatedVi.widget,
+        wardChat: {
+            ...generatedVi.widget.wardChat,
+            enableAlertAria: 'Bật thông báo tin nhắn mới trong trò chuyện khoa',
+            disableAlertAria: 'Tắt thông báo tin nhắn mới trong trò chuyện khoa',
+            alertOnTooltip: 'Thông báo tin nhắn mới đang bật',
+            alertOffTooltip: 'Thông báo tin nhắn mới đang tắt',
+            previewOpenAria: 'Mở tin nhắn mới từ {{sender}}: {{text}}',
+            unknownSender: 'Trò chuyện khoa',
+            emptyPreview: 'Có tin nhắn mới.',
+        },
+    },
     page: {
         ...generatedVi.page,
         notifications: {

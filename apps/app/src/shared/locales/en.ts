@@ -1085,6 +1085,11 @@ export const en: TLocale = {
                 },
                 intro: 'Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.',
                 loading: 'Loading the duty schedule',
+                loadingOverlay: {
+                    title: 'AI is filling the schedule',
+                    description: 'Requested and fixed shifts stay in place.\nAI fills the remaining cells.',
+                    elapsed: '{{seconds}} sec in progress',
+                },
                 error: 'Failed to load the duty schedule',
                 empty: 'Could not load schedule data',
                 saveFailed: 'Failed to save. Please try again shortly.',
@@ -2135,6 +2140,7 @@ export const en: TLocale = {
         wardChat: {
             title: 'Ward chat',
             subtitle: 'Ward member chat',
+            connectedMemberCount: '{{count}} members',
             deletedMessage: 'This message was deleted',
             closeAria: 'Close ward chat',
             loadOlder: 'Previous messages',
@@ -2143,6 +2149,13 @@ export const en: TLocale = {
             sendAria: 'Send message',
             openAria: 'Open ward chat',
             openWithUnreadAria: 'Open ward chat, {{count}} unread messages',
+            enableAlertAria: 'Turn on ward chat new message alerts',
+            disableAlertAria: 'Turn off ward chat new message alerts',
+            alertOnTooltip: 'New message alerts on',
+            alertOffTooltip: 'New message alerts off',
+            previewOpenAria: 'Open new message from {{sender}}: {{text}}',
+            unknownSender: 'Ward chat',
+            emptyPreview: 'A new message arrived.',
             state: {
                 loadFailed: 'Could not load the conversation.',
                 retry: 'Retry',

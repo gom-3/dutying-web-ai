@@ -31,7 +31,9 @@ export type TOnboardingParsedInitialShift = {
     shiftShortName: string;
 };
 
-export type TOnboardingParsedNurse = Partial<Pick<TOnboardingNurseDraft, 'name' | 'memo' | 'isWorker' | 'employmentDate' | 'level'>> & {
+export type TOnboardingParsedNurse = Partial<
+    Pick<TOnboardingNurseDraft, 'name' | 'memo' | 'isWorker' | 'employmentDate' | 'level' | 'isPreceptor' | 'isPreceptee'>
+> & {
     teamName?: string;
     possibleShiftShortNames?: string[];
     initialShifts?: TOnboardingParsedInitialShift[];
@@ -122,6 +124,18 @@ const DEFAULT_UPLOAD_FAILURE_COPY: TOnboardingUploadFailureCopy = {
         '\uD30C\uC77C\uC744 \uD574\uC11D\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694. \uC5D1\uC140 \uC591\uC2DD\uC744 \uD655\uC778\uD55C \uB4A4 \uB2E4\uC2DC \uC5C5\uB85C\uB4DC\uD574 \uC8FC\uC138\uC694.',
     networkMessage:
         '\uD30C\uC2F1 \uC11C\uBC84\uC5D0 \uC5F0\uACB0\uD558\uC9C0 \uBABB\uD588\uC5B4\uC694. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574 \uC8FC\uC138\uC694.',
+};
+const getNurseRoleFlagsFromMemo = (memo: string | null | undefined) => {
+    const trimmedMemo = memo?.trim();
+    const isPreceptor = trimmedMemo === PRECEPTOR_MEMO;
+    const isPreceptee = trimmedMemo === PRECEPTEE_MEMO;
+
+    return {isPreceptor, isPreceptee};
+};
+const getMemoWithoutNurseRoleMarker = (memo: string | null | undefined) => {
+    const trimmedMemo = memo?.trim();
+
+    return trimmedMemo === PRECEPTOR_MEMO || trimmedMemo === PRECEPTEE_MEMO ? '' : (memo ?? '');
 };
 const VALID_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classification']>([
     'DAY',
@@ -498,11 +512,15 @@ const buildParsedNurses = (
     const fallbackTeamId = requireFirstTeamId(teams);
 
     return parsedNurses.map((nurse, index) => {
+        const legacyRoleFlags = getNurseRoleFlagsFromMemo(nurse.memo);
+
         return {
             id: createLocalId(`nurse-${index + 1}`),
             teamId: teamIdByName.get(nurse.teamName?.trim() ?? '') ?? fallbackTeamId,
             name: nurse.name ?? '',
-            memo: nurse.memo ?? '',
+            memo: getMemoWithoutNurseRoleMarker(nurse.memo),
+            isPreceptor: nurse.isPreceptor ?? legacyRoleFlags.isPreceptor,
+            isPreceptee: nurse.isPreceptee ?? legacyRoleFlags.isPreceptee,
             isWorker: nurse.isWorker ?? true,
             employmentDate: nurse.employmentDate ?? getTodayDate(),
             possibleShiftTypeIds: defaultShiftTypeIds,
@@ -837,6 +855,8 @@ const normalizeParsedNurses = (
                 compactParsedNurse({
                     name: trimToUndefined(nurse.name),
                     memo: nurse.memo ?? undefined,
+                    isPreceptor: nurse.isPreceptor ?? undefined,
+                    isPreceptee: nurse.isPreceptee ?? undefined,
                     isWorker: nurse.isWorker ?? undefined,
                     employmentDate: trimToUndefined(nurse.employmentDate),
                     level: nurse.level ?? undefined,
@@ -1030,12 +1050,12 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                 constraintRules: constraintRules.length > 0 ? constraintRules : undefined,
                 nurses: nurses.map((nurse) => ({
                     name: nurse.requestName,
-                    memo: nurse.memo,
+                    memo: getMemoWithoutNurseRoleMarker(nurse.memo),
                     isWorker: nurse.isWorker,
                     employmentDate: nurse.employmentDate,
                     level: draft.skillLevelConfig.enabled ? nurse.level : null,
-                    isPreceptor: nurse.memo.trim() === PRECEPTOR_MEMO,
-                    isPreceptee: nurse.memo.trim() === PRECEPTEE_MEMO,
+                    isPreceptor: nurse.isPreceptor,
+                    isPreceptee: nurse.isPreceptee,
                     possibleShiftShortNames: nurse.possibleShiftTypeIds
                         .map((shiftTypeId) => shiftTypeById.get(shiftTypeId))
                         .filter((shiftType): shiftType is TOnboardingWardShiftType =>

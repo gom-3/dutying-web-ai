@@ -10,7 +10,7 @@ import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
 import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings, type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
-import {hasPrecepteeMemo} from '@/pages/member/model/nurse-role';
+import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
 import {MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT} from '../../model/make-shift-events';
@@ -95,7 +95,6 @@ type TNurseLike = {
 type TNurseRoleLike = {
     isPreceptor?: boolean | null;
     isPreceptee?: boolean | null;
-    isWardManager?: boolean | null;
     memo?: string | null;
 };
 
@@ -104,11 +103,11 @@ const EMPTY_SHIFT_TYPES: TShiftTypeLike[] = [];
 const EMPTY_SHIFT_CONSTRAINT_OPTIONS: TShiftConstraintOptions = {};
 
 function hasPreceptorRole(nurse: TNurseRoleLike | null | undefined) {
-    return nurse?.isPreceptor === true || nurse?.isWardManager === true;
+    return hasNursePreceptorRole(nurse);
 }
 
 function hasPrecepteeRole(nurse: TNurseRoleLike | null | undefined) {
-    return nurse?.isPreceptee === true || hasPrecepteeMemo(nurse?.memo);
+    return hasNursePrecepteeRole(nurse);
 }
 
 const CONSTRAINT_IMPORT_ICON_SRC = '/img/temp222.png';

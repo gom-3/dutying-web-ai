@@ -24,6 +24,8 @@ export type TOnboardingWardParseApiTeam = {
 export type TOnboardingWardParseApiNurse = {
     name?: string | null;
     memo?: string | null;
+    isPreceptor?: boolean | null;
+    isPreceptee?: boolean | null;
     isWorker?: boolean | null;
     employmentDate?: string | null;
     level?: number | null;

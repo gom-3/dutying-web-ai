@@ -187,6 +187,8 @@ describe('useEditShiftTeam', () => {
                 name: '신규간호사1',
                 isWorker: true,
                 isWardManager: false,
+                isPreceptor: false,
+                isPreceptee: false,
                 memo: '',
             },
         );

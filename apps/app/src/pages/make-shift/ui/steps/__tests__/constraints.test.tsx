@@ -723,7 +723,7 @@ describe('Constraints', () => {
 
     it('shows preceptor and preceptee badges in person target dropdowns using member-role details', async () => {
         wardApiMocks.getShiftTeamNurses.mockResolvedValueOnce([
-            {nurseId: 1, name: '오지헌', isWardManager: true, memo: '__PRECEPTEE__'},
+            {nurseId: 1, name: '오지헌', isPreceptor: true, isPreceptee: true, memo: ''},
         ] as never);
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
