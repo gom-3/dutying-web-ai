@@ -99,6 +99,22 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('renders a dedicated row reorder handle column when row reordering is enabled', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} canReorderRows />);
+
+        const headerDragColumn = document.querySelector<HTMLElement>('.make-shift-calendar__header-label--drag');
+        const rowDragHandle = document.querySelector<HTMLElement>('.make-shift-calendar__row-drag-handle');
+        const rowGrid = document.querySelector<HTMLElement>('.make-shift-calendar__row-left');
+
+        expect(headerDragColumn).toBeInTheDocument();
+        expect(rowDragHandle).toBeInTheDocument();
+        expect(rowDragHandle?.tagName).toBe('BUTTON');
+        expect(rowDragHandle).toHaveAttribute('aria-label', expect.stringContaining('Kim'));
+        expect(rowDragHandle).toHaveClass('text-gray-4', 'hover:bg-gray-7', 'hover:text-sub-2');
+        expect(rowDragHandle).toHaveClass('self-center', 'justify-self-center', 'p-0', 'leading-none');
+        expect(rowGrid?.firstElementChild).toHaveClass('make-shift-calendar__row-drag-handle');
+    });
+
     it('shows rest shortage and surplus when rest check summaries are provided', () => {
         render(
             <MakeShiftCalendar

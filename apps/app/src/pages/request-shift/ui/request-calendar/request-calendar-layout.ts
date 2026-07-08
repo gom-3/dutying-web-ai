@@ -1,4 +1,8 @@
+export const REQUEST_CALENDAR_REORDER_COLUMN_CLASS = 'size-7 shrink-0';
+
 export const REQUEST_CALENDAR_NAME_COLUMN_CLASS = 'w-[clamp(64px,4.4cqw,76px)] shrink-0';
+
+export const REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS = 'w-10 shrink-0';
 
 export const REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS =
     'truncate text-center font-apple text-[clamp(12px,1.05cqw,16px)] leading-none whitespace-nowrap text-sub-1';

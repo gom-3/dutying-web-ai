@@ -8,6 +8,7 @@ import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole}
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {formatAnnualLeaveDays} from '@/shared/lib/annual-leave';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {formatNurseDisplayName} from './shared/format-nurse-display-name';
 
@@ -19,9 +20,9 @@ const FALLBACK_SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
 };
 const DEFAULT_SHIFT_TYPE_STYLE = {bg: '#939ba9', text: '#ffffff'};
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL =
-    'minmax(112px,0.72fr) minmax(76px,0.58fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
+    'minmax(112px,0.72fr) minmax(76px,0.58fr) minmax(64px,0.44fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL =
-    'minmax(112px,0.72fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
+    'minmax(112px,0.72fr) minmax(64px,0.44fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
 const WORKERS_GRID_GAP = 'gap-[clamp(6px,0.65vw,10px)]';
 const WORKERS_ROW_PADDING_X = 'px-[clamp(10px,1vw,16px)]';
 const WORKERS_NAME_TEXT_CLASS =
@@ -139,6 +140,9 @@ export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
                     {t('page.makeShift.workers.column.level')}
                 </p>
             ) : null}
+            <p className="make-shift-workers__col-label make-shift-workers__col-label--annual-leave text-center">
+                {t('page.makeShift.workers.column.annualLeave')}
+            </p>
             <p className="make-shift-workers__col-label make-shift-workers__col-label--shift-types text-center">
                 {t('page.makeShift.workers.column.shiftTypes')}
             </p>
@@ -251,6 +255,7 @@ function WorkerRow({
     const memo = getMemoWithoutRoleMarkers(nurse.memo).trim();
     const memoPreview = memo ? formatMemoPreview(memo) : '';
     const fadedRowClass = isWorker ? '' : 'opacity-55';
+    const annualLeaveLabel = formatAnnualLeaveDays(nurse.remainingAnnualLeaveDays);
 
     return (
         <Draggable draggableId={String(nurse.nurseId)} index={index} isDragDisabled={!isWorker}>
@@ -297,6 +302,14 @@ function WorkerRow({
                                 />
                             </div>
                         ) : null}
+                        <div className="make-shift-workers__row-annual-leave flex justify-center">
+                            <span
+                                className="font-poppins text-[clamp(11px,0.9vw,14px)] font-semibold text-sub-1 tabular-nums"
+                                title={t('page.makeShift.workers.annualLeaveTitle', {count: annualLeaveLabel})}
+                            >
+                                {annualLeaveLabel}
+                            </span>
+                        </div>
                         <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.24vw,4px)]">
                             {shiftTypeBadges.length > 0 ? (
                                 shiftTypeBadges.map((badge) => <ShiftTypeBadge key={badge.key} badge={badge} />)

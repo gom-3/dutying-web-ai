@@ -1,8 +1,6 @@
 import type {TSnapshotSummaryDto} from '@dutying/api/ward';
 import {useQueryClient} from '@tanstack/react-query';
-import {LoaderCircle} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
@@ -27,9 +25,11 @@ import {canConfirmAiAutofill, type TAiAutofillStatus} from '../../../model/ai-au
 import {requestAiSchedule} from '../../../model/ai-schedule-provider';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../../model/make-shift-use-case';
+import {sortScheduleByTeamNurseOrder} from '../../../model/nurse-order-sync';
 import {syncNextMonthRestCarryOver} from '../../../model/rest-carry-over';
 import {useRestTargetAdjustment} from '../../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../../model/rest-target-days';
+import {useMakeShiftNurseOrder} from '../../../model/use-make-shift-nurse-order';
 import {
     MAX_SCHEDULE_SNAPSHOT_COUNT,
     normalizeScheduleSnapshots,
@@ -45,6 +45,7 @@ import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
+import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
@@ -119,58 +120,6 @@ function resolveSnapshotDisplayTitle(params: {
     return resolveHistoryTitle(detailTitle, fallbackTitle);
 }
 
-function getElapsedSeconds(startedAt: number | null) {
-    if (startedAt === null) return 0;
-
-    return Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-}
-
-function AiAutofillLoadingOverlay({startedAt}: {startedAt: number | null}) {
-    const {t} = useTypedTranslation();
-    const [elapsedSeconds, setElapsedSeconds] = useState(() => getElapsedSeconds(startedAt));
-
-    useEffect(() => {
-        setElapsedSeconds(getElapsedSeconds(startedAt));
-
-        if (startedAt === null) return undefined;
-
-        const timerId = window.setInterval(() => {
-            setElapsedSeconds(getElapsedSeconds(startedAt));
-        }, 1000);
-
-        return () => window.clearInterval(timerId);
-    }, [startedAt]);
-
-    const portalContainer = typeof document === 'undefined' ? null : (document.getElementById('modal-root') ?? document.body);
-
-    if (portalContainer === null) return null;
-
-    return createPortal(
-        <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="ai-autofill-loading-title"
-            className="fixed inset-0 z-[100002] flex items-center justify-center bg-transparent px-4"
-        >
-            <div className="w-full max-w-[420px] rounded-[20px] bg-white px-7 py-8 text-center shadow-[0_22px_80px_rgba(45,32,92,0.24)]">
-                <div className="mx-auto flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#F3F4F6] text-main-1">
-                    <LoaderCircle className="h-[22px] w-[22px] animate-spin" aria-hidden />
-                </div>
-                <p id="ai-autofill-loading-title" className="mt-5 font-apple text-[24px] leading-[1.35] font-bold text-sub-1">
-                    {t('page.makeShift.aiRefill.loadingOverlay.title')}
-                </p>
-                <p className="mx-auto mt-3 max-w-[300px] font-apple text-[15px] leading-[1.6] font-medium whitespace-pre-line text-gray-3">
-                    {t('page.makeShift.aiRefill.loadingOverlay.description')}
-                </p>
-                <p className="mt-6 font-apple text-[13px] font-semibold text-main-1" aria-live="polite">
-                    {t('page.makeShift.aiRefill.loadingOverlay.elapsed', {seconds: elapsedSeconds})}
-                </p>
-            </div>
-        </div>,
-        portalContainer,
-    );
-}
-
 /**
  * AI 자동 채우기 — MakeShiftCalendar + 툴바. 가로 스크롤은 페이지(page-view)가 담당, 캘린더는 cqw 기반(스케일 없음).
  */
@@ -197,6 +146,7 @@ export function AiAutofill() {
     const draftRevision = useShiftEditorStore((s) => s.draftRevision);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
+    const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     const [cellAttention, setCellAttention] = useState<{target: 'fixed' | 'request'; nonce: number} | null>(null);
     const [showFaults, setShowFaults] = useState(true);
@@ -248,7 +198,8 @@ export function AiAutofill() {
         hydratePreviousLastShifts: true,
         editorInputDisabled: isAiGenerating,
     });
-    const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
+    const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses), [currentTeamNurses, dutyQuery.data]);
+    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const aiRequestSeqRef = useRef(0);
@@ -292,7 +243,7 @@ export function AiAutofill() {
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
     const isStepNavigationBusy =
-        isWorking || isSavingSnapshot || isAiGenerating || loadingSnapshotId !== null || deletingSnapshotId !== null;
+        isWorking || isSavingSnapshot || isAiGenerating || isReorderingRows || loadingSnapshotId !== null || deletingSnapshotId !== null;
 
     useEffect(() => {
         setStepNavigationBusy(5, isStepNavigationBusy);
@@ -306,8 +257,8 @@ export function AiAutofill() {
         shiftTeamId: currentShiftTeamId,
         year,
         month,
-        originalShift: dutyQuery.data,
-        enabled: isCurrentShiftTeamReady && !isAiGenerating && !isWorking && !isSavingSnapshot,
+        originalShift: orderedShift,
+        enabled: isCurrentShiftTeamReady && Boolean(orderedShift) && !isAiGenerating && !isWorking && !isSavingSnapshot && !isReorderingRows,
         debounceMs: 1000,
     });
     const isScheduleValidationChecking = scheduleValidation.status === 'validating';
@@ -353,9 +304,9 @@ export function AiAutofill() {
     const isCalendarReadonly = isAiGenerating;
     const restCheckByShiftNurseId = useMemo(
         () =>
-            dutyQuery.data
+            orderedShift
                 ? calculateRestCheckByShiftNurse({
-                      shift: dutyQuery.data,
+                      shift: orderedShift,
                       doc: hydratedDoc,
                       policy,
                       year,
@@ -363,16 +314,17 @@ export function AiAutofill() {
                       adjustmentDays,
                   })
                 : undefined,
-        [adjustmentDays, dutyQuery.data, hydratedDoc, month, policy, year],
+        [adjustmentDays, hydratedDoc, month, orderedShift, policy, year],
     );
     const canConfirm =
         !isWorking &&
         !isSavingSnapshot &&
         !isAiGenerating &&
+        !isReorderingRows &&
         !dutyQuery.isLoading &&
         !isHydratingEditor &&
         !dutyQuery.isError &&
-        Boolean(dutyQuery.data) &&
+        Boolean(orderedShift) &&
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
     const hasUnsavedEditableChanges = useMemo(
@@ -394,13 +346,13 @@ export function AiAutofill() {
     );
 
     useEffect(() => {
-        if (isHydratingEditor || !dutyQuery.data || editorDoc.columns.length === 0) return;
+        if (isHydratingEditor || !orderedShift || editorDoc.columns.length === 0) return;
 
         if (savedEditableContextKeyRef.current === currentContextKey && savedEditableDocRef.current !== null) return;
 
         savedEditableContextKeyRef.current = currentContextKey;
         markEditableDocSaved(editorDoc);
-    }, [currentContextKey, dutyQuery.data, editorDoc, isHydratingEditor, markEditableDocSaved]);
+    }, [currentContextKey, editorDoc, isHydratingEditor, markEditableDocSaved, orderedShift]);
 
     useEffect(() => {
         setExitGuard({hasUnsavedChanges: hasUnsavedEditableChanges, isAiGenerating});
@@ -433,7 +385,7 @@ export function AiAutofill() {
     }, [lastShiftBlankWarningAcknowledgedKey, lastShiftBlankWarningKey]);
 
     const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const progressToastId = 'make-shift-snapshot-save-progress';
         const docToSave = useShiftEditorStore.getState().doc;
@@ -455,7 +407,7 @@ export function AiAutofill() {
                     year,
                     month,
                     doc: docToSave,
-                    originalShift: dutyQuery.data,
+                    originalShift: orderedShift,
                 }),
             );
 
@@ -470,7 +422,7 @@ export function AiAutofill() {
         }
     };
     const publishCurrentSchedule = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
 
         const docToPublish = useShiftEditorStore.getState().doc;
 
@@ -488,7 +440,7 @@ export function AiAutofill() {
                 year,
                 month,
                 doc: docToPublish,
-                originalShift: dutyQuery.data,
+                originalShift: orderedShift,
             }),
         );
 
@@ -501,7 +453,7 @@ export function AiAutofill() {
         });
 
         const nextShift = {
-            ...docToShift(docToPublish, dutyQuery.data),
+            ...docToShift(docToPublish, orderedShift),
             workflowStatus: 'CONFIRMED' as const,
             workflowStep: 6,
         };
@@ -536,7 +488,7 @@ export function AiAutofill() {
         }
     };
     const handleSaveSnapshot = async () => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || isSavingSnapshot) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || isSavingSnapshot) return;
 
         setIsSavingSnapshot(true);
 
@@ -569,14 +521,14 @@ export function AiAutofill() {
         }
     };
     const handleLoadSnapshot = async (snapshotId: number) => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || loadingSnapshotId != null) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || loadingSnapshotId != null) return;
 
         setSnapshotLoadTarget(null);
         setLoadingSnapshotId(snapshotId);
 
         try {
             const detail = await WardAPI.getSnapshot(wardId, currentShiftTeamId, snapshotId);
-            const nextDoc = snapshotDetailToDoc(detail, dutyQuery.data, year, month, {
+            const nextDoc = snapshotDetailToDoc(detail, orderedShift, year, month, {
                 fixedCells: editorDoc.fixedCells,
                 requestCells: editorDoc.requestCells,
                 lastCellsByWorkerId: Object.fromEntries(editorDoc.rows.map((row) => [row.workerId, row.lastCells ?? []])),
@@ -593,7 +545,7 @@ export function AiAutofill() {
                     {
                         wardId,
                         doc: stateAfterInit.doc,
-                        originalShift: dutyQuery.data,
+                        originalShift: orderedShift,
                         shiftTeamId: currentShiftTeamId,
                         year,
                         month,
@@ -626,7 +578,7 @@ export function AiAutofill() {
         setSnapshotLoadTarget(snapshot);
     };
     const confirmCurrentSchedule = async () => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || !canConfirm) return;
 
         setIsWorking(true);
 
@@ -663,7 +615,7 @@ export function AiAutofill() {
         }
     };
     const handleConfirm = () => {
-        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !dutyQuery.data || !canConfirm) return;
+        if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift || !canConfirm) return;
 
         if (requestLastShiftBlankWarning('confirm')) return;
 
@@ -761,14 +713,14 @@ export function AiAutofill() {
     const getAiFillReadyContext = () => {
         if (isAiGenerating) return null;
 
-        if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !dutyQuery.data) {
+        if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !orderedShift) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
 
             return null;
         }
 
         return {
-            originalShift: dutyQuery.data,
+            originalShift: orderedShift,
             rulesHash,
             shiftTeamId: currentShiftTeamId,
             wardId,
@@ -965,9 +917,9 @@ export function AiAutofill() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
                     <MakeShiftCalendar
-                        shift={dutyQuery.data}
+                        shift={orderedShift}
                         doc={hydratedDoc}
                         violationMap={violationMap}
                         teamViolations={teamViolations}
@@ -980,12 +932,17 @@ export function AiAutofill() {
                         cellAttention={cellAttention}
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
+                        canReorderRows
+                        rowReorderDisabled={isCalendarReadonly || isReorderingRows}
+                        onRowDragEnd={(result) => {
+                            void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
+                        }}
                         restPolicyControl={
                             <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
                         }
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
                     <PageState tone="empty" title={t('page.makeShift.aiRefill.empty')} description={t('page.state.emptyDescription')} />
                 )}
             </div>

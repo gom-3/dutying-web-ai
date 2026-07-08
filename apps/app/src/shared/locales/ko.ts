@@ -633,6 +633,9 @@ export const ko = {
             },
             calendar: {
                 name: '이름',
+                annualLeave: '연차',
+                annualLeaveFull: '남은 연차',
+                annualLeaveDetail: '남은 연차 {{count}}일',
                 carried: '이월',
                 previousShifts: '전달 근무',
                 violationDialogAria: '제약 문제',
@@ -1021,12 +1024,14 @@ export const ko = {
                 column: {
                     name: '이름',
                     level: '숙련도',
+                    annualLeave: '연차',
                     shiftTypes: '가능 근무',
                     preceptor: '프리셉터',
                     preceptee: '프리셉티',
                     isWorker: '근무투입',
                     memo: '비고',
                 },
+                annualLeaveTitle: '남은 연차 {{count}}일',
                 emptyTitle: '근무자를 확정하면 시작할 수 있어요.',
                 emptyDescription: '근무 투입이 설정된 인원을 먼저 확인해 주세요.',
                 noNurseTitle: '{{teamName}}에는 아직 간호사가 없어요',
@@ -1312,6 +1317,8 @@ export const ko = {
             calendar: {
                 ariaLabel: '신청 근무표',
                 nameColumn: '이름',
+                annualLeaveColumn: '연차',
+                annualLeaveTitle: '남은 연차 {{count}}일',
                 skillColumn: '숙련도',
                 linkColumn: '연동',
                 reorderAria: '{{name}} 순서 변경',
@@ -1751,6 +1758,9 @@ export const ko = {
             row: {
                 dragAria: '드래그해서 순서 변경',
                 unselectedSkill: '선택안함',
+                decreaseAnnualLeaveAria: '{{nurseName}} 남은 연차 줄이기',
+                increaseAnnualLeaveAria: '{{nurseName}} 남은 연차 늘리기',
+                annualLeaveTitle: '남은 연차 {{count}}일',
                 preceptorAria: '{{nurseName}} 프리셉터',
                 precepteeAria: '{{nurseName}} 프리셉티',
                 workerAria: '{{nurseName}} 근무투입',
@@ -1770,6 +1780,7 @@ export const ko = {
             table: {
                 name: '이름',
                 level: '숙련도',
+                annualLeave: '연차',
                 shiftTypes: '가능 근무',
                 memo: '비고',
                 isWorker: '근무 투입',

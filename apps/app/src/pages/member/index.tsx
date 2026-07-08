@@ -8,7 +8,7 @@ import {
     type DraggableProvidedDraggableProps,
     type DropResult,
 } from '@hello-pangea/dnd';
-import {Check, ChevronDown, Copy, Info, Link2, Plus, Settings2, Trash2, X} from 'lucide-react';
+import {Check, ChevronDown, Copy, Info, Link2, Minus, Plus, Settings2, Trash2, X} from 'lucide-react';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -32,6 +32,7 @@ import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets
 import {MEMBER_CONNECTION_MANAGE_SEARCH_PARAM, MEMBER_CONNECTION_MANAGE_SEARCH_VALUE} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
+import {ANNUAL_LEAVE_STEP_DAYS, formatAnnualLeaveDays, normalizeAnnualLeaveDays} from '@/shared/lib/annual-leave';
 import {Input} from '@/shared/ui/primitives/input';
 import {Switch} from '@/shared/ui/primitives/switch';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -86,9 +87,9 @@ const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-3 min-[1600px]:px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-1.5 min-[1600px]:gap-x-2';
 const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(70px,0.62fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
+    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(70px,0.62fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; labelKey: Parameters<ReturnType<typeof useTypedTranslation>['t']>[0]}[] = [
     {value: 'manual', labelKey: 'page.member.sort.manual'},
     {value: 'name', labelKey: 'page.member.sort.name'},
@@ -1079,9 +1080,7 @@ function MemberPage() {
                             </h1>
                         </div>
                         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 min-[1600px]:gap-2">
-                            <div
-                                className="flex h-10 shrink-0 items-center justify-center rounded-[10px] bg-white px-3 min-[1600px]:h-[46px] min-[1600px]:px-4"
-                            >
+                            <div className="flex h-10 shrink-0 items-center justify-center rounded-[10px] bg-white px-3 min-[1600px]:h-[46px] min-[1600px]:px-4">
                                 <div className="flex shrink-0 items-center justify-center gap-2 min-[1600px]:gap-3">
                                     <div className="flex items-baseline gap-1.5 whitespace-nowrap min-[1600px]:gap-2">
                                         <span className="font-apple text-[13px] font-normal text-[#8A94A8] min-[1600px]:text-[14px]">
@@ -1174,7 +1173,7 @@ function MemberPage() {
                             aria-label={t('page.member.skillSettings')}
                             title={t('page.member.skillSettings')}
                             className={cn(
-                                'ml-auto mr-12 flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
+                                'mr-12 ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
                                 selectedNurse
                                     ? 'min-[1600px]:w-[42px] min-[1600px]:px-0'
                                     : 'min-[1600px]:w-auto min-[1600px]:gap-1.5 min-[1600px]:px-4',
@@ -1367,6 +1366,7 @@ function MemberPage() {
                                 <span />
                                 <span className="text-center">{t('page.member.table.name')}</span>
                                 {isSkillFeatureEnabled ? <span className="text-center">{t('page.member.table.level')}</span> : null}
+                                <span className="text-center">{t('page.member.table.annualLeave')}</span>
                                 <span className="text-center">{t('page.member.table.shiftTypes')}</span>
                                 <span className="flex justify-center text-center">
                                     <MemberRoleHeaderHelp
@@ -1632,6 +1632,16 @@ function MemberNurseRow({
     const fadedClass = isWorker ? '' : 'opacity-55';
     const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
     const unselectedSkillLabel = t('page.member.row.unselectedSkill');
+    const annualLeaveDays = normalizeAnnualLeaveDays(nurse.remainingAnnualLeaveDays);
+    const annualLeaveLabel = formatAnnualLeaveDays(annualLeaveDays);
+    const updateAnnualLeaveDays = async (delta: number) => {
+        if (isBusy) return;
+
+        await onUpdateNurse(nurse.nurseId, {
+            ...nurse,
+            remainingAnnualLeaveDays: normalizeAnnualLeaveDays(annualLeaveDays + delta),
+        });
+    };
 
     useEffect(() => {
         if (!skillMenuOpen) {
@@ -1776,6 +1786,40 @@ function MemberNurseRow({
                         </div>
                     </div>
                 ) : null}
+                <div className={cn('flex items-center justify-center gap-1', fadedClass)}>
+                    <button
+                        type="button"
+                        disabled={isBusy}
+                        aria-label={t('page.member.row.decreaseAnnualLeaveAria', {nurseName: nurseNameForAria})}
+                        className="grid size-6 shrink-0 place-items-center rounded-full border border-gray-6 bg-white text-gray-4 transition-colors hover:border-main-3 hover:bg-main-light hover:text-main-1 disabled:cursor-not-allowed disabled:opacity-45"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onSelect();
+                            void updateAnnualLeaveDays(-ANNUAL_LEAVE_STEP_DAYS);
+                        }}
+                    >
+                        <Minus className="size-3" strokeWidth={2.4} />
+                    </button>
+                    <span
+                        className="min-w-[2.2rem] text-center font-poppins text-[14px] font-semibold text-sub-1 tabular-nums"
+                        title={t('page.member.row.annualLeaveTitle', {count: annualLeaveLabel})}
+                    >
+                        {annualLeaveLabel}
+                    </span>
+                    <button
+                        type="button"
+                        disabled={isBusy}
+                        aria-label={t('page.member.row.increaseAnnualLeaveAria', {nurseName: nurseNameForAria})}
+                        className="grid size-6 shrink-0 place-items-center rounded-full border border-gray-6 bg-white text-gray-4 transition-colors hover:border-main-3 hover:bg-main-light hover:text-main-1 disabled:cursor-not-allowed disabled:opacity-45"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onSelect();
+                            void updateAnnualLeaveDays(ANNUAL_LEAVE_STEP_DAYS);
+                        }}
+                    >
+                        <Plus className="size-3" strokeWidth={2.4} />
+                    </button>
+                </div>
                 <div className={cn('flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-0.5 overflow-hidden', fadedClass)}>
                     {shiftTypeOptions.length > 0 ? (
                         shiftTypeOptions.map((shiftType) => {

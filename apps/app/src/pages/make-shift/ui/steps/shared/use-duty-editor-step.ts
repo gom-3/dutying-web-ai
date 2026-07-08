@@ -20,6 +20,7 @@ import {
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../../model/make-shift-store';
+import {getCurrentTeamNurses, sortDutyDocByTeamNurseOrder} from '../../../model/nurse-order-sync';
 
 function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
     if (a.columns.length !== b.columns.length || a.rows.length !== b.rows.length) return false;
@@ -28,8 +29,13 @@ function isSameDutyDocShape(a: TDutyDoc, b: TDutyDoc): boolean {
         if (a.columns[i] !== b.columns[i]) return false;
     }
 
-    for (let i = 0; i < a.rows.length; i += 1) {
-        if (a.rows[i]?.workerId !== b.rows[i]?.workerId) return false;
+    const aWorkerIds = new Set(a.rows.map((row) => row.workerId));
+    const bWorkerIds = new Set(b.rows.map((row) => row.workerId));
+
+    if (aWorkerIds.size !== bWorkerIds.size) return false;
+
+    for (const workerId of aWorkerIds) {
+        if (!bWorkerIds.has(workerId)) return false;
     }
 
     return true;
@@ -55,25 +61,26 @@ function rebasePersistedCell(cell: TCellValue, baseCell: TCellValue, currentShor
 
 function rebaseDocRowsToCurrentShiftTypes(doc: TDutyDoc, baseDoc: TDutyDoc, currentShortNames: Set<string>): TDutyDoc | null {
     let changed = false;
+    const baseRowByWorkerId = new Map(baseDoc.rows.map((row) => [row.workerId, row]));
     const rows = doc.rows.map((row, rowIdx) => {
-            const baseRow = baseDoc.rows[rowIdx];
-            const cells = row.cells.map((cell, colIdx) => {
-                const nextCell = rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
+        const baseRow = baseRowByWorkerId.get(row.workerId) ?? baseDoc.rows[rowIdx];
+        const cells = row.cells.map((cell, colIdx) => {
+            const nextCell = rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
 
-                if (nextCell !== cell) changed = true;
+            if (nextCell !== cell) changed = true;
 
-                return nextCell;
-            });
-
-            return changed ? {...row, cells} : row;
+            return nextCell;
         });
+
+        return changed ? {...row, cells} : row;
+    });
 
     if (!changed) return null;
 
     return {
         ...doc,
         rows,
-            };
+    };
 }
 
 function deriveRequestCells(
@@ -152,6 +159,7 @@ export function useDutyEditorStep({
     const storeWardId = useMakeShiftStore((s) => s.wardId);
     const shiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const shiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
+    const currentTeamNurses = useMemo(() => getCurrentTeamNurses(shiftTeams, currentShiftTeamId), [currentShiftTeamId, shiftTeams]);
     const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
     const dutyQuery = useQuery({
         ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
@@ -216,15 +224,17 @@ export function useDutyEditorStep({
             hydratedDraftRevisionRef.current !== null &&
             useShiftEditorStore.getState().draftRevision > hydratedDraftRevisionRef.current;
 
-        const baseDoc = shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift});
+        const baseDoc = sortDutyDocByTeamNurseOrder(shiftToDoc(dutyQuery.data, year, month, {previousConfirmedShift}), currentTeamNurses);
         const currentShortNames = new Set(buildWardShiftTypeMaps(dutyQuery.data).shortNameToType.keys());
 
         if (!hasContextChanged && hasDutyDataChanged && hasLocalChangesSinceHydration && !isStoreEmpty) {
             const rebasedDoc = rebaseDocRowsToCurrentShiftTypes(editorDoc, baseDoc, currentShortNames);
 
             if (rebasedDoc) {
+                const orderedRebasedDoc = sortDutyDocByTeamNurseOrder(rebasedDoc, currentTeamNurses);
+
                 commands.hydrate({
-                    doc: rebasedDoc,
+                    doc: orderedRebasedDoc,
                     history: JSON.stringify(useShiftEditorStore.getState().history),
                     scheduleViolations: {validationSnapshot: null},
                     savedAt: Date.now(),
@@ -267,12 +277,15 @@ export function useDutyEditorStep({
         const persisted = commands.getPersisted();
 
         if (persisted && isSameDutyDocShape(persisted.doc, nextDoc)) {
-            const mergedRows = persisted.doc.rows.map((row, rowIdx) => {
-                const baseRow = baseDoc.rows[rowIdx];
+            const persistedRowByWorkerId = new Map(persisted.doc.rows.map((row) => [row.workerId, row]));
+            const mergedRows = baseDoc.rows.map((baseRow) => {
+                const row = persistedRowByWorkerId.get(baseRow.workerId);
+
+                if (!row) return baseRow;
 
                 return {
                     ...row,
-                    lastCells: mergeLastCells(row.lastCells, baseRow?.lastCells),
+                    lastCells: mergeLastCells(row.lastCells, baseRow.lastCells),
                     cells: row.cells.map((cell, colIdx) => {
                         const date = persisted.doc.columns[colIdx];
 
@@ -284,10 +297,10 @@ export function useDutyEditorStep({
                         if (requestValue !== undefined) return requestValue;
 
                         if (persisted.doc.requestCells[key] === true && !requestCells[key]) {
-                            return baseRow?.cells[colIdx] ?? null;
+                            return baseRow.cells[colIdx] ?? null;
                         }
 
-                        return rebasePersistedCell(cell, baseRow?.cells[colIdx] ?? null, currentShortNames);
+                        return rebasePersistedCell(cell, baseRow.cells[colIdx] ?? null, currentShortNames);
                     }),
                 };
             });
@@ -332,6 +345,7 @@ export function useDutyEditorStep({
         wardId,
         year,
         editorDoc.columns.length,
+        currentTeamNurses,
     ]);
 
     const focusEditor = () => {

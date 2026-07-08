@@ -636,6 +636,9 @@ export const en: TLocale = {
             },
             calendar: {
                 name: 'Name',
+                annualLeave: 'Leave',
+                annualLeaveFull: 'Remaining leave',
+                annualLeaveDetail: '{{count}} days of annual leave remaining',
                 carried: 'Carry',
                 previousShifts: 'Prev',
                 violationDialogAria: 'Constraint issue',
@@ -1024,12 +1027,14 @@ export const en: TLocale = {
                 column: {
                     name: 'Name',
                     level: 'Level',
+                    annualLeave: 'Leave',
                     shiftTypes: 'Available shifts',
                     preceptor: 'Preceptor',
                     preceptee: 'Preceptee',
                     isWorker: 'Included',
                     memo: 'Memo',
                 },
+                annualLeaveTitle: '{{count}} days of annual leave remaining',
                 emptyTitle: 'No confirmed workers yet.',
                 emptyDescription: 'Check the staff marked for duty first.',
                 noNurseTitle: '{{teamName}} has no nurses yet',
@@ -1315,6 +1320,8 @@ export const en: TLocale = {
             calendar: {
                 ariaLabel: 'Request shift schedule',
                 nameColumn: 'Name',
+                annualLeaveColumn: 'Leave',
+                annualLeaveTitle: '{{count}} days of annual leave remaining',
                 skillColumn: 'Skill',
                 linkColumn: 'Link',
                 reorderAria: 'Reorder {{name}}',
@@ -1754,6 +1761,9 @@ export const en: TLocale = {
             row: {
                 dragAria: 'Drag to change order',
                 unselectedSkill: 'Unselected',
+                decreaseAnnualLeaveAria: 'Decrease remaining leave for {{nurseName}}',
+                increaseAnnualLeaveAria: 'Increase remaining leave for {{nurseName}}',
+                annualLeaveTitle: '{{count}} days of annual leave remaining',
                 preceptorAria: '{{nurseName}} preceptor',
                 precepteeAria: '{{nurseName}} preceptee',
                 workerAria: '{{nurseName}} included in duty',
@@ -1773,6 +1783,7 @@ export const en: TLocale = {
             table: {
                 name: 'Name',
                 level: 'Skill',
+                annualLeave: 'Leave',
                 shiftTypes: 'Available shifts',
                 memo: 'Note',
                 isWorker: 'Included',

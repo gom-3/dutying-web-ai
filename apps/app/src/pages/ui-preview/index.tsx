@@ -1,6 +1,7 @@
 import {Check, Info, Plus, RefreshCcw, Save, Trash2, X} from 'lucide-react';
 import {useState, type ReactNode} from 'react';
 import {useSearchParams} from 'react-router';
+import {AiAutofillLoadingOverlay} from '@/pages/make-shift/ui/steps/ai-auto-fill/ai-autofill-loading-overlay';
 import WardCreationProgressOverlay from '@/pages/onboarding-ward-create/ui/ward-creation-progress-overlay';
 import Card from '@/shared/ui/Card';
 import Button from '@/shared/ui/form-controls/Button';
@@ -59,8 +60,10 @@ function UiPreviewPage() {
     const [selectValue, setSelectValue] = useState('day');
     const [nameValue, setNameValue] = useState('김듀팅');
     const [inputValue, setInputValue] = useState('Sample input');
+    const [aiAutofillPreviewStartedAt] = useState(() => Date.now() - 12_000);
     const wardCreationLoadingPreview = searchParams.get('wardCreationLoading');
     const shouldShowWardCreationPreview = wardCreationLoadingPreview === 'submitting' || wardCreationLoadingPreview === 'complete';
+    const shouldShowAiAutofillLoadingPreview = searchParams.get('aiAutofillLoading') === 'true';
 
     return (
         <TooltipProvider>
@@ -249,6 +252,23 @@ function UiPreviewPage() {
                     </div>
                 </PreviewSection>
 
+                <PreviewSection title="AI autofill loading" description="Open the modal shown while AI fills the duty schedule.">
+                    <div className="flex flex-wrap gap-3">
+                        <a
+                            href="/__ui?aiAutofillLoading=true"
+                            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-main-1 px-5 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-2"
+                        >
+                            자동채우기 모달 보기
+                        </a>
+                        <a
+                            href="/__ui"
+                            className="inline-flex h-11 items-center justify-center rounded-[14px] px-2 font-apple text-[14px] font-semibold text-gray-3 underline underline-offset-2 transition-colors hover:text-sub-1"
+                        >
+                            닫기
+                        </a>
+                    </div>
+                </PreviewSection>
+
                 <PreviewSection title="Icon states">
                     <div className="grid gap-4 sm:grid-cols-3">
                         <SampleBox label="success">
@@ -273,6 +293,7 @@ function UiPreviewPage() {
                 </PreviewSection>
             </main>
             {shouldShowWardCreationPreview ? <WardCreationProgressOverlay isComplete={wardCreationLoadingPreview === 'complete'} /> : null}
+            {shouldShowAiAutofillLoadingPreview ? <AiAutofillLoadingOverlay startedAt={aiAutofillPreviewStartedAt} /> : null}
         </TooltipProvider>
     );
 }

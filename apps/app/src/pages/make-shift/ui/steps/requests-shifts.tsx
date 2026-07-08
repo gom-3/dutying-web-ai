@@ -9,6 +9,8 @@ import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {sortScheduleByTeamNurseOrder} from '../../model/nurse-order-sync';
+import {useMakeShiftNurseOrder} from '../../model/use-make-shift-nurse-order';
 import {
     MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
     MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS,
@@ -22,6 +24,7 @@ import {useFlowTransitionFeedback} from '../use-flow-transition-feedback';
 export function RequestsShifts() {
     const {t} = useTypedTranslation();
     const useCase = useMakeShiftUseCase();
+    const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const canPrev = useMakeShiftStore((s) => canGoPrev(s));
     const canNext = useMakeShiftStore((s) => canGoNext(s));
@@ -31,6 +34,7 @@ export function RequestsShifts() {
     const makeShiftTeams = useMakeShiftStore((s) => s.shiftTeams);
     const makeShiftTeamsStatus = useMakeShiftStore((s) => s.shiftTeamsStatus);
     const makeShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
+    const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     const setRequestState = useRequestShiftStore((s) => s.setState);
     const setRequestWardContext = useRequestShiftStore((s) => s.setWardContext);
     const [isRequestContextSynced, setIsRequestContextSynced] = useState(false);
@@ -39,6 +43,14 @@ export function RequestsShifts() {
         makeWardId,
         makeShiftTeamId,
     );
+
+    useEffect(() => {
+        if (typeof setStepNavigationBusy !== 'function') return;
+
+        setStepNavigationBusy(3, isReorderingRows);
+
+        return () => setStepNavigationBusy(3, false);
+    }, [isReorderingRows, setStepNavigationBusy]);
 
     useEffect(() => {
         setIsRequestContextSynced(false);
@@ -55,6 +67,7 @@ export function RequestsShifts() {
         actions: {retry, createNextMonthShift},
     } = useRequestShift(true);
     const shiftTeamCount = shiftTeams?.length ?? 0;
+    const orderedRequestShift = sortScheduleByTeamNurseOrder(requestShift, currentTeamNurses);
     const pageState =
         !isRequestContextSynced || bootstrapStatus === 'pending'
             ? {
@@ -162,7 +175,17 @@ export function RequestsShifts() {
                         ) : null}
                     </PageState>
                 ) : (
-                    <RequestCalendar defaultReviewMode="pending" />
+                    <RequestCalendar
+                        defaultReviewMode="pending"
+                        canReorderRows
+                        rowReorderDisabled={isReorderingRows}
+                        orderSourceNurses={currentTeamNurses}
+                        onRowDragEnd={(result) => {
+                            if (!orderedRequestShift) return;
+
+                            void moveScheduleRow(orderedRequestShift, result, {scheduleKind: 'request'});
+                        }}
+                    />
                 )}
             </div>
         </div>

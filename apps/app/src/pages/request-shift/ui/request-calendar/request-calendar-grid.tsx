@@ -11,6 +11,7 @@ interface IRequestCalendarGridProps {
     focus: TFocus | null;
     readonly: boolean;
     canReorder?: boolean;
+    rowReorderDisabled?: boolean;
     separateWeekendColor: boolean;
     wardShiftTypeMap: Map<number, TWardShiftType>;
     dutyRequestLookup: Map<string, TDutyRequest>;
@@ -28,6 +29,7 @@ export default function RequestCalendarGrid({
     focus,
     readonly,
     canReorder = false,
+    rowReorderDisabled = false,
     separateWeekendColor,
     wardShiftTypeMap,
     dutyRequestLookup,
@@ -39,16 +41,20 @@ export default function RequestCalendarGrid({
     onDragEnd,
     onSelectCell,
 }: IRequestCalendarGridProps) {
+    const canDragRows = canReorder && !rowReorderDisabled;
+
     return (
-        <DragDropContext onDragEnd={(result) => canReorder && onDragEnd?.(result)}>
+        <DragDropContext onDragEnd={(result) => canDragRows && onDragEnd?.(result)}>
             <div className="flex min-h-0 w-full flex-col gap-1 pb-1">
                 {requestShift.divisionShiftNurses
                     .map((division) => division.filter((row) => row.shiftNurse.isWorker))
                     .map((rows, level) => {
                         if (rows.length === 0) return null;
 
+                        const divisionNum = rows[0]?.shiftNurse.divisionNum ?? level + 1;
+
                         return (
-                            <Droppable droppableId={level.toString()} key={level}>
+                            <Droppable droppableId={divisionNum.toString()} key={divisionNum} isDropDisabled={!canDragRows}>
                                 {(provided) => (
                                     <div ref={provided.innerRef} className="w-full" {...provided.droppableProps}>
                                         {rows.map((row, rowIndex) => (
@@ -56,7 +62,7 @@ export default function RequestCalendarGrid({
                                                 draggableId={row.shiftNurse.shiftNurseId.toString()}
                                                 index={rowIndex}
                                                 key={row.shiftNurse.shiftNurseId}
-                                                isDragDisabled={!canReorder}
+                                                isDragDisabled={!canDragRows}
                                             >
                                                 {(draggableProvided) => (
                                                     <RequestCalendarGridRow
@@ -65,6 +71,7 @@ export default function RequestCalendarGrid({
                                                         focus={focus}
                                                         readonly={readonly}
                                                         canReorder={canReorder}
+                                                        rowReorderDisabled={rowReorderDisabled}
                                                         separateWeekendColor={separateWeekendColor}
                                                         requestShift={requestShift}
                                                         wardShiftTypeMap={wardShiftTypeMap}

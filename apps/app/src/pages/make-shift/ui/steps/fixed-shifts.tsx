@@ -13,8 +13,10 @@ import Button from '@/shared/ui/form-controls/Button';
 import PageState from '@/shared/ui/PageState';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {sortScheduleByTeamNurseOrder} from '../../model/nurse-order-sync';
 import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
+import {useMakeShiftNurseOrder} from '../../model/use-make-shift-nurse-order';
 import {
     MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS,
     MAKE_SHIFT_STEP_NAV_ACTIONS_CLASS,
@@ -46,6 +48,7 @@ export function FixedShifts() {
     const month = useMakeShiftStore((s) => s.month);
     const currentShiftTeamId = useMakeShiftStore((s) => s.currentShiftTeamId);
     const useCase = useMakeShiftUseCase();
+    const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
     const {transitioning, runTransition} = useFlowTransitionFeedback();
     const setEditorMode = useShiftEditorStore((s) => s.setEditorMode);
     const editorMode = useShiftEditorStore((s) => s.editorMode);
@@ -53,10 +56,10 @@ export function FixedShifts() {
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
-        setStepNavigationBusy(4, isSaving);
+        setStepNavigationBusy(4, isSaving || isReorderingRows);
 
         return () => setStepNavigationBusy(4, false);
-    }, [isSaving, setStepNavigationBusy]);
+    }, [isReorderingRows, isSaving, setStepNavigationBusy]);
 
     useEffect(() => {
         if (editorMode !== 'fixed') {
@@ -73,11 +76,12 @@ export function FixedShifts() {
     const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingEditor} = useDutyEditorStep({
         hydratePreviousLastShifts: true,
     });
-    const skillColumn = useMakeShiftSkillColumn(dutyQuery.data);
+    const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses), [currentTeamNurses, dutyQuery.data]);
+    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const handleNext = useCallback(async () => {
-        if (!wardId || !dutyQuery.data || !canNext || isSaving) return;
+        if (!wardId || !orderedShift || !canNext || isSaving || isReorderingRows) return;
 
         setIsSaving(true);
 
@@ -86,7 +90,7 @@ export function FixedShifts() {
         toast.loading(t('page.makeShift.navigation.saving'), {id: progressToastId});
 
         try {
-            const dto = docToFixedWardShiftsDTO(editorDoc, dutyQuery.data);
+            const dto = docToFixedWardShiftsDTO(editorDoc, orderedShift);
 
             await WardAPI.updateShifts(wardId, dto);
             await queryClient.invalidateQueries({
@@ -99,15 +103,16 @@ export function FixedShifts() {
             toast.dismiss(progressToastId);
             setIsSaving(false);
         }
-    }, [wardId, dutyQuery.data, canNext, isSaving, editorDoc, queryClient, currentShiftTeamId, year, month, useCase, t]);
+    }, [wardId, orderedShift, canNext, isSaving, isReorderingRows, editorDoc, queryClient, currentShiftTeamId, year, month, useCase, t]);
     const nextDisabled =
         wardId === null ||
         !canNext ||
         isSaving ||
+        isReorderingRows ||
         dutyQuery.isLoading ||
         isHydratingEditor ||
         dutyQuery.isError ||
-        dutyQuery.data === undefined;
+        !orderedShift;
     /**
      * 고정 근무 화면에서는 fixedCells / requestCells 로 마킹된 셀만 보여준다.
      * (그 외 셀은 비워서 사용자가 "고정해야 할 부분"에만 집중하도록.)
@@ -132,9 +137,9 @@ export function FixedShifts() {
     );
     const restCheckByShiftNurseId = useMemo(
         () =>
-            dutyQuery.data
+            orderedShift
                 ? calculateRestCheckByShiftNurse({
-                      shift: dutyQuery.data,
+                      shift: orderedShift,
                       doc: fixedOnlyDoc,
                       policy,
                       year,
@@ -142,7 +147,7 @@ export function FixedShifts() {
                       adjustmentDays,
                   })
                 : undefined,
-        [adjustmentDays, dutyQuery.data, fixedOnlyDoc, month, policy, year],
+        [adjustmentDays, fixedOnlyDoc, month, orderedShift, policy, year],
     );
 
     return (
@@ -198,10 +203,10 @@ export function FixedShifts() {
                     action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                 />
             )}
-            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
                 <div className="fixed-shifts-calendar-wrap w-full min-w-0">
                     <MakeShiftCalendar
-                        shift={dutyQuery.data}
+                        shift={orderedShift}
                         doc={fixedOnlyDoc}
                         // 고정 근무 화면에서는 위반(violation) 표시를 항상 끈다.
                         violationMap={EMPTY_VIOLATION_MAP}
@@ -212,13 +217,18 @@ export function FixedShifts() {
                         showCellStatusPins
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
+                        canReorderRows
+                        rowReorderDisabled={isSaving || isReorderingRows}
+                        onRowDragEnd={(result) => {
+                            void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
+                        }}
                         restPolicyControl={
                             <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
                         }
                     />
                 </div>
             )}
-            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !dutyQuery.data && (
+            {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && !orderedShift && (
                 <PageState tone="empty" title={t('page.makeShift.fixedShifts.empty')} description={t('page.state.emptyDescription')} />
             )}
         </div>

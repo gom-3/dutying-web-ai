@@ -6,10 +6,16 @@ import {type TWardShiftType} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
 import {type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
 import SkillBadge from '@/features/ward-skill/ui/skill-badge';
-import {DragIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
+import {LinkedIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {formatAnnualLeaveDays} from '@/shared/lib/annual-leave';
 import RequestCalendarGridCell from './request-calendar-grid-cell';
-import {REQUEST_CALENDAR_NAME_COLUMN_CLASS, REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS} from './request-calendar-layout';
+import {
+    REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS,
+    REQUEST_CALENDAR_NAME_COLUMN_CLASS,
+    REQUEST_CALENDAR_NURSE_NAME_TEXT_CLASS,
+    REQUEST_CALENDAR_REORDER_COLUMN_CLASS,
+} from './request-calendar-layout';
 import {getDutyRequestLookupKey, getRequestCalendarRowClassName} from './utils';
 
 type TRequestShiftRow = TRequestShift['divisionShiftNurses'][number][number];
@@ -20,6 +26,7 @@ type TRequestCalendarGridRowProps = {
     focus: TFocus | null;
     readonly: boolean;
     canReorder: boolean;
+    rowReorderDisabled: boolean;
     separateWeekendColor: boolean;
     requestShift: TRequestShift;
     wardShiftTypeMap: Map<number, TWardShiftType>;
@@ -39,6 +46,7 @@ export default function RequestCalendarGridRow({
     focus,
     readonly,
     canReorder,
+    rowReorderDisabled,
     separateWeekendColor,
     requestShift,
     wardShiftTypeMap,
@@ -53,6 +61,8 @@ export default function RequestCalendarGridRow({
 }: TRequestCalendarGridRowProps) {
     const {t} = useTypedTranslation();
     const isFocusedRow = focus?.shiftNurseId === row.shiftNurse.shiftNurseId;
+    const effectiveDragHandleProps = canReorder && !rowReorderDisabled ? draggableProvided.dragHandleProps : undefined;
+    const annualLeaveLabel = formatAnnualLeaveDays(row.shiftNurse.remainingAnnualLeaveDays);
 
     return (
         <div
@@ -61,13 +71,19 @@ export default function RequestCalendarGridRow({
             {...draggableProvided.draggableProps}
         >
             {canReorder ? (
-                <div
-                    className="relative flex w-6 shrink-0 items-center justify-center text-gray-4"
-                    {...draggableProvided.dragHandleProps}
+                <button
+                    type="button"
+                    disabled={rowReorderDisabled}
+                    className={cn(
+                        'request-calendar__row-drag-handle grid cursor-grab place-items-center self-center rounded-[8px] border-0 bg-transparent p-0 leading-none text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-55',
+                        REQUEST_CALENDAR_REORDER_COLUMN_CLASS,
+                    )}
+                    {...(effectiveDragHandleProps ?? {})}
                     aria-label={t('page.request.calendar.reorderAria', {name: row.shiftNurse.name})}
+                    title={t('page.request.calendar.reorderAria', {name: row.shiftNurse.name})}
                 >
-                    <DragIcon className="h-5 w-5 cursor-grab active:cursor-grabbing" />
-                </div>
+                    <SixDotsIcon className="block size-[clamp(13px,1.1vw,16px)]" aria-hidden="true" />
+                </button>
             ) : null}
             <div
                 className={cn(
@@ -77,6 +93,16 @@ export default function RequestCalendarGridRow({
                 )}
             >
                 {row.shiftNurse.name}
+            </div>
+            <div
+                className={cn(
+                    'request-calendar__annual-leave-column text-center font-poppins text-[clamp(11px,0.9cqw,14px)] font-semibold text-sub-2 tabular-nums',
+                    REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS,
+                    isFocusedRow && 'text-main-1',
+                )}
+                title={t('page.request.calendar.annualLeaveTitle', {count: annualLeaveLabel})}
+            >
+                {annualLeaveLabel}
             </div>
             {showSkillColumn ? (
                 <div className="flex w-11 shrink-0 justify-center">

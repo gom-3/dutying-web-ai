@@ -14,6 +14,7 @@ import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 import {isMakeShiftTeamReadyForWard, useMakeShiftStore} from '../../model/make-shift-store';
 import {useMakeShiftUseCase} from '../../model/make-shift-use-case';
+import {sortScheduleByTeamNurseOrder} from '../../model/nurse-order-sync';
 import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
@@ -61,15 +62,17 @@ export function ConfirmedShifts() {
     const teamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.confirmedShifts.fallbackTeamName');
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
-    const skillColumn = useMakeShiftSkillColumn(shift);
+    const currentTeamNurses = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.nurses ?? [];
+    const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(shift, currentTeamNurses), [currentTeamNurses, shift]);
+    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
-    const doc = useMemo(() => toConfirmedDoc(shift, year, month), [month, shift, year]);
+    const doc = useMemo(() => toConfirmedDoc(orderedShift, year, month), [month, orderedShift, year]);
     const restCheckByShiftNurseId = useMemo(
         () =>
-            shift && doc
+            orderedShift && doc
                 ? calculateRestCheckByShiftNurse({
-                      shift,
+                      shift: orderedShift,
                       doc,
                       policy,
                       year,
@@ -77,7 +80,7 @@ export function ConfirmedShifts() {
                       adjustmentDays,
                   })
                 : undefined,
-        [adjustmentDays, doc, month, policy, shift, year],
+        [adjustmentDays, doc, month, orderedShift, policy, year],
     );
     const {isExporting, downloadImage} = useShiftImageExport({
         targetRef: calendarExportRef,
@@ -86,9 +89,9 @@ export function ConfirmedShifts() {
         teamName,
         hospitalName: wardQuery.data?.hospitalName ?? null,
         wardName: wardQuery.data?.name ?? null,
-        disabled: !shift || !doc,
+        disabled: !orderedShift || !doc,
     });
-    const calendarResetKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}:${shift ? 'ready' : 'empty'}`;
+    const calendarResetKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}:${orderedShift ? 'ready' : 'empty'}`;
     const imageActionLabel = isExporting
         ? t('page.makeShift.confirmedShifts.imageActionLoading')
         : t('page.makeShift.confirmedShifts.imageAction');
@@ -151,7 +154,7 @@ export function ConfirmedShifts() {
                                             void downloadImage();
                                             sendEvent(events.makePage.toolbar.downloadImage);
                                         }}
-                                        disabled={!shift || !doc || isExporting}
+                                        disabled={!orderedShift || !doc || isExporting}
                                     >
                                         <Download
                                             className={`size-5 ${isExporting ? 'animate-pulse' : ''}`}
@@ -180,13 +183,13 @@ export function ConfirmedShifts() {
                     </div>
                 </div>
 
-                {!shift && dutyQuery.isLoading && (
+                {!orderedShift && dutyQuery.isLoading && (
                     <MakeShiftCalendarSkeleton
                         className="confirmed-shifts-calendar-wrap"
                         ariaLabel={t('page.makeShift.confirmedShifts.loading')}
                     />
                 )}
-                {!shift && dutyQuery.isError && (
+                {!orderedShift && dutyQuery.isError && (
                     <PageState
                         tone="error"
                         title={t('page.makeShift.confirmedShifts.error')}
@@ -194,7 +197,7 @@ export function ConfirmedShifts() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {shift && !doc && (
+                {orderedShift && !doc && (
                     <PageState
                         tone="error"
                         title={t('page.makeShift.confirmedShifts.error')}
@@ -202,7 +205,7 @@ export function ConfirmedShifts() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {shift && doc && (
+                {orderedShift && doc && (
                     <div ref={calendarExportRef} className="confirmed-shifts-calendar-wrap w-full min-w-0">
                         <ConfirmedCalendarBoundary
                             resetKey={calendarResetKey}
@@ -216,7 +219,7 @@ export function ConfirmedShifts() {
                             }
                         >
                             <MakeShiftCalendar
-                                shift={shift}
+                                shift={orderedShift}
                                 doc={doc}
                                 violationMap={EMPTY_VIOLATION_MAP}
                                 showFaults={false}
@@ -228,7 +231,7 @@ export function ConfirmedShifts() {
                         </ConfirmedCalendarBoundary>
                     </div>
                 )}
-                {!dutyQuery.isLoading && !dutyQuery.isError && !shift && (
+                {!dutyQuery.isLoading && !dutyQuery.isError && !orderedShift && (
                     <PageState
                         tone="empty"
                         title={t('page.makeShift.confirmedShifts.empty')}

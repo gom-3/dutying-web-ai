@@ -11,6 +11,7 @@ const translations: Record<string, string> = {
     'page.request.calendar.noNurseTitleSuffix': '에는 아직 간호사가 없어요',
     'page.request.calendar.noNurseDescription': '신청 근무를 확인하려면 먼저 근무자 관리에서 팀 간호사를 추가해 주세요.',
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
+    'page.request.calendar.reorderAria': '{{name}} 순서 변경',
     'page.request.calendar.skillColumn': '숙련도',
     'page.makeShift.calendar.requestStatusPin': '신청 근무',
 };
@@ -85,10 +86,10 @@ function LocationProbe() {
     return <div data-testid="location">{`${location.pathname}${location.search}`}</div>;
 }
 
-function renderRequestCalendar() {
+function renderRequestCalendar(props?: Parameters<typeof RequestCalendar>[0]) {
     return render(
         <MemoryRouter initialEntries={['/request']}>
-            <RequestCalendar />
+            <RequestCalendar {...props} />
             <LocationProbe />
         </MemoryRouter>,
     );
@@ -236,6 +237,31 @@ describe('RequestCalendar', () => {
         await user.click(screen.getByRole('button', {name: /근무자 관리로 이동/}));
 
         expect(screen.getByTestId('location')).toHaveTextContent('/member?shiftTeamId=3');
+    });
+
+    it('신청근무표에도 근무 만들기 1단계와 같은 행 순서 핸들을 보여준다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar();
+
+        const handle = screen.getByRole('button', {name: 'Kim 순서 변경'});
+        const headerSpacer = document.querySelector('.request-calendar__row-drag-header-spacer');
+
+        expect(handle).toHaveClass('request-calendar__row-drag-handle', 'text-gray-4', 'hover:bg-gray-7', 'hover:text-sub-2');
+        expect(handle).toHaveClass('size-7', 'shrink-0', 'self-center', 'p-0', 'leading-none');
+        expect(headerSpacer).toHaveClass('size-7', 'shrink-0');
+        expect(handle.querySelector('svg')).toBeInTheDocument();
+    });
+
+    it('행 순서 저장 중에도 핸들을 숨기지 않고 비활성 상태로 유지한다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar({canReorderRows: true, rowReorderDisabled: true, onRowDragEnd: vi.fn()});
+
+        const handle = screen.getByRole('button', {name: 'Kim 순서 변경'});
+
+        expect(handle).toBeDisabled();
+        expect(handle).toHaveClass('request-calendar__row-drag-handle', 'disabled:cursor-not-allowed', 'disabled:opacity-55');
     });
 
     it('숙련도 기능이 꺼져 있으면 신청근무 캘린더에서 숙련도 컬럼을 숨긴다', () => {

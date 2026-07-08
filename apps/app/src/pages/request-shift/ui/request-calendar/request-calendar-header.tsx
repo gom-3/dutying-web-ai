@@ -1,23 +1,41 @@
 ﻿import {type TRequestShift} from '@/entities/shift';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS, REQUEST_CALENDAR_NAME_COLUMN_CLASS} from './request-calendar-layout';
+import {
+    REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS,
+    REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS,
+    REQUEST_CALENDAR_NAME_COLUMN_CLASS,
+    REQUEST_CALENDAR_REORDER_COLUMN_CLASS,
+} from './request-calendar-layout';
 import {getDayBadgeClass} from './utils';
 
 interface IRequestCalendarHeaderProps {
     days: TRequestShift['days'];
     focusDay: number | undefined;
+    canReorder: boolean;
     separateWeekendColor: boolean;
     showSkillColumn: boolean;
 }
 
-export default function RequestCalendarHeader({days, focusDay, separateWeekendColor, showSkillColumn}: IRequestCalendarHeaderProps) {
+export default function RequestCalendarHeader({
+    days,
+    focusDay,
+    canReorder,
+    separateWeekendColor,
+    showSkillColumn,
+}: IRequestCalendarHeaderProps) {
     const {t} = useTypedTranslation();
 
     return (
         <div className="sticky top-0 z-20 mb-1 flex h-8 w-full items-center rounded-t-[18px] bg-white pt-1">
             <div className="flex w-full items-center gap-2">
+                {canReorder ? (
+                    <div className={`request-calendar__row-drag-header-spacer ${REQUEST_CALENDAR_REORDER_COLUMN_CLASS}`} aria-hidden />
+                ) : null}
                 <div className={`${REQUEST_CALENDAR_NAME_COLUMN_CLASS} ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>
                     {t('page.request.calendar.nameColumn')}
+                </div>
+                <div className={`${REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS} ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>
+                    {t('page.request.calendar.annualLeaveColumn')}
                 </div>
                 {showSkillColumn ? (
                     <div className={`w-11 shrink-0 ${REQUEST_CALENDAR_HEADER_LABEL_TEXT_CLASS}`}>

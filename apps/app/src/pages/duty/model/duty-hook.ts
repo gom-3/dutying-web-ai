@@ -18,6 +18,7 @@ import {
 } from '@/features/shift-editor';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {getCurrentTeamNurses, sortScheduleByTeamNurseOrder} from '@/pages/make-shift/model/nurse-order-sync';
 import {
     isDutyAtMaxFutureMonth,
     isDutyCalendarViewAllowed,
@@ -131,6 +132,7 @@ export function useDutyHook() {
         disabled: !shift,
     });
     const currentShiftTeamName = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.duty.selectedTeamFallback');
+    const currentTeamNurses = useMemo(() => getCurrentTeamNurses(shiftTeams, currentShiftTeamId), [currentShiftTeamId, shiftTeams]);
     const shiftTeamsStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
 
     useEffect(() => {
@@ -194,7 +196,10 @@ export function useDutyHook() {
         setStatus('success');
 
         const rawShift = dutyQuery.data ?? null;
-        const nextShift = rawShift != null && !isDutyShiftWithoutAssignments(rawShift) ? rawShift : null;
+        const nextShift =
+            rawShift != null && !isDutyShiftWithoutAssignments(rawShift)
+                ? sortScheduleByTeamNurseOrder(rawShift, currentTeamNurses)
+                : null;
 
         setShift(nextShift);
 
@@ -207,7 +212,18 @@ export function useDutyHook() {
 
         commands.init(shiftToDoc(nextShift, year, month));
         commands.discardPersisted();
-    }, [commands, dutyQuery.data, dutyQuery.isError, dutyQuery.isPending, isDutyViewAllowed, month, setShift, setStatus, year]);
+    }, [
+        commands,
+        currentTeamNurses,
+        dutyQuery.data,
+        dutyQuery.isError,
+        dutyQuery.isPending,
+        isDutyViewAllowed,
+        month,
+        setShift,
+        setStatus,
+        year,
+    ]);
 
     // 확정 근무표(/duty)에서는 규칙 검증·위반 UI를 쓰지 않는다(만들기 플로우 전용).
     useEffect(() => {

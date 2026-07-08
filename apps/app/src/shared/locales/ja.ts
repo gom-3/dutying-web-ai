@@ -998,6 +998,9 @@ export const ja: TLocale = {
             row: {
                 dragAria: 'ドラッグして順序を変更',
                 unselectedSkill: '未選択',
+                decreaseAnnualLeaveAria: '{{nurseName}}の残り年休を減らす',
+                increaseAnnualLeaveAria: '{{nurseName}}の残り年休を増やす',
+                annualLeaveTitle: '残り年休 {{count}}日',
                 preceptorAria: '{{nurseName}} プリセプター',
                 precepteeAria: '{{nurseName}} プリセプティ',
                 workerAria: '{{nurseName}} 勤務投入',
@@ -1017,6 +1020,7 @@ export const ja: TLocale = {
             table: {
                 name: '名前',
                 level: '習熟度',
+                annualLeave: '年休',
                 shiftTypes: '可能勤務',
                 memo: '備考',
                 isWorker: '勤務投入',
@@ -1274,6 +1278,9 @@ export const ja: TLocale = {
             },
             calendar: {
                 name: '名前',
+                annualLeave: '年休',
+                annualLeaveFull: '残り年休',
+                annualLeaveDetail: '残り年休 {{count}}日',
                 carried: '繰越',
                 previousShifts: '前月',
                 violationDialogAria: '制約の問題',
@@ -1342,12 +1349,14 @@ export const ja: TLocale = {
                 column: {
                     name: '名前',
                     level: '熟練度',
+                    annualLeave: '年休',
                     shiftTypes: '可能勤務',
                     preceptor: 'プリセプター',
                     preceptee: 'プリセプティ',
                     isWorker: '勤務投入',
                     memo: 'メモ',
                 },
+                annualLeaveTitle: '残り年休 {{count}}日',
                 emptyTitle: '勤務者を確定すると開始できます。',
                 emptyDescription: '勤務投入に設定された人数を先に確認してください。',
                 noNurseTitle: '{{teamName}}にはまだ看護師がいません',

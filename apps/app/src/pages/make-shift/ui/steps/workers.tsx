@@ -22,6 +22,7 @@ import {
     freshenMakeShiftDisplayWorkers,
     sortMakeShiftWorkersInitialOrder,
 } from '../../model/make-shift-worker-order';
+import {useMakeShiftNurseOrder} from '../../model/use-make-shift-nurse-order';
 import {RestLeavePolicySummaryCard} from './rest-leave-policy-summary-card';
 import {WorkersList, WorkersTableHeader} from './workers-sections';
 
@@ -106,8 +107,9 @@ export function Workers() {
     const enabled = isMakeShiftTeamReadyForWard({wardId: storeWardId, shiftTeams, shiftTeamsStatus}, wardId, currentShiftTeamId);
     const {
         state: {nurseSaveStatus},
-        actions: {moveNurseOrder, updateNurse},
+        actions: {updateNurse},
     } = useEditShiftTeam();
+    const {moveNurseOrder} = useMakeShiftNurseOrder();
     const teamNursesQuery = useQuery({
         ...wardQueryOptions.shiftTeamNurses(wardId ?? -1, currentShiftTeamId ?? -1),
         enabled,
@@ -172,7 +174,6 @@ export function Workers() {
         [baseWorkers, getWorkerState, levelsByNurseId, sortMode],
     );
     const grouped = useMemo(() => getGroupedDivisionNurses(displayWorkers), [displayWorkers]);
-    const patchYearMonth = `${year}-${String(month).padStart(2, '0')}`;
 
     displayWorkersRef.current = displayWorkers;
 
@@ -331,13 +332,7 @@ export function Workers() {
             setSortMode('priority');
 
             void moveNurseOrder(
-                payload.nurseId,
-                payload.sourceShiftTeamId,
-                payload.destinationShiftTeamId,
-                payload.divisionNum,
-                payload.prevPriority,
-                payload.nextPriority,
-                patchYearMonth,
+                payload,
             );
         } finally {
             releaseDragFlipSkip();

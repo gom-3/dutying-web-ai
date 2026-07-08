@@ -201,6 +201,7 @@ const toAddShiftTeamNurseRequest = (nurse: TAddShiftTeamNurseDTO) =>
         proficiency: nurse.proficiency,
         isPreceptor: nurse.isPreceptor,
         isPreceptee: nurse.isPreceptee,
+        remainingAnnualLeaveDays: nurse.remainingAnnualLeaveDays,
         workStartDate: toOptionalText(nurse.workStartDate),
         workEndDate: toOptionalText(nurse.workEndDate),
     });
