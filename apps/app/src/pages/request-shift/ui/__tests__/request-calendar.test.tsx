@@ -13,6 +13,10 @@ const translations: Record<string, string> = {
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
     'page.request.calendar.reorderAria': '{{name}} 순서 변경',
     'page.request.calendar.skillColumn': '숙련도',
+    'page.makeShift.calendar.annualLeave': '연차',
+    'page.makeShift.calendar.annualLeaveDetail': '남은 연차 {{count}}일',
+    'page.makeShift.calendar.annualLeaveFull': '남은 연차',
+    'page.makeShift.calendar.name': '이름',
     'page.makeShift.calendar.requestStatusPin': '신청 근무',
 };
 
@@ -245,11 +249,11 @@ describe('RequestCalendar', () => {
         renderRequestCalendar();
 
         const handle = screen.getByRole('button', {name: 'Kim 순서 변경'});
-        const headerSpacer = document.querySelector('.request-calendar__row-drag-header-spacer');
+        const headerSpacer = document.querySelector('.make-shift-calendar__header-label--drag');
 
-        expect(handle).toHaveClass('request-calendar__row-drag-handle', 'text-gray-4', 'hover:bg-gray-7', 'hover:text-sub-2');
+        expect(handle).toHaveClass('make-shift-calendar__row-drag-handle', 'text-gray-4', 'hover:bg-gray-7', 'hover:text-sub-2');
         expect(handle).toHaveClass('size-7', 'shrink-0', 'self-center', 'p-0', 'leading-none');
-        expect(headerSpacer).toHaveClass('size-7', 'shrink-0');
+        expect(headerSpacer).toBeInTheDocument();
         expect(handle.querySelector('svg')).toBeInTheDocument();
     });
 
@@ -261,17 +265,18 @@ describe('RequestCalendar', () => {
         const handle = screen.getByRole('button', {name: 'Kim 순서 변경'});
 
         expect(handle).toBeDisabled();
-        expect(handle).toHaveClass('request-calendar__row-drag-handle', 'disabled:cursor-not-allowed', 'disabled:opacity-55');
+        expect(handle).toHaveClass('make-shift-calendar__row-drag-handle', 'disabled:cursor-not-allowed');
     });
 
-    it('숙련도 기능이 꺼져 있으면 신청근무 캘린더에서 숙련도 컬럼을 숨긴다', () => {
+    it('신청근무 캘린더를 공용 simplified 캘린더 칼럼으로 렌더링한다', () => {
         mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
 
         renderRequestCalendar();
 
         expect(screen.getByText('이름')).toBeInTheDocument();
-        expect(screen.getByText('연동')).toBeInTheDocument();
+        expect(screen.getByText('연차')).toBeInTheDocument();
         expect(screen.getByText('Kim')).toBeInTheDocument();
+        expect(screen.queryByText('연동')).not.toBeInTheDocument();
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
     });
 
@@ -280,7 +285,7 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        const requestPin = document.querySelector<HTMLElement>('[data-request-shift-status-pin="true"]');
+        const requestPin = document.querySelector<HTMLElement>('[data-cell-status-pin="request"]');
 
         expect(requestPin).toBeInTheDocument();
         expect(requestPin).toHaveAttribute('title', '신청 근무');
@@ -319,8 +324,9 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        expect(screen.getByText('Kim')).toHaveClass('text-main-1');
-        expect(screen.getByText('D').closest('button')).toHaveClass('bg-main-light');
+        expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-main-1');
+        expect(document.querySelector('[data-selection-layer="true"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-selection-column-layer="true"]')).toBeInTheDocument();
     });
 
     it('수락하지 않은 신청 근무에는 핀을 표시하지 않는다', () => {
@@ -334,7 +340,7 @@ describe('RequestCalendar', () => {
 
         renderRequestCalendar();
 
-        expect(document.querySelector('[data-request-shift-status-pin="true"]')).not.toBeInTheDocument();
+        expect(document.querySelector('[data-cell-status-pin="request"]')).not.toBeInTheDocument();
         expect(screen.getByText('D')).toBeInTheDocument();
     });
 });

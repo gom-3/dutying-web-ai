@@ -13,9 +13,9 @@ type TMakeShiftCalendarSkeletonProps = {
 const DEFAULT_DAY_COUNT = 31;
 const DEFAULT_ROW_COUNT = 9;
 const SUMMARY_CELL_COUNT = 5;
-const NAME_COL = 'clamp(64px,4.4cqw,76px)';
-const LAST_COL = 'clamp(70px,4.75cqw,88px)';
-const ROW_GAP_X = 'clamp(2px,0.24cqw,5px)';
+const NAME_COL = 'clamp(52px,3.7cqw,64px)';
+const LAST_COL = 'clamp(58px,4.05cqw,76px)';
+const ROW_GAP_X = 'clamp(1px,0.18cqw,4px)';
 const DIVISION_TO_SUMMARY_GAP = 'clamp(8px,0.65cqw,14px)';
 const DIVISION_PADDING_X = 'clamp(2px,0.2cqw,4px)';
 const SUMMARY_PADDING_X = 'clamp(0px,0.1cqw,2px)';
@@ -112,7 +112,7 @@ export function MakeShiftCalendarSkeleton({
                                     {Array.from({length: 4}).map((__, badgeIndex) => (
                                         <Skeleton
                                             key={badgeIndex}
-                                            className="size-[clamp(14px,1.05cqw,19px)] shrink-0 rounded-[5px] bg-main-4/80"
+                                            className="size-[clamp(13px,0.95cqw,17px)] shrink-0 rounded-[5px] bg-main-4/80"
                                         />
                                     ))}
                                 </div>

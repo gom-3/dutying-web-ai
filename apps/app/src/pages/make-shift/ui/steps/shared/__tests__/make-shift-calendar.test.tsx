@@ -349,7 +349,12 @@ describe('MakeShiftCalendar', () => {
         expect(screen.queryByText('이월')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('LV. 3');
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass('min-h-[18px]', 'w-full', 'min-w-0', 'text-[10px]');
+        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass(
+            'min-h-[18px]',
+            'w-full',
+            'min-w-0',
+            'text-[10px]',
+        );
     });
 
     it('keeps custom skill badge labels visible', () => {
@@ -864,6 +869,35 @@ describe('MakeShiftCalendar', () => {
         expect(screen.queryByRole('listbox', {name: '근무유형 선택'})).not.toBeInTheDocument();
     });
 
+    it('shows a fix action at the top of the shift type dropdown and fixes the current cell', async () => {
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults />);
+        await act(async () => undefined);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+        act(() => {
+            fireEvent.doubleClick(trigger!);
+        });
+
+        const listbox = await screen.findByRole('listbox', {name: '근무유형 선택'});
+        const options = within(listbox).getAllByRole('option');
+
+        expect(options[0]).toHaveTextContent('고정하기');
+        expect(options[0]).toBeEnabled();
+
+        act(() => {
+            fireEvent.click(options[0]!);
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells['2|2026-05-02']).toBe(true);
+        expect(screen.queryByRole('listbox', {name: '근무유형 선택'})).not.toBeInTheDocument();
+    });
+
     it('opens the shift type dropdown on editable previous-shift cells', async () => {
         act(() => {
             useShiftEditorStore.getState().setDoc(doc);
@@ -1292,16 +1326,10 @@ describe('MakeShiftCalendar', () => {
 
         act(() => {
             useShiftEditorStore.getState().setDoc(doc);
+            useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}});
         });
 
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} />);
-
-        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
-
-        expect(trigger).not.toBeNull();
-        await act(async () => {
-            await user.click(trigger!);
-        });
 
         expect(useShiftEditorStore.getState().selection).toEqual({type: 'single', anchor: {row: 0, col: 0}});
 
@@ -1310,6 +1338,29 @@ describe('MakeShiftCalendar', () => {
         });
 
         expect(useShiftEditorStore.getState().selection).toBeNull();
+    });
+
+    it('keeps the selected cell when clicking a selection-preserving toolbar area', async () => {
+        const toolbar = document.createElement('button');
+
+        toolbar.type = 'button';
+        toolbar.dataset.preserveDutySelection = 'true';
+        document.body.append(toolbar);
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+            useShiftEditorStore.getState().setSelection({type: 'single', anchor: {row: 0, col: 0}});
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} />);
+
+        expect(useShiftEditorStore.getState().selection).toEqual({type: 'single', anchor: {row: 0, col: 0}});
+
+        act(() => {
+            fireEvent.pointerDown(toolbar);
+        });
+
+        expect(useShiftEditorStore.getState().selection).toEqual({type: 'single', anchor: {row: 0, col: 0}});
     });
 
     it('does not open the shift type dropdown when the calendar is readonly', async () => {

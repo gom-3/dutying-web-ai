@@ -10,6 +10,7 @@ import {
     canGoPrev,
     clearPersistedStep,
     hasRequiredWorkerForSchedule,
+    MAKE_SHIFT_CONFIRMED_STEP,
     useMakeShiftStore,
     type TMakeShiftStep,
 } from './make-shift-store';
@@ -29,7 +30,7 @@ export function useMakeShiftUseCase() {
     const persistCurrentWorkflowStep = useCallback(() => {
         const s = useMakeShiftStore.getState();
 
-        if (!s.wardId || !s.currentShiftTeamId || s.currentStep >= 6) return;
+        if (!s.wardId || !s.currentShiftTeamId || s.currentStep >= MAKE_SHIFT_CONFIRMED_STEP) return;
 
         void WardAPI.updateShiftWorkflow(s.wardId, s.currentShiftTeamId, s.year, s.month, {
             workflowStatus: 'IN_PROGRESS',
@@ -65,9 +66,14 @@ export function useMakeShiftUseCase() {
         const s = syncEditorPersistenceKey();
         const persisted = editor.getPersisted();
         const saved = s.wardId && s.currentShiftTeamId ? loadDraftStep(s.wardId, s.currentShiftTeamId, s.year, s.month) : null;
-        const step = s.shiftStatus === 'success' && s.shiftFullyAssigned ? 6 : saved === 6 ? 1 : (saved ?? 1);
+        const step =
+            s.shiftStatus === 'success' && s.shiftFullyAssigned
+                ? MAKE_SHIFT_CONFIRMED_STEP
+                : saved === MAKE_SHIFT_CONFIRMED_STEP
+                  ? 1
+                  : (saved ?? 1);
 
-        startFromStep({step, openRestoreDraftModal: step === 6 ? false : persisted !== null});
+        startFromStep({step, openRestoreDraftModal: step === MAKE_SHIFT_CONFIRMED_STEP ? false : persisted !== null});
         persistCurrentWorkflowStep();
     }, [editor, persistCurrentWorkflowStep, startFromStep, syncEditorPersistenceKey]);
     const confirmRestoreDraft = useCallback(() => {
@@ -139,7 +145,7 @@ export function useMakeShiftUseCase() {
             const state = useMakeShiftStore.getState();
             const {currentStep, maxReachedStep} = state;
 
-            if (currentStep === 6) return;
+            if (currentStep === MAKE_SHIFT_CONFIRMED_STEP) return;
 
             if (currentStep === 1 && step > 1 && !hasRequiredWorkerForSchedule(state)) {
                 showValidationFeedback(t('page.makeShift.navigation.workerRequired'));

@@ -1,40 +1,42 @@
-import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {describe, expect, it, vi} from 'vitest';
+import {render, screen, userEvent} from '@/shared/util/test-utils';
 import {AiAutofillToolbar} from '../ai-autofill-toolbar';
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
         t: (key: string) =>
-            (
-                {
-                    'page.makeShift.aiRefill.action': 'Refill',
-                    'page.makeShift.aiRefill.confirm': 'Confirm',
-                    'page.makeShift.aiRefill.firstFill': 'Autofill',
-                    'page.makeShift.aiRefill.generating': 'Filling',
-                    'page.makeShift.aiRefill.retry': 'Retry',
-                    'page.makeShift.aiRefill.saveSnapshot': 'Save draft',
-                    'page.makeShift.aiRefill.fixedDisplay': 'Fixed shifts',
-                    'page.makeShift.aiRefill.fixedDisplayHidden': 'Fixed shifts hidden',
-                    'page.makeShift.aiRefill.fixedDisplayShown': 'Fixed shifts shown',
-                    'page.makeShift.aiRefill.fixedDisplayHighlight': 'Highlight fixed shifts',
-                    'page.makeShift.aiRefill.requestDisplay': 'Requested shifts',
-                    'page.makeShift.aiRefill.requestDisplayHidden': 'Requested shifts hidden',
-                    'page.makeShift.aiRefill.requestDisplayShown': 'Requested shifts shown',
-                    'page.makeShift.aiRefill.requestDisplayHighlight': 'Highlight requested shifts',
-                    'page.makeShift.aiRefill.showViolations': 'Show violations',
-                    'page.makeShift.aiRefill.snapshotSidebar.title': 'History',
-                    'page.makeShift.aiRefill.toolbarSubTitle': 'Use AI Autofill',
-                    'page.makeShift.aiRefill.toolbarTitle': 'Fill and confirm',
-                    'page.makeShift.aiRefill.validationStatus.checking': 'Checking',
-                    'page.makeShift.aiRefill.viewOptions': 'Display options',
-                    'page.makeShift.aiRefill.viewBaseline': 'Show requests and fixed shifts only',
-                    'page.makeShift.aiRefill.viewBaselineCompact': 'Requests/fixed',
-                    'page.makeShift.aiRefill.viewComplete': 'Show all assignments',
-                    'page.makeShift.aiRefill.viewCompleteCompact': 'All',
-                    'page.makeShift.aiRefill.violationsHidden': 'Constraint violations hidden',
-                    'page.makeShift.aiRefill.violationsShown': 'Constraint violations shown',
-                    'page.makeShift.navigation.saving': 'Saving',
-                })[key] ?? key,
+            ({
+                'page.makeShift.aiRefill.action': 'Refill',
+                'page.makeShift.aiRefill.confirm': 'Confirm',
+                'page.makeShift.aiRefill.firstFill': 'Autofill',
+                'page.makeShift.aiRefill.generating': 'Filling',
+                'page.makeShift.aiRefill.retry': 'Retry',
+                'page.makeShift.aiRefill.saveSnapshot': 'Save draft',
+                'page.makeShift.aiRefill.fixedDisplay': 'Fixed shifts',
+                'page.makeShift.aiRefill.fixedDisplayHidden': 'Fixed shifts hidden',
+                'page.makeShift.aiRefill.fixedDisplayShown': 'Fixed shifts shown',
+                'page.makeShift.aiRefill.fixedDisplayHighlight': 'Highlight fixed shifts',
+                'page.makeShift.aiRefill.fixedSelectionTools': 'Fixed selection tools',
+                'page.makeShift.aiRefill.fixSelection': 'Fix selected shifts',
+                'page.makeShift.aiRefill.unfixSelection': 'Unfix selected shifts',
+                'page.makeShift.aiRefill.requestDisplay': 'Requested shifts',
+                'page.makeShift.aiRefill.requestDisplayHidden': 'Requested shifts hidden',
+                'page.makeShift.aiRefill.requestDisplayShown': 'Requested shifts shown',
+                'page.makeShift.aiRefill.requestDisplayHighlight': 'Highlight requested shifts',
+                'page.makeShift.aiRefill.showViolations': 'Show violations',
+                'page.makeShift.aiRefill.snapshotSidebar.title': 'History',
+                'page.makeShift.aiRefill.toolbarSubTitle': 'Use AI Autofill',
+                'page.makeShift.aiRefill.toolbarTitle': 'Fill and confirm',
+                'page.makeShift.aiRefill.validationStatus.checking': 'Checking',
+                'page.makeShift.aiRefill.viewOptions': 'Display options',
+                'page.makeShift.aiRefill.viewBaseline': 'Show requests and fixed shifts only',
+                'page.makeShift.aiRefill.viewBaselineCompact': 'Requests/fixed',
+                'page.makeShift.aiRefill.viewComplete': 'Show all assignments',
+                'page.makeShift.aiRefill.viewCompleteCompact': 'All',
+                'page.makeShift.aiRefill.violationsHidden': 'Constraint violations hidden',
+                'page.makeShift.aiRefill.violationsShown': 'Constraint violations shown',
+                'page.makeShift.navigation.saving': 'Saving',
+            })[key] ?? key,
     }),
 }));
 
@@ -59,6 +61,10 @@ function renderToolbar({
             onFixedShiftsAttentionEnd={onFixedShiftsAttentionEnd}
             onRequestShiftsAttentionStart={onRequestShiftsAttentionStart}
             onRequestShiftsAttentionEnd={onRequestShiftsAttentionEnd}
+            canFixSelection
+            canUnfixSelection
+            onFixSelection={vi.fn()}
+            onUnfixSelection={vi.fn()}
             showFaults={showFaults}
             onToggleFaults={onToggleFaults}
             canUndo={false}
@@ -91,7 +97,14 @@ describe('AiAutofillToolbar', () => {
         expect(requestButton).toHaveTextContent('');
         expect(screen.getByText('Fixed shifts')).toBeInTheDocument();
         expect(screen.getByText('Requested shifts')).toBeInTheDocument();
-        expect(screen.getAllByRole('button').map((button) => button.textContent).filter(Boolean)).toEqual(['Autofill', 'Confirm']);
+        expect(screen.getByRole('button', {name: 'Fix selected shifts'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Unfix selected shifts'})).toBeEnabled();
+        expect(
+            screen
+                .getAllByRole('button')
+                .map((button) => button.textContent)
+                .filter(Boolean),
+        ).toEqual(['Autofill', 'Confirm']);
         expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('');
     });
 

@@ -1,6 +1,6 @@
+import {type TTutorialKey} from '@dutying/api/account';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
-import {type TTutorialKey} from '@dutying/api/account';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import MakeTutorial from '../make-tutorial';
 
@@ -12,7 +12,7 @@ let tutorialStoreState = {
 };
 let makeShiftStoreState = {
     phase: 'stepping' as 'overview' | 'stepping',
-    currentStep: 1 as 1 | 2 | 3 | 4 | 5 | 6,
+    currentStep: 1 as 1 | 2 | 3 | 4 | 5,
 };
 let authStoreState: {
     accountId: number | null;
@@ -40,6 +40,7 @@ vi.mock('@/shared/api', () => ({
 }));
 
 vi.mock('../../model/make-shift-store', () => ({
+    MAKE_SHIFT_CONFIRMED_STEP: 5,
     useMakeShiftStore: (selector: (state: typeof makeShiftStoreState) => unknown) => selector(makeShiftStoreState),
 }));
 
@@ -152,8 +153,10 @@ describe('make-tutorial', () => {
     });
 
     it('uses current-tab tutorial targets instead of a full flow tour', async () => {
-        makeShiftStoreState = {phase: 'stepping', currentStep: 5};
+        makeShiftStoreState = {phase: 'stepping', currentStep: 4};
         addTutorialTargets([
+            'make_fixed_shift_sample_cell',
+            'make_ai_fix_selected_button',
             'make_ai_fill_button',
             'make_ai_view_tools',
             'make_ai_history_undo_redo_tools',
@@ -166,27 +169,34 @@ describe('make-tutorial', () => {
 
         const lastCall = getLastTutorialCall();
 
-        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '2');
+        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '3');
         expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([
+            ['make_fixed_shift_sample_cell', 'make_ai_fix_selected_button'],
             ['make_ai_fill_button'],
             ['make_ai_view_tools', 'make_ai_history_undo_redo_tools', 'make_ai_history_snapshot_tools'],
         ]);
-        expect(lastCall.config.steps.map((step) => step.title)).toEqual(['AI 자동 채우기', '보조 도구 활용하기']);
+        expect(lastCall.config.steps.map((step) => step.title)).toEqual([
+            '바꾸면 안 되는 근무 고정하기',
+            'AI 자동 채우기',
+            '보조 도구 활용하기',
+        ]);
     });
 
-    it('shows fixed-shift keyboard input guidance on the fourth tab', async () => {
-        makeShiftStoreState = {phase: 'stepping', currentStep: 4};
-        addTutorialTargets(['make_fixed_shift_sample_cell']);
+    it('does not open authoring guidance on the confirmed step', async () => {
+        makeShiftStoreState = {phase: 'stepping', currentStep: 5};
+        addTutorialTargets([
+            'make_fixed_shift_sample_cell',
+            'make_ai_fix_selected_button',
+            'make_ai_fill_button',
+            'make_ai_view_tools',
+            'make_ai_history_undo_redo_tools',
+            'make_ai_history_snapshot_tools',
+        ]);
 
         render(<MakeTutorial />);
 
-        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'true'));
-
-        const lastCall = getLastTutorialCall();
-
-        expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-step-count', '1');
-        expect(lastCall.config.steps.map((step) => step.highlightIds)).toEqual([['make_fixed_shift_sample_cell']]);
-        expect(lastCall.config.steps[0]?.title).toBe('고정 근무 입력하기');
+        await waitFor(() => expect(screen.getByTestId('tutorial-portal')).toHaveAttribute('data-open', 'false'));
+        expect(markTutorialSeenMock).not.toHaveBeenCalledWith('make-step-5');
     });
 
     it('keeps later step tutorials available after completing an earlier step', async () => {

@@ -1,4 +1,4 @@
-import type {TShift, TShiftWorkflowStatus} from '@/entities';
+import type {TShift, TShiftWorkflowStatus} from '@dutying/domain/shift';
 
 const SHIFT_WORKFLOW_STATUSES = new Set<TShiftWorkflowStatus>(['NOT_STARTED', 'IN_PROGRESS', 'CONFIRMED']);
 
@@ -57,10 +57,14 @@ export function getShiftWorkflowStatus(shift: TShift | unknown | null | undefine
 export function getWorkflowStatusFromStep(step: number | null | undefined): TShiftWorkflowStatus | null {
     if (step == null) return null;
 
-    return step >= 6 ? 'CONFIRMED' : 'IN_PROGRESS';
+    if (step >= 1 && step <= 4) return 'IN_PROGRESS';
+
+    if (step === 5) return 'CONFIRMED';
+
+    return null;
 }
 
-export function getShiftWorkflowStep(shift: TShift | unknown | null | undefined): 1 | 2 | 3 | 4 | 5 | 6 | null {
+export function getShiftWorkflowStep(shift: TShift | unknown | null | undefined): 1 | 2 | 3 | 4 | 5 | null {
     const step =
         readNumberAt(shift, ['workflowStep']) ??
         readNumberAt(shift, ['scheduleWorkflowStep']) ??
@@ -71,7 +75,7 @@ export function getShiftWorkflowStep(shift: TShift | unknown | null | undefined)
         readNumberAt(shift, ['scheduleWorkflow', 'step']) ??
         readNumberAt(shift, ['authoring', 'step']);
 
-    if (step == null || !Number.isInteger(step) || step < 1 || step > 6) return null;
+    if (step == null || !Number.isInteger(step) || step < 1 || step > 5) return null;
 
-    return step as 1 | 2 | 3 | 4 | 5 | 6;
+    return step as 1 | 2 | 3 | 4 | 5;
 }

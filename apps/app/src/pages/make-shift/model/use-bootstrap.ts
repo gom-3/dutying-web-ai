@@ -6,10 +6,9 @@ import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy
 import {getShiftWorkflowStatus, getShiftWorkflowStep, getWorkflowStatusFromStep} from '@/shared/lib/shift-workflow-status';
 import {bumpMaxReachedStep, clearMakeShiftProgress, loadDraftStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 import {
-    clearPersistedStep,
     isMakeShiftTeamReadyForWard,
-    loadPersistedStep,
-    loadPersistedYearMonth,
+    MAKE_SHIFT_AUTHORING_STEP,
+    MAKE_SHIFT_CONFIRMED_STEP,
     type TMakeShiftStep,
     useMakeShiftStore,
 } from './make-shift-store';
@@ -25,7 +24,7 @@ function parsePositiveInt(raw: string | null): number | null {
 function parseMakeShiftStep(raw: string | null): TMakeShiftStep | null {
     const n = parsePositiveInt(raw);
 
-    return n !== null && n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
+    return n !== null && n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
 }
 
 type TInitialScheduleTarget = {
@@ -42,19 +41,12 @@ type TUseMakeShiftBootstrapOptions = {
 const getInitialScheduleTargetsKey = (targets: TInitialScheduleTarget[]) =>
     targets.map((target) => `${target.year}:${target.month}:${target.shiftTeamId ?? '*'}`).join('|');
 
-function isInitialScheduleTarget(
-    targets: TInitialScheduleTarget[],
-    year: number,
-    month: number,
-    shiftTeamId: number | null,
-): boolean {
+function isInitialScheduleTarget(targets: TInitialScheduleTarget[], year: number, month: number, shiftTeamId: number | null): boolean {
     if (shiftTeamId === null) return false;
 
     return targets.some(
         (target) =>
-            target.year === year &&
-            target.month === month &&
-            (target.shiftTeamId === undefined || target.shiftTeamId === shiftTeamId),
+            target.year === year && target.month === month && (target.shiftTeamId === undefined || target.shiftTeamId === shiftTeamId),
     );
 }
 
@@ -126,31 +118,6 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         setHydrated();
     }, [isHydrated, primaryOnboardingScheduleTarget, wardId, setHydrated, searchParams, setYearMonth]);
-
-    useEffect(() => {
-        if (!wardId || !isHydrated || !currentShiftTeamId || !isCurrentShiftTeamReady) return;
-
-        const st = useMakeShiftStore.getState();
-        const fromComposite = loadDraftStep(wardId, currentShiftTeamId, st.year, st.month);
-        const fromLegacy = loadPersistedStep();
-        const legacyYearMonth = loadPersistedYearMonth();
-        const hasExplicitYearMonth = searchParams.has('year') || searchParams.has('month');
-        const canMigrateLegacy =
-            !hasExplicitYearMonth && legacyYearMonth !== null && legacyYearMonth.year === st.year && legacyYearMonth.month === st.month;
-
-        if (!fromLegacy) return;
-
-        if (fromComposite || !canMigrateLegacy) {
-            clearPersistedStep();
-
-            return;
-        }
-
-        saveDraftStep(wardId, currentShiftTeamId, st.year, st.month, fromLegacy);
-        bumpMaxReachedStep(wardId, currentShiftTeamId, st.year, st.month, fromLegacy);
-        clearPersistedStep();
-        setCurrentShiftTeamId(currentShiftTeamId);
-    }, [currentShiftTeamId, isCurrentShiftTeamReady, isHydrated, month, searchParams, setCurrentShiftTeamId, wardId, year]);
 
     useEffect(() => {
         if (!wardId) {
@@ -294,32 +261,30 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
                 const shouldTreatAsConfirmed =
                     workflowStatus === 'CONFIRMED' ||
                     (isOnboardingInitialSchedule && hasAssignments) ||
-                    (savedStep === 6 && hasAssignments && workflowStatus !== 'IN_PROGRESS');
-                const nextShiftExists =
-                    shouldTreatAsConfirmed
+                    (savedStep === MAKE_SHIFT_CONFIRMED_STEP && hasAssignments && workflowStatus !== 'IN_PROGRESS');
+                const nextShiftExists = shouldTreatAsConfirmed
+                    ? true
+                    : workflowStatus === 'NOT_STARTED'
+                      ? false
+                      : workflowStatus === 'IN_PROGRESS' || workflowStatus === 'CONFIRMED'
                         ? true
-                        : workflowStatus === 'NOT_STARTED'
-                        ? false
-                        : workflowStatus === 'IN_PROGRESS' || workflowStatus === 'CONFIRMED'
-                          ? true
-                          : hasAssignments;
-                const nextShiftFullyAssigned =
-                    shouldTreatAsConfirmed
-                        ? true
-                        : workflowStatus === 'NOT_STARTED' || workflowStatus === 'IN_PROGRESS'
-                          ? false
-                          : isDutyShiftFullyAssigned(shift);
+                        : hasAssignments;
+                const nextShiftFullyAssigned = shouldTreatAsConfirmed
+                    ? true
+                    : workflowStatus === 'NOT_STARTED' || workflowStatus === 'IN_PROGRESS'
+                      ? false
+                      : isDutyShiftFullyAssigned(shift);
 
                 let shouldRefreshProgress = false;
 
                 if (shouldTreatAsConfirmed) {
-                    saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
-                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+                    saveDraftStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_CONFIRMED_STEP);
+                    bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_CONFIRMED_STEP);
                 } else if (workflowStatus === 'NOT_STARTED') {
                     clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
                     shouldRefreshProgress = true;
                 } else if (workflowStatus === 'IN_PROGRESS' && workflowStep !== null) {
-                    const safeWorkflowStep = Math.min(workflowStep, 5) as 1 | 2 | 3 | 4 | 5;
+                    const safeWorkflowStep = Math.min(workflowStep, MAKE_SHIFT_AUTHORING_STEP) as 1 | 2 | 3 | 4;
 
                     saveDraftStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
                     saveMaxReachedStep(wardId, currentShiftTeamId, year, month, safeWorkflowStep);
@@ -369,14 +334,14 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
         if (shouldOpenConfirmedStep) {
             const state = useMakeShiftStore.getState();
 
-            if (state.phase !== 'stepping' || state.currentStep !== 6) {
+            if (state.phase !== 'stepping' || state.currentStep !== MAKE_SHIFT_CONFIRMED_STEP) {
                 confirmSchedule();
             }
 
             return;
         }
 
-        if (saved === 6 && !shiftFullyAssigned && wardId) {
+        if (saved === MAKE_SHIFT_CONFIRMED_STEP && !shiftFullyAssigned && wardId) {
             clearMakeShiftProgress(wardId, currentShiftTeamId, year, month);
             setCurrentShiftTeamId(currentShiftTeamId);
 
@@ -420,8 +385,8 @@ export function useMakeShiftBootstrap(wardId: number | null, options: TUseMakeSh
 
         const state = useMakeShiftStore.getState();
 
-        if (queryStep === 6 || state.shiftFullyAssigned) {
-            if (queryStep === 6 && state.shiftFullyAssigned) {
+        if (queryStep === MAKE_SHIFT_CONFIRMED_STEP || state.shiftFullyAssigned) {
+            if (queryStep === MAKE_SHIFT_CONFIRMED_STEP && state.shiftFullyAssigned) {
                 confirmSchedule();
             }
 

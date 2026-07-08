@@ -13,8 +13,8 @@ const queryMockState = vi.hoisted(() => ({
 
 type TMockMakeShiftState = {
     phase: 'overview' | 'stepping';
-    currentStep: 1 | 2 | 3 | 4 | 5 | 6;
-    maxReachedStep: 1 | 2 | 3 | 4 | 5 | 6;
+    currentStep: 1 | 2 | 3 | 4 | 5;
+    maxReachedStep: 1 | 2 | 3 | 4 | 5;
     year: number;
     month: number;
     shiftStatus: 'idle' | 'pending' | 'success' | 'error';
@@ -24,7 +24,7 @@ type TMockMakeShiftState = {
     shiftTeamsStatus: 'idle' | 'pending' | 'success' | 'error';
     currentShiftTeamId: number | null;
     wardId: number | null;
-    stepNavigationBusy: Partial<Record<1 | 2 | 3 | 4 | 5 | 6, boolean>>;
+    stepNavigationBusy: Partial<Record<1 | 2 | 3 | 4 | 5, boolean>>;
 };
 
 const mockUseCase = {
@@ -72,7 +72,7 @@ vi.mock('../make-shift-stepper', () => ({
         onClickStep,
     }: {
         navigationDisabled?: boolean;
-        onClickStep: (step: 1 | 2 | 3 | 4 | 5 | 6) => void;
+        onClickStep: (step: 1 | 2 | 3 | 4 | 5) => void;
     }) => (
         <button type="button" data-testid="make-shift-stepper" disabled={navigationDisabled} onClick={() => onClickStep(5)}>
             stepper

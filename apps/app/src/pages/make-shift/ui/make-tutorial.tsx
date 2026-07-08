@@ -1,13 +1,13 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {type TTutorialKey} from '@dutying/api/account';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import useAuth from '@/features/auth';
-import {isTutorialDismissedForAccount, setTutorialDismissedForAccount} from '@/features/tutorial/model/tutorial-dismiss-storage';
 import {useTutorialStore} from '@/features/tutorial/model/store';
+import {isTutorialDismissedForAccount, setTutorialDismissedForAccount} from '@/features/tutorial/model/tutorial-dismiss-storage';
 import {AccountAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {type ITutorialConfig} from '@/widgets/tutorial/tutorial.types';
 import {TutorialPortal} from '@/widgets/tutorial/TutorialPortal';
-import {type TMakeShiftStep, useMakeShiftStore} from '../model/make-shift-store';
+import {MAKE_SHIFT_CONFIRMED_STEP, type TMakeShiftStep, useMakeShiftStore} from '../model/make-shift-store';
 
 const EMPTY_TUTORIAL_CONFIG: ITutorialConfig = {
     steps: [],
@@ -58,18 +58,11 @@ const createMakeTutorialConfigByStep = (t: TTypedT): Partial<Record<TMakeShiftSt
     4: {
         steps: [
             {
-                highlightIds: ['make_fixed_shift_sample_cell'],
-                title: t('page.makeShift.tutorial.fixedShifts.title'),
-                info: t('page.makeShift.tutorial.fixedShifts.info'),
+                highlightIds: ['make_fixed_shift_sample_cell', 'make_ai_fix_selected_button'],
+                title: t('page.makeShift.tutorial.authoringFixed.title'),
+                info: t('page.makeShift.tutorial.authoringFixed.info'),
                 infoBoxAlignment: 'right',
             },
-        ],
-        infoBoxHeight: 150,
-        infoBoxMargin: 24,
-        scrollLock: true,
-    },
-    5: {
-        steps: [
             {
                 highlightIds: ['make_ai_fill_button'],
                 title: t('page.makeShift.tutorial.aiAutofill.title'),
@@ -94,7 +87,7 @@ function getHighlightIds(config: ITutorialConfig | undefined) {
 }
 
 function getMakeStepTutorialKey(step: TMakeShiftStep): TTutorialKey | null {
-    if (step < 1 || step > 5) return null;
+    if (step < 1 || step >= MAKE_SHIFT_CONFIRMED_STEP) return null;
 
     return `make-step-${step}` as TTutorialKey;
 }
@@ -113,7 +106,8 @@ const MakeTutorial = () => {
     const config = useMemo(() => createMakeTutorialConfigByStep(t)[currentStep], [currentStep, t]);
     const currentTutorialKey = getMakeStepTutorialKey(currentStep);
     const backendCurrentStepSeen = currentTutorialKey != null && (accountMe?.tutorials?.seen?.includes(currentTutorialKey) ?? false);
-    const localCurrentStepSeen = accountId != null && currentTutorialKey != null && isTutorialDismissedForAccount(currentTutorialKey, accountId);
+    const localCurrentStepSeen =
+        accountId != null && currentTutorialKey != null && isTutorialDismissedForAccount(currentTutorialKey, accountId);
     const currentStepSeen = backendCurrentStepSeen || localCurrentStepSeen;
     const openCandidate =
         showMakeTutorial &&
@@ -169,12 +163,7 @@ const MakeTutorial = () => {
     }, [config, openCandidate]);
 
     return (
-        <TutorialPortal
-            open={open}
-            config={config ?? EMPTY_TUTORIAL_CONFIG}
-            closeCallback={closeCurrentTutorial}
-            initialStepIndex={0}
-        />
+        <TutorialPortal open={open} config={config ?? EMPTY_TUTORIAL_CONFIG} closeCallback={closeCurrentTutorial} initialStepIndex={0} />
     );
 };
 

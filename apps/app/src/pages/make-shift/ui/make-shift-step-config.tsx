@@ -4,7 +4,6 @@ import {type TMakeShiftStep} from '../model/make-shift-store';
 import {AiAutofill} from './steps/ai-auto-fill';
 import {ConfirmedShifts} from './steps/confirmed-shifts';
 import {Constraints} from './steps/constraints';
-import {FixedShifts} from './steps/fixed-shifts';
 import {RequestsShifts} from './steps/requests-shifts';
 import {Workers} from './steps/workers';
 
@@ -49,18 +48,12 @@ export const MAKE_SHIFT_STEP_CONFIG: Record<TMakeShiftStep, TMakeShiftStepConfig
         Component: RequestsShifts,
     },
     4: {
-        labelKey: 'page.makeShift.steps.fixedShifts.label',
-        captionKey: 'page.makeShift.steps.fixedShifts.caption',
-        layout: 'wide',
-        Component: FixedShifts,
-    },
-    5: {
         labelKey: 'page.makeShift.steps.aiAutofill.label',
         captionKey: 'page.makeShift.steps.aiAutofill.caption',
         layout: 'wide',
         Component: AiAutofill,
     },
-    6: {
+    5: {
         labelKey: 'page.makeShift.steps.confirmedShifts.label',
         captionKey: 'page.makeShift.steps.confirmedShifts.caption',
         layout: 'wide',

@@ -279,7 +279,7 @@ describe('useDutyHook', () => {
             expect(mockCommands.init).toHaveBeenCalledWith(convertedDoc);
             expect(mockCommands.discardPersisted).toHaveBeenCalled();
             expect(result.current.state.status).toBe('success');
-            expect(result.current.state.shift).toBe(shift);
+            expect(result.current.state.shift).toStrictEqual(shift);
         });
     });
 
@@ -347,7 +347,7 @@ describe('useDutyHook', () => {
         const {result} = renderHook(() => useDutyHook());
 
         await waitFor(() => {
-            expect(result.current.state.shift).toBe(shift);
+            expect(result.current.state.shift).toStrictEqual(shift);
         });
 
         mockCommands.init.mockClear();
@@ -412,7 +412,7 @@ describe('useDutyHook', () => {
         const {result} = renderHook(() => useDutyHook());
 
         await waitFor(() => {
-            expect(result.current.state.shift).toBe(shift);
+            expect(result.current.state.shift).toStrictEqual(shift);
         });
 
         mockCommands.discardPersisted.mockClear();
@@ -504,7 +504,7 @@ describe('useDutyHook', () => {
         const {result} = renderHook(() => useDutyHook());
 
         await waitFor(() => {
-            expect(result.current.state.shift).toBe(shift);
+            expect(result.current.state.shift).toStrictEqual(shift);
         });
 
         act(() => {

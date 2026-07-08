@@ -48,6 +48,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({
         t: (key: string, params?: Record<string, string | number>) => {
             if (key === 'page.request.calendar.reorderAria') return `${params?.name ?? ''} 순서 변경`;
+
             if (key === 'feature.editShiftTeam.moveNurseFailed') return '순서 변경에 실패했습니다';
 
             return key;
@@ -75,13 +76,13 @@ vi.mock('../request-calendar/request-duty-request-panel', () => ({
     default: () => <aside data-testid="request-panel">request-panel</aside>,
 }));
 
-vi.mock('../request-calendar/request-calendar-grid', () => ({
-    default: ({
-        requestShift,
+vi.mock('@/pages/make-shift/ui/steps/shared/make-shift-calendar', () => ({
+    MakeShiftCalendar: ({
+        shift,
         rowReorderDisabled,
-        onDragEnd,
+        onRowDragEnd,
     }: {
-        requestShift: {
+        shift: {
             divisionShiftNurses: Array<
                 Array<{
                     shiftNurse: {
@@ -93,7 +94,7 @@ vi.mock('../request-calendar/request-calendar-grid', () => ({
             >;
         };
         rowReorderDisabled?: boolean;
-        onDragEnd?: (result: {
+        onRowDragEnd?: (result: {
             draggableId: string;
             type: string;
             source: {droppableId: string; index: number};
@@ -109,7 +110,7 @@ vi.mock('../request-calendar/request-calendar-grid', () => ({
                 data-testid="move-first-row"
                 disabled={rowReorderDisabled}
                 onClick={() =>
-                    onDragEnd?.({
+                    onRowDragEnd?.({
                         draggableId: '20',
                         type: 'DEFAULT',
                         source: {droppableId: '1', index: 0},
@@ -123,7 +124,7 @@ vi.mock('../request-calendar/request-calendar-grid', () => ({
                 move
             </button>
             <ol data-testid="row-order">
-                {requestShift.divisionShiftNurses
+                {shift.divisionShiftNurses
                     .flat()
                     .filter((row) => row.shiftNurse.isWorker)
                     .map((row) => (
@@ -247,6 +248,7 @@ describe('RequestCalendar reorder', () => {
 
     it('드롭 직후 저장이 끝나기 전에도 변경된 행 순서를 유지하고 핸들을 비활성화하지 않는다', async () => {
         const user = userEvent.setup();
+
         let resolveUpdate: (() => void) | undefined;
 
         apiMocks.updateNurseOrder.mockReturnValue(

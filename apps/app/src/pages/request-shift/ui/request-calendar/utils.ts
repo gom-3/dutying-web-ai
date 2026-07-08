@@ -1,12 +1,16 @@
 import {type DropResult} from '@hello-pangea/dnd';
-import {type TDutyRequest, type TRequestShift} from '@/entities/shift';
-import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
+import {type TDutyRequest, type TRequestShift, type TShift} from '@/entities/shift';
+import {type TShiftTeam} from '@/entities/ward';
 import {type TFocus} from '@/features/request-shift/model/types';
+import {type TCellValue, type TDutyDoc} from '@/features/shift-editor/model';
 import i18n from '@/i18n';
 
 const PRIORITY_GAP = 2024;
 
 export const getYearMonthLabel = (year: number, month: number) => `${year}-${month.toString().padStart(2, '0')}`;
+
+const getDateKey = (year: number, month: number, day: number) =>
+    `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
 export const getDutyRequestLookupKey = (nurseId: number, dateIndex: number) => `${nurseId}:${dateIndex}`;
 
@@ -22,6 +26,101 @@ export const createShiftNurseIdByNurseId = (requestShift: TRequestShift) =>
 
 export const createConnectedNurseIdSet = (currentShiftTeam: TShiftTeam) =>
     new Set(currentShiftTeam.nurses.filter((nurse) => nurse.isConnected).map((nurse) => nurse.nurseId));
+
+type TRequestCalendarDocRowMeta = {
+    shiftNurseId: number;
+    nurseId: number;
+    nurseName: string;
+};
+
+export type TRequestCalendarData = {
+    shift: TShift;
+    doc: TDutyDoc;
+    rowsByDocIndex: TRequestCalendarDocRowMeta[];
+    rowIndexByShiftNurseId: Map<number, number>;
+};
+
+export function requestShiftToCalendarData(
+    requestShift: TRequestShift,
+    year: number,
+    month: number,
+    dutyRequestList: TDutyRequest[] | undefined,
+): TRequestCalendarData {
+    const idToType = new Map(requestShift.wardShiftTypes.map((type) => [type.wardShiftTypeId, type]));
+    const dutyRequestLookup = createDutyRequestLookup(dutyRequestList);
+    const columns = requestShift.days.map((day) => getDateKey(year, month, day.day));
+    const workerMeta: TDutyDoc['workerMeta'] = {};
+    const requestCells: TDutyDoc['requestCells'] = {};
+    const rowsByDocIndex: TRequestCalendarDocRowMeta[] = [];
+    const rowIndexByShiftNurseId = new Map<number, number>();
+    const docRows: TDutyDoc['rows'] = [];
+    const divisionShiftNurses: TShift['divisionShiftNurses'] = requestShift.divisionShiftNurses.map((division) =>
+        division.map((row) => {
+            const workerId = String(row.shiftNurse.shiftNurseId);
+            const displayShiftTypeIds: (number | null)[] = [];
+            const cells: TCellValue[] = requestShift.days.map((day, dayIndex) => {
+                const dutyRequest = dutyRequestLookup.get(getDutyRequestLookupKey(row.shiftNurse.nurseId, day.day - 1)) ?? null;
+                const displayShiftTypeId = row.wardReqShiftList[dayIndex] ?? dutyRequest?.wardShiftTypeId ?? null;
+
+                displayShiftTypeIds.push(displayShiftTypeId);
+
+                if (dutyRequest?.isAccepted === true) {
+                    const date = columns[dayIndex];
+
+                    if (date) requestCells[`${workerId}|${date}`] = true;
+                }
+
+                if (displayShiftTypeId === null) return null;
+
+                return idToType.get(displayShiftTypeId)?.shortName ?? dutyRequest?.wardShiftTypeShortName ?? null;
+            });
+
+            if (row.shiftNurse.isWorker) {
+                const docRowIndex = docRows.length;
+
+                rowIndexByShiftNurseId.set(row.shiftNurse.shiftNurseId, docRowIndex);
+                rowsByDocIndex.push({
+                    shiftNurseId: row.shiftNurse.shiftNurseId,
+                    nurseId: row.shiftNurse.nurseId,
+                    nurseName: row.shiftNurse.name,
+                });
+                workerMeta[workerId] = {
+                    name: row.shiftNurse.name,
+                    nurseId: row.shiftNurse.nurseId,
+                    priority: row.shiftNurse.priority,
+                    divisionNum: row.shiftNurse.divisionNum,
+                };
+                docRows.push({workerId, lastCells: [], cells});
+            }
+
+            return {
+                shiftNurse: row.shiftNurse,
+                lastWardShiftList: [],
+                lastWardReqShiftList: [],
+                wardShiftList: displayShiftTypeIds,
+                wardReqShiftList: displayShiftTypeIds,
+            };
+        }),
+    );
+
+    return {
+        shift: {
+            lastDays: [],
+            days: requestShift.days,
+            wardShiftTypes: requestShift.wardShiftTypes,
+            divisionShiftNurses,
+        },
+        doc: {
+            columns,
+            rows: docRows,
+            workerMeta,
+            fixedCells: {},
+            requestCells,
+        },
+        rowsByDocIndex,
+        rowIndexByShiftNurseId,
+    };
+}
 
 export const getDutyRequestStatusLabel = (isAccepted: boolean | null) => {
     if (isAccepted === true) return i18n.t('page.request.calendar.status.accepted');
@@ -84,99 +183,6 @@ export const createRequestCalendarCellFocus = ({
     shiftNurseId,
     day,
 });
-
-export const getRequestCalendarCellState = ({
-    currentShiftTypeId,
-    requestDutyRequest,
-    focus,
-    shiftNurseId,
-    day,
-    wardShiftTypeMap,
-}: {
-    currentShiftTypeId: number | null;
-    requestDutyRequest: TDutyRequest | null;
-    focus: TFocus | null;
-    shiftNurseId: number;
-    day: number;
-    wardShiftTypeMap: Map<number, TWardShiftType>;
-}) => {
-    const isOnlyRequest = currentShiftTypeId === null && requestDutyRequest !== null;
-
-    return {
-        isFocused: focus?.shiftNurseId === shiftNurseId && focus?.day === day,
-        shiftType:
-            currentShiftTypeId === null
-                ? requestDutyRequest === null
-                    ? null
-                    : wardShiftTypeMap.get(requestDutyRequest.wardShiftTypeId)
-                : wardShiftTypeMap.get(currentShiftTypeId),
-        isOnlyRequest,
-        isRejectedOnlyRequest: isOnlyRequest && requestDutyRequest.isAccepted === false,
-    };
-};
-
-export const getRequestCalendarDivisionAction = ({
-    readonly,
-    rowIndex,
-    rowCount,
-    level,
-    divisionCount,
-}: {
-    readonly: boolean;
-    rowIndex: number;
-    rowCount: number;
-    level: number;
-    divisionCount: number;
-}) => {
-    if (readonly) return null;
-
-    if (rowIndex !== rowCount - 1) return 'create' as const;
-
-    if (level !== divisionCount - 1) return 'delete' as const;
-
-    return null;
-};
-
-export const getRequestCalendarRowClassName = ({isFocusedRow}: {isFocusedRow: boolean}) =>
-    `relative flex h-[clamp(28px,2.4cqw,40px)] w-full items-center gap-2 transition-colors ${isFocusedRow ? 'bg-main-light' : 'bg-white'}`;
-
-export const getDayBadgeClass = (dayType: TRequestShift['days'][number]['dayType'], isFocused: boolean, _separateWeekendColor: boolean) => {
-    if (dayType === 'saturday') {
-        if (isFocused) return 'bg-blue text-white';
-
-        return 'text-blue';
-    }
-
-    if (dayType === 'sunday' || dayType === 'holiday') {
-        return isFocused ? 'bg-red text-white' : 'text-red';
-    }
-
-    if (dayType === 'workday') {
-        return isFocused ? 'bg-main-1 text-white' : 'text-sub-2.5';
-    }
-
-    return '';
-};
-
-export const getDayCellClass = (
-    dayType: TRequestShift['days'][number]['dayType'],
-    isFocusedDay: boolean,
-    _separateWeekendColor: boolean,
-) => {
-    const classes = [];
-
-    if (dayType === 'sunday' || dayType === 'holiday') {
-        classes.push('bg-red/5');
-    } else if (dayType === 'saturday') {
-        classes.push('bg-blue/5');
-    }
-
-    if (isFocusedDay) {
-        classes.push('bg-main-light');
-    }
-
-    return classes.join(' ');
-};
 
 type TMoveNurseOrderPayload = {
     nurseId: number;

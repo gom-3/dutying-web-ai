@@ -22,7 +22,6 @@ const createNurse = (params: Partial<TNurse> & Pick<TNurse, 'nurseId' | 'isWorke
     divisionNum: params.divisionNum ?? 1,
     priority: params.priority ?? 100,
 });
-
 const createShiftTeam = (params: Partial<TShiftTeam> & Pick<TShiftTeam, 'shiftTeamId' | 'nurses'>): TShiftTeam => ({
     shiftTeamId: params.shiftTeamId,
     name: params.name ?? 'A Team',
@@ -92,14 +91,14 @@ describe('make-shift-store', () => {
 
         expect(useMakeShiftStore.getState()).toMatchObject({
             phase: 'stepping',
-            currentStep: 6,
-            maxReachedStep: 6,
+            currentStep: 5,
+            maxReachedStep: 5,
             restoreDraftModalOpen: false,
         });
     });
 
     it('does not restore the confirmed step from local progress alone', () => {
-        useMakeShiftStore.getState().startFromStep({step: 6, openRestoreDraftModal: true});
+        useMakeShiftStore.getState().startFromStep({step: 5, openRestoreDraftModal: true});
 
         expect(useMakeShiftStore.getState()).toMatchObject({
             phase: 'stepping',
@@ -110,12 +109,12 @@ describe('make-shift-store', () => {
     });
 
     it('keeps a selected confirmed step while the server revalidates the same team', () => {
-        saveDraftStep(1, 10, 2026, 6, 6);
-        saveMaxReachedStep(1, 10, 2026, 6, 6);
+        saveDraftStep(1, 10, 2026, 6, 5);
+        saveMaxReachedStep(1, 10, 2026, 6, 5);
         useMakeShiftStore.setState({
             phase: 'stepping',
-            currentStep: 6,
-            maxReachedStep: 6,
+            currentStep: 5,
+            maxReachedStep: 5,
             currentShiftTeamId: 10,
             shiftStatus: 'pending',
             shiftExists: false,
@@ -126,8 +125,8 @@ describe('make-shift-store', () => {
 
         expect(useMakeShiftStore.getState()).toMatchObject({
             phase: 'stepping',
-            currentStep: 6,
-            maxReachedStep: 6,
+            currentStep: 5,
+            maxReachedStep: 5,
             currentShiftTeamId: 10,
             shiftFullyAssigned: false,
         });
@@ -189,6 +188,29 @@ describe('make-shift-store', () => {
         expect(useMakeShiftStore.getState()).toMatchObject({
             currentStep: 2,
             maxReachedStep: 2,
+        });
+    });
+
+    it('moves from requests to authoring', () => {
+        useMakeShiftStore.setState({
+            phase: 'stepping',
+            currentStep: 3,
+            maxReachedStep: 3,
+            workerConfirmationStatus: 'success',
+            workerConfirmationCount: 1,
+        });
+
+        useMakeShiftStore.getState().goNext();
+
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            currentStep: 4,
+            maxReachedStep: 4,
+        });
+
+        useMakeShiftStore.getState().goPrev();
+
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            currentStep: 3,
         });
     });
 

@@ -87,6 +87,37 @@ describe('useShiftEditorCommands', () => {
         });
     });
 
+    it('fixes and unfixes selected filled cells with undo support', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const selection = {type: 'range' as const, from: {row: 0, col: 0}, to: {row: 1, col: 1}};
+
+        act(() => {
+            result.current.init(createDoc());
+            useShiftEditorStore.getState().setSelection(selection);
+        });
+
+        act(() => {
+            expect(result.current.setSelectionFixed(true)).toBe(2);
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({
+            '2|2026-03-01': true,
+            '1|2026-03-02': true,
+        });
+        expect(useShiftEditorStore.getState().history.past).toHaveLength(1);
+
+        act(() => result.current.undo());
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({});
+
+        act(() => result.current.redo());
+        act(() => {
+            expect(result.current.setSelectionFixed(false)).toBe(2);
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({});
+    });
+
     it('pastes payload from the selection anchor and trims cells outside document bounds', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const payload: TClipboardPayload = {

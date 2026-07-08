@@ -1,7 +1,5 @@
 import {type TMakeShiftStep} from './make-shift-store';
 
-const LEGACY_DRAFT_STEP_KEY = 'make-shift:draft-step';
-
 export function buildMakeShiftDraftKey(wardId: number, shiftTeamId: number, year: number, month: number): string {
     return `make-shift:draft-step:${wardId}:${shiftTeamId}:${year}:${month}`;
 }
@@ -15,20 +13,7 @@ function parseStep(raw: string | null): TMakeShiftStep | null {
 
     const n = Number(raw);
 
-    return n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
-}
-
-/** 예전 단일 키에서 읽기 (마이그레이션용). */
-export function loadLegacyDraftStep(): TMakeShiftStep | null {
-    if (typeof window === 'undefined') return null;
-
-    return parseStep(window.localStorage.getItem(LEGACY_DRAFT_STEP_KEY));
-}
-
-export function clearLegacyDraftStep(): void {
-    if (typeof window === 'undefined') return;
-
-    window.localStorage.removeItem(LEGACY_DRAFT_STEP_KEY);
+    return n >= 1 && n <= 5 ? (n as TMakeShiftStep) : null;
 }
 
 export function loadDraftStep(wardId: number, shiftTeamId: number, year: number, month: number): TMakeShiftStep | null {

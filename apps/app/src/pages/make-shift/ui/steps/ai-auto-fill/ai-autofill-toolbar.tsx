@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {AnimationItem} from 'lottie-web';
-import {AlertTriangle, Check, History, Pin, Redo2, Save, Undo2} from 'lucide-react';
+import {AlertTriangle, Check, History, Pin, PinOff, Redo2, Save, Undo2} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
@@ -20,6 +20,10 @@ type TAiAutofillToolbarProps = {
     onFixedShiftsAttentionEnd: () => void;
     onRequestShiftsAttentionStart: () => void;
     onRequestShiftsAttentionEnd: () => void;
+    canFixSelection: boolean;
+    canUnfixSelection: boolean;
+    onFixSelection: () => void;
+    onUnfixSelection: () => void;
     showFaults: boolean;
     onToggleFaults: () => void;
     canUndo: boolean;
@@ -51,6 +55,10 @@ export function AiAutofillToolbar({
     onFixedShiftsAttentionEnd,
     onRequestShiftsAttentionStart,
     onRequestShiftsAttentionEnd,
+    canFixSelection,
+    canUnfixSelection,
+    onFixSelection,
+    onUnfixSelection,
     showFaults,
     onToggleFaults,
     canUndo,
@@ -74,7 +82,10 @@ export function AiAutofillToolbar({
     const isValidationChecking = scheduleValidationStatus === 'validating';
 
     return (
-        <div className="ai-autofill-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3">
+        <div
+            data-preserve-duty-selection="true"
+            className="ai-autofill-toolbar flex w-full min-w-0 flex-nowrap items-center justify-between gap-3"
+        >
             <div className={`ai-autofill-toolbar__titles ${MAKE_SHIFT_STEP_HEADING_BLOCK_CLASS}`}>
                 <div className="ai-autofill-toolbar__title-row flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                     <h1 className={`ai-autofill-toolbar__title min-w-0 ${MAKE_SHIFT_STEP_TITLE_CLASS}`}>
@@ -104,6 +115,32 @@ export function AiAutofillToolbar({
                 className="ai-autofill-toolbar__actions ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-[clamp(20px,3vw,48px)] [&_button:not(:disabled)]:cursor-pointer"
             >
                 <div className="ai-autofill-toolbar__utility-actions flex shrink-0 flex-nowrap items-center gap-2">
+                    <div
+                        id="make_ai_fixed_tools"
+                        className="ai-autofill-toolbar__fixed-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
+                        aria-label={t('page.makeShift.aiRefill.fixedSelectionTools')}
+                    >
+                        <IconButton
+                            id="make_ai_fix_selected_button"
+                            className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--fix"
+                            onClick={onFixSelection}
+                            disabled={!canFixSelection || isAiGenerating}
+                            ariaLabel={t('page.makeShift.aiRefill.fixSelection')}
+                            title={t('page.makeShift.aiRefill.fixSelection')}
+                        >
+                            <Pin className="size-3.5" aria-hidden />
+                        </IconButton>
+                        <IconButton
+                            className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--unfix"
+                            onClick={onUnfixSelection}
+                            disabled={!canUnfixSelection || isAiGenerating}
+                            ariaLabel={t('page.makeShift.aiRefill.unfixSelection')}
+                            title={t('page.makeShift.aiRefill.unfixSelection')}
+                        >
+                            <PinOff className="size-3.5" aria-hidden />
+                        </IconButton>
+                    </div>
+
                     <div
                         id="make_ai_view_tools"
                         className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
@@ -144,7 +181,9 @@ export function AiAutofillToolbar({
                             className="ai-autofill-toolbar__icon-tool ai-autofill-toolbar__icon-tool--faults"
                             active={showFaults}
                             onClick={onToggleFaults}
-                            ariaLabel={t(showFaults ? 'page.makeShift.aiRefill.violationsShown' : 'page.makeShift.aiRefill.violationsHidden')}
+                            ariaLabel={t(
+                                showFaults ? 'page.makeShift.aiRefill.violationsShown' : 'page.makeShift.aiRefill.violationsHidden',
+                            )}
                             activeClassName="bg-white text-[#B86E00] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
                             inactiveClassName="text-gray-3 hover:bg-white hover:text-[#B86E00]"
                         >
@@ -377,27 +416,33 @@ function IconToolButton({
 }
 
 function IconButton({
+    id,
     onClick,
     disabled,
     ariaBusy,
     ariaLabel,
+    title,
     className,
     children,
 }: {
+    id?: string;
     onClick: () => void;
     disabled?: boolean;
     ariaBusy?: boolean;
     ariaLabel: string;
+    title?: string;
     className?: string;
     children: ReactNode;
 }) {
     return (
         <button
+            id={id}
             type="button"
             onClick={onClick}
             disabled={disabled}
             aria-label={ariaLabel}
             aria-busy={ariaBusy}
+            title={title}
             className={cn(
                 'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] text-gray-3 transition-colors duration-150',
                 'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',

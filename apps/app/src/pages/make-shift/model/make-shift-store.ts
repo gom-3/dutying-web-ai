@@ -4,11 +4,14 @@ import {type TShift, type TShiftTeam} from '@/entities';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
 import {bumpMaxReachedStep, loadDraftStep, loadMaxReachedStep, saveDraftStep, saveMaxReachedStep} from './make-shift-progress-storage';
 
-export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5 | 6;
+export type TMakeShiftStep = 1 | 2 | 3 | 4 | 5;
 export type TFlowPhase = 'overview' | 'stepping';
 export type TShiftStatus = 'idle' | 'pending' | 'success' | 'error';
 export type TShiftTeamsStatus = 'idle' | 'pending' | 'success' | 'error';
 export type TWorkerConfirmationStatus = 'idle' | 'pending' | 'success' | 'error';
+
+export const MAKE_SHIFT_AUTHORING_STEP = 4;
+export const MAKE_SHIFT_CONFIRMED_STEP = 5;
 
 const STEP_STORAGE_KEY = 'make-shift:draft-step';
 const YEAR_STORAGE_KEY = 'make-shift:draft-year';
@@ -22,30 +25,6 @@ function persistYearMonth(year: number, month: number) {
     window.localStorage.setItem(MONTH_STORAGE_KEY, String(month));
 }
 
-export function loadPersistedYearMonth(): {year: number; month: number} | null {
-    if (typeof window === 'undefined') return null;
-
-    const y = window.localStorage.getItem(YEAR_STORAGE_KEY);
-    const m = window.localStorage.getItem(MONTH_STORAGE_KEY);
-
-    if (!y || !m) return null;
-
-    return {year: Number(y), month: Number(m)};
-}
-
-export function loadPersistedStep(): TMakeShiftStep | null {
-    if (typeof window === 'undefined') return null;
-
-    const raw = window.localStorage.getItem(STEP_STORAGE_KEY);
-
-    if (!raw) return null;
-
-    const n = Number(raw);
-
-    return n >= 1 && n <= 6 ? (n as TMakeShiftStep) : null;
-}
-
-/** 레거시 단일 draft-step 키만 제거 (연·월 로컬 키는 유지). */
 export function clearPersistedStep() {
     if (typeof window === 'undefined') return;
 
@@ -232,14 +211,15 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
         startFromStep: ({step, openRestoreDraftModal}) => {
             const {wardId, currentShiftTeamId, year, month, shiftFullyAssigned, shiftStatus, shiftTeams} = get();
-            const nextStep = shiftStatus === 'success' && shiftFullyAssigned ? 6 : step === 6 ? 1 : step;
+            const nextStep =
+                shiftStatus === 'success' && shiftFullyAssigned ? MAKE_SHIFT_CONFIRMED_STEP : step === MAKE_SHIFT_CONFIRMED_STEP ? 1 : step;
             const workerConfirmation = getWorkerConfirmationFromShiftTeams(shiftTeams, currentShiftTeamId);
 
             set(() => ({
                 phase: 'stepping',
                 currentStep: nextStep,
                 confirmedShiftSnapshot: null,
-                restoreDraftModalOpen: nextStep === 6 ? false : openRestoreDraftModal,
+                restoreDraftModalOpen: nextStep === MAKE_SHIFT_CONFIRMED_STEP ? false : openRestoreDraftModal,
                 workerConfirmationStatus: workerConfirmation.status,
                 workerConfirmationCount: workerConfirmation.count,
                 stepNavigationBusy: {},
@@ -275,7 +255,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (phase !== 'stepping') return;
 
-            if (currentStep <= 1 || currentStep >= 6) return;
+            if (currentStep <= 1 || currentStep >= MAKE_SHIFT_CONFIRMED_STEP) return;
 
             const nextStep = (currentStep - 1) as TMakeShiftStep;
 
@@ -308,9 +288,9 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             if (phase !== 'stepping') return;
 
-            if (currentStep === 6) return;
+            if (currentStep === MAKE_SHIFT_CONFIRMED_STEP) return;
 
-            if (step === 6 || step > maxReachedStep) return;
+            if (step === MAKE_SHIFT_CONFIRMED_STEP || step > maxReachedStep) return;
 
             set(() => ({currentStep: step}));
 
@@ -323,8 +303,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             set(() => ({
                 phase: 'stepping',
-                currentStep: 6,
-                maxReachedStep: 6,
+                currentStep: MAKE_SHIFT_CONFIRMED_STEP,
+                maxReachedStep: MAKE_SHIFT_CONFIRMED_STEP,
                 restoreDraftModalOpen: false,
                 shiftExists: true,
                 shiftFullyAssigned: true,
@@ -334,8 +314,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             persistYearMonth(year, month);
 
             if (wardId && currentShiftTeamId) {
-                saveDraftStep(wardId, currentShiftTeamId, year, month, 6);
-                bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, 6);
+                saveDraftStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_CONFIRMED_STEP);
+                bumpMaxReachedStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_CONFIRMED_STEP);
             }
         },
         editConfirmedSchedule: () => {
@@ -343,8 +323,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 
             set(() => ({
                 phase: 'stepping',
-                currentStep: 5,
-                maxReachedStep: 5,
+                currentStep: MAKE_SHIFT_AUTHORING_STEP,
+                maxReachedStep: MAKE_SHIFT_AUTHORING_STEP,
                 restoreDraftModalOpen: false,
                 shiftFullyAssigned: false,
                 confirmedShiftSnapshot: null,
@@ -353,8 +333,8 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
             persistYearMonth(year, month);
 
             if (wardId && currentShiftTeamId) {
-                saveDraftStep(wardId, currentShiftTeamId, year, month, 5);
-                saveMaxReachedStep(wardId, currentShiftTeamId, year, month, 5);
+                saveDraftStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_AUTHORING_STEP);
+                saveMaxReachedStep(wardId, currentShiftTeamId, year, month, MAKE_SHIFT_AUTHORING_STEP);
             }
         },
 
@@ -503,7 +483,7 @@ export const useMakeShiftStore = create<TMakeShiftStore>()(
 );
 
 export function canGoPrev(state: Pick<TMakeShiftStore, 'phase' | 'currentStep'>): boolean {
-    return state.phase === 'stepping' && state.currentStep > 1 && state.currentStep < 6;
+    return state.phase === 'stepping' && state.currentStep > 1 && state.currentStep < MAKE_SHIFT_CONFIRMED_STEP;
 }
 
 export function hasRequiredWorkerForSchedule(
@@ -519,7 +499,7 @@ export function canGoNext(
     state: Pick<TMakeShiftStore, 'phase' | 'currentStep' | 'workerConfirmationStatus' | 'workerConfirmationCount'> &
         Partial<Pick<TMakeShiftStore, 'shiftTeams' | 'currentShiftTeamId'>>,
 ): boolean {
-    if (state.phase !== 'stepping' || state.currentStep >= 5) return false;
+    if (state.phase !== 'stepping' || state.currentStep >= MAKE_SHIFT_AUTHORING_STEP) return false;
 
     if (state.currentStep === 1) return hasRequiredWorkerForSchedule(state);
 

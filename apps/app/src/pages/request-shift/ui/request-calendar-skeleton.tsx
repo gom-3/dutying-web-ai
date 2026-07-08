@@ -1,5 +1,10 @@
 import {cn} from '@dutying/utils/style';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
+import {
+    REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS,
+    REQUEST_CALENDAR_NAME_COLUMN_CLASS,
+    REQUEST_CALENDAR_ROW_GAP_CLASS,
+} from './request-calendar/request-calendar-layout';
 
 type TRequestCalendarSkeletonProps = {
     ariaLabel: string;
@@ -27,16 +32,16 @@ export function RequestCalendarSkeleton({
             aria-label={ariaLabel}
             data-testid="request-calendar-skeleton"
             className={cn(
-                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1160px] flex-1 grid-cols-[minmax(876px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
+                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1124px] flex-1 grid-cols-[minmax(840px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
                 className,
             )}
         >
             <section className="min-h-0 min-w-0 overflow-hidden rounded-[18px] bg-white p-2">
                 <div className="flex min-h-[420px] w-full flex-col rounded-[18px] bg-white">
                     <div className="sticky top-0 z-20 mb-1 flex h-8 w-full items-center rounded-t-[18px] bg-white pt-1">
-                        <div className="flex w-full items-center gap-2">
-                            <Skeleton className="h-4 w-[clamp(64px,4.4cqw,76px)] shrink-0 rounded-full bg-gray-6" />
-                            <Skeleton className="h-4 w-6 shrink-0 rounded-full bg-gray-6" />
+                        <div className={cn('flex w-full items-center', REQUEST_CALENDAR_ROW_GAP_CLASS)}>
+                            <Skeleton className={cn('h-4 rounded-full bg-gray-6', REQUEST_CALENDAR_NAME_COLUMN_CLASS)} />
+                            <Skeleton className={cn('h-4 rounded-full bg-gray-6', REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS)} />
                             <div
                                 className="grid min-w-0 flex-1 rounded-[12px] bg-gray-7 px-1 py-0.5"
                                 style={{gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`}}
@@ -52,14 +57,14 @@ export function RequestCalendarSkeleton({
 
                     <div className="flex min-h-0 w-full flex-col gap-1 pb-1">
                         {rows.map((_, rowIndex) => (
-                            <div key={rowIndex} className="grid h-[44px] w-full grid-cols-[auto_auto_1fr] items-stretch gap-2">
-                                <div className="flex w-[clamp(64px,4.4cqw,76px)] items-center justify-center">
+                            <div key={rowIndex} className={cn('flex h-[44px] w-full items-stretch', REQUEST_CALENDAR_ROW_GAP_CLASS)}>
+                                <div className={cn('flex items-center justify-center', REQUEST_CALENDAR_NAME_COLUMN_CLASS)}>
                                     <Skeleton className="h-4 w-9/12 rounded-full bg-gray-6" />
                                 </div>
-                                <div className="flex w-6 items-center justify-center">
-                                    <Skeleton className="size-4 rounded-full bg-main-4/80" />
+                                <div className={cn('flex items-center justify-center', REQUEST_CALENDAR_ANNUAL_LEAVE_COLUMN_CLASS)}>
+                                    <Skeleton className="h-4 w-7/12 rounded-full bg-gray-6" />
                                 </div>
-                                <div className="grid min-w-0" style={{gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`}}>
+                                <div className="grid min-w-0 flex-1" style={{gridTemplateColumns: `repeat(${dayCount}, minmax(0, 1fr))`}}>
                                     {days.map((_, dayIndex) => (
                                         <div key={dayIndex} className="grid min-w-0 place-items-center">
                                             <Skeleton className="size-[24px] rounded-[6px] bg-gray-6/80" />

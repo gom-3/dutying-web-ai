@@ -1,17 +1,12 @@
 import {beforeEach, describe, expect, it} from 'vitest';
 import {type TRequestShift} from '@/entities/shift';
-import {type TWardShiftType} from '@/entities/ward';
 import i18n from '@/i18n';
 import {
     createRequestCalendarCellFocus,
-    getDayBadgeClass,
-    getDayCellClass,
     getDutyRequestStatusDescription,
     getMoveNurseOrderPayload,
-    getRequestCalendarCellState,
-    getRequestCalendarDivisionAction,
-    getRequestCalendarRowClassName,
     getRequestFocus,
+    requestShiftToCalendarData,
 } from '../utils';
 
 const createRequestShift = (): TRequestShift => ({
@@ -219,133 +214,61 @@ describe('request-calendar utils', () => {
         });
     });
 
-    it('일자 헤더 색상을 홈 캘린더 기준으로 표시한다', () => {
-        expect(getDayBadgeClass('saturday', false, false)).toBe('text-blue');
-        expect(getDayBadgeClass('saturday', false, true)).toBe('text-blue');
-        expect(getDayBadgeClass('saturday', true, false)).toBe('bg-blue text-white');
-        expect(getDayBadgeClass('sunday', false, false)).toBe('text-red');
-        expect(getDayBadgeClass('holiday', true, false)).toBe('bg-red text-white');
-        expect(getDayBadgeClass('workday', false, false)).toBe('text-sub-2.5');
-    });
-
-    it('주말 셀 배경색을 홈 캘린더 기준으로 표시한다', () => {
-        expect(getDayCellClass('saturday', false, false)).toBe('bg-blue/5');
-        expect(getDayCellClass('saturday', false, true)).toBe('bg-blue/5');
-        expect(getDayCellClass('sunday', false, false)).toBe('bg-red/5');
-        expect(getDayCellClass('holiday', true, false)).toBe('bg-red/5 bg-main-light');
-        expect(getDayCellClass('workday', false, false)).toBe('');
-    });
-
-    it('/make 확정 근무표와 같은 스케일로 신청근무 행 높이를 잡는다', () => {
-        expect(getRequestCalendarRowClassName({isFocusedRow: false})).toContain('h-[clamp(28px,2.4cqw,40px)]');
-        expect(getRequestCalendarRowClassName({isFocusedRow: false})).not.toContain('h-11');
-    });
-
-    it('요청만 있는 셀 상태를 계산한다', () => {
+    it('신청근무 데이터를 공용 캘린더용 shift/doc로 변환한다', () => {
         const dayShiftType = {
             wardShiftTypeId: 9,
             name: '데이',
             shortName: 'D',
+            startTime: '07:00',
+            endTime: '15:00',
             color: '#000000',
-        } as TWardShiftType;
+            isDefault: true,
+            isOff: false,
+            isCounted: true,
+            classification: 'DAY' as const,
+        };
+        const requestShift: TRequestShift = {
+            days: [{day: 3, dayType: 'workday'}],
+            wardShiftTypes: [dayShiftType],
+            divisionShiftNurses: [
+                [
+                    {
+                        shiftNurse: {
+                            shiftNurseId: 11,
+                            nurseId: 101,
+                            name: '김간호',
+                            carried: 0,
+                            isWorker: true,
+                            divisionNum: 1,
+                            priority: 100,
+                        },
+                        carry: 0,
+                        wardReqShiftList: [null],
+                    },
+                ],
+            ],
+        };
+        const data = requestShiftToCalendarData(requestShift, 2026, 3, [
+            {
+                wardReqShiftId: 1,
+                nurseId: 101,
+                nurseName: '김간호',
+                date: 3,
+                requestDate: '2026-03-03',
+                wardShiftTypeId: 9,
+                wardShiftTypeShortName: 'D',
+                wardShiftTypeColor: '#000000',
+                isRead: false,
+                isAccepted: true,
+            },
+        ]);
 
-        expect(
-            getRequestCalendarCellState({
-                currentShiftTypeId: null,
-                requestDutyRequest: {
-                    wardReqShiftId: 1,
-                    nurseId: 101,
-                    nurseName: '김간호',
-                    date: 3,
-                    requestDate: '2026-03-01',
-                    wardShiftTypeId: 9,
-                    wardShiftTypeShortName: 'D',
-                    wardShiftTypeColor: '#000000',
-                    isRead: false,
-                    isAccepted: null,
-                },
-                focus: {
-                    shiftNurseName: '김간호',
-                    shiftNurseId: 11,
-                    day: 2,
-                },
-                shiftNurseId: 11,
-                day: 2,
-                wardShiftTypeMap: new Map([[9, dayShiftType]]),
-            }),
-        ).toEqual({
-            isFocused: true,
-            shiftType: dayShiftType,
-            isOnlyRequest: true,
-            isRejectedOnlyRequest: false,
-        });
-    });
-
-    it('거절된 요청만 있는 셀은 더 흐린 상태로 표시한다', () => {
-        const dayShiftType = {
-            wardShiftTypeId: 9,
-            name: '데이',
-            shortName: 'D',
-            color: '#000000',
-        } as TWardShiftType;
-
-        expect(
-            getRequestCalendarCellState({
-                currentShiftTypeId: null,
-                requestDutyRequest: {
-                    wardReqShiftId: 1,
-                    nurseId: 101,
-                    nurseName: '김간호',
-                    date: 3,
-                    requestDate: '2026-03-01',
-                    wardShiftTypeId: 9,
-                    wardShiftTypeShortName: 'D',
-                    wardShiftTypeColor: '#000000',
-                    isRead: false,
-                    isAccepted: false,
-                },
-                focus: null,
-                shiftNurseId: 11,
-                day: 2,
-                wardShiftTypeMap: new Map([[9, dayShiftType]]),
-            }),
-        ).toEqual({
-            isFocused: false,
-            shiftType: dayShiftType,
-            isOnlyRequest: true,
-            isRejectedOnlyRequest: true,
-        });
-    });
-
-    it('행 위치에 따라 분할 조정 액션을 결정한다', () => {
-        expect(
-            getRequestCalendarDivisionAction({
-                readonly: false,
-                rowIndex: 0,
-                rowCount: 3,
-                level: 0,
-                divisionCount: 2,
-            }),
-        ).toBe('create');
-
-        expect(
-            getRequestCalendarDivisionAction({
-                readonly: false,
-                rowIndex: 2,
-                rowCount: 3,
-                level: 0,
-                divisionCount: 2,
-            }),
-        ).toBe('delete');
-
-        expect(
-            getRequestCalendarDivisionAction({
-                readonly: true,
-                rowIndex: 0,
-                rowCount: 3,
-                level: 0,
-                divisionCount: 2,
-            }),
-        ).toBeNull();
+        expect(data.shift.lastDays).toEqual([]);
+        expect(data.shift.divisionShiftNurses[0]?.[0]?.wardShiftList).toEqual([9]);
+        expect(data.doc.columns).toEqual(['2026-03-03']);
+        expect(data.doc.rows[0]?.cells).toEqual(['D']);
+        expect(data.doc.requestCells).toEqual({'11|2026-03-03': true});
+        expect(data.rowsByDocIndex[0]).toEqual({shiftNurseId: 11, nurseId: 101, nurseName: '김간호'});
+        expect(data.rowIndexByShiftNurseId.get(11)).toBe(0);
     });
 });

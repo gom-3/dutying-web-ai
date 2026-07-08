@@ -195,6 +195,64 @@ export function useShiftEditorCommands() {
 
         cmdSetCells(cells, value, source ?? 'user');
     };
+    const cmdSetCellsFixed = (cells: TCellPos[], fixed: boolean, source: TTxSource = 'user'): number => {
+        const {doc, history, selection} = getState();
+        const fixedDelta: TSetCellsOp['fixedDelta'] = [];
+
+        let skippedByRequest = 0;
+
+        for (const {row, col} of cells) {
+            if (col < 0 || !isDutyCellPositionInBounds(doc, row, col)) continue;
+
+            const dutyRow = doc.rows[row];
+
+            if (!dutyRow) continue;
+
+            const key = getDutyCellLockKey(doc, row, col);
+
+            if (key === null) continue;
+
+            if (doc.requestCells[key] === true) {
+                skippedByRequest += 1;
+                continue;
+            }
+
+            if (fixed && readDutyCell(dutyRow, col) === null) continue;
+
+            const prevFixed = doc.fixedCells[key] === true;
+
+            if (prevFixed === fixed) continue;
+
+            fixedDelta.push({key, prev: prevFixed, next: fixed});
+        }
+
+        if (source === 'user' && skippedByRequest > 0) notifyRequestLocked();
+
+        if (fixedDelta.length === 0) return 0;
+
+        const tx: TTransaction<TOperation> = {
+            ops: [{kind: 'setCells', cells: [], fixedDelta}],
+            source,
+            timestamp: Date.now(),
+        };
+        const inverseOps = invertOps(tx.ops);
+        const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+        const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+        const nextHistory = pushHistory(history, entry);
+
+        setDoc(nextDoc);
+        setHistory(nextHistory);
+        persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
+
+        return fixedDelta.length;
+    };
+    const cmdSetSelectionFixed = (fixed: boolean, source?: TTxSource): number => {
+        const {selection} = getState();
+
+        if (!selection) return 0;
+
+        return cmdSetCellsFixed(getCellsInSelection(selection), fixed, source ?? 'user');
+    };
 
     return {
         init: (doc: TDutyDoc, opts?: {maxHistoryDepth?: number}) => {
@@ -324,6 +382,8 @@ export function useShiftEditorCommands() {
         },
         setCells: cmdSetCells,
         setSelectionValue: cmdSetSelectionValue,
+        setCellsFixed: cmdSetCellsFixed,
+        setSelectionFixed: cmdSetSelectionFixed,
         clearSelectionCells: (source?: TTxSource) => cmdSetSelectionValue(null, source),
         resetAutofilled: (source: TTxSource = 'user') => {
             const {doc, history, selection} = getState();

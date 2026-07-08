@@ -1,13 +1,13 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
-import {type TMakeShiftStep} from '../model/make-shift-store';
+import {MAKE_SHIFT_AUTHORING_STEP, MAKE_SHIFT_CONFIRMED_STEP, type TMakeShiftStep} from '../model/make-shift-store';
 
 type TStepState = 'done' | 'current' | 'available' | 'locked';
 type TStepMeta = {
     labelKey: TI18nKey;
 };
 
-const MAKE_SHIFT_STEPS: TMakeShiftStep[] = [1, 2, 3, 4, 5, 6];
+const MAKE_SHIFT_STEPS: TMakeShiftStep[] = [1, 2, 3, 4, 5];
 const MAKE_SHIFT_STEP_META: Record<TMakeShiftStep, TStepMeta> = {
     1: {
         labelKey: 'page.makeShift.steps.workers.label',
@@ -19,12 +19,9 @@ const MAKE_SHIFT_STEP_META: Record<TMakeShiftStep, TStepMeta> = {
         labelKey: 'page.makeShift.steps.requests.label',
     },
     4: {
-        labelKey: 'page.makeShift.steps.fixedShifts.label',
-    },
-    5: {
         labelKey: 'page.makeShift.steps.aiAutofill.label',
     },
-    6: {
+    5: {
         labelKey: 'page.makeShift.steps.confirmedShifts.label',
     },
 };
@@ -73,6 +70,10 @@ function StepCheckIcon() {
     );
 }
 
+function getVisibleStepNumber(step: TMakeShiftStep, visibleSteps: TMakeShiftStep[]): number {
+    return visibleSteps.findIndex((visibleStep) => visibleStep === step) + 1;
+}
+
 export function MakeShiftStepper({
     currentStep,
     maxReachedStep,
@@ -85,9 +86,9 @@ export function MakeShiftStepper({
     onClickStep: (step: TMakeShiftStep) => void;
 }) {
     const {t} = useTypedTranslation();
-    const isConfirmedStep = currentStep === 6;
-    const showConfirmedStep = isConfirmedStep || maxReachedStep >= 6;
-    const visibleSteps = isConfirmedStep ? ([6] as TMakeShiftStep[]) : MAKE_SHIFT_STEPS;
+    const isConfirmedStep = currentStep === MAKE_SHIFT_CONFIRMED_STEP;
+    const showConfirmedStep = isConfirmedStep || maxReachedStep >= MAKE_SHIFT_CONFIRMED_STEP;
+    const visibleSteps = isConfirmedStep ? ([MAKE_SHIFT_CONFIRMED_STEP] as TMakeShiftStep[]) : MAKE_SHIFT_STEPS;
 
     return (
         <nav
@@ -105,17 +106,24 @@ export function MakeShiftStepper({
                         gridTemplateColumns: isConfirmedStep
                             ? 'minmax(0, 1fr)'
                             : showConfirmedStep
-                              ? 'repeat(6, minmax(0, 1fr))'
-                              : 'repeat(5, minmax(0, 1fr)) minmax(0, 0fr)',
+                              ? 'repeat(5, minmax(0, 1fr))'
+                              : 'repeat(4, minmax(0, 1fr)) minmax(0, 0fr)',
                     }}
                 >
                     {visibleSteps.map((step) => {
                         const stepMeta = MAKE_SHIFT_STEP_META[step];
                         const state = getStepState(step, currentStep, maxReachedStep);
-                        const isFinalConfirmedStep = step === 6 && state === 'current';
-                        const isStepHidden = step === 6 && !showConfirmedStep;
-                        const clickable = !navigationDisabled && !isConfirmedStep && step !== currentStep && state !== 'locked';
-                        const showRightConnector = step !== 6 && (step !== 5 || showConfirmedStep);
+                        const isFinalConfirmedStep = step === MAKE_SHIFT_CONFIRMED_STEP && state === 'current';
+                        const isStepHidden = step === MAKE_SHIFT_CONFIRMED_STEP && !showConfirmedStep;
+                        const clickable =
+                            !navigationDisabled &&
+                            !isConfirmedStep &&
+                            step !== MAKE_SHIFT_CONFIRMED_STEP &&
+                            step !== currentStep &&
+                            state !== 'locked';
+                        const showRightConnector =
+                            step !== MAKE_SHIFT_CONFIRMED_STEP && (step !== MAKE_SHIFT_AUTHORING_STEP || showConfirmedStep);
+                        const visibleStepNumber = getVisibleStepNumber(step, MAKE_SHIFT_STEPS);
 
                         return (
                             <li
@@ -160,7 +168,7 @@ export function MakeShiftStepper({
                                                 state === 'locked' && 'bg-gray-7 text-gray-4',
                                             )}
                                         >
-                                            {state === 'done' || isFinalConfirmedStep ? <StepCheckIcon /> : step}
+                                            {state === 'done' || isFinalConfirmedStep ? <StepCheckIcon /> : visibleStepNumber}
                                         </span>
                                     </span>
                                     <span className="max-w-full min-w-0">

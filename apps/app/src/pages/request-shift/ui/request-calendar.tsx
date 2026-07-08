@@ -6,31 +6,27 @@ import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import useOnclickOutside from 'react-cool-onclickoutside';
 import {useNavigate} from 'react-router-dom';
 import {events, sendEvent} from '@/analytics';
-import type {TRequestShift} from '@/entities/shift';
-import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import type {TNurse} from '@/entities/nurse';
+import type {TRequestShift} from '@/entities/shift';
 import type {TShiftTeam} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useRequestShift from '@/features/request-shift';
-import {getWardSkillSettings, resolveWardSkillLevels} from '@/features/ward-skill/model/skill-level';
+import {buildMakeShiftWorkerMovePayload} from '@/pages/make-shift/model/make-shift-worker-order';
 import {
     applyNursePriorityMoveToSchedule,
     applyNursePriorityMoveToShiftTeams,
     getDisplayWorkersFromSchedule,
     sortScheduleByTeamNurseOrder,
 } from '@/pages/make-shift/model/nurse-order-sync';
-import {buildMakeShiftWorkerMovePayload} from '@/pages/make-shift/model/make-shift-worker-order';
+import {MakeShiftCalendar} from '@/pages/make-shift/ui/steps/shared/make-shift-calendar';
 import {NurseAPI} from '@/shared/api';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 import {ManagementActionButton} from '@/widgets/duty-management/ui';
-import RequestCalendarGrid from './request-calendar/request-calendar-grid';
-import RequestCalendarHeader from './request-calendar/request-calendar-header';
 import RequestDutyRequestPanel from './request-calendar/request-duty-request-panel';
-import {useRequestCalendarFocusScroll} from './request-calendar/use-request-calendar-focus-scroll';
-import {createConnectedNurseIdSet, createDutyRequestLookup, createShiftNurseIdByNurseId} from './request-calendar/utils';
+import {createRequestCalendarCellFocus, createShiftNurseIdByNurseId, requestShiftToCalendarData} from './request-calendar/utils';
 
 type TRequestCalendarProps = {
     defaultReviewMode?: 'date' | 'request' | 'pending' | 'nurse';
@@ -43,6 +39,8 @@ type TRequestCalendarProps = {
 function formatPatchYearMonth(year: number, month: number) {
     return `${year}-${String(month).padStart(2, '0')}`;
 }
+
+const EMPTY_VIOLATION_MAP = new Map();
 
 function findRequestRowByShiftNurseId(requestShift: TRequestShift, shiftNurseId: number) {
     for (const division of requestShift.divisionShiftNurses) {
@@ -73,18 +71,15 @@ export default function ShiftCalendar({
             dutyRequestStatus,
             updatingRequestId,
             focus,
-            wardShiftTypeMap,
             currentShiftTeam,
-            shiftTeams,
             editAvailability,
+            wardShiftTypeMap,
         },
         actions: {changeFocus, acceptRequest, acceptRequests, retry},
     } = useRequestShift();
     const {
         state: {wardId},
     } = useAuth();
-    const separateWeekendColor = useUIConfigStore((state) => state.separateWeekendColor);
-    const focusedCellRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const reorderInFlightRef = useRef(false);
     const [optimisticRequestShift, setOptimisticRequestShift] = useState<TRequestShift | null>(null);
@@ -97,15 +92,6 @@ export default function ShiftCalendar({
             sendEvent(events.requestPage.calendar.focusCell);
         },
         [changeFocus],
-    );
-    const skillSettings = useMemo(() => getWardSkillSettings(wardId), [wardId]);
-    const allWardNurses = useMemo(
-        () => shiftTeams?.flatMap((shiftTeam) => shiftTeam.nurses) ?? currentShiftTeam?.nurses ?? [],
-        [currentShiftTeam?.nurses, shiftTeams],
-    );
-    const {config: skillConfig, levelsByNurseId} = useMemo(
-        () => resolveWardSkillLevels(allWardNurses, skillSettings),
-        [allWardNurses, skillSettings],
     );
     const hasCurrentTeamNurses = (currentShiftTeam?.nurses.length ?? 0) > 0;
     const requestContextKey = `${wardId ?? 'none'}:${currentShiftTeam?.shiftTeamId ?? 'none'}:${year}:${month}`;
@@ -220,6 +206,7 @@ export default function ShiftCalendar({
                 setOptimisticRequestShift(null);
             } catch (error) {
                 if (previousRequestShift !== undefined) queryClient.setQueryData(requestQueryKey, previousRequestShift);
+
                 if (previousShiftTeams !== undefined) queryClient.setQueryData(shiftTeamsQueryKey, previousShiftTeams);
 
                 setOptimisticRequestShift(null);
@@ -235,24 +222,76 @@ export default function ShiftCalendar({
 
         navigate(`${ROUTE.MEMBER}?shiftTeamId=${currentShiftTeam.shiftTeamId}`);
     }, [currentShiftTeam, navigate]);
+    const requestCalendarData = useMemo(
+        () => (orderedRequestShift ? requestShiftToCalendarData(orderedRequestShift, year, month, dutyRequestList) : null),
+        [dutyRequestList, month, orderedRequestShift, year],
+    );
+    const focusedCell = useMemo(() => {
+        if (focus === null || requestCalendarData === null) return null;
 
-    useRequestCalendarFocusScroll({focus, focusedCellRef, containerRef});
+        const row = requestCalendarData.rowIndexByShiftNurseId.get(focus.shiftNurseId);
 
-    if (!orderedRequestShift || !wardShiftTypeMap || !currentShiftTeam) return null;
-
+        return row === undefined ? null : {row, col: focus.day};
+    }, [focus, requestCalendarData]);
+    const shiftNurseIdByNurseId = useMemo(
+        () => (orderedRequestShift ? createShiftNurseIdByNurseId(orderedRequestShift) : new Map<number, number>()),
+        [orderedRequestShift],
+    );
     const canEditRequests = editAvailability.canEdit;
-    const dutyRequestLookup = createDutyRequestLookup(dutyRequestList);
-    const connectedNurseIds = createConnectedNurseIdSet(currentShiftTeam);
-    const shiftNurseIdByNurseId = createShiftNurseIdByNurseId(orderedRequestShift);
-    const showSkillColumn = skillConfig.enabled;
     const shouldShowRowReorder = canReorderRows || onRowDragEnd === undefined;
     const isRowReorderDisabled = rowReorderDisabled;
+    const handleCalendarCellClick = useCallback(
+        (rowIndex: number, colIndex: number) => {
+            if (colIndex < 0 || requestCalendarData === null) return;
+
+            const row = requestCalendarData.rowsByDocIndex[rowIndex];
+
+            if (!row) return;
+
+            handleSelectCell(
+                createRequestCalendarCellFocus({
+                    shiftNurseName: row.nurseName,
+                    shiftNurseId: row.shiftNurseId,
+                    day: colIndex,
+                }),
+            );
+        },
+        [handleSelectCell, requestCalendarData],
+    );
+
+    useEffect(() => {
+        if (!focus || requestCalendarData === null) return;
+
+        const container = containerRef.current;
+        const target = container?.querySelector<HTMLElement>(
+            `[data-shift-nurse-id="${focus.shiftNurseId}"] [data-day-index="${focus.day}"]`,
+        );
+
+        if (!container || !target) return;
+
+        const containerRect = container.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const overflowRight = targetRect.right - containerRect.right;
+        const overflowLeft = targetRect.left - containerRect.left;
+        const overflowBottom = targetRect.bottom - containerRect.bottom;
+        const overflowTop = targetRect.top - containerRect.top;
+
+        if (overflowRight > 0) container.scrollLeft += overflowRight + 8;
+
+        if (overflowLeft < 0) container.scrollLeft += overflowLeft - 8;
+
+        if (overflowBottom > 0) container.scrollTop += overflowBottom + 8;
+
+        if (overflowTop < 0) container.scrollTop += overflowTop - 8;
+    }, [focus, requestCalendarData]);
+
+    if (!orderedRequestShift || !requestCalendarData || !wardShiftTypeMap || !currentShiftTeam) return null;
 
     return (
         <div
             id="calendar"
             className={cn(
-                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1160px] flex-1 grid-cols-[minmax(876px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
+                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1124px] flex-1 grid-cols-[minmax(840px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
                 !hasCurrentTeamNurses && 'items-stretch',
             )}
         >
@@ -263,30 +302,21 @@ export default function ShiftCalendar({
                 <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col rounded-[18px] bg-white">
                     {hasCurrentTeamNurses ? (
                         <div ref={containerRef} className="min-h-[420px] w-full overflow-x-auto overflow-y-visible rounded-[18px] bg-white">
-                            <div className="min-w-[900px]">
-                                <RequestCalendarHeader
-                                    days={orderedRequestShift.days}
-                                    focusDay={focus?.day}
-                                    canReorder={shouldShowRowReorder}
-                                    separateWeekendColor={separateWeekendColor}
-                                    showSkillColumn={showSkillColumn}
-                                />
-                                <RequestCalendarGrid
-                                    requestShift={orderedRequestShift}
-                                    focus={focus}
+                            <div className="min-w-[840px]">
+                                <MakeShiftCalendar
+                                    shift={requestCalendarData.shift}
+                                    doc={requestCalendarData.doc}
+                                    violationMap={EMPTY_VIOLATION_MAP}
+                                    showFaults={false}
+                                    variant="simplified"
                                     readonly
-                                    canReorder={shouldShowRowReorder}
+                                    disableInitialSelection
+                                    showCellStatusPins
+                                    focusedCell={focusedCell}
+                                    canReorderRows={shouldShowRowReorder}
                                     rowReorderDisabled={isRowReorderDisabled}
-                                    separateWeekendColor={separateWeekendColor}
-                                    wardShiftTypeMap={wardShiftTypeMap}
-                                    dutyRequestLookup={dutyRequestLookup}
-                                    connectedNurseIds={connectedNurseIds}
-                                    skillConfig={skillConfig}
-                                    levelsByNurseId={levelsByNurseId}
-                                    showSkillColumn={showSkillColumn}
-                                    focusedCellRef={focusedCellRef}
-                                    onDragEnd={handleStandaloneRowDragEnd}
-                                    onSelectCell={handleSelectCell}
+                                    onRowDragEnd={handleStandaloneRowDragEnd}
+                                    onCellClick={handleCalendarCellClick}
                                 />
                             </div>
                         </div>

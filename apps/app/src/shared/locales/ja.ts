@@ -1286,6 +1286,7 @@ export const ja: TLocale = {
                 violationDialogAria: '制約の問題',
                 closePopover: 'ポップアップを閉じる',
                 shiftTypeDropdownAria: '勤務区分を選択',
+                fixCell: '固定する',
                 clearCell: 'クリア',
                 fullDayLabel: '{{day}}日 全体',
                 nurseDayLabel: '{{name}} · {{day}}日',
@@ -1308,6 +1309,10 @@ export const ja: TLocale = {
                 fixedShifts: {
                     title: '固定勤務を入力',
                     info: 'セルを選択して勤務略称をキーボードで入力します。\nD、E、N、Oなど病棟で使う略称はすぐ反映されます。',
+                },
+                authoringFixed: {
+                    title: '変更してほしくない勤務を固定',
+                    info: '勤務表作成画面でもセルを選択して固定できます。\n固定した勤務と承認済み希望勤務はAI自動入力で変更されません。',
                 },
                 aiAutofill: {
                     title: 'AI自動入力',

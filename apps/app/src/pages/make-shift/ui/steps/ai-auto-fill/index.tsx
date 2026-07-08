@@ -12,8 +12,10 @@ import {
     useAsyncScheduleValidation,
     useShiftEditorCommands,
     useShiftEditorStore,
+    type TCellPos,
     type TDutyDoc,
 } from '@/features/shift-editor';
+import {getCellsInSelection} from '@/features/shift-editor/model/selection';
 import {useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
 import WardAPI from '@/shared/api/ward';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -59,6 +61,114 @@ type TSnapshotLimitContext = {
     intent: 'save' | 'confirm';
 };
 type TLastShiftBlankWarningIntent = 'aiFill' | 'confirm';
+type TAiFillDecisionContext = {kind: 'initial'; cellCount: number} | {kind: 'regenerate'; cellCount: number};
+
+type TSelectionFixedStats = {
+    fixableFilledCount: number;
+    fixedCount: number;
+};
+
+function getDocCellKey(doc: TDutyDoc, row: number, col: number): string | null {
+    if (col < 0) return null;
+
+    const workerId = doc.rows[row]?.workerId;
+    const date = doc.columns[col];
+
+    if (!workerId || !date) return null;
+
+    return `${workerId}|${date}`;
+}
+
+function getUnprotectedFilledCells(doc: TDutyDoc): TCellPos[] {
+    const cells: TCellPos[] = [];
+
+    for (let row = 0; row < doc.rows.length; row += 1) {
+        const dutyRow = doc.rows[row];
+
+        if (!dutyRow) continue;
+
+        for (let col = 0; col < doc.columns.length; col += 1) {
+            const key = getDocCellKey(doc, row, col);
+
+            if (key === null) continue;
+
+            if (doc.fixedCells[key] === true || doc.requestCells[key] === true) continue;
+
+            if (dutyRow.cells[col] == null) continue;
+
+            cells.push({row, col});
+        }
+    }
+
+    return cells;
+}
+
+function getSelectionFixedStats(doc: TDutyDoc, selectionCells: TCellPos[]): TSelectionFixedStats {
+    let fixableFilledCount = 0;
+    let fixedCount = 0;
+
+    for (const {row, col} of selectionCells) {
+        const key = getDocCellKey(doc, row, col);
+        const dutyRow = doc.rows[row];
+
+        if (key === null || !dutyRow) continue;
+
+        if (doc.requestCells[key] === true) continue;
+
+        if (doc.fixedCells[key] === true) {
+            fixedCount += 1;
+            continue;
+        }
+
+        if (dutyRow.cells[col] != null) {
+            fixableFilledCount += 1;
+        }
+    }
+
+    return {fixableFilledCount, fixedCount};
+}
+
+function getEditedFilledCellsSinceBaseline(currentDoc: TDutyDoc, baselineDoc: TDutyDoc | null): TCellPos[] {
+    if (!baselineDoc) return [];
+
+    const baselineValueByKey = new Map<string, string | null>();
+
+    for (const row of baselineDoc.rows) {
+        for (let col = 0; col < baselineDoc.columns.length; col += 1) {
+            const date = baselineDoc.columns[col];
+
+            if (!date) continue;
+
+            baselineValueByKey.set(`${row.workerId}|${date}`, row.cells[col] ?? null);
+        }
+    }
+
+    const cells: TCellPos[] = [];
+
+    for (let row = 0; row < currentDoc.rows.length; row += 1) {
+        const dutyRow = currentDoc.rows[row];
+
+        if (!dutyRow) continue;
+
+        for (let col = 0; col < currentDoc.columns.length; col += 1) {
+            const key = getDocCellKey(currentDoc, row, col);
+
+            if (key === null) continue;
+
+            if (currentDoc.fixedCells[key] === true || currentDoc.requestCells[key] === true) continue;
+
+            const currentValue = dutyRow.cells[col] ?? null;
+
+            if (currentValue === null) continue;
+
+            if (baselineValueByKey.get(key) === currentValue) continue;
+
+            cells.push({row, col});
+        }
+    }
+
+    return cells;
+}
 
 function getSnapshotTimeValue(snapshot: TSnapshotSummaryDto) {
     const updatedAt = new Date(snapshot.updatedAt).getTime();
@@ -142,8 +252,8 @@ export function AiAutofill() {
     );
     const commands = useShiftEditorCommands();
     const editorDoc = useShiftEditorStore((s) => s.doc);
+    const selection = useShiftEditorStore((s) => s.selection);
     const history = useShiftEditorStore((s) => s.history);
-    const draftRevision = useShiftEditorStore((s) => s.draftRevision);
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
@@ -165,6 +275,7 @@ export function AiAutofill() {
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
+    const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -198,7 +309,10 @@ export function AiAutofill() {
         hydratePreviousLastShifts: true,
         editorInputDisabled: isAiGenerating,
     });
-    const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses), [currentTeamNurses, dutyQuery.data]);
+    const orderedShift = useMemo(
+        () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
+        [currentTeamNurses, dutyQuery.data],
+    );
     const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -208,7 +322,9 @@ export function AiAutofill() {
     const currentAiContextRef = useRef({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const savedEditableDocRef = useRef<TDutyDoc | null>(null);
     const savedEditableContextKeyRef = useRef<string | null>(null);
+    const lastAiGeneratedDocRef = useRef<TDutyDoc | null>(null);
     const [savedEditableDocVersion, setSavedEditableDocVersion] = useState(0);
+    const [lastAiGeneratedDocVersion, setLastAiGeneratedDocVersion] = useState(0);
     const [hasAiGeneratedUnsavedChanges, setHasAiGeneratedUnsavedChanges] = useState(false);
     const setExitGuard = useAiAutofillExitGuardStore((s) => s.setExitGuard);
     const resetExitGuard = useAiAutofillExitGuardStore((s) => s.resetExitGuard);
@@ -220,6 +336,10 @@ export function AiAutofill() {
         savedEditableDocRef.current = doc;
         setHasAiGeneratedUnsavedChanges(false);
         setSavedEditableDocVersion((version) => version + 1);
+    }, []);
+    const markLastAiGeneratedDoc = useCallback((doc: TDutyDoc | null) => {
+        lastAiGeneratedDocRef.current = doc;
+        setLastAiGeneratedDocVersion((version) => version + 1);
     }, []);
     const clearAiEffectDismissTimer = useCallback(() => {
         if (aiEffectDismissTimerRef.current === null) return;
@@ -258,7 +378,8 @@ export function AiAutofill() {
         year,
         month,
         originalShift: orderedShift,
-        enabled: isCurrentShiftTeamReady && Boolean(orderedShift) && !isAiGenerating && !isWorking && !isSavingSnapshot && !isReorderingRows,
+        enabled:
+            isCurrentShiftTeamReady && Boolean(orderedShift) && !isAiGenerating && !isWorking && !isSavingSnapshot && !isReorderingRows,
         debounceMs: 1000,
     });
     const isScheduleValidationChecking = scheduleValidation.status === 'validating';
@@ -271,6 +392,8 @@ export function AiAutofill() {
         setSnapshotLimitContext(null);
         setLastShiftBlankWarningIntent(null);
         setLastShiftBlankWarningAcknowledgedKey(null);
+        setAiFillDecisionContext(null);
+        markLastAiGeneratedDoc(null);
         aiAbortControllerRef.current?.abort();
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
@@ -278,14 +401,15 @@ export function AiAutofill() {
         setAiStartedAt(null);
         hideAiEffect();
         resetAiStatus();
-    }, [wardId, currentShiftTeamId, year, month, hideAiEffect, resetAiStatus]);
+    }, [wardId, currentShiftTeamId, year, month, hideAiEffect, markLastAiGeneratedDoc, resetAiStatus]);
 
     useEffect(() => {
         savedEditableContextKeyRef.current = null;
         savedEditableDocRef.current = null;
+        markLastAiGeneratedDoc(null);
         setHasAiGeneratedUnsavedChanges(false);
         setSavedEditableDocVersion((version) => version + 1);
-    }, [currentContextKey]);
+    }, [currentContextKey, markLastAiGeneratedDoc]);
 
     useEffect(() => {
         const root = document.documentElement;
@@ -327,6 +451,13 @@ export function AiAutofill() {
         Boolean(orderedShift) &&
         !isScheduleValidationChecking &&
         canConfirmAiAutofill(aiStatus);
+    const selectedCells = useMemo(() => (selection ? getCellsInSelection(selection) : []), [selection]);
+    const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
+    const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
+    const editedFilledCellsSinceLastAi = useMemo(
+        () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
+        [editorDoc, lastAiGeneratedDocVersion],
+    );
     const hasUnsavedEditableChanges = useMemo(
         () => hasAiGeneratedUnsavedChanges || hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
         [editorDoc, hasAiGeneratedUnsavedChanges, savedEditableDocVersion],
@@ -455,7 +586,7 @@ export function AiAutofill() {
         const nextShift = {
             ...docToShift(docToPublish, orderedShift),
             workflowStatus: 'CONFIRMED' as const,
-            workflowStep: 6,
+            workflowStep: 5,
         };
         const confirmedRestCheckByShiftNurseId = calculateRestCheckByShiftNurse({
             shift: nextShift,
@@ -536,7 +667,9 @@ export function AiAutofill() {
 
             commands.init(nextDoc);
             markEditableDocSaved(nextDoc);
+            markLastAiGeneratedDoc(null);
             resetAiStatus();
+            setHasCompletedAiFill(false);
 
             const stateAfterInit = useShiftEditorStore.getState();
 
@@ -745,14 +878,15 @@ export function AiAutofill() {
         let shouldKeepAiEffectVisible = false;
 
         try {
+            const stateBeforeRequest = useShiftEditorStore.getState();
             const result = await requestAiSchedule({
                 wardId: requestContext.wardId,
                 shiftTeamId: requestContext.shiftTeamId,
                 year: requestContext.year,
                 month: requestContext.month,
-                doc: editorDoc,
+                doc: stateBeforeRequest.doc,
                 originalShift: readyContext.originalShift,
-                draftRevision,
+                draftRevision: stateBeforeRequest.draftRevision,
                 rulesHash: readyContext.rulesHash,
                 signal: abortController.signal,
             });
@@ -788,6 +922,7 @@ export function AiAutofill() {
             if (result.response.draftRevision !== useShiftEditorStore.getState().draftRevision) return;
 
             commands.applyChangedCells(result.response.changedCells, readyContext.originalShift, 'ai');
+            markLastAiGeneratedDoc(useShiftEditorStore.getState().doc);
             setHasAiGeneratedUnsavedChanges(result.response.changedCells.length > 0);
             commands.setScheduleValidationFromApi(result.validation);
 
@@ -805,6 +940,44 @@ export function AiAutofill() {
             }
         }
     };
+    const handleFixSelection = () => {
+        const changedCount = commands.setSelectionFixed(true);
+
+        if (changedCount > 0) {
+            toast.success(t('page.makeShift.aiRefill.fixSelectionSuccess', {count: changedCount}));
+        }
+    };
+    const handleUnfixSelection = () => {
+        const changedCount = commands.setSelectionFixed(false);
+
+        if (changedCount > 0) {
+            toast.success(t('page.makeShift.aiRefill.unfixSelectionSuccess', {count: changedCount}));
+        }
+    };
+    const runAiFillWithDecision = (readyContext = getAiFillReadyContext()) => {
+        if (!readyContext) return;
+
+        if (!hasCompletedAiFill) {
+            if (unprotectedFilledCells.length > 0) {
+                setAiFillDecisionContext({kind: 'initial', cellCount: unprotectedFilledCells.length});
+
+                return;
+            }
+
+            void runAiFill(readyContext);
+
+            return;
+        }
+
+        if (editedFilledCellsSinceLastAi.length > 0) {
+            setAiFillDecisionContext({kind: 'regenerate', cellCount: editedFilledCellsSinceLastAi.length});
+
+            return;
+        }
+
+        commands.resetAutofilled('user');
+        void runAiFill(readyContext);
+    };
     const handleAiFill = () => {
         const readyContext = getAiFillReadyContext();
 
@@ -812,7 +985,32 @@ export function AiAutofill() {
 
         if (requestLastShiftBlankWarning('aiFill')) return;
 
-        void runAiFill(readyContext);
+        runAiFillWithDecision(readyContext);
+    };
+    const handleConfirmAiFillDecision = () => {
+        const decisionContext = aiFillDecisionContext;
+
+        setAiFillDecisionContext(null);
+
+        if (!decisionContext) return;
+
+        if (decisionContext.kind === 'initial') {
+            commands.setCellsFixed(getUnprotectedFilledCells(useShiftEditorStore.getState().doc), true);
+            void runAiFill();
+
+            return;
+        }
+
+        commands.setCellsFixed(getEditedFilledCellsSinceBaseline(useShiftEditorStore.getState().doc, lastAiGeneratedDocRef.current), true);
+        commands.resetAutofilled('user');
+        void runAiFill();
+    };
+    const handleCancelAiFillDecision = () => {
+        if (!aiFillDecisionContext) return;
+
+        setAiFillDecisionContext(null);
+        commands.resetAutofilled('user');
+        void runAiFill();
     };
     const handleConfirmLastShiftBlankWarning = () => {
         const warningIntent = lastShiftBlankWarningIntent;
@@ -824,7 +1022,7 @@ export function AiAutofill() {
         }
 
         if (warningIntent === 'aiFill') {
-            void runAiFill();
+            runAiFillWithDecision();
 
             return;
         }
@@ -872,6 +1070,23 @@ export function AiAutofill() {
             </span>
         </>
     );
+    const aiFillDecisionTitle =
+        aiFillDecisionContext?.kind === 'initial'
+            ? t('page.makeShift.aiRefill.prefillDecision.title')
+            : t('page.makeShift.aiRefill.regenerateDecision.title');
+    const aiFillDecisionDescription = aiFillDecisionContext
+        ? aiFillDecisionContext.kind === 'initial'
+            ? t('page.makeShift.aiRefill.prefillDecision.description', {count: aiFillDecisionContext.cellCount})
+            : t('page.makeShift.aiRefill.regenerateDecision.description', {count: aiFillDecisionContext.cellCount})
+        : '';
+    const aiFillDecisionConfirmLabel =
+        aiFillDecisionContext?.kind === 'initial'
+            ? t('page.makeShift.aiRefill.prefillDecision.confirm')
+            : t('page.makeShift.aiRefill.regenerateDecision.confirm');
+    const aiFillDecisionCancelLabel =
+        aiFillDecisionContext?.kind === 'initial'
+            ? t('page.makeShift.aiRefill.prefillDecision.cancel')
+            : t('page.makeShift.aiRefill.regenerateDecision.cancel');
 
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex w-full min-w-0">
@@ -887,6 +1102,10 @@ export function AiAutofill() {
                     onFixedShiftsAttentionEnd={clearCellAttention}
                     onRequestShiftsAttentionStart={() => showCellAttention('request')}
                     onRequestShiftsAttentionEnd={clearCellAttention}
+                    canFixSelection={selectionFixedStats.fixableFilledCount > 0}
+                    canUnfixSelection={selectionFixedStats.fixedCount > 0}
+                    onFixSelection={handleFixSelection}
+                    onUnfixSelection={handleUnfixSelection}
                     showFaults={showFaults}
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
@@ -930,6 +1149,7 @@ export function AiAutofill() {
                         isShimmering={isAiEffectVisible}
                         showCellStatusPins
                         cellAttention={cellAttention}
+                        tutorialCellId="make_fixed_shift_sample_cell"
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         canReorderRows
@@ -959,6 +1179,16 @@ export function AiAutofill() {
                 onRenameSnapshot={handleRenameSnapshot}
                 onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
+            />
+            <ConfirmActionDialog
+                open={aiFillDecisionContext !== null}
+                title={aiFillDecisionTitle}
+                description={aiFillDecisionDescription}
+                confirmLabel={aiFillDecisionConfirmLabel}
+                cancelLabel={aiFillDecisionCancelLabel}
+                onClose={() => setAiFillDecisionContext(null)}
+                onCancel={handleCancelAiFillDecision}
+                onConfirm={handleConfirmAiFillDecision}
             />
             <ConfirmActionDialog
                 open={lastShiftBlankWarningIntent !== null}
