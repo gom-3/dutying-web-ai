@@ -97,6 +97,7 @@ describe('WardChatWidget', () => {
                     senderWardAdminAccountId: null,
                     senderType: 'ACCOUNT',
                     senderName: 'Other Nurse',
+                    senderProfileImgUrl: 'https://cdn.example.com/profile/incoming-nurse.png',
                     text: 'Incoming message',
                     sentAt: '2026-05-25T04:56:01.462Z',
                     isDeleted: false,
@@ -162,6 +163,7 @@ describe('WardChatWidget', () => {
                 senderWardAdminAccountId: null,
                 senderType: 'ACCOUNT',
                 senderName: 'Other Nurse',
+                senderProfileImgUrl: 'https://cdn.example.com/profile/other-nurse.png',
                 text: 'New realtime message',
                 sentAt: '2026-05-25T05:00:01.462Z',
                 isDeleted: false,
@@ -176,6 +178,9 @@ describe('WardChatWidget', () => {
         expect(await screen.findByText('3')).toBeInTheDocument();
         expect(await screen.findByText('New realtime message')).toBeInTheDocument();
         expect(screen.getByText('Other Nurse')).toBeInTheDocument();
+        await waitFor(() =>
+            expect(document.querySelector('img[src="https://cdn.example.com/profile/other-nurse.png"]')).toBeInTheDocument(),
+        );
         expect(fetchMock).toHaveBeenCalledWith(
             'https://dev.api.dutying.net/events/stream',
             expect.objectContaining({
@@ -222,8 +227,10 @@ describe('WardChatWidget', () => {
         expect(screen.getByText('Charge Nurse')).toBeInTheDocument();
     });
 
-    it('ignores the previous preview alert storage key so stale off state does not block previews', async () => {
+    it('shows previews when unread count increases even if stale alert storage is off', async () => {
         window.localStorage.setItem('dutying:ward-chat-alert-enabled', 'off');
+        window.localStorage.setItem('dutying:ward-chat-preview-alert-enabled:v2', 'off');
+        window.localStorage.setItem('dutying:ward-chat-preview-alert-enabled:v3', 'off');
         wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
         wardApiMock.getWardChatMessages.mockResolvedValueOnce({
             messages: [
@@ -258,8 +265,10 @@ describe('WardChatWidget', () => {
         expect(screen.getByText('Night Nurse')).toBeInTheDocument();
     });
 
-    it('turns off floating message previews from the alert toggle', async () => {
-        const user = userEvent.setup();
+    it('shows realtime message previews even if stale alert storage was off', async () => {
+        window.localStorage.setItem('dutying:ward-chat-alert-enabled', 'off');
+        window.localStorage.setItem('dutying:ward-chat-preview-alert-enabled:v2', 'off');
+        window.localStorage.setItem('dutying:ward-chat-preview-alert-enabled:v3', 'off');
 
         let resolveFetch: ((response: Response) => void) | undefined;
 
@@ -277,12 +286,7 @@ describe('WardChatWidget', () => {
 
         renderWithQueryClient(<WardChatWidget />);
 
-        await user.click(await findOpenWardChatButton());
-        await user.click(await screen.findByRole('button', {name: '병동톡 새 메시지 알림 끄기'}));
-
-        expect(screen.getByRole('button', {name: '병동톡 새 메시지 알림 켜기'})).toHaveAttribute('aria-pressed', 'false');
-
-        await user.click(screen.getByRole('button', {name: '병동톡 닫기'}));
+        await findOpenWardChatButton();
 
         await act(async () => {
             resolveFetch?.(
@@ -303,7 +307,7 @@ describe('WardChatWidget', () => {
         });
 
         expect(await screen.findByText('2')).toBeInTheDocument();
-        expect(screen.queryByText('Muted realtime message')).not.toBeInTheDocument();
+        expect(await screen.findByText('Muted realtime message')).toBeInTheDocument();
     });
 
     it('shows the connected ward member count in the header', async () => {
@@ -317,6 +321,21 @@ describe('WardChatWidget', () => {
         expect(wardApiMock.getShiftTeams).toHaveBeenCalledWith(1);
     });
 
+    it('closes when clicking outside the open ward chat panel', async () => {
+        const user = userEvent.setup();
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+
+        expect(await screen.findByRole('button', {name: '병동톡 닫기'})).toBeInTheDocument();
+
+        await user.click(document.body);
+
+        await waitFor(() => expect(screen.queryByRole('button', {name: '병동톡 닫기'})).not.toBeInTheDocument());
+        expect(await findOpenWardChatButton()).toBeInTheDocument();
+    });
+
     it('opens messages and sends a chat message', async () => {
         const user = userEvent.setup();
 
@@ -325,6 +344,7 @@ describe('WardChatWidget', () => {
         await user.click(await findOpenWardChatButton());
 
         expect(await screen.findByText('Incoming message')).toBeInTheDocument();
+        expect(document.querySelector('img[src="https://cdn.example.com/profile/incoming-nurse.png"]')).toBeInTheDocument();
         await waitFor(() => expect(wardApiMock.readWardChat).toHaveBeenCalledWith(1, {lastReadMessageId: 1}));
 
         const textarea = document.querySelector('textarea');

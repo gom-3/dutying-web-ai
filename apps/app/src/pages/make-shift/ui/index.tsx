@@ -1,22 +1,32 @@
 import {cn} from '@dutying/utils/style';
 import {useIsMutating} from '@tanstack/react-query';
 import {ArrowRight, CalendarPlus} from 'lucide-react';
-import {useCallback, useEffect} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {Trans} from 'react-i18next';
 import {useNavigate} from 'react-router';
 import useEditNurseStore from '@/features/edit-shift-team/model/store';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {isMakeShiftMonthAllowed} from '@/shared/lib/shift-calendar-month-policy';
+import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {DutyManagementStatusCard, ManagementActionButton} from '@/widgets/duty-management/ui';
-import {getAiAutofillExitGuardReason, useAiAutofillExitGuardStore} from '../model/ai-autofill-exit-guard';
+import {
+    getAiAutofillExitGuardReason,
+    type TAiAutofillExitGuardReason,
+    useAiAutofillExitGuardStore,
+} from '../model/ai-autofill-exit-guard';
 import {canGoNext, canGoPrev, useMakeShiftStore} from '../model/make-shift-store';
 import {useMakeShiftUseCase} from '../model/make-shift-use-case';
 import {shiftConstraintRuleQueryKeys} from '../model/shift-constraint-rules';
 import {MakeShiftHeader} from './make-shift-header';
 import {MakeShiftStepContent} from './make-shift-step-content';
 import {MakeShiftStepper} from './make-shift-stepper';
+
+type TPendingAiAutofillExit = {
+    action: () => void;
+    reason: TAiAutofillExitGuardReason;
+};
 
 export const MakeShiftPageView = () => {
     const {t} = useTypedTranslation();
@@ -47,6 +57,7 @@ export const MakeShiftPageView = () => {
     const isSavingWorkers = currentStep === 1 && nurseSaveStatus === 'saving';
     const isCurrentStepNavigationBusy = Boolean(stepNavigationBusy[currentStep]) || isSavingConstraintRules || isSavingWorkers;
     const showNoTeamsState = shiftTeamsStatus === 'success' && shiftTeams.length === 0;
+    const [pendingAiAutofillExit, setPendingAiAutofillExit] = useState<TPendingAiAutofillExit | null>(null);
     const currentShiftTeamName =
         shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
     const visibleMaxReachedStep = currentStep === 1 && !canNext ? 1 : maxReachedStep;
@@ -58,28 +69,29 @@ export const MakeShiftPageView = () => {
         hasUnsavedChanges: hasAiAutofillUnsavedChanges,
         isAiGenerating: isAiAutofillGenerating,
     });
-    const aiAutofillExitGuardMessage =
-        aiAutofillExitGuardReason === 'aiGenerating'
-            ? t('page.makeShift.aiRefill.exitGuard.aiGeneratingMessage')
-            : aiAutofillExitGuardReason === 'unsavedChanges'
-              ? t('page.makeShift.aiRefill.exitGuard.unsavedMessage')
-              : null;
-    const confirmAiAutofillExit = useCallback(() => {
-        if (!aiAutofillExitGuardMessage) return true;
-
-        return window.confirm(aiAutofillExitGuardMessage);
-    }, [aiAutofillExitGuardMessage]);
     const runWithAiAutofillExitGuard = useCallback(
         (action: () => void) => {
-            if (!confirmAiAutofillExit()) return;
+            if (!aiAutofillExitGuardReason) {
+                action();
+                return;
+            }
 
-            action();
+            setPendingAiAutofillExit({action, reason: aiAutofillExitGuardReason});
         },
-        [confirmAiAutofillExit],
+        [aiAutofillExitGuardReason],
     );
+    const closeAiAutofillExitDialog = useCallback(() => {
+        setPendingAiAutofillExit(null);
+    }, []);
+    const confirmAiAutofillExitDialog = useCallback(() => {
+        const pendingAction = pendingAiAutofillExit?.action;
+
+        setPendingAiAutofillExit(null);
+        pendingAction?.();
+    }, [pendingAiAutofillExit]);
 
     useEffect(() => {
-        if (!aiAutofillExitGuardMessage) return;
+        if (!aiAutofillExitGuardReason) return;
 
         const handleNavigationClick = (event: MouseEvent) => {
             if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -89,23 +101,33 @@ export const MakeShiftPageView = () => {
 
             if (!navigationPath || navigationPath === window.location.pathname) return;
 
-            if (window.confirm(aiAutofillExitGuardMessage)) return;
-
             event.preventDefault();
             event.stopPropagation();
+            runWithAiAutofillExitGuard(() => navigate(navigationPath));
         };
 
         document.addEventListener('click', handleNavigationClick, true);
 
         return () => document.removeEventListener('click', handleNavigationClick, true);
-    }, [aiAutofillExitGuardMessage]);
+    }, [aiAutofillExitGuardReason, navigate, runWithAiAutofillExitGuard]);
+
+    const aiAutofillExitDialogReason = pendingAiAutofillExit?.reason ?? aiAutofillExitGuardReason;
+    const aiAutofillExitDialogOpen = pendingAiAutofillExit !== null;
+    const aiAutofillExitDialogTitle =
+        aiAutofillExitDialogReason === 'aiGenerating'
+            ? t('page.makeShift.aiRefill.exitGuard.aiGeneratingTitle')
+            : t('page.makeShift.aiRefill.exitGuard.unsavedTitle');
+    const aiAutofillExitDialogDescription =
+        aiAutofillExitDialogReason === 'aiGenerating'
+            ? t('page.makeShift.aiRefill.exitGuard.aiGeneratingDescription')
+            : t('page.makeShift.aiRefill.exitGuard.unsavedDescription');
 
     return (
         <div
             className={cn('min-h-full w-full', isStepping ? 'overflow-x-auto' : 'overflow-x-hidden')}
         >
             <div className="mx-auto flex min-h-full w-full max-w-[1680px] min-w-0 flex-col pt-4 pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+0.75rem)] pb-3 pl-3 transition-[padding-right] duration-300 ease-out lg:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+1rem)] lg:pl-4 min-[1600px]:pr-[calc(var(--make-ai-snapshot-sidebar-offset,0px)+2.5rem)] min-[1600px]:pl-10">
-                <MakeShiftHeader onBeforeContextChange={confirmAiAutofillExit} />
+                <MakeShiftHeader onBeforeContextChange={runWithAiAutofillExitGuard} />
 
                 <div
                     className={cn(
@@ -230,6 +252,16 @@ export const MakeShiftPageView = () => {
                     )}
                 </div>
             </div>
+            <ConfirmActionDialog
+                open={aiAutofillExitDialogOpen}
+                title={aiAutofillExitDialogTitle}
+                description={aiAutofillExitDialogDescription}
+                confirmLabel={t('page.makeShift.aiRefill.exitGuard.leaveConfirm')}
+                cancelLabel={t('page.makeShift.aiRefill.exitGuard.stayCancel')}
+                tone="danger"
+                onClose={closeAiAutofillExitDialog}
+                onConfirm={confirmAiAutofillExitDialog}
+            />
         </div>
     );
 };

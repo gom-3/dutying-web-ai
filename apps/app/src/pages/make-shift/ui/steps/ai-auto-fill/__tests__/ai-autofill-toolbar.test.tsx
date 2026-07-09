@@ -25,6 +25,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
                 'page.makeShift.aiRefill.requestDisplayHighlight': 'Highlight requested shifts',
                 'page.makeShift.aiRefill.showViolations': 'Show violations',
                 'page.makeShift.aiRefill.snapshotSidebar.title': 'History',
+                'page.makeShift.aiRefill.statusHighlightTools': 'Request and fixed shift indicators',
                 'page.makeShift.aiRefill.toolbarSubTitle': 'Use AI Autofill',
                 'page.makeShift.aiRefill.toolbarTitle': 'Fill and confirm',
                 'page.makeShift.aiRefill.validationStatus.checking': 'Checking',
@@ -90,13 +91,12 @@ describe('AiAutofillToolbar', () => {
     it('renders compact support tools', () => {
         renderToolbar();
 
-        const fixedButton = screen.getByRole('button', {name: 'Highlight fixed shifts'});
-        const requestButton = screen.getByRole('button', {name: 'Highlight requested shifts'});
+        const statusDisplayButton = screen.getByRole('button', {name: 'Request and fixed shift indicators'});
 
-        expect(fixedButton).toHaveTextContent('');
-        expect(requestButton).toHaveTextContent('');
-        expect(screen.getByText('Fixed shifts')).toBeInTheDocument();
-        expect(screen.getByText('Requested shifts')).toBeInTheDocument();
+        expect(statusDisplayButton).toHaveTextContent('');
+        expect(statusDisplayButton).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByRole('button', {name: 'Highlight fixed shifts'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: 'Highlight requested shifts'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Fix selected shifts'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Unfix selected shifts'})).toBeEnabled();
         expect(
@@ -108,12 +108,31 @@ describe('AiAutofillToolbar', () => {
         expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('');
     });
 
+    it('shows fixed and requested indicators inside the status display menu', async () => {
+        const user = userEvent.setup();
+
+        renderToolbar();
+
+        const statusDisplayButton = screen.getByRole('button', {name: 'Request and fixed shift indicators'});
+
+        await user.click(statusDisplayButton);
+
+        expect(statusDisplayButton).toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByRole('menu', {name: 'Request and fixed shift indicators'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Highlight fixed shifts'})).toHaveTextContent('');
+        expect(screen.getByRole('button', {name: 'Highlight requested shifts'})).toHaveTextContent('');
+        expect(screen.getByText('Fixed shifts')).toBeInTheDocument();
+        expect(screen.getByText('Requested shifts')).toBeInTheDocument();
+    });
+
     it('keeps fixed shift positions highlighted while hovered', async () => {
         const user = userEvent.setup();
         const onFixedShiftsAttentionStart = vi.fn();
         const onFixedShiftsAttentionEnd = vi.fn();
 
         renderToolbar({onFixedShiftsAttentionStart, onFixedShiftsAttentionEnd});
+
+        await user.click(screen.getByRole('button', {name: 'Request and fixed shift indicators'}));
 
         const fixedButton = screen.getByRole('button', {name: 'Highlight fixed shifts'});
 
@@ -135,6 +154,8 @@ describe('AiAutofillToolbar', () => {
         const onRequestShiftsAttentionEnd = vi.fn();
 
         renderToolbar({onRequestShiftsAttentionStart, onRequestShiftsAttentionEnd});
+
+        await user.click(screen.getByRole('button', {name: 'Request and fixed shift indicators'}));
 
         const requestButton = screen.getByRole('button', {name: 'Highlight requested shifts'});
 

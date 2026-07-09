@@ -71,7 +71,7 @@ const RequestShiftPageContent = () => {
                           : null;
 
     return (
-        <div className="mx-auto flex min-h-screen w-full max-w-[1640px] min-w-[1124px] flex-col px-10 pt-4 pb-3">
+        <div className="mx-auto flex min-h-screen w-full max-w-[1680px] min-w-0 flex-col px-3 pt-4 pb-3 min-[1600px]:px-10 lg:px-4">
             <div className="flex min-h-0 flex-1 flex-col">
                 {shouldShowToolbar ? <Toolbar /> : null}
 

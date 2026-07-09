@@ -3,6 +3,7 @@ import {type DraggableProvided, type DropResult, DragDropContext, Draggable, Dro
 import {Pin} from 'lucide-react';
 import {
     type CSSProperties,
+    type MouseEvent as ReactMouseEvent,
     type PointerEvent as ReactPointerEvent,
     type ReactNode,
     useCallback,
@@ -12,6 +13,7 @@ import {
     useState,
 } from 'react';
 import {createPortal} from 'react-dom';
+import toast from 'react-hot-toast';
 import {type TShift, type TWardShiftType} from '@/entities';
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {
@@ -76,6 +78,10 @@ type TMakeShiftCalendarProps = {
      * true면 날짜 셀의 근무유형 칩 왼쪽 상단에 고정/신청 상태 핀을 표시한다.
      */
     showCellStatusPins?: boolean;
+    /**
+     * true면 날짜 셀에서 우클릭으로 해당 셀을 고정 근무로 표시한다.
+     */
+    fixCellOnContextMenu?: boolean;
     cellAttention?: TCellAttention | null;
     focusedCell?: TCellPos | null;
     skillColumn?: TSkillColumnConfig;
@@ -84,6 +90,8 @@ type TMakeShiftCalendarProps = {
     canReorderRows?: boolean;
     rowReorderDisabled?: boolean;
     onRowDragEnd?: (result: DropResult) => void;
+    rowNameClassName?: string;
+    rowGapClassName?: string;
 };
 type TCellAttention = {target: 'fixed' | 'request'; nonce: number};
 
@@ -343,6 +351,13 @@ type TShiftTypeDropdownState = {
     colIndex: number;
     currentValue: TCellValue;
     position: TShiftTypeDropdownPosition;
+};
+type TShiftTypeDropdownActionState = {
+    canEditValue: boolean;
+    isFixed: boolean;
+    isRequested: boolean;
+    showFixedAction: boolean;
+    showClearAction: boolean;
 };
 
 type TViolationReasonPopoverProps = {
@@ -934,6 +949,49 @@ function isSameShiftTypeDropdownPosition(a: TShiftTypeDropdownPosition, b: TShif
     return a.left === b.left && a.top === b.top && a.bottom === b.bottom && a.width === b.width && a.placement === b.placement;
 }
 
+function getShiftTypeDropdownActionState(doc: TDutyDoc, rowIndex: number, colIndex: number, currentValue: TCellValue): TShiftTypeDropdownActionState {
+    const currentCellKey = colIndex >= 0 ? getDutyCellLockKey(doc, rowIndex, colIndex) : null;
+    const isFixed = currentCellKey !== null && doc.fixedCells[currentCellKey] === true;
+    const isRequested = currentCellKey !== null && doc.requestCells[currentCellKey] === true;
+    const canEditValue = isEditableDutyCell(rowIndex, colIndex, false);
+
+    return {
+        canEditValue,
+        isFixed,
+        isRequested,
+        showFixedAction: currentCellKey !== null && !isRequested && (currentValue !== null || isFixed),
+        showClearAction: currentValue !== null && canEditValue,
+    };
+}
+
+function getShiftTypeDropdownOptionCount(shiftTypeCount: number, actionState: TShiftTypeDropdownActionState): number {
+    const clearActionCount = actionState.showClearAction ? 1 : 0;
+    const fixActionCount = actionState.showFixedAction ? 1 : 0;
+    const valueOptionCount = actionState.canEditValue ? shiftTypeCount : 0;
+
+    return valueOptionCount + clearActionCount + fixActionCount;
+}
+
+function canOpenShiftTypeDropdown(rowIndex: number, colIndex: number, readonly: boolean): boolean {
+    if (readonly) return false;
+
+    const {doc, editorMode} = useShiftEditorStore.getState();
+
+    if (!isDutyCellPositionInBounds(doc, rowIndex, colIndex)) return false;
+
+    if (colIndex < 0) return true;
+
+    const key = getDutyCellLockKey(doc, rowIndex, colIndex);
+
+    if (key === null) return false;
+
+    if (doc.requestCells[key] === true) return false;
+
+    if (doc.fixedCells[key] === true) return true;
+
+    return editorMode === 'fixed' || isEditableDutyCell(rowIndex, colIndex, readonly);
+}
+
 function isEditableDutyCell(rowIndex: number, colIndex: number, readonly: boolean): boolean {
     if (readonly) return false;
 
@@ -981,14 +1039,14 @@ function ShiftTypeDropdown({
     dropdown,
     shiftTypes,
     onClose,
-    onFix,
+    onFixedChange,
     onSelect,
     onReposition,
 }: {
     dropdown: TShiftTypeDropdownState | null;
     shiftTypes: TWardShiftType[];
     onClose: () => void;
-    onFix: (rowIndex: number, colIndex: number) => void;
+    onFixedChange: (rowIndex: number, colIndex: number, fixed: boolean) => void;
     onSelect: (rowIndex: number, colIndex: number, value: TCellValue) => void;
     onReposition: () => void;
 }) {
@@ -1028,13 +1086,8 @@ function ShiftTypeDropdown({
     if (!dropdown) return null;
 
     const selectableShiftTypes = shiftTypes.filter(isActiveShiftType);
-    const currentCellKey = getDutyCellLockKey(doc, dropdown.rowIndex, dropdown.colIndex);
-    const canFixCurrentCell =
-        dropdown.colIndex >= 0 &&
-        dropdown.currentValue !== null &&
-        currentCellKey !== null &&
-        doc.requestCells[currentCellKey] !== true &&
-        doc.fixedCells[currentCellKey] !== true;
+    const actionState = getShiftTypeDropdownActionState(doc, dropdown.rowIndex, dropdown.colIndex, dropdown.currentValue);
+    const fixedActionLabel = actionState.isFixed ? t('page.makeShift.calendar.unfixCell') : t('page.makeShift.calendar.fixCell');
     const menuStyle: CSSProperties = {
         left: dropdown.position.left,
         width: dropdown.position.width,
@@ -1054,40 +1107,41 @@ function ShiftTypeDropdown({
                 dropdown.position.placement === 'top' ? 'slide-in-from-bottom-1' : 'slide-in-from-top-1',
             )}
         >
-            <button
-                type="button"
-                role="option"
-                aria-selected={false}
-                disabled={!canFixCurrentCell}
-                className={cn(
-                    'flex min-h-10 w-full items-center gap-2 border-b border-gray-6/70 px-2.5 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
-                    canFixCurrentCell ? 'cursor-pointer text-sub-1 hover:bg-gray-7' : 'cursor-not-allowed text-gray-4',
-                )}
-                onClick={() => {
-                    if (!canFixCurrentCell) return;
-
-                    onFix(dropdown.rowIndex, dropdown.colIndex);
-                }}
-            >
-                <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-[6px] bg-main-light text-main-1">
-                    <Pin className="size-3.5" aria-hidden />
-                </span>
-                <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{t('page.makeShift.calendar.fixCell')}</span>
-            </button>
-            <button
-                type="button"
-                role="option"
-                aria-selected={clearSelected}
-                className={cn(
-                    'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                    clearSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
-                )}
-                onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, null)}
-            >
-                <ShiftBadge shiftType={null} className="size-6 shrink-0 text-[12px]" />
-                <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{t('page.makeShift.calendar.clearCell')}</span>
-            </button>
-            {selectableShiftTypes.map((shiftType) => {
+            {actionState.showFixedAction && (
+                <button
+                    type="button"
+                    role="option"
+                    aria-selected={false}
+                    className={cn(
+                        'flex min-h-10 w-full items-center gap-2 border-b border-gray-6/70 px-2.5 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
+                        'cursor-pointer text-sub-1 hover:bg-gray-7',
+                    )}
+                    onClick={() => {
+                        onFixedChange(dropdown.rowIndex, dropdown.colIndex, !actionState.isFixed);
+                    }}
+                >
+                    <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-[6px] bg-main-light text-main-1">
+                        <Pin className="size-3.5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{fixedActionLabel}</span>
+                </button>
+            )}
+            {actionState.showClearAction && (
+                <button
+                    type="button"
+                    role="option"
+                    aria-selected={clearSelected}
+                    className={cn(
+                        'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                        clearSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
+                    )}
+                    onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, null)}
+                >
+                    <ShiftBadge shiftType={null} className="size-6 shrink-0 text-[12px]" />
+                    <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{t('page.makeShift.calendar.clearCell')}</span>
+                </button>
+            )}
+            {actionState.canEditValue && selectableShiftTypes.map((shiftType) => {
                 const isSelected = dropdown.currentValue === shiftType.shortName;
 
                 return (
@@ -1128,6 +1182,7 @@ export function MakeShiftCalendar({
     editableLastShifts = false,
     isShimmering = false,
     showCellStatusPins = false,
+    fixCellOnContextMenu = false,
     cellAttention = null,
     focusedCell,
     skillColumn,
@@ -1136,6 +1191,8 @@ export function MakeShiftCalendar({
     canReorderRows = false,
     rowReorderDisabled = false,
     onRowDragEnd,
+    rowNameClassName,
+    rowGapClassName,
 }: TMakeShiftCalendarProps) {
     const {t} = useTypedTranslation();
     const commands = useShiftEditorCommands();
@@ -1216,15 +1273,20 @@ export function MakeShiftCalendar({
         setShiftTypeDropdown((prev) => {
             if (!prev) return prev;
 
-            const nextPosition = getShiftTypeDropdownPosition(prev.target, selectableShiftTypes.length + 2);
+            const doc = useShiftEditorStore.getState().doc;
+            const actionState = getShiftTypeDropdownActionState(doc, prev.rowIndex, prev.colIndex, prev.currentValue);
+            const optionCount = getShiftTypeDropdownOptionCount(selectableShiftTypes.length, actionState);
+            const nextPosition = getShiftTypeDropdownPosition(prev.target, optionCount);
 
             return isSameShiftTypeDropdownPosition(prev.position, nextPosition) ? prev : {...prev, position: nextPosition};
         });
     }, [selectableShiftTypes.length]);
     const openShiftTypeDropdown = useCallback(
         (target: HTMLElement, rowIndex: number, colIndex: number, currentValue: TCellValue) => {
-            if (selectableShiftTypes.length === 0 || !isEditableDutyCell(rowIndex, colIndex, readonly)) return;
+            if (selectableShiftTypes.length === 0 || !canOpenShiftTypeDropdown(rowIndex, colIndex, readonly)) return;
 
+            const doc = useShiftEditorStore.getState().doc;
+            const actionState = getShiftTypeDropdownActionState(doc, rowIndex, colIndex, currentValue);
             closeViolationPopover();
             commands.select({row: rowIndex, col: colIndex});
             onCellClick?.(rowIndex, colIndex);
@@ -1233,25 +1295,33 @@ export function MakeShiftCalendar({
                 rowIndex,
                 colIndex,
                 currentValue,
-                position: getShiftTypeDropdownPosition(target, selectableShiftTypes.length + 2),
+                position: getShiftTypeDropdownPosition(
+                    target,
+                    getShiftTypeDropdownOptionCount(selectableShiftTypes.length, actionState),
+                ),
             });
         },
         [closeViolationPopover, commands, onCellClick, readonly, selectableShiftTypes.length],
     );
-    const handleShiftTypeDropdownFix = useCallback(
-        (rowIndex: number, colIndex: number) => {
-            if (!isEditableDutyCell(rowIndex, colIndex, readonly)) {
+    const handleShiftTypeDropdownFixedChange = useCallback(
+        (rowIndex: number, colIndex: number, fixed: boolean) => {
+            if (readonly || colIndex < 0) {
                 closeShiftTypeDropdown();
 
                 return;
             }
 
             commands.select({row: rowIndex, col: colIndex});
-            commands.setCellsFixed([{row: rowIndex, col: colIndex}], true);
+            const changedCount = commands.setCellsFixed([{row: rowIndex, col: colIndex}], fixed);
+
+            if (changedCount > 0) {
+                toast.success(t(fixed ? 'page.makeShift.calendar.fixCellSuccess' : 'page.makeShift.calendar.unfixCellSuccess'));
+            }
+
             closeShiftTypeDropdown();
             onCellClick?.(rowIndex, colIndex);
         },
-        [closeShiftTypeDropdown, commands, onCellClick, readonly],
+        [closeShiftTypeDropdown, commands, onCellClick, readonly, t],
     );
     const handleShiftTypeDropdownSelect = useCallback(
         (rowIndex: number, colIndex: number, value: TCellValue) => {
@@ -1376,6 +1446,44 @@ export function MakeShiftCalendar({
 
         commands.selectRange(dragSelection.from, {row: rowIndex, col: colIndex});
     };
+    const handleCellContextMenu = useCallback(
+        (event: ReactMouseEvent<HTMLElement>, rowIndex: number, colIndex: number) => {
+            if (!fixCellOnContextMenu) return;
+
+            event.preventDefault();
+
+            if (readonly || colIndex < 0) return;
+
+            cancelScheduledViolationPopover();
+            closeViolationPopover();
+            closeShiftTypeDropdown();
+            commands.select({row: rowIndex, col: colIndex});
+
+            const currentDoc = useShiftEditorStore.getState().doc;
+            const cellKey = getDutyCellLockKey(currentDoc, rowIndex, colIndex);
+
+            if (cellKey !== null) {
+                const nextFixed = currentDoc.fixedCells[cellKey] !== true;
+                const changedCount = commands.setCellsFixed([{row: rowIndex, col: colIndex}], nextFixed);
+
+                if (changedCount > 0) {
+                    toast.success(t(nextFixed ? 'page.makeShift.calendar.fixCellSuccess' : 'page.makeShift.calendar.unfixCellSuccess'));
+                }
+            }
+
+            onCellClick?.(rowIndex, colIndex);
+        },
+        [
+            cancelScheduledViolationPopover,
+            closeShiftTypeDropdown,
+            closeViolationPopover,
+            commands,
+            fixCellOnContextMenu,
+            onCellClick,
+            readonly,
+            t,
+        ],
+    );
     const shortNameToType = useMemo(() => {
         const map = new Map<string, TWardShiftType>();
 
@@ -1689,7 +1797,10 @@ export function MakeShiftCalendar({
                                     {(droppableProvided) => (
                                         <div
                                             ref={droppableProvided.innerRef}
-                                            className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-[16px] bg-white"
+                                            className={cn(
+                                                'make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-[16px] bg-white',
+                                                rowGapClassName,
+                                            )}
                                             {...droppableProvided.droppableProps}
                                         >
                                             {isShimmering && (
@@ -1776,9 +1887,11 @@ export function MakeShiftCalendar({
                                                                     canReorderRows={canReorderRows}
                                                                     rowReorderDisabled={rowReorderDisabled}
                                                                     dragHandleProps={draggableProvided.dragHandleProps}
+                                                                    rowNameClassName={rowNameClassName}
                                                                     onCellClick={handleCellClick}
                                                                     onCellPointerDown={handleCellPointerDown}
                                                                     onCellPointerEnter={handleCellPointerEnter}
+                                                                    onCellContextMenu={handleCellContextMenu}
                                                                     onCellDoubleClick={openShiftTypeDropdown}
                                                                     onViolationClick={showViolationPopover}
                                                                     onViolationHoverStart={scheduleViolationPopover}
@@ -1843,7 +1956,7 @@ export function MakeShiftCalendar({
                 dropdown={shiftTypeDropdown}
                 shiftTypes={selectableShiftTypes}
                 onClose={closeShiftTypeDropdown}
-                onFix={handleShiftTypeDropdownFix}
+                onFixedChange={handleShiftTypeDropdownFixedChange}
                 onSelect={handleShiftTypeDropdownSelect}
                 onReposition={repositionShiftTypeDropdown}
             />
@@ -1908,9 +2021,11 @@ type TCalendarRowLeftProps = {
     canReorderRows: boolean;
     rowReorderDisabled: boolean;
     dragHandleProps?: DraggableProvided['dragHandleProps'];
+    rowNameClassName?: string;
     onCellClick?: (rowIndex: number, colIndex: number) => void;
     onCellPointerDown: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
     onCellPointerEnter: (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
+    onCellContextMenu: (event: ReactMouseEvent<HTMLElement>, rowIndex: number, colIndex: number) => void;
     onCellDoubleClick: (target: HTMLElement, rowIndex: number, colIndex: number, currentValue: TCellValue) => void;
     onViolationClick: (target: HTMLElement, violations: TViolation[], title: string) => void;
     onViolationHoverStart: (target: HTMLElement, violations: TViolation[], title: string) => void;
@@ -1955,9 +2070,11 @@ function CalendarRowLeft({
     canReorderRows,
     rowReorderDisabled,
     dragHandleProps,
+    rowNameClassName,
     onCellClick,
     onCellPointerDown,
     onCellPointerEnter,
+    onCellContextMenu,
     onCellDoubleClick,
     onViolationClick,
     onViolationHoverStart,
@@ -2098,6 +2215,7 @@ function CalendarRowLeft({
                     data-selected-row-label={isRowSelected || undefined}
                     className={cn(
                         'make-shift-calendar__row-name flex min-h-0 min-w-0 items-center justify-center truncate rounded-[clamp(5px,0.55cqw,8px)] text-center font-apple text-[clamp(12px,1.05cqw,16px)] leading-none whitespace-nowrap text-sub-1',
+                        rowNameClassName,
                         isRowSelected && SELECTED_ROW_LABEL_CLASS,
                     )}
                     title={nurseName}
@@ -2126,6 +2244,7 @@ function CalendarRowLeft({
                         ) : null}
                         {showCarryColumn ? (
                             <div
+                                data-selected-row-label={isRowSelected || undefined}
                                 className={cn(
                                     'make-shift-calendar__row-carried-value flex min-h-0 min-w-0 items-center justify-center rounded-[clamp(5px,0.55cqw,8px)] font-poppins text-[clamp(11px,0.9cqw,14px)] font-semibold whitespace-nowrap tabular-nums',
                                     carriedDays === undefined || carriedDays === 0
@@ -2133,6 +2252,7 @@ function CalendarRowLeft({
                                         : carriedDays > 0
                                           ? 'text-red'
                                           : 'text-main-1',
+                                    isRowSelected && SELECTED_ROW_LABEL_CLASS,
                                 )}
                                 title={carriedTitle}
                             >
@@ -2340,6 +2460,9 @@ function CalendarRowLeft({
                                     if (hasCellViolations) {
                                         onViolationClick(event.currentTarget, cellViolations, cellViolationPopoverTitle);
                                     }
+                                }}
+                                onContextMenu={(event) => {
+                                    onCellContextMenu(event, rowIndex, j);
                                 }}
                                 onDoubleClick={(event) => {
                                     onCellDoubleClick(event.currentTarget, rowIndex, j, cells[j] ?? null);

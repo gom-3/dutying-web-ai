@@ -60,6 +60,7 @@ export type TWardChatMessageResponse = {
     senderWardAdminAccountId?: number | null;
     senderType?: 'ACCOUNT' | 'WARD_ADMIN';
     senderName: string;
+    senderProfileImgUrl?: string | null;
     text: string;
     sentAt: string;
     isDeleted: boolean;

@@ -16,7 +16,7 @@ function getNextYearMonth(year: number, month: number) {
 }
 
 type TMakeShiftHeaderProps = {
-    onBeforeContextChange?: () => boolean;
+    onBeforeContextChange?: (action: () => void) => void;
 };
 
 export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps = {}) {
@@ -43,31 +43,52 @@ export function MakeShiftHeader({onBeforeContextChange}: TMakeShiftHeaderProps =
         });
     };
     const handlePrevMonth = () => {
-        if (onBeforeContextChange && !onBeforeContextChange()) return;
+        const changeContext = () => {
+            const next = getPrevYearMonth(year, month);
 
-        const next = getPrevYearMonth(year, month);
+            goPrevMonth();
+            showContextToast(next.year, next.month, currentShiftTeamName);
+        };
 
-        goPrevMonth();
-        showContextToast(next.year, next.month, currentShiftTeamName);
+        if (onBeforeContextChange) {
+            onBeforeContextChange(changeContext);
+            return;
+        }
+
+        changeContext();
     };
     const handleNextMonth = () => {
-        if (onBeforeContextChange && !onBeforeContextChange()) return;
+        const changeContext = () => {
+            const next = getNextYearMonth(year, month);
 
-        const next = getNextYearMonth(year, month);
+            goNextMonth();
+            showContextToast(next.year, next.month, currentShiftTeamName);
+        };
 
-        goNextMonth();
-        showContextToast(next.year, next.month, currentShiftTeamName);
+        if (onBeforeContextChange) {
+            onBeforeContextChange(changeContext);
+            return;
+        }
+
+        changeContext();
     };
     const handleSelectShiftTeam = (shiftTeamId: number) => {
         if (shiftTeamId === currentShiftTeamId) return;
 
-        if (onBeforeContextChange && !onBeforeContextChange()) return;
+        const changeContext = () => {
+            const nextTeamName =
+                shiftTeams.find((team) => team.shiftTeamId === shiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
 
-        const nextTeamName =
-            shiftTeams.find((team) => team.shiftTeamId === shiftTeamId)?.name ?? t('page.makeShift.overview.selectedTeamFallback');
+            setCurrentShiftTeamId(shiftTeamId);
+            showContextToast(year, month, nextTeamName);
+        };
 
-        setCurrentShiftTeamId(shiftTeamId);
-        showContextToast(year, month, nextTeamName);
+        if (onBeforeContextChange) {
+            onBeforeContextChange(changeContext);
+            return;
+        }
+
+        changeContext();
     };
 
     return (

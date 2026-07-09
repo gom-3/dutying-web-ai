@@ -2,8 +2,9 @@ import type {TShiftTeamResponse, TWardChatMessageResponse, TWardChatUnreadCountR
 import {cn} from '@dutying/utils/style';
 import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {AnimationItem} from 'lottie-web';
-import {Bell, BellOff, ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
+import {ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
 import {Fragment, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import toast from 'react-hot-toast';
 import useAuth from '@/features/auth';
 import {getWardAdminAccountIdFromAccessToken} from '@/features/auth/model/admin-token';
@@ -17,6 +18,7 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {Button} from '@/shared/ui/primitives/button';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
+import {WardChatPreviewBubble} from '@/widgets/ward-chat/ui/ward-chat-preview-bubble';
 
 const CHAT_PAGE_SIZE = 30;
 const OPEN_REFETCH_INTERVAL_MS = 5000;
@@ -27,7 +29,6 @@ const WARD_CHAT_ICON_REST_FRAME = 40;
 const WARD_CHAT_ICON_HOVER_SEGMENT: [number, number] = [40, 80];
 const WARD_CHAT_ICON_HOVER_SPEED = 0.45;
 const WARD_CHAT_MESSAGE_PREVIEW_MS = 4800;
-const WARD_CHAT_ALERT_SETTING_STORAGE_KEY = 'dutying:ward-chat-preview-alert-enabled:v2';
 const wardChatQueryKeys = {
     connectedMembers: (wardId: number) => ['ward-chat', 'connected-members', wardId] as const,
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
@@ -39,6 +40,7 @@ type TWardChatRealtimePayload = Record<string, unknown>;
 type TWardChatMessagePreview = {
     messageId: number;
     senderName: string;
+    senderProfileImgUrl?: string | null;
     text: string;
 };
 
@@ -79,26 +81,6 @@ function setWardChatUnreadCount(queryClient: QueryClient, wardId: number, unread
 
     queryClient.setQueryData<TWardChatUnreadCountResponse>(wardChatQueryKeys.unread(wardId), updater);
     queryClient.setQueryData<TWardChatUnreadCountResponse>(homeWardChatUnreadQueryKey(wardId), updater);
-}
-
-function readWardChatAlertSetting() {
-    if (typeof window === 'undefined') return true;
-
-    try {
-        return window.localStorage.getItem(WARD_CHAT_ALERT_SETTING_STORAGE_KEY) !== 'off';
-    } catch {
-        return true;
-    }
-}
-
-function writeWardChatAlertSetting(isEnabled: boolean) {
-    if (typeof window === 'undefined') return;
-
-    try {
-        window.localStorage.setItem(WARD_CHAT_ALERT_SETTING_STORAGE_KEY, isEnabled ? 'on' : 'off');
-    } catch {
-        // Ignore storage failures so the chat control remains usable.
-    }
 }
 
 function countConnectedWardMembers(shiftTeams: TShiftTeamResponse[]) {
@@ -161,6 +143,7 @@ function toWardChatMessage(payload: TWardChatRealtimePayload): TWardChatMessageR
         senderWardAdminAccountId: toNullableNumber(payload.senderWardAdminAccountId),
         senderType: payload.senderType === 'WARD_ADMIN' ? 'WARD_ADMIN' : 'ACCOUNT',
         senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
+        senderProfileImgUrl: typeof payload.senderProfileImgUrl === 'string' ? payload.senderProfileImgUrl : null,
         text: typeof payload.text === 'string' ? payload.text : '',
         sentAt: typeof payload.sentAt === 'string' ? payload.sentAt : new Date().toISOString(),
         isDeleted: payload.isDeleted === true,
@@ -298,10 +281,6 @@ function getNonEmptyTrimmedText(value: string | undefined, fallback: string) {
     return trimmedValue;
 }
 
-function getSenderInitial(senderName: string) {
-    return senderName.trim().slice(0, 1) || '?';
-}
-
 function SenderName({message}: {message: TWardChatMessageResponse}) {
     return (
         <span className="flex min-w-0 items-center gap-1.5 px-1 text-[12px] font-semibold text-gray-3">
@@ -331,9 +310,11 @@ function ChatMessage({
     return (
         <div className={cn('flex w-full gap-2.5', isMine ? 'justify-end' : 'justify-start')}>
             {isMine ? null : (
-                <div className="mt-5 flex size-8 shrink-0 items-center justify-center rounded-full bg-[#EEF3F7] text-[13px] font-bold text-[#526070]">
-                    {getSenderInitial(message.senderName)}
-                </div>
+                <ProfileImage
+                    name={message.senderName}
+                    profileImg={message.senderProfileImgUrl ? {profileImgUrl: message.senderProfileImgUrl} : undefined}
+                    className="mt-5 size-8 shrink-0 rounded-full"
+                />
             )}
             <div className={cn('flex max-w-[78%] flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
                 {isMine ? null : <SenderName message={message} />}
@@ -513,15 +494,14 @@ export default function WardChatWidget() {
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
     const [isFloatingButtonHovered, setIsFloatingButtonHovered] = useState(false);
-    const [isFloatingAlertEnabled, setIsFloatingAlertEnabled] = useState(readWardChatAlertSetting);
     const [messagePreview, setMessagePreview] = useState<TWardChatMessagePreview | null>(null);
     const [draft, setDraft] = useState('');
     const [messages, setMessages] = useState<TWardChatMessageResponse[]>([]);
     const [nextCursorMessageId, setNextCursorMessageId] = useState<number | null>(null);
+    const chatPanelRef = useRef<HTMLElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const isOpenRef = useRef(isOpen);
-    const isFloatingAlertEnabledRef = useRef(isFloatingAlertEnabled);
     const messagePreviewTimerRef = useRef<number | null>(null);
     const acknowledgedMessageIdRef = useRef<number | null>(null);
     const lastPreviewedMessageIdRef = useRef<number | null>(null);
@@ -620,8 +600,7 @@ export default function WardChatWidget() {
     }, []);
     const showMessagePreview = useCallback(
         (message: TWardChatMessageResponse) => {
-            const shouldSkipPreview =
-                !isFloatingAlertEnabledRef.current || isOpenRef.current || isMyMessage(message, accountId, wardAdminAccountId);
+            const shouldSkipPreview = isOpenRef.current || isMyMessage(message, accountId, wardAdminAccountId);
 
             if (shouldSkipPreview) return false;
 
@@ -635,6 +614,7 @@ export default function WardChatWidget() {
             setMessagePreview({
                 messageId: message.messageId,
                 senderName: message.senderName,
+                senderProfileImgUrl: message.senderProfileImgUrl ?? null,
                 text: message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text,
             });
             messagePreviewTimerRef.current = window.setTimeout(() => {
@@ -647,7 +627,7 @@ export default function WardChatWidget() {
         [accountId, t, wardAdminAccountId],
     );
     const showUnreadFallbackPreview = useCallback(() => {
-        if (!isFloatingAlertEnabledRef.current || isOpenRef.current) return;
+        if (isOpenRef.current) return;
 
         if (messagePreviewTimerRef.current != null) {
             window.clearTimeout(messagePreviewTimerRef.current);
@@ -656,6 +636,7 @@ export default function WardChatWidget() {
         setMessagePreview({
             messageId: 0,
             senderName: t('widget.wardChat.unknownSender'),
+            senderProfileImgUrl: null,
             text: t('widget.wardChat.emptyPreview'),
         });
         messagePreviewTimerRef.current = window.setTimeout(() => {
@@ -663,29 +644,32 @@ export default function WardChatWidget() {
             messagePreviewTimerRef.current = null;
         }, WARD_CHAT_MESSAGE_PREVIEW_MS);
     }, [t]);
-    const toggleFloatingAlert = () => {
-        setIsFloatingAlertEnabled((current) => {
-            const next = !current;
-
-            writeWardChatAlertSetting(next);
-
-            if (!next) hideMessagePreview();
-
-            return next;
-        });
-    };
 
     useEffect(() => {
         isOpenRef.current = isOpen;
     }, [isOpen]);
 
     useEffect(() => {
-        isFloatingAlertEnabledRef.current = isFloatingAlertEnabled;
-    }, [isFloatingAlertEnabled]);
-
-    useEffect(() => {
         if (isOpen) hideMessagePreview();
     }, [hideMessagePreview, isOpen]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+
+            if (!(target instanceof Node)) return;
+
+            if (chatPanelRef.current?.contains(target)) return;
+
+            setIsOpen(false);
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+
+        return () => document.removeEventListener('pointerdown', handlePointerDown);
+    }, [isOpen]);
 
     useEffect(() => {
         setMessages([]);
@@ -773,7 +757,7 @@ export default function WardChatWidget() {
     }, [messagesQuery.data]);
 
     useEffect(() => {
-        if (!isWidgetAvailable || !unreadQuery.isSuccess) return;
+        if (!isWidgetAvailable) return;
 
         if (unreadCount <= 0) {
             lastPreviewedUnreadCountRef.current = 0;
@@ -782,7 +766,11 @@ export default function WardChatWidget() {
             return;
         }
 
-        if (isOpen || !isFloatingAlertEnabledRef.current) return;
+        if (isOpen) {
+            lastPreviewedUnreadCountRef.current = unreadCount;
+
+            return;
+        }
 
         if (skipNextUnreadPreviewRef.current) {
             skipNextUnreadPreviewRef.current = false;
@@ -791,9 +779,12 @@ export default function WardChatWidget() {
             return;
         }
 
-        if (lastPreviewedUnreadCountRef.current === unreadCount) return;
+        const previousUnreadCount = lastPreviewedUnreadCountRef.current;
+        const shouldShowPreview = previousUnreadCount == null || unreadCount > previousUnreadCount;
 
         lastPreviewedUnreadCountRef.current = unreadCount;
+
+        if (!shouldShowPreview) return;
 
         showUnreadFallbackPreview();
 
@@ -815,7 +806,7 @@ export default function WardChatWidget() {
         return () => {
             isDisposed = true;
         };
-    }, [effectiveWardId, isOpen, isWidgetAvailable, showMessagePreview, showUnreadFallbackPreview, unreadCount, unreadQuery.isSuccess]);
+    }, [effectiveWardId, isOpen, isWidgetAvailable, showMessagePreview, showUnreadFallbackPreview, unreadCount]);
 
     useEffect(() => {
         if (!isOpen || !isWidgetAvailable || newestMessageId <= 0) return;
@@ -876,12 +867,14 @@ export default function WardChatWidget() {
         loadOlderMutation.mutate(nextCursorMessageId);
     };
     const previewSenderName = getNonEmptyTrimmedText(messagePreview?.senderName, t('widget.wardChat.unknownSender'));
+    const previewSenderProfileImgUrl = messagePreview?.senderProfileImgUrl ?? null;
     const previewText = getNonEmptyTrimmedText(messagePreview?.text, t('widget.wardChat.emptyPreview'));
 
     return (
         <div className="fixed right-4 bottom-4 z-[1200] font-pretendard sm:right-6 sm:bottom-6">
             {isOpen ? (
                 <section
+                    ref={chatPanelRef}
                     aria-label={t('widget.wardChat.title')}
                     className="flex h-[min(640px,calc(100vh-32px))] w-[min(390px,calc(100vw-32px))] animate-in flex-col overflow-hidden rounded-[24px] border border-[#E7EAF0] bg-[#F8FAFC] shadow-[0_24px_70px_rgba(21,24,34,0.22)] duration-200 zoom-in-95 fade-in slide-in-from-bottom-4"
                 >
@@ -899,42 +892,6 @@ export default function WardChatWidget() {
                             </div>
                         </div>
                         <div className="flex shrink-0 items-center gap-1.5">
-                            <TooltipProvider delayDuration={200}>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <button
-                                            type="button"
-                                            aria-label={
-                                                isFloatingAlertEnabled
-                                                    ? t('widget.wardChat.disableAlertAria')
-                                                    : t('widget.wardChat.enableAlertAria')
-                                            }
-                                            aria-pressed={isFloatingAlertEnabled}
-                                            className={cn(
-                                                'flex size-9 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
-                                                isFloatingAlertEnabled
-                                                    ? 'text-main-1 hover:bg-gray-7'
-                                                    : 'text-gray-4 hover:bg-gray-7 hover:text-sub-1',
-                                            )}
-                                            onClick={toggleFloatingAlert}
-                                        >
-                                            {isFloatingAlertEnabled ? (
-                                                <Bell className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-                                            ) : (
-                                                <BellOff className="size-[18px]" strokeWidth={2.2} aria-hidden="true" />
-                                            )}
-                                        </button>
-                                    </TooltipTrigger>
-                                    <TooltipContent
-                                        side="bottom"
-                                        className="rounded-full bg-[#1C2331] px-3 py-1.5 text-[12px] font-semibold text-white"
-                                    >
-                                        {isFloatingAlertEnabled
-                                            ? t('widget.wardChat.alertOnTooltip')
-                                            : t('widget.wardChat.alertOffTooltip')}
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
                             <button
                                 type="button"
                                 className="flex size-9 items-center justify-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
@@ -1058,33 +1015,17 @@ export default function WardChatWidget() {
                 <TooltipProvider delayDuration={200}>
                     <div className="relative flex items-end gap-2">
                         {messagePreview ? (
-                            <button
-                                type="button"
-                                aria-label={t('widget.wardChat.previewOpenAria', {sender: previewSenderName, text: previewText})}
-                                aria-live="polite"
-                                className="fixed right-4 bottom-[94px] z-[1301] flex min-h-[76px] w-[min(324px,calc(100vw-32px))] animate-in items-start gap-3 rounded-[12px] border border-[#E4E8F0] bg-white p-3 text-left shadow-[0_18px_48px_rgba(15,23,42,0.18)] ring-1 ring-black/[0.03] transition-[transform,box-shadow,border-color] duration-200 zoom-in-95 fade-in slide-in-from-bottom-2 hover:-translate-y-0.5 hover:border-[#D6DCE8] hover:shadow-[0_22px_56px_rgba(15,23,42,0.2)] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none sm:right-6 sm:bottom-[102px]"
+                            <WardChatPreviewBubble
+                                senderName={previewSenderName}
+                                senderProfileImgUrl={previewSenderProfileImgUrl}
+                                text={previewText}
+                                ariaLabel={t('widget.wardChat.previewOpenAria', {sender: previewSenderName, text: previewText})}
+                                position="fixed"
                                 onClick={() => {
                                     hideMessagePreview();
                                     setIsOpen(true);
                                 }}
-                            >
-                                <span className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-main-light text-main-1">
-                                    <WardChatImageIcon className="size-6" />
-                                </span>
-                                <span className="min-w-0 flex-1 pt-0.5">
-                                    <span className="flex min-w-0 items-center gap-2">
-                                        <span className="truncate text-[13px] leading-4 font-bold text-[#17171C]">{previewSenderName}</span>
-                                        <span className="size-1.5 shrink-0 rounded-full bg-main-1" aria-hidden="true" />
-                                    </span>
-                                    <span className="mt-1 [display:-webkit-box] block overflow-hidden text-[13px] leading-5 font-medium break-words text-[#3F4652] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-                                        {previewText}
-                                    </span>
-                                </span>
-                                <span
-                                    aria-hidden="true"
-                                    className="absolute right-[25px] -bottom-1.5 size-3 rotate-45 border-r border-b border-[#E4E8F0] bg-white"
-                                />
-                            </button>
+                            />
                         ) : null}
                         <Tooltip>
                             <TooltipTrigger asChild>

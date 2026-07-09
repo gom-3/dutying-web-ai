@@ -35,6 +35,10 @@ export const vi = {
             ...generatedVi.page.makeShift,
             calendar: {
                 ...generatedVi.page.makeShift.calendar,
+                fixCell: 'Cố định',
+                unfixCell: 'Bỏ cố định',
+                fixCellSuccess: 'Đã cố định ca.',
+                unfixCellSuccess: 'Đã bỏ cố định ca.',
                 fixedStatusPin: 'Ca cố định',
                 requestStatusPin: 'Ca đã đăng ký',
             },

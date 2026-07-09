@@ -280,6 +280,24 @@ describe('RequestCalendar', () => {
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
     });
 
+    it('신청근무 행 이름 글자 크기를 근무표 만들기 화면 기준으로 맞춘다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar();
+
+        expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-[clamp(12px,1.05vw,16px)]');
+    });
+
+    it('간호사 행 사이에 작은 세로 여백을 둔다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true}));
+
+        renderRequestCalendar();
+
+        const divisionCard = document.querySelector('.make-shift-calendar__division-card');
+
+        expect(divisionCard).toHaveClass('gap-y-3');
+    });
+
     it('신청 근무가 있는 셀의 근무유형 칩에 파란 핀을 표시한다', () => {
         mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, hasRequest: true}));
 

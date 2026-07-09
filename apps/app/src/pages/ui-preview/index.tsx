@@ -20,6 +20,7 @@ import SectionHeader from '@/shared/ui/SectionHeader';
 import StatusBadge from '@/shared/ui/StatusBadge';
 import Toggle from '@/shared/ui/Toggle';
 import ValidationMessage from '@/shared/ui/ValidationMessage';
+import {WardChatPreviewBubble} from '@/widgets/ward-chat/ui/ward-chat-preview-bubble';
 
 type TPreviewSectionProps = {
     title: string;
@@ -226,6 +227,34 @@ function UiPreviewPage() {
                                 </div>
                             </SampleBox>
                         </div>
+                    </div>
+                </PreviewSection>
+
+                <PreviewSection
+                    title="Ward chat speech bubble"
+                    description="Floating preview bubble shown when a new ward chat message arrives."
+                >
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <SampleBox label="default">
+                            <div className="flex w-full justify-end py-2">
+                                <WardChatPreviewBubble
+                                    senderName="나이트 담당"
+                                    text="오늘 이브닝 인계 확인 부탁드려요. 7병상 환자 보호자 문의가 있었어요."
+                                    ariaLabel="나이트 담당님의 새 메시지 열기"
+                                    onClick={() => undefined}
+                                />
+                            </div>
+                        </SampleBox>
+                        <SampleBox label="long text">
+                            <div className="flex w-full justify-end py-2">
+                                <WardChatPreviewBubble
+                                    senderName="병동톡"
+                                    text="새 메시지가 도착했어요. 긴 문장이 들어와도 두 줄까지만 보여주고 말풍선 크기가 화면 밖으로 넘치지 않는지 확인합니다."
+                                    ariaLabel="병동톡 새 메시지 열기"
+                                    onClick={() => undefined}
+                                />
+                            </div>
+                        </SampleBox>
                     </div>
                 </PreviewSection>
 

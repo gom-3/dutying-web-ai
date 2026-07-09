@@ -1,8 +1,8 @@
 import {cn} from '@dutying/utils/style';
 import type {AnimationItem} from 'lottie-web';
-import {AlertTriangle, Check, History, Pin, PinOff, Redo2, Save, Undo2} from 'lucide-react';
+import {AlertTriangle, Check, Eye, History, Pin, PinOff, Redo2, Save, Undo2} from 'lucide-react';
 import type {ReactNode} from 'react';
-import {useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
 import type {TAsyncScheduleValidationStatus} from '@/features/shift-editor';
 import constraintValidationDotsAnimation from '@/shared/assets/animation/constraint-validation-dots.json';
@@ -146,34 +146,12 @@ export function AiAutofillToolbar({
                         className="ai-autofill-toolbar__view-actions flex min-h-[43px] shrink-0 items-center gap-1 rounded-[13px] bg-gray-7 px-1"
                         aria-label={t('page.makeShift.aiRefill.viewOptions')}
                     >
-                        <span
-                            className="ai-autofill-toolbar__status-highlight-tools flex items-center gap-1"
-                            aria-label={t('page.makeShift.aiRefill.statusHighlightTools')}
-                        >
-                            <IconToolButton
-                                className="ai-autofill-toolbar__icon-tool ai-autofill-toolbar__icon-tool--requests"
-                                onClick={onRequestShiftsAttentionStart}
-                                onAttentionStart={onRequestShiftsAttentionStart}
-                                onAttentionEnd={onRequestShiftsAttentionEnd}
-                                ariaLabel={t('page.makeShift.aiRefill.requestDisplayHighlight')}
-                                tooltip={t('page.makeShift.aiRefill.requestDisplay')}
-                                activeClassName="text-[#2877CC] hover:bg-white hover:shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-                            >
-                                <img src="/img/navigation/request-active.png" alt="" className="size-4 object-contain" aria-hidden />
-                            </IconToolButton>
-
-                            <IconToolButton
-                                className="ai-autofill-toolbar__icon-tool ai-autofill-toolbar__icon-tool--fixed"
-                                onClick={onFixedShiftsAttentionStart}
-                                onAttentionStart={onFixedShiftsAttentionStart}
-                                onAttentionEnd={onFixedShiftsAttentionEnd}
-                                ariaLabel={t('page.makeShift.aiRefill.fixedDisplayHighlight')}
-                                tooltip={t('page.makeShift.aiRefill.fixedDisplay')}
-                                activeClassName="text-sub-1 hover:bg-white hover:shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-                            >
-                                <Pin className="size-3.5" aria-hidden />
-                            </IconToolButton>
-                        </span>
+                        <StatusHighlightMenu
+                            onFixedShiftsAttentionStart={onFixedShiftsAttentionStart}
+                            onFixedShiftsAttentionEnd={onFixedShiftsAttentionEnd}
+                            onRequestShiftsAttentionStart={onRequestShiftsAttentionStart}
+                            onRequestShiftsAttentionEnd={onRequestShiftsAttentionEnd}
+                        />
 
                         <span aria-hidden="true" className="mx-1 h-5 w-px rounded-full bg-gray-5" />
 
@@ -297,6 +275,148 @@ export function AiAutofillToolbar({
                 </div>
             </div>
         </div>
+    );
+}
+
+function StatusHighlightMenu({
+    onFixedShiftsAttentionStart,
+    onFixedShiftsAttentionEnd,
+    onRequestShiftsAttentionStart,
+    onRequestShiftsAttentionEnd,
+}: {
+    onFixedShiftsAttentionStart: () => void;
+    onFixedShiftsAttentionEnd: () => void;
+    onRequestShiftsAttentionStart: () => void;
+    onRequestShiftsAttentionEnd: () => void;
+}) {
+    const {t} = useTypedTranslation();
+    const rootRef = useRef<HTMLSpanElement | null>(null);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const [open, setOpen] = useState(false);
+    const closeMenu = useCallback(() => {
+        setOpen(false);
+        onFixedShiftsAttentionEnd();
+        onRequestShiftsAttentionEnd();
+    }, [onFixedShiftsAttentionEnd, onRequestShiftsAttentionEnd]);
+    const toggleMenu = useCallback(() => {
+        setOpen((current) => {
+            if (current) {
+                onFixedShiftsAttentionEnd();
+                onRequestShiftsAttentionEnd();
+            }
+
+            return !current;
+        });
+    }, [onFixedShiftsAttentionEnd, onRequestShiftsAttentionEnd]);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handlePointerDown = (event: PointerEvent) => {
+            const target = event.target;
+
+            if (target instanceof Node && rootRef.current?.contains(target)) return;
+
+            closeMenu();
+        };
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Escape') return;
+
+            event.stopPropagation();
+            closeMenu();
+            triggerRef.current?.focus();
+        };
+
+        document.addEventListener('pointerdown', handlePointerDown);
+        document.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            document.removeEventListener('pointerdown', handlePointerDown);
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [closeMenu, open]);
+
+    return (
+        <span
+            ref={rootRef}
+            className="ai-autofill-toolbar__status-highlight-tools relative inline-grid size-9 shrink-0 place-items-center"
+            aria-label={t('page.makeShift.aiRefill.statusHighlightTools')}
+            onBlur={(event) => {
+                if (!open) return;
+
+                const nextFocused = event.relatedTarget;
+
+                if (nextFocused instanceof Node && event.currentTarget.contains(nextFocused)) return;
+
+                closeMenu();
+            }}
+        >
+            <button
+                ref={triggerRef}
+                type="button"
+                onClick={toggleMenu}
+                aria-label={t('page.makeShift.aiRefill.statusHighlightTools')}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                className={cn(
+                    'peer grid size-9 cursor-pointer place-items-center rounded-[10px] text-gray-3',
+                    'transition-[color,background-color,box-shadow,transform] duration-150',
+                    'hover:bg-white hover:text-main-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                    open && 'bg-white text-main-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
+                )}
+            >
+                <Eye className="size-3.5" aria-hidden />
+            </button>
+
+            {!open && (
+                <span
+                    role="tooltip"
+                    className={cn(
+                        'pointer-events-none absolute top-[calc(100%+7px)] left-1/2 z-50 -translate-x-1/2 -translate-y-1',
+                        'rounded-full bg-[#111827] px-2.5 py-1.5 font-apple text-[11px] leading-none font-semibold whitespace-nowrap text-white',
+                        'opacity-0 shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-[opacity,transform] duration-150 ease-out',
+                        'peer-hover:translate-y-0 peer-hover:opacity-100 peer-focus-visible:translate-y-0 peer-focus-visible:opacity-100',
+                    )}
+                >
+                    {t('page.makeShift.aiRefill.statusHighlightTools')}
+                </span>
+            )}
+
+            {open && (
+                <span
+                    role="menu"
+                    aria-label={t('page.makeShift.aiRefill.statusHighlightTools')}
+                    className={cn(
+                        'absolute top-[calc(100%+8px)] left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-[13px] border border-gray-6 bg-white p-1',
+                        'shadow-[0_14px_32px_rgba(15,23,42,0.16)]',
+                    )}
+                >
+                    <IconToolButton
+                        className="ai-autofill-toolbar__icon-tool ai-autofill-toolbar__icon-tool--requests"
+                        onClick={onRequestShiftsAttentionStart}
+                        onAttentionStart={onRequestShiftsAttentionStart}
+                        onAttentionEnd={onRequestShiftsAttentionEnd}
+                        ariaLabel={t('page.makeShift.aiRefill.requestDisplayHighlight')}
+                        tooltip={t('page.makeShift.aiRefill.requestDisplay')}
+                        activeClassName="text-[#2877CC] hover:bg-gray-7 hover:shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                    >
+                        <img src="/img/navigation/request-active.png" alt="" className="size-4 object-contain" aria-hidden />
+                    </IconToolButton>
+
+                    <IconToolButton
+                        className="ai-autofill-toolbar__icon-tool ai-autofill-toolbar__icon-tool--fixed"
+                        onClick={onFixedShiftsAttentionStart}
+                        onAttentionStart={onFixedShiftsAttentionStart}
+                        onAttentionEnd={onFixedShiftsAttentionEnd}
+                        ariaLabel={t('page.makeShift.aiRefill.fixedDisplayHighlight')}
+                        tooltip={t('page.makeShift.aiRefill.fixedDisplay')}
+                        activeClassName="text-sub-1 hover:bg-gray-7 hover:shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
+                    >
+                        <Pin className="size-3.5" aria-hidden />
+                    </IconToolButton>
+                </span>
+            )}
+        </span>
     );
 }
 

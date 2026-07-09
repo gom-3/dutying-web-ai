@@ -1281,7 +1281,7 @@ export const ko = {
                 "error": "고정 근무 데이터를 불러오지 못했어요",
                 "hint": "연수·교육·공가처럼 이미 정해진 일정이나 반드시 지켜야 할 일정이 있다면 고정해 주세요.",
                 "loading": "근무표를 불러오는 중이에요",
-                "lockedToast": "고정 근무는 고정근무 탭에서만 수정할 수 있어요",
+                "lockedToast": "고정된 근무는 고정 해제 후 수정할 수 있어요",
                 "saveFailed": "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
                 "title": "고정할 일정을 입력해 주세요"
             },
@@ -3956,7 +3956,7 @@ export const en: TLocale = {
                 "error": "Failed to load fixed shift data",
                 "hint": "If there are already-set items like training, education, or official leave, or any schedule that must be preserved, fix them here.",
                 "loading": "Loading the duty schedule",
-                "lockedToast": "Fixed shifts can only be edited from the Fixed Shifts tab",
+                "lockedToast": "Fixed shifts can be edited after unfixing them",
                 "saveFailed": "Failed to save. Please try again shortly.",
                 "title": "Enter items that should stay fixed"
             },
@@ -6629,7 +6629,7 @@ export const ja: TLocale = {
                 "error": "固定勤務データを読み込めませんでした",
                 "hint": "研修・教育・公休のようにすでに決まっている予定や必ず守る予定がある場合は固定してください。",
                 "loading": "勤務表を読み込み中です",
-                "lockedToast": "固定勤務は固定勤務タブでのみ編集できます",
+                "lockedToast": "固定勤務は固定を解除してから編集できます",
                 "saveFailed": "保存できませんでした。少し待ってからもう一度お試しください。",
                 "title": "固定する予定を入力してください"
             },
@@ -9302,7 +9302,7 @@ export const zh: TLocale = {
                 "error": "无法加载固定班次数据",
                 "hint": "如果有已经设定或必须遵守的时间表，例如培训、教育或公共服务，请修复它。",
                 "loading": "正在加载排班表。",
-                "lockedToast": "固定班次只能在“固定班次”选项卡中修改。",
+                "lockedToast": "固定班次需要先取消固定后才能修改。",
                 "saveFailed": "保存失败。请稍后重试。",
                 "title": "请输入您想要固定的时间表"
             },
@@ -11975,7 +11975,7 @@ export const th: TLocale = {
                 "error": "โหลดข้อมูลกะคงที่ไม่สำเร็จ",
                 "hint": "หากมีรายการที่กำหนดไว้แล้ว เช่น การฝึกอบรม การศึกษา หรือการลาอย่างเป็นทางการ หรือกำหนดการใดๆ ที่ต้องรักษาไว้ ให้แก้ไขที่นี่",
                 "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่",
-                "lockedToast": "กะคงที่สามารถแก้ไขได้จากแท็บกะคงที่เท่านั้น",
+                "lockedToast": "ต้องยกเลิกการตรึงกะคงที่ก่อนจึงจะแก้ไขได้",
                 "saveFailed": "บันทึกไม่สำเร็จ โปรดลองอีกครั้งในอีกสักครู่",
                 "title": "ป้อนรายการที่ควรคงที่"
             },
@@ -14648,7 +14648,7 @@ export const vi: TLocale = {
                 "error": "Không thể tải dữ liệu ca cố định",
                 "hint": "Nếu có các mục đã được thiết lập sẵn như đào tạo, giáo dục hoặc nghỉ phép chính thức hoặc bất kỳ lịch nào cần được giữ nguyên, hãy sửa chúng tại đây.",
                 "loading": "Đang tải Lịch trực",
-                "lockedToast": "Ca cố định chỉ có thể được chỉnh sửa từ tab Ca cố định",
+                "lockedToast": "Ca cố định cần được bỏ cố định trước khi chỉnh sửa",
                 "saveFailed": "Không lưu được. Vui lòng thử lại trong thời gian ngắn.",
                 "title": "Nhập các mục cần cố định"
             },

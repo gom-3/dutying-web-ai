@@ -223,6 +223,13 @@ describe('MainLayout', () => {
 
     it.each([
         {
+            route: ROUTE.REQUEST,
+            routeLabel: 'request',
+            pageText: 'request page',
+            layerClasses: ['top-4'],
+            frameClasses: ['max-w-[1680px]', 'px-3', 'lg:px-4', 'min-[1600px]:px-10'],
+        },
+        {
             route: ROUTE.MEMBER,
             routeLabel: 'member',
             pageText: 'member page',

@@ -273,7 +273,7 @@ describe('MakeShiftPageView layout', () => {
 
     it('blocks leaving step 5 through the stepper when editable changes are unsaved', async () => {
         const user = userEvent.setup();
-        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+        const confirmSpy = vi.spyOn(window, 'confirm');
 
         useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: true, isAiGenerating: false});
         makeShiftState = {
@@ -286,13 +286,15 @@ describe('MakeShiftPageView layout', () => {
 
         await user.click(screen.getByTestId('make-shift-stepper'));
 
-        expect(confirmSpy).toHaveBeenCalledWith('page.makeShift.aiRefill.exitGuard.unsavedMessage');
+        expect(confirmSpy).not.toHaveBeenCalled();
+        expect(screen.getByRole('dialog')).toHaveTextContent('page.makeShift.aiRefill.exitGuard.unsavedTitle');
+        expect(screen.getByRole('dialog')).toHaveTextContent('page.makeShift.aiRefill.exitGuard.unsavedDescription');
         expect(mockUseCase.goToStep).not.toHaveBeenCalled();
     });
 
-    it('allows leaving step 5 when the user confirms the AI running warning', async () => {
+    it('allows leaving step 5 when the user confirms the AI running warning dialog', async () => {
         const user = userEvent.setup();
-        const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+        const confirmSpy = vi.spyOn(window, 'confirm');
 
         useAiAutofillExitGuardStore.getState().setExitGuard({hasUnsavedChanges: false, isAiGenerating: true});
         makeShiftState = {
@@ -304,8 +306,9 @@ describe('MakeShiftPageView layout', () => {
         renderMakeShiftPageView();
 
         await user.click(screen.getByTestId('make-shift-stepper'));
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.exitGuard.leaveConfirm'}));
 
-        expect(confirmSpy).toHaveBeenCalledWith('page.makeShift.aiRefill.exitGuard.aiGeneratingMessage');
+        expect(confirmSpy).not.toHaveBeenCalled();
         expect(mockUseCase.goToStep).toHaveBeenCalledWith(5);
     });
 });

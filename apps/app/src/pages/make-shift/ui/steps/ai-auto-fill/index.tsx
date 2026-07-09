@@ -45,6 +45,7 @@ import {
 import {RestLeavePolicySummaryButton} from '../rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
+import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
@@ -263,8 +264,10 @@ export function AiAutofill() {
     const [isWorking, setIsWorking] = useState(false);
     const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
     const [isAiGenerating, setIsAiGenerating] = useState(false);
+    const [isAiLoadingOverlayFinishing, setIsAiLoadingOverlayFinishing] = useState(false);
     const [aiStartedAt, setAiStartedAt] = useState<number | null>(null);
     const [isAiEffectVisible, setIsAiEffectVisible] = useState(false);
+    const [isAiBlankPreviewVisible, setIsAiBlankPreviewVisible] = useState(false);
     const [aiStatus, setAiStatus] = useState<TAiAutofillStatus>('idle');
     const [hasCompletedAiFill, setHasCompletedAiFill] = useState(false);
     const [isSnapshotSidebarOpen, setIsSnapshotSidebarOpen] = useState(false);
@@ -307,7 +310,7 @@ export function AiAutofill() {
     } = useDutyEditorStep({
         onContextChanged: resetAiStatus,
         hydratePreviousLastShifts: true,
-        editorInputDisabled: isAiGenerating,
+        editorInputDisabled: isAiGenerating || isAiLoadingOverlayFinishing,
     });
     const orderedShift = useMemo(
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
@@ -359,11 +362,21 @@ export function AiAutofill() {
             setIsAiEffectVisible(false);
         }, AI_CALENDAR_EFFECT_SETTLE_MS);
     }, [clearAiEffectDismissTimer]);
+    const handleAiLoadingOverlayFinish = useCallback(() => {
+        setIsAiLoadingOverlayFinishing(false);
+        setAiStartedAt(null);
+    }, []);
 
     useEffect(() => () => clearAiEffectDismissTimer(), [clearAiEffectDismissTimer]);
 
     const isStepNavigationBusy =
-        isWorking || isSavingSnapshot || isAiGenerating || isReorderingRows || loadingSnapshotId !== null || deletingSnapshotId !== null;
+        isWorking ||
+        isSavingSnapshot ||
+        isAiGenerating ||
+        isAiLoadingOverlayFinishing ||
+        isReorderingRows ||
+        loadingSnapshotId !== null ||
+        deletingSnapshotId !== null;
 
     useEffect(() => {
         setStepNavigationBusy(5, isStepNavigationBusy);
@@ -398,7 +411,9 @@ export function AiAutofill() {
         aiAbortControllerRef.current = null;
         aiRequestSeqRef.current += 1;
         setIsAiGenerating(false);
+        setIsAiLoadingOverlayFinishing(false);
         setAiStartedAt(null);
+        setIsAiBlankPreviewVisible(false);
         hideAiEffect();
         resetAiStatus();
     }, [wardId, currentShiftTeamId, year, month, hideAiEffect, markLastAiGeneratedDoc, resetAiStatus]);
@@ -426,6 +441,10 @@ export function AiAutofill() {
     }, [isSnapshotSidebarOpen]);
 
     const isCalendarReadonly = isAiGenerating;
+    const visibleCalendarDoc = useMemo(
+        () => (isAiBlankPreviewVisible ? maskDutyDocCells(hydratedDoc, {hideUnlocked: true}) : hydratedDoc),
+        [hydratedDoc, isAiBlankPreviewVisible],
+    );
     const restCheckByShiftNurseId = useMemo(
         () =>
             orderedShift
@@ -514,6 +533,14 @@ export function AiAutofill() {
             setLastShiftBlankWarningAcknowledgedKey(null);
         }
     }, [lastShiftBlankWarningAcknowledgedKey, lastShiftBlankWarningKey]);
+
+    useEffect(() => {
+        if (!isAiBlankPreviewVisible) return;
+
+        if (isAiGenerating || aiFillDecisionContext !== null || lastShiftBlankWarningIntent === 'aiFill') return;
+
+        setIsAiBlankPreviewVisible(false);
+    }, [aiFillDecisionContext, isAiBlankPreviewVisible, isAiGenerating, lastShiftBlankWarningIntent]);
 
     const saveSnapshotFromList = async (snapshots: TSnapshotSummaryDto[], snapshotToDelete?: TSnapshotSummaryDto) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId || !orderedShift) return;
@@ -844,7 +871,7 @@ export function AiAutofill() {
         }
     };
     const getAiFillReadyContext = () => {
-        if (isAiGenerating) return null;
+        if (isAiGenerating || isAiLoadingOverlayFinishing) return null;
 
         if (!isCurrentShiftTeamReady || wardId == null || currentShiftTeamId == null || !rulesHash || !orderedShift) {
             toast.error(t('page.makeShift.aiRefill.cannotAutofillYet'));
@@ -860,7 +887,11 @@ export function AiAutofill() {
         };
     };
     const runAiFill = async (readyContext = getAiFillReadyContext()) => {
-        if (!readyContext) return;
+        if (!readyContext) {
+            setIsAiBlankPreviewVisible(false);
+
+            return;
+        }
 
         const requestSeq = aiRequestSeqRef.current + 1;
         const requestContext = {wardId: readyContext.wardId, shiftTeamId: readyContext.shiftTeamId, year, month};
@@ -870,6 +901,7 @@ export function AiAutofill() {
         aiAbortControllerRef.current = abortController;
         aiRequestSeqRef.current = requestSeq;
         setIsAiGenerating(true);
+        setIsAiLoadingOverlayFinishing(false);
         clearAiEffectDismissTimer();
         setAiStartedAt(Date.now());
         setIsAiEffectVisible(true);
@@ -934,7 +966,13 @@ export function AiAutofill() {
             if (aiRequestSeqRef.current === requestSeq) {
                 aiAbortControllerRef.current = null;
                 setIsAiGenerating(false);
-                setAiStartedAt(null);
+                setIsAiLoadingOverlayFinishing(shouldKeepAiEffectVisible);
+
+                if (!shouldKeepAiEffectVisible) {
+                    setAiStartedAt(null);
+                }
+
+                setIsAiBlankPreviewVisible(false);
 
                 if (!shouldKeepAiEffectVisible) hideAiEffect();
             }
@@ -983,6 +1021,8 @@ export function AiAutofill() {
 
         if (!readyContext) return;
 
+        setIsAiBlankPreviewVisible(true);
+
         if (requestLastShiftBlankWarning('aiFill')) return;
 
         runAiFillWithDecision(readyContext);
@@ -995,7 +1035,7 @@ export function AiAutofill() {
         if (!decisionContext) return;
 
         if (decisionContext.kind === 'initial') {
-            commands.setCellsFixed(getUnprotectedFilledCells(useShiftEditorStore.getState().doc), true);
+            commands.resetAutofilled('user');
             void runAiFill();
 
             return;
@@ -1006,9 +1046,18 @@ export function AiAutofill() {
         void runAiFill();
     };
     const handleCancelAiFillDecision = () => {
-        if (!aiFillDecisionContext) return;
+        const decisionContext = aiFillDecisionContext;
 
         setAiFillDecisionContext(null);
+
+        if (!decisionContext) return;
+
+        if (decisionContext.kind === 'initial') {
+            setIsAiBlankPreviewVisible(false);
+
+            return;
+        }
+
         commands.resetAutofilled('user');
         void runAiFill();
     };
@@ -1139,7 +1188,7 @@ export function AiAutofill() {
                 {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
                     <MakeShiftCalendar
                         shift={orderedShift}
-                        doc={hydratedDoc}
+                        doc={visibleCalendarDoc}
                         violationMap={violationMap}
                         teamViolations={teamViolations}
                         showFaults={showFaults}
@@ -1148,6 +1197,7 @@ export function AiAutofill() {
                         editableLastShifts={!isCalendarReadonly}
                         isShimmering={isAiEffectVisible}
                         showCellStatusPins
+                        fixCellOnContextMenu
                         cellAttention={cellAttention}
                         tutorialCellId="make_fixed_shift_sample_cell"
                         skillColumn={skillColumn}
@@ -1238,7 +1288,13 @@ export function AiAutofill() {
                 onClose={() => setSnapshotLimitContext(null)}
                 onConfirm={() => void handleConfirmDeleteOldestAndSave()}
             />
-            {isAiGenerating ? <AiAutofillLoadingOverlay startedAt={aiStartedAt} /> : null}
+            {isAiGenerating || isAiLoadingOverlayFinishing ? (
+                <AiAutofillLoadingOverlay
+                    isFinishing={isAiLoadingOverlayFinishing}
+                    startedAt={aiStartedAt}
+                    onFinish={handleAiLoadingOverlayFinish}
+                />
+            ) : null}
         </div>
     );
 }

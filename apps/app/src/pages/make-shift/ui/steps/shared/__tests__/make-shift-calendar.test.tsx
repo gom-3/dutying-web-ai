@@ -1,6 +1,7 @@
 import {createEvent, fireEvent, render, screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {act} from 'react';
+import toast from 'react-hot-toast';
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
@@ -8,6 +9,15 @@ import {type TDutyDoc, type TViolation, useShiftEditorStore} from '@/features/sh
 import {DEFAULT_SKILL_LEVEL_CONFIG} from '@/features/ward-skill/model/skill-level';
 import i18n from '@/i18n';
 import {MakeShiftCalendar} from '../make-shift-calendar';
+
+vi.mock('react-hot-toast', () => ({
+    default: {
+        success: vi.fn(),
+        error: vi.fn(),
+        loading: vi.fn(),
+        dismiss: vi.fn(),
+    },
+}));
 
 const shift = {
     lastDays: [],
@@ -65,6 +75,7 @@ describe('MakeShiftCalendar', () => {
 
     afterEach(() => {
         vi.useRealTimers();
+        vi.mocked(toast.success).mockClear();
         useShiftEditorStore.getState().reset();
         useUIConfigStore.getState().reset();
     });
@@ -261,6 +272,7 @@ describe('MakeShiftCalendar', () => {
         expect(fixedCell).toHaveAttribute('data-fixed-cell', 'true');
         expect(requestedCell).toHaveAttribute('data-request-cell', 'true');
         expect(fixedPin).toHaveAttribute('title', '고정 근무');
+        expect(fixedPin).toHaveClass('text-[#374151]');
         expect(requestPin).toHaveAttribute('title', '신청 근무');
         expect(fixedCell?.querySelector('[data-cell-status-pin="request"]')).not.toBeInTheDocument();
         expect(requestedCell?.querySelector('[data-cell-status-pin="fixed"]')).not.toBeInTheDocument();
@@ -855,7 +867,11 @@ describe('MakeShiftCalendar', () => {
             fireEvent.doubleClick(trigger!);
         });
 
-        expect(await screen.findByRole('listbox', {name: '근무유형 선택'})).toBeInTheDocument();
+        const listbox = await screen.findByRole('listbox', {name: '근무유형 선택'});
+
+        expect(listbox).toBeInTheDocument();
+        expect(within(listbox).queryByText('고정하기')).not.toBeInTheDocument();
+        expect(within(listbox).queryByText('비우기')).not.toBeInTheDocument();
         expect(trigger).not.toHaveClass('bg-main-4/70');
         expect(trigger!.closest('[data-shift-nurse-id]')?.querySelector('[data-selection-layer="true"]')).toHaveClass('bg-main-4/70');
         expect(trigger!.querySelector('.make-shift-calendar__shift-badge')).not.toHaveClass('outline-[1px]', 'outline-main-1');
@@ -895,7 +911,82 @@ describe('MakeShiftCalendar', () => {
         });
 
         expect(useShiftEditorStore.getState().doc.fixedCells['2|2026-05-02']).toBe(true);
+        expect(toast.success).toHaveBeenCalledWith('근무를 고정했어요.');
         expect(screen.queryByRole('listbox', {name: '근무유형 선택'})).not.toBeInTheDocument();
+    });
+
+    it('shows an unfix action for fixed cells and unfixes the current cell', async () => {
+        const fixedDoc: TDutyDoc = {
+            ...doc,
+            fixedCells: {'2|2026-05-02': true},
+        };
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(fixedDoc);
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={fixedDoc} violationMap={new Map()} showFaults />);
+        await act(async () => undefined);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+        act(() => {
+            fireEvent.doubleClick(trigger!);
+        });
+
+        const listbox = await screen.findByRole('listbox', {name: '근무유형 선택'});
+        const options = within(listbox).getAllByRole('option');
+
+        expect(options).toHaveLength(1);
+        expect(options[0]).toHaveTextContent('고정해제하기');
+
+        act(() => {
+            fireEvent.click(options[0]!);
+        });
+
+        expect(useShiftEditorStore.getState().doc.fixedCells['2|2026-05-02']).toBeUndefined();
+        expect(toast.success).toHaveBeenCalledWith('근무 고정을 해제했어요.');
+        expect(screen.queryByRole('listbox', {name: '근무유형 선택'})).not.toBeInTheDocument();
+    });
+
+    it('toggles the underlying day cell fixed state on right click when context-menu fixing is enabled', () => {
+        const maskedDoc: TDutyDoc = {
+            ...doc,
+            rows: [{...doc.rows[0]!, cells: [null, null]}],
+        };
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+            useShiftEditorStore.getState().setEditorMode('fixed');
+        });
+
+        render(<MakeShiftCalendar shift={shift} doc={maskedDoc} violationMap={new Map()} showFaults={false} fixCellOnContextMenu />);
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="1"]');
+
+        expect(trigger).not.toBeNull();
+
+        const contextMenu = createEvent.contextMenu(trigger!, {button: 2});
+
+        act(() => {
+            fireEvent(trigger!, contextMenu);
+        });
+
+        expect(contextMenu.defaultPrevented).toBe(true);
+        expect(useShiftEditorStore.getState().selection).toEqual({type: 'single', anchor: {row: 0, col: 1}});
+        expect(useShiftEditorStore.getState().doc.fixedCells['2|2026-05-02']).toBe(true);
+        expect(toast.success).toHaveBeenLastCalledWith('근무를 고정했어요.');
+
+        const secondContextMenu = createEvent.contextMenu(trigger!, {button: 2});
+
+        act(() => {
+            fireEvent(trigger!, secondContextMenu);
+        });
+
+        expect(secondContextMenu.defaultPrevented).toBe(true);
+        expect(useShiftEditorStore.getState().doc.fixedCells['2|2026-05-02']).toBeUndefined();
+        expect(toast.success).toHaveBeenLastCalledWith('근무 고정을 해제했어요.');
     });
 
     it('opens the shift type dropdown on editable previous-shift cells', async () => {
@@ -980,6 +1071,46 @@ describe('MakeShiftCalendar', () => {
         );
         expect(trigger!.querySelector('.make-shift-calendar__shift-badge')).not.toHaveClass('outline-[1px]', 'outline-main-1');
         expect(trigger!.querySelector('span[aria-hidden]')).not.toBeInTheDocument();
+    });
+
+    it('highlights the selected row carry-over value with the row label color', async () => {
+        const user = userEvent.setup();
+
+        act(() => {
+            useShiftEditorStore.getState().setDoc(doc);
+        });
+
+        render(
+            <MakeShiftCalendar
+                shift={shift}
+                doc={doc}
+                violationMap={new Map()}
+                showFaults={false}
+                restCheckByShiftNurseId={{
+                    2: {
+                        targetDays: 10,
+                        assignedDays: 1,
+                        carriedDays: 2,
+                        carryOverApplied: true,
+                        differenceDays: -9,
+                    },
+                }}
+            />,
+        );
+
+        const trigger = document.querySelector<HTMLButtonElement>('[data-shift-nurse-id="2"] [data-day-index="0"]');
+        const carryOverValue = document.querySelector<HTMLElement>('[data-shift-nurse-id="2"] .make-shift-calendar__row-carried-value');
+
+        expect(trigger).not.toBeNull();
+        expect(carryOverValue).toHaveClass('text-red');
+
+        await act(async () => {
+            await user.click(trigger!);
+        });
+
+        expect(carryOverValue).toHaveAttribute('data-selected-row-label', 'true');
+        expect(carryOverValue).toHaveClass('text-main-1');
+        expect(carryOverValue).not.toHaveClass('text-red');
     });
 
     it('prevents editable day cells from taking native mouse focus', () => {

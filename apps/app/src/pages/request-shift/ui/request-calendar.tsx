@@ -302,7 +302,7 @@ export default function ShiftCalendar({
                 <div ref={clickAwayRef} className="flex h-full min-h-0 flex-col rounded-[18px] bg-white">
                     {hasCurrentTeamNurses ? (
                         <div ref={containerRef} className="min-h-[420px] w-full overflow-x-auto overflow-y-visible rounded-[18px] bg-white">
-                            <div className="min-w-[840px]">
+                            <div className="request-calendar__calendar-frame min-w-[840px]">
                                 <MakeShiftCalendar
                                     shift={requestCalendarData.shift}
                                     doc={requestCalendarData.doc}
@@ -313,6 +313,8 @@ export default function ShiftCalendar({
                                     disableInitialSelection
                                     showCellStatusPins
                                     focusedCell={focusedCell}
+                                    rowNameClassName="text-[clamp(12px,1.05vw,16px)]"
+                                    rowGapClassName="gap-y-3"
                                     canReorderRows={shouldShowRowReorder}
                                     rowReorderDisabled={isRowReorderDisabled}
                                     onRowDragEnd={handleStandaloneRowDragEnd}

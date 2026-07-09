@@ -35,6 +35,10 @@ export const th = {
             ...generatedTh.page.makeShift,
             calendar: {
                 ...generatedTh.page.makeShift.calendar,
+                fixCell: 'ตรึง',
+                unfixCell: 'ยกเลิกการตรึง',
+                fixCellSuccess: 'ตรึงเวรแล้ว',
+                unfixCellSuccess: 'ยกเลิกการตรึงเวรแล้ว',
                 fixedStatusPin: 'เวรคงที่',
                 requestStatusPin: 'เวรที่ขอ',
             },

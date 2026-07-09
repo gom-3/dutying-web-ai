@@ -76,7 +76,10 @@ export function FixedShifts() {
     const {dutyQuery, editorDoc, editorRef, onKeyDown, onPasteCapture, focusEditor, isHydratingEditor} = useDutyEditorStep({
         hydratePreviousLastShifts: true,
     });
-    const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses), [currentTeamNurses, dutyQuery.data]);
+    const orderedShift = useMemo(
+        () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
+        [currentTeamNurses, dutyQuery.data],
+    );
     const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -215,6 +218,7 @@ export function FixedShifts() {
                         onCellClick={focusEditor}
                         editableLastShifts
                         showCellStatusPins
+                        fixCellOnContextMenu
                         skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         canReorderRows

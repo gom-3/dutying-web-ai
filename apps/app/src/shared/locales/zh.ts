@@ -35,6 +35,10 @@ export const zh = {
             ...generatedZh.page.makeShift,
             calendar: {
                 ...generatedZh.page.makeShift.calendar,
+                fixCell: '固定',
+                unfixCell: '取消固定',
+                fixCellSuccess: '已固定班次。',
+                unfixCellSuccess: '已取消固定班次。',
                 fixedStatusPin: '固定班次',
                 requestStatusPin: '申请班次',
             },

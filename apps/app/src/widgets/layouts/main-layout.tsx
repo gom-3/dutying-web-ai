@@ -32,7 +32,7 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
     {
         route: ROUTE.REQUEST,
         topClassName: 'top-4',
-        innerClassName: 'mx-auto flex w-full max-w-[1640px] min-w-[1160px] justify-end px-10',
+        innerClassName: 'mx-auto flex w-full max-w-[1680px] justify-end px-3 min-[1600px]:px-10 lg:px-4',
     },
     {
         route: ROUTE.BOARD,
