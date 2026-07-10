@@ -1,8 +1,8 @@
 import {RUNTIME_CONFIG} from './runtime';
 
 /** 프로덕션 앱 도메인 — 여기서는 LINKED 계정 온보딩 미리보기 불가 */
-const PRODUCTION_APP_HOSTS = new Set(['app.dutying.net']);
-const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.net']);
+const PRODUCTION_APP_HOSTS = new Set(['app.dutying.ai', 'app.dutying.net']);
+const PRODUCTION_API_HOSTS_WITHOUT_WARD_CHAT = new Set(['api.dutying.ai', 'api.dutying.net']);
 
 function getAppHostname(): string | null {
     if (typeof window === 'undefined') return null;
@@ -27,7 +27,7 @@ export function isNonProductionAppDomain(hostname: string = getAppHostname() ?? 
 
     if (hostname.startsWith('local.')) return true;
 
-    if (hostname === 'dev.dutying.net') return true;
+    if (hostname === 'dev.dutying.ai' || hostname === 'dev.dutying.net') return true;
 
     if (hostname.startsWith('staging.')) return true;
 
@@ -38,7 +38,7 @@ export function isNonProductionAppDomain(hostname: string = getAppHostname() ?? 
  * 온보딩 병동 생성 UI를 WARD_SELECT_PENDING이 아닌 계정(LINKED 등)에서도 열 수 있게 한다.
  *
  * - 로컬 dev server: `import.meta.env.DEV`
- * - 그 외: **접속 도메인**이 프로덕션(`app.dutying.net`)이 아니면 허용
+ * - 그 외: **접속 도메인**이 프로덕션(`app.dutying.ai`, `app.dutying.net`)이 아니면 허용
  * - 명시 override: `VITE_ALLOW_ONBOARDING_PREVIEW=true|false`
  */
 export function isOnboardingWardCreatePreviewAllowed(): boolean {

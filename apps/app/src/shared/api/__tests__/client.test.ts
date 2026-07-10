@@ -16,6 +16,6 @@ describe('api client unauthorized redirect policy', () => {
 
     it('redirects protected api failures to the refresh route', () => {
         expect(shouldRedirectToRefreshOnUnauthorized('/accounts/me', ROUTE.MAKE)).toBe(true);
-        expect(shouldRedirectToRefreshOnUnauthorized('https://api.dutying.net/wards/1/nurses', ROUTE.MEMBER)).toBe(true);
+        expect(shouldRedirectToRefreshOnUnauthorized('https://api.dutying.ai/wards/1/nurses', ROUTE.MEMBER)).toBe(true);
     });
 });

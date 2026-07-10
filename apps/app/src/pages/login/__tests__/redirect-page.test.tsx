@@ -52,7 +52,7 @@ describe('RedirectPage', () => {
             },
         } as never);
 
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
         window.history.replaceState({}, '', '/oauth2/redirect');
     });
 
@@ -74,7 +74,7 @@ describe('RedirectPage', () => {
         window.history.replaceState(
             {},
             '',
-            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=https%3A%2F%2Fdutying.net%2Frequest%3Fmonth%3D3`,
+            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=https%3A%2F%2Fdutying.ai%2Frequest%3Fmonth%3D3`,
         );
 
         render(<RedirectPage />);
@@ -90,7 +90,7 @@ describe('RedirectPage', () => {
         window.history.replaceState(
             {},
             '',
-            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Frequest%3Fmonth%3D3%23calendar`,
+            `/oauth2/redirect?accessToken=${adminToken}&nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Frequest%3Fmonth%3D3%23calendar`,
         );
 
         render(<RedirectPage />);
@@ -220,7 +220,7 @@ describe('RedirectPage', () => {
     });
 
     it('uses the refresh cookie flow when the callback only includes an app-domain nextPageUrl', async () => {
-        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2F');
+        window.history.replaceState({}, '', '/oauth2/redirect?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2F');
 
         const replace = mockLocationReplace();
 

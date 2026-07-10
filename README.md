@@ -158,9 +158,9 @@ pnpm run changeset:version
 
 ## 링크
 
-- 랜딩 화면: [https://dutying.net](https://dutying.net)
-- 웹 앱: [https://app.dutying.net](https://app.dutying.net)
-- 가이드 문서 사이트: [https://docs.dutying.net](https://docs.dutying.net)
+- 랜딩 화면: [https://dutying.ai](https://dutying.ai)
+- 웹 앱: [https://app.dutying.ai](https://app.dutying.ai)
+- 가이드 문서 사이트: [https://docs.dutying.ai](https://docs.dutying.ai)
 - 모바일 앱 저장소: [gom-3/dutying-mobile](https://github.com/gom-3/dutying-mobile)
 - 이용 약관: [Notion](https://gom3.notion.site/5ed51c04dd5d475c868367ed05a7d903?pvs=4)
 - 라이선스: [Apache License 2.0](LICENSE)

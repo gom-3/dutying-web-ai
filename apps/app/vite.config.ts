@@ -47,8 +47,8 @@ const dependencies = {
     zustand: 'zustand',
 };
 const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
-const defaultAppSiteUrl = 'https://app.dutying.net';
-const defaultPreviewAppSiteUrl = 'https://dev.dutying.net';
+const defaultAppSiteUrl = 'https://app.dutying.ai';
+const defaultPreviewAppSiteUrl = 'https://dev.dutying.ai';
 const stripTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 const withHttpsProtocol = (value: string) => (/^https?:\/\//.test(value) ? value : `https://${value}`);
 const getConfiguredAppSiteUrl = (env: Record<string, string>) => {

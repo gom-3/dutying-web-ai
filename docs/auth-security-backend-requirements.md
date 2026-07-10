@@ -11,10 +11,10 @@
 - OAuth `state` 값으로 CSRF 방지와 `nextPageUrl` 무결성 검증
 - `nextPageUrl`은 서버에서도 app origin allow-list 검증
 - OAuth 콜백/`nextPageUrl`은 환경별 프론트 도메인을 유지
-  - production: `https://app.dutying.net/oauth2/redirect`, `nextPageUrl=https://app.dutying.net/...`
-  - dev: `https://dev.dutying.net/oauth2/redirect`, `nextPageUrl=https://dev.dutying.net/...`
+  - production: `https://app.dutying.ai/oauth2/redirect`, `nextPageUrl=https://app.dutying.ai/...`
+  - dev: `https://dev.dutying.ai/oauth2/redirect`, `nextPageUrl=https://dev.dutying.ai/...`
   - local 필요 시: `https://local.app.dutying.net:3000/oauth2/redirect`
-  - dev 로그인 요청이 production `app.dutying.net`으로 돌아가면 안 됩니다.
+  - dev 로그인 요청이 production `app.dutying.ai`으로 돌아가면 안 됩니다.
 
 ## 2. Refresh/Logout 토큰 정책
 
@@ -42,8 +42,8 @@
 ## 5. 운영 보안 헤더/CORS
 
 - API CORS origin allow-list를 환경별 필요한 프론트 도메인으로 제한
-  - production: `https://app.dutying.net`
-  - dev: `https://dev.dutying.net`
+  - production: `https://app.dutying.ai`
+  - dev: `https://dev.dutying.ai`
   - local 필요 시: `https://local.app.dutying.net:3000`
 - credential 요청 허용 시 wildcard origin 금지
 - CSP는 프론트 SDK 목록을 확정한 뒤 배포 환경에서 적용

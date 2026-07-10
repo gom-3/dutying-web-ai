@@ -32,7 +32,7 @@ describe('getLoginRedirectDecision', () => {
     it('falls back to the default app route when nextPageUrl is missing', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
             history: {
                 back: vi.fn(),
@@ -48,14 +48,14 @@ describe('getLoginRedirectDecision', () => {
     it('keeps allowed app-domain subdomain redirects as in-app replace targets', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
             history: {
                 back: vi.fn(),
             },
         });
 
-        expect(getLoginRedirectDecision('https://app.dutying.net/request?month=3#calendar')).toEqual({
+        expect(getLoginRedirectDecision('https://app.dutying.ai/request?month=3#calendar')).toEqual({
             type: 'replace',
             href: '/request?month=3#calendar',
         });
@@ -64,14 +64,14 @@ describe('getLoginRedirectDecision', () => {
     it('falls back when nextPageUrl points to the landing domain after subdomain split', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
             history: {
                 back: vi.fn(),
             },
         });
 
-        expect(getLoginRedirectDecision('https://dutying.net/request?month=3')).toEqual({
+        expect(getLoginRedirectDecision('https://dutying.ai/request?month=3')).toEqual({
             type: 'replace',
             href: ROUTE.HOME,
         });
