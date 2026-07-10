@@ -2,19 +2,19 @@
 
 ## Decision
 
-- `apps/landing` is a dedicated Astro app for `dutying.net`.
-- `apps/app` remains the product app that will be served from `app.dutying.net`.
+- `apps/landing` is a dedicated Astro app for `dutying.ai`.
+- `apps/app` remains the product app that will be served from `app.dutying.ai`.
 - This ticket establishes the split-ready baseline, not the final landing content or the full authentication migration.
 
 ## Responsibility Boundary
 
-### `dutying.net` landing
+### `dutying.ai` landing
 
 - product positioning, marketing copy, SEO, OG metadata
 - feature overview and trust-building content
 - CTA links that send users into the product app
 
-### `app.dutying.net` app
+### `app.dutying.ai` app
 
 - login and OAuth callback flow
 - authenticated product routes
@@ -22,9 +22,9 @@
 
 ## Landing Entry Flow
 
-- Primary CTA: `https://app.dutying.net/login`
-- Secondary CTA: `https://app.dutying.net/make`
-- Additional path: `https://app.dutying.net/register`
+- Primary CTA: `https://app.dutying.ai/login`
+- Secondary CTA: `https://app.dutying.ai/make`
+- Additional path: `https://app.dutying.ai/register`
 
 These URLs are exposed in `apps/landing/src/config/site.ts` and can be overridden with:
 
@@ -45,7 +45,7 @@ The app itself uses matching Vite env keys:
 ### 1. Root route responsibility is still mixed
 
 - `apps/app/src/app/Router.tsx` still serves `LandingPage` on `/`.
-- Once `app.dutying.net` becomes the product-only domain, `/` should stop acting as the public marketing landing.
+- Once `app.dutying.ai` becomes the product-only domain, `/` should stop acting as the public marketing landing.
 - Follow-up options:
     - redirect `/` to `/login` or `/make`
     - or keep `/` as a signed-in gateway page explicitly designed for the app domain
@@ -56,7 +56,7 @@ The app itself uses matching Vite env keys:
 - `apps/app/public/robots.txt`
 - `apps/app/public/sitemap.xml`
 
-These are now updated toward `app.dutying.net`, but the real deployment sitemap strategy still needs a final decision once both domains ship.
+These are now updated toward `app.dutying.ai`, but the real deployment sitemap strategy still needs a final decision once both domains ship.
 
 ### 3. OAuth redirect should stay app-domain only
 
@@ -66,12 +66,12 @@ These are now updated toward `app.dutying.net`, but the real deployment sitemap 
 - `apps/app/src/shared/api/client.ts`
 - `apps/app/src/pages/refresh/index.tsx`
 
-The app should build OAuth entry URLs from an explicit app-site setting and normalize callback targets back into app-relative paths. That keeps login, refresh, and callback flows inside `app.dutying.net` even after domain separation.
+The app should build OAuth entry URLs from an explicit app-site setting and normalize callback targets back into app-relative paths. That keeps login, refresh, and callback flows inside `app.dutying.ai` even after domain separation.
 
 Checkpoints:
 
-- backend OAuth allow-list must include `https://app.dutying.net/oauth2/redirect`
-- refresh redirect flow must never bounce users back to `dutying.net`
+- backend OAuth allow-list must include `https://app.dutying.ai/oauth2/redirect`
+- refresh redirect flow must never bounce users back to `dutying.ai`
 - post-login default route should remain product-focused
 
 ### 4. Auth state is not purely cookie-based

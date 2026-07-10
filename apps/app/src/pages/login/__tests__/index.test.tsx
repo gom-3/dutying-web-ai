@@ -64,8 +64,8 @@ describe('LoginPage', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
     });
 
     it('renders sign-in as the default admin login page with a signup entry', () => {
@@ -87,11 +87,11 @@ describe('LoginPage', () => {
         expect(screen.getByRole('link', {name: '회원가입'})).toHaveAttribute('href', ROUTE.SIGN_UP);
         expect(screen.getByRole('link', {name: '카카오로 계속하기'})).toHaveAttribute(
             'href',
-            'https://api.dutying.net/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fhome',
+            'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
         expect(screen.getByRole('link', {name: 'Apple로 계속하기'})).toHaveAttribute(
             'href',
-            'https://api.dutying.net/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fhome',
+            'https://api.dutying.ai/oauth2/authorization/admin/apple?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fhome',
         );
     });
 
@@ -167,7 +167,7 @@ describe('LoginPage', () => {
         expect(screen.getByRole('link', {name: '로그인'})).toHaveAttribute('href', ROUTE.SIGN_IN);
         expect(screen.getByRole('link', {name: '카카오로 시작하기'})).toHaveAttribute(
             'href',
-            'https://api.dutying.net/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.net%2Fregister%3FsocialSignup%3D1',
+            'https://api.dutying.ai/oauth2/authorization/admin/kakao?nextPageUrl=https%3A%2F%2Fapp.dutying.ai%2Fregister%3FsocialSignup%3D1',
         );
     });
 

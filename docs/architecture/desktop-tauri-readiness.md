@@ -17,7 +17,7 @@
 ### 1. 인증과 redirect
 
 - 로그인 시작점이 `${VITE_SERVER_URL}/oauth2/authorization/*?nextPageUrl=${appOrigin}/make` 형식이라, 현재는 브라우저 origin이 곧 복귀 주소라는 가정이 있다.
-- `RedirectPage`는 querystring의 `accessToken`, `nextPageUrl`을 바로 읽는다. Tauri에서는 `https://app.dutying.net`, `tauri://localhost`, custom scheme, loopback URL 중 무엇을 복귀 주소로 쓸지 먼저 정해야 한다.
+- `RedirectPage`는 querystring의 `accessToken`, `nextPageUrl`을 바로 읽는다. Tauri에서는 `https://app.dutying.ai`, `tauri://localhost`, custom scheme, loopback URL 중 무엇을 복귀 주소로 쓸지 먼저 정해야 한다.
 - refresh는 `withCredentials: true` 쿠키 기반이며 401 발생 시 `/refresh?next=...`로 강제 이동한다. desktop에서 webview cookie jar가 서버의 `SameSite`, `Secure`, domain 정책과 호환되는지 점검이 필요하다.
 - 이번 변경으로 로그인 시작 URL은 `VITE_APP_PUBLIC_URL` 우선, 브라우저 origin fallback 방식으로 정리했다. desktop에서는 이 값을 명시적으로 주입하는 쪽이 안전하다.
 
@@ -33,7 +33,7 @@
 
 ### 3. 도메인/환경 변수 하드코딩
 
-- 앱 내부에 `app.dutying.net`, Notion 문서 URL, S3 bucket base URL이 직접 박혀 있었다.
+- 앱 내부에 `app.dutying.ai`, Notion 문서 URL, S3 bucket base URL이 직접 박혀 있었다.
 - 이 값들은 desktop 전용 배포 채널, staging, custom scheme 실험 시 매번 코드 수정 포인트가 된다.
 - `VITE_APP_PUBLIC_URL`, `VITE_PUBLIC_S3_BASE_URL`, 문서 URL env를 두고 런타임 구성으로 노출하는 편이 안전하다.
 

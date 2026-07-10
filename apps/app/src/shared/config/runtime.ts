@@ -16,10 +16,10 @@ const getRuntimeUrl = (envValue: string | undefined, fallback: string) => {
     return trimTrailingSlash(normalized ?? fallback);
 };
 const INTERNAL_PATH_PATTERN = /^\/(?![\\/])/;
-export const DEFAULT_SERVER_URL = 'https://api.dutying.net';
+export const DEFAULT_SERVER_URL = 'https://api.dutying.ai';
 
 export const RUNTIME_CONFIG = {
-    publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.net'),
+    publicAppUrl: () => getRuntimeUrl(import.meta.env.VITE_APP_PUBLIC_URL, getWindowOrigin() ?? 'https://app.dutying.ai'),
     serverUrl: () => getRuntimeUrl(import.meta.env.VITE_SERVER_URL, DEFAULT_SERVER_URL),
     profileImageBaseUrl: () =>
         getRuntimeUrl(import.meta.env.VITE_PUBLIC_S3_BASE_URL, 'https://dutying-prod.s3.ap-northeast-2.amazonaws.com'),

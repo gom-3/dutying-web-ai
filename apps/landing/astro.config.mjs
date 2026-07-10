@@ -4,7 +4,7 @@ import {loadRootEnv} from '../../packages/config/load-root-env.mjs';
 const env = loadRootEnv(process.cwd());
 
 export default defineConfig({
-    site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.net',
+    site: env.PUBLIC_MARKETING_SITE_URL ?? 'https://dutying.ai',
     build: {
         format: 'directory',
     },

@@ -16,17 +16,17 @@ describe('resolveSafeRedirectTarget', () => {
     it('accepts same-origin absolute redirect and converts it to app-relative path', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://app.dutying.net/request?month=3#header')).toBe('/request?month=3#header');
+        expect(resolveSafeRedirectTarget('https://app.dutying.ai/request?month=3#header')).toBe('/request?month=3#header');
     });
 
     it('rejects cross-origin redirects', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
         });
 
@@ -34,14 +34,14 @@ describe('resolveSafeRedirectTarget', () => {
     });
 
     it('accepts redirects that match the configured public app origin in local development', () => {
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
         vi.stubGlobal('window', {
             location: {
                 origin: 'https://local.app.dutying.net:3000',
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://app.dutying.net/login?next=%2Fmake#cta')).toBe('/login?next=%2Fmake#cta');
+        expect(resolveSafeRedirectTarget('https://app.dutying.ai/login?next=%2Fmake#cta')).toBe('/login?next=%2Fmake#cta');
     });
 
     it('rejects protocol-relative redirect targets', () => {
@@ -51,32 +51,32 @@ describe('resolveSafeRedirectTarget', () => {
     it('rejects same-origin redirects whose normalized path becomes protocol-relative', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://app.dutying.net//evil.example')).toBe(ROUTE.HOME);
-        expect(resolveSafeRedirectTarget('https://app.dutying.net/\\evil.example')).toBe(ROUTE.HOME);
+        expect(resolveSafeRedirectTarget('https://app.dutying.ai//evil.example')).toBe(ROUTE.HOME);
+        expect(resolveSafeRedirectTarget('https://app.dutying.ai/\\evil.example')).toBe(ROUTE.HOME);
     });
 
     it('rejects landing-domain redirects after domain split', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://dutying.net/request')).toBe(ROUTE.HOME);
+        expect(resolveSafeRedirectTarget('https://dutying.ai/request')).toBe(ROUTE.HOME);
     });
 
     it('rejects docs-domain redirects after domain split', () => {
         vi.stubGlobal('window', {
             location: {
-                origin: 'https://app.dutying.net',
+                origin: 'https://app.dutying.ai',
             },
         });
 
-        expect(resolveSafeRedirectTarget('https://docs.dutying.net/request')).toBe(ROUTE.HOME);
+        expect(resolveSafeRedirectTarget('https://docs.dutying.ai/request')).toBe(ROUTE.HOME);
     });
 
     it('rejects slash-backslash redirect targets', () => {
@@ -86,32 +86,32 @@ describe('resolveSafeRedirectTarget', () => {
 
 describe('buildAppUrl', () => {
     it('uses the configured public app url and strips trailing slashes', () => {
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://staging.app.dutying.net///');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://staging.app.dutying.ai///');
 
-        expect(buildAppUrl('/member')).toBe('https://staging.app.dutying.net/member');
+        expect(buildAppUrl('/member')).toBe('https://staging.app.dutying.ai/member');
     });
 });
 
 describe('buildAuthAuthorizeUrl', () => {
     it('sanitizes invalid nextPath before building auth url', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
 
         const url = new URL(buildAuthAuthorizeUrl('kakao', 'https://evil.example/phish'));
 
-        expect(url.origin).toBe('https://api.dutying.net');
+        expect(url.origin).toBe('https://api.dutying.ai');
         expect(url.pathname).toBe('/oauth2/authorization/admin/kakao');
-        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/home');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.ai/home');
     });
 
     it('uses the default server origin when VITE_SERVER_URL is blank', () => {
         vi.stubEnv('VITE_SERVER_URL', '   ');
-        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.net');
+        vi.stubEnv('VITE_APP_PUBLIC_URL', 'https://app.dutying.ai');
 
         const url = new URL(buildAuthAuthorizeUrl('apple', ROUTE.REQUEST));
 
-        expect(url.origin).toBe('https://api.dutying.net');
+        expect(url.origin).toBe('https://api.dutying.ai');
         expect(url.pathname).toBe('/oauth2/authorization/admin/apple');
-        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.net/request');
+        expect(url.searchParams.get('nextPageUrl')).toBe('https://app.dutying.ai/request');
     });
 });

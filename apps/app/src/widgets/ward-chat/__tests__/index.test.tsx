@@ -81,7 +81,7 @@ describe('WardChatWidget', () => {
         authStateMock.isDemoExpired = false;
         authStateMock.wardId = 1;
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', '');
-        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
         vi.stubGlobal(
             'fetch',
             vi.fn(() => pendingFetch()),
@@ -182,7 +182,7 @@ describe('WardChatWidget', () => {
             expect(document.querySelector('img[src="https://cdn.example.com/profile/other-nurse.png"]')).toBeInTheDocument(),
         );
         expect(fetchMock).toHaveBeenCalledWith(
-            'https://dev.api.dutying.net/events/stream',
+            'https://dev.api.dutying.ai/events/stream',
             expect.objectContaining({
                 headers: expect.objectContaining({
                     Accept: 'text/event-stream',
@@ -438,7 +438,7 @@ describe('WardChatWidget', () => {
     });
 
     it('does not call ward chat APIs on production API while the routes are unavailable', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
 
         renderWithQueryClient(<WardChatWidget />);
 

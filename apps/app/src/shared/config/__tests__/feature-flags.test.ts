@@ -3,10 +3,12 @@ import {isNonProductionAppDomain, isOnboardingWardCreatePreviewAllowed, isWardCh
 
 describe('isNonProductionAppDomain', () => {
     it('treats production app host as production', () => {
+        expect(isNonProductionAppDomain('app.dutying.ai')).toBe(false);
         expect(isNonProductionAppDomain('app.dutying.net')).toBe(false);
     });
 
     it('treats dev and preview hosts as non-production', () => {
+        expect(isNonProductionAppDomain('dev.dutying.ai')).toBe(true);
         expect(isNonProductionAppDomain('dev.dutying.net')).toBe(true);
         expect(isNonProductionAppDomain('local.app.dutying.net')).toBe(true);
         expect(isNonProductionAppDomain('dutying-app-git-feat.vercel.app')).toBe(true);
@@ -17,7 +19,7 @@ describe('isNonProductionAppDomain', () => {
 describe('isOnboardingWardCreatePreviewAllowed', () => {
     beforeEach(() => {
         vi.stubEnv('VITE_ALLOW_ONBOARDING_PREVIEW', '');
-        vi.stubGlobal('window', {location: {hostname: 'app.dutying.net'}});
+        vi.stubGlobal('window', {location: {hostname: 'app.dutying.ai'}});
     });
 
     afterEach(() => {
@@ -30,7 +32,7 @@ describe('isOnboardingWardCreatePreviewAllowed', () => {
     });
 
     it('allows preview on dev app domain', () => {
-        vi.stubGlobal('window', {location: {hostname: 'dev.dutying.net'}});
+        vi.stubGlobal('window', {location: {hostname: 'dev.dutying.ai'}});
 
         expect(isOnboardingWardCreatePreviewAllowed()).toBe(true);
     });
@@ -44,7 +46,7 @@ describe('isOnboardingWardCreatePreviewAllowed', () => {
     });
 
     it('respects VITE_ALLOW_ONBOARDING_PREVIEW=false override', () => {
-        vi.stubGlobal('window', {location: {hostname: 'dev.dutying.net'}});
+        vi.stubGlobal('window', {location: {hostname: 'dev.dutying.ai'}});
         vi.stubEnv('VITE_ALLOW_ONBOARDING_PREVIEW', 'false');
 
         expect(isOnboardingWardCreatePreviewAllowed()).toBe(false);
@@ -68,19 +70,19 @@ describe('isWardChatEnabled', () => {
     });
 
     it('disables ward chat against production API while it lacks chat routes', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
 
         expect(isWardChatEnabled()).toBe(false);
     });
 
     it('allows ward chat against dev API', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
 
         expect(isWardChatEnabled()).toBe(true);
     });
 
     it('respects explicit override', () => {
-        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.net');
+        vi.stubEnv('VITE_SERVER_URL', 'https://api.dutying.ai');
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', 'true');
 
         expect(isWardChatEnabled()).toBe(true);
