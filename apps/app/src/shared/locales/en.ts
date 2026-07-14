@@ -672,8 +672,8 @@ export const en: TLocale = {
                     info: 'Select a cell and type the shift abbreviation.\nWard abbreviations such as D, E, N, and O apply immediately.',
                 },
                 authoringFixed: {
-                    title: 'Fix shifts AI should not change',
-                    info: 'You can select cells and fix them directly from the schedule authoring screen.\nFixed shifts and accepted requests are protected during AI autofill.',
+                    title: 'Fix shifts before using AI',
+                    info: 'AI fills blank cells except fixed and requested shifts.\nFix any shift that must not change before running AI.',
                 },
                 aiAutofill: {
                     title: 'AI autofill',

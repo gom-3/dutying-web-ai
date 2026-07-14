@@ -361,8 +361,8 @@ function StatusHighlightMenu({
                 className={cn(
                     'peer grid size-9 cursor-pointer place-items-center rounded-[10px] text-gray-3',
                     'transition-[color,background-color,box-shadow,transform] duration-150',
-                    'hover:bg-white hover:text-main-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-                    open && 'bg-white text-main-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
+                    'hover:bg-white hover:text-gray-3 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                    open && 'bg-white text-gray-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
                 )}
             >
                 <Eye className="size-3.5" aria-hidden />

@@ -176,10 +176,13 @@ describe('make-tutorial', () => {
             ['make_ai_view_tools', 'make_ai_history_undo_redo_tools', 'make_ai_history_snapshot_tools'],
         ]);
         expect(lastCall.config.steps.map((step) => step.title)).toEqual([
-            '바꾸면 안 되는 근무 고정하기',
+            'AI 전에 꼭 고정해 주세요',
             'AI 자동 채우기',
             '보조 도구 활용하기',
         ]);
+        expect(lastCall.config.steps[0]?.info).toBe(
+            'AI는 고정근무와 신청근무를 제외한 빈칸을 채워요.\n바꾸면 안 되는 근무가 있다면 AI 실행 전에 먼저 고정해 주세요.',
+        );
     });
 
     it('does not open authoring guidance on the confirmed step', async () => {

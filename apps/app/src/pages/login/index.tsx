@@ -1,6 +1,7 @@
 import {cn} from '@dutying/utils/style';
 import {ChevronLeft, ChevronRight, Eye, EyeOff, Loader2, Lock, Mail} from 'lucide-react';
 import {type FormEvent, useCallback, useEffect, useRef, useState} from 'react';
+import {preload} from 'react-dom';
 import {Link, useLocation} from 'react-router';
 import useAuth from '@/features/auth';
 import {getIsDemoSignupLoginReason} from '@/features/auth/model/demo-session';
@@ -22,7 +23,11 @@ const FIELD_CLASS =
 const PASSWORD_MIN_LENGTH = 8;
 const EMAIL_VERIFICATION_CODE_LENGTH = 6;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const LOGIN_VISUAL_SLIDES = ['/img/login-slide-1.png', '/img/login-slide-2.png', '/img/login-slide-3.png'];
+const LOGIN_VISUAL_SLIDES = [
+    {fallback: '/img/login-slide-1.png', webp: '/img/login-slide-1.webp'},
+    {fallback: '/img/login-slide-2.png', webp: '/img/login-slide-2.webp'},
+    {fallback: '/img/login-slide-3.png', webp: '/img/login-slide-3.webp'},
+] as const;
 const LOGIN_VISUAL_AUTO_ROTATE_MS = 4000;
 const LOGIN_VISUAL_MANUAL_RESUME_MS = 3000;
 const getInputClassName = (hasError: boolean) => cn(FIELD_CLASS, hasError && 'border-red bg-[#FFF7F8] focus-visible:bg-white');
@@ -182,6 +187,18 @@ function LoginPage() {
     const appleAuthorizeUrl = buildAuthAuthorizeUrl('apple', socialAuthorizeNextPath);
     const currentLoginVisualPage = loginVisualSlideIndex + 1;
     const totalLoginVisualPages = LOGIN_VISUAL_SLIDES.length;
+    const currentLoginVisualSlide = LOGIN_VISUAL_SLIDES[loginVisualSlideIndex];
+    const nextLoginVisualSlide = LOGIN_VISUAL_SLIDES[(loginVisualSlideIndex + 1) % totalLoginVisualPages];
+    preload(currentLoginVisualSlide.webp, {
+        as: 'image',
+        fetchPriority: 'high',
+        type: 'image/webp',
+    });
+    preload(nextLoginVisualSlide.webp, {
+        as: 'image',
+        fetchPriority: 'low',
+        type: 'image/webp',
+    });
     const invalidLoginCredentialsMessage = t('page.login.feedback.invalidCredentials');
     const legacyInvalidLoginCredentialsServerText = t('page.login.feedback.legacyInvalidCredentialsServerText');
     const title = isSignupPage
@@ -628,15 +645,24 @@ function LoginPage() {
     return (
         <div className="flex min-h-screen w-full overflow-x-hidden bg-white">
             <aside className="login-visual-panel" aria-label={t('page.login.loginVisualAria')}>
-                {LOGIN_VISUAL_SLIDES.map((src, index) => (
-                    <img
-                        key={src}
-                        src={src}
-                        alt=""
-                        aria-hidden="true"
-                        className={cn('login-visual-slide', index === loginVisualSlideIndex && 'login-visual-slide-active')}
-                    />
-                ))}
+                {LOGIN_VISUAL_SLIDES.map(({fallback, webp}, index) => {
+                    const isActive = index === loginVisualSlideIndex;
+
+                    return (
+                        <picture key={webp} className="login-visual-picture">
+                            <source srcSet={isActive ? webp : undefined} type="image/webp" />
+                            <img
+                                src={isActive ? fallback : undefined}
+                                alt=""
+                                aria-hidden="true"
+                                className={cn('login-visual-slide', isActive && 'login-visual-slide-active')}
+                                decoding="async"
+                                fetchPriority={isActive ? 'high' : 'low'}
+                                loading={isActive ? 'eager' : 'lazy'}
+                            />
+                        </picture>
+                    );
+                })}
                 <button
                     type="button"
                     className="login-visual-arrow login-visual-arrow-prev"

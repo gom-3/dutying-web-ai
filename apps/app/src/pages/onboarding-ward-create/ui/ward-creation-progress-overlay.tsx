@@ -107,10 +107,7 @@ function WardCreationProgressOverlay({isComplete}: TWardCreationProgressOverlayP
                         aria-label={t('page.onboardingWardCreate.progress.ariaLabel')}
                         className="h-2 overflow-hidden rounded-full bg-[#ECE6FF]"
                     >
-                        <div
-                            className="h-full origin-left rounded-full bg-main-1 will-change-transform"
-                            style={{transform: `scaleX(${progress / 100})`}}
-                        />
+                        <div className="h-full rounded-full bg-main-1" style={{width: `${progress}%`}} />
                     </div>
                     <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-apple text-[13px] font-semibold">
                         <span className="min-w-0 text-left text-gray-3">{message}</span>

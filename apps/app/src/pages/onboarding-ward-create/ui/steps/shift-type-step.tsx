@@ -26,6 +26,7 @@ const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
+const SHIFT_TYPE_ROW_CONTROL_CLASS = 'h-10 items-center';
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const parseShiftTimeToMinutes = (value: string) => {
     if (!SHIFT_TIME_FORMAT_REGEX.test(value)) return null;
@@ -284,7 +285,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 </InlineFieldError>
                             ) : null}
                         </div>
-                        <div className="mx-auto flex h-10 w-full max-w-[112px] items-center rounded-[10px] bg-gray-7 p-1">
+                        <div className={`mx-auto flex w-full max-w-[112px] rounded-[10px] bg-gray-7 p-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}>
                             <button
                                 type="button"
                                 className={`h-full flex-1 rounded-[8px] font-apple text-[13px] leading-none font-semibold transition-colors ${
@@ -318,7 +319,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 {t('page.onboardingWardCreate.shiftType.leave')}
                             </button>
                         </div>
-                        <div className="ml-[12px] flex justify-center self-center">
+                        <div className="ml-[12px] flex justify-center self-start">
                             <div className="flex items-start">
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2">
@@ -374,7 +375,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                             </div>
                         </div>
                         <div
-                            className="relative flex justify-center self-center"
+                            className={`relative flex justify-center self-start ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
                             ref={openedColorShiftTypeId === shiftType.id ? openedColorContainerRef : null}
                         >
                             <button
@@ -417,7 +418,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
                             })}
                             onClick={() => onDelete(shiftType.id)}
-                            className="flex h-10 w-10 items-center justify-center rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1"
+                            className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
                         >
                             <X className="h-4 w-4" />
                         </button>

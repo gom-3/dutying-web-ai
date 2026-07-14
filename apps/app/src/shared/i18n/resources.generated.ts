@@ -935,13 +935,12 @@ export const ko = {
                 "error": "근무표를 불러오지 못했어요",
                 "firstFill": "자동 채우기",
                 "fixedOnly": "고정만 보기",
-                "fixedDisplay": "고정 근무 표시",
+                "fixedDisplay": "고정 표시",
                 "fixedDisplayHidden": "고정근무 숨김",
                 "fixedDisplayShown": "고정근무 표시 중",
                 "requestDisplay": "신청근무 표시",
                 "requestDisplayHidden": "신청근무 숨김",
                 "requestDisplayShown": "신청근무 표시 중",
-                "statusHighlightTools": "신청근무 및 고정근무 표시",
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
@@ -1407,6 +1406,10 @@ export const ko = {
                 "aiAutofill": {
                     "info": "AI 자동 채우기를 여러 번 실행해 원하는 근무표에 빠르게 가까워질 수 있어요.\n결과는 관리자가 한 번 더 확인하고 수정해 주세요.",
                     "title": "AI 자동 채우기"
+                },
+                "authoringFixed": {
+                    "info": "AI는 고정근무와 신청근무를 제외한 빈칸을 채워요.\n바꾸면 안 되는 근무가 있다면 AI 실행 전에 먼저 고정해 주세요.",
+                    "title": "AI 전에 꼭 고정해 주세요"
                 },
                 "constraints": {
                     "info": "권장 제약조건 7개 외에도 필요한 조건을 추가할 수 있어요.\n조건이 많을수록 배정이 어려워질 수 있어요.",
@@ -2620,7 +2623,6 @@ export const ko = {
         },
         "wardChat": {
             "closeAria": "병동톡 닫기",
-            "connectedMemberCount": "{{count}}명",
             "conversationStart": "대화의 시작",
             "deletedMessage": "삭제된 메시지입니다",
             "inputPlaceholder": "메시지 입력",
@@ -3616,7 +3618,6 @@ export const en: TLocale = {
                 "requestDisplay": "Show requests",
                 "requestDisplayHidden": "Requested shifts hidden",
                 "requestDisplayShown": "Requested shifts shown",
-                "statusHighlightTools": "Request and fixed shift indicators",
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
@@ -4082,6 +4083,10 @@ export const en: TLocale = {
                 "aiAutofill": {
                     "info": "Run AI autofill multiple times to move quickly toward the schedule you want.\nAn admin should review and adjust the result.",
                     "title": "AI autofill"
+                },
+                "authoringFixed": {
+                    "info": "AI fills blank cells except fixed and requested shifts.\nFix any shift that must not change before running AI.",
+                    "title": "Fix shifts before using AI"
                 },
                 "constraints": {
                     "info": "You can add custom rules beyond the seven recommended constraints.\nMore rules can make scheduling harder.",
@@ -5295,7 +5300,6 @@ export const en: TLocale = {
         },
         "wardChat": {
             "closeAria": "Close ward chat",
-            "connectedMemberCount": "{{count}} members",
             "conversationStart": "Start of conversation",
             "deletedMessage": "This message was deleted",
             "inputPlaceholder": "Enter a message",
@@ -6289,7 +6293,6 @@ export const ja: TLocale = {
                 "requestDisplay": "申請勤務を表示",
                 "requestDisplayHidden": "申請勤務を非表示",
                 "requestDisplayShown": "申請勤務を表示中",
-                "statusHighlightTools": "Request and fixed shift indicators",
                 "generating": "入力中...",
                 "hidingFaults": "エラー非表示",
                 "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
@@ -6755,6 +6758,10 @@ export const ja: TLocale = {
                 "aiAutofill": {
                     "info": "AI自動入力を複数回実行して、希望する勤務表に素早く近づけます。\n結果は管理者が必ず確認して調整してください。",
                     "title": "AI自動入力"
+                },
+                "authoringFixed": {
+                    "info": "AIは固定勤務と希望勤務を除く空欄を埋めます。\n変更したくない勤務はAIを実行する前に固定してください。",
+                    "title": "AIの前に勤務を固定してください"
                 },
                 "constraints": {
                     "info": "推奨制約7件以外にも必要な条件を追加できます。\n条件が多いほど割り当てが難しくなる場合があります。",
@@ -7968,7 +7975,6 @@ export const ja: TLocale = {
         },
         "wardChat": {
             "closeAria": "病棟チャットを閉じる",
-            "connectedMemberCount": "{{count}}名",
             "conversationStart": "会話の始まり",
             "deletedMessage": "削除されたメッセージです",
             "inputPlaceholder": "メッセージを入力",
@@ -8962,7 +8968,6 @@ export const zh: TLocale = {
                 "requestDisplay": "显示申请班次",
                 "requestDisplayHidden": "已隐藏申请班次",
                 "requestDisplayShown": "已显示申请班次",
-                "statusHighlightTools": "Request and fixed shift indicators",
                 "generating": "填充...",
                 "hidingFaults": "错误隐藏",
                 "intro": "即使失败，当前编辑的版本也会保留。\n您可以返回上一步并重新查看条件，或在此处重试并确认。",
@@ -9428,6 +9433,10 @@ export const zh: TLocale = {
                 "aiAutofill": {
                     "info": "您可以多次运行人工智能自动填充，以快速接近您想要的排班表。\n请管理员再次检查结果并进行更正。",
                     "title": "人工智能自动填充"
+                },
+                "authoringFixed": {
+                    "info": "人工智能会填充固定班次和申请班次以外的空白。\n运行人工智能前，请先固定不应更改的班次。",
+                    "title": "在使用人工智能前固定班次"
                 },
                 "constraints": {
                     "info": "除了七个建议的约束之外，您还可以添加必要的条件。\n条件越多，任务就越困难。",
@@ -10641,7 +10650,6 @@ export const zh: TLocale = {
         },
         "wardChat": {
             "closeAria": "密切病区谈话",
-            "connectedMemberCount": "{{count}} 人",
             "conversationStart": "谈话开始",
             "deletedMessage": "此消息已被删除",
             "inputPlaceholder": "输入留言",
@@ -11635,7 +11643,6 @@ export const th: TLocale = {
                 "requestDisplay": "Show requests",
                 "requestDisplayHidden": "Requested shifts hidden",
                 "requestDisplayShown": "Requested shifts shown",
-                "statusHighlightTools": "Request and fixed shift indicators",
                 "generating": "กำลังกรอก...",
                 "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
                 "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
@@ -12101,6 +12108,10 @@ export const th: TLocale = {
                 "aiAutofill": {
                     "info": "เรียกใช้การป้อนอัตโนมัติ AI หลายครั้งเพื่อเลื่อนไปยังกำหนดเวลาที่คุณต้องการอย่างรวดเร็ว\nผู้ดูแลระบบควรตรวจสอบและแก้ไขผลลัพธ์",
                     "title": "AI ป้อนอัตโนมัติ"
+                },
+                "authoringFixed": {
+                    "info": "AI จะเติมช่องว่าง ยกเว้นกะที่固定และกะที่ร้องขอ\nโปรด固定กะที่ไม่ควรเปลี่ยนก่อนเรียกใช้ AI",
+                    "title": "แก้ไขกะก่อนใช้ AI"
                 },
                 "constraints": {
                     "info": "คุณสามารถเพิ่มกฎที่กำหนดเองนอกเหนือจากข้อจำกัดที่แนะนำเจ็ดข้อได้\nกฎเพิ่มเติมอาจทำให้การจัดกำหนดการยากขึ้น",
@@ -13314,7 +13325,6 @@ export const th: TLocale = {
         },
         "wardChat": {
             "closeAria": "ปิดการสนทนาวอร์ด",
-            "connectedMemberCount": "{{count}} คน",
             "conversationStart": "เริ่มการสนทนา",
             "deletedMessage": "ข้อความนี้ถูกลบแล้ว",
             "inputPlaceholder": "ป้อนข้อความ",
@@ -14308,7 +14318,6 @@ export const vi: TLocale = {
                 "requestDisplay": "Hiển thị ca yêu cầu",
                 "requestDisplayHidden": "Đã ẩn ca yêu cầu",
                 "requestDisplayShown": "Đang hiển thị ca yêu cầu",
-                "statusHighlightTools": "Request and fixed shift indicators",
                 "generating": "Làm đầy...",
                 "hidingFaults": "Lỗi ẩn",
                 "intro": "Các chỉnh sửa hiện tại của bạn vẫn được giữ nguyên ngay cả khi AI bị lỗi.\nBạn có thể quay lại bước trước để xem lại các điều kiện hoặc thử lại và xác nhận tại đây.",
@@ -14774,6 +14783,10 @@ export const vi: TLocale = {
                 "aiAutofill": {
                     "info": "Chạy tính năng tự động điền AI nhiều lần để nhanh chóng tiến tới lịch bạn muốn.\nMột quản trị viên nên xem xét và điều chỉnh kết quả.",
                     "title": "Tự động điền AI"
+                },
+                "authoringFixed": {
+                    "info": "AI sẽ điền các ô trống ngoại trừ ca đã cố định và ca được yêu cầu.\nHãy cố định các ca không được thay đổi trước khi chạy AI.",
+                    "title": "Cố định ca trước khi dùng AI"
                 },
                 "constraints": {
                     "info": "Bạn có thể thêm các quy tắc tùy chỉnh ngoài bảy ràng buộc được đề xuất.\nNhiều quy tắc hơn có thể khiến việc lập kế hoạch trở nên khó khăn hơn.",
@@ -15987,7 +16000,6 @@ export const vi: TLocale = {
         },
         "wardChat": {
             "closeAria": "Đóng trò chuyện khoa",
-            "connectedMemberCount": "{{count}} người",
             "conversationStart": "Bắt đầu cuộc trò chuyện",
             "deletedMessage": "Tin nhắn này đã bị xóa",
             "inputPlaceholder": "Nhập tin nhắn",

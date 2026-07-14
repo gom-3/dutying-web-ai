@@ -677,6 +677,14 @@ function isRedCalendarDay(dayType: TShift['days'][number]['dayType'] | string): 
     return normalizedDayType === 'sunday' || normalizedDayType.includes('holiday') || LEGACY_HOLIDAY_DAY_TYPES.has(normalizedDayType);
 }
 
+function getCalendarDayBackgroundClass(dayType: TShift['days'][number]['dayType'] | string): string {
+    if (isSaturday(dayType)) return 'bg-blue/5';
+
+    if (isRedCalendarDay(dayType)) return 'bg-red/5';
+
+    return '';
+}
+
 function getDayHeaderTextClass(dayType: TShift['days'][number]['dayType']): string {
     if (isSaturday(dayType)) return 'text-blue';
 
@@ -1814,6 +1822,58 @@ export function MakeShiftCalendar({
                                                     <span className="make-shift-calendar__shimmer-sweep absolute top-0 bottom-0 w-[18%]" />
                                                 </div>
                                             )}
+                                            {rowGapClassName &&
+                                                shift.days.some((day) => getCalendarDayBackgroundClass(day.dayType) !== '') && (
+                                                    <div
+                                                        aria-hidden="true"
+                                                        data-division-day-background-layer="true"
+                                                        className="make-shift-calendar__division-day-background pointer-events-none absolute top-0 right-0 bottom-0 z-0 grid"
+                                                        style={{
+                                                            left: shimmerInsetLeft,
+                                                            gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
+                                                        }}
+                                                    >
+                                                        {shift.days.map((day, j) => {
+                                                            const backgroundClass = getCalendarDayBackgroundClass(day.dayType);
+
+                                                            return backgroundClass ? (
+                                                                <span
+                                                                    key={j}
+                                                                    className={backgroundClass}
+                                                                    style={{gridRow: 1, gridColumn: j + 1}}
+                                                                />
+                                                            ) : null;
+                                                        })}
+                                                    </div>
+                                                )}
+                                            {rowGapClassName &&
+                                                crosshairSelectionRect !== null &&
+                                                rows.some(
+                                                    (row) =>
+                                                        workerRowMap.get(String(row.shiftNurse.shiftNurseId))?.index ===
+                                                        crosshairSelectionRect.top,
+                                                ) && (
+                                                    <div
+                                                        aria-hidden="true"
+                                                        data-selection-column-layer="true"
+                                                        data-selection-division-column-layer="true"
+                                                        className="make-shift-calendar__selection-division-column pointer-events-none absolute top-0 right-0 bottom-0 z-[1] grid"
+                                                        style={{
+                                                            left: shimmerInsetLeft,
+                                                            gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
+                                                        }}
+                                                    >
+                                                        {shift.days.map((_, j) =>
+                                                            j >= crosshairSelectionRect.left && j <= crosshairSelectionRect.right ? (
+                                                                <span
+                                                                    key={j}
+                                                                    className={GRID_SELECTION_CROSSHAIR_LAYER_CLASS}
+                                                                    style={{gridRow: 1, gridColumn: j + 1}}
+                                                                />
+                                                            ) : null,
+                                                        )}
+                                                    </div>
+                                                )}
                                             {rows.map((row, i) => {
                                                 const workerId = String(row.shiftNurse.shiftNurseId);
                                                 const docEntry = workerRowMap.get(workerId);
@@ -1883,6 +1943,7 @@ export function MakeShiftCalendar({
                                                                     editableLastShifts={editableLastShifts}
                                                                     selectionRect={displaySelectionRect}
                                                                     crosshairSelectionRect={crosshairSelectionRect}
+                                                                    useDivisionGapLayers={Boolean(rowGapClassName)}
                                                                     tutorialCellId={rowTutorialCellId}
                                                                     canReorderRows={canReorderRows}
                                                                     rowReorderDisabled={rowReorderDisabled}
@@ -2017,6 +2078,7 @@ type TCalendarRowLeftProps = {
     editableLastShifts: boolean;
     selectionRect: TSelectionRect | null;
     crosshairSelectionRect: TSelectionRect | null;
+    useDivisionGapLayers: boolean;
     tutorialCellId?: string;
     canReorderRows: boolean;
     rowReorderDisabled: boolean;
@@ -2066,6 +2128,7 @@ function CalendarRowLeft({
     editableLastShifts,
     selectionRect,
     crosshairSelectionRect,
+    useDivisionGapLayers,
     tutorialCellId,
     canReorderRows,
     rowReorderDisabled,
@@ -2347,6 +2410,7 @@ function CalendarRowLeft({
                         />
                     ) : null}
                     {crosshairSelectionRect !== null &&
+                        !useDivisionGapLayers &&
                         days.map((_, j) => {
                             if (j < crosshairSelectionRect.left || j > crosshairSelectionRect.right) return null;
 
@@ -2401,7 +2465,7 @@ function CalendarRowLeft({
                                 : undefined;
                         const isCellViolationDimmed = activeViolationKey !== null && hasCellViolations && !activeCellViolation;
                         const normalizedDayType = normalizeDayType(day.dayType);
-                        const weekendBg = isSaturday(day.dayType) ? 'bg-blue/5' : isRedCalendarDay(day.dayType) ? 'bg-red/5' : '';
+                        const weekendBg = useDivisionGapLayers ? '' : getCalendarDayBackgroundClass(day.dayType);
                         const isSelected =
                             !readonly &&
                             selectionRect !== null &&

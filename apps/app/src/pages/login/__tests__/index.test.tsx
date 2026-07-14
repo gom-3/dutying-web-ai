@@ -81,6 +81,15 @@ describe('LoginPage', () => {
         expect(screen.getByRole('button', {name: '이전 이미지'})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: '다음 이미지'})).toBeInTheDocument();
         expect(screen.getByText('1/3')).toBeInTheDocument();
+        const visualImages = document.querySelectorAll('.login-visual-slide');
+        expect(visualImages).toHaveLength(3);
+        expect(visualImages[0]).toHaveAttribute('loading', 'eager');
+        expect(visualImages[1]).toHaveAttribute('loading', 'lazy');
+        expect(visualImages[1]).not.toHaveAttribute('src');
+        expect(document.querySelector('source[type="image/webp"]')).toHaveAttribute(
+            'srcset',
+            '/img/login-slide-1.webp',
+        );
         expect(screen.queryByLabelText('병원명 또는 기관명')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '비밀번호 찾기'})).not.toBeInTheDocument();
         expect(screen.getByText('아직 계정이 없나요?')).toBeInTheDocument();

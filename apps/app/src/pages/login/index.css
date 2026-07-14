@@ -10,6 +10,12 @@
     background: #7047ff;
 }
 
+.login-visual-picture {
+    position: absolute;
+    inset: 0;
+    display: block;
+}
+
 .login-visual-slide {
     position: absolute;
     inset: 0;

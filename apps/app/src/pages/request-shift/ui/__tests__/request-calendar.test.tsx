@@ -103,11 +103,13 @@ function createUseRequestShiftValue({
     hasNurses = false,
     hasRequest = false,
     requestAccepted = true,
+    dayType = 'workday',
     focus = null,
 }: {
     hasNurses?: boolean;
     hasRequest?: boolean;
     requestAccepted?: boolean | null;
+    dayType?: 'workday' | 'saturday' | 'sunday' | 'holiday';
     focus?: {shiftNurseName: string; shiftNurseId: number; day: number} | null;
 } = {}) {
     const nurse = {
@@ -148,7 +150,7 @@ function createUseRequestShiftValue({
             year: 2026,
             month: 6,
             requestShift: {
-                days: [{day: 1, dayType: 'workday'}],
+                days: [{day: 1, dayType}],
                 wardShiftTypes: hasRequest ? [dayShiftType] : [],
                 divisionShiftNurses: hasNurses
                     ? [
@@ -345,6 +347,24 @@ describe('RequestCalendar', () => {
         expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-main-1');
         expect(document.querySelector('[data-selection-layer="true"]')).toBeInTheDocument();
         expect(document.querySelector('[data-selection-column-layer="true"]')).toBeInTheDocument();
+        expect(document.querySelector('[data-selection-division-column-layer="true"]')).toBeInTheDocument();
+    });
+
+    it.each([
+        ['saturday', 'bg-blue/5'],
+        ['sunday', 'bg-red/5'],
+        ['holiday', 'bg-red/5'],
+    ] as const)('%s 배경을 행 간격까지 이어서 표시한다', (dayType, expectedClass) => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, dayType}));
+
+        renderRequestCalendar();
+
+        const backgroundLayer = document.querySelector('[data-division-day-background-layer="true"]');
+
+        expect(backgroundLayer).toBeInTheDocument();
+        expect(
+            Array.from(backgroundLayer?.querySelectorAll('span') ?? []).some((element) => element.classList.contains(expectedClass)),
+        ).toBe(true);
     });
 
     it('수락하지 않은 신청 근무에는 핀을 표시하지 않는다', () => {
