@@ -76,6 +76,10 @@ type TSubmissionStatus = 'idle' | 'submitting' | 'success' | 'error';
 type TUploadStatus = 'idle' | 'uploading' | 'success' | 'warning' | 'error';
 type TDraftCreationStatus = 'idle' | 'creating' | 'created' | 'error';
 type TDraftRestoreStatus = 'loading' | 'ready' | 'error';
+type TDraftSaveResult = {
+    success: boolean;
+    response?: TOnboardingWardDraftResponse;
+};
 
 const parseScheduleTemplateSafely = async (file: File, options?: TOnboardingWardParseOptions) => {
     if (!options?.targetYear || !options.targetMonth) {
@@ -685,6 +689,7 @@ function useOnboardingWardWizard() {
         [t],
     );
     const draftTouchedRef = useRef(false);
+    const skipNextAutosaveRef = useRef(false);
     const shouldResetStepOnRestoreRef = useRef(shouldResetStepFromHistoryState());
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
     const [selectedTeamId, setSelectedTeamId] = useState('');
@@ -698,6 +703,8 @@ function useOnboardingWardWizard() {
     const [draftCreationStatus, setDraftCreationStatus] = useState<TDraftCreationStatus>('idle');
     const [draftRestoreStatus, setDraftRestoreStatus] = useState<TDraftRestoreStatus>('loading');
     const [createdWard, setCreatedWard] = useState<TOnboardingWardCreateSubmission['ward'] | null>(null);
+    const [isStepTransitioning, setIsStepTransitioning] = useState(false);
+    const stepTransitioningRef = useRef(false);
     const draftSaveChainRef = useRef<Promise<unknown>>(Promise.resolve());
     const fallbackWardName = t('page.onboardingWardCreate.fallback.wardName');
     const onboardingWardCreateExecutor = useMemo(
@@ -707,6 +714,20 @@ function useOnboardingWardWizard() {
     const isSkillLevelEnabled = draft.skillLevelConfig.enabled;
     const markDraftTouched = () => {
         draftTouchedRef.current = true;
+    };
+    const beginStepTransition = () => {
+        if (stepTransitioningRef.current) {
+            return false;
+        }
+
+        stepTransitioningRef.current = true;
+        setIsStepTransitioning(true);
+
+        return true;
+    };
+    const endStepTransition = () => {
+        stepTransitioningRef.current = false;
+        setIsStepTransitioning(false);
     };
 
     useEffect(() => {
@@ -778,7 +799,7 @@ function useOnboardingWardWizard() {
         }
     }, [isSkillLevelEnabled, sortMode]);
 
-    const enqueueDraftSave = useCallback((save: () => Promise<boolean>) => {
+    const enqueueDraftSave = useCallback((save: () => Promise<TDraftSaveResult>) => {
         const nextSave = draftSaveChainRef.current.catch(() => undefined).then(save);
 
         draftSaveChainRef.current = nextSave.catch(() => undefined);
@@ -787,9 +808,19 @@ function useOnboardingWardWizard() {
     }, []);
 
     const saveDraftSnapshot = useCallback(
-        ({showErrorToast = false, draftOverride}: {showErrorToast?: boolean; draftOverride?: TOnboardingWardDraft} = {}) => {
+        ({
+            showErrorToast = false,
+            draftOverride,
+            isAutosave = false,
+            suppressNextAutosave = false,
+        }: {
+            showErrorToast?: boolean;
+            draftOverride?: TOnboardingWardDraft;
+            isAutosave?: boolean;
+            suppressNextAutosave?: boolean;
+        } = {}) => {
             if (submissionStatus === 'success' || draftCreationStatus === 'creating') {
-                return Promise.resolve(true);
+                return Promise.resolve<TDraftSaveResult>({success: true});
             }
 
             const targetDraft = draftOverride ?? draft;
@@ -798,18 +829,25 @@ function useOnboardingWardWizard() {
 
             return enqueueDraftSave(async () => {
                 try {
+                    if (isAutosave && stepTransitioningRef.current) {
+                        return {success: true};
+                    }
+
                     if (draftWardId) {
-                        await saveOnboardingWardDraft(draftWardId, {
+                        const savedDraft = await saveOnboardingWardDraft(draftWardId, {
                             ...identityPayload,
                             draftPayload,
                         });
+                        if (suppressNextAutosave) {
+                            skipNextAutosaveRef.current = true;
+                        }
                         setDraftCreationStatus('created');
 
-                        return true;
+                        return {success: true, response: savedDraft};
                     }
 
                     if (!draftTouchedRef.current || !hasServerSavableDraftSignal(targetDraft)) {
-                        return true;
+                        return {success: true};
                     }
 
                     setDraftCreationStatus('creating');
@@ -826,7 +864,7 @@ function useOnboardingWardWizard() {
                     setDraftWardId(draftWard.wardId);
                     setDraftCreationStatus('created');
 
-                    return true;
+                    return {success: true};
                 } catch (error) {
                     Sentry.captureException(error, {
                         tags: {feature: 'onboarding-ward-create'},
@@ -838,7 +876,7 @@ function useOnboardingWardWizard() {
                         toast.error(t('page.onboardingWardCreate.toast.saveDraftError'));
                     }
 
-                    return false;
+                    return {success: false};
                 }
             });
         },
@@ -858,7 +896,18 @@ function useOnboardingWardWizard() {
     );
 
     useEffect(() => {
-        if (draftRestoreStatus === 'loading' || submissionStatus === 'success' || submissionStatus === 'submitting') {
+        if (
+            draftRestoreStatus === 'loading' ||
+            submissionStatus === 'success' ||
+            submissionStatus === 'submitting' ||
+            isStepTransitioning
+        ) {
+            return;
+        }
+
+        if (skipNextAutosaveRef.current) {
+            skipNextAutosaveRef.current = false;
+
             return;
         }
 
@@ -867,11 +916,11 @@ function useOnboardingWardWizard() {
         }
 
         const autosaveTimer = window.setTimeout(() => {
-            void saveDraftSnapshot();
+            void saveDraftSnapshot({isAutosave: true});
         }, ONBOARDING_DRAFT_AUTOSAVE_DELAY_MS);
 
         return () => window.clearTimeout(autosaveTimer);
-    }, [draft, draftRestoreStatus, draftWardId, saveDraftSnapshot, submissionStatus]);
+    }, [draft, draftRestoreStatus, draftWardId, isStepTransitioning, saveDraftSnapshot, submissionStatus]);
 
     const selectedTeamExists = draft.teams.some((team) => team.id === selectedTeamId);
     const activeTeamId = selectedTeamExists ? selectedTeamId : (draft.teams[0]?.id ?? '');
@@ -891,9 +940,9 @@ function useOnboardingWardWizard() {
     };
     const ensureDraftWard = async () => {
         if (draftWardId) {
-            await saveDraftSnapshot({showErrorToast: true});
+            const saveResult = await saveDraftSnapshot({showErrorToast: true});
 
-            return true;
+            return saveResult.success;
         }
 
         if (draftCreationStatus === 'creating') {
@@ -902,7 +951,9 @@ function useOnboardingWardWizard() {
 
         markDraftTouched();
 
-        return saveDraftSnapshot({showErrorToast: true});
+        const saveResult = await saveDraftSnapshot({showErrorToast: true});
+
+        return saveResult.success;
     };
     const applyRestoredServerDraft = (serverDraft: TOnboardingWardDraftResponse, fallbackDraft: TOnboardingWardDraft) => {
         setDraftWardId(serverDraft.ward.wardId);
@@ -921,10 +972,20 @@ function useOnboardingWardWizard() {
         setSortModeState(restoredDraftState.sortMode);
     };
     const saveAndReloadDraft = async (nextDraft: TOnboardingWardDraft) => {
-        const isSaved = await saveDraftSnapshot({showErrorToast: true, draftOverride: nextDraft});
+        const saveResult = await saveDraftSnapshot({
+            showErrorToast: true,
+            draftOverride: nextDraft,
+            suppressNextAutosave: true,
+        });
 
-        if (!isSaved) {
+        if (!saveResult.success) {
             return false;
+        }
+
+        if (saveResult.response?.ward?.wardId) {
+            applyRestoredServerDraft(saveResult.response, nextDraft);
+
+            return true;
         }
 
         try {
@@ -959,16 +1020,17 @@ function useOnboardingWardWizard() {
         });
 
         try {
-            let previewDraft = draft;
-
-            for (const {teamId, previewInput} of schedulePreviewTargets) {
-                previewDraft = applySchedulePreviewToDraft(
-                    previewDraft,
+            const previewResults = await Promise.all(
+                schedulePreviewTargets.map(async ({teamId, previewInput}) => ({
                     teamId,
-                    previewInput.schedule,
-                    await previewOnboardingScheduleInput(previewInput.request),
-                );
-            }
+                    schedule: previewInput.schedule,
+                    response: await previewOnboardingScheduleInput(previewInput.request),
+                })),
+            );
+            const previewDraft = previewResults.reduce(
+                (currentDraft, {teamId, schedule, response}) => applySchedulePreviewToDraft(currentDraft, teamId, schedule, response),
+                draft,
+            );
 
             const nextDraft = goNextStepDraft(previewDraft);
 
@@ -984,38 +1046,46 @@ function useOnboardingWardWizard() {
         }
     };
     const goNextStep = async () => {
-        if (!canGoNext(draft)) {
+        if (!canGoNext(draft) || !beginStepTransition()) {
             return false;
         }
 
-        if (draft.currentStep === 1) {
-            const isDraftReady = await ensureDraftWard();
+        try {
+            if (draft.currentStep === 1) {
+                const isDraftReady = await ensureDraftWard();
 
-            if (!isDraftReady) {
+                if (!isDraftReady) {
+                    return;
+                }
+            }
+
+            if (draft.currentStep === 2) {
+                markDraftTouched();
+                await saveScheduleInputAndGoNext();
+
                 return;
             }
-        }
 
-        if (draft.currentStep === 2) {
             markDraftTouched();
-            await saveScheduleInputAndGoNext();
+            if (draft.currentStep === 3) {
+                const nextDraft = goNextStepDraft(draft);
+                const saveResult = await saveDraftSnapshot({
+                    showErrorToast: true,
+                    draftOverride: nextDraft,
+                    suppressNextAutosave: true,
+                });
 
-            return;
-        }
+                if (saveResult.success) {
+                    setDraft(nextDraft);
+                }
 
-        markDraftTouched();
-        if (draft.currentStep === 3) {
-            const nextDraft = goNextStepDraft(draft);
-            const isSaved = await saveDraftSnapshot({showErrorToast: true, draftOverride: nextDraft});
-
-            if (isSaved) {
-                setDraft(nextDraft);
+                return;
             }
 
-            return;
+            setDraft((prev) => goNextStepDraft(prev));
+        } finally {
+            endStepTransition();
         }
-
-        setDraft((prev) => goNextStepDraft(prev));
     };
     const goPreviousStep = () => {
         markDraftTouched();
@@ -1384,7 +1454,7 @@ function useOnboardingWardWizard() {
             toast.error(t('page.onboardingWardCreate.toast.completeError'));
         }
     };
-    const skipOrComplete = () => {
+    const skipOrComplete = async () => {
         if (draft.currentStep === MAX_STEP) {
             void complete();
 
@@ -1392,13 +1462,21 @@ function useOnboardingWardWizard() {
         }
 
         if (draft.currentStep === 2 && !draft.uploadedFileName && !hasScheduleInputDraft(draft)) {
+            if (!beginStepTransition()) {
+                return;
+            }
+
             markDraftTouched();
-            void saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels)));
+            try {
+                await saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels)));
+            } finally {
+                endStepTransition();
+            }
 
             return;
         }
 
-        void goNextStep();
+        await goNextStep();
     };
 
     return {
@@ -1438,6 +1516,7 @@ function useOnboardingWardWizard() {
         saveSkillConfig,
         disableSkillConfig,
         complete,
+        isStepTransitioning,
         canAddTeam: draft.teams.length < MAX_ONBOARDING_TEAMS,
         hasScheduleInput: hasScheduleInputDraft(draft),
         submissionStatus,

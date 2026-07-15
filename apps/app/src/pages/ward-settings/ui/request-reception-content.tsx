@@ -272,25 +272,22 @@ export function RequestReceptionContent({
     return (
         <div className="w-full">
             <div className={SETTINGS_PANEL_CLASS}>
-                <div className={SETTINGS_RAIL_GRID_CLASS}>
-                    <div aria-hidden="true" />
-                    <div className="min-w-0">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                            <div className="min-w-0">
-                                <p className="font-apple text-[17px] leading-[24px] font-semibold [word-break:keep-all] text-sub-1">
-                                    {t('page.wardSettings.requestReception.toggleTitle')}
-                                </p>
-                                <p className="mt-1 max-w-[620px] font-apple text-[13px] leading-[20px] [word-break:keep-all] text-gray-3">
-                                    {t('page.wardSettings.requestReception.toggleDescription')}
-                                </p>
-                            </div>
-                            <Switch
-                                checked={draft.enabled}
-                                onCheckedChange={(checked) => patchDraft({enabled: checked})}
-                                aria-label={t('page.wardSettings.requestReception.toggleTitle')}
-                                className="shrink-0 data-[state=checked]:bg-main-1"
-                            />
+                <div className="min-w-0">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                        <div className="min-w-0">
+                            <p className="font-apple text-[17px] leading-[24px] font-semibold [word-break:keep-all] text-sub-1">
+                                {t('page.wardSettings.requestReception.toggleTitle')}
+                            </p>
+                            <p className="mt-1 max-w-[620px] font-apple text-[13px] leading-[20px] [word-break:keep-all] text-gray-3">
+                                {t('page.wardSettings.requestReception.toggleDescription')}
+                            </p>
                         </div>
+                        <Switch
+                            checked={draft.enabled}
+                            onCheckedChange={(checked) => patchDraft({enabled: checked})}
+                            aria-label={t('page.wardSettings.requestReception.toggleTitle')}
+                            className="shrink-0 data-[state=checked]:bg-main-1"
+                        />
                     </div>
                 </div>
             </div>

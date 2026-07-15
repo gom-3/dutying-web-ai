@@ -30,29 +30,23 @@ const LocationProbe = () => {
 
     return <div data-testid="location">{location.pathname}</div>;
 };
-const setPhoneViewport = (matches: boolean) => {
-    Object.defineProperty(window, 'matchMedia', {
+const setPhoneDevice = (isPhone: boolean) => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+        configurable: true,
         writable: true,
-        value: vi.fn().mockImplementation((query: string) => ({
-            matches: query === '(max-width: 767px)' ? matches : false,
-            media: query,
-            onchange: null,
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-            addListener: vi.fn(),
-            removeListener: vi.fn(),
-            dispatchEvent: vi.fn(),
-        })),
+        value: isPhone
+            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+            : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
     });
 };
 
 describe('Router', () => {
     beforeEach(() => {
-        setPhoneViewport(false);
+        setPhoneDevice(false);
     });
 
     it('redirects phone visitors away from auth routes to the landing page', async () => {
-        setPhoneViewport(true);
+        setPhoneDevice(true);
 
         render(
             <MemoryRouter initialEntries={[ROUTE.LOGIN]}>

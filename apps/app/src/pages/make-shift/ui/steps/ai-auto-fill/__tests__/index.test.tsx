@@ -164,10 +164,15 @@ vi.mock('../../shared/make-shift-calendar', () => ({
 }));
 
 vi.mock('../ai-autofill-toolbar', () => ({
-    AiAutofillToolbar: ({onAiFill}: {onAiFill: () => void}) => (
-        <button type="button" onClick={onAiFill}>
-            auto fill
-        </button>
+    AiAutofillToolbar: ({onAiFill, onConfirm}: {onAiFill: () => void; onConfirm: () => void}) => (
+        <>
+            <button type="button" onClick={onAiFill}>
+                auto fill
+            </button>
+            <button type="button" onClick={onConfirm}>
+                confirm
+            </button>
+        </>
     ),
 }));
 
@@ -223,6 +228,18 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.fixCellOnContextMenu).toBe(true);
+    });
+
+    it('confirms immediately without a publish confirmation when no nurses are connected', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'confirm'}));
+
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.publishConfirm.title'})).not.toBeInTheDocument(),
+        );
     });
 
     it('shows only fixed and requested cells as soon as auto fill is clicked, even before the decision dialog is handled', async () => {

@@ -276,6 +276,7 @@ export function AiAutofill() {
     const [snapshotLoadTarget, setSnapshotLoadTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
+    const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
@@ -316,6 +317,7 @@ export function AiAutofill() {
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
         [currentTeamNurses, dutyQuery.data],
     );
+    const connectedNurseCount = useMemo(() => currentTeamNurses.filter((nurse) => nurse.isConnected).length, [currentTeamNurses]);
     const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
@@ -403,6 +405,7 @@ export function AiAutofill() {
         setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
         setSnapshotLimitContext(null);
+        setPublishConfirmOpen(false);
         setLastShiftBlankWarningIntent(null);
         setLastShiftBlankWarningAcknowledgedKey(null);
         setAiFillDecisionContext(null);
@@ -767,7 +770,15 @@ export function AiAutofill() {
             }
 
             await publishCurrentSchedule(snapshots);
-            toast.success(t('page.makeShift.aiRefill.publishSuccess'), {id: progressToastId});
+            toast.success(
+                t(
+                    connectedNurseCount > 0
+                        ? 'page.makeShift.aiRefill.publishSuccessWithRecipients'
+                        : 'page.makeShift.aiRefill.publishSuccessWithoutRecipients',
+                    {count: connectedNurseCount},
+                ),
+                {id: progressToastId},
+            );
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
         } finally {
@@ -779,7 +790,13 @@ export function AiAutofill() {
 
         if (requestLastShiftBlankWarning('confirm')) return;
 
-        void confirmCurrentSchedule();
+        if (connectedNurseCount === 0) {
+            void confirmCurrentSchedule();
+
+            return;
+        }
+
+        setPublishConfirmOpen(true);
     };
     const handleRenameSnapshot = async (snapshotId: number, title: string) => {
         if (!isCurrentShiftTeamReady || !wardId || !currentShiftTeamId) return;
@@ -862,7 +879,15 @@ export function AiAutofill() {
 
         try {
             await publishCurrentSchedule(snapshots, oldestSnapshot);
-            toast.success(t('page.makeShift.aiRefill.publishSuccess'), {id: progressToastId});
+            toast.success(
+                t(
+                    connectedNurseCount > 0
+                        ? 'page.makeShift.aiRefill.publishSuccessWithRecipients'
+                        : 'page.makeShift.aiRefill.publishSuccessWithoutRecipients',
+                    {count: connectedNurseCount},
+                ),
+                {id: progressToastId},
+            );
         } catch {
             toast.error(t('page.makeShift.aiRefill.saveFailed'), {id: progressToastId});
         } finally {
@@ -1077,8 +1102,20 @@ export function AiAutofill() {
         }
 
         if (warningIntent === 'confirm') {
-            void confirmCurrentSchedule();
+            if (connectedNurseCount === 0) {
+                void confirmCurrentSchedule();
+
+                return;
+            }
+
+            setPublishConfirmOpen(true);
         }
+    };
+    const handlePublishConfirm = () => {
+        if (!canConfirm) return;
+
+        setPublishConfirmOpen(false);
+        void confirmCurrentSchedule();
     };
     const handleCancelLastShiftBlankWarning = () => {
         const firstBlankLastShiftCell = findFirstBlankLastShiftCell(useShiftEditorStore.getState().doc);
@@ -1136,6 +1173,10 @@ export function AiAutofill() {
         aiFillDecisionContext?.kind === 'initial'
             ? t('page.makeShift.aiRefill.prefillDecision.cancel')
             : t('page.makeShift.aiRefill.regenerateDecision.cancel');
+    const publishConfirmDescription =
+        connectedNurseCount > 0
+            ? t('page.makeShift.aiRefill.publishConfirm.description', {count: connectedNurseCount})
+            : t('page.makeShift.aiRefill.publishConfirm.noConnectedDescription');
 
     return (
         <div id="make_ai_autofill_step" className="ai-autofill-root flex w-full min-w-0">
@@ -1239,6 +1280,18 @@ export function AiAutofill() {
                 onClose={() => setAiFillDecisionContext(null)}
                 onCancel={handleCancelAiFillDecision}
                 onConfirm={handleConfirmAiFillDecision}
+            />
+            <ConfirmActionDialog
+                open={publishConfirmOpen}
+                title={t('page.makeShift.aiRefill.publishConfirm.title')}
+                description={publishConfirmDescription}
+                confirmLabel={t(
+                    connectedNurseCount > 0
+                        ? 'page.makeShift.aiRefill.publishConfirm.confirm'
+                        : 'page.makeShift.aiRefill.publishConfirm.confirmWithoutRecipients',
+                )}
+                onClose={() => setPublishConfirmOpen(false)}
+                onConfirm={handlePublishConfirm}
             />
             <ConfirmActionDialog
                 open={lastShiftBlankWarningIntent !== null}

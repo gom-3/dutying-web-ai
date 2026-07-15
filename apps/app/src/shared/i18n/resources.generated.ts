@@ -953,7 +953,16 @@ export const ko = {
                 "loading": "근무표를 불러오는 중이에요",
                 "previous": "이전 단계",
                 "progressToast": "근무표 채우는 중",
+                "publishConfirm": {
+                    "confirm": "확정 및 게시",
+                    "confirmWithoutRecipients": "확정",
+                    "description": "확정하면 연동된 {{count}}명이 앱에서 근무표를 볼 수 있고 알림도 받아요.",
+                    "noConnectedDescription": "확정되지만 연동된 인원이 없어 앱 게시와 알림은 전송되지 않아요.",
+                    "title": "근무표를 확정할까요?"
+                },
                 "publishSuccess": "근무표를 확정하고 게시했어요.",
+                "publishSuccessWithRecipients": "근무표를 확정하고 {{count}}명에게 게시·알림을 보냈어요.",
+                "publishSuccessWithoutRecipients": "근무표를 확정했어요. 연동된 인원이 없어 게시·알림은 전송되지 않았어요.",
                 "requestFailed": "AI 자동 채우기를 완료하지 못했어요.",
                 "resetAction": "초기화",
                 "retry": "다시 시도",
@@ -1450,10 +1459,10 @@ export const ko = {
                     "adjustmentNone": "추가 조정 없음",
                     "adjustmentPlus": "+{{count}}일 추가",
                     "dayUnit": "일",
-                    "decreaseTarget": "목표 쉬는 날 줄이기",
+                    "decreaseTarget": "목표 휴무일 줄이기",
                     "fixedTarget": "월 {{count}}일",
-                    "increaseTarget": "목표 쉬는 날 늘리기",
-                    "targetLabel": "목표 쉬는 날",
+                    "increaseTarget": "목표 휴무일 늘리기",
+                    "targetLabel": "목표 휴무일",
                     "weeklyTarget": "주 {{days}}일 × {{weeks}}주 = {{count}}일"
                 },
                 "emptyDescription": "근무 투입이 설정된 인원을 먼저 확인해 주세요.",
@@ -2468,7 +2477,7 @@ export const ko = {
             "description": {
                 "constraints": "근무 규칙을 관리해요.",
                 "shiftTypes": "근무 유형을 관리해요.",
-                "restLeavePolicy": "목표 쉬는 날과 포함 항목을 관리해요.",
+                "restLeavePolicy": "목표 휴무일과 계산에 포함할 휴무 유형을 관리해요.",
                 "requestReception": "신청근무 접수 기간을 관리해요."
             },
             "shiftTypes": {
@@ -2511,7 +2520,7 @@ export const ko = {
             "tabs": {
                 "constraints": "제약 조건",
                 "shiftTypes": "근무 유형",
-                "restLeavePolicy": "쉬는 날 계산",
+                "restLeavePolicy": "휴무일 계산",
                 "requestReception": "신청근무 접수"
             },
             "title": "근무 설정",
@@ -2524,7 +2533,7 @@ export const ko = {
                 "error": "신청근무 접수 설정을 불러오지 못했어요",
                 "sectionTitle": "다음 달 신청근무 접수 기간",
                 "toggleTitle": "접수 기간 제한 사용",
-                "toggleDescription": "켜면 설정한 기간에만 앱에서 신청근무를 제출하거나 수정할 수 있어요.",
+                "toggleDescription": "설정한 기간에만 앱에서 신청근무를 제출하거나 수정할 수 있어요.",
                 "startDay": "접수 시작일",
                 "endDay": "접수 종료일",
                 "daySuffix": "일",
@@ -2548,53 +2557,53 @@ export const ko = {
             },
             "restLeavePolicy": {
                 "availability": {
-                    "title": "쉬는 날 계산을 사용할까요?"
+                    "title": "휴무일 계산 사용"
                 },
-                "simpleSubtitle": "목표 쉬는 날을 정하고 어떤 휴무 유형을 실제 쉬는 날로 계산할지 선택해요.",
-                "previewLabel": "{{month}}월 목표 쉬는 날",
+                "simpleSubtitle": "목표 휴무일과 계산에 포함할 휴무 유형을 관리해요.",
+                "previewLabel": "{{month}}월 예상 목표 휴무일",
                 "unit": {
                     "day": "일"
                 },
                 "target": {
-                    "title": "목표 쉬는 날",
+                    "title": "목표 휴무일",
                     "weekly": {
                         "title": "주 단위로 계산",
-                        "description": "한 주에 필요한 쉬는 날을 기준으로 월 목표를 계산해요.",
-                        "stepperLabel": "{{count}}주 기준 주당 쉬는 날"
+                        "description": "한 주에 필요한 휴무일 수를 기준으로 월 목표를 자동 계산해요.",
+                        "stepperLabel": "{{count}}주 기준 주간 휴무일 수"
                     },
                     "fixed": {
                         "title": "월 고정으로 계산",
-                        "description": "매월 필요한 쉬는 날 수를 직접 정해요.",
-                        "stepperLabel": "월 목표 쉬는 날"
+                        "description": "매월 필요한 휴무일 수를 직접 정해요.",
+                        "stepperLabel": "월 목표 휴무일"
                     }
                 },
                 "holiday": {
                     "title": "공휴일 포함 여부",
                     "include": {
                         "title": "공휴일 포함",
-                        "description": "월 목표 쉬는 날에 공휴일을 함께 계산해요."
+                        "description": "월 목표 휴무일에 공휴일을 함께 계산해요."
                     },
                     "exclude": {
                         "title": "공휴일 제외",
-                        "description": "근무표 안의 휴무 유형만 쉬는 날로 계산해요."
+                        "description": "근무표 안의 휴무 유형만 휴무일로 계산해요."
                     }
                 },
                 "carryOver": {
-                    "title": "부족한 쉬는 날 이월",
+                    "title": "휴무일 이월",
                     "toggle": "이월 사용",
-                    "toggleHint": "이번 달에 부족한 쉬는 날을 다음 달 목표에 더해요.",
+                    "toggleHint": "이번 달에 부족한 휴무일을 다음 달 목표에 더해요.",
                     "offTitle": "이월 안 함",
-                    "offHint": "매월 목표 쉬는 날을 독립적으로 계산해요."
+                    "offHint": "매월 목표 휴무일을 독립적으로 계산해요."
                 },
                 "countedLeaves": {
-                    "sectionTitle": "쉬는 날에 넣을 항목",
-                    "hint": "선택한 휴무 유형만 실제 쉬는 날로 계산해요.",
-                    "toggleAria": "{{name}} 쉬는 날 계산 포함 여부",
+                    "sectionTitle": "휴무일로 계산할 근무 유형",
+                    "hint": "선택한 휴무 유형만 실제 휴무일로 계산해요.",
+                    "toggleAria": "{{name}} 휴무일 계산 포함 여부",
                     "empty": "아직 휴무 유형이 없어요."
                 },
                 "save": "저장하기",
                 "toast": {
-                    "saved": "쉬는 날 계산 설정을 저장했어요."
+                    "saved": "휴무일 계산 설정을 저장했어요."
                 }
             }
         }
@@ -3630,7 +3639,16 @@ export const en: TLocale = {
                 "loading": "Loading the duty schedule",
                 "previous": "Previous step",
                 "progressToast": "Filling schedule",
+                "publishConfirm": {
+                    "confirm": "Confirm and publish",
+                    "confirmWithoutRecipients": "Confirm",
+                    "description": "Once confirmed {{count}} connected nurses can view the schedule in the app and will receive a notification.",
+                    "noConnectedDescription": "The schedule will be confirmed but it will not be posted in the app or send notifications because no nurses are connected.",
+                    "title": "Confirm this schedule?"
+                },
                 "publishSuccess": "Schedule confirmed and published.",
+                "publishSuccessWithRecipients": "Schedule confirmed and shared with {{count}} nurses with a notification.",
+                "publishSuccessWithoutRecipients": "Schedule confirmed. No app post or notification was sent because no nurses are connected.",
                 "requestFailed": "Could not complete AI autofill.",
                 "resetAction": "Reset",
                 "retry": "Retry",
@@ -6305,7 +6323,16 @@ export const ja: TLocale = {
                 "loading": "勤務表を読み込み中です",
                 "previous": "前のステップ",
                 "progressToast": "勤務表を入力中",
+                "publishConfirm": {
+                    "confirm": "確定して公開",
+                    "confirmWithoutRecipients": "確定",
+                    "description": "確定すると連携済みの{{count}}名がアプリで勤務表を確認でき通知も届きます。",
+                    "noConnectedDescription": "勤務表は確定しますが連携済みのスタッフがいないためアプリへの公開と通知は行われません。",
+                    "title": "この勤務表を確定しますか？"
+                },
                 "publishSuccess": "勤務表を確定して公開しました。",
+                "publishSuccessWithRecipients": "勤務表を確定して{{count}}名に公開し通知しました。",
+                "publishSuccessWithoutRecipients": "勤務表を確定しました。連携済みのスタッフがいないため公開と通知は行われませんでした。",
                 "requestFailed": "AI自動入力を完了できませんでした。",
                 "resetAction": "リセット",
                 "retry": "再試行",
@@ -8980,7 +9007,16 @@ export const zh: TLocale = {
                 "loading": "正在加载排班表。",
                 "previous": "之前的步骤",
                 "progressToast": "填写排班表表",
+                "publishConfirm": {
+                    "confirm": "确认并发布",
+                    "confirmWithoutRecipients": "确认",
+                    "description": "确认后已连接的 {{count}} 名护士可在应用中查看排班表并会收到通知。",
+                    "noConnectedDescription": "排班表会被确认但由于没有已连接的护士不会在应用中发布也不会发送通知。",
+                    "title": "确认这份排班表吗？"
+                },
                 "publishSuccess": "已确认并发布排班表。",
+                "publishSuccessWithRecipients": "已确认排班表并向 {{count}} 名护士发布和发送通知。",
+                "publishSuccessWithoutRecipients": "排班表已确认。由于没有已连接的护士未发布到应用也未发送通知。",
                 "requestFailed": "AI 自动填充无法完成。",
                 "resetAction": "重置",
                 "retry": "再试一次",
@@ -10615,7 +10651,7 @@ export const zh: TLocale = {
                 },
                 "countedLeaves": {
                     "sectionTitle": "计为休息日的项目",
-                    "hint": "只有选择的休假类型会计为实际休息日。",
+                    "hint": "只有选择的休假类型会计为休息日。",
                     "toggleAria": "切换{{name}}是否计入休息日规则",
                     "empty": "还没有休假类型。"
                 },
@@ -11655,7 +11691,16 @@ export const th: TLocale = {
                 "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่",
                 "previous": "ขั้นตอนก่อนหน้า",
                 "progressToast": "กำหนดการเติม",
+                "publishConfirm": {
+                    "confirm": "ยืนยันและเผยแพร่",
+                    "confirmWithoutRecipients": "ยืนยัน",
+                    "description": "เมื่อยืนยันแล้วพยาบาลที่เชื่อมต่อ {{count}} คนจะดูตารางเวรในแอปได้และจะได้รับการแจ้งเตือน",
+                    "noConnectedDescription": "กำหนดการจะได้รับการยืนยันแต่จะไม่เผยแพร่ในแอปหรือส่งการแจ้งเตือนเนื่องจากไม่มีพยาบาลที่เชื่อมต่อ",
+                    "title": "ยืนยันกำหนดการนี้ไหม?"
+                },
                 "publishSuccess": "กำหนดการได้รับการยืนยันและเผยแพร่แล้ว",
+                "publishSuccessWithRecipients": "ยืนยันกำหนดการและเผยแพร่พร้อมส่งการแจ้งเตือนให้พยาบาล {{count}} คนแล้ว",
+                "publishSuccessWithoutRecipients": "ยืนยันกำหนดการแล้ว ไม่ได้เผยแพร่หรือส่งการแจ้งเตือนเนื่องจากไม่มีพยาบาลที่เชื่อมต่อ",
                 "requestFailed": "ไม่สามารถกรอก AI อัตโนมัติได้",
                 "resetAction": "รีเซ็ต",
                 "retry": "ลองอีกครั้ง",
@@ -14330,7 +14375,16 @@ export const vi: TLocale = {
                 "loading": "Đang tải Lịch trực",
                 "previous": "Bước trước",
                 "progressToast": "lịch chiết rót",
+                "publishConfirm": {
+                    "confirm": "Xác nhận và đăng",
+                    "confirmWithoutRecipients": "Xác nhận",
+                    "description": "{{count}} điều dưỡng đã kết nối có thể xem lịch trong ứng dụng và sẽ nhận được thông báo sau khi xác nhận.",
+                    "noConnectedDescription": "Lịch sẽ được xác nhận nhưng không đăng trong ứng dụng hoặc gửi thông báo vì không có điều dưỡng nào được kết nối.",
+                    "title": "Xác nhận lịch này?"
+                },
                 "publishSuccess": "lịch được xác nhận và công bố.",
+                "publishSuccessWithRecipients": "Đã xác nhận lịch và đăng kèm thông báo cho {{count}} điều dưỡng.",
+                "publishSuccessWithoutRecipients": "Đã xác nhận lịch. Không đăng trong ứng dụng hoặc gửi thông báo vì không có điều dưỡng nào được kết nối.",
                 "requestFailed": "Không thể hoàn thành tính năng tự động điền AI.",
                 "resetAction": "Đặt lại",
                 "retry": "Thử lại",

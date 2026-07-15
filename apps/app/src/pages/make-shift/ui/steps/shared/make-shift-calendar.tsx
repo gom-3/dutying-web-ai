@@ -179,7 +179,12 @@ const SUMMARY_GAP = 'clamp(2px,0.22cqw,6px)';
  * type-summary-header / row-summary / daily-summary__spacer 셋 모두 동일 값을 사용해야 컬럼이 어긋나지 않는다.
  */
 const SUMMARY_CELL_HEIGHT = 'h-[clamp(16px,1.4cqw,22px)]';
-const SUMMARY_CELL_WIDTH = 'w-[clamp(14px,1.05cqw,18px)]';
+const SUMMARY_CELL_WIDTH = 'w-full';
+const SUMMARY_CELL_SIZE = 'clamp(14px,1.05cqw,18px)';
+const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boolean) =>
+    [count > 0 ? `repeat(${count}, minmax(${SUMMARY_CELL_SIZE}, 1fr))` : null, showRestCheckColumn ? REST_CHECK_COL : null]
+        .filter(Boolean)
+        .join(' ');
 /** 우측 row-summary 행 · footer daily-summary 행 공통 높이 */
 const ROW_SUMMARY_HEIGHT = 'h-[clamp(28px,2.4cqw,40px)]';
 /** row-summary 우측 합계 숫자 · daily-summary 일자별 셀 — 동일 글자 크기·색 */
@@ -1742,10 +1747,14 @@ export function MakeShiftCalendar({
                      * 사진 기준: 헤더 우측 D/E/N/O/WO 라벨은 박스 없이
                      * 모두 동일한 회색의 "컬럼 헤더" 텍스트 라벨이다.
                      * (footer의 daily-summary 배지와는 정반대 — 그쪽은 배경 채움.)
-                     */
+                    */
                     <div
-                        className="make-shift-calendar__type-summary-header flex shrink-0 items-center"
-                        style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
+                        className="make-shift-calendar__type-summary-header grid shrink-0 items-center justify-center justify-items-center"
+                        style={{
+                            gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
+                            gap: SUMMARY_GAP,
+                            paddingInline: SUMMARY_PADDING_X,
+                        }}
                     >
                         {hasSummaryShiftTypes &&
                             summaryShiftTypes.map((type) => (
@@ -1769,7 +1778,6 @@ export function MakeShiftCalendar({
                                     'flex items-center justify-center gap-0.5 font-apple text-[clamp(10px,0.78cqw,13px)] leading-none font-medium text-sub-3',
                                     SUMMARY_CELL_HEIGHT,
                                 )}
-                                style={{width: REST_CHECK_COL}}
                                 title={t('page.makeShift.calendar.restCheck')}
                             >
                                 <span>{t('page.makeShift.calendar.restCheckCompact')}</span>
@@ -2698,8 +2706,15 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
 
     return (
         <div
-            className={cn('make-shift-calendar__row-summary flex shrink-0 items-center', ROW_SUMMARY_HEIGHT)}
-            style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
+            className={cn(
+                'make-shift-calendar__row-summary grid shrink-0 self-stretch items-center justify-center justify-items-center',
+                ROW_SUMMARY_HEIGHT,
+            )}
+            style={{
+                gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
+                gap: SUMMARY_GAP,
+                paddingInline: SUMMARY_PADDING_X,
+            }}
         >
             {summaryShiftTypes.map((t) => (
                 <div
@@ -2713,7 +2728,9 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
                     )}
                     style={{color: t.color}}
                 >
-                    {countByType(t.wardShiftTypeId)}
+                    <span className="inline-flex min-w-[2ch] items-center justify-center text-center">
+                        {countByType(t.wardShiftTypeId)}
+                    </span>
                 </div>
             ))}
             {showRestCheckColumn ? (
@@ -2727,7 +2744,6 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
                               ? 'text-red'
                               : 'text-main-1',
                     )}
-                    style={{width: REST_CHECK_COL}}
                     title={restCheckTitle}
                 >
                     {restCheckLabel}
@@ -2812,7 +2828,9 @@ function DailySummary({
                                     )}
                                     style={{color: type.color}}
                                 >
-                                    {countByDay(j, type.wardShiftTypeId)}
+                                    <span className="inline-flex min-w-[2ch] items-center justify-center text-center">
+                                        {countByDay(j, type.wardShiftTypeId)}
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -2835,14 +2853,18 @@ function DailySummary({
 function DailySummarySpacer({count, showRestCheckColumn}: {count: number; showRestCheckColumn: boolean}) {
     return (
         <div
-            className="make-shift-daily-summary__spacer flex shrink-0 items-center"
-            style={{gap: SUMMARY_GAP, paddingInline: SUMMARY_PADDING_X}}
+            className="make-shift-daily-summary__spacer grid shrink-0 items-center justify-center justify-items-center"
+            style={{
+                gridTemplateColumns: getSummaryGridTemplateColumns(count, showRestCheckColumn),
+                gap: SUMMARY_GAP,
+                paddingInline: SUMMARY_PADDING_X,
+            }}
             aria-hidden
         >
             {Array.from({length: count}).map((_, i) => (
                 <div key={i} className={cn(SUMMARY_CELL_HEIGHT, SUMMARY_CELL_WIDTH)} />
             ))}
-            {showRestCheckColumn ? <div className={cn(SUMMARY_CELL_HEIGHT)} style={{width: REST_CHECK_COL}} /> : null}
+            {showRestCheckColumn ? <div className={cn(SUMMARY_CELL_HEIGHT)} /> : null}
         </div>
     );
 }

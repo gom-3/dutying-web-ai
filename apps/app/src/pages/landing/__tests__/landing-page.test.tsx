@@ -14,19 +14,13 @@ vi.mock('@/features/auth', () => ({
 const mockedUseAuth = vi.mocked(useAuth);
 const mockHandleLogout = vi.fn();
 const mockHandleGetAccountMe = vi.fn();
-const setPhoneViewport = (matches: boolean) => {
-    Object.defineProperty(window, 'matchMedia', {
+const setPhoneDevice = (isPhone: boolean) => {
+    Object.defineProperty(window.navigator, 'userAgent', {
+        configurable: true,
         writable: true,
-        value: vi.fn().mockImplementation((query: string) => ({
-            matches: query === '(max-width: 767px)' ? matches : false,
-            media: query,
-            onchange: null,
-            addEventListener: vi.fn(),
-            removeEventListener: vi.fn(),
-            addListener: vi.fn(),
-            removeListener: vi.fn(),
-            dispatchEvent: vi.fn(),
-        })),
+        value: isPhone
+            ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1'
+            : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36',
     });
 };
 const mockUseAuthState = (isAuth: boolean, accountMe: ReturnType<typeof useAuth>['state']['accountMe'] = null) => {
@@ -51,7 +45,7 @@ describe('LandingPage', () => {
         await i18n.changeLanguage('ko');
         mockHandleGetAccountMe.mockReset();
         mockHandleLogout.mockReset();
-        setPhoneViewport(false);
+        setPhoneDevice(false);
         mockUseAuthState(false);
     });
 
@@ -214,8 +208,8 @@ describe('LandingPage', () => {
         getWardSpy.mockRestore();
     });
 
-    it('shows app-only landing content on phone viewport', () => {
-        setPhoneViewport(true);
+    it('shows app-only landing content on a phone device', () => {
+        setPhoneDevice(true);
 
         render(
             <MemoryRouter initialEntries={[ROUTE.ROOT]}>
@@ -230,10 +224,11 @@ describe('LandingPage', () => {
         expect(screen.queryByRole('link', {name: /웹에서 근무표 만들기/})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '로그인'})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '회원가입'})).not.toBeInTheDocument();
+        expect(document.querySelector('main.landing-main--web-fixed')).not.toBeInTheDocument();
     });
 
-    it('ignores desktop landing preference on phone viewport', () => {
-        setPhoneViewport(true);
+    it('ignores desktop landing preference on a phone device', () => {
+        setPhoneDevice(true);
         window.localStorage.setItem('dutying:landing-view-preference', 'desktop');
         window.history.pushState(null, '', '/?view=desktop');
 
@@ -247,5 +242,21 @@ describe('LandingPage', () => {
         expect(screen.queryByRole('link', {name: '근무표 관리자 웹'})).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /모바일 버전으로 보기/})).not.toBeInTheDocument();
         expect(document.querySelector('meta[name="viewport"]')).toHaveAttribute('content', 'width=device-width, initial-scale=1.0');
+    });
+
+    it('keeps the full landing for a narrow desktop browser viewport', () => {
+        setPhoneDevice(false);
+        Object.defineProperty(window, 'innerWidth', {configurable: true, writable: true, value: 500});
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.ROOT]}>
+                <LandingPage />
+            </MemoryRouter>,
+        );
+
+        expect(screen.getByRole('heading', {name: /교대 근무표,.*듀팅으로 더 간편하게/})).toBeInTheDocument();
+        expect(screen.getByRole('link', {name: '로그인'})).toBeInTheDocument();
+        expect(screen.queryByRole('heading', {name: /듀팅에서 바로 확인해요/})).not.toBeInTheDocument();
+        expect(document.querySelector('main.landing-main--web-fixed')).toBeInTheDocument();
     });
 });

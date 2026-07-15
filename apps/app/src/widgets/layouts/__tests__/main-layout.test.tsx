@@ -233,7 +233,7 @@ describe('MainLayout', () => {
             route: ROUTE.MEMBER,
             routeLabel: 'member',
             pageText: 'member page',
-            layerClasses: ['top-5', 'min-[1600px]:top-[52px]'],
+            layerClasses: ['top-5', 'min-[1600px]:top-[52px]', 'z-[996]'],
             frameClasses: ['max-w-[1560px]', 'px-3', 'min-[1600px]:px-10'],
         },
         {

@@ -221,7 +221,7 @@ describe('useOnboardingWardWizard upload flow', () => {
         );
         expect(previewRequest.dutyBlock.split('\t').slice(0, 5)).toEqual(['R', 'Z', 'A', 'Y', '/']);
         expect(mockSaveOnboardingWardDraft).toHaveBeenCalled();
-        expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(2);
+        expect(mockGetOnboardingWardDraft).toHaveBeenCalledTimes(1);
         expect(savedDraft.currentStep).toBe(3);
         expect(result.current.draft.currentStep).toBe(3);
         expect(result.current.draft.shiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['D', 'E', 'N', '/', 'A', 'R', 'Y', 'Z']);

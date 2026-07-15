@@ -62,6 +62,7 @@ function OnboardingWardCreatePage() {
         saveSkillConfig,
         disableSkillConfig,
         complete,
+        isStepTransitioning,
         canGoNext,
         canComplete,
         submissionStatus,
@@ -75,7 +76,7 @@ function OnboardingWardCreatePage() {
     const isSubmitting = submissionStatus === 'submitting';
     const isSuccess = submissionStatus === 'success';
     const isSavingDraft = draftCreationStatus === 'creating';
-    const actionsDisabled = isSavingDraft || isSubmitting || isSuccess;
+    const actionsDisabled = isSavingDraft || isStepTransitioning || isSubmitting || isSuccess;
     const isNurseRegistrationStep = draft.currentStep === 4;
     const isScheduleInputStep = draft.currentStep === 2;
     const activeTeam = draft.teams.find((team) => team.id === activeTeamId);
@@ -496,7 +497,7 @@ function OnboardingWardCreatePage() {
                     }
                     actionsDisabled={actionsDisabled}
                     nextLabel={
-                        draft.currentStep === 1 && isSavingDraft
+                        (draft.currentStep === 1 && isSavingDraft) || isStepTransitioning
                             ? t('page.onboardingWardCreate.action.saving')
                             : draft.currentStep < 4
                               ? t('page.onboardingWardCreate.action.next')

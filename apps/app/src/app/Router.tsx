@@ -2,7 +2,7 @@ import {Suspense, lazy} from 'react';
 import {Navigate, Route, Routes} from 'react-router-dom';
 import RedirectPage from '@/pages/login/redirect-page.tsx';
 import ROUTE from '@/shared/constant/path.ts';
-import {usePhoneViewport} from '@/shared/hook/use-phone-viewport';
+import {usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import PageState from '@/shared/ui/PageState';
 import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
@@ -33,9 +33,9 @@ const NotFoundPage = lazy(() => import('@/pages/error').then((module) => ({defau
 
 export const Router = () => {
     const {t} = useTypedTranslation();
-    const isPhoneViewport = usePhoneViewport();
+    const isPhoneDevice = usePhoneDevice();
 
-    if (isPhoneViewport) {
+    if (isPhoneDevice) {
         return (
             <Suspense
                 fallback={

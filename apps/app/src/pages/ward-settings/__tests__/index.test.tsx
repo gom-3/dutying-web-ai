@@ -430,7 +430,7 @@ describe('WardSettingsPage', () => {
         expect(toast.success).toHaveBeenCalledWith(expect.stringMatching(/신청.*설정을 저장했어요/));
     });
 
-    it('쉬는 날 계산 탭에서 실제 쉬는 날로 계산할 근무유형을 고른다', async () => {
+    it('휴무일 계산 탭에서 실제 휴무일로 계산할 근무 유형을 고른다', async () => {
         const user = userEvent.setup();
 
         mockUseWardSettings.mockReturnValue(
@@ -467,10 +467,10 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /오프.*쉬는 날 계산/})).toBeInTheDocument();
+        expect(screen.getByText('휴무일로 계산할 근무 유형')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /오프.*휴무일 계산/})).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /연차.*쉬는 날 계산/}));
+        await user.click(screen.getByRole('button', {name: /연차.*휴무일 계산/}));
         await user.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() => {
@@ -480,7 +480,7 @@ describe('WardSettingsPage', () => {
         });
     });
 
-    it('쉬는 날 계산 탭에서 기본 휴무만 있어도 포함 항목에 표시한다', () => {
+    it('휴무일 계산 탭에서 기본 휴무만 있어도 포함 항목에 표시한다', () => {
         mockUseWardSettings.mockReturnValue(
             createValue({
                 state: {
@@ -504,12 +504,12 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
-        expect(screen.getByRole('button', {name: /휴무.*쉬는 날 계산/})).toBeInTheDocument();
+        expect(screen.getByText('휴무일로 계산할 근무 유형')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /휴무.*휴무일 계산/})).toBeInTheDocument();
         expect(screen.queryByText('아직 휴무 유형이 없어요.')).not.toBeInTheDocument();
     });
 
-    it('쉬는 날 계산 탭에서 기능을 끄면 세부 설정을 접고 저장한다', async () => {
+    it('휴무일 계산 탭에서 기능을 끄면 세부 설정을 접고 저장한다', async () => {
         const user = userEvent.setup();
 
         mockUseWardSettings.mockReturnValue(
@@ -536,16 +536,16 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getByText('쉬는 날에 넣을 항목')).toBeInTheDocument();
+        expect(screen.getByText('휴무일로 계산할 근무 유형')).toBeInTheDocument();
 
-        const restPolicySwitch = screen.getByRole('switch', {name: '쉬는 날 계산을 사용할까요?'});
+        const restPolicySwitch = screen.getByRole('switch', {name: '휴무일 계산 사용'});
 
         expect(restPolicySwitch).toHaveAttribute('aria-checked', 'true');
 
         await user.click(restPolicySwitch);
 
         expect(restPolicySwitch).toHaveAttribute('aria-checked', 'false');
-        expect(screen.queryByText('쉬는 날에 넣을 항목')).not.toBeInTheDocument();
+        expect(screen.queryByText('휴무일로 계산할 근무 유형')).not.toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: '저장하기'}));
 
@@ -556,7 +556,7 @@ describe('WardSettingsPage', () => {
         });
     });
 
-    it('쉬는 날 계산 탭에서 변경 후 다른 탭으로 나가려 하면 확인 모달을 띄운다', async () => {
+    it('휴무일 계산 탭에서 변경 후 다른 탭으로 나가려 하면 확인 모달을 띄운다', async () => {
         const user = userEvent.setup();
         const selectTab = vi.fn();
 
@@ -587,7 +587,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        await user.click(screen.getByRole('switch', {name: '쉬는 날 계산을 사용할까요?'}));
+        await user.click(screen.getByRole('switch', {name: '휴무일 계산 사용'}));
         await waitFor(() => {
             expect(screen.getByRole('button', {name: '저장하기'})).toBeEnabled();
         });

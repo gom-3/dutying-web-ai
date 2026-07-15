@@ -125,6 +125,11 @@
     min-width: 1180px;
 }
 
+.landing-main--web-fixed {
+    width: max(100%, 1180px);
+    min-width: 1180px;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .landing-main {
         scroll-behavior: auto;
@@ -155,5 +160,84 @@
 
     .landing-hero-grid {
         min-height: min(calc(88svh - 4.5rem), 820px);
+    }
+}
+
+/* Keep the web landing as a desktop canvas when a non-phone viewport is narrow. */
+@media (max-width: 767px) {
+    .landing-main--web-fixed .landing-section-nav {
+        display: flex;
+    }
+
+    .landing-main--web-fixed .landing-hero-grid {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+        gap: 2.5rem;
+        min-height: min(calc(88svh - 4.5rem), 820px);
+        padding: 8rem 2rem 1.5rem;
+    }
+
+    .landing-main--web-fixed .landing-hero-grid > picture {
+        justify-content: flex-end;
+        margin-top: -4rem;
+    }
+
+    .landing-main--web-fixed .landing-hero-grid > picture img {
+        width: 118%;
+        max-width: none;
+        transform: translateX(2rem);
+    }
+
+    .landing-main--web-fixed .landing-hero-title {
+        font-size: 51px;
+    }
+
+    .landing-main--web-fixed .landing-hero-description {
+        font-size: 1.125rem;
+        line-height: 2rem;
+    }
+
+    .landing-main--web-fixed .landing-hero-actions {
+        margin-top: 7rem;
+        flex-direction: row;
+    }
+
+    .landing-main--web-fixed .landing-web-section__inner {
+        grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+        gap: 6rem;
+        padding: 9.7rem 2rem;
+    }
+
+    .landing-main--web-fixed .landing-feature-section__inner,
+    .landing-main--web-fixed .landing-app-feature-section__inner {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 3rem;
+        padding: 7rem 2rem;
+    }
+
+    .landing-main--web-fixed .landing-app-section__inner {
+        grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+        padding: 5rem 2rem;
+    }
+
+    .landing-main--web-fixed .landing-final-cta__inner {
+        grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+        padding: 5.5rem 2rem 2rem;
+    }
+
+    .landing-main--web-fixed .landing-final-cta__inner img {
+        width: 765px;
+    }
+
+    .landing-main--web-fixed #app-ward > .landing-app-feature-section__inner > picture {
+        order: 2;
+    }
+
+    .landing-main--web-fixed .landing-web-actions,
+    .landing-main--web-fixed .landing-cta-row {
+        flex-direction: row;
+    }
+
+    .landing-main--web-fixed .landing-cta-row > a {
+        width: 180px;
     }
 }

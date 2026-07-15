@@ -8,6 +8,7 @@ import {type TShift, type TShiftTeam, type TWardShiftClassification, type TWardS
 import ShiftBadge from '@/entities/shift/ui/shift-badge';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import {isDutyShiftFullyAssigned, isDutyShiftWithoutAssignments} from '@/features/shift-editor';
 import {BoardAPI} from '@/shared/api';
 import {type TWardBoardDeadline, type TWardBoardSchedule} from '@/shared/api/board';
@@ -18,6 +19,7 @@ import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {getShiftWorkflowStatus} from '@/shared/lib/shift-workflow-status';
 import PageState from '@/shared/ui/PageState';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
+import {NotificationBell} from '@/widgets/notifications/notification-bell';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TASK_LOOKAHEAD_DAYS = 7;
@@ -1317,7 +1319,7 @@ function HomePage() {
     const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const navigate = useNavigate();
     const {
-        state: {wardId, accountMe},
+        state: {accessToken, wardId, accountMe},
     } = useAuth();
     const [selectedTodayTeamId, setSelectedTodayTeamId] = useState<number | 'all'>('all');
     const [selectedMonthlyTeamId, setSelectedMonthlyTeamId] = useState<TMonthlyTeamFilter>('all');
@@ -1449,6 +1451,7 @@ function HomePage() {
     const todayAssignedCount = todayDuties.reduce((total, duty) => total + duty.assignedCount, 0);
     const isBootstrapLoading = wardId !== null && (wardQuery.isPending || shiftTeamsQuery.isPending);
     const isBootstrapError = wardId !== null && (wardQuery.isError || shiftTeamsQuery.isError);
+    const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
     const wardTitle = wardQuery.data ? `${wardQuery.data.hospitalName} ${wardQuery.data.name}` : t('page.home.fallback.ward');
     const trimmedManagerName = accountMe?.name?.trim() ?? '';
     const managerName = trimmedManagerName.length > 0 ? trimmedManagerName : t('page.home.fallback.manager');
@@ -1543,6 +1546,7 @@ function HomePage() {
                         >
                             {t('page.home.header.createNextMonth')}
                         </HomeButton>
+                        {shouldShowNotificationBell ? <NotificationBell /> : null}
                     </div>
                 </header>
 

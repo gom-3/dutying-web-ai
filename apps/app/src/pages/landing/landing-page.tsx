@@ -9,7 +9,7 @@ import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {ProfileContent} from '@/pages/profile';
 import ROUTE from '@/shared/constant/path';
-import {getIsPhoneViewport, usePhoneViewport} from '@/shared/hook/use-phone-viewport';
+import {getIsPhoneDevice, usePhoneDevice} from '@/shared/hook/use-phone-device';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {normalizePreferredLanguage, SUPPORTED_LANGUAGES} from '@/shared/i18n/locale';
 import './landing-page.css';
@@ -176,7 +176,7 @@ function getInitialLandingViewPreference(): TLandingViewPreference {
         return 'auto';
     }
 
-    if (getIsPhoneViewport()) {
+    if (getIsPhoneDevice()) {
         return 'auto';
     }
 
@@ -244,18 +244,18 @@ function getLandingWorkScheduleImageSrc(language?: string | null) {
 
 function useLandingViewportMode() {
     const [viewPreference, setViewPreference] = useState<TLandingViewPreference>(getInitialLandingViewPreference);
-    const isPhoneViewport = usePhoneViewport();
-    const isDesktopVersionForced = !isPhoneViewport && viewPreference === 'desktop';
+    const isPhoneDevice = usePhoneDevice();
+    const isDesktopVersionForced = !isPhoneDevice && viewPreference === 'desktop';
 
     useEffect(() => {
-        if (!isPhoneViewport || viewPreference !== 'desktop') {
+        if (!isPhoneDevice || viewPreference !== 'desktop') {
             return;
         }
 
         writeLandingViewPreference('auto');
         updateLandingViewUrl('auto');
         setViewPreference('auto');
-    }, [isPhoneViewport, viewPreference]);
+    }, [isPhoneDevice, viewPreference]);
 
     useEffect(() => {
         if (typeof document === 'undefined' || !isDesktopVersionForced) {
@@ -284,7 +284,7 @@ function useLandingViewportMode() {
     return {
         isDesktopVersionForced,
         selectAutomaticVersion,
-        showMobileAppLanding: isPhoneViewport,
+        showMobileAppLanding: isPhoneDevice,
     };
 }
 
@@ -827,7 +827,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
     if (isAiSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
+                <div className="landing-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-20 md:grid-cols-[1.04fr_0.96fr] md:gap-20 md:px-8 md:py-28">
                     <picture className="reveal-on-scroll reveal-on-scroll--image mx-auto flex w-full max-w-[893px] items-center justify-center md:mx-0">
                         <img src={section.image} alt="" className="w-full max-w-[806px] object-contain object-center md:max-w-[893px]" />
                     </picture>
@@ -841,7 +841,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
     if (isIntegrationSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
+                <div className="landing-feature-section__inner mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.76fr_1.24fr] md:gap-10 md:px-8 md:py-28 lg:gap-12">
                     <div className="mr-auto w-full max-w-[470px] md:mx-0">{copy}</div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
@@ -859,7 +859,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
     if (isWardSection) {
         return (
             <section id={section.id} className={section.background}>
-                <div className="mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.72fr_1.28fr] md:gap-10 md:px-8 md:py-28 lg:gap-14">
+                <div className="landing-feature-section__inner mx-auto grid min-h-[680px] max-w-[1440px] items-center gap-12 px-5 py-20 md:min-h-[780px] md:grid-cols-[0.72fr_1.28fr] md:gap-10 md:px-8 md:py-28 lg:gap-14">
                     <div className="mr-auto w-full max-w-[470px] md:mx-0">{copy}</div>
 
                     <picture className="reveal-on-scroll reveal-on-scroll--image flex w-full justify-center md:justify-end">
@@ -876,7 +876,7 @@ function BackgroundFeatureSection({section}: {section: TFeatureSection}) {
 
     return (
         <section id={section.id} className={`relative overflow-hidden ${section.background}`}>
-            <div className="mx-auto flex min-h-[680px] max-w-[1440px] items-center justify-start px-5 py-20 md:min-h-[780px] md:px-8">
+            <div className="landing-feature-section__inner mx-auto flex min-h-[680px] max-w-[1440px] items-center justify-start px-5 py-20 md:min-h-[780px] md:px-8">
                 {copy}
             </div>
         </section>
@@ -899,7 +899,7 @@ function AppFeatureSection({section}: {section: TAppFeatureSection}) {
     return (
         <section id={section.id} className={section.background}>
             <div
-                className={`mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
+                className={`landing-app-feature-section__inner mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-2 md:px-8 md:py-28 ${section.reverse ? 'md:[&>picture]:order-2' : ''}`}
             >
                 <picture className={`reveal-on-scroll reveal-on-scroll--image mx-auto w-full ${imageMaxWidthClass}`}>
                     <img src={section.image} alt="" className={imageClassName} />
@@ -1071,7 +1071,7 @@ function LandingPage() {
 
     return (
         <main
-            className={`landing-main min-h-screen bg-white font-apple text-[#150B3C] ${
+            className={`landing-main landing-main--web-fixed min-h-screen bg-white font-apple text-[#150B3C] ${
                 isDesktopVersionForced ? 'landing-main--desktop-forced' : ''
             }`}
         >
@@ -1082,7 +1082,7 @@ function LandingPage() {
                     </Link>
 
                     <nav
-                        className="hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex"
+                        className="landing-section-nav hidden items-center gap-12 text-sm font-semibold text-[#5F557F] md:flex"
                         aria-label={t('page.landing.header.sectionAria')}
                     >
                         <a href="#web" className="transition-colors hover:text-main-1">
@@ -1107,17 +1107,17 @@ function LandingPage() {
                     <div className="relative z-10 min-w-0">
                         <h1
                             aria-label={t('page.landing.hero.ariaLabel')}
-                            className="reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold md:text-[51px]"
+                            className="landing-hero-title reveal-on-scroll max-w-[580px] text-[29px] leading-[1.28] font-extrabold md:text-[51px]"
                         >
                             <RotatingHeroPhrase phrases={heroTitlePhrases} />
                             <br />
                             <span className="hero-gradient-text">{t('page.landing.hero.suffix')}</span>
                         </h1>
-                        <p className="reveal-on-scroll reveal-on-scroll--delay-1 mt-5 max-w-[620px] text-base leading-7 font-medium text-[#6F6B7A] md:text-lg md:leading-8 2xl:whitespace-nowrap">
+                        <p className="landing-hero-description reveal-on-scroll reveal-on-scroll--delay-1 mt-5 max-w-[620px] text-base leading-7 font-medium text-[#6F6B7A] md:text-lg md:leading-8 2xl:whitespace-nowrap">
                             <TextLines>{t('page.landing.hero.description')}</TextLines>
                         </p>
 
-                        <div className="reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[560px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
+                        <div className="landing-hero-actions reveal-on-scroll reveal-on-scroll--delay-1 mt-12 flex max-w-[560px] flex-col gap-4 sm:mt-16 sm:flex-row md:mt-28">
                             <DarkActionButton type="web" isAuth={isAuth} />
                             <DarkActionButton type="app" />
                         </div>
@@ -1142,7 +1142,7 @@ function LandingPage() {
             </section>
 
             <section id="web" className={softPurpleBackground}>
-                <div className="mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
+                <div className="landing-web-section__inner mx-auto grid max-w-[1440px] items-center gap-14 px-5 py-[6.9rem] md:grid-cols-[1.08fr_0.92fr] md:gap-24 md:px-8 md:py-[9.7rem]">
                     <div className="reveal-on-scroll reveal-on-scroll--image relative aspect-[1420/722] overflow-hidden rounded-[8px] shadow-[0_24px_80px_rgba(37,22,91,0.12)]">
                         <div className="absolute inset-0 rounded-[8px] bg-[#37404F]" aria-hidden="true" />
                         <img
@@ -1161,7 +1161,7 @@ function LandingPage() {
                             <span className="text-highlight-soft">{t('page.landing.webSection.titleHighlight')}</span>{' '}
                             {t('page.landing.webSection.titleLine2Suffix')}
                         </h2>
-                        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                        <div className="landing-web-actions mt-10 flex flex-col gap-3 sm:flex-row">
                             {isAuth ? (
                                 <Link
                                     to={webMakeLink}
@@ -1199,7 +1199,7 @@ function LandingPage() {
             <section id="app" className="relative overflow-hidden bg-[#070D18]">
                 <div className="absolute inset-y-0 left-0 hidden w-[46%] bg-[#070D18] md:block" aria-hidden="true" />
 
-                <div className="relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
+                <div className="landing-app-section__inner relative mx-auto grid min-h-[520px] max-w-[1440px] items-center gap-10 px-5 py-20 md:grid-cols-[0.95fr_1.05fr] md:px-8">
                     <article className="reveal-on-scroll max-w-[500px] text-white">
                         <Pill>{t('page.landing.appSection.pill')}</Pill>
                         <h2 className="mt-6 text-[34px] leading-[1.36] font-extrabold md:text-[42px]">
@@ -1207,7 +1207,7 @@ function LandingPage() {
                             <br />
                             {t('page.landing.appSection.titleLine2')}
                         </h2>
-                        <div className="mt-12 flex flex-col gap-4 sm:flex-row">
+                        <div className="landing-cta-row mt-12 flex flex-col gap-4 sm:flex-row">
                             <StoreButton store="google" />
                             <StoreButton store="apple" />
                         </div>
@@ -1231,7 +1231,7 @@ function LandingPage() {
             ))}
 
             <section className="relative overflow-hidden bg-black">
-                <div className="mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:pt-[95px] md:pb-[32px]">
+                <div className="landing-final-cta__inner mx-auto grid min-h-[442px] max-w-[1440px] items-center gap-12 px-5 pt-[68px] pb-[23px] md:min-h-[476px] md:grid-cols-[0.85fr_1.15fr] md:px-8 md:pt-[95px] md:pb-[32px]">
                     <article className="reveal-on-scroll reveal-on-scroll--delay-1 relative z-10 max-w-[470px] text-left">
                         <p className="text-lg font-extrabold text-[#F4EDFF]">{t('page.landing.finalCta.eyebrow')}</p>
                         <h2 className="mt-4 text-[34px] leading-[1.36] font-extrabold text-white md:text-[42px]">
@@ -1240,7 +1240,7 @@ function LandingPage() {
                             {t('page.landing.finalCta.titleLine2')}
                         </h2>
                         <p className="mt-12 text-xl font-extrabold text-white/85">{t('page.landing.finalCta.download')}</p>
-                        <div className="mt-5 flex flex-col gap-4 sm:flex-row">
+                        <div className="landing-cta-row mt-5 flex flex-col gap-4 sm:flex-row">
                             <StoreButton store="google" />
                             <StoreButton store="apple" />
                         </div>

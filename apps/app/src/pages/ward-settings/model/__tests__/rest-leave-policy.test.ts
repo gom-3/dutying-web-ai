@@ -50,7 +50,7 @@ const shiftTypes: TWardShiftType[] = [
 ];
 
 describe('rest leave policy', () => {
-    it('주 단위 기준으로 월 목표 쉬는 날을 계산한다', () => {
+    it('주 단위 기준으로 월 목표 휴무일을 계산한다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
 
         expect(calculateBaseRestTarget(policy, 2026, 6)).toBe(10);
@@ -65,19 +65,19 @@ describe('rest leave policy', () => {
         expect(calculateRestTarget({...policy, includeHolidays: false}, 2026, 6, 2)).toBe(6);
     });
 
-    it('쉬는 날 계산을 끄면 기준일을 계산하지 않는다', () => {
+    it('휴무일 계산을 끄면 기준일을 계산하지 않는다', () => {
         const policy = {...DEFAULT_REST_LEAVE_POLICY, enabled: false};
 
         expect(calculateBaseRestTarget(policy, 2026, 6)).toBe(0);
         expect(calculateRestTarget(policy, 2026, 6, 2)).toBe(0);
     });
 
-    it('기본값은 휴무 계열 근무유형을 모두 쉬는 날로 계산한다', () => {
+    it('기본값은 휴무 계열 근무유형을 모두 휴무일로 계산한다', () => {
         expect(getDefaultCountedRestShiftTypeIds(shiftTypes)).toEqual([1, 2]);
         expect(resolveCountedRestShiftTypeIds(DEFAULT_REST_LEAVE_POLICY, shiftTypes)).toEqual([1, 2]);
     });
 
-    it('선택한 근무유형만 쉬는 날로 계산한다', () => {
+    it('선택한 근무유형만 휴무일로 계산한다', () => {
         expect(resolveCountedRestShiftTypeIds({...DEFAULT_REST_LEAVE_POLICY, countedRestShiftTypeIds: [2, 3]}, shiftTypes)).toEqual([2]);
     });
 
@@ -98,7 +98,7 @@ describe('rest leave policy', () => {
         expect(normalizeRestLeavePolicy({targetMode: 'manual', leaveCountMode: 'custom'})).toEqual(DEFAULT_REST_LEAVE_POLICY);
     });
 
-    it('쉬는 날 계산 사용 여부를 저장값에서 정규화한다', () => {
+    it('휴무일 계산 사용 여부를 저장값에서 정규화한다', () => {
         expect(normalizeRestLeavePolicy({enabled: false})).toMatchObject({enabled: false});
         expect(normalizeRestLeavePolicy({enabled: 'yes'})).toMatchObject({enabled: true});
     });

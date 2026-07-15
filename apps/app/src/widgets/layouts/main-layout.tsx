@@ -135,6 +135,7 @@ export const MainLayout = () => {
     const shouldUseCompactNavigation = shouldFoldNavigation || (viewportWidth < WORKSPACE_NAV_AUTO_FOLD_WIDTH && isNavigationFolded);
     const shouldKeepStableVerticalScroll = location.pathname === ROUTE.WARD_SETTINGS;
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
+    const isHomeRoute = isRouteMatch(location.pathname, ROUTE.HOME);
     const isMakeRoute = isRouteMatch(location.pathname, ROUTE.MAKE);
     const isMemberRoute = isRouteMatch(location.pathname, ROUTE.MEMBER);
     const notificationFrameConfig = getNotificationFrameConfig(location.pathname);
@@ -256,8 +257,14 @@ export const MainLayout = () => {
             <NavigationBar compactMode={shouldUseCompactNavigation} />
             <main className={cn('relative min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
                 <Outlet />
-                {shouldShowNotificationBell ? (
-                    <div className={cn('pointer-events-none absolute inset-x-0 z-[1002]', notificationFrameConfig.topClassName)}>
+                {shouldShowNotificationBell && !isHomeRoute ? (
+                    <div
+                        className={cn(
+                            'pointer-events-none absolute inset-x-0 z-[1002]',
+                            notificationFrameConfig.topClassName,
+                            isMemberRoute && 'z-[996]',
+                        )}
+                    >
                         <div className={notificationFrameClassName}>
                             <NotificationBell />
                         </div>

@@ -50,6 +50,7 @@ function OnboardingStepLayout({
 
                             onNext();
                         }}
+                        disabled={actionsDisabled}
                         aria-disabled={nextDisabled}
                         className={cn(
                             nextDisabled && 'border-0 bg-[#EFEAFF] text-[#A69BCF] hover:bg-[#EFEAFF] hover:text-[#A69BCF] active:scale-100',

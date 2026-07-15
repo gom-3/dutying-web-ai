@@ -1071,9 +1071,9 @@ export const ko = {
                 fixSelectionSuccess: '{{count}}칸을 고정했어요.',
                 unfixSelectionSuccess: '{{count}}칸의 고정을 해제했어요.',
                 prefillDecision: {
-                    title: '고정되지 않은 근무가 있어요',
-                    description: 'AI는 고정 근무와 신청 근무를 제외하고 다시 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.',
-                    confirm: '그대로 AI채우기',
+                    title: 'AI가 바꾸면 안 되는 근무를 고정했나요?',
+                    description: 'AI는 고정 근무와 신청 근무를 제외한 빈칸을 자동으로 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.',
+                    confirm: '이대로 진행하기',
                     cancel: '다시 편집하기',
                 },
                 regenerateDecision: {
@@ -2015,13 +2015,13 @@ export const ko = {
             title: '근무 설정',
             description: {
                 shiftTypes: '근무 유형을 관리해요.',
-                restLeavePolicy: '목표 쉬는 날과 포함 항목을 관리해요.',
+                restLeavePolicy: '목표 휴무일과 계산에 포함할 휴무 유형을 관리해요.',
                 requestReception: '신청근무 접수 기간을 관리해요.',
                 constraints: '근무 규칙을 관리해요.',
             },
             tabs: {
                 shiftTypes: '근무 유형',
-                restLeavePolicy: '쉬는 날 계산',
+                restLeavePolicy: '휴무일 계산',
                 requestReception: '신청근무 접수',
                 constraints: '제약 조건',
             },
@@ -2072,7 +2072,7 @@ export const ko = {
                 error: '신청근무 접수 설정을 불러오지 못했어요',
                 sectionTitle: '다음 달 신청근무 접수 기간',
                 toggleTitle: '접수 기간 제한 사용',
-                toggleDescription: '켜면 설정한 기간에만 앱에서 신청근무를 제출하거나 수정할 수 있어요.',
+                toggleDescription: '설정한 기간에만 앱에서 신청근무를 제출하거나 수정할 수 있어요.',
                 startDay: '접수 시작일',
                 startTime: '시작 시간',
                 endDay: '접수 종료일',
