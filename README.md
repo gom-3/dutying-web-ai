@@ -156,6 +156,11 @@ pnpm run changeset:version
 - The repository keeps the existing branch strategy: merge feature work into `develop`, merge the generated release PR into `develop` when the next version is ready, cut `release/{version}` for QA, and merge that branch into `main` to publish the GitHub Release.
 - Operational details and prerequisites are documented in [`docs/release-automation.md`](./docs/release-automation.md).
 
+## Universal Links (AASA) — 머지 주의
+
+`www.dutying.ai`(prod/`main`)와 `dev.dutying.ai`(dev/`develop`)에 AASA를 **각각 다른 경로**로 넣어 두었습니다.  
+`main` ↔ `develop` 합치기 전에 반드시 읽으세요: [docs/universal-links-aasa.md](./docs/universal-links-aasa.md)
+
 ## 링크
 
 - 랜딩 화면: [https://dutying.ai](https://dutying.ai)
