@@ -167,7 +167,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.hospitalName).toBe('듀팅 병동');
     });
 
-    it('classifies overnight working shift types as night in the create payload', () => {
+    it('preserves the selected classification for overnight working shift types', () => {
         const draft = createInitialDraft();
         const dayShiftId = draft.shiftTypes.find((shiftType) => shiftType.classification === 'DAY')?.id ?? '';
         const payload = buildCreateWardPayload({
@@ -184,7 +184,7 @@ describe('OnboardingWardCreatePage adapter', () => {
             ),
         });
 
-        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === 'D')?.classification).toBe('NIGHT');
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === 'D')?.classification).toBe('OTHER_WORK');
     });
 
     it('applies parsed response data as draft bootstrap values', () => {

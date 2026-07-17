@@ -1,4 +1,4 @@
-﻿import {Check, CircleAlert, Plus, X} from 'lucide-react';
+﻿import {Check, ChevronDown, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -21,13 +21,21 @@ interface IShiftTypeStepProps {
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(130px,1.2fr)_84px_112px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(110px,0.95fr)_84px_180px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
     'bg-[#FFF7F8] ring-1 ring-red/45 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-red/70';
 const SHIFT_TYPE_ROW_CONTROL_CLASS = 'h-10 items-center';
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
+const SHIFT_CLASSIFICATION_OPTIONS = [
+    {value: 'DAY', labelKey: 'page.onboardingWardCreate.shiftType.classification.day'},
+    {value: 'EVENING', labelKey: 'page.onboardingWardCreate.shiftType.classification.evening'},
+    {value: 'NIGHT', labelKey: 'page.onboardingWardCreate.shiftType.classification.night'},
+    {value: 'OFF', labelKey: 'page.onboardingWardCreate.shiftType.classification.off'},
+    {value: 'OTHER_WORK', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherWork'},
+    {value: 'OTHER_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherLeave'},
+] as const;
 const parseShiftTimeToMinutes = (value: string) => {
     if (!SHIFT_TIME_FORMAT_REGEX.test(value)) return null;
 
@@ -285,39 +293,37 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                 </InlineFieldError>
                             ) : null}
                         </div>
-                        <div className={`mx-auto flex w-full max-w-[112px] rounded-[10px] bg-gray-7 p-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}>
-                            <button
-                                type="button"
-                                className={`h-full flex-1 rounded-[8px] font-apple text-[13px] leading-none font-semibold transition-colors ${
-                                    !shiftType.isOff ? 'bg-white text-sub-1' : 'bg-transparent text-gray-3'
-                                }`}
-                                onClick={() =>
+                        <div className="relative mx-auto flex w-full max-w-[180px] items-center">
+                            <select
+                                value={shiftType.classification}
+                                aria-label={t('page.onboardingWardCreate.shiftType.classificationAria', {
+                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
+                                })}
+                                className="h-10 w-full cursor-pointer appearance-none rounded-[10px] border-0 bg-gray-7 px-3 pr-9 text-center font-poppins text-[15px] text-sub-1 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70"
+                                onChange={(event) => {
+                                    const classification = event.target.value as TOnboardingWardShiftType['classification'];
+                                    const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+
                                     onChange(shiftType.id, {
-                                        isOff: false,
-                                        classification: 'OTHER_WORK',
-                                        startTime: shiftType.startTime || '09:00',
-                                        endTime: shiftType.endTime || '18:00',
-                                    })
-                                }
+                                        classification,
+                                        isOff,
+                                        isCounted: !isOff,
+                                        startTime: isOff ? '' : shiftType.startTime || '09:00',
+                                        endTime: isOff ? '' : shiftType.endTime || '18:00',
+                                    });
+                                }}
                             >
-                                {t('page.onboardingWardCreate.shiftType.work')}
-                            </button>
-                            <button
-                                type="button"
-                                className={`h-full flex-1 rounded-[8px] font-apple text-[13px] leading-none font-semibold transition-colors ${
-                                    shiftType.isOff ? 'bg-white text-sub-1' : 'bg-transparent text-gray-3'
-                                }`}
-                                onClick={() =>
-                                    onChange(shiftType.id, {
-                                        isOff: true,
-                                        classification: 'OTHER_LEAVE',
-                                        startTime: '',
-                                        endTime: '',
-                                    })
-                                }
-                            >
-                                {t('page.onboardingWardCreate.shiftType.leave')}
-                            </button>
+                                {SHIFT_CLASSIFICATION_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value} className="font-poppins text-[15px]">
+                                        {t(option.labelKey)}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown
+                                className="pointer-events-none absolute right-2.5 h-4 w-4 text-gray-3"
+                                strokeWidth={2.25}
+                                aria-hidden="true"
+                            />
                         </div>
                         <div className="ml-[12px] flex justify-center self-start">
                             <div className="flex items-start">

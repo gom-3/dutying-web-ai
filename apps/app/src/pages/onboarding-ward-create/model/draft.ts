@@ -127,6 +127,7 @@ export type TOnboardingValidationIssueCode =
     | 'invalid-ward-name'
     | 'invalid-hospital-name'
     | 'empty-shift-types'
+    | 'missing-required-shift-types'
     | 'missing-shift-name'
     | 'missing-shift-short-name'
     | 'invalid-shift-short-name'
@@ -197,6 +198,13 @@ const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 2, 3, 4];
 const WARD_IDENTITY_REGEX = /^[a-zA-Z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u3400-\u9FFF0-9\s]{1,20}$/u;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
+const REQUIRED_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT', 'OFF'] as const;
+const REQUIRED_SHIFT_TYPE_DEFINITIONS = [
+    {classification: 'DAY', nameKey: 'day', shortName: 'D', startTime: '07:00', endTime: '15:00', color: '#4DC2AD', isOff: false},
+    {classification: 'EVENING', nameKey: 'evening', shortName: 'E', startTime: '15:00', endTime: '23:00', color: '#FF8BA5', isOff: false},
+    {classification: 'NIGHT', nameKey: 'night', shortName: 'N', startTime: '23:00', endTime: '07:00', color: '#3580FF', isOff: false},
+    {classification: 'OFF', nameKey: 'off', shortName: 'O', startTime: '', endTime: '', color: '#465B7A', isOff: true},
+] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
 const DEFAULT_NEW_NURSE_PREFIX = '\uC2E0\uADDC \uAC04\uD638\uC0AC';
@@ -1251,6 +1259,63 @@ export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardD
     };
 };
 
+const getAvailableRequiredShiftShortName = (preferredShortName: string, shiftTypes: TOnboardingWardShiftType[]) => {
+    const usedShortNameKeys = new Set(
+        shiftTypes
+            .map((shiftType) => getShiftShortNameEntryKey(shiftType.shortName))
+            .filter((shortName): shortName is string => Boolean(shortName)),
+    );
+    const candidates = [preferredShortName, 'W', 'V', 'Q', 'X', 'Y', 'Z', '1', '2', '3', '4'];
+
+    return candidates.find((candidate) => !usedShortNameKeys.has(getShiftShortNameEntryKey(candidate))) ?? preferredShortName;
+};
+
+export const addRequiredShiftTypesDraft = (
+    draft: TOnboardingWardDraft,
+    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
+): TOnboardingWardDraft => {
+    const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
+    const existingClassifications = new Set(activeShiftTypes.map((shiftType) => shiftType.classification));
+    const missingDefinitions = REQUIRED_SHIFT_TYPE_DEFINITIONS.filter(({classification}) => !existingClassifications.has(classification));
+    let nextShiftTypes = [...draft.shiftTypes];
+    const addedShiftTypeIds: string[] = [];
+
+    missingDefinitions.forEach((definition) => {
+        if (nextShiftTypes.filter(isOnboardingShiftTypeActive).length >= MAX_ONBOARDING_SHIFT_TYPES) {
+            return;
+        }
+
+        const shortName = getAvailableRequiredShiftShortName(definition.shortName, nextShiftTypes);
+        const shiftType = createShiftType({
+            name: labels.shiftNames[definition.nameKey],
+            shortName,
+            startTime: definition.startTime,
+            endTime: definition.endTime,
+            color: definition.color,
+            isDefault: true,
+            isOff: definition.isOff,
+            isCounted: !definition.isOff,
+            classification: definition.classification,
+        });
+
+        nextShiftTypes = [...nextShiftTypes, shiftType];
+        addedShiftTypeIds.push(shiftType.id);
+    });
+
+    if (addedShiftTypeIds.length === 0) {
+        return draft;
+    }
+
+    return {
+        ...draft,
+        shiftTypes: nextShiftTypes,
+        nurses: draft.nurses.map((nurse) => ({
+            ...nurse,
+            possibleShiftTypeIds: [...nurse.possibleShiftTypeIds, ...addedShiftTypeIds],
+        })),
+    };
+};
+
 export const deleteShiftTypeDraft = (draft: TOnboardingWardDraft, shiftTypeId: string): TOnboardingWardDraft => {
     const targetShiftType = draft.shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
     const shouldArchive = targetShiftType ? isShiftTypeReferencedByInitialSchedules(draft, targetShiftType) : false;
@@ -1432,6 +1497,12 @@ const validateShiftTypes = (draft: TOnboardingWardDraft): TOnboardingValidationI
 
     if (activeShiftTypes.length === 0) {
         issues.push({code: 'empty-shift-types', step});
+    }
+
+    const activeClassifications = new Set(activeShiftTypes.map((shiftType) => shiftType.classification));
+
+    if (REQUIRED_SHIFT_CLASSIFICATIONS.some((classification) => !activeClassifications.has(classification))) {
+        issues.push({code: 'missing-required-shift-types', step});
     }
 
     activeShiftTypes.forEach((shiftType) => {

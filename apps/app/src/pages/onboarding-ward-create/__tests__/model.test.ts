@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {
     addNurseDraft,
+    addRequiredShiftTypesDraft,
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
@@ -97,6 +98,46 @@ describe('OnboardingWardCreatePage model', () => {
         expect(validation.isValid).toBe(false);
         expect(validation.issues.map((issue) => issue.code)).toEqual(expect.arrayContaining(['missing-shift-short-name']));
         expect(canGoNext(extraShiftDraft)).toBe(false);
+    });
+
+    it('requires day, evening, night, and off classifications before continuing', () => {
+        const initialDraft = createInitialDraft();
+        const eveningShift = initialDraft.shiftTypes.find((shiftType) => shiftType.classification === 'EVENING');
+
+        if (!eveningShift) {
+            throw new Error('default evening shift type is required for this test');
+        }
+
+        const missingEveningDraft = updateShiftTypeDraft(
+            {
+                ...initialDraft,
+                currentStep: 3,
+            },
+            eveningShift.id,
+            {classification: 'OTHER_WORK'},
+        );
+        const validation = getStepValidation(missingEveningDraft, 3);
+
+        expect(validation.issues).toEqual(expect.arrayContaining([{code: 'missing-required-shift-types', step: 3}]));
+        expect(canGoNext(missingEveningDraft)).toBe(false);
+    });
+
+    it('adds missing required shift types with non-conflicting short names', () => {
+        const initialDraft = createInitialDraft();
+        const dayShift = initialDraft.shiftTypes.find((shiftType) => shiftType.classification === 'DAY');
+
+        if (!dayShift) {
+            throw new Error('default day shift type is required for this test');
+        }
+
+        const missingDayDraft = updateShiftTypeDraft(initialDraft, dayShift.id, {classification: 'OTHER_WORK'});
+        const completedShiftTypesDraft = addRequiredShiftTypesDraft(missingDayDraft);
+        const addedDayShift = completedShiftTypesDraft.shiftTypes.find((shiftType) => shiftType.classification === 'DAY');
+
+        expect(addedDayShift).toEqual(expect.objectContaining({name: '데이', shortName: 'W', classification: 'DAY'}));
+        expect(getStepValidation(completedShiftTypesDraft, 3).issues).not.toEqual(
+            expect.arrayContaining([{code: 'missing-required-shift-types', step: 3}]),
+        );
     });
 
     it('blocks duplicate shift short names', () => {

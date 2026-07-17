@@ -114,7 +114,6 @@ const PLACEHOLDER_CUSTOM_SHIFT_COLORS = new Set(['#94A3B8', '#BFC7D4']);
 const DEFAULT_WARD_FALLBACK_NAME = '\uB4C0\uD305 \uBCD1\uB3D9';
 const PRECEPTOR_MEMO = '\uD504\uB9AC\uC149\uD130';
 const PRECEPTEE_MEMO = '\uD504\uB9AC\uC149\uD2F0';
-const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const DEFAULT_PARSE_WARNING_COPY: TOnboardingParseWarningCopy = {
     failedSheet: (sheetName) => `\uC2DC\uD2B8 "${sheetName}" \uB370\uC774\uD130\uB97C \uBD88\uB7EC\uC624\uC9C0 \uBABB\uD588\uC5B4\uC694.`,
     failedRow: (rowLabel) => `\uC77C\uBD80 \uD589(${rowLabel})\uC744 \uD574\uC11D\uD558\uC9C0 \uBABB\uD574 \uC81C\uC678\uD588\uC5B4\uC694.`,
@@ -146,36 +145,11 @@ const VALID_SHIFT_CLASSIFICATIONS = new Set<TOnboardingWardShiftType['classifica
     'OTHER_LEAVE',
 ]);
 const createLocalId = (prefix: string) => `${prefix}-${uuidv4()}`;
-const parseShiftTimeToMinutes = (value: string): number | null => {
-    const normalizedValue = value.trim();
-
-    if (!SHIFT_TIME_FORMAT_REGEX.test(normalizedValue)) return null;
-
-    const [hour, minute] = normalizedValue.split(':').map(Number);
-
-    if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
-
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-    return hour * 60 + minute;
-};
-const isOvernightShiftType = (shiftType: Pick<TOnboardingWardShiftType, 'isOff' | 'startTime' | 'endTime'>) => {
-    if (shiftType.isOff) return false;
-
-    const startMinutes = parseShiftTimeToMinutes(shiftType.startTime);
-    const endMinutes = parseShiftTimeToMinutes(shiftType.endTime);
-
-    return startMinutes != null && endMinutes != null && endMinutes < startMinutes;
-};
 const getPayloadShiftClassification = (
     shiftType: TCreateWardDTO['wardShiftTypes'][number],
 ): TCreateWardDTO['wardShiftTypes'][number]['classification'] => {
     if (shiftType.isOff) {
         return shiftType.classification === 'OFF' || isOffShiftShortName(shiftType.shortName) ? 'OFF' : 'OTHER_LEAVE';
-    }
-
-    if (isOvernightShiftType(shiftType)) {
-        return 'NIGHT';
     }
 
     if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {

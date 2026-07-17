@@ -1,4 +1,5 @@
 import {type TCreateShiftTypeDTO} from '@dutying/api/ward';
+import {ChevronDown} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {CancelIcon} from '@/shared/assets/svg';
@@ -34,6 +35,14 @@ const initialValue: TCreateShiftTypeDTO = {
     isCounted: true,
     classification: 'OTHER_WORK',
 };
+const SHIFT_CLASSIFICATION_OPTIONS = [
+    {value: 'DAY', labelKey: 'feature.createShiftModal.classification.day'},
+    {value: 'EVENING', labelKey: 'feature.createShiftModal.classification.evening'},
+    {value: 'NIGHT', labelKey: 'feature.createShiftModal.classification.night'},
+    {value: 'OFF', labelKey: 'feature.createShiftModal.classification.off'},
+    {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
+    {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
+] as const;
 
 function CreateShiftModal({open, shiftType, close, onSubmit, onDelete, existingShortNames = []}: ICreateShiftModalProps) {
     const {t} = useTypedTranslation();
@@ -127,7 +136,14 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete, existingS
                                   if (writeShift.isDefault) return;
 
                                   setValidationMessage(null);
-                                  setWriteShift({...writeShift, isOff: false, classification: 'OTHER_WORK'});
+                                  setWriteShift({
+                                      ...writeShift,
+                                      isOff: false,
+                                      isCounted: true,
+                                      classification: 'OTHER_WORK',
+                                      startTime: writeShift.startTime || '09:00',
+                                      endTime: writeShift.endTime || '18:00',
+                                  });
                               }}
                           >
                               {t('feature.createShiftModal.work')}
@@ -140,10 +156,54 @@ function CreateShiftModal({open, shiftType, close, onSubmit, onDelete, existingS
                                   if (writeShift.isDefault) return;
 
                                   setValidationMessage(null);
-                                  setWriteShift({...writeShift, isOff: true, classification: 'OTHER_LEAVE'});
+                                  setWriteShift({
+                                      ...writeShift,
+                                      isOff: true,
+                                      isCounted: false,
+                                      classification: 'OTHER_LEAVE',
+                                      startTime: '',
+                                      endTime: '',
+                                  });
                               }}
                           >
                               {t('feature.createShiftModal.leave')}
+                          </div>
+                      </div>
+                      <div className="mt-6 w-[50%]">
+                          <p className="mb-[.625rem] font-apple text-base text-sub-3">
+                              {t('feature.createShiftModal.classification.label')}
+                          </p>
+                          <div className="relative">
+                              <select
+                                  value={writeShift.classification}
+                                  aria-label={t('feature.createShiftModal.classification.label')}
+                                  className="h-13.5 w-full cursor-pointer appearance-none rounded-[.625rem] border border-sub-4.5 bg-white px-4 pr-11 font-apple text-[1.1rem] font-medium text-sub-1 outline-none transition-colors focus:border-main-1"
+                                  onChange={(event) => {
+                                      const classification = event.target.value as TCreateShiftTypeDTO['classification'];
+                                      const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+
+                                      setWriteShift({
+                                          ...writeShift,
+                                          classification,
+                                          isOff,
+                                          isCounted: !isOff,
+                                          startTime: isOff ? '' : writeShift.startTime || '09:00',
+                                          endTime: isOff ? '' : writeShift.endTime || '18:00',
+                                      });
+                                      setValidationMessage(null);
+                                  }}
+                              >
+                                  {SHIFT_CLASSIFICATION_OPTIONS.map((option) => (
+                                      <option key={option.value} value={option.value} className="font-apple font-medium">
+                                          {t(option.labelKey)}
+                                      </option>
+                                  ))}
+                              </select>
+                              <ChevronDown
+                                  className="pointer-events-none absolute top-1/2 right-4 h-5 w-5 -translate-y-1/2 text-sub-3"
+                                  strokeWidth={2.25}
+                                  aria-hidden="true"
+                              />
                           </div>
                       </div>
                       <div className="flex gap-5">

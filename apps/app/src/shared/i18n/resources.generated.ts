@@ -64,6 +64,15 @@ export const ko = {
         },
         "createShiftModal": {
             "backgroundColor": "배경 색",
+            "classification": {
+                "day": "주간 근무 (Day)",
+                "evening": "저녁 근무 (Evening)",
+                "label": "근무 의미",
+                "night": "야간 근무 (Night)",
+                "off": "휴무 (Off)",
+                "otherLeave": "기타 휴가",
+                "otherWork": "기타 근무"
+            },
             "createTitle": "근무•휴가 추가하기",
             "delete": "삭제",
             "editTitle": "근무•휴가 수정하기",
@@ -1867,6 +1876,8 @@ export const ko = {
                 "invalidShiftType": "근무 유형 정보를 확인해 주세요.",
                 "invalidWardIdentity": "입력값은 한글, 영문, 숫자, 공백만 1~20자로 입력해 주세요.",
                 "missingHospitalName": "병원명을 입력해 주세요.",
+                "addedRequiredShiftTypes": "없는 필수 유형을 추가했어요: {{shiftTypes}}",
+                "missingRequiredShiftTypes": "다음 유형을 추가해 주세요: {{shiftTypes}}",
                 "scheduleMissingNurseName": "근무가 입력된 행에는 간호사 이름을 입력해 주세요.",
                 "submitting": "병동을 생성하고 있어요. 잠시만 기다려 주세요.",
                 "success": "이미 병동 생성을 마쳤어요."
@@ -1994,6 +2005,15 @@ export const ko = {
                 "color": "색상",
                 "colorOptionAria": "{{color}} 선택",
                 "colorSelectAria": "{{shiftName}} 색상 선택",
+                "classification": {
+                    "day": "주간 근무 (Day)",
+                    "evening": "저녁 근무 (Evening)",
+                    "night": "야간 근무 (Night)",
+                    "off": "휴무 (Off)",
+                    "otherLeave": "기타 휴가",
+                    "otherWork": "기타 근무"
+                },
+                "classificationAria": "{{shiftName}} 근무 의미 선택",
                 "deleteAria": "{{shiftName}} 삭제",
                 "leave": "휴무",
                 "name": "근무명",
@@ -2303,6 +2323,7 @@ export const ko = {
             "panel": {
                 "accept": "수락",
                 "acceptAll": "대기 {{count}}건 반영",
+                "acceptAllAction": "모두 반영",
                 "acceptedState": "반영됨",
                 "acceptedToast": "{{nurseName}} {{shiftType}} 근무 신청을 수락했어요.",
                 "appliedCount": "반영 {{count}}",
@@ -2310,6 +2331,7 @@ export const ko = {
                 "changeToAccept": "반영으로 변경",
                 "changeToReject": "제외로 변경",
                 "dateLabel": "{{month}}월 {{date}}일",
+                "requestDateTimeLabel": "신청 {{date}}",
                 "dayShortLabel": "{{date}}일",
                 "dayType": {
                     "holiday": "공휴일",
@@ -2339,9 +2361,12 @@ export const ko = {
                 "overlapBadge": "같은 근무 {{count}}명",
                 "overlapSummary": "겹침 {{count}}개",
                 "pendingCount": "대기 {{count}}",
+                "pendingRequestCount": "대기 중인 신청 {{count}}건",
                 "pendingEmptyDescription": "반영하거나 제외하지 않은 신청만 여기에서 볼 수 있어요.",
                 "pendingEmptyTitle": "대기 중인 신청이 없어요",
                 "pendingLabel": "대기",
+                "processedEmptyTitle": "처리완료된 신청이 없어요",
+                "processedLabel": "처리완료",
                 "readonlyTitle": "반영된 신청 근무",
                 "reject": "거절",
                 "rejectAll": "대기 {{count}}건 제외",
@@ -2750,6 +2775,15 @@ export const en: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "Background color",
+            "classification": {
+                "day": "Day shift",
+                "evening": "Evening shift",
+                "label": "Shift meaning",
+                "night": "Night shift",
+                "off": "Day off",
+                "otherLeave": "Other leave",
+                "otherWork": "Other work"
+            },
             "createTitle": "Add work/leave type",
             "delete": "Delete",
             "editTitle": "Edit work/leave type",
@@ -4553,6 +4587,8 @@ export const en: TLocale = {
                 "invalidShiftType": "Check the shift type information.",
                 "invalidWardIdentity": "Use Korean, English, Japanese, numbers, and spaces only, within 1-20 characters.",
                 "missingHospitalName": "Enter a hospital name.",
+                "addedRequiredShiftTypes": "Added the missing required shift types: {{shiftTypes}}",
+                "missingRequiredShiftTypes": "Please add the following shift types: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Enter a nurse name for each row with shifts.",
                 "submitting": "Creating the ward. Please wait.",
                 "success": "Ward creation is already complete."
@@ -4680,6 +4716,15 @@ export const en: TLocale = {
                 "color": "Color",
                 "colorOptionAria": "Select {{color}}",
                 "colorSelectAria": "Select color for {{shiftName}}",
+                "classification": {
+                    "day": "Day shift",
+                    "evening": "Evening shift",
+                    "night": "Night shift",
+                    "off": "Day off",
+                    "otherLeave": "Other leave",
+                    "otherWork": "Other work"
+                },
+                "classificationAria": "Select the meaning of {{shiftName}}",
                 "deleteAria": "Delete {{shiftName}}",
                 "leave": "Leave",
                 "name": "Shift name",
@@ -4989,6 +5034,7 @@ export const en: TLocale = {
             "panel": {
                 "accept": "Accept",
                 "acceptAll": "Accept {{count}} pending",
+                "acceptAllAction": "Accept all",
                 "acceptedState": "Accepted",
                 "acceptedToast": "{{nurseName}}'s {{shiftType}} request accepted.",
                 "appliedCount": "Applied {{count}}",
@@ -4996,6 +5042,7 @@ export const en: TLocale = {
                 "changeToAccept": "Change to accept",
                 "changeToReject": "Change to reject",
                 "dateLabel": "{{month}}/{{date}}",
+                "requestDateTimeLabel": "Requested {{date}}",
                 "dayShortLabel": "{{date}}",
                 "dayType": {
                     "holiday": "Holiday",
@@ -5025,9 +5072,12 @@ export const en: TLocale = {
                 "overlapBadge": "{{count}} want this shift",
                 "overlapSummary": "{{count}} overlaps",
                 "pendingCount": "Pending {{count}}",
+                "pendingRequestCount": "{{count}} pending requests",
                 "pendingEmptyDescription": "Only requests without an accept or reject decision appear here.",
                 "pendingEmptyTitle": "No pending requests",
                 "pendingLabel": "Pending",
+                "processedEmptyTitle": "No processed requests",
+                "processedLabel": "Processed",
                 "readonlyTitle": "Applied requested shifts",
                 "reject": "Reject",
                 "rejectAll": "Reject {{count}} pending",
@@ -5434,6 +5484,15 @@ export const ja: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "背景色",
+            "classification": {
+                "day": "日勤",
+                "evening": "準夜勤",
+                "label": "勤務の意味",
+                "night": "夜勤",
+                "off": "休み",
+                "otherLeave": "その他の休暇",
+                "otherWork": "その他の勤務"
+            },
             "createTitle": "勤務・休みを追加",
             "delete": "削除",
             "editTitle": "勤務・休みを編集",
@@ -7237,6 +7296,8 @@ export const ja: TLocale = {
                 "invalidShiftType": "勤務区分情報を確認してください。",
                 "invalidWardIdentity": "入力値は韓国語、英語、日本語、数字、スペースのみ1〜20文字で入力してください。",
                 "missingHospitalName": "病院名を入力してください。",
+                "addedRequiredShiftTypes": "不足していた必須の勤務区分を追加しました：{{shiftTypes}}",
+                "missingRequiredShiftTypes": "次の勤務区分を追加してください：{{shiftTypes}}",
                 "scheduleMissingNurseName": "勤務が入力された行には看護師名を入力してください。",
                 "submitting": "病棟を作成しています。しばらくお待ちください。",
                 "success": "病棟作成はすでに完了しています。"
@@ -7364,7 +7425,16 @@ export const ja: TLocale = {
                 "color": "色",
                 "colorOptionAria": "{{color}}を選択",
                 "colorSelectAria": "{{shiftName}}の色を選択",
-                "deleteAria": "{{shiftName}}を削除",
+                "classification": {
+                    "day": "日勤",
+                    "evening": "準夜勤",
+                    "night": "夜勤",
+                    "off": "休み",
+                    "otherLeave": "その他の休暇",
+                    "otherWork": "その他の勤務"
+                },
+                "classificationAria": "{{shiftName}}の勤務の意味を選択",
+                "deleteAria": "{{shiftName}}の削除",
                 "leave": "休み",
                 "name": "勤務名",
                 "shortName": "略称",
@@ -7673,6 +7743,7 @@ export const ja: TLocale = {
             "panel": {
                 "accept": "承認",
                 "acceptAll": "待機{{count}}件を反映",
+                "acceptAllAction": "すべて反映",
                 "acceptedState": "反映済み",
                 "acceptedToast": "{{nurseName}}さんの{{shiftType}}の勤務希望を承認しました。",
                 "appliedCount": "反映 {{count}}",
@@ -7680,6 +7751,7 @@ export const ja: TLocale = {
                 "changeToAccept": "反映に変更",
                 "changeToReject": "除外に変更",
                 "dateLabel": "{{month}}月{{date}}日",
+                "requestDateTimeLabel": "申請 {{date}}",
                 "dayShortLabel": "{{date}}日",
                 "dayType": {
                     "holiday": "祝日",
@@ -7709,9 +7781,12 @@ export const ja: TLocale = {
                 "overlapBadge": "同じ勤務 {{count}}名",
                 "overlapSummary": "重複 {{count}}件",
                 "pendingCount": "待機 {{count}}",
+                "pendingRequestCount": "待機中の申請 {{count}}件",
                 "pendingEmptyDescription": "反映または除外していない申請だけがここに表示されます。",
                 "pendingEmptyTitle": "待機中の申請はありません",
                 "pendingLabel": "待機",
+                "processedEmptyTitle": "処理済みの申請はありません",
+                "processedLabel": "処理済み",
                 "readonlyTitle": "反映済み勤務希望",
                 "reject": "却下",
                 "rejectAll": "待機{{count}}件を除外",
@@ -8118,6 +8193,15 @@ export const zh: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "背景颜色",
+            "classification": {
+                "day": "白班",
+                "evening": "小夜班",
+                "label": "班次含义",
+                "night": "夜班",
+                "off": "休息",
+                "otherLeave": "其他假期",
+                "otherWork": "其他工作"
+            },
             "createTitle": "添加工作/假期",
             "delete": "删除",
             "editTitle": "编辑工作/假期",
@@ -9921,6 +10005,8 @@ export const zh: TLocale = {
                 "invalidShiftType": "请检查您的班次类型信息。",
                 "invalidWardIdentity": "请输入仅包含韩语、英语、数字和空格的 1 至 20 个字符。",
                 "missingHospitalName": "请输入医院名称。",
+                "addedRequiredShiftTypes": "已添加缺少的必需班次类型：{{shiftTypes}}",
+                "missingRequiredShiftTypes": "请添加以下班次类型：{{shiftTypes}}",
                 "scheduleMissingNurseName": "请在输入班次的行中输入护士姓名。",
                 "submitting": "正在创建一个病区。请稍等。",
                 "success": "已完成病区的创建。"
@@ -10048,6 +10134,15 @@ export const zh: TLocale = {
                 "color": "颜色",
                 "colorOptionAria": "选择{{color}}",
                 "colorSelectAria": "{{shiftName}} 颜色选择",
+                "classification": {
+                    "day": "白班",
+                    "evening": "小夜班",
+                    "night": "夜班",
+                    "off": "休息",
+                    "otherLeave": "其他假期",
+                    "otherWork": "其他工作"
+                },
+                "classificationAria": "选择{{shiftName}}的班次含义",
                 "deleteAria": "删除{{shiftName}}",
                 "leave": "关闭",
                 "name": "作品名称",
@@ -10357,6 +10452,7 @@ export const zh: TLocale = {
             "panel": {
                 "accept": "验收",
                 "acceptAll": "反映待机{{count}}",
+                "acceptAllAction": "全部反映",
                 "acceptedState": "反映",
                 "acceptedToast": "{{nurseName}} {{shiftType}} 班次申请已通过。",
                 "appliedCount": "反射{{count}}",
@@ -10364,6 +10460,7 @@ export const zh: TLocale = {
                 "changeToAccept": "改变以反映",
                 "changeToReject": "更改为排除",
                 "dateLabel": "{{month}} 月 {{date}} 日",
+                "requestDateTimeLabel": "申请 {{date}}",
                 "dayShortLabel": "{{date}}天",
                 "dayType": {
                     "holiday": "公众假期",
@@ -10393,9 +10490,12 @@ export const zh: TLocale = {
                 "overlapBadge": "同班{{count}}人",
                 "overlapSummary": "重叠 {{count}}",
                 "pendingCount": "备用{{count}}",
+                "pendingRequestCount": "待处理申请 {{count}}个",
                 "pendingEmptyDescription": "此处只能查看未反映或排除的申请。",
                 "pendingEmptyTitle": "没有待处理的申请",
                 "pendingLabel": "气氛",
+                "processedEmptyTitle": "没有已处理的申请",
+                "processedLabel": "已处理",
                 "readonlyTitle": "反映应用工作",
                 "reject": "拒绝",
                 "rejectAll": "不含备用{{count}}枪",
@@ -10802,6 +10902,15 @@ export const th: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "สีพื้นหลัง",
+            "classification": {
+                "day": "กะกลางวัน",
+                "evening": "กะเย็น",
+                "label": "ความหมายของกะ",
+                "night": "กะกลางคืน",
+                "off": "วันหยุด",
+                "otherLeave": "การลาอื่น ๆ",
+                "otherWork": "งานอื่น ๆ"
+            },
             "createTitle": "เพิ่มประเภทงาน/การลา",
             "delete": "ลบ",
             "editTitle": "แก้ไขงาน/ประเภทการลา",
@@ -12605,6 +12714,8 @@ export const th: TLocale = {
                 "invalidShiftType": "ตรวจสอบข้อมูลประเภทกะ",
                 "invalidWardIdentity": "ใช้ภาษาเกาหลี อังกฤษ ญี่ปุ่น ตัวเลข และช่องว่างเท่านั้น โดยมีความยาวไม่เกิน 1-20 อักขระ",
                 "missingHospitalName": "ป้อนชื่อโรงพยาบาล",
+                "addedRequiredShiftTypes": "เพิ่มประเภทกะที่จำเป็นซึ่งขาดหายไปแล้ว: {{shiftTypes}}",
+                "missingRequiredShiftTypes": "โปรดเพิ่มประเภทกะต่อไปนี้: {{shiftTypes}}",
                 "scheduleMissingNurseName": "ป้อนชื่อพยาบาลสำหรับแต่ละแถวที่มีกะ",
                 "submitting": "การสร้างวอร์ด โปรดรอ.",
                 "success": "การสร้างวอร์ดเสร็จสมบูรณ์แล้ว"
@@ -12732,6 +12843,15 @@ export const th: TLocale = {
                 "color": "สี",
                 "colorOptionAria": "เลือก {{color}}",
                 "colorSelectAria": "เลือกสีสำหรับ {{shiftName}}",
+                "classification": {
+                    "day": "กะกลางวัน",
+                    "evening": "กะเย็น",
+                    "night": "กะกลางคืน",
+                    "off": "วันหยุด",
+                    "otherLeave": "การลาอื่น ๆ",
+                    "otherWork": "งานอื่น ๆ"
+                },
+                "classificationAria": "เลือกความหมายของ {{shiftName}}",
                 "deleteAria": "ลบ {{shiftName}}",
                 "leave": "ออกจาก",
                 "name": "เปลี่ยนชื่อ",
@@ -13041,6 +13161,7 @@ export const th: TLocale = {
             "panel": {
                 "accept": "ยอมรับ",
                 "acceptAll": "ยอมรับ {{count}} ที่รอดำเนินการ",
+                "acceptAllAction": "ยอมรับทั้งหมด",
                 "acceptedState": "ได้รับการยอมรับ",
                 "acceptedToast": "ยอมรับคำขอ {{shiftType}} ของ {{nurseName}} แล้ว",
                 "appliedCount": "Appโกหก {{count}}",
@@ -13048,6 +13169,7 @@ export const th: TLocale = {
                 "changeToAccept": "เปลี่ยนแปลงเพื่อยอมรับ",
                 "changeToReject": "เปลี่ยนเป็นปฏิเสธ",
                 "dateLabel": "{{month}}/{{date}}",
+                "requestDateTimeLabel": "ส่งคำขอ {{date}}",
                 "dayShortLabel": "{{date}}",
                 "dayType": {
                     "holiday": "วันหยุด",
@@ -13077,9 +13199,12 @@ export const th: TLocale = {
                 "overlapBadge": "{{count}} ต้องการการเปลี่ยนแปลงนี้",
                 "overlapSummary": "{{count}} ทับซ้อนกัน",
                 "pendingCount": "รอดำเนินการ {{count}}",
+                "pendingRequestCount": "คำขอที่รอดำเนินการ {{count}} รายการ",
                 "pendingEmptyDescription": "เฉพาะคำขอที่ไม่มีการตัดสินใจยอมรับหรือปฏิเสธเท่านั้นที่ปรากฏที่นี่",
                 "pendingEmptyTitle": "ไม่มีคำขอที่ค้างอยู่",
                 "pendingLabel": "รอดำเนินการ",
+                "processedEmptyTitle": "ไม่มีคำขอที่ดำเนินการแล้ว",
+                "processedLabel": "ดำเนินการแล้ว",
                 "readonlyTitle": "Applied ร้องขอการเปลี่ยนแปลง",
                 "reject": "ปฏิเสธ",
                 "rejectAll": "ปฏิเสธ {{count}} ที่รอดำเนินการ",
@@ -13486,6 +13611,15 @@ export const vi: TLocale = {
         },
         "createShiftModal": {
             "backgroundColor": "Màu nền",
+            "classification": {
+                "day": "Ca ngày",
+                "evening": "Ca chiều",
+                "label": "Ý nghĩa ca",
+                "night": "Ca đêm",
+                "off": "Ngày nghỉ",
+                "otherLeave": "Nghỉ phép khác",
+                "otherWork": "Công việc khác"
+            },
             "createTitle": "Thêm loại công việc/nghỉ phép",
             "delete": "Xóa",
             "editTitle": "Chỉnh sửa loại công việc/nghỉ phép",
@@ -15289,6 +15423,8 @@ export const vi: TLocale = {
                 "invalidShiftType": "Kiểm tra thông tin loại ca.",
                 "invalidWardIdentity": "Chỉ sử dụng tiếng Hàn, tiếng Anh, tiếng Nhật, số và dấu cách, trong vòng 1-20 ký tự.",
                 "missingHospitalName": "Nhập tên bệnh viện.",
+                "addedRequiredShiftTypes": "Đã thêm các loại ca bắt buộc còn thiếu: {{shiftTypes}}",
+                "missingRequiredShiftTypes": "Vui lòng thêm các loại ca sau: {{shiftTypes}}",
                 "scheduleMissingNurseName": "Nhập tên điều dưỡng cho mỗi hàng theo ca.",
                 "submitting": "Tạo khoa. Vui lòng chờ.",
                 "success": "Việc tạo khoa đã hoàn tất."
@@ -15416,6 +15552,15 @@ export const vi: TLocale = {
                 "color": "Màu sắc",
                 "colorOptionAria": "Chọn {{color}}",
                 "colorSelectAria": "Chọn màu cho {{shiftName}}",
+                "classification": {
+                    "day": "Ca ngày",
+                    "evening": "Ca chiều",
+                    "night": "Ca đêm",
+                    "off": "Ngày nghỉ",
+                    "otherLeave": "Nghỉ phép khác",
+                    "otherWork": "Công việc khác"
+                },
+                "classificationAria": "Chọn ý nghĩa của {{shiftName}}",
                 "deleteAria": "Xóa {{shiftName}}",
                 "leave": "Rời khỏi",
                 "name": "Tên ca",
@@ -15725,6 +15870,7 @@ export const vi: TLocale = {
             "panel": {
                 "accept": "Chấp nhận",
                 "acceptAll": "Chấp nhận {{count}} đang chờ xử lý",
+                "acceptAllAction": "Chấp nhận tất cả",
                 "acceptedState": "Đã chấp nhận",
                 "acceptedToast": "Yêu cầu {{shiftType}} của {{nurseName}} đã được chấp nhận.",
                 "appliedCount": "Đã áp dụng {{count}}",
@@ -15732,6 +15878,7 @@ export const vi: TLocale = {
                 "changeToAccept": "Thay đổi để chấp nhận",
                 "changeToReject": "Thay đổi để từ chối",
                 "dateLabel": "{{month}}/{{date}}",
+                "requestDateTimeLabel": "Đã gửi {{date}}",
                 "dayShortLabel": "{{date}}",
                 "dayType": {
                     "holiday": "Kỳ nghỉ",
@@ -15761,9 +15908,12 @@ export const vi: TLocale = {
                 "overlapBadge": "{{count}} muốn ca này",
                 "overlapSummary": "{{count}} trùng lặp",
                 "pendingCount": "Đang chờ xử lý {{count}}",
+                "pendingRequestCount": "{{count}} yêu cầu đang chờ",
                 "pendingEmptyDescription": "Chỉ những yêu cầu không có quyết định chấp nhận hoặc từ chối mới xuất hiện ở đây.",
                 "pendingEmptyTitle": "Không có yêu cầu đang chờ xử lý",
                 "pendingLabel": "Đang chờ xử lý",
+                "processedEmptyTitle": "Không có yêu cầu đã xử lý",
+                "processedLabel": "Đã xử lý",
                 "readonlyTitle": "Các ca được yêu cầu đã áp dụng",
                 "reject": "Từ chối",
                 "rejectAll": "Từ chối {{count}} đang chờ xử lý",

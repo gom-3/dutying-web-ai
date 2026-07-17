@@ -43,6 +43,7 @@ function OnboardingWardCreatePage() {
         goPreviousStep,
         updateWardIdentity,
         skipOrComplete,
+        addRequiredShiftTypes,
         addShiftType,
         updateShiftType,
         deleteShiftType,
@@ -129,6 +130,21 @@ function OnboardingWardCreatePage() {
             {t('page.onboardingWardCreate.deleteTeamAction')}
         </WizardButton>
     );
+    const getMissingRequiredShiftTypeLabels = () => {
+        const requiredShiftTypes = [
+            {classification: 'DAY', label: t('page.onboardingWardCreate.shiftType.classification.day')},
+            {classification: 'EVENING', label: t('page.onboardingWardCreate.shiftType.classification.evening')},
+            {classification: 'NIGHT', label: t('page.onboardingWardCreate.shiftType.classification.night')},
+            {classification: 'OFF', label: t('page.onboardingWardCreate.shiftType.classification.off')},
+        ] as const;
+        const activeClassifications = new Set(
+            draft.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => shiftType.classification),
+        );
+
+        return requiredShiftTypes
+            .filter(({classification}) => !activeClassifications.has(classification))
+            .map(({label}) => label);
+    };
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
             return t('page.onboardingWardCreate.blocked.submitting');
@@ -167,6 +183,12 @@ function OnboardingWardCreatePage() {
 
         if (codes.has('duplicate-shift-short-name')) {
             return t('page.onboardingWardCreate.blocked.duplicateShiftType');
+        }
+
+        if (codes.has('missing-required-shift-types')) {
+            return t('page.onboardingWardCreate.blocked.missingRequiredShiftTypes', {
+                shiftTypes: getMissingRequiredShiftTypeLabels().join(', '),
+            });
         }
 
         if (codes.has('missing-shift-time') || codes.has('invalid-shift-time-format') || codes.has('invalid-shift-time-order')) {
@@ -477,6 +499,21 @@ function OnboardingWardCreatePage() {
                         if (draft.currentStep === 1) {
                             setShowIdentityNameError(true);
                             focusFirstInvalidIdentityField();
+                        }
+
+                        const blockingIssues = draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
+                        const codes = new Set(blockingIssues.map((issue) => issue.code));
+
+                        if (draft.currentStep === 3 && codes.has('missing-required-shift-types')) {
+                            const missingShiftTypes = getMissingRequiredShiftTypeLabels();
+                            addRequiredShiftTypes();
+                            toast.success(
+                                t('page.onboardingWardCreate.blocked.addedRequiredShiftTypes', {
+                                    shiftTypes: missingShiftTypes.join(', '),
+                                }),
+                            );
+
+                            return;
                         }
 
                         toast.error(getNextBlockedReasonMessage());

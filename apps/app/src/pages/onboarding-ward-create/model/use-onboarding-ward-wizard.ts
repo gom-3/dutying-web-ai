@@ -26,6 +26,7 @@ import {
 } from './adapter';
 import {
     addNurseDraft,
+    addRequiredShiftTypesDraft,
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
@@ -314,10 +315,24 @@ const mergeSchedulePreviewShiftTypes = (
     preferredOffShortName: string | null,
 ): TOnboardingParsedShiftType[] => {
     const draftShiftTypes = draft.shiftTypes.map(toParsedShiftType);
-    const previewShiftTypes: TOnboardingParsedShiftType[] = toSchedulePreviewShiftTypes(response).map((shiftType) => ({
-        ...shiftType,
-        shortName: remapPreviewOffShortName(shiftType.shortName, preferredOffShortName),
-    }));
+    const observedPreviewShortNames = new Set(
+        response.nurses.flatMap((nurse) =>
+            nurse.initialShifts
+                .map((initialShift) => remapPreviewOffShortName(initialShift.shiftShortName, preferredOffShortName))
+                .map(normalizeShiftTypeMergeKey)
+                .filter((shortName): shortName is string => Boolean(shortName)),
+        ),
+    );
+    const previewShiftTypes: TOnboardingParsedShiftType[] = toSchedulePreviewShiftTypes(response)
+        .map((shiftType) => ({
+            ...shiftType,
+            shortName: remapPreviewOffShortName(shiftType.shortName, preferredOffShortName),
+        }))
+        .filter((shiftType) => {
+            const shortName = normalizeShiftTypeMergeKey(shiftType.shortName);
+
+            return Boolean(shortName && observedPreviewShortNames.has(shortName));
+        });
     const draftByShortName = new Map(
         draftShiftTypes
             .map((shiftType) => [normalizeShiftTypeMergeKey(shiftType.shortName), shiftType] as const)
@@ -1103,6 +1118,10 @@ function useOnboardingWardWizard() {
         markDraftTouched();
         setDraft((prev) => addShiftTypeDraft(prev));
     };
+    const addRequiredShiftTypes = () => {
+        markDraftTouched();
+        setDraft((prev) => addRequiredShiftTypesDraft(prev, onboardingDraftLabels));
+    };
     const deleteShiftType = (shiftTypeId: string) => {
         markDraftTouched();
         setDraft((prev) => deleteShiftTypeDraft(prev, shiftTypeId));
@@ -1493,6 +1512,7 @@ function useOnboardingWardWizard() {
         updateWardIdentity,
         skipOrComplete,
         addShiftType,
+        addRequiredShiftTypes,
         updateShiftType,
         deleteShiftType,
         addTeam,

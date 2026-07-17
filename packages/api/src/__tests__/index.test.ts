@@ -112,7 +112,7 @@ describe('@dutying/api public entry', () => {
         });
     });
 
-    it('normalizes overnight ward shift types in create payloads', async () => {
+    it('preserves the selected classification for overnight ward shift types', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
 
@@ -154,7 +154,7 @@ describe('@dutying/api public entry', () => {
             wardShiftTypes: [
                 {
                     ...overnightShiftType,
-                    classification: 'NIGHT',
+                    classification: 'OTHER_WORK',
                 },
             ],
             shiftTeams: [],
@@ -588,7 +588,7 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenNthCalledWith(2, '/wards/7/req-shifts/301/accept', {isAccepted: true});
     });
 
-    it('normalizes overnight shift type create and update payloads', async () => {
+    it('preserves explicit classification for overnight shift type create and update payloads', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
         const putMock = client.put as ReturnType<typeof vi.fn>;
@@ -613,11 +613,11 @@ describe('@dutying/api public entry', () => {
 
         expect(postMock).toHaveBeenCalledWith('/wards/7/shift-types', {
             ...payload,
-            classification: 'NIGHT',
+            classification: 'OTHER_WORK',
         });
         expect(putMock).toHaveBeenCalledWith('/wards/7/shift-types/3', {
             ...payload,
-            classification: 'NIGHT',
+            classification: 'OTHER_WORK',
         });
     });
 

@@ -53,7 +53,6 @@ import type {
 import type {TNurseResponse} from '../nurse';
 
 const DUMMY_PHONE_NUM = '01000000000';
-const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 
 const toYearMonthQuery = (year: number, month: number) =>
     new URLSearchParams({
@@ -100,39 +99,11 @@ const normalizeBasePath = (basePath: string | undefined) => {
 };
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as Partial<T>;
-const parseShiftTimeToMinutes = (value: string | null | undefined): number | null => {
-    const normalizedValue = value?.trim();
-
-    if (!normalizedValue || !SHIFT_TIME_FORMAT_REGEX.test(normalizedValue)) return null;
-
-    const [hour, minute] = normalizedValue.split(':').map(Number);
-
-    if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
-
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
-
-    return hour * 60 + minute;
-};
-const isOvernightShiftType = (shiftType: Pick<TCreateShiftTypeDTO, 'isOff' | 'startTime' | 'endTime'>) => {
-    if (shiftType.isOff) return false;
-
-    const startMinutes = parseShiftTimeToMinutes(shiftType.startTime);
-    const endMinutes = parseShiftTimeToMinutes(shiftType.endTime);
-
-    return startMinutes != null && endMinutes != null && endMinutes < startMinutes;
-};
 const normalizeShiftTypePayload = <T extends TCreateShiftTypeDTO | TCreateWardShiftTypeDTO>(shiftType: T): T => {
     if (shiftType.isOff) {
         return {
             ...shiftType,
             classification: shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE',
-        };
-    }
-
-    if (isOvernightShiftType(shiftType)) {
-        return {
-            ...shiftType,
-            classification: 'NIGHT',
         };
     }
 
