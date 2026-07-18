@@ -294,6 +294,62 @@ export function docToSnapshotCellsDTO(doc: TDutyDoc, originalShift: TShift): TSn
     return dto;
 }
 
+/**
+ * 전달 근무(직전 달 마지막 근무)를 검증/자동채우기 요청용 셀로 변환한다.
+ *
+ * 서버는 이번 달 격자(`docToSnapshotCellsDTO`)와 달리 이 셀들을 별도 `carryOverCells` 필드로 받아
+ * 월 경계 제약(연속 근무·나이트 후 오프 등) 계산에만 쓰고 저장하지 않는다.
+ *
+ * `row.lastCells`는 시간순 오름차순으로, 마지막 원소가 직전 달 말일이다(서버 `/duty`가 마지막 4일을 그렇게 채운다).
+ * 따라서 뒤에서부터 직전 달 말일→역순으로 날짜를 매핑한다. 왼쪽 패딩 null·빈칸·알 수 없는 근무코드는 보내지 않는다.
+ */
+export function docToCarryOverCellsDTO(doc: TDutyDoc, originalShift: TShift, year: number, month: number): TSnapshotCellDTO[] {
+    const maps = buildWardShiftTypeMaps(originalShift);
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    // JS Date의 month 인자는 0-based라 (prevYear, prevMonth, 0)은 직전 달의 말일이 된다.
+    const prevMonthLastDay = new Date(prevYear, prevMonth, 0).getDate();
+    const dto: TSnapshotCellDTO[] = [];
+
+    for (const row of doc.rows) {
+        const lastCells = row.lastCells;
+
+        if (!lastCells || lastCells.length === 0) continue;
+
+        const shiftNurseId = Number(row.workerId);
+        const nurseId = doc.workerMeta[row.workerId]?.nurseId;
+
+        for (let offset = 0; offset < lastCells.length; offset += 1) {
+            const cell = lastCells[lastCells.length - 1 - offset] ?? null;
+
+            if (cell === null || cell === '') continue;
+
+            const day = prevMonthLastDay - offset;
+
+            if (day < 1) break;
+
+            const wardShiftTypeId = cellToWardShiftTypeId(cell, maps);
+
+            if (wardShiftTypeId === null) continue;
+
+            const date = formatDateKey(prevYear, prevMonth, day);
+
+            dto.push({
+                cellKey: buildSnapshotCellKey(shiftNurseId, date),
+                shiftNurseId,
+                nurseId,
+                date,
+                wardShiftTypeId,
+                shiftCode: cell,
+                source: 'CARRY_OVER',
+                fixed: true,
+            });
+        }
+    }
+
+    return dto;
+}
+
 export function docToSnapshotRowOrderDTO(doc: TDutyDoc): TSnapshotRowOrderDTO[] {
     return doc.rows.map((row, index) => {
         const shiftNurseId = Number(row.workerId);

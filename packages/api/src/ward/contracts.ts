@@ -471,6 +471,8 @@ export type TValidateSnapshotDTO = {
     rulesHash: string;
     cells: TSnapshotCellDTO[];
     rowOrder: TSnapshotRowOrderDTO[];
+    /** 전달 근무(직전 달 마지막 근무). 월 경계 제약 계산에만 쓰이며 서버에 저장되지 않는다. date는 직전 달. */
+    carryOverCells?: TSnapshotCellDTO[];
 };
 
 export type TAutofillTargetDto = {
@@ -488,6 +490,8 @@ export type TAutofillDTO = {
     rulesHash?: string;
     rowOrder: TSnapshotRowOrderDTO[];
     cells: TSnapshotCellDTO[];
+    /** 전달 근무(직전 달 마지막 근무). 월 경계 제약 계산·프롬프트에만 쓰이며 서버에 저장되지 않는다. date는 직전 달. */
+    carryOverCells?: TSnapshotCellDTO[];
     target?: TAutofillTargetDto;
     lockedCellKeys?: string[];
     returnMode?: 'PATCH';
