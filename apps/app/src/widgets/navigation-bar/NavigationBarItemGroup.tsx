@@ -1,6 +1,5 @@
 import {cn} from '@dutying/utils/style';
 import {useQuery} from '@tanstack/react-query';
-import {CircleUserRound} from 'lucide-react';
 import {useState} from 'react';
 import {Link} from 'react-router';
 import {notificationQueryOptions} from '@/entities/notification';
@@ -9,7 +8,6 @@ import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useEditWard from '@/features/edit-ward';
 import {useTotalPendingRequestCount} from '@/features/request-shift/model/use-total-pending-request-count';
-import {HomeIcon, HomeIconSelected} from '@/shared/assets/svg';
 import ROUTE, {type TRoute} from '@/shared/constant/path';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
@@ -29,11 +27,15 @@ type TNavSection = {
     items: TNavItem[];
 };
 
-const navigationImageIcon = (name: string): TNavigationBarItemIcon => ({
+const navigationImageIcon = (
+    name: string,
+    options: {sizeClassName?: string; imageSizeClassName?: string} = {},
+): TNavigationBarItemIcon => ({
     kind: 'image',
     defaultSrc: `/img/navigation/${name}-default.png`,
     hoverSrc: `/img/navigation/${name}-hover.png`,
     activeSrc: `/img/navigation/${name}-active.png`,
+    ...options,
 });
 const navigationIcons = {
     make: navigationImageIcon('make'),
@@ -42,14 +44,12 @@ const navigationIcons = {
     member: navigationImageIcon('member'),
     wardSettings: navigationImageIcon('ward-settings'),
     wardInfo: navigationImageIcon('ward-info'),
+    account: navigationImageIcon('account', {sizeClassName: 'size-[20px]'}),
+    home: navigationImageIcon('home', {imageSizeClassName: 'size-[15px]'}),
 } as const;
 const homeItem: TNavItem = {
     path: ROUTE.HOME,
-    icon: {
-        kind: 'component',
-        Icon: HomeIcon,
-        SelectedIcon: HomeIconSelected,
-    },
+    icon: navigationIcons.home,
     textKey: 'page.navigationBar.home',
 };
 const sections: TNavSection[] = [
@@ -98,10 +98,7 @@ const sections: TNavSection[] = [
 ];
 const accountItem: TNavItem = {
     path: ROUTE.PROFILE,
-    icon: {
-        kind: 'component',
-        Icon: CircleUserRound,
-    },
+    icon: navigationIcons.account,
     textKey: 'page.navigationBar.items.account',
 };
 

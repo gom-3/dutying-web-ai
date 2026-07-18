@@ -29,7 +29,7 @@ import RequestDutyRequestPanel from './request-calendar/request-duty-request-pan
 import {createRequestCalendarCellFocus, createShiftNurseIdByNurseId, requestShiftToCalendarData} from './request-calendar/utils';
 
 type TRequestCalendarProps = {
-    defaultReviewMode?: 'date' | 'request' | 'pending' | 'nurse';
+    defaultReviewMode?: 'pending' | 'processed';
     canReorderRows?: boolean;
     rowReorderDisabled?: boolean;
     orderSourceNurses?: TNurse[];
@@ -291,7 +291,7 @@ export default function ShiftCalendar({
         <div
             id="calendar"
             className={cn(
-                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-[1124px] flex-1 grid-cols-[minmax(840px,1fr)_minmax(271px,clamp(271px,18vw,344px))] items-start gap-3',
+                'mx-auto mt-2 grid min-h-0 w-full max-w-none min-w-0 flex-1 grid-cols-1 items-start gap-3 min-[1280px]:min-w-[1172px] min-[1280px]:grid-cols-[minmax(840px,1fr)_minmax(320px,clamp(320px,20vw,360px))]',
                 !hasCurrentTeamNurses && 'items-stretch',
             )}
         >

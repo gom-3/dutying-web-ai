@@ -9,6 +9,8 @@ type TNavigationBarImageIcon = {
     defaultSrc: string;
     hoverSrc: string;
     activeSrc: string;
+    sizeClassName?: string;
+    imageSizeClassName?: string;
 };
 
 type TNavigationBarComponentIcon = {
@@ -61,6 +63,8 @@ const NavigationBarItem = ({
     const CurrentComponentIcon =
         icon.kind === 'component' && isSelected && icon.SelectedIcon ? icon.SelectedIcon : icon.kind === 'component' ? icon.Icon : null;
     const iconMotionClassName = cn(iconTapMotionClass, isTapAnimating ? 'scale-[0.9] duration-100 ease-out' : undefined);
+    const imagePositionClassName =
+        icon.kind === 'image' && icon.imageSizeClassName ? 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2' : 'inset-0';
 
     useEffect(() => {
         setIsPressedPreview(false);
@@ -138,13 +142,15 @@ const NavigationBarItem = ({
                 />
             ) : null}
             {icon.kind === 'image' ? (
-                <span aria-hidden="true" className={cn('relative size-[22px] shrink-0', iconMotionClassName)}>
+                <span aria-hidden="true" className={cn('relative shrink-0', icon.sizeClassName ?? 'size-[22px]', iconMotionClassName)}>
                     <img
                         src={icon.defaultSrc}
                         alt=""
                         aria-hidden="true"
                         className={cn(
-                            'absolute inset-0 size-full object-contain transition-opacity duration-150',
+                            'absolute object-contain transition-opacity duration-150',
+                            imagePositionClassName,
+                            icon.kind === 'image' ? (icon.imageSizeClassName ?? 'size-full') : undefined,
                             isSelected || isInteractionPreview
                                 ? 'opacity-0'
                                 : canSwapImageIcon
@@ -157,7 +163,9 @@ const NavigationBarItem = ({
                         alt=""
                         aria-hidden="true"
                         className={cn(
-                            'absolute inset-0 size-full object-contain transition-opacity duration-150',
+                            'absolute object-contain transition-opacity duration-150',
+                            imagePositionClassName,
+                            icon.kind === 'image' ? (icon.imageSizeClassName ?? 'size-full') : undefined,
                             isInteractionPreview ? 'opacity-100' : canSwapImageIcon ? 'opacity-0 group-hover:opacity-100' : 'opacity-0',
                         )}
                     />
@@ -166,7 +174,9 @@ const NavigationBarItem = ({
                         alt=""
                         aria-hidden="true"
                         className={cn(
-                            'absolute inset-0 size-full object-contain transition-opacity duration-150',
+                            'absolute object-contain transition-opacity duration-150',
+                            imagePositionClassName,
+                            icon.kind === 'image' ? (icon.imageSizeClassName ?? 'size-full') : undefined,
                             isSelected ? 'opacity-100' : 'opacity-0',
                         )}
                     />

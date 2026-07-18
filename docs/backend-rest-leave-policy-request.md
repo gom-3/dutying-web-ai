@@ -1,16 +1,16 @@
-# 쉬는 날 계산 설정 백엔드 API 요청
+# 휴무일 계산 설정 백엔드 API 요청
 
 ## 배경
 
-`https://dev.dutying.net/ward-settings?tab=restLeavePolicy` 화면에는 병동별로 "쉬는 날 계산" 기준을 설정하는 UI가 들어가 있습니다.
+`https://dev.dutying.net/ward-settings?tab=restLeavePolicy` 화면에는 병동별로 "휴무일 계산" 기준을 설정하는 UI가 들어가 있습니다.
 
 현재 프론트엔드는 아래 값을 `localStorage`에만 저장하고 있어, 다른 브라우저/다른 관리자 계정에서는 설정이 공유되지 않습니다. 백엔드에 병동 단위 설정 조회/저장 API가 필요합니다.
 
-이 설정은 `/make` 근무표 작성 화면의 휴무 체크 칼럼과 목표 쉬는 날 계산에도 사용됩니다.
+이 설정은 `/make` 근무표 작성 화면의 휴무 체크 칼럼과 목표 휴무일 계산에도 사용됩니다.
 
 ## 현재 프론트 동작
 
-- 위치: 병동 설정 > 쉬는 날 계산 탭
+- 위치: 병동 설정 > 휴무일 계산 탭
 - URL: `/ward-settings?tab=restLeavePolicy`
 - 저장 방식: `localStorage`
 - 저장 키: `dutying:ward:{wardId}:rest-leave-policy`
@@ -32,22 +32,22 @@ type HolidayCountry = 'KR' | 'JP' | 'US' | 'CN' | 'TH' | 'VN';
 type RestLeavePolicy = {
     wardId: number;
 
-    // false이면 /make에서 휴무 체크와 목표 쉬는 날 표시를 숨깁니다.
+    // false이면 /make에서 휴무 체크와 목표 휴무일 표시를 숨깁니다.
     enabled: boolean;
 
     // weekly: 주 단위 기준, fixed: 월 고정 기준
     targetMode: RestTargetMode;
 
-    // targetMode=weekly일 때 사용하는 주당 쉬는 날 수
+    // targetMode=weekly일 때 사용하는 주당 휴무일 수
     weeklyOffDays: number;
 
-    // targetMode=fixed일 때 사용하는 월 고정 쉬는 날 수
+    // targetMode=fixed일 때 사용하는 월 고정 휴무일 수
     fixedMonthlyOffDays: number;
 
-    // 공휴일 수만큼 목표 쉬는 날을 늘릴지 여부
+    // 공휴일 수만큼 목표 휴무일을 늘릴지 여부
     includeHolidays: boolean;
 
-    // 실제 쉬는 날로 카운트할 병동 근무유형 ID 목록
+    // 실제 휴무일로 카운트할 병동 근무유형 ID 목록
     // null이면 leaveCountMode 기준으로 기본값을 적용합니다.
     countedRestShiftTypeIds: number[] | null;
 
@@ -56,7 +56,7 @@ type RestLeavePolicy = {
     // offOnly: isOff=true && classification='OFF' 유형만 포함
     leaveCountMode: LeaveCountMode;
 
-    // 간호사별 이월 값을 목표 쉬는 날에 반영할지 여부
+    // 간호사별 이월 값을 목표 휴무일에 반영할지 여부
     carryOverEnabled: boolean;
 
     // 조회 응답에서 계산 기준 확인용으로 내려주면 좋습니다.
@@ -84,11 +84,11 @@ type RestLeavePolicy = {
 }
 ```
 
-`countedRestShiftTypeIds=null`은 프론트가 기본 포함 대상을 계산하겠다는 의미입니다. 빈 배열 `[]`은 사용자가 아무 근무유형도 쉬는 날로 세지 않겠다고 저장한 명시값으로 구분해주세요.
+`countedRestShiftTypeIds=null`은 프론트가 기본 포함 대상을 계산하겠다는 의미입니다. 빈 배열 `[]`은 사용자가 아무 근무유형도 휴무일로 세지 않겠다고 저장한 명시값으로 구분해주세요.
 
 ## API
 
-### 쉬는 날 계산 설정 조회
+### 휴무일 계산 설정 조회
 
 ```http
 GET /wards/{wardId}/rest-leave-policy
@@ -117,7 +117,7 @@ Authorization: Bearer {adminToken}
 
 설정이 없을 때도 `404`가 아니라 기본값을 채운 `200` 응답을 반환해주세요.
 
-### 쉬는 날 계산 설정 저장
+### 휴무일 계산 설정 저장
 
 ```http
 PUT /wards/{wardId}/rest-leave-policy
@@ -223,7 +223,7 @@ targetRestDays =
     + (carryOverEnabled ? shiftNurse.carried : 0);
 ```
 
-실제 배정된 쉬는 날은 근무표 셀의 `wardShiftTypeId`가 `countedRestShiftTypeIds`에 포함되는지로 계산합니다.
+실제 배정된 휴무일은 근무표 셀의 `wardShiftTypeId`가 `countedRestShiftTypeIds`에 포함되는지로 계산합니다.
 
 ```ts
 assignedRestDays = count(schedule cells where wardShiftTypeId is in countedRestShiftTypeIds);
@@ -234,9 +234,9 @@ differenceDays = assignedRestDays - targetRestDays;
 - `differenceDays > 0`: 초과
 - `differenceDays = 0`: 맞음
 
-## 월별 목표 쉬는 날 임시 보정
+## 월별 목표 휴무일 임시 보정
 
-`/make` 화면에는 해당 월/근무팀에서만 목표 쉬는 날을 `+1` 또는 `-1` 조정하는 UI가 있습니다.
+`/make` 화면에는 해당 월/근무팀에서만 목표 휴무일을 `+1` 또는 `-1` 조정하는 UI가 있습니다.
 
 현재는 프론트 `localStorage`로 관리하고 있습니다. 백엔드 저장까지 포함한다면 아래 키 기준을 권장합니다.
 
@@ -291,7 +291,7 @@ Request/response 예시:
             "level": "warning",
             "shiftNurseId": 1001,
             "nurseId": 501,
-            "message": "김OO님은 기준 쉬는 날 10일 중 8일만 배정되어 2일 부족해요.",
+            "message": "김OO님은 기준 휴무일 10일 중 8일만 배정되어 2일 부족해요.",
             "messageKey": "schedule.validation.restTargetShortage",
             "messageArgs": {
                 "nurseName": "김OO",
@@ -319,8 +319,8 @@ ward_rest_leave_policy
 | `ward_id` | PK 또는 unique key |
 | `enabled` | 기능 사용 여부 |
 | `target_mode` | `weekly` 또는 `fixed` |
-| `weekly_off_days` | 주당 쉬는 날 수 |
-| `fixed_monthly_off_days` | 월 고정 쉬는 날 수 |
+| `weekly_off_days` | 주당 휴무일 수 |
+| `fixed_monthly_off_days` | 월 고정 휴무일 수 |
 | `include_holidays` | 공휴일 포함 여부 |
 | `counted_rest_shift_type_ids` | JSON 배열 또는 별도 매핑 테이블 |
 | `leave_count_mode` | `allLeaves` 또는 `offOnly` |

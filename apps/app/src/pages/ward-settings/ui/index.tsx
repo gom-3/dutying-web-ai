@@ -14,9 +14,10 @@ import {
     normalizeShiftShortNameInput,
     SHIFT_SHORT_NAME_MAX_LENGTH,
 } from '@/shared/lib/shift-short-name';
-import PageState from '@/shared/ui/PageState';
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
+import PageState from '@/shared/ui/PageState';
 import {Input} from '@/shared/ui/primitives/input';
+import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {formatShiftDuration} from '../model/utils';
 import {
     type TWardSettingsActions,
@@ -47,7 +48,7 @@ const SHIFT_COLOR_OPTIONS = [
 ] as const;
 const COLOR_PICKER_WIDTH = 126;
 const COLOR_PICKER_VIEWPORT_PADDING = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(150px,1.15fr)_82px_112px_minmax(250px,1.5fr)_52px_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(110px,0.95fr)_82px_180px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
@@ -61,6 +62,15 @@ const SHIFT_TYPE_CLASSIFICATION_ORDER: Record<TWardSettingsShiftType['classifica
     OFF: 4,
     OTHER_LEAVE: 5,
 };
+const SHIFT_CLASSIFICATION_OPTIONS = [
+    {value: 'DAY', labelKey: 'feature.createShiftModal.classification.day'},
+    {value: 'EVENING', labelKey: 'feature.createShiftModal.classification.evening'},
+    {value: 'NIGHT', labelKey: 'feature.createShiftModal.classification.night'},
+    {value: 'OFF', labelKey: 'feature.createShiftModal.classification.off'},
+    {value: 'OTHER_WORK', labelKey: 'feature.createShiftModal.classification.otherWork'},
+    {value: 'OTHER_LEAVE', labelKey: 'feature.createShiftModal.classification.otherLeave'},
+] as const;
+const REQUIRED_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT', 'OFF'] as const;
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const SETTINGS_CONTENT_CLASS = 'mx-auto w-full max-w-[960px]';
 const SETTINGS_PRIMARY_BUTTON_CLASS =
@@ -91,19 +101,38 @@ function isOvernightShiftTime(startTime: string | null | undefined, endTime: str
 }
 
 function getShiftTypeClassification(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO['classification'] {
-    if (shiftType.isOff) {
-        return shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE';
-    }
+    if (shiftType.isOff) return shiftType.classification === 'OFF' ? 'OFF' : 'OTHER_LEAVE';
 
-    if (isOvernightShiftTime(shiftType.startTime, shiftType.endTime)) {
-        return 'NIGHT';
-    }
+    if (shiftType.classification) return shiftType.classification;
 
-    if (shiftType.classification === 'OFF' || shiftType.classification === 'OTHER_LEAVE') {
-        return 'OTHER_WORK';
-    }
+    // Old records may not have a classification yet. Keep those records editable
+    // until the user explicitly chooses a meaning in the settings screen.
+    if (shiftType.isOff) return 'OTHER_LEAVE';
 
-    return shiftType.classification;
+    return isOvernightShiftTime(shiftType.startTime, shiftType.endTime) ? 'NIGHT' : 'OTHER_WORK';
+}
+
+function isOffShiftType(shiftType: TWardSettingsShiftType) {
+    const classification = getShiftTypeClassification(shiftType);
+
+    return classification === 'OFF' || classification === 'OTHER_LEAVE';
+}
+
+function getAvailableShiftClassificationOptions(shiftTypes: TWardSettingsShiftType[], shiftTypeId: number) {
+    const currentClassification = shiftTypes.find((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
+    const usedClassifications = new Set(
+        shiftTypes.filter((shiftType) => shiftType.wardShiftTypeId !== shiftTypeId).map(getShiftTypeClassification),
+    );
+
+    return SHIFT_CLASSIFICATION_OPTIONS.filter((option) => {
+        const isRequiredClassification = REQUIRED_SHIFT_CLASSIFICATIONS.some((classification) => classification === option.value);
+
+        return (
+            !isRequiredClassification ||
+            option.value === (currentClassification ? getShiftTypeClassification(currentClassification) : undefined) ||
+            !usedClassifications.has(option.value)
+        );
+    });
 }
 
 function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSettingsShiftType) {
@@ -111,7 +140,8 @@ function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSetting
 
     if (restOrder !== 0) return restOrder;
 
-    const classificationOrder = SHIFT_TYPE_CLASSIFICATION_ORDER[a.classification] - SHIFT_TYPE_CLASSIFICATION_ORDER[b.classification];
+    const classificationOrder =
+        SHIFT_TYPE_CLASSIFICATION_ORDER[getShiftTypeClassification(a)] - SHIFT_TYPE_CLASSIFICATION_ORDER[getShiftTypeClassification(b)];
 
     if (classificationOrder !== 0) return classificationOrder;
 
@@ -121,17 +151,19 @@ function compareShiftTypesForSettings(a: TWardSettingsShiftType, b: TWardSetting
 function toShiftTypeUpdateDTO(shiftType: TWardSettingsShiftType): TCreateShiftTypeDTO {
     const shortName = shiftType.shortName.trim().toLocaleUpperCase();
     const name = shiftType.name.trim() || shortName;
+    const classification = getShiftTypeClassification(shiftType);
+    const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
 
     return {
         name,
         shortName,
-        startTime: shiftType.startTime ?? '',
-        endTime: shiftType.endTime ?? '',
+        startTime: isOff ? '' : (shiftType.startTime ?? ''),
+        endTime: isOff ? '' : (shiftType.endTime ?? ''),
         color: shiftType.color,
         isDefault: shiftType.isDefault,
-        isOff: shiftType.isOff,
-        isCounted: shiftType.isCounted,
-        classification: getShiftTypeClassification(shiftType),
+        isOff,
+        isCounted: isOff ? false : shiftType.isCounted,
+        classification,
     };
 }
 
@@ -285,6 +317,7 @@ function ShiftTypeTable({
     useEffect(() => {
         setDraftShiftTypes([...shiftTypes].sort(compareShiftTypesForSettings));
         setDeletedShiftTypeIds([]);
+        setShortNameErrorById({});
         setShowValidationHighlight(false);
     }, [shiftTypes]);
 
@@ -360,6 +393,10 @@ function ShiftTypeTable({
 
         if (!normalizedShortName) return t('page.wardSettings.shiftTypes.validation.shortNameRequired');
 
+        if (hasInvalidShiftShortNameLengthInput(shortName)) {
+            return t('page.wardSettings.shiftTypes.validation.shortNameLength');
+        }
+
         if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
             return t('page.wardSettings.shiftTypes.validation.shortNameFirstKey');
         }
@@ -376,7 +413,7 @@ function ShiftTypeTable({
         return null;
     };
     const getShiftTimeError = (shiftType: TWardSettingsShiftType) => {
-        if (shiftType.isOff) return null;
+        if (isOffShiftType(shiftType)) return null;
 
         const normalizedStartTime = shiftType.startTime?.trim() ?? '';
         const normalizedEndTime = shiftType.endTime?.trim() ?? '';
@@ -398,7 +435,15 @@ function ShiftTypeTable({
                 getShiftShortNameError(shiftType.wardShiftTypeId, shiftType.shortName) ??
                 getShiftTimeError(shiftType),
         );
-    const hasAnyValidationError = draftShiftTypes.some(hasRowValidationError);
+    const missingRequiredShiftTypeLabels = REQUIRED_SHIFT_CLASSIFICATIONS.filter(
+        (classification) => !draftShiftTypes.some((shiftType) => getShiftTypeClassification(shiftType) === classification),
+    ).map((classification) => {
+        const option = SHIFT_CLASSIFICATION_OPTIONS.find((candidate) => candidate.value === classification);
+
+        return option ? t(option.labelKey) : classification;
+    });
+    const hasMissingRequiredShiftTypes = missingRequiredShiftTypeLabels.length > 0;
+    const hasAnyValidationError = draftShiftTypes.some(hasRowValidationError) || hasMissingRequiredShiftTypes;
     const addDraftShiftType = () => {
         const nextTempId = tempShiftTypeIdRef.current--;
 
@@ -431,7 +476,17 @@ function ShiftTypeTable({
         if (hasAnyValidationError) {
             const firstInvalid = draftShiftTypes.find(hasRowValidationError);
 
-            if (!firstInvalid) return;
+            if (!firstInvalid) {
+                if (hasMissingRequiredShiftTypes) {
+                    toast.error(
+                        t('page.onboardingWardCreate.blocked.missingRequiredShiftTypes', {
+                            shiftTypes: missingRequiredShiftTypeLabels.join(', '),
+                        }),
+                    );
+                }
+
+                return;
+            }
 
             const firstTargetSelector = (() => {
                 if (getShiftNameError(firstInvalid.name)) return `[data-shift-name-input="${firstInvalid.wardShiftTypeId}"]`;
@@ -456,7 +511,28 @@ function ShiftTypeTable({
             return;
         }
 
-        for (const shiftTypeId of deletedShiftTypeIds) {
+        const deletedDefaultShiftTypeReplacements = new Map<number, TWardSettingsShiftType>();
+        const usedReplacementDraftIds = new Set<number>();
+
+        deletedShiftTypeIds.forEach((shiftTypeId) => {
+            const deletedShiftType = shiftTypes.find((shiftType) => shiftType.wardShiftTypeId === shiftTypeId);
+
+            if (!deletedShiftType?.isDefault) return;
+
+            const replacement = draftShiftTypes.find(
+                (shiftType) =>
+                    shiftType.wardShiftTypeId < 0 &&
+                    !usedReplacementDraftIds.has(shiftType.wardShiftTypeId) &&
+                    getShiftTypeClassification(shiftType) === getShiftTypeClassification(deletedShiftType),
+            );
+
+            if (!replacement) return;
+
+            deletedDefaultShiftTypeReplacements.set(shiftTypeId, replacement);
+            usedReplacementDraftIds.add(replacement.wardShiftTypeId);
+        });
+
+        for (const shiftTypeId of deletedShiftTypeIds.filter((id) => !deletedDefaultShiftTypeReplacements.has(id))) {
             const saved = await onDelete(shiftTypeId);
 
             if (saved === false) return;
@@ -464,6 +540,24 @@ function ShiftTypeTable({
 
         for (const shiftType of draftShiftTypes) {
             if (shiftType.wardShiftTypeId < 0) {
+                const replacementEntry = Array.from(deletedDefaultShiftTypeReplacements.entries()).find(
+                    ([, replacement]) => replacement.wardShiftTypeId === shiftType.wardShiftTypeId,
+                );
+
+                if (replacementEntry) {
+                    const [replacedShiftTypeId] = replacementEntry;
+                    const replacedShiftType = shiftTypes.find((item) => item.wardShiftTypeId === replacedShiftTypeId);
+                    const saved = await onUpdate({
+                        ...shiftType,
+                        wardShiftTypeId: replacedShiftTypeId,
+                        isDefault: replacedShiftType?.isDefault ?? shiftType.isDefault,
+                    });
+
+                    if (saved === false) return;
+
+                    continue;
+                }
+
                 const saved = await onCreate(toShiftTypeUpdateDTO(shiftType));
 
                 if (saved === false) return;
@@ -530,6 +624,13 @@ function ShiftTypeTable({
                         <span>{t('page.wardSettings.shiftTypes.column.color')}</span>
                         <span />
                     </div>
+                    {showValidationHighlight && hasMissingRequiredShiftTypes ? (
+                        <p className="px-3 pt-2 text-center font-apple text-[12px] text-red" role="alert">
+                            {t('page.onboardingWardCreate.blocked.missingRequiredShiftTypes', {
+                                shiftTypes: missingRequiredShiftTypeLabels.join(', '),
+                            })}
+                        </p>
+                    ) : null}
                     <div className="mt-1">
                         {draftShiftTypes.map((shiftType) => (
                             <div key={shiftType.wardShiftTypeId} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-3 px-3 py-3.5`}>
@@ -618,51 +719,31 @@ function ShiftTypeTable({
                                         </InlineFieldError>
                                     ) : null}
                                 </div>
-                                <div className="mx-auto flex h-10 w-full max-w-[112px] items-center rounded-[10px] bg-[#F1F3F5] p-1">
-                                    <button
-                                        type="button"
-                                        className={cn(
-                                            'h-full flex-1 rounded-[8px] font-apple text-[13px] leading-none font-semibold transition-colors',
-                                            !shiftType.isOff ? 'bg-white text-sub-1' : 'bg-transparent text-gray-3 hover:text-sub-1',
+                                <div className="relative mx-auto flex h-10 w-full max-w-[180px] items-center">
+                                    <ShiftClassificationDropdown
+                                        value={getShiftTypeClassification(shiftType)}
+                                        options={getAvailableShiftClassificationOptions(draftShiftTypes, shiftType.wardShiftTypeId).map(
+                                            (option) => ({
+                                                value: option.value,
+                                                label: t(option.labelKey),
+                                            }),
                                         )}
-                                        onClick={() => {
-                                            if (!shiftType.isOff) return;
+                                        ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
+                                            shiftName: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
+                                        })}
+                                        onChange={(value) => {
+                                            const classification = value as TCreateShiftTypeDTO['classification'];
+                                            const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
 
-                                            const next = {
-                                                ...shiftType,
-                                                isOff: false,
-                                                classification: 'OTHER_WORK' as const,
-                                                startTime: shiftType.startTime || '09:00',
-                                                endTime: shiftType.endTime || '18:00',
-                                            };
-
-                                            patchDraft(shiftType.wardShiftTypeId, next);
+                                            patchDraft(shiftType.wardShiftTypeId, {
+                                                classification,
+                                                isOff,
+                                                isCounted: !isOff,
+                                                startTime: isOff ? '' : shiftType.startTime || '09:00',
+                                                endTime: isOff ? '' : shiftType.endTime || '18:00',
+                                            });
                                         }}
-                                    >
-                                        {t('page.wardSettings.type.work')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={cn(
-                                            'h-full flex-1 rounded-[8px] font-apple text-[13px] leading-none font-semibold transition-colors',
-                                            shiftType.isOff ? 'bg-white text-sub-1' : 'bg-transparent text-gray-3 hover:text-sub-1',
-                                        )}
-                                        onClick={() => {
-                                            if (shiftType.isOff) return;
-
-                                            const next = {
-                                                ...shiftType,
-                                                isOff: true,
-                                                classification: 'OTHER_LEAVE' as const,
-                                                startTime: '',
-                                                endTime: '',
-                                            };
-
-                                            patchDraft(shiftType.wardShiftTypeId, next);
-                                        }}
-                                    >
-                                        {t('page.wardSettings.type.leave')}
-                                    </button>
+                                    />
                                 </div>
                                 <div className="flex self-start">
                                     <div className="flex items-start">
@@ -670,8 +751,8 @@ function ShiftTypeTable({
                                             <div className="flex items-center gap-2">
                                                 <Input
                                                     data-shift-start-input={shiftType.wardShiftTypeId}
-                                                    value={shiftType.isOff ? '-' : (shiftType.startTime ?? '')}
-                                                    disabled={shiftType.isOff}
+                                                    value={isOffShiftType(shiftType) ? '-' : (shiftType.startTime ?? '')}
+                                                    disabled={isOffShiftType(shiftType)}
                                                     onChange={(event) =>
                                                         patchDraft(shiftType.wardShiftTypeId, {
                                                             startTime: normalizeShiftTimeInput(event.target.value),
@@ -701,8 +782,8 @@ function ShiftTypeTable({
                                                 <span className="font-poppins text-[15px] text-gray-3">~</span>
                                                 <Input
                                                     data-shift-end-input={shiftType.wardShiftTypeId}
-                                                    value={shiftType.isOff ? '-' : (shiftType.endTime ?? '')}
-                                                    disabled={shiftType.isOff}
+                                                    value={isOffShiftType(shiftType) ? '-' : (shiftType.endTime ?? '')}
+                                                    disabled={isOffShiftType(shiftType)}
                                                     onChange={(event) =>
                                                         patchDraft(shiftType.wardShiftTypeId, {
                                                             endTime: normalizeShiftTimeInput(event.target.value),
@@ -737,7 +818,7 @@ function ShiftTypeTable({
                                             ) : null}
                                         </div>
                                         <span className="ml-2 flex h-10 min-w-[48px] items-center justify-center rounded-[8px] bg-[#F6F7F9] px-2 font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
-                                            {shiftType.isOff ? '' : formatShiftDuration(shiftType.startTime, shiftType.endTime)}
+                                            {isOffShiftType(shiftType) ? '' : formatShiftDuration(shiftType.startTime, shiftType.endTime)}
                                         </span>
                                     </div>
                                 </div>
@@ -794,20 +875,16 @@ function ShiftTypeTable({
                                           )
                                         : null}
                                 </div>
-                                {shiftType.isDefault ? (
-                                    <div className="h-10 w-10" aria-hidden="true" />
-                                ) : (
-                                    <button
-                                        type="button"
-                                        aria-label={t('page.wardSettings.shiftTypes.deleteAria', {
-                                            name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
-                                        })}
-                                        onClick={() => removeDraftShiftType(shiftType.wardShiftTypeId)}
-                                        className="flex h-10 w-10 items-center justify-center rounded-[8px] text-gray-4 transition-colors hover:bg-[#F1F3F5] hover:text-sub-1"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                )}
+                                <button
+                                    type="button"
+                                    aria-label={t('page.wardSettings.shiftTypes.deleteAria', {
+                                        name: shiftType.name || shiftType.shortName || t('page.wardSettings.type.work'),
+                                    })}
+                                    onClick={() => removeDraftShiftType(shiftType.wardShiftTypeId)}
+                                    className="flex h-10 w-10 items-center justify-center rounded-[8px] text-gray-4 transition-colors hover:bg-[#F1F3F5] hover:text-sub-1"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -960,6 +1037,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
         },
         [actions, hasUnsavedRestLeavePolicyChanges, state.currentTab],
     );
+
     useEffect(() => {
         if (!hasUnsavedRestLeavePolicyChanges || state.currentTab !== 'restLeavePolicy') return;
 
@@ -1015,6 +1093,7 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
 
             setPendingNavigationPath(null);
             navigate(nextPath);
+
             return;
         }
     };

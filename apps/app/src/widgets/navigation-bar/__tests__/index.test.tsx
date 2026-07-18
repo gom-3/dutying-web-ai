@@ -84,6 +84,12 @@ describe('NavigationBar', () => {
         expect(homeButton).toHaveClass('justify-start', 'gap-3');
         expect(homeButton).not.toHaveClass('border');
         expect(homeButton).not.toHaveClass('bg-white');
+        expect(homeButton.querySelector('span[aria-hidden="true"]')).toHaveClass('size-[22px]');
+        expect(homeButton.querySelector('img')).toHaveClass('size-[15px]', 'left-1/2', 'top-1/2');
+        expect(homeButton.querySelectorAll('img')).toHaveLength(3);
+        expect(homeButton.querySelectorAll('img')[0]).toHaveAttribute('src', '/img/navigation/home-default.png');
+        expect(homeButton.querySelectorAll('img')[1]).toHaveAttribute('src', '/img/navigation/home-hover.png');
+        expect(homeButton.querySelectorAll('img')[2]).toHaveAttribute('src', '/img/navigation/home-active.png');
         expect(screen.getByText('홈')).toHaveClass('flex-1', 'text-left');
         expect(screen.getAllByRole('button', {name: '근무표 만들기'})).toHaveLength(1);
         expect(screen.queryByRole('button', {name: '근무표'})).not.toBeInTheDocument();
@@ -215,7 +221,14 @@ describe('NavigationBar', () => {
         expect(dutyingLink).toHaveClass('mx-auto', 'text-gray-4');
         expect(screen.queryByRole('button', {name: '듀팅'})).not.toBeInTheDocument();
         expect(screen.queryByRole('link', {name: '문의하기'})).not.toBeInTheDocument();
-        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+
+        const accountIcons = accountButton.querySelectorAll('img');
+
+        expect(accountButton.querySelector('span[aria-hidden="true"]')).toHaveClass('size-[20px]');
+        expect(accountIcons).toHaveLength(3);
+        expect(accountIcons[0]).toHaveAttribute('src', '/img/navigation/account-default.png');
+        expect(accountIcons[1]).toHaveAttribute('src', '/img/navigation/account-hover.png');
+        expect(accountIcons[2]).toHaveAttribute('src', '/img/navigation/account-active.png');
     });
 
     it('뷰포트 높이 안에서 스크롤 없이 들어가도록 높이 반응형 밀도를 적용한다', () => {

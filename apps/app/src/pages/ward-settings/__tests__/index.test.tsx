@@ -1,5 +1,6 @@
 import {waitFor} from '@testing-library/react';
 import toast from 'react-hot-toast';
+import type * as ReactRouterModule from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as I18nModule from '@/i18n';
 import {render, screen, userEvent} from '@/shared/util/test-utils';
@@ -13,7 +14,7 @@ vi.mock('../model/ward-settings-hook', () => ({
 }));
 
 vi.mock('react-router', async () => {
-    const actual = await vi.importActual<typeof import('react-router')>('react-router');
+    const actual = await vi.importActual<typeof ReactRouterModule>('react-router');
 
     return {
         ...actual,
@@ -24,6 +25,7 @@ vi.mock('react-router', async () => {
 vi.mock('react-hot-toast', () => ({
     default: {
         success: vi.fn(),
+        error: vi.fn(),
     },
 }));
 
@@ -157,11 +159,49 @@ function createValue(overrides?: {state?: Partial<TMockValue['state']>; actions?
     };
 }
 
+function requiredShiftTypes() {
+    const dayShiftType = baseValue().state.shiftTypes[0]!;
+
+    return [
+        dayShiftType,
+        {
+            ...dayShiftType,
+            wardShiftTypeId: 2,
+            name: '이브닝',
+            shortName: 'E',
+            startTime: '15:00',
+            endTime: '23:00',
+            classification: 'EVENING' as const,
+        },
+        {
+            ...dayShiftType,
+            wardShiftTypeId: 3,
+            name: '나이트',
+            shortName: 'N',
+            startTime: '23:00',
+            endTime: '07:00',
+            classification: 'NIGHT' as const,
+        },
+        {
+            ...dayShiftType,
+            wardShiftTypeId: 4,
+            name: '오프',
+            shortName: 'O',
+            startTime: null,
+            endTime: null,
+            isOff: true,
+            isCounted: false,
+            classification: 'OFF' as const,
+        },
+    ];
+}
+
 describe('WardSettingsPage', () => {
     beforeEach(() => {
         mockUseWardSettings.mockReset();
         mockNavigate.mockClear();
         vi.mocked(toast.success).mockClear();
+        vi.mocked(toast.error).mockClear();
         window.localStorage.removeItem('dutying:ward:1:rest-leave-policy');
     });
 
@@ -245,9 +285,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map(
-            (input) => input.value,
-        );
+        const names = Array.from(document.querySelectorAll<HTMLInputElement>('[data-shift-name-input]')).map((input) => input.value);
 
         expect(names).toEqual(['Day', 'Night', 'Off']);
     });
@@ -279,6 +317,9 @@ describe('WardSettingsPage', () => {
                             isDefault: false,
                             classification: 'OTHER_WORK',
                         },
+                        ...requiredShiftTypes()
+                            .slice(1)
+                            .map((shiftType, index) => ({...shiftType, wardShiftTypeId: index + 3})),
                     ],
                 },
                 actions: {
@@ -289,7 +330,7 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        expect(screen.getAllByText('8h')).toHaveLength(2);
+        expect(screen.getAllByText('8h')).toHaveLength(4);
 
         const buttons = screen.getAllByRole('button');
 
@@ -302,7 +343,7 @@ describe('WardSettingsPage', () => {
                 expect.objectContaining({
                     startTime: '16:30',
                     endTime: '00:30',
-                    classification: 'NIGHT',
+                    classification: 'OTHER_WORK',
                 }),
             );
         });
@@ -314,6 +355,9 @@ describe('WardSettingsPage', () => {
 
         mockUseWardSettings.mockReturnValue(
             createValue({
+                state: {
+                    shiftTypes: requiredShiftTypes(),
+                },
                 actions: {
                     updateShiftType,
                 },
@@ -335,6 +379,9 @@ describe('WardSettingsPage', () => {
 
         mockUseWardSettings.mockReturnValue(
             createValue({
+                state: {
+                    shiftTypes: requiredShiftTypes(),
+                },
                 actions: {
                     updateShiftType,
                 },
@@ -614,6 +661,72 @@ describe('WardSettingsPage', () => {
         expect(screen.getByDisplayValue('W')).toBeInTheDocument();
     });
 
+    it('기본 근무 유형도 삭제할 수 있다', async () => {
+        const user = userEvent.setup();
+
+        mockUseWardSettings.mockReturnValue(createValue());
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: '데이 삭제'}));
+
+        expect(screen.queryByDisplayValue('데이')).not.toBeInTheDocument();
+    });
+
+    it('기본 근무를 삭제하고 같은 의미의 근무를 추가하면 기존 근무를 수정한다', async () => {
+        const user = userEvent.setup();
+        const deleteShiftType = vi.fn().mockResolvedValue(true);
+        const updateShiftType = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: requiredShiftTypes(),
+                },
+                actions: {
+                    deleteShiftType,
+                    updateShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: '데이 삭제'}));
+        await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
+        await user.click(screen.getByRole('combobox', {name: '새 근무 근무 의미 선택'}));
+        await user.click(screen.getByRole('option', {name: '주간 근무 (Day)'}));
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
+
+        await waitFor(() => {
+            expect(deleteShiftType).not.toHaveBeenCalled();
+            expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({classification: 'DAY', isDefault: true}));
+        });
+    });
+
+    it('이미 사용 중인 D/E/N/O 근무 의미는 다른 행의 옵션에서 숨긴다', async () => {
+        const user = userEvent.setup();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: requiredShiftTypes(),
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('combobox', {name: '데이 근무 의미 선택'}));
+
+        expect(screen.getByRole('option', {name: '주간 근무 (Day)'})).toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: '저녁 근무 (Evening)'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: '야간 근무 (Night)'})).not.toBeInTheDocument();
+        expect(screen.queryByRole('option', {name: '휴무 (Off)'})).not.toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '기타 근무'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '기타 휴가'})).toBeInTheDocument();
+    });
+
     it('색상 버튼을 누르면 색상 팔레트를 연다', async () => {
         const user = userEvent.setup();
 
@@ -626,7 +739,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getByRole('button', {name: '#63C8B8 선택'})).toBeInTheDocument();
     });
 
-    it('휴무 버튼을 누르면 draft만 휴무 상태로 바꾼다', async () => {
+    it('근무 의미에서 휴무를 선택하면 draft만 휴무 상태로 바꾼다', async () => {
         const user = userEvent.setup();
         const updateShiftType = vi.fn();
 
@@ -648,9 +761,10 @@ describe('WardSettingsPage', () => {
 
         render(<WardSettingsPage />);
 
-        const leaveButton = screen.getByRole('button', {name: '휴무'});
+        const classificationSelect = screen.getByRole('combobox', {name: '데이 근무 의미 선택'});
 
-        await user.click(leaveButton);
+        await user.click(classificationSelect);
+        await user.click(screen.getByRole('option', {name: '휴무 (Off)'}));
 
         expect(updateShiftType).not.toHaveBeenCalled();
         expect(screen.getAllByDisplayValue('-')).toHaveLength(2);

@@ -1,4 +1,4 @@
-﻿import {Check, ChevronDown, CircleAlert, Plus, X} from 'lucide-react';
+﻿import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/shared/lib/shift-short-name';
 import Card from '@/shared/ui/Card';
 import {Input} from '@/shared/ui/primitives/input';
+import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {DEFAULT_SHIFT_TYPE_COLORS, type TOnboardingWardShiftType} from '../../model';
 
 interface IShiftTypeStepProps {
@@ -294,14 +295,17 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                             ) : null}
                         </div>
                         <div className="relative mx-auto flex w-full max-w-[180px] items-center">
-                            <select
+                            <ShiftClassificationDropdown
                                 value={shiftType.classification}
-                                aria-label={t('page.onboardingWardCreate.shiftType.classificationAria', {
+                                options={SHIFT_CLASSIFICATION_OPTIONS.map((option) => ({
+                                    value: option.value,
+                                    label: t(option.labelKey),
+                                }))}
+                                ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
                                     shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
                                 })}
-                                className="h-10 w-full cursor-pointer appearance-none rounded-[10px] border-0 bg-gray-7 px-3 pr-9 text-center font-poppins text-[15px] text-sub-1 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70"
-                                onChange={(event) => {
-                                    const classification = event.target.value as TOnboardingWardShiftType['classification'];
+                                onChange={(value) => {
+                                    const classification = value as TOnboardingWardShiftType['classification'];
                                     const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
 
                                     onChange(shiftType.id, {
@@ -312,17 +316,6 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                                         endTime: isOff ? '' : shiftType.endTime || '18:00',
                                     });
                                 }}
-                            >
-                                {SHIFT_CLASSIFICATION_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value} className="font-poppins text-[15px]">
-                                        {t(option.labelKey)}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown
-                                className="pointer-events-none absolute right-2.5 h-4 w-4 text-gray-3"
-                                strokeWidth={2.25}
-                                aria-hidden="true"
                             />
                         </div>
                         <div className="ml-[12px] flex justify-center self-start">

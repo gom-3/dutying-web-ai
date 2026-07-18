@@ -1,3 +1,4 @@
+import {ChevronDown} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {twMerge} from 'tailwind-merge';
@@ -31,15 +32,15 @@ interface IRequestDutyRequestPanelProps {
     className?: string;
 }
 
-type TReviewMode = 'date' | 'request' | 'pending' | 'nurse';
-type TRequestRowLabelMode = 'nurse' | 'nurse-date' | 'date';
+type TReviewMode = 'pending' | 'processed';
+type TRequestSort = 'date' | 'nurse' | 'request';
+type TRequestRowLabelMode = 'nurse' | 'nurse-date' | 'nurse-requested-at' | 'date';
 
 type TRequestDateGroup = {
     key: string;
     date: number;
     requests: TDutyRequest[];
 };
-
 type TRequestNurseGroup = {
     key: string;
     nurseId: number;
@@ -47,9 +48,9 @@ type TRequestNurseGroup = {
     requests: TDutyRequest[];
 };
 
-const REQUEST_DATE_GROUP_PAGE_SIZE = 4;
+const REQUEST_DATE_GROUP_PAGE_SIZE = 7;
 const REQUEST_NURSE_GROUP_PAGE_SIZE = 4;
-const REQUEST_ROW_PAGE_SIZE = 9;
+const REQUEST_FLAT_LIST_PAGE_SIZE = 9;
 const PENDING_REQUEST_DISMISS_DELAY_MS = 500;
 const REVIEW_PANEL_SURFACE_CLASS_NAME = 'bg-gray-7';
 const REVIEW_ROW_SURFACE_CLASS_NAME = 'bg-white';
@@ -92,12 +93,12 @@ const sortByDateThenRequest = (current: TDutyRequest, next: TDutyRequest) => {
 
     return sortByRequestDate(current, next);
 };
-const sortByNurseName = (current: TRequestNurseGroup, next: TRequestNurseGroup, locale: string) => {
-    const nameDiff = current.nurseName.localeCompare(next.nurseName, locale);
+const sortByNurseName = (current: TDutyRequest, next: TDutyRequest) => {
+    const nurseNameDiff = current.nurseName.localeCompare(next.nurseName);
 
-    if (nameDiff !== 0) return nameDiff;
+    if (nurseNameDiff !== 0) return nurseNameDiff;
 
-    return current.nurseId - next.nurseId;
+    return sortByDateThenRequest(current, next);
 };
 const getRequestShiftType = (request: TDutyRequest, wardShiftTypeMap: Map<number, TWardShiftType>) => {
     const shiftType = wardShiftTypeMap.get(request.wardShiftTypeId);
@@ -166,17 +167,29 @@ export default function RequestDutyRequestPanel({
     shiftNurseIdByNurseId,
     changeFocus,
     acceptRequest,
+    acceptRequests,
     retry,
     onAcceptAnalytics,
-    defaultReviewMode = 'date',
+    defaultReviewMode = 'pending',
     className,
 }: IRequestDutyRequestPanelProps) {
     const {t} = useTypedTranslation();
-    const [reviewMode, setReviewMode] = useState<TReviewMode>(defaultReviewMode);
+    const locale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
+    const requestDateTimeFormatter = useMemo(
+        () =>
+            new Intl.DateTimeFormat(locale, {
+                month: 'numeric',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            }),
+        [locale],
+    );
+    const [reviewMode, setReviewMode] = useState<TReviewMode>(canEdit ? defaultReviewMode : 'processed');
+    const [requestSort, setRequestSort] = useState<TRequestSort>('date');
     const [requestPageIndex, setRequestPageIndex] = useState(0);
     const [exitingPendingRequestById, setExitingPendingRequestById] = useState<Record<number, TDutyRequest>>({});
     const exitingPendingRequestTimerByIdRef = useRef(new Map<number, number>());
-    const sortLocale = getLocaleForLanguage(i18n.resolvedLanguage ?? i18n.language);
     const isRequestActionLocked = updatingRequestId !== null;
     const isBulkUpdating = updatingRequestId === -1;
     const displayedRequestList = canEdit ? dutyRequestList : dutyRequestList?.filter((request) => request.isAccepted === true);
@@ -190,8 +203,8 @@ export default function RequestDutyRequestPanel({
             requestById.set(request.wardReqShiftId, {...requestById.get(request.wardReqShiftId), ...request});
         }
 
-        return [...requestById.values()].sort(reviewMode === 'date' ? sortByDateThenRequest : sortByRequestDate);
-    }, [displayedRequestList, exitingPendingRequestById, reviewMode]);
+        return [...requestById.values()].sort(sortByDateThenRequest);
+    }, [displayedRequestList, exitingPendingRequestById]);
     const pendingRequestList = useMemo(
         () =>
             sortedRequestList
@@ -199,35 +212,31 @@ export default function RequestDutyRequestPanel({
                 .sort(sortByRequestDate),
         [exitingPendingRequestById, sortedRequestList],
     );
+    const actionablePendingRequestList = useMemo(
+        () =>
+            (displayedRequestList ?? []).filter(
+                (request) => request.isAccepted === null && exitingPendingRequestById[request.wardReqShiftId] === undefined,
+            ),
+        [displayedRequestList, exitingPendingRequestById],
+    );
+    const processedRequestList = useMemo(() => sortedRequestList.filter((request) => request.isAccepted !== null), [sortedRequestList]);
     const panelDisplayTitle = canEdit ? `${panelTitle} (${pendingRequestList.length})` : panelTitle;
-    const requestDateGroups = useMemo(() => {
-        const groupMap = new Map<number, TDutyRequest[]>();
+    const visibleRequestList = reviewMode === 'pending' ? pendingRequestList : processedRequestList;
+    const sortedVisibleRequestList = useMemo(() => {
+        const requests = [...visibleRequestList];
 
-        for (const request of sortedRequestList) {
-            const currentRequests = groupMap.get(request.date);
+        if (requestSort === 'nurse') return requests.sort(sortByNurseName);
 
-            if (currentRequests) {
-                currentRequests.push(request);
-                continue;
-            }
+        if (requestSort === 'request') return requests.sort(sortByRequestDate);
 
-            groupMap.set(request.date, [request]);
-        }
-
-        return [...groupMap.entries()]
-            .map(
-                ([date, requests]): TRequestDateGroup => ({
-                    key: String(date),
-                    date,
-                    requests: [...requests].sort(sortByRequestDate),
-                }),
-            )
-            .sort((current, next) => current.date - next.date);
-    }, [sortedRequestList]);
+        return requests.sort(sortByDateThenRequest);
+    }, [requestSort, visibleRequestList]);
     const requestNurseGroups = useMemo(() => {
+        if (requestSort !== 'nurse') return [];
+
         const groupMap = new Map<number, TRequestNurseGroup>();
 
-        for (const request of sortedRequestList) {
+        for (const request of sortedVisibleRequestList) {
             const currentGroup = groupMap.get(request.nurseId);
 
             if (currentGroup) {
@@ -248,41 +257,75 @@ export default function RequestDutyRequestPanel({
                 ...group,
                 requests: [...group.requests].sort(sortByDateThenRequest),
             }))
-            .sort((current, next) => sortByNurseName(current, next, sortLocale));
-    }, [sortLocale, sortedRequestList]);
-    const flatRequestList = reviewMode === 'pending' ? pendingRequestList : sortedRequestList;
+            .sort((current, next) => {
+                const nurseNameDiff = current.nurseName.localeCompare(next.nurseName);
+
+                return nurseNameDiff !== 0 ? nurseNameDiff : current.nurseId - next.nurseId;
+            });
+    }, [requestSort, sortedVisibleRequestList]);
+    const requestDateGroups = useMemo(() => {
+        if (requestSort !== 'date') return [];
+
+        const groupMap = new Map<number, TDutyRequest[]>();
+
+        for (const request of sortedVisibleRequestList) {
+            const currentRequests = groupMap.get(request.date);
+
+            if (currentRequests) {
+                currentRequests.push(request);
+                continue;
+            }
+
+            groupMap.set(request.date, [request]);
+        }
+
+        return [...groupMap.entries()]
+            .map(
+                ([date, requests]): TRequestDateGroup => ({
+                    key: String(date),
+                    date,
+                    requests: [...requests].sort(sortByRequestDate),
+                }),
+            )
+            .sort((current, next) => current.date - next.date);
+    }, [requestSort, sortedVisibleRequestList]);
+    const flatRequestList = requestSort === 'request' ? sortedVisibleRequestList : [];
     const totalDisplayCount =
-        reviewMode === 'date' ? requestDateGroups.length : reviewMode === 'nurse' ? requestNurseGroups.length : flatRequestList.length;
+        requestSort === 'date' ? requestDateGroups.length : requestSort === 'nurse' ? requestNurseGroups.length : flatRequestList.length;
     const pageSize =
-        reviewMode === 'date'
+        requestSort === 'date'
             ? REQUEST_DATE_GROUP_PAGE_SIZE
-            : reviewMode === 'nurse'
+            : requestSort === 'nurse'
               ? REQUEST_NURSE_GROUP_PAGE_SIZE
-              : REQUEST_ROW_PAGE_SIZE;
+              : REQUEST_FLAT_LIST_PAGE_SIZE;
     const lastPageIndex = Math.max(Math.ceil(totalDisplayCount / pageSize) - 1, 0);
     const currentPageIndex = Math.min(requestPageIndex, lastPageIndex);
     const visibleStartIndex = currentPageIndex * pageSize;
     const visibleDateGroups = requestDateGroups.slice(visibleStartIndex, visibleStartIndex + pageSize);
     const visibleNurseGroups = requestNurseGroups.slice(visibleStartIndex, visibleStartIndex + pageSize);
     const visibleFlatRequests = flatRequestList.slice(visibleStartIndex, visibleStartIndex + pageSize);
-    const visibleEndIndex =
-        visibleStartIndex +
-        (reviewMode === 'date'
+    const visibleItemCount =
+        requestSort === 'date'
             ? visibleDateGroups.length
-            : reviewMode === 'nurse'
+            : requestSort === 'nurse'
               ? visibleNurseGroups.length
-              : visibleFlatRequests.length);
+              : visibleFlatRequests.length;
+    const visibleEndIndex = visibleStartIndex + visibleItemCount;
     const hasRequestPagination = totalDisplayCount > pageSize;
     const hasAnyRequest = sortedRequestList.length > 0;
     const hasVisibleRequest = totalDisplayCount > 0;
     const shouldShowRequestEmptyVisual = !(reviewMode === 'pending' && hasAnyRequest);
     const reviewModeOptions: Array<{value: TReviewMode; label: string; count?: number}> = [
+        {value: 'pending', label: t('page.request.panel.pendingLabel'), count: pendingRequestList.length},
+        {value: 'processed', label: t('page.request.panel.processedLabel')},
+    ];
+    const requestSortOptions: Array<{value: TRequestSort; label: string}> = [
         {value: 'date', label: t('page.request.panel.sortByDate')},
         {value: 'nurse', label: t('page.request.panel.sortByNurse')},
         {value: 'request', label: t('page.request.panel.sortByRequestOrder')},
-        {value: 'pending', label: t('page.request.panel.sortByPending'), count: pendingRequestList.length},
     ];
     const pendingEmptyTitle = t('page.request.panel.pendingEmptyTitle');
+    const processedEmptyTitle = t('page.request.panel.processedEmptyTitle');
     const queuePendingRequestDismissal = (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
         if (reviewMode !== 'pending' || dutyRequest.isAccepted !== null) return;
 
@@ -333,6 +376,22 @@ export default function RequestDutyRequestPanel({
                   }),
         );
     };
+    const acceptAllPendingRequests = async () => {
+        if (isRequestActionLocked || actionablePendingRequestList.length === 0) return;
+
+        const pendingRequestIds = actionablePendingRequestList.map((request) => request.wardReqShiftId);
+        const accepted = await acceptRequests(pendingRequestIds, true);
+
+        if (!accepted) return;
+
+        onAcceptAnalytics(true);
+
+        for (const dutyRequest of actionablePendingRequestList) {
+            queuePendingRequestDismissal(dutyRequest, true);
+        }
+
+        toast.success(t('page.request.panel.acceptAll', {count: pendingRequestIds.length}));
+    };
 
     useEffect(
         () => () => {
@@ -343,15 +402,18 @@ export default function RequestDutyRequestPanel({
         [],
     );
 
-    const renderRequestRow = (dutyRequest: TDutyRequest, labelMode: TRequestRowLabelMode) => {
+    const renderRequestRow = (dutyRequest: TDutyRequest, labelMode: TRequestRowLabelMode = 'nurse') => {
         const requestFocus = getRequestFocus(dutyRequest, shiftNurseIdByNurseId);
         const isExitingPendingRequest = exitingPendingRequestById[dutyRequest.wardReqShiftId] !== undefined;
         const isUpdating = updatingRequestId === dutyRequest.wardReqShiftId || isBulkUpdating;
         const isAccepted = dutyRequest.isAccepted === true;
         const isRejected = dutyRequest.isAccepted === false;
         const dateLabel = t('page.request.panel.dateLabel', {month, date: dutyRequest.date});
+        const requestDateTime = new Date(dutyRequest.requestDate);
+        const requestedAtLabel = t('page.request.panel.requestDateTimeLabel', {
+            date: Number.isNaN(requestDateTime.getTime()) ? dutyRequest.requestDate : requestDateTimeFormatter.format(requestDateTime),
+        });
         const primaryLabel = labelMode === 'date' ? dateLabel : dutyRequest.nurseName;
-        const secondaryLabel = labelMode === 'nurse-date' ? dateLabel : null;
         const focusRequest = () => {
             if (!requestFocus) return;
 
@@ -376,10 +438,14 @@ export default function RequestDutyRequestPanel({
                     )}
                     onClick={focusRequest}
                 >
-                    <span className="min-w-0 truncate font-apple text-[13px] font-semibold text-sub-1">{primaryLabel}</span>
-                    {secondaryLabel ? (
-                        <span className="shrink-0 font-apple text-[12px] font-medium text-gray-4">{secondaryLabel}</span>
-                    ) : null}
+                    <span className="min-w-0 flex-1">
+                        <span className="block truncate font-apple text-[13px] font-semibold text-sub-1">{primaryLabel}</span>
+                        {labelMode === 'nurse-date' || labelMode === 'nurse-requested-at' ? (
+                            <span className="mt-0.5 block truncate font-apple text-[11px] font-medium text-gray-4">
+                                {labelMode === 'nurse-requested-at' ? requestedAtLabel : dateLabel}
+                            </span>
+                        ) : null}
+                    </span>
                 </button>
                 <button
                     type="button"
@@ -429,38 +495,81 @@ export default function RequestDutyRequestPanel({
             aria-label={panelDisplayTitle}
         >
             <div className="px-2 pt-2 min-[1440px]:px-2.5 min-[1440px]:pt-2.5">
-                <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
                     <p className="pl-1 font-apple text-[15px] font-semibold text-sub-1 min-[1440px]:text-[17px]">{panelDisplayTitle}</p>
                 </div>
                 {canEdit && hasAnyRequest ? (
-                    <div
-                        className="mt-3 grid w-full grid-cols-4 rounded-[12px] bg-[#F2F4F6] p-0.5"
-                        aria-label={t('page.request.panel.viewModeLabel')}
-                    >
-                        {reviewModeOptions.map((option) => (
-                            <button
-                                key={option.value}
-                                type="button"
-                                id={option.value === 'pending' ? 'nurse_request_pending_toggle' : undefined}
-                                className={twMerge(
-                                    'relative h-8 min-w-0 cursor-pointer overflow-visible rounded-[9px] px-1.5 font-apple text-[11px] font-semibold whitespace-nowrap transition-colors min-[1440px]:px-2 min-[1440px]:text-[12px]',
-                                    reviewMode === option.value ? 'bg-white text-sub-1' : 'text-gray-4 hover:text-sub-1',
-                                )}
-                                aria-pressed={reviewMode === option.value}
-                                onClick={() => {
-                                    setReviewMode(option.value);
-                                    setRequestPageIndex(0);
-                                }}
-                            >
-                                <span className="block min-w-0 truncate">{option.label}</span>
-                                {option.count !== undefined && option.count > 0 ? (
-                                    <span className="absolute -top-1.5 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F07C84] px-1 font-poppins text-[10px] leading-none font-semibold text-white">
-                                        {option.count}
-                                    </span>
-                                ) : null}
-                            </button>
-                        ))}
-                    </div>
+                    <>
+                        <div
+                            className="mt-3 grid w-full grid-cols-2 rounded-[12px] bg-[#F2F4F6] p-0.5"
+                            aria-label={t('page.request.panel.summaryLabel')}
+                        >
+                            {reviewModeOptions.map((option) => (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    id={option.value === 'pending' ? 'nurse_request_pending_toggle' : undefined}
+                                    className={twMerge(
+                                        'relative h-8 min-w-0 cursor-pointer overflow-visible rounded-[9px] px-1.5 font-apple text-[11px] font-semibold whitespace-nowrap transition-colors min-[1440px]:px-2 min-[1440px]:text-[12px]',
+                                        reviewMode === option.value ? 'bg-white text-sub-1' : 'text-gray-4 hover:text-sub-1',
+                                    )}
+                                    aria-pressed={reviewMode === option.value}
+                                    onClick={() => {
+                                        setReviewMode(option.value);
+                                        setRequestPageIndex(0);
+                                    }}
+                                >
+                                    <span className="block min-w-0 truncate">{option.label}</span>
+                                    {option.count !== undefined && option.count > 0 ? (
+                                        <span className="absolute -top-1.5 right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-[#F07C84] px-1 font-poppins text-[10px] leading-none font-semibold text-white">
+                                            {option.count}
+                                        </span>
+                                    ) : null}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                            <label htmlFor="nurse_request_sort" className="sr-only">
+                                {t('page.request.panel.viewModeLabel')}
+                            </label>
+                            <div className="relative w-[116px] min-[1440px]:w-[128px]">
+                                <select
+                                    id="nurse_request_sort"
+                                    value={requestSort}
+                                    className="h-8 w-full cursor-pointer appearance-none rounded-[10px] bg-gray-7 px-3 pr-8 font-apple text-[12px] font-semibold text-sub-1 transition-colors outline-none hover:bg-gray-6/70 focus:ring-0 focus-visible:ring-0"
+                                    onChange={(event) => {
+                                        setRequestSort(event.target.value as TRequestSort);
+                                        setRequestPageIndex(0);
+                                    }}
+                                >
+                                    {requestSortOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-gray-4"
+                                />
+                            </div>
+                        </div>
+                        {reviewMode === 'pending' && actionablePendingRequestList.length > 0 ? (
+                            <div className="mt-1 flex min-h-8 items-center justify-between gap-3 px-1">
+                                <span className="min-w-0 truncate font-apple text-[12px] font-medium text-gray-3">
+                                    {t('page.request.panel.pendingRequestCount', {count: actionablePendingRequestList.length})}
+                                </span>
+                                <button
+                                    type="button"
+                                    className="h-8 shrink-0 cursor-pointer rounded-[9px] bg-main-light px-3 font-apple text-[12px] font-semibold whitespace-nowrap text-main-1 transition-colors hover:bg-main-light/70 active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                                    disabled={isRequestActionLocked}
+                                    onClick={() => void acceptAllPendingRequests()}
+                                >
+                                    {t('page.request.panel.acceptAllAction')}
+                                </button>
+                            </div>
+                        ) : null}
+                    </>
                 ) : null}
             </div>
 
@@ -484,42 +593,40 @@ export default function RequestDutyRequestPanel({
                     />
                 ) : hasVisibleRequest ? (
                     <>
-                        {reviewMode === 'date' ? (
+                        {requestSort === 'date' ? (
                             <div className="flex flex-col gap-1.5">
-                                {visibleDateGroups.map((requestGroup) =>
-                                    (() => {
-                                        const dateMeta = getDateMeta({year, month, date: requestGroup.date, days});
+                                {visibleDateGroups.map((requestGroup) => {
+                                    const dateMeta = getDateMeta({year, month, date: requestGroup.date, days});
 
-                                        return (
-                                            <section
-                                                key={requestGroup.key}
-                                                className={twMerge('flex gap-1.5 rounded-[16px] p-1.5', REVIEW_PANEL_SURFACE_CLASS_NAME)}
-                                            >
-                                                <div className="flex w-[56px] shrink-0 flex-col items-center justify-center text-center min-[1440px]:w-[62px]">
-                                                    <span className="font-apple text-[11px] leading-none font-semibold text-gray-4">
-                                                        {t('page.request.panel.monthShortLabel', {month})}
-                                                    </span>
-                                                    <span className="mt-1 font-apple text-[17px] leading-none font-semibold tracking-[-0.03em] text-sub-1">
-                                                        {t('page.request.panel.dayShortLabel', {date: requestGroup.date})}
-                                                    </span>
-                                                    <span
-                                                        className={twMerge(
-                                                            'mt-1.5 font-apple text-[11px] leading-none font-medium',
-                                                            dateMeta.className,
-                                                        )}
-                                                    >
-                                                        {t(dateMeta.labelKey)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                                                    {requestGroup.requests.map((dutyRequest) => renderRequestRow(dutyRequest, 'nurse'))}
-                                                </div>
-                                            </section>
-                                        );
-                                    })(),
-                                )}
+                                    return (
+                                        <section
+                                            key={requestGroup.key}
+                                            className={twMerge('flex gap-1.5 rounded-[16px] p-1.5', REVIEW_PANEL_SURFACE_CLASS_NAME)}
+                                        >
+                                            <div className="flex w-[56px] shrink-0 flex-col items-center justify-center text-center min-[1440px]:w-[62px]">
+                                                <span className="font-apple text-[11px] leading-none font-semibold text-gray-4">
+                                                    {t('page.request.panel.monthShortLabel', {month})}
+                                                </span>
+                                                <span className="mt-1 font-apple text-[17px] leading-none font-semibold tracking-[-0.03em] text-sub-1">
+                                                    {t('page.request.panel.dayShortLabel', {date: requestGroup.date})}
+                                                </span>
+                                                <span
+                                                    className={twMerge(
+                                                        'mt-1.5 font-apple text-[11px] leading-none font-medium',
+                                                        dateMeta.className,
+                                                    )}
+                                                >
+                                                    {t(dateMeta.labelKey)}
+                                                </span>
+                                            </div>
+                                            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                                                {requestGroup.requests.map((dutyRequest) => renderRequestRow(dutyRequest))}
+                                            </div>
+                                        </section>
+                                    );
+                                })}
                             </div>
-                        ) : reviewMode === 'nurse' ? (
+                        ) : requestSort === 'nurse' ? (
                             <div className="flex flex-col gap-1.5">
                                 {visibleNurseGroups.map((requestGroup) => (
                                     <section
@@ -541,8 +648,8 @@ export default function RequestDutyRequestPanel({
                                 ))}
                             </div>
                         ) : (
-                            <div className={twMerge('flex flex-col gap-1.5 rounded-[16px] p-2', REVIEW_PANEL_SURFACE_CLASS_NAME)}>
-                                {visibleFlatRequests.map((dutyRequest) => renderRequestRow(dutyRequest, 'nurse-date'))}
+                            <div className="flex flex-col gap-1.5">
+                                {visibleFlatRequests.map((dutyRequest) => renderRequestRow(dutyRequest, 'nurse-requested-at'))}
                             </div>
                         )}
                         {hasRequestPagination ? (
@@ -572,8 +679,14 @@ export default function RequestDutyRequestPanel({
                 ) : (
                     <PageState
                         tone="empty"
-                        title={reviewMode === 'pending' && hasAnyRequest ? pendingEmptyTitle : emptyTitle}
-                        description={reviewMode === 'pending' && hasAnyRequest ? undefined : emptyDescription}
+                        title={
+                            reviewMode === 'pending' && hasAnyRequest
+                                ? pendingEmptyTitle
+                                : reviewMode === 'processed' && hasAnyRequest
+                                  ? processedEmptyTitle
+                                  : emptyTitle
+                        }
+                        description={hasAnyRequest ? undefined : emptyDescription}
                         titleClassName="max-w-full !break-normal [overflow-wrap:anywhere]"
                         visual={shouldShowRequestEmptyVisual ? REQUEST_EMPTY_VISUAL : undefined}
                         className="min-h-[132px] px-5 py-6"
