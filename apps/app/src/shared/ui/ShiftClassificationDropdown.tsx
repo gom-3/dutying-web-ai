@@ -98,7 +98,7 @@ export default function ShiftClassificationDropdown({value, options, ariaLabel, 
                     setOpen((previous) => !previous);
                 }}
                 className={cn(
-                    'relative flex h-10 w-full cursor-pointer items-center justify-center rounded-[10px] border-0 bg-gray-7 px-3 pr-9 font-poppins text-[15px] text-sub-1 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70 focus-visible:outline-none',
+                    'relative flex h-10 w-full cursor-pointer items-center justify-center rounded-[10px] border-0 bg-gray-7 px-3 pr-9 font-poppins text-[15px] leading-[1.4] text-sub-1 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70 focus-visible:outline-none',
                     className,
                 )}
             >
@@ -132,7 +132,7 @@ export default function ShiftClassificationDropdown({value, options, ariaLabel, 
                                       role="option"
                                       aria-selected={isSelected}
                                       className={cn(
-                                          'flex min-h-9 w-full cursor-pointer items-center justify-center px-3 py-2 font-apple text-[14px] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                          'flex min-h-9 w-full cursor-pointer items-center justify-center px-3 py-2 font-apple text-[14px] leading-[1.4] whitespace-nowrap transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
                                           isSelected ? 'bg-main-light font-semibold text-main-1' : 'text-sub-1',
                                       )}
                                       onClick={() => {

@@ -13,9 +13,6 @@ const translations: Record<string, string> = {
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
     'page.request.calendar.reorderAria': '{{name}} 순서 변경',
     'page.request.calendar.skillColumn': '숙련도',
-    'page.makeShift.calendar.annualLeave': '연차',
-    'page.makeShift.calendar.annualLeaveDetail': '남은 연차 {{count}}일',
-    'page.makeShift.calendar.annualLeaveFull': '남은 연차',
     'page.makeShift.calendar.name': '이름',
     'page.makeShift.calendar.requestStatusPin': '신청 근무',
 };
@@ -276,7 +273,6 @@ describe('RequestCalendar', () => {
         renderRequestCalendar();
 
         expect(screen.getByText('이름')).toBeInTheDocument();
-        expect(screen.getByText('연차')).toBeInTheDocument();
         expect(screen.getByText('Kim')).toBeInTheDocument();
         expect(screen.queryByText('연동')).not.toBeInTheDocument();
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();

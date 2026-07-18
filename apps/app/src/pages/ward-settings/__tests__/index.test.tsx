@@ -499,7 +499,7 @@ describe('WardSettingsPage', () => {
                         {
                             ...baseValue().state.shiftTypes[0],
                             wardShiftTypeId: 3,
-                            name: '연차',
+                            name: '휴가',
                             shortName: 'A',
                             color: '#7C8AF2',
                             isDefault: false,
@@ -517,7 +517,7 @@ describe('WardSettingsPage', () => {
         expect(screen.getByText('휴무일로 계산할 근무 유형')).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /오프.*휴무일 계산/})).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', {name: /연차.*휴무일 계산/}));
+        await user.click(screen.getByRole('button', {name: /휴가.*휴무일 계산/}));
         await user.click(screen.getByRole('button', {name: '저장하기'}));
 
         await waitFor(() => {
@@ -568,7 +568,7 @@ describe('WardSettingsPage', () => {
                         {
                             ...baseValue().state.shiftTypes[0],
                             wardShiftTypeId: 2,
-                            name: '연차',
+                            name: '휴가',
                             shortName: 'A',
                             color: '#7C8AF2',
                             isDefault: false,
@@ -616,7 +616,7 @@ describe('WardSettingsPage', () => {
                         {
                             ...baseValue().state.shiftTypes[0],
                             wardShiftTypeId: 2,
-                            name: '연차',
+                            name: '휴가',
                             shortName: 'A',
                             color: '#7C8AF2',
                             isDefault: false,
@@ -724,7 +724,7 @@ describe('WardSettingsPage', () => {
         expect(screen.queryByRole('option', {name: '야간 근무 (Night)'})).not.toBeInTheDocument();
         expect(screen.queryByRole('option', {name: '휴무 (Off)'})).not.toBeInTheDocument();
         expect(screen.getByRole('option', {name: '기타 근무'})).toBeInTheDocument();
-        expect(screen.getByRole('option', {name: '기타 휴가'})).toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '기타 휴무'})).toBeInTheDocument();
     });
 
     it('색상 버튼을 누르면 색상 팔레트를 연다', async () => {

@@ -114,7 +114,7 @@ feature.createShiftModal.classification.evening,web,feature.createShiftModal.cla
 feature.createShiftModal.classification.label,web,feature.createShiftModal.classification.label,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,근무 의미,Shift meaning,勤務の意味,班次含义,ความหมายของกะ,Ý nghĩa ca,,2026-07-18
 feature.createShiftModal.classification.night,web,feature.createShiftModal.classification.night,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,야간 근무 (Night),Night shift,夜勤,夜班,กะกลางคืน,Ca đêm,,2026-07-18
 feature.createShiftModal.classification.off,web,feature.createShiftModal.classification.off,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,휴무 (Off),Day off,休み,休息,วันหยุด,Ngày nghỉ,,2026-07-18
-feature.createShiftModal.classification.otherLeave,web,feature.createShiftModal.classification.otherLeave,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,기타 휴가,Other leave,その他の休暇,其他假期,การลาอื่น ๆ,Nghỉ phép khác,,2026-07-18
+feature.createShiftModal.classification.otherLeave,web,feature.createShiftModal.classification.otherLeave,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,기타 휴무,Other leave,その他の休暇,其他假期,การลาอื่น ๆ,Nghỉ phép khác,,2026-07-18
 feature.createShiftModal.classification.otherWork,web,feature.createShiftModal.classification.otherWork,feature.createShiftModal,createShiftModal,text,imported,,,,,,,,,기타 근무,Other work,その他の勤務,其他工作,งานอื่น ๆ,Công việc khác,,2026-07-18
 feature.createShiftModal.createTitle,web,feature.createShiftModal.createTitle,feature.createShiftModal,createShiftModal,accessibility,imported,,,,,,,,,근무•휴가 추가하기,Add work/leave type,勤務・休みを追加,添加工作/假期,เพิ่มประเภทงาน/การลา,Thêm loại công việc/nghỉ phép,,2026-06-10
 feature.createShiftModal.delete,web,feature.createShiftModal.delete,feature.createShiftModal,createShiftModal,button,imported,,,,,,,,,삭제,Delete,削除,删除,ลบ,Xóa,,2026-06-10
@@ -871,6 +871,91 @@ page.login.verificationConfirm,web,page.login.verificationConfirm,page.login,log
 page.login.verificationResend,web,page.login.verificationResend,page.login,login,text,imported,,,,,,,,,재전송,Resend,再送信,重传,ส่งอีกครั้ง,Gửi lại,,2026-06-10
 page.login.verificationSend,web,page.login.verificationSend,page.login,login,text,imported,,,,,,,,,인증,Verify,認証,认证,ตรวจสอบ,Xác minh,,2026-06-10
 page.makeShift.aiRefill.action,web,page.makeShift.aiRefill.action,page.makeShift,makeShift,button,imported,,,,,,,,,다시 채우기,Refill,再入力,补充装,เติมเงิน,Nạp tiền,,2026-06-19
+page.makeShift.aiRefill.fixedSelectionTools,web,page.makeShift.aiRefill.fixedSelectionTools,page.makeShift,makeShift,accessibility,imported,,,,,,,,,선택한 근무 고정 도구,Selected shift fixing tools,選択した勤務の固定ツール,选中班次固定工具,เครื่องมือตรึงเวรที่เลือก,Công cụ cố định ca đã chọn,,2026-07-18
+page.makeShift.aiRefill.fixSelection,web,page.makeShift.aiRefill.fixSelection,page.makeShift,makeShift,button,imported,,,,,,,,,선택한 근무 고정,Fix selected shifts,選択した勤務を固定,固定选中的班次,ตรึงเวรที่เลือก,Cố định các ca đã chọn,,2026-07-18
+page.makeShift.aiRefill.unfixSelection,web,page.makeShift.aiRefill.unfixSelection,page.makeShift,makeShift,button,imported,,,,,,,,,선택한 고정 해제,Unfix selected shifts,選択した勤務の固定を解除,取消选中班次的固定,ยกเลิกการตรึงเวรที่เลือก,Bỏ cố định các ca đã chọn,,2026-07-18
+page.makeShift.aiRefill.fixSelectionSuccess,web,page.makeShift.aiRefill.fixSelectionSuccess,page.makeShift,makeShift,button,imported,,,,,,,,,{{count}}칸을 고정했어요.,Fixed {{count}} cells.,{{count}}個のセルを固定しました。,已固定 {{count}} 个单元格。,ตรึงเซลล์ {{count}} รายการแล้ว,Đã cố định {{count}} ô.,,2026-07-18
+page.makeShift.aiRefill.unfixSelectionSuccess,web,page.makeShift.aiRefill.unfixSelectionSuccess,page.makeShift,makeShift,button,imported,,,,,,,,,{{count}}칸의 고정을 해제했어요.,Unfixed {{count}} cells.,{{count}}個のセルの固定を解除しました。,已取消 {{count}} 个单元格的固定。,ยกเลิกการตรึงเซลล์ {{count}} รายการแล้ว,Đã bỏ cố định {{count}} ô.,,2026-07-18
+page.makeShift.aiRefill.prefillDecision.title,web,page.makeShift.aiRefill.prefillDecision.title,page.makeShift,makeShift,accessibility,imported,,,,,,,,,AI가 바꾸면 안 되는 근무를 고정했나요?,Have you fixed shifts AI should not change?,AIが変更してはいけない勤務を固定しましたか？,是否已固定 AI 不应更改的班次？,ตรึงเวรที่ AI ไม่ควรเปลี่ยนแล้วหรือยัง?,Bạn đã cố định các ca AI không được thay đổi chưa?,,2026-07-18
+page.makeShift.aiRefill.prefillDecision.description,web,page.makeShift.aiRefill.prefillDecision.description,page.makeShift,makeShift,description,imported,,,,,,,,,"AI는 고정 근무와 신청 근무를 제외한 빈칸을 자동으로 채워요.
+바뀌면 안 되는 근무는 먼저 고정해 주세요.","AI will refill every empty cell except fixed and requested shifts.
+Fix any shifts that should not change before continuing.","AIは固定勤務と希望勤務を除く空欄を自動入力します。
+変更してはいけない勤務は、先に固定してください。","AI 会自动填充除固定班次和申请班次以外的空白单元格。
+请先固定不应更改的班次。","AI จะเติมช่องว่างทั้งหมด ยกเว้นเวรที่ตรึงและเวรที่ขอ
+โปรดตรึงเวรที่ไม่ควรเปลี่ยนก่อนดำเนินการต่อ","AI sẽ tự động điền mọi ô trống ngoại trừ ca cố định và ca đã yêu cầu.
+Hãy cố định các ca không được thay đổi trước khi tiếp tục.",,2026-07-18
+page.makeShift.aiRefill.prefillDecision.confirm,web,page.makeShift.aiRefill.prefillDecision.confirm,page.makeShift,makeShift,button,imported,,,,,,,,,이대로 진행하기,Continue,このまま進む,继续,ดำเนินการต่อ,Tiếp tục,,2026-07-18
+page.makeShift.aiRefill.prefillDecision.cancel,web,page.makeShift.aiRefill.prefillDecision.cancel,page.makeShift,makeShift,button,imported,,,,,,,,,다시 편집하기,Edit again,もう一度編集,再次编辑,แก้ไขอีกครั้ง,Chỉnh sửa lại,,2026-07-18
+page.makeShift.aiRefill.regenerateDecision.title,web,page.makeShift.aiRefill.regenerateDecision.title,page.makeShift,makeShift,accessibility,imported,,,,,,,,,수정한 근무를 어떻게 할까요?,How should your edits be handled?,編集した勤務をどうしますか？,如何处理您修改的班次？,จัดการเวรที่คุณแก้ไขอย่างไร?,Xử lý các ca bạn đã chỉnh sửa như thế nào?,,2026-07-18
+page.makeShift.aiRefill.regenerateDecision.description,web,page.makeShift.aiRefill.regenerateDecision.description,page.makeShift,makeShift,description,imported,,,,,,,,,"AI 결과 이후 고정하지 않고 수정한 근무가 {{count}}칸 있어요.
+이 칸은 유지하고 싶다면 고정하고 다시 생성하고, 현재 결과를 새로 받고 싶다면 수정한 칸도 다시 생성해 주세요.","After the AI result, {{count}} edited cells are not fixed.
+Fix them if they should stay, or regenerate them too for a fresh result.","AIの結果を適用した後、固定せずに編集したセルが{{count}}個あります。
+残したい場合は固定して再生成し、新しい結果が必要な場合は編集したセルも再生成してください。","AI 结果生成后，有 {{count}} 个未固定的编辑单元格。
+如果要保留，请先固定后重新生成；如果要获取全新结果，也可以重新生成这些修改的单元格。","หลังจากได้ผลลัพธ์จาก AI มีช่องที่แก้ไขแต่ยังไม่ได้ตรึง {{count}} ช่อง
+ตรึงช่องเหล่านั้นหากต้องการเก็บไว้ หรือให้ AI สร้างใหม่ทั้งหมดเพื่อรับผลลัพธ์ใหม่","Sau kết quả AI, có {{count}} ô đã chỉnh sửa nhưng chưa được cố định.
+Hãy cố định nếu muốn giữ lại, hoặc tạo lại cả các ô đó để nhận kết quả mới.",,2026-07-18
+page.makeShift.aiRefill.regenerateDecision.confirm,web,page.makeShift.aiRefill.regenerateDecision.confirm,page.makeShift,makeShift,button,imported,,,,,,,,,수정한 칸 고정,Fix edited cells,編集したセルを固定,固定已编辑单元格,ตรึงช่องที่แก้ไข,Cố định các ô đã chỉnh sửa,,2026-07-18
+page.makeShift.aiRefill.regenerateDecision.cancel,web,page.makeShift.aiRefill.regenerateDecision.cancel,page.makeShift,makeShift,button,imported,,,,,,,,,수정한 칸도 다시 생성,Regenerate edits too,編集内容も再生成,也重新生成已编辑内容,สร้างช่องที่แก้ไขใหม่ด้วย,Tạo lại cả phần đã chỉnh sửa,,2026-07-18
+page.makeShift.aiRefill.viewComplete,web,page.makeShift.aiRefill.viewComplete,page.makeShift,makeShift,text,imported,,,,,,,,,전체 배정 보기,Show all assignments,全割り当てを表示,显示全部排班,แสดงการจัดเวรทั้งหมด,Hiển thị tất cả phân ca,,2026-07-18
+page.makeShift.aiRefill.viewBaseline,web,page.makeShift.aiRefill.viewBaseline,page.makeShift,makeShift,text,imported,,,,,,,,,신청·고정만 보기,Show requests and fixed shifts only,希望・固定勤務のみ表示,仅显示申请和固定班次,แสดงเฉพาะเวรที่ขอและเวรที่ตรึง,Chỉ hiển thị ca đã yêu cầu và ca cố định,,2026-07-18
+page.makeShift.aiRefill.viewCompleteCompact,web,page.makeShift.aiRefill.viewCompleteCompact,page.makeShift,makeShift,text,imported,,,,,,,,,전체,All,すべて,全部,ทั้งหมด,Tất cả,,2026-07-18
+page.makeShift.aiRefill.viewBaselineCompact,web,page.makeShift.aiRefill.viewBaselineCompact,page.makeShift,makeShift,text,imported,,,,,,,,,신청·고정,Requests/fixed,希望・固定,申请/固定,คำขอ/ตรึง,Yêu cầu/cố định,,2026-07-18
+page.makeShift.aiRefill.viewCompleteTooltip,web,page.makeShift.aiRefill.viewCompleteTooltip,page.makeShift,makeShift,description,imported,,,,,,,,,전체 배정을 보고 있어요. 클릭하면 신청·고정만 봅니다.,Showing all assignments. Click to show requests and fixed shifts only.,全割り当てを表示中です。クリックすると希望・固定勤務のみ表示します。,正在显示全部排班。点击后仅显示申请和固定班次。,กำลังแสดงการจัดเวรทั้งหมด คลิกเพื่อแสดงเฉพาะเวรที่ขอและเวรที่ตรึง,Đang hiển thị tất cả phân ca. Nhấn để chỉ hiển thị ca đã yêu cầu và ca cố định.,,2026-07-18
+page.makeShift.aiRefill.viewBaselineTooltip,web,page.makeShift.aiRefill.viewBaselineTooltip,page.makeShift,makeShift,description,imported,,,,,,,,,신청·고정만 보고 있어요. 클릭하면 전체 배정을 봅니다.,Showing requests and fixed shifts only. Click to show all assignments.,希望・固定勤務のみ表示中です。クリックすると全割り当てを表示します。,正在仅显示申请和固定班次。点击后显示全部排班。,กำลังแสดงเฉพาะเวรที่ขอและเวรที่ตรึง คลิกเพื่อแสดงการจัดเวรทั้งหมด,Đang chỉ hiển thị ca đã yêu cầu và ca cố định. Nhấn để hiển thị tất cả phân ca.,,2026-07-18
+page.makeShift.aiRefill.baselineReadonlyToast,web,page.makeShift.aiRefill.baselineReadonlyToast,page.makeShift,makeShift,text,imported,,,,,,,,,수정하려면 전체 보기로 돌아가 주세요.,Switch back to All to edit the schedule.,編集するには「すべて表示」に戻してください。,切换回“全部”以编辑排班表。,กลับไปที่ “ทั้งหมด” เพื่อแก้ไขกำหนดการ,Chuyển lại sang “Tất cả” để chỉnh sửa lịch.,,2026-07-18
+page.makeShift.aiRefill.fixedDisplayHighlight,web,page.makeShift.aiRefill.fixedDisplayHighlight,page.makeShift,makeShift,text,imported,,,,,,,,,고정근무 위치 강조,Highlight fixed shifts,固定勤務を強調表示,强调显示固定班次,ไฮไลต์เวรที่ตรึง,Làm nổi bật ca cố định,,2026-07-18
+page.makeShift.aiRefill.requestDisplayHighlight,web,page.makeShift.aiRefill.requestDisplayHighlight,page.makeShift,makeShift,text,imported,,,,,,,,,신청근무 위치 강조,Highlight requested shifts,希望勤務を強調表示,强调显示申请班次,ไฮไลต์เวรที่ขอ,Làm nổi bật ca đã yêu cầu,,2026-07-18
+page.makeShift.aiRefill.statusHighlightTools,web,page.makeShift.aiRefill.statusHighlightTools,page.makeShift,makeShift,text,imported,,,,,,,,,신청근무 및 고정근무 표시,Request and fixed shift indicators,希望勤務と固定勤務の表示,申请和固定班次指示器,ตัวบ่งชี้เวรที่ขอและเวรที่ตรึง,Chỉ báo ca đã yêu cầu và ca cố định,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.title,web,page.makeShift.aiRefill.loadingOverlay.title,page.makeShift,makeShift,accessibility,imported,,,,,,,,,AI가 근무표를 채우고 있어요,AI is filling the schedule,AIが勤務表を入力中です,AI 正在填充排班表,AI กำลังเติมตารางเวร,AI đang điền lịch,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.description,web,page.makeShift.aiRefill.loadingOverlay.description,page.makeShift,makeShift,description,imported,,,,,,,,,"신청·고정근무는 유지하고,
+나머지 칸을 AI가 채워요.","Requested and fixed shifts stay in place.
+AI fills the remaining cells.","希望・固定勤務はそのままに、
+残りのセルをAIが入力します。","保留申请和固定班次。
+AI 填充其余单元格。","คงเวรที่ขอและเวรที่ตรึงไว้
+AI จะเติมช่องที่เหลือ","Giữ nguyên ca đã yêu cầu và ca cố định.
+AI sẽ điền các ô còn lại.",,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.elapsed,web,page.makeShift.aiRefill.loadingOverlay.elapsed,page.makeShift,makeShift,text,imported,,,,,,,,,{{seconds}}초째 진행 중,{{seconds}} sec in progress,{{seconds}}秒経過,已进行 {{seconds}} 秒,ดำเนินการแล้ว {{seconds}} วินาที,Đã thực hiện {{seconds}} giây,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.ariaLabel,web,page.makeShift.aiRefill.loadingOverlay.ariaLabel,page.makeShift,makeShift,accessibility,imported,,,,,,,,,AI 근무표 채우기 진행률,AI schedule fill progress,AI勤務表入力の進捗,AI 排班填充进度,ความคืบหน้าการเติมตารางเวรด้วย AI,Tiến độ điền lịch bằng AI,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.checkingRequests,web,page.makeShift.aiRefill.loadingOverlay.checkingRequests,page.makeShift,makeShift,text,imported,,,,,,,,,신청·고정근무를 확인하고 있어요,Checking requested and fixed shifts,希望・固定勤務を確認中,正在检查申请和固定班次,กำลังตรวจสอบเวรที่ขอและเวรที่ตรึง,Đang kiểm tra ca đã yêu cầu và ca cố định,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.fillingBlanks,web,page.makeShift.aiRefill.loadingOverlay.fillingBlanks,page.makeShift,makeShift,text,imported,,,,,,,,,빈칸에 맞는 근무를 배치하고 있어요,Assigning shifts to the remaining cells,残りのセルに勤務を割り当てています,正在为剩余单元格分配班次,กำลังจัดเวรให้ช่องที่เหลือ,Đang phân ca cho các ô còn lại,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.finalReview,web,page.makeShift.aiRefill.loadingOverlay.finalReview,page.makeShift,makeShift,text,imported,,,,,,,,,마지막 조건을 꼼꼼히 확인하고 있어요,Reviewing the final conditions carefully,最終条件を丁寧に確認中,正在仔细检查最终条件,กำลังตรวจสอบเงื่อนไขสุดท้ายอย่างละเอียด,Đang kiểm tra kỹ các điều kiện cuối cùng,,2026-07-18
+page.makeShift.aiRefill.loadingOverlay.almostDone,web,page.makeShift.aiRefill.loadingOverlay.almostDone,page.makeShift,makeShift,text,imported,,,,,,,,,조금만 더 기다려 주세요,Please wait just a little longer,もう少しお待ちください,请再稍等片刻,โปรดรออีกสักครู่,Vui lòng đợi thêm một chút,,2026-07-18
+page.makeShift.aiRefill.restCarryOverSyncFailed,web,page.makeShift.aiRefill.restCarryOverSyncFailed,page.makeShift,makeShift,text,imported,,,,,,,,,근무표는 확정됐지만 다음 달 이월 반영에 실패했어요.,"Schedule confirmed, but next month carry-over could not be updated.",勤務表は確定しましたが、翌月への繰り越しを更新できませんでした。,排班表已确认，但无法更新下个月的顺延休息。,ยืนยันกำหนดการแล้ว แต่ไม่สามารถอัปเดตวันหยุดสะสมของเดือนถัดไปได้,Đã xác nhận lịch nhưng không thể cập nhật ngày nghỉ chuyển sang tháng sau.,,2026-07-18
+page.makeShift.aiRefill.lastShiftBlankDialog.descriptionLead,web,page.makeShift.aiRefill.lastShiftBlankDialog.descriptionLead,page.makeShift,makeShift,description,imported,,,,,,,,,전달근무에 빈칸이 있어요.,Some previous-shift cells are empty.,前月勤務に空欄があります。,上一个月的班次有空白单元格。,มีช่องว่างในเวรก่อนหน้า,Một số ô của ca trước đang trống.,,2026-07-18
+page.makeShift.aiRefill.lastShiftBlankDialog.descriptionHighlight,web,page.makeShift.aiRefill.lastShiftBlankDialog.descriptionHighlight,page.makeShift,makeShift,description,imported,,,,,,,,,이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.,Fill them if AI should consider continuity from the prior month.,前月の勤務を引き継いで考慮する場合は入力してください。,如果需要参考上个月的班次，请补充填写。,กรอกข้อมูลหากต้องการให้ AI พิจารณาความต่อเนื่องจากเดือนก่อน,Hãy điền nếu AI cần xem xét tính liên tục từ tháng trước.,,2026-07-18
+page.makeShift.aiRefill.lastShiftBlankDialog.confirmAiFill,web,page.makeShift.aiRefill.lastShiftBlankDialog.confirmAiFill,page.makeShift,makeShift,button,imported,,,,,,,,,그대로 AI 채우기,Autofill as-is,そのままAI入力,按原样自动填充,เติมอัตโนมัติตามเดิม,Tự động điền nguyên trạng,,2026-07-18
+page.makeShift.aiRefill.exitGuard.unsavedTitle,web,page.makeShift.aiRefill.exitGuard.unsavedTitle,page.makeShift,makeShift,accessibility,imported,,,,,,,,,저장되지 않은 편집 내용이 있어요,You have unsaved edits,保存されていない編集内容があります,有未保存的编辑内容,มีการแก้ไขที่ยังไม่ได้บันทึก,Bạn có chỉnh sửa chưa lưu,,2026-07-18
+page.makeShift.aiRefill.exitGuard.unsavedDescription,web,page.makeShift.aiRefill.exitGuard.unsavedDescription,page.makeShift,makeShift,description,imported,,,,,,,,,"편집 중인 내용을 유지하려면
+임시 저장하거나 근무표를 확정해 주세요.",Save a draft or confirm the schedule to keep your edits.,"編集内容を保持するには
+一時保存するか、勤務表を確定してください。",要保留编辑内容，请保存草稿或确认排班表。,บันทึกฉบับร่างหรือยืนยันกำหนดการเพื่อเก็บการแก้ไขไว้,Hãy lưu bản nháp hoặc xác nhận lịch để giữ lại chỉnh sửa.,,2026-07-18
+page.makeShift.aiRefill.exitGuard.aiGeneratingTitle,web,page.makeShift.aiRefill.exitGuard.aiGeneratingTitle,page.makeShift,makeShift,accessibility,imported,,,,,,,,,AI 자동채우기를 중단하고 나갈까요?,Stop AI Autofill and leave?,AI自動入力を中止して退出しますか？,要停止 AI 自动填充并退出吗？,หยุดการเติมอัตโนมัติด้วย AI และออกใช่ไหม?,Dừng Tự động điền AI và rời đi?,,2026-07-18
+page.makeShift.aiRefill.exitGuard.aiGeneratingDescription,web,page.makeShift.aiRefill.exitGuard.aiGeneratingDescription,page.makeShift,makeShift,description,imported,,,,,,,,,나가면 자동채우기 결과가 반영되지 않을 수 있습니다.,Leaving may discard the autofill result.,退出すると自動入力の結果が反映されない場合があります。,离开后，自动填充结果可能不会被应用。,หากออก ผลลัพธ์การเติมอัตโนมัติอาจไม่ถูกนำไปใช้,"Nếu rời đi, kết quả tự động điền có thể không được áp dụng.",,2026-07-18
+page.makeShift.aiRefill.exitGuard.leaveConfirm,web,page.makeShift.aiRefill.exitGuard.leaveConfirm,page.makeShift,makeShift,button,imported,,,,,,,,,나가기,Leave,退出,离开,ออก,Rời đi,,2026-07-18
+page.makeShift.aiRefill.exitGuard.stayCancel,web,page.makeShift.aiRefill.exitGuard.stayCancel,page.makeShift,makeShift,button,imported,,,,,,,,,계속 편집하기,Keep editing,編集を続ける,继续编辑,แก้ไขต่อ,Tiếp tục chỉnh sửa,,2026-07-18
+page.makeShift.aiRefill.exitGuard.unsavedMessage,web,page.makeShift.aiRefill.exitGuard.unsavedMessage,page.makeShift,makeShift,description,imported,,,,,,,,,"저장되지 않은 편집 내용이 있어요
+편집 중인 내용을 유지하려면
+임시 저장하거나 근무표를 확정해 주세요.","You have unsaved edits
+Save a draft or confirm the schedule to keep your edits.","保存されていない編集内容があります
+編集内容を保持するには
+一時保存するか、勤務表を確定してください。","有未保存的编辑内容
+要保留编辑内容，请保存草稿或确认排班表。","มีการแก้ไขที่ยังไม่ได้บันทึก
+บันทึกฉบับร่างหรือยืนยันกำหนดการเพื่อเก็บการแก้ไขไว้","Bạn có chỉnh sửa chưa lưu
+Hãy lưu bản nháp hoặc xác nhận lịch để giữ lại chỉnh sửa.",,2026-07-18
+page.makeShift.aiRefill.exitGuard.aiGeneratingMessage,web,page.makeShift.aiRefill.exitGuard.aiGeneratingMessage,page.makeShift,makeShift,description,imported,,,,,,,,,"AI 자동채우기 중이에요.
+나가면 결과가 반영되지 않을 수 있어요.
+그래도 나갈까요?","AI Autofill is running.
+Leaving may discard the result.
+Leave anyway?","AI自動入力中です。
+退出すると結果が反映されない場合があります。
+それでも退出しますか？","AI 自动填充正在运行。
+离开后结果可能不会应用。
+仍要离开吗？","AI กำลังเติมอัตโนมัติ
+หากออก ผลลัพธ์อาจไม่ถูกนำไปใช้
+ยังต้องการออกหรือไม่?","AI đang tự động điền.
+Nếu rời đi, kết quả có thể không được áp dụng.
+Vẫn rời đi?",,2026-07-18
+page.makeShift.aiRefill.undo,web,page.makeShift.aiRefill.undo,page.makeShift,makeShift,button,imported,,,,,,,,,실행 취소,Undo,元に戻す,撤销,เลิกทำ,Hoàn tác,,2026-07-18
+page.makeShift.aiRefill.redo,web,page.makeShift.aiRefill.redo,page.makeShift,makeShift,button,imported,,,,,,,,,다시 실행,Redo,やり直す,重做,ทำซ้ำ,Làm lại,,2026-07-18
 page.makeShift.aiRefill.cannotAutofillYet,web,page.makeShift.aiRefill.cannotAutofillYet,page.makeShift,makeShift,text,imported,,,,,,,,,근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.,Schedule data is still loading. Please try again shortly.,勤務表データを読み込み中です。少し待ってからもう一度お試しください。,加载排班表信息。请稍后重试。,ข้อมูลกำหนดการยังคงโหลดอยู่ โปรดลองอีกครั้งในอีกสักครู่,Dữ liệu lịch vẫn đang tải. Vui lòng thử lại trong thời gian ngắn.,,2026-06-19
 page.makeShift.aiRefill.confirm,web,page.makeShift.aiRefill.confirm,page.makeShift,makeShift,text,imported,,,,,,,,,근무표 확정,Confirm schedule,勤務表を確定,确认排班表,ยืนยันกำหนดการ,Xác nhận lịch,,2026-06-19
 page.makeShift.aiRefill.description.error,web,page.makeShift.aiRefill.description.error,page.makeShift,makeShift,feedback,imported,,,,,,,,,AI 요청을 완료하지 못했어요. 현재 화면의 근무표는 그대로 유지되며 바로 다시 시도할 수 있어요.,"The AI request failed. The current schedule stays as-is, and you can retry immediately.",AIリクエストを完了できませんでした。現在の勤務表はそのまま保持され、すぐに再試行できます。,AI请求无法完成。当前屏幕上的时间表将保持不变，您可以立即重试。,คำร้องขอ AI ล้มเหลว กำหนดการปัจจุบันจะคงอยู่ตามเดิม และคุณสามารถลองอีกครั้งได้ทันที,Yêu cầu AI không thành công. lịch hiện tại vẫn giữ nguyên và bạn có thể thử lại ngay lập tức.,,2026-06-19
@@ -1688,6 +1773,7 @@ page.onboardingWardCreate.section.shiftType.description,web,page.onboardingWardC
 page.onboardingWardCreate.section.shiftType.highlight,web,page.onboardingWardCreate.section.shiftType.highlight,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,근무 유형,shift types,勤務区分,班次类型,ประเภทกะ,các loại ca,,2026-06-13
 page.onboardingWardCreate.section.shiftType.title,web,page.onboardingWardCreate.section.shiftType.title,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,병동의 근무 유형을 설정해 주세요,Set ward shift types,病棟の勤務区分を設定してください,请设置病区的班次类型,ตั้งค่าประเภทกะวอร์ด,Đặt loại ca khoa,,2026-06-10
 page.onboardingWardCreate.shiftType.add,web,page.onboardingWardCreate.shiftType.add,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,근무 유형 추가하기,Add shift type,勤務区分を追加,添加班次类型,เพิ่มประเภทกะ,Thêm loại ca,,2026-06-10
+page.onboardingWardCreate.shiftType.dragAria,web,page.onboardingWardCreate.shiftType.dragAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,드래그하여 {{shiftName}} 순서 변경,Drag to reorder {{shiftName}},ドラッグして{{shiftName}}の順序を変更,拖动{{shiftName}}更改顺序,ลาก {{shiftName}} เพื่อเปลี่ยนลำดับ,Kéo {{shiftName}} để thay đổi thứ tự,,2026-07-18
 page.onboardingWardCreate.shiftType.color,web,page.onboardingWardCreate.shiftType.color,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,색상,Color,色,颜色,สี,Màu sắc,,2026-06-10
 page.onboardingWardCreate.shiftType.colorOptionAria,web,page.onboardingWardCreate.shiftType.colorOptionAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,{{color}} 선택,Select {{color}},{{color}}を選択,选择{{color}},เลือก {{color}},Chọn {{color}},,2026-06-10
 page.onboardingWardCreate.shiftType.colorSelectAria,web,page.onboardingWardCreate.shiftType.colorSelectAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,{{shiftName}} 색상 선택,Select color for {{shiftName}},{{shiftName}}の色を選択,{{shiftName}} 颜色选择,เลือกสีสำหรับ {{shiftName}},Chọn màu cho {{shiftName}},,2026-06-10
@@ -1695,7 +1781,7 @@ page.onboardingWardCreate.shiftType.classification.day,web,page.onboardingWardCr
 page.onboardingWardCreate.shiftType.classification.evening,web,page.onboardingWardCreate.shiftType.classification.evening,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,저녁 근무 (Evening),Evening shift,準夜勤,小夜班,กะเย็น,Ca chiều,,2026-07-18
 page.onboardingWardCreate.shiftType.classification.night,web,page.onboardingWardCreate.shiftType.classification.night,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,야간 근무 (Night),Night shift,夜勤,夜班,กะกลางคืน,Ca đêm,,2026-07-18
 page.onboardingWardCreate.shiftType.classification.off,web,page.onboardingWardCreate.shiftType.classification.off,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,휴무 (Off),Day off,休み,休息,วันหยุด,Ngày nghỉ,,2026-07-18
-page.onboardingWardCreate.shiftType.classification.otherLeave,web,page.onboardingWardCreate.shiftType.classification.otherLeave,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,기타 휴가,Other leave,その他の休暇,其他假期,การลาอื่น ๆ,Nghỉ phép khác,,2026-07-18
+page.onboardingWardCreate.shiftType.classification.otherLeave,web,page.onboardingWardCreate.shiftType.classification.otherLeave,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,기타 휴무,Other leave,その他の休暇,其他假期,การลาอื่น ๆ,Nghỉ phép khác,,2026-07-18
 page.onboardingWardCreate.shiftType.classification.otherWork,web,page.onboardingWardCreate.shiftType.classification.otherWork,page.onboardingWardCreate,onboardingWardCreate,text,imported,,,,,,,,,기타 근무,Other work,その他の勤務,其他工作,งานอื่น ๆ,Công việc khác,,2026-07-18
 page.onboardingWardCreate.shiftType.classificationAria,web,page.onboardingWardCreate.shiftType.classificationAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,{{shiftName}} 근무 의미 선택,Select the meaning of {{shiftName}},{{shiftName}}の勤務の意味を選択,选择{{shiftName}}的班次含义,เลือกความหมายของ {{shiftName}},Chọn ý nghĩa của {{shiftName}},,2026-07-18
 page.onboardingWardCreate.shiftType.deleteAria,web,page.onboardingWardCreate.shiftType.deleteAria,page.onboardingWardCreate,onboardingWardCreate,accessibility,imported,,,,,,,,,{{shiftName}} 삭제,Delete {{shiftName}},{{shiftName}}の削除,删除{{shiftName}},ลบ {{shiftName}},Xóa {{shiftName}},,2026-06-10

@@ -1,5 +1,7 @@
-﻿import {Check, CircleAlert, Plus, X} from 'lucide-react';
+﻿import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
+import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     getShiftShortNameEntryKey,
@@ -16,13 +18,14 @@ import {DEFAULT_SHIFT_TYPE_COLORS, type TOnboardingWardShiftType} from '../../mo
 interface IShiftTypeStepProps {
     shiftTypes: TOnboardingWardShiftType[];
     onChange: (shiftTypeId: string, updater: Partial<TOnboardingWardShiftType>) => void;
+    onDragEnd: (result: DropResult) => void;
     onAdd: () => void;
     onDelete: (shiftTypeId: string) => void;
 }
 
 const SHIFT_COLOR_OPTIONS = DEFAULT_SHIFT_TYPE_COLORS;
 const SHIFT_NAME_MAX_LENGTH = 12;
-const SHIFT_TYPE_GRID_COLS = 'grid-cols-[minmax(110px,0.95fr)_84px_180px_minmax(230px,1.45fr)_48px_40px]';
+const SHIFT_TYPE_GRID_COLS = 'grid-cols-[32px_minmax(110px,0.95fr)_84px_180px_minmax(230px,1.45fr)_48px_40px]';
 const SHIFT_TYPE_INPUT_SURFACE_CLASS =
     'rounded-[10px] border-0 bg-gray-7 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:border-0 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70';
 const SHIFT_TYPE_INPUT_ERROR_CLASS =
@@ -37,6 +40,23 @@ const SHIFT_CLASSIFICATION_OPTIONS = [
     {value: 'OTHER_WORK', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherWork'},
     {value: 'OTHER_LEAVE', labelKey: 'page.onboardingWardCreate.shiftType.classification.otherLeave'},
 ] as const;
+const UNIQUE_SHIFT_CLASSIFICATIONS = new Set(['DAY', 'EVENING', 'NIGHT', 'OFF']);
+
+function getAvailableShiftClassificationOptions(shiftTypes: TOnboardingWardShiftType[], shiftTypeId: string) {
+    const currentShiftType = shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
+    const usedClassifications = new Set(
+        shiftTypes.filter((shiftType) => shiftType.id !== shiftTypeId).map((shiftType) => shiftType.classification),
+    );
+
+    return SHIFT_CLASSIFICATION_OPTIONS.filter(
+        (option) =>
+            currentShiftType?.protectedByPreviousSchedule ||
+            !UNIQUE_SHIFT_CLASSIFICATIONS.has(option.value) ||
+            option.value === currentShiftType?.classification ||
+            !usedClassifications.has(option.value),
+    );
+}
+
 const parseShiftTimeToMinutes = (value: string) => {
     if (!SHIFT_TIME_FORMAT_REGEX.test(value)) return null;
 
@@ -111,7 +131,7 @@ function InlineFieldError({id, children}: {id?: string; children: ReactNode}) {
     );
 }
 
-function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepProps) {
+function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShiftTypeStepProps) {
     const {t} = useTypedTranslation();
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
@@ -220,6 +240,7 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
             <div
                 className={`mb-2 grid ${SHIFT_TYPE_GRID_COLS} items-center gap-4 px-3 text-center font-apple text-[13px] font-medium text-gray-3`}
             >
+                <span />
                 <span>{t('page.onboardingWardCreate.shiftType.name')}</span>
                 <span>{t('page.onboardingWardCreate.shiftType.shortName')}</span>
                 <span>{t('page.onboardingWardCreate.shiftType.type')}</span>
@@ -227,203 +248,275 @@ function ShiftTypeStep({shiftTypes, onChange, onAdd, onDelete}: IShiftTypeStepPr
                 <span>{t('page.onboardingWardCreate.shiftType.color')}</span>
                 <span />
             </div>
-            <div className="overflow-visible rounded-[16px] bg-white px-1 py-1">
-                {shiftTypes.map((shiftType) => (
-                    <div key={shiftType.id} className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-4 px-3 py-3`}>
-                        <div className="flex flex-col items-center gap-1">
-                            <Input
-                                value={shiftType.name}
-                                maxLength={SHIFT_NAME_MAX_LENGTH}
-                                onChange={(event) => onChange(shiftType.id, {name: event.target.value})}
-                                variant="foundation"
-                                fieldSize="lg"
-                                aria-invalid={Boolean(getShiftNameError(shiftType.name))}
-                                aria-describedby={
-                                    getShiftNameError(shiftType.name) ? `onboarding-shift-name-error-${shiftType.id}` : undefined
-                                }
-                                className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
-                                    getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
-                                }`}
-                                placeholder={t('page.onboardingWardCreate.shiftType.name')}
-                            />
-                            {getShiftNameError(shiftType.name) ? (
-                                <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
-                                    {getShiftNameError(shiftType.name)}
-                                </InlineFieldError>
-                            ) : null}
-                        </div>
-                        <div className="flex flex-col items-center gap-1">
-                            <Input
-                                value={shiftType.shortName}
-                                maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
-                                onChange={(event) => {
-                                    const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
-
-                                    if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
-                                        setShortNameErrorById((prev) => ({
-                                            ...prev,
-                                            [shiftType.id]: t('page.onboardingWardCreate.shiftType.validation.shortNameLength'),
-                                        }));
-                                    } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
-                                        setShortNameErrorById((prev) => ({
-                                            ...prev,
-                                            [shiftType.id]: t('page.onboardingWardCreate.shiftType.validation.shortNameFirstKey'),
-                                        }));
-                                    } else {
-                                        setShortNameErrorById((prev) => ({...prev, [shiftType.id]: ''}));
-                                    }
-
-                                    onChange(shiftType.id, {shortName: normalizedShortName});
-                                }}
-                                variant="foundation"
-                                fieldSize="lg"
-                                aria-invalid={Boolean(getShiftShortNameError(shiftType.id, shiftType.shortName))}
-                                aria-describedby={
-                                    getShiftShortNameError(shiftType.id, shiftType.shortName)
-                                        ? `onboarding-shift-short-name-error-${shiftType.id}`
-                                        : undefined
-                                }
-                                className={`h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
-                                    getShiftShortNameError(shiftType.id, shiftType.shortName) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
-                                }`}
-                                placeholder="-"
-                            />
-                            {getShiftShortNameError(shiftType.id, shiftType.shortName) ? (
-                                <InlineFieldError id={`onboarding-shift-short-name-error-${shiftType.id}`}>
-                                    {getShiftShortNameError(shiftType.id, shiftType.shortName)}
-                                </InlineFieldError>
-                            ) : null}
-                        </div>
-                        <div className="relative mx-auto flex w-full max-w-[180px] items-center">
-                            <ShiftClassificationDropdown
-                                value={shiftType.classification}
-                                options={SHIFT_CLASSIFICATION_OPTIONS.map((option) => ({
-                                    value: option.value,
-                                    label: t(option.labelKey),
-                                }))}
-                                ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
-                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
-                                })}
-                                onChange={(value) => {
-                                    const classification = value as TOnboardingWardShiftType['classification'];
-                                    const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
-
-                                    onChange(shiftType.id, {
-                                        classification,
-                                        isOff,
-                                        isCounted: !isOff,
-                                        startTime: isOff ? '' : shiftType.startTime || '09:00',
-                                        endTime: isOff ? '' : shiftType.endTime || '18:00',
-                                    });
-                                }}
-                            />
-                        </div>
-                        <div className="ml-[12px] flex justify-center self-start">
-                            <div className="flex items-start">
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            value={shiftType.isOff ? '-' : shiftType.startTime}
-                                            disabled={shiftType.isOff}
-                                            onChange={(event) =>
-                                                onChange(shiftType.id, {startTime: normalizeShiftTimeInput(event.target.value)})
-                                            }
-                                            onBlur={(event) =>
-                                                onChange(shiftType.id, {startTime: toCanonicalShiftTime(event.target.value)})
-                                            }
-                                            variant="foundation"
-                                            fieldSize="lg"
-                                            aria-invalid={Boolean(getShiftTimeError(shiftType))}
-                                            aria-describedby={
-                                                getShiftTimeError(shiftType) ? `onboarding-shift-time-error-${shiftType.id}` : undefined
-                                            }
-                                            className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
-                                                getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
-                                            }`}
-                                            placeholder="07:00"
-                                        />
-                                        <span className="font-poppins text-[15px] text-gray-3">~</span>
-                                        <Input
-                                            value={shiftType.isOff ? '-' : shiftType.endTime}
-                                            disabled={shiftType.isOff}
-                                            onChange={(event) =>
-                                                onChange(shiftType.id, {endTime: normalizeShiftTimeInput(event.target.value)})
-                                            }
-                                            onBlur={(event) => onChange(shiftType.id, {endTime: toCanonicalShiftTime(event.target.value)})}
-                                            variant="foundation"
-                                            fieldSize="lg"
-                                            aria-invalid={Boolean(getShiftTimeError(shiftType))}
-                                            aria-describedby={
-                                                getShiftTimeError(shiftType) ? `onboarding-shift-time-error-${shiftType.id}` : undefined
-                                            }
-                                            className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
-                                                getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
-                                            }`}
-                                            placeholder="15:00"
-                                        />
-                                    </div>
-                                    {getShiftTimeError(shiftType) ? (
-                                        <InlineFieldError id={`onboarding-shift-time-error-${shiftType.id}`}>
-                                            {getShiftTimeError(shiftType)}
-                                        </InlineFieldError>
-                                    ) : null}
-                                </div>
-                                <span className="ml-2 flex h-10 min-w-[52px] items-center font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
-                                    {getShiftDurationLabel(shiftType)}
-                                </span>
-                            </div>
-                        </div>
+            <DragDropContext onDragEnd={onDragEnd}>
+                <Droppable droppableId="onboarding-shift-types">
+                    {(provided) => (
                         <div
-                            className={`relative flex justify-center self-start ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
-                            ref={openedColorShiftTypeId === shiftType.id ? openedColorContainerRef : null}
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            className="overflow-visible rounded-[16px] bg-white px-1 py-1"
                         >
-                            <button
-                                type="button"
-                                aria-label={t('page.onboardingWardCreate.shiftType.colorSelectAria', {
-                                    shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
-                                })}
-                                className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
-                                onClick={() => setOpenedColorShiftTypeId((prev) => (prev === shiftType.id ? null : shiftType.id))}
-                            >
-                                <span className="h-6 w-6 rounded-[7px]" style={{backgroundColor: shiftType.color}} />
-                            </button>
-                            {openedColorShiftTypeId === shiftType.id ? (
-                                <div className="absolute top-full left-1/2 z-[1000] mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]">
-                                    {SHIFT_COLOR_OPTIONS.map((color) => {
-                                        const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
-
-                                        return (
+                            {shiftTypes.map((shiftType, index) => (
+                                <Draggable key={shiftType.id} draggableId={shiftType.id} index={index}>
+                                    {(dragProvided) => (
+                                        <div
+                                            ref={dragProvided.innerRef}
+                                            {...dragProvided.draggableProps}
+                                            className={`grid ${SHIFT_TYPE_GRID_COLS} items-start gap-4 px-3 py-3`}
+                                        >
                                             <button
-                                                key={color}
                                                 type="button"
-                                                aria-label={t('page.onboardingWardCreate.shiftType.colorOptionAria', {color})}
-                                                className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
-                                                style={{backgroundColor: color}}
-                                                onClick={() => {
-                                                    onChange(shiftType.id, {color});
-                                                    setOpenedColorShiftTypeId(null);
-                                                }}
+                                                {...dragProvided.dragHandleProps}
+                                                aria-label={t('page.onboardingWardCreate.shiftType.dragAria', {
+                                                    shiftName:
+                                                        shiftType.name ||
+                                                        shiftType.shortName ||
+                                                        t('page.onboardingWardCreate.shiftType.work'),
+                                                })}
+                                                className="hover:text-gray-2 flex h-10 w-8 cursor-grab items-center justify-center self-start text-gray-4 transition-colors active:cursor-grabbing"
                                             >
-                                                {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
+                                                <SixDotsIcon className="h-4 w-4" />
                                             </button>
-                                        );
-                                    })}
-                                </div>
-                            ) : null}
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Input
+                                                    value={shiftType.name}
+                                                    maxLength={SHIFT_NAME_MAX_LENGTH}
+                                                    onChange={(event) => onChange(shiftType.id, {name: event.target.value})}
+                                                    variant="foundation"
+                                                    fieldSize="lg"
+                                                    aria-invalid={Boolean(getShiftNameError(shiftType.name))}
+                                                    aria-describedby={
+                                                        getShiftNameError(shiftType.name)
+                                                            ? `onboarding-shift-name-error-${shiftType.id}`
+                                                            : undefined
+                                                    }
+                                                    className={`h-10 w-full px-3 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                        getShiftNameError(shiftType.name) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
+                                                    }`}
+                                                    placeholder={t('page.onboardingWardCreate.shiftType.name')}
+                                                />
+                                                {getShiftNameError(shiftType.name) ? (
+                                                    <InlineFieldError id={`onboarding-shift-name-error-${shiftType.id}`}>
+                                                        {getShiftNameError(shiftType.name)}
+                                                    </InlineFieldError>
+                                                ) : null}
+                                            </div>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <Input
+                                                    value={shiftType.shortName}
+                                                    maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
+                                                    readOnly={shiftType.protectedByPreviousSchedule}
+                                                    aria-readonly={shiftType.protectedByPreviousSchedule}
+                                                    onChange={(event) => {
+                                                        const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
+
+                                                        if (hasInvalidShiftShortNameLengthInput(event.target.value)) {
+                                                            setShortNameErrorById((prev) => ({
+                                                                ...prev,
+                                                                [shiftType.id]: t(
+                                                                    'page.onboardingWardCreate.shiftType.validation.shortNameLength',
+                                                                ),
+                                                            }));
+                                                        } else if (hasInvalidShiftShortNameEntryKey(normalizedShortName)) {
+                                                            setShortNameErrorById((prev) => ({
+                                                                ...prev,
+                                                                [shiftType.id]: t(
+                                                                    'page.onboardingWardCreate.shiftType.validation.shortNameFirstKey',
+                                                                ),
+                                                            }));
+                                                        } else {
+                                                            setShortNameErrorById((prev) => ({...prev, [shiftType.id]: ''}));
+                                                        }
+
+                                                        onChange(shiftType.id, {shortName: normalizedShortName});
+                                                    }}
+                                                    variant="foundation"
+                                                    fieldSize="lg"
+                                                    aria-invalid={Boolean(getShiftShortNameError(shiftType.id, shiftType.shortName))}
+                                                    aria-describedby={
+                                                        getShiftShortNameError(shiftType.id, shiftType.shortName)
+                                                            ? `onboarding-shift-short-name-error-${shiftType.id}`
+                                                            : undefined
+                                                    }
+                                                    className={`h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                        getShiftShortNameError(shiftType.id, shiftType.shortName)
+                                                            ? SHIFT_TYPE_INPUT_ERROR_CLASS
+                                                            : ''
+                                                    }`}
+                                                    placeholder="-"
+                                                />
+                                                {getShiftShortNameError(shiftType.id, shiftType.shortName) ? (
+                                                    <InlineFieldError id={`onboarding-shift-short-name-error-${shiftType.id}`}>
+                                                        {getShiftShortNameError(shiftType.id, shiftType.shortName)}
+                                                    </InlineFieldError>
+                                                ) : null}
+                                            </div>
+                                            <div className="relative mx-auto flex w-full max-w-[180px] items-center">
+                                                <ShiftClassificationDropdown
+                                                    value={shiftType.classification}
+                                                    options={getAvailableShiftClassificationOptions(shiftTypes, shiftType.id).map(
+                                                        (option) => ({
+                                                            value: option.value,
+                                                            label: t(option.labelKey),
+                                                        }),
+                                                    )}
+                                                    ariaLabel={t('page.onboardingWardCreate.shiftType.classificationAria', {
+                                                        shiftName:
+                                                            shiftType.name ||
+                                                            shiftType.shortName ||
+                                                            t('page.onboardingWardCreate.shiftType.work'),
+                                                    })}
+                                                    onChange={(value) => {
+                                                        const classification = value as TOnboardingWardShiftType['classification'];
+                                                        const isOff = classification === 'OFF' || classification === 'OTHER_LEAVE';
+
+                                                        onChange(shiftType.id, {
+                                                            classification,
+                                                            isOff,
+                                                            isCounted: !isOff,
+                                                            startTime: isOff ? '' : shiftType.startTime || '09:00',
+                                                            endTime: isOff ? '' : shiftType.endTime || '18:00',
+                                                        });
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="ml-[12px] flex justify-center self-start">
+                                                <div className="flex items-start">
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <Input
+                                                                value={shiftType.isOff ? '-' : shiftType.startTime}
+                                                                disabled={shiftType.isOff}
+                                                                onChange={(event) =>
+                                                                    onChange(shiftType.id, {
+                                                                        startTime: normalizeShiftTimeInput(event.target.value),
+                                                                    })
+                                                                }
+                                                                onBlur={(event) =>
+                                                                    onChange(shiftType.id, {
+                                                                        startTime: toCanonicalShiftTime(event.target.value),
+                                                                    })
+                                                                }
+                                                                variant="foundation"
+                                                                fieldSize="lg"
+                                                                aria-invalid={Boolean(getShiftTimeError(shiftType))}
+                                                                aria-describedby={
+                                                                    getShiftTimeError(shiftType)
+                                                                        ? `onboarding-shift-time-error-${shiftType.id}`
+                                                                        : undefined
+                                                                }
+                                                                className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                    getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
+                                                                }`}
+                                                                placeholder="07:00"
+                                                            />
+                                                            <span className="font-poppins text-[15px] text-gray-3">~</span>
+                                                            <Input
+                                                                value={shiftType.isOff ? '-' : shiftType.endTime}
+                                                                disabled={shiftType.isOff}
+                                                                onChange={(event) =>
+                                                                    onChange(shiftType.id, {
+                                                                        endTime: normalizeShiftTimeInput(event.target.value),
+                                                                    })
+                                                                }
+                                                                onBlur={(event) =>
+                                                                    onChange(shiftType.id, {
+                                                                        endTime: toCanonicalShiftTime(event.target.value),
+                                                                    })
+                                                                }
+                                                                variant="foundation"
+                                                                fieldSize="lg"
+                                                                aria-invalid={Boolean(getShiftTimeError(shiftType))}
+                                                                aria-describedby={
+                                                                    getShiftTimeError(shiftType)
+                                                                        ? `onboarding-shift-time-error-${shiftType.id}`
+                                                                        : undefined
+                                                                }
+                                                                className={`h-10 text-center font-poppins text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS} ${
+                                                                    getShiftTimeError(shiftType) ? SHIFT_TYPE_INPUT_ERROR_CLASS : ''
+                                                                }`}
+                                                                placeholder="15:00"
+                                                            />
+                                                        </div>
+                                                        {getShiftTimeError(shiftType) ? (
+                                                            <InlineFieldError id={`onboarding-shift-time-error-${shiftType.id}`}>
+                                                                {getShiftTimeError(shiftType)}
+                                                            </InlineFieldError>
+                                                        ) : null}
+                                                    </div>
+                                                    <span className="ml-2 flex h-10 min-w-[52px] items-center font-poppins text-[11px] leading-none whitespace-nowrap text-gray-4">
+                                                        {getShiftDurationLabel(shiftType)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div
+                                                className={`relative flex justify-center self-start ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
+                                                ref={openedColorShiftTypeId === shiftType.id ? openedColorContainerRef : null}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    aria-label={t('page.onboardingWardCreate.shiftType.colorSelectAria', {
+                                                        shiftName:
+                                                            shiftType.name ||
+                                                            shiftType.shortName ||
+                                                            t('page.onboardingWardCreate.shiftType.work'),
+                                                    })}
+                                                    className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-gray-7"
+                                                    onClick={() =>
+                                                        setOpenedColorShiftTypeId((prev) => (prev === shiftType.id ? null : shiftType.id))
+                                                    }
+                                                >
+                                                    <span className="h-6 w-6 rounded-[7px]" style={{backgroundColor: shiftType.color}} />
+                                                </button>
+                                                {openedColorShiftTypeId === shiftType.id ? (
+                                                    <div className="absolute top-full left-1/2 z-[1000] mt-2 grid w-[126px] -translate-x-1/2 grid-cols-5 gap-2 rounded-[10px] bg-white p-2 shadow-[0px_10px_28px_rgba(95,100,135,0.16)]">
+                                                        {SHIFT_COLOR_OPTIONS.map((color) => {
+                                                            const isSelected = shiftType.color.toLowerCase() === color.toLowerCase();
+
+                                                            return (
+                                                                <button
+                                                                    key={color}
+                                                                    type="button"
+                                                                    aria-label={t('page.onboardingWardCreate.shiftType.colorOptionAria', {
+                                                                        color,
+                                                                    })}
+                                                                    className="flex h-5 w-5 items-center justify-center rounded-[6px] border border-black/20 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.35)]"
+                                                                    style={{backgroundColor: color}}
+                                                                    onClick={() => {
+                                                                        onChange(shiftType.id, {color});
+                                                                        setOpenedColorShiftTypeId(null);
+                                                                    }}
+                                                                >
+                                                                    {isSelected ? <Check className="h-3.5 w-3.5 text-white" /> : null}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
+                                                    shiftName:
+                                                        shiftType.name ||
+                                                        shiftType.shortName ||
+                                                        t('page.onboardingWardCreate.shiftType.work'),
+                                                })}
+                                                disabled={shiftType.protectedByPreviousSchedule}
+                                                onClick={() => onDelete(shiftType.id)}
+                                                className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </Draggable>
+                            ))}
+                            {provided.placeholder}
                         </div>
-                        <button
-                            type="button"
-                            aria-label={t('page.onboardingWardCreate.shiftType.deleteAria', {
-                                shiftName: shiftType.name || shiftType.shortName || t('page.onboardingWardCreate.shiftType.work'),
-                            })}
-                            onClick={() => onDelete(shiftType.id)}
-                            className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
-                        >
-                            <X className="h-4 w-4" />
-                        </button>
-                    </div>
-                ))}
-            </div>
+                    )}
+                </Droppable>
+            </DragDropContext>
             <div className="mt-4 flex justify-end">
                 <button
                     type="button"

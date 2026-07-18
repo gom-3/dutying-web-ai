@@ -51,6 +51,7 @@ import {
     normalizeNurseNameForRequest,
     normalizeOnboardingShiftCode,
     prepareManualEntryDraft,
+    reorderShiftTypes,
     saveSkillLevelConfig,
     type TOnboardingDraftLabels,
     type TOnboardingNurseDraft,
@@ -282,43 +283,16 @@ const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewRe
         };
     });
 const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
-const PREVIEW_OFF_SHIFT_ALIASES = new Set(['O', 'OFF', '/', '-', '\uC624\uD504', '\uD734', '\uD734\uBB34']);
-const PREVIEW_SYMBOL_OFF_SHIFT_ALIASES = new Set(['/', '-']);
-const getPreviewOffShortName = (value: string): string | null => {
-    const normalized = normalizeOnboardingShiftCode(value);
-
-    if (!PREVIEW_OFF_SHIFT_ALIASES.has(normalized)) return null;
-
-    return PREVIEW_SYMBOL_OFF_SHIFT_ALIASES.has(normalized) ? normalized : 'O';
-};
-const getSchedulePreviewOffShortName = (schedule: TOnboardingTeamScheduleDraft): string | null => {
-    for (const row of schedule.rows) {
-        const orderedShifts = Object.entries(row.shifts).sort(([leftDay], [rightDay]) => Number(leftDay) - Number(rightDay));
-
-        for (const [, value] of orderedShifts) {
-            const offShortName = getPreviewOffShortName(value);
-
-            if (offShortName) return offShortName;
-        }
-    }
-
-    return null;
-};
-const remapPreviewOffShortName = (shortName: string | null | undefined, preferredOffShortName: string | null) => {
-    if (!shortName || !preferredOffShortName || preferredOffShortName === 'O') return shortName ?? undefined;
-
-    return getPreviewOffShortName(shortName) ? preferredOffShortName : shortName;
-};
 const mergeSchedulePreviewShiftTypes = (
     draft: TOnboardingWardDraft,
+    schedule: TOnboardingTeamScheduleDraft,
     response: TOnboardingScheduleInputPreviewResponse,
-    preferredOffShortName: string | null,
 ): TOnboardingParsedShiftType[] => {
     const draftShiftTypes = draft.shiftTypes.map(toParsedShiftType);
     const observedPreviewShortNames = new Set(
-        response.nurses.flatMap((nurse) =>
-            nurse.initialShifts
-                .map((initialShift) => remapPreviewOffShortName(initialShift.shiftShortName, preferredOffShortName))
+        schedule.rows.flatMap((row) =>
+            Object.values(row.shifts)
+                .map((shortName) => normalizeOnboardingShiftCode(shortName))
                 .map(normalizeShiftTypeMergeKey)
                 .filter((shortName): shortName is string => Boolean(shortName)),
         ),
@@ -326,7 +300,7 @@ const mergeSchedulePreviewShiftTypes = (
     const previewShiftTypes: TOnboardingParsedShiftType[] = toSchedulePreviewShiftTypes(response)
         .map((shiftType) => ({
             ...shiftType,
-            shortName: remapPreviewOffShortName(shiftType.shortName, preferredOffShortName),
+            shortName: normalizeOnboardingShiftCode(shiftType.shortName ?? ''),
         }))
         .filter((shiftType) => {
             const shortName = normalizeShiftTypeMergeKey(shiftType.shortName);
@@ -360,7 +334,15 @@ const mergeSchedulePreviewShiftTypes = (
             const draftShiftType = draftByShortName.get(shortName);
             const previewShiftType = previewByShortName.get(shortName);
 
-            return previewShiftType ? {...previewShiftType, source: draftShiftType?.source} : draftShiftType;
+            if (!previewShiftType) {
+                return draftShiftType;
+            }
+
+            if (draftShiftType?.protectedByPreviousSchedule) {
+                return draftShiftType;
+            }
+
+            return {...previewShiftType, source: draftShiftType?.source};
         })
         .filter((shiftType): shiftType is TOnboardingParsedShiftType => Boolean(shiftType));
 };
@@ -408,16 +390,19 @@ const applySchedulePreviewToDraft = (
     schedule: TOnboardingTeamScheduleDraft,
     response: TOnboardingScheduleInputPreviewResponse,
 ): TOnboardingWardDraft => {
-    const preferredOffShortName = getSchedulePreviewOffShortName(schedule);
     const draftWithShiftTypes = applyParsedWardData(draft, {
-        shiftTypes: mergeSchedulePreviewShiftTypes(draft, response, preferredOffShortName),
+        shiftTypes: mergeSchedulePreviewShiftTypes(draft, schedule, response),
     });
     const shiftIdByShortName = new Map(
         draftWithShiftTypes.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => [shiftType.shortName, shiftType.id]),
     );
-    const possibleShiftTypeIds = response.wardShiftTypes
-        .map((shiftType) => shiftIdByShortName.get(remapPreviewOffShortName(shiftType.shortName, preferredOffShortName) ?? shiftType.shortName))
+    const previewPossibleShiftTypeIds = response.wardShiftTypes
+        .map((shiftType) => shiftIdByShortName.get(normalizeOnboardingShiftCode(shiftType.shortName) ?? shiftType.shortName))
         .filter((shiftTypeId): shiftTypeId is string => Boolean(shiftTypeId));
+    const protectedPreviousShiftTypeIds = draftWithShiftTypes.shiftTypes
+        .filter((shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.protectedByPreviousSchedule)
+        .map((shiftType) => shiftType.id);
+    const possibleShiftTypeIds = Array.from(new Set([...previewPossibleShiftTypeIds, ...protectedPreviousShiftTypeIds]));
     const fallbackPossibleShiftTypeIds = draftWithShiftTypes.shiftTypes
         .filter(isOnboardingShiftTypeActive)
         .map((shiftType) => shiftType.id);
@@ -448,10 +433,15 @@ const applySchedulePreviewToDraft = (
             level: existingNurse?.level ?? null,
             initialShifts: mergeInitialShifts(
                 existingNurse?.initialShifts,
-                nurse.initialShifts?.map((shift) => ({
-                    ...shift,
-                    shiftShortName: remapPreviewOffShortName(shift.shiftShortName, preferredOffShortName) ?? shift.shiftShortName,
-                })),
+                nurse.initialShifts?.map((shift) => {
+                    const day = Number(shift.date.slice(-2));
+                    const scheduleShortName = schedule.rows[nurse.displayOrder - 1]?.shifts[String(day)];
+
+                    return {
+                        ...shift,
+                        shiftShortName: normalizeOnboardingShiftCode(scheduleShortName ?? shift.shiftShortName) ?? shift.shiftShortName,
+                    };
+                }),
             ),
         };
     });
@@ -705,6 +695,7 @@ function useOnboardingWardWizard() {
     );
     const draftTouchedRef = useRef(false);
     const skipNextAutosaveRef = useRef(false);
+    const shiftTypeStepEntryDraftRef = useRef<TOnboardingWardDraft | null>(null);
     const shouldResetStepOnRestoreRef = useRef(shouldResetStepFromHistoryState());
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
     const [selectedTeamId, setSelectedTeamId] = useState('');
@@ -821,7 +812,6 @@ function useOnboardingWardWizard() {
 
         return nextSave;
     }, []);
-
     const saveDraftSnapshot = useCallback(
         ({
             showErrorToast = false,
@@ -853,9 +843,11 @@ function useOnboardingWardWizard() {
                             ...identityPayload,
                             draftPayload,
                         });
+
                         if (suppressNextAutosave) {
                             skipNextAutosaveRef.current = true;
                         }
+
                         setDraftCreationStatus('created');
 
                         return {success: true, response: savedDraft};
@@ -1046,8 +1038,9 @@ function useOnboardingWardWizard() {
                 (currentDraft, {teamId, schedule, response}) => applySchedulePreviewToDraft(currentDraft, teamId, schedule, response),
                 draft,
             );
-
             const nextDraft = goNextStepDraft(previewDraft);
+
+            shiftTypeStepEntryDraftRef.current = nextDraft;
 
             return saveAndReloadDraft(nextDraft);
         } catch (error) {
@@ -1082,6 +1075,7 @@ function useOnboardingWardWizard() {
             }
 
             markDraftTouched();
+
             if (draft.currentStep === 3) {
                 const nextDraft = goNextStepDraft(draft);
                 const saveResult = await saveDraftSnapshot({
@@ -1104,7 +1098,25 @@ function useOnboardingWardWizard() {
     };
     const goPreviousStep = () => {
         markDraftTouched();
-        setDraft((prev) => goPreviousStepDraft(prev));
+
+        const shiftTypeStepEntryDraft = draft.currentStep === 3 ? shiftTypeStepEntryDraftRef.current : null;
+
+        if (draft.currentStep === 3 || draft.currentStep === 2) {
+            shiftTypeStepEntryDraftRef.current = null;
+        }
+
+        setDraft((prev) => {
+            const previousDraft = goPreviousStepDraft(prev);
+
+            if (prev.currentStep === 3 && shiftTypeStepEntryDraft) {
+                return {
+                    ...shiftTypeStepEntryDraft,
+                    currentStep: previousDraft.currentStep,
+                };
+            }
+
+            return previousDraft;
+        });
     };
     const updateWardIdentity = (updater: Partial<Pick<TOnboardingWardDraft, 'wardName' | 'hospitalName'>>) => {
         markDraftTouched();
@@ -1342,6 +1354,14 @@ function useOnboardingWardWizard() {
             setSortModeState('manual');
         }
     };
+    const handleShiftTypeDragEnd = ({destination, source}: DropResult) => {
+        if (!destination || source.index === destination.index || source.droppableId !== destination.droppableId) {
+            return;
+        }
+
+        markDraftTouched();
+        setDraft((prev) => reorderShiftTypes(prev, {destination, source}));
+    };
     const applyUploadedFile = async (file: File, options?: TOnboardingWardParseOptions) => {
         markDraftTouched();
 
@@ -1486,8 +1506,12 @@ function useOnboardingWardWizard() {
             }
 
             markDraftTouched();
+
             try {
-                await saveAndReloadDraft(goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels)));
+                const nextDraft = goNextStepDraft(prepareManualEntryDraft(draft, onboardingDraftLabels));
+
+                shiftTypeStepEntryDraftRef.current = nextDraft;
+                await saveAndReloadDraft(nextDraft);
             } finally {
                 endStepTransition();
             }
@@ -1527,6 +1551,7 @@ function useOnboardingWardWizard() {
         updateConstraintCandidateCount,
         updateConstraintCandidateStaffingCount,
         handleNurseDragEnd,
+        handleShiftTypeDragEnd,
         applyUploadedFile,
         uploadStatus,
         uploadError,

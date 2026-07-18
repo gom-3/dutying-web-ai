@@ -18,6 +18,7 @@ import {
     MAX_ONBOARDING_SHIFT_TYPES,
     prepareManualEntryDraft,
     reorderNursesWithinTeam,
+    reorderShiftTypes,
     saveSkillLevelConfig,
     type TOnboardingDraftLabels,
     updateNurseDraft,
@@ -385,6 +386,31 @@ describe('OnboardingWardCreatePage model', () => {
         expect(nextDraft.nurses.every((nurse) => !nurse.possibleShiftTypeIds.includes(deletedShiftId))).toBe(true);
     });
 
+    it('locks the abbreviation and deletion of a previous-schedule shift type while allowing classification edits', () => {
+        const draft = prepareManualEntryDraft(createInitialDraft());
+        const teamId = draft.teams[0]!.id;
+        const withPreviousShift = applyScheduleInputDraft(draft, teamId, {
+            year: 2026,
+            month: 5,
+            rows: [{id: 'row-1', nurseId: null, name: 'Nurse A', shifts: {'1': 'N'}}],
+        });
+        const previousShiftType = withPreviousShift.shiftTypes.find((shiftType) => shiftType.shortName === 'N')!;
+        const withClassification = updateShiftTypeDraft(withPreviousShift, previousShiftType.id, {
+            classification: 'DAY',
+            isOff: false,
+            isCounted: true,
+        });
+        const withRenameAttempt = updateShiftTypeDraft(withClassification, previousShiftType.id, {shortName: 'D'});
+        const withDeleteAttempt = deleteShiftTypeDraft(withRenameAttempt, previousShiftType.id);
+
+        expect(previousShiftType.protectedByPreviousSchedule).toBe(true);
+        expect(withRenameAttempt.shiftTypes.find((shiftType) => shiftType.id === previousShiftType.id)).toMatchObject({
+            shortName: 'N',
+            classification: 'DAY',
+        });
+        expect(withDeleteAttempt.shiftTypes.some((shiftType) => shiftType.id === previousShiftType.id)).toBe(true);
+    });
+
     it('flags empty teams and missing nurse names in nurse steps', () => {
         const draft = createInitialDraft();
         const {draft: draftWithTeam} = addTeamDraft({
@@ -582,6 +608,44 @@ describe('OnboardingWardCreatePage model', () => {
         expect(reordered.nurses.find((nurse) => nurse.id === otherTeamNurse.id)?.teamId).toBe(otherTeamId);
     });
 
+    it('reorders shift types while keeping their configuration intact', () => {
+        const draft = createInitialDraft();
+        const firstShiftType = draft.shiftTypes[0]!;
+        const secondShiftType = draft.shiftTypes[1]!;
+        const reordered = reorderShiftTypes(draft, {
+            source: {droppableId: 'onboarding-shift-types', index: 0},
+            destination: {droppableId: 'onboarding-shift-types', index: 1},
+        });
+
+        expect(reordered.shiftTypes.map((shiftType) => shiftType.id)).toEqual([
+            secondShiftType.id,
+            firstShiftType.id,
+            ...draft.shiftTypes.slice(2).map((shiftType) => shiftType.id),
+        ]);
+        expect(reordered.shiftTypes[0]).toEqual(secondShiftType);
+        expect(reordered.shiftTypes[1]).toEqual(firstShiftType);
+    });
+
+    it('reorders only active shift types when an archived type is present', () => {
+        const draft = createInitialDraft();
+        const archivedShiftType = {...draft.shiftTypes[1]!, id: 'archived-shift', isActive: false};
+        const draftWithArchivedShiftType = {
+            ...draft,
+            shiftTypes: [draft.shiftTypes[0]!, archivedShiftType, draft.shiftTypes[2]!, draft.shiftTypes[3]!],
+        };
+        const reordered = reorderShiftTypes(draftWithArchivedShiftType, {
+            source: {droppableId: 'onboarding-shift-types', index: 0},
+            destination: {droppableId: 'onboarding-shift-types', index: 1},
+        });
+
+        expect(reordered.shiftTypes.map((shiftType) => shiftType.id)).toEqual([
+            draft.shiftTypes[2]!.id,
+            archivedShiftType.id,
+            draft.shiftTypes[0]!.id,
+            draft.shiftTypes[3]!.id,
+        ]);
+    });
+
     it('allows completion only when step 4 validation passes', () => {
         const draft = createInitialDraft();
         const withSecondTeamNurse = addNurseDraft(draft, draft.teams[1]!.id);
@@ -629,9 +693,9 @@ describe('OnboardingWardCreatePage model', () => {
         expect(nurse?.initialShifts).toEqual([
             {date: '2026-05-01', shiftShortName: 'D'},
             {date: '2026-05-02', shiftShortName: '/'},
-            {date: '2026-05-03', shiftShortName: '/'},
-            {date: '2026-05-04', shiftShortName: '/'},
-            {date: '2026-05-05', shiftShortName: '/'},
+            {date: '2026-05-03', shiftShortName: '-'},
+            {date: '2026-05-04', shiftShortName: 'OFF'},
+            {date: '2026-05-05', shiftShortName: '휴무'},
             {date: '2026-05-06', shiftShortName: '교육'},
         ]);
         expect(customShiftType).toEqual(
@@ -700,7 +764,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(nextDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'CCC', '2': 'AAA'});
     });
 
-    it('removes schedule-generated shift types when the entered code is cleared', () => {
+    it('preserves previous-schedule shift types when the entered code is cleared', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -731,11 +795,14 @@ describe('OnboardingWardCreatePage model', () => {
         });
 
         expect(customShiftTypeId).toBeTruthy();
-        expect(clearedDraft.shiftTypes.some((shiftType) => shiftType.shortName === 'X')).toBe(false);
-        expect(clearedDraft.nurses.every((nurse) => !nurse.possibleShiftTypeIds.includes(customShiftTypeId ?? ''))).toBe(true);
+        expect(clearedDraft.shiftTypes.find((shiftType) => shiftType.shortName === 'X')).toMatchObject({
+            id: customShiftTypeId,
+            protectedByPreviousSchedule: true,
+        });
+        expect(clearedDraft.nurses.every((nurse) => nurse.possibleShiftTypeIds.includes(customShiftTypeId ?? ''))).toBe(true);
     });
 
-    it('archives a deleted shift type when an entered schedule still references it', () => {
+    it('keeps a previous-schedule shift type when deletion is requested', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -755,13 +822,13 @@ describe('OnboardingWardCreatePage model', () => {
         const archivedShiftType = archivedDraft.shiftTypes.find((shiftType) => shiftType.id === customShiftTypeId);
         const nurse = archivedDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
 
-        expect(archivedShiftType).toEqual(expect.objectContaining({shortName: 'A', isActive: false}));
-        expect(nurse?.possibleShiftTypeIds).not.toContain(customShiftTypeId);
+        expect(archivedShiftType).toEqual(expect.objectContaining({shortName: 'A', protectedByPreviousSchedule: true}));
+        expect(nurse?.possibleShiftTypeIds).toContain(customShiftTypeId);
         expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'A'}]);
         expect(getStepValidation({...archivedDraft, currentStep: 3}, 3).isValid).toBe(true);
     });
 
-    it('restores an archived shift type instead of creating a second one with the same short name', () => {
+    it('keeps a protected previous-schedule type when a new type uses another code', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -780,14 +847,15 @@ describe('OnboardingWardCreatePage model', () => {
         const archivedDraft = deleteShiftTypeDraft(withCustomShift, archivedShiftTypeId);
         const withNewShiftRow = addShiftTypeDraft(archivedDraft);
         const newShiftTypeId = withNewShiftRow.shiftTypes.find((shiftType) => shiftType.shortName === '')?.id ?? '';
-        const restoredDraft = updateShiftTypeDraft(withNewShiftRow, newShiftTypeId, {shortName: 'A'});
+        const restoredDraft = updateShiftTypeDraft(withNewShiftRow, newShiftTypeId, {shortName: 'B'});
 
         expect(restoredDraft.shiftTypes.filter((shiftType) => shiftType.shortName === 'A')).toHaveLength(1);
         expect(restoredDraft.shiftTypes.find((shiftType) => shiftType.id === archivedShiftTypeId)).toEqual(
-            expect.objectContaining({shortName: 'A', isActive: true}),
+            expect.objectContaining({shortName: 'A', protectedByPreviousSchedule: true}),
         );
-        expect(restoredDraft.shiftTypes.some((shiftType) => shiftType.id === newShiftTypeId)).toBe(false);
-        expect(restoredDraft.nurses.every((nurse) => nurse.possibleShiftTypeIds.includes(archivedShiftTypeId))).toBe(true);
+        expect(restoredDraft.shiftTypes.find((shiftType) => shiftType.id === newShiftTypeId)).toEqual(
+            expect.objectContaining({shortName: 'B'}),
+        );
     });
 
     it('keeps user-configured shift types even if their schedule code is cleared', () => {
@@ -834,7 +902,7 @@ describe('OnboardingWardCreatePage model', () => {
         );
     });
 
-    it('renames matching schedule cells and initial shifts when a schedule-discovered shift code changes', () => {
+    it('keeps the previous schedule code while allowing other shift edits', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -860,19 +928,19 @@ describe('OnboardingWardCreatePage model', () => {
         expect(renamedDraft.shiftTypes.find((shiftType) => shiftType.id === customShiftTypeId)).toEqual(
             expect.objectContaining({
                 name: 'R',
-                shortName: 'A',
+                shortName: 'R',
                 startTime: '09:00',
                 endTime: '18:00',
             }),
         );
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'A', '2': 'D'});
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R', '2': 'D'});
         expect(nurse?.initialShifts).toEqual([
-            {date: '2026-05-01', shiftShortName: 'A'},
+            {date: '2026-05-01', shiftShortName: 'R'},
             {date: '2026-05-02', shiftShortName: 'D'},
         ]);
     });
 
-    it('keeps the original schedule code available for remapping while a short name is temporarily empty', () => {
+    it('keeps the previous schedule code when a protected abbreviation is edited', () => {
         const draft = prepareManualEntryDraft(createInitialDraft());
         const teamId = draft.teams[0]!.id;
         const withCustomShift = applyScheduleInputDraft(draft, teamId, {
@@ -897,8 +965,8 @@ describe('OnboardingWardCreatePage model', () => {
         const nurse = renamedDraft.nurses.find((candidate) => candidate.name === 'Nurse A');
 
         expect(temporarilyEmptyDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R'});
-        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'A'});
-        expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'A'}]);
+        expect(renamedDraft.scheduleInputs[teamId]?.['2026-05']?.rows[0]?.shifts).toEqual({'1': 'R'});
+        expect(nurse?.initialShifts).toEqual([{date: '2026-05-01', shiftShortName: 'R'}]);
     });
 
     it('resolves the onboarding initial schedule target from the entered schedule month and created ward team', () => {

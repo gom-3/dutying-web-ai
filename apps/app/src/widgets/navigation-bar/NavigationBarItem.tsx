@@ -108,7 +108,7 @@ const NavigationBarItem = ({
                     : alignWithCollapsedIcon
                       ? 'justify-start gap-3 pr-3 pl-[13px]'
                       : 'justify-start gap-3 px-3',
-                isSelected ? 'bg-main-light text-[#844AFF]' : 'text-gray-3 hover:bg-gray-7 hover:text-sub-1',
+                isSelected ? 'bg-main-light text-main-1' : 'text-gray-3 hover:bg-gray-7 hover:text-sub-1',
                 isDisabled ? 'cursor-not-allowed opacity-45 hover:bg-transparent hover:text-gray-3' : 'cursor-pointer',
             )}
             onPointerDown={() => {
@@ -136,7 +136,7 @@ const NavigationBarItem = ({
                 <span
                     aria-hidden="true"
                     className={cn(
-                        'absolute left-0 w-[3px] rounded-r-full bg-[#844AFF]',
+                        'absolute left-0 w-[3px] rounded-r-full bg-main-1',
                         collapsed || alignWithCollapsedIcon ? 'top-[11px] h-[22px]' : 'top-2.5 h-6',
                     )}
                 />
@@ -186,7 +186,7 @@ const NavigationBarItem = ({
                     className={cn(
                         'size-5 shrink-0',
                         iconMotionClassName,
-                        isSelected ? 'text-[#844AFF]' : 'text-gray-4 group-hover:text-sub-1',
+                        isSelected ? 'text-main-1' : 'text-gray-4 group-hover:text-sub-1',
                     )}
                     aria-hidden="true"
                 />

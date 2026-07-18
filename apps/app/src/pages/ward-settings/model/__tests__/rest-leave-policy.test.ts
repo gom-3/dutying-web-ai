@@ -25,7 +25,7 @@ const shiftTypes: TWardShiftType[] = [
     },
     {
         wardShiftTypeId: 2,
-        name: '연차',
+        name: '휴가',
         shortName: 'A',
         startTime: '',
         endTime: '',

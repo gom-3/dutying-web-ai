@@ -106,7 +106,6 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
         memo: nurse.memo ?? undefined,
         isPreceptor: nurse.isPreceptor,
         isPreceptee: nurse.isPreceptee,
-        remainingAnnualLeaveDays: nurse.remainingAnnualLeaveDays,
     }) as TUpdateNurseDTO;
 const toCreateNursePayload = (nurse: TUpdateNurseDTO): TAddShiftTeamNurseDTO => ({
     ...toNursePayload(nurse),

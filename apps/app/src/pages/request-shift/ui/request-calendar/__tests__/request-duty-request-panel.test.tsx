@@ -409,4 +409,63 @@ describe('RequestDutyRequestPanel', () => {
 
         expect(screen.queryByText('Kim')).not.toBeInTheDocument();
     });
+
+    it('keeps the pending row stable while the decision response is still in flight', async () => {
+        vi.useFakeTimers();
+
+        let resolveRequest!: (accepted: boolean) => void;
+
+        function PendingRequestPanelHarness() {
+            const [dutyRequestList, setDutyRequestList] = useState<TDutyRequest[]>([createDutyRequest()]);
+
+            return (
+                <RequestDutyRequestPanel
+                    year={2026}
+                    month={6}
+                    days={[{day: 1, dayType: 'workday'}]}
+                    dutyRequestList={dutyRequestList}
+                    dutyRequestStatus="success"
+                    wardShiftTypeMap={new Map()}
+                    canEdit
+                    updatingRequestId={null}
+                    shiftNurseIdByNurseId={new Map([[10, 20]])}
+                    changeFocus={vi.fn()}
+                    acceptRequest={vi.fn().mockImplementation(
+                        async (reqShiftId: number, isAccepted: boolean) =>
+                            new Promise<boolean>((resolve) => {
+                                setDutyRequestList((current) =>
+                                    current.map((request) => (request.wardReqShiftId === reqShiftId ? {...request, isAccepted} : request)),
+                                );
+                                resolveRequest = resolve;
+                            }),
+                    )}
+                    acceptRequests={vi.fn().mockResolvedValue(true)}
+                    retry={vi.fn()}
+                    onAcceptAnalytics={vi.fn()}
+                />
+            );
+        }
+
+        render(<PendingRequestPanelHarness />);
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', {name: 'Accept'}));
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('Kim')).toBeInTheDocument();
+
+        await act(async () => {
+            resolveRequest(true);
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('Kim')).toBeInTheDocument();
+
+        act(() => {
+            vi.advanceTimersByTime(500);
+        });
+
+        expect(screen.queryByText('Kim')).not.toBeInTheDocument();
+    });
 });

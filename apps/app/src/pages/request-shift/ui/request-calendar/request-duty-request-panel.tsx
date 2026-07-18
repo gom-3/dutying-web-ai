@@ -326,19 +326,47 @@ export default function RequestDutyRequestPanel({
     ];
     const pendingEmptyTitle = t('page.request.panel.pendingEmptyTitle');
     const processedEmptyTitle = t('page.request.panel.processedEmptyTitle');
-    const queuePendingRequestDismissal = (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
-        if (reviewMode !== 'pending' || dutyRequest.isAccepted !== null) return;
+    const markPendingRequestExiting = (dutyRequest: TDutyRequest, nextAccepted: boolean) => {
+        if (dutyRequest.isAccepted !== null) return;
 
         const previousTimer = exitingPendingRequestTimerByIdRef.current.get(dutyRequest.wardReqShiftId);
 
         if (previousTimer !== undefined) {
             window.clearTimeout(previousTimer);
+            exitingPendingRequestTimerByIdRef.current.delete(dutyRequest.wardReqShiftId);
         }
 
         setExitingPendingRequestById((current) => ({
             ...current,
             [dutyRequest.wardReqShiftId]: {...dutyRequest, isAccepted: nextAccepted},
         }));
+    };
+    const clearPendingRequestExit = (reqShiftId: number) => {
+        const previousTimer = exitingPendingRequestTimerByIdRef.current.get(reqShiftId);
+
+        if (previousTimer !== undefined) {
+            window.clearTimeout(previousTimer);
+            exitingPendingRequestTimerByIdRef.current.delete(reqShiftId);
+        }
+
+        setExitingPendingRequestById((current) => {
+            if (current[reqShiftId] === undefined) return current;
+
+            const next = {...current};
+
+            delete next[reqShiftId];
+
+            return next;
+        });
+    };
+    const schedulePendingRequestDismissal = (dutyRequest: TDutyRequest) => {
+        if (dutyRequest.isAccepted !== null) return;
+
+        const previousTimer = exitingPendingRequestTimerByIdRef.current.get(dutyRequest.wardReqShiftId);
+
+        if (previousTimer !== undefined) {
+            window.clearTimeout(previousTimer);
+        }
 
         const nextTimer = window.setTimeout(() => {
             exitingPendingRequestTimerByIdRef.current.delete(dutyRequest.wardReqShiftId);
@@ -358,12 +386,25 @@ export default function RequestDutyRequestPanel({
 
         if (dutyRequest.isAccepted === nextAccepted) return;
 
-        const accepted = await acceptRequest(dutyRequest.wardReqShiftId, nextAccepted);
+        markPendingRequestExiting(dutyRequest, nextAccepted);
 
-        if (!accepted) return;
+        let accepted = false;
+
+        try {
+            accepted = await acceptRequest(dutyRequest.wardReqShiftId, nextAccepted);
+        } catch (error) {
+            clearPendingRequestExit(dutyRequest.wardReqShiftId);
+            throw error;
+        }
+
+        if (!accepted) {
+            clearPendingRequestExit(dutyRequest.wardReqShiftId);
+
+            return;
+        }
 
         onAcceptAnalytics(nextAccepted);
-        queuePendingRequestDismissal(dutyRequest, nextAccepted);
+        schedulePendingRequestDismissal(dutyRequest);
         toast.success(
             nextAccepted
                 ? t('page.request.panel.acceptedToast', {
@@ -380,14 +421,35 @@ export default function RequestDutyRequestPanel({
         if (isRequestActionLocked || actionablePendingRequestList.length === 0) return;
 
         const pendingRequestIds = actionablePendingRequestList.map((request) => request.wardReqShiftId);
-        const accepted = await acceptRequests(pendingRequestIds, true);
 
-        if (!accepted) return;
+        for (const dutyRequest of actionablePendingRequestList) {
+            markPendingRequestExiting(dutyRequest, true);
+        }
+
+        let accepted = false;
+
+        try {
+            accepted = await acceptRequests(pendingRequestIds, true);
+        } catch (error) {
+            for (const dutyRequest of actionablePendingRequestList) {
+                clearPendingRequestExit(dutyRequest.wardReqShiftId);
+            }
+
+            throw error;
+        }
+
+        if (!accepted) {
+            for (const dutyRequest of actionablePendingRequestList) {
+                clearPendingRequestExit(dutyRequest.wardReqShiftId);
+            }
+
+            return;
+        }
 
         onAcceptAnalytics(true);
 
         for (const dutyRequest of actionablePendingRequestList) {
-            queuePendingRequestDismissal(dutyRequest, true);
+            schedulePendingRequestDismissal(dutyRequest);
         }
 
         toast.success(t('page.request.panel.acceptAll', {count: pendingRequestIds.length}));

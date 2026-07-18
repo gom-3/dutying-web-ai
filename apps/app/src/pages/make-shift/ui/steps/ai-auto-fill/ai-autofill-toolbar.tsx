@@ -174,10 +174,20 @@ export function AiAutofillToolbar({
                             id="make_ai_history_undo_redo_tools"
                             className="ai-autofill-toolbar__history-group ai-autofill-toolbar__history-group--undo-redo flex min-h-[43px] items-center gap-1 rounded-[13px] bg-gray-7 px-1"
                         >
-                            <IconButton className="ai-autofill-toolbar__history-undo" onClick={onUndo} disabled={!canUndo} ariaLabel="Undo">
+                            <IconButton
+                                className="ai-autofill-toolbar__history-undo"
+                                onClick={onUndo}
+                                disabled={!canUndo}
+                                ariaLabel={t('page.makeShift.aiRefill.undo')}
+                            >
                                 <Undo2 className="size-3.5" aria-hidden />
                             </IconButton>
-                            <IconButton className="ai-autofill-toolbar__history-redo" onClick={onRedo} disabled={!canRedo} ariaLabel="Redo">
+                            <IconButton
+                                className="ai-autofill-toolbar__history-redo"
+                                onClick={onRedo}
+                                disabled={!canRedo}
+                                ariaLabel={t('page.makeShift.aiRefill.redo')}
+                            >
                                 <Redo2 className="size-3.5" aria-hidden />
                             </IconButton>
                         </span>

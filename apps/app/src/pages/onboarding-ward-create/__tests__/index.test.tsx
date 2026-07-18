@@ -1,6 +1,7 @@
 import {fireEvent, screen, waitFor, within} from '@testing-library/react';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type * as SharedApiModule from '@/shared/api';
+import type * as I18nResourcesModule from '@/shared/i18n/resources.generated';
 import {render, userEvent} from '@/shared/util/test-utils';
 import OnboardingWardCreatePage from '../index';
 
@@ -105,7 +106,7 @@ vi.mock('@/features/auth', () => ({
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', async () => {
-    const {ko} = await vi.importActual<typeof import('@/shared/i18n/resources.generated')>('@/shared/i18n/resources.generated');
+    const {ko} = await vi.importActual<typeof I18nResourcesModule>('@/shared/i18n/resources.generated');
     const getCatalogValue = (key: string) => {
         const value = key.split('.').reduce<unknown>((current, part) => {
             if (!current || typeof current !== 'object') return undefined;
@@ -756,6 +757,21 @@ describe('OnboardingWardCreatePage', () => {
         await user.click(screen.getByRole('button', {name: '근무 유형 추가하기'}));
 
         expect(screen.getByRole('button', {name: '다음'})).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('이미 사용 중인 기본 근무 의미는 다른 행의 드롭다운에서 제외한다', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+
+        await moveToShiftTypeStep(user);
+
+        const classificationSelects = screen.getAllByRole('combobox');
+
+        await user.click(classificationSelects[1]!);
+
+        expect(screen.queryByRole('option', {name: '주간 근무 (Day)'})).not.toBeInTheDocument();
+        expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();
     });
 
     it('disables next in step 3 when shift abbreviations are duplicated', async () => {

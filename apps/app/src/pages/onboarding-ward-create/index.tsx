@@ -55,6 +55,7 @@ function OnboardingWardCreatePage() {
         updateTeamName,
         updateScheduleInput,
         handleNurseDragEnd,
+        handleShiftTypeDragEnd,
         applyUploadedFile,
         uploadStatus,
         uploadError,
@@ -141,9 +142,7 @@ function OnboardingWardCreatePage() {
             draft.shiftTypes.filter(isOnboardingShiftTypeActive).map((shiftType) => shiftType.classification),
         );
 
-        return requiredShiftTypes
-            .filter(({classification}) => !activeClassifications.has(classification))
-            .map(({label}) => label);
+        return requiredShiftTypes.filter(({classification}) => !activeClassifications.has(classification)).map(({label}) => label);
     };
     const getNextBlockedReasonMessage = () => {
         if (isSubmitting) {
@@ -370,6 +369,7 @@ function OnboardingWardCreatePage() {
                     <ShiftTypeStep
                         shiftTypes={draft.shiftTypes.filter(isOnboardingShiftTypeActive)}
                         onChange={updateShiftType}
+                        onDragEnd={handleShiftTypeDragEnd}
                         onAdd={addShiftType}
                         onDelete={deleteShiftType}
                     />
@@ -501,7 +501,8 @@ function OnboardingWardCreatePage() {
                             focusFirstInvalidIdentityField();
                         }
 
-                        const blockingIssues = draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
+                        const blockingIssues =
+                            draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
                         const codes = new Set(blockingIssues.map((issue) => issue.code));
 
                         if (draft.currentStep === 3 && codes.has('missing-required-shift-types')) {

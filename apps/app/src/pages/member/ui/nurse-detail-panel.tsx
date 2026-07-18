@@ -359,7 +359,7 @@ function NurseDetailPanel({
                     ) : null}
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col">
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
                     <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <div className="flex items-center justify-between">
                             <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
@@ -544,7 +544,7 @@ function NurseDetailPanel({
                         </div>
                     </div>
 
-                    <div className="flex min-h-0 flex-1 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                    <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.phone')}
                         </p>

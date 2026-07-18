@@ -108,7 +108,7 @@ const supplementalKo = {
                 },
                 countedLeaves: {
                     sectionTitle: '휴무일로 계산할 근무 유형',
-                    hint: 'OFF, 연차처럼 휴무일로 인정할 근무 유형을 선택해요.',
+                    hint: 'OFF 같은 휴무일로 인정할 근무 유형을 선택해요.',
                     toggleAria: '{{name}} 휴무일 계산 포함 여부',
                     empty: '휴무일로 설정할 휴무 근무 유형이 없어요.',
                 },

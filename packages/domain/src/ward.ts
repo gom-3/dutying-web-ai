@@ -50,7 +50,6 @@ export type TShiftNurse = {
     priority: number;
     isWorker: true;
     nurseId: number;
-    remainingAnnualLeaveDays?: number;
 };
 
 export type TShiftTeam = {

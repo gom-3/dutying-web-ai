@@ -28,7 +28,6 @@ export type TNurse = {
     isWardManager: boolean;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
-    remainingAnnualLeaveDays?: number;
     gender: string;
     employmentDate: string;
     memo: string;

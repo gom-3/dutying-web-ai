@@ -70,7 +70,7 @@ export const ko = {
                 "label": "근무 의미",
                 "night": "야간 근무 (Night)",
                 "off": "휴무 (Off)",
-                "otherLeave": "기타 휴가",
+                "otherLeave": "기타 휴무",
                 "otherWork": "기타 근무"
             },
             "createTitle": "근무•휴가 추가하기",
@@ -928,6 +928,65 @@ export const ko = {
         "makeShift": {
             "aiRefill": {
                 "action": "다시 채우기",
+                "fixedSelectionTools": "선택한 근무 고정 도구",
+                "fixSelection": "선택한 근무 고정",
+                "unfixSelection": "선택한 고정 해제",
+                "fixSelectionSuccess": "{{count}}칸을 고정했어요.",
+                "unfixSelectionSuccess": "{{count}}칸의 고정을 해제했어요.",
+                "prefillDecision": {
+                    "title": "AI가 바꾸면 안 되는 근무를 고정했나요?",
+                    "description": "AI는 고정 근무와 신청 근무를 제외한 빈칸을 자동으로 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.",
+                    "confirm": "이대로 진행하기",
+                    "cancel": "다시 편집하기"
+                },
+                "regenerateDecision": {
+                    "title": "수정한 근무를 어떻게 할까요?",
+                    "description": "AI 결과 이후 고정하지 않고 수정한 근무가 {{count}}칸 있어요.\n이 칸은 유지하고 싶다면 고정하고 다시 생성하고, 현재 결과를 새로 받고 싶다면 수정한 칸도 다시 생성해 주세요.",
+                    "confirm": "수정한 칸 고정",
+                    "cancel": "수정한 칸도 다시 생성"
+                },
+                "viewComplete": "전체 배정 보기",
+                "viewBaseline": "신청·고정만 보기",
+                "viewCompleteCompact": "전체",
+                "viewBaselineCompact": "신청·고정",
+                "viewCompleteTooltip": "전체 배정을 보고 있어요. 클릭하면 신청·고정만 봅니다.",
+                "viewBaselineTooltip": "신청·고정만 보고 있어요. 클릭하면 전체 배정을 봅니다.",
+                "baselineReadonlyToast": "수정하려면 전체 보기로 돌아가 주세요.",
+                "fixedDisplayHighlight": "고정근무 위치 강조",
+                "requestDisplayHighlight": "신청근무 위치 강조",
+                "statusHighlightTools": "신청근무 및 고정근무 표시",
+                "loadingOverlay": {
+                    "title": "AI가 근무표를 채우고 있어요",
+                    "description": "신청·고정근무는 유지하고,\n나머지 칸을 AI가 채워요.",
+                    "elapsed": "{{seconds}}초째 진행 중",
+                    "ariaLabel": "AI 근무표 채우기 진행률",
+                    "checkingRequests": "신청·고정근무를 확인하고 있어요",
+                    "fillingBlanks": "빈칸에 맞는 근무를 배치하고 있어요",
+                    "finalReview": "마지막 조건을 꼼꼼히 확인하고 있어요",
+                    "almostDone": "조금만 더 기다려 주세요"
+                },
+                "restCarryOverSyncFailed": "근무표는 확정됐지만 다음 달 이월 반영에 실패했어요.",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "전달근무에 빈칸이 있어요.",
+                    "descriptionHighlight": "이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
+                    "confirmAiFill": "그대로 AI 채우기",
+                    "cancel": "입력 확인",
+                    "confirm": "그대로 확정",
+                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
+                    "title": "전달근무를 확인했나요?"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "저장되지 않은 편집 내용이 있어요",
+                    "unsavedDescription": "편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
+                    "aiGeneratingTitle": "AI 자동채우기를 중단하고 나갈까요?",
+                    "aiGeneratingDescription": "나가면 자동채우기 결과가 반영되지 않을 수 있습니다.",
+                    "leaveConfirm": "나가기",
+                    "stayCancel": "계속 편집하기",
+                    "unsavedMessage": "저장되지 않은 편집 내용이 있어요\n편집 중인 내용을 유지하려면\n임시 저장하거나 근무표를 확정해 주세요.",
+                    "aiGeneratingMessage": "AI 자동채우기 중이에요.\n나가면 결과가 반영되지 않을 수 있어요.\n그래도 나갈까요?"
+                },
+                "undo": "실행 취소",
+                "redo": "다시 실행",
                 "cannotAutofillYet": "근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해 주세요.",
                 "confirm": "근무표 확정",
                 "description": {
@@ -953,12 +1012,6 @@ export const ko = {
                 "generating": "채우는 중...",
                 "hidingFaults": "오류 숨김",
                 "intro": "실패해도 현재 편집본은 유지돼요.\n이전 단계로 돌아가 조건을 다시 보고 오거나, 여기서 바로 재시도하고 확정할 수 있어요.",
-                "lastShiftBlankDialog": {
-                    "cancel": "입력 확인",
-                    "confirm": "그대로 확정",
-                    "description": "전달근무에 빈칸이 있어요.\n이전 달 근무를 이어서 고려해야 한다면 입력해 주세요.",
-                    "title": "전달근무를 확인했나요?"
-                },
                 "loading": "근무표를 불러오는 중이에요",
                 "previous": "이전 단계",
                 "progressToast": "근무표 채우는 중",
@@ -2002,6 +2055,7 @@ export const ko = {
             },
             "shiftType": {
                 "add": "근무 유형 추가하기",
+                "dragAria": "드래그하여 {{shiftName}} 순서 변경",
                 "color": "색상",
                 "colorOptionAria": "{{color}} 선택",
                 "colorSelectAria": "{{shiftName}} 색상 선택",
@@ -2010,7 +2064,7 @@ export const ko = {
                     "evening": "저녁 근무 (Evening)",
                     "night": "야간 근무 (Night)",
                     "off": "휴무 (Off)",
-                    "otherLeave": "기타 휴가",
+                    "otherLeave": "기타 휴무",
                     "otherWork": "기타 근무"
                 },
                 "classificationAria": "{{shiftName}} 근무 의미 선택",
@@ -3639,6 +3693,65 @@ export const en: TLocale = {
         "makeShift": {
             "aiRefill": {
                 "action": "Refill",
+                "fixedSelectionTools": "Selected shift fixing tools",
+                "fixSelection": "Fix selected shifts",
+                "unfixSelection": "Unfix selected shifts",
+                "fixSelectionSuccess": "Fixed {{count}} cells.",
+                "unfixSelectionSuccess": "Unfixed {{count}} cells.",
+                "prefillDecision": {
+                    "title": "Have you fixed shifts AI should not change?",
+                    "description": "AI will refill every empty cell except fixed and requested shifts.\nFix any shifts that should not change before continuing.",
+                    "confirm": "Continue",
+                    "cancel": "Edit again"
+                },
+                "regenerateDecision": {
+                    "title": "How should your edits be handled?",
+                    "description": "After the AI result, {{count}} edited cells are not fixed.\nFix them if they should stay, or regenerate them too for a fresh result.",
+                    "confirm": "Fix edited cells",
+                    "cancel": "Regenerate edits too"
+                },
+                "viewComplete": "Show all assignments",
+                "viewBaseline": "Show requests and fixed shifts only",
+                "viewCompleteCompact": "All",
+                "viewBaselineCompact": "Requests/fixed",
+                "viewCompleteTooltip": "Showing all assignments. Click to show requests and fixed shifts only.",
+                "viewBaselineTooltip": "Showing requests and fixed shifts only. Click to show all assignments.",
+                "baselineReadonlyToast": "Switch back to All to edit the schedule.",
+                "fixedDisplayHighlight": "Highlight fixed shifts",
+                "requestDisplayHighlight": "Highlight requested shifts",
+                "statusHighlightTools": "Request and fixed shift indicators",
+                "loadingOverlay": {
+                    "title": "AI is filling the schedule",
+                    "description": "Requested and fixed shifts stay in place.\nAI fills the remaining cells.",
+                    "elapsed": "{{seconds}} sec in progress",
+                    "ariaLabel": "AI schedule fill progress",
+                    "checkingRequests": "Checking requested and fixed shifts",
+                    "fillingBlanks": "Assigning shifts to the remaining cells",
+                    "finalReview": "Reviewing the final conditions carefully",
+                    "almostDone": "Please wait just a little longer"
+                },
+                "restCarryOverSyncFailed": "Schedule confirmed, but next month carry-over could not be updated.",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "Some previous-shift cells are empty.",
+                    "descriptionHighlight": "Fill them if AI should consider continuity from the prior month.",
+                    "confirmAiFill": "Autofill as-is",
+                    "cancel": "Review input",
+                    "confirm": "Confirm as-is",
+                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.",
+                    "title": "Review previous shifts?"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "You have unsaved edits",
+                    "unsavedDescription": "Save a draft or confirm the schedule to keep your edits.",
+                    "aiGeneratingTitle": "Stop AI Autofill and leave?",
+                    "aiGeneratingDescription": "Leaving may discard the autofill result.",
+                    "leaveConfirm": "Leave",
+                    "stayCancel": "Keep editing",
+                    "unsavedMessage": "You have unsaved edits\nSave a draft or confirm the schedule to keep your edits.",
+                    "aiGeneratingMessage": "AI Autofill is running.\nLeaving may discard the result.\nLeave anyway?"
+                },
+                "undo": "Undo",
+                "redo": "Redo",
                 "cannotAutofillYet": "Schedule data is still loading. Please try again shortly.",
                 "confirm": "Confirm schedule",
                 "description": {
@@ -3664,12 +3777,6 @@ export const en: TLocale = {
                 "generating": "Filling...",
                 "hidingFaults": "Errors hidden",
                 "intro": "Your current edits stay in place even if AI fails.\nYou can go back to the previous step to revisit conditions, or retry and confirm here.",
-                "lastShiftBlankDialog": {
-                    "cancel": "Review input",
-                    "confirm": "Confirm as-is",
-                    "description": "Some previous-shift cells are empty. Fill them if this schedule should consider the prior month.",
-                    "title": "Review previous shifts?"
-                },
                 "loading": "Loading the duty schedule",
                 "previous": "Previous step",
                 "progressToast": "Filling schedule",
@@ -4713,6 +4820,7 @@ export const en: TLocale = {
             },
             "shiftType": {
                 "add": "Add shift type",
+                "dragAria": "Drag to reorder {{shiftName}}",
                 "color": "Color",
                 "colorOptionAria": "Select {{color}}",
                 "colorSelectAria": "Select color for {{shiftName}}",
@@ -6348,6 +6456,65 @@ export const ja: TLocale = {
         "makeShift": {
             "aiRefill": {
                 "action": "再入力",
+                "fixedSelectionTools": "選択した勤務の固定ツール",
+                "fixSelection": "選択した勤務を固定",
+                "unfixSelection": "選択した勤務の固定を解除",
+                "fixSelectionSuccess": "{{count}}個のセルを固定しました。",
+                "unfixSelectionSuccess": "{{count}}個のセルの固定を解除しました。",
+                "prefillDecision": {
+                    "title": "AIが変更してはいけない勤務を固定しましたか？",
+                    "description": "AIは固定勤務と希望勤務を除く空欄を自動入力します。\n変更してはいけない勤務は、先に固定してください。",
+                    "confirm": "このまま進む",
+                    "cancel": "もう一度編集"
+                },
+                "regenerateDecision": {
+                    "title": "編集した勤務をどうしますか？",
+                    "description": "AIの結果を適用した後、固定せずに編集したセルが{{count}}個あります。\n残したい場合は固定して再生成し、新しい結果が必要な場合は編集したセルも再生成してください。",
+                    "confirm": "編集したセルを固定",
+                    "cancel": "編集内容も再生成"
+                },
+                "viewComplete": "全割り当てを表示",
+                "viewBaseline": "希望・固定勤務のみ表示",
+                "viewCompleteCompact": "すべて",
+                "viewBaselineCompact": "希望・固定",
+                "viewCompleteTooltip": "全割り当てを表示中です。クリックすると希望・固定勤務のみ表示します。",
+                "viewBaselineTooltip": "希望・固定勤務のみ表示中です。クリックすると全割り当てを表示します。",
+                "baselineReadonlyToast": "編集するには「すべて表示」に戻してください。",
+                "fixedDisplayHighlight": "固定勤務を強調表示",
+                "requestDisplayHighlight": "希望勤務を強調表示",
+                "statusHighlightTools": "希望勤務と固定勤務の表示",
+                "loadingOverlay": {
+                    "title": "AIが勤務表を入力中です",
+                    "description": "希望・固定勤務はそのままに、\n残りのセルをAIが入力します。",
+                    "elapsed": "{{seconds}}秒経過",
+                    "ariaLabel": "AI勤務表入力の進捗",
+                    "checkingRequests": "希望・固定勤務を確認中",
+                    "fillingBlanks": "残りのセルに勤務を割り当てています",
+                    "finalReview": "最終条件を丁寧に確認中",
+                    "almostDone": "もう少しお待ちください"
+                },
+                "restCarryOverSyncFailed": "勤務表は確定しましたが、翌月への繰り越しを更新できませんでした。",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "前月勤務に空欄があります。",
+                    "descriptionHighlight": "前月の勤務を引き継いで考慮する場合は入力してください。",
+                    "confirmAiFill": "そのままAI入力",
+                    "cancel": "入力を確認",
+                    "confirm": "そのまま確定",
+                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。",
+                    "title": "前月勤務を確認しましたか？"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "保存されていない編集内容があります",
+                    "unsavedDescription": "編集内容を保持するには\n一時保存するか、勤務表を確定してください。",
+                    "aiGeneratingTitle": "AI自動入力を中止して退出しますか？",
+                    "aiGeneratingDescription": "退出すると自動入力の結果が反映されない場合があります。",
+                    "leaveConfirm": "退出",
+                    "stayCancel": "編集を続ける",
+                    "unsavedMessage": "保存されていない編集内容があります\n編集内容を保持するには\n一時保存するか、勤務表を確定してください。",
+                    "aiGeneratingMessage": "AI自動入力中です。\n退出すると結果が反映されない場合があります。\nそれでも退出しますか？"
+                },
+                "undo": "元に戻す",
+                "redo": "やり直す",
                 "cannotAutofillYet": "勤務表データを読み込み中です。少し待ってからもう一度お試しください。",
                 "confirm": "勤務表を確定",
                 "description": {
@@ -6373,12 +6540,6 @@ export const ja: TLocale = {
                 "generating": "入力中...",
                 "hidingFaults": "エラー非表示",
                 "intro": "失敗しても現在の編集内容は保持されます。\n前のステップに戻って条件を見直すか、ここで再試行して確定できます。",
-                "lastShiftBlankDialog": {
-                    "cancel": "入力を確認",
-                    "confirm": "そのまま確定",
-                    "description": "前月勤務に空欄があります。前月からの勤務を考慮する必要がある場合は入力してください。",
-                    "title": "前月勤務を確認しましたか？"
-                },
                 "loading": "勤務表を読み込み中です",
                 "previous": "前のステップ",
                 "progressToast": "勤務表を入力中",
@@ -7422,6 +7583,7 @@ export const ja: TLocale = {
             },
             "shiftType": {
                 "add": "勤務区分を追加",
+                "dragAria": "ドラッグして{{shiftName}}の順序を変更",
                 "color": "色",
                 "colorOptionAria": "{{color}}を選択",
                 "colorSelectAria": "{{shiftName}}の色を選択",
@@ -9057,6 +9219,65 @@ export const zh: TLocale = {
         "makeShift": {
             "aiRefill": {
                 "action": "补充装",
+                "fixedSelectionTools": "选中班次固定工具",
+                "fixSelection": "固定选中的班次",
+                "unfixSelection": "取消选中班次的固定",
+                "fixSelectionSuccess": "已固定 {{count}} 个单元格。",
+                "unfixSelectionSuccess": "已取消 {{count}} 个单元格的固定。",
+                "prefillDecision": {
+                    "title": "是否已固定 AI 不应更改的班次？",
+                    "description": "AI 会自动填充除固定班次和申请班次以外的空白单元格。\n请先固定不应更改的班次。",
+                    "confirm": "继续",
+                    "cancel": "再次编辑"
+                },
+                "regenerateDecision": {
+                    "title": "如何处理您修改的班次？",
+                    "description": "AI 结果生成后，有 {{count}} 个未固定的编辑单元格。\n如果要保留，请先固定后重新生成；如果要获取全新结果，也可以重新生成这些修改的单元格。",
+                    "confirm": "固定已编辑单元格",
+                    "cancel": "也重新生成已编辑内容"
+                },
+                "viewComplete": "显示全部排班",
+                "viewBaseline": "仅显示申请和固定班次",
+                "viewCompleteCompact": "全部",
+                "viewBaselineCompact": "申请/固定",
+                "viewCompleteTooltip": "正在显示全部排班。点击后仅显示申请和固定班次。",
+                "viewBaselineTooltip": "正在仅显示申请和固定班次。点击后显示全部排班。",
+                "baselineReadonlyToast": "切换回“全部”以编辑排班表。",
+                "fixedDisplayHighlight": "强调显示固定班次",
+                "requestDisplayHighlight": "强调显示申请班次",
+                "statusHighlightTools": "申请和固定班次指示器",
+                "loadingOverlay": {
+                    "title": "AI 正在填充排班表",
+                    "description": "保留申请和固定班次。\nAI 填充其余单元格。",
+                    "elapsed": "已进行 {{seconds}} 秒",
+                    "ariaLabel": "AI 排班填充进度",
+                    "checkingRequests": "正在检查申请和固定班次",
+                    "fillingBlanks": "正在为剩余单元格分配班次",
+                    "finalReview": "正在仔细检查最终条件",
+                    "almostDone": "请再稍等片刻"
+                },
+                "restCarryOverSyncFailed": "排班表已确认，但无法更新下个月的顺延休息。",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "上一个月的班次有空白单元格。",
+                    "descriptionHighlight": "如果需要参考上个月的班次，请补充填写。",
+                    "confirmAiFill": "按原样自动填充",
+                    "cancel": "确认输入",
+                    "confirm": "确认原样",
+                    "description": "上一个班次中有一个空格。\n如果您想继续上个月的工作，请输入。",
+                    "title": "您确认之前的班次了吗？"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "有未保存的编辑内容",
+                    "unsavedDescription": "要保留编辑内容，请保存草稿或确认排班表。",
+                    "aiGeneratingTitle": "要停止 AI 自动填充并退出吗？",
+                    "aiGeneratingDescription": "离开后，自动填充结果可能不会被应用。",
+                    "leaveConfirm": "离开",
+                    "stayCancel": "继续编辑",
+                    "unsavedMessage": "有未保存的编辑内容\n要保留编辑内容，请保存草稿或确认排班表。",
+                    "aiGeneratingMessage": "AI 自动填充正在运行。\n离开后结果可能不会应用。\n仍要离开吗？"
+                },
+                "undo": "撤销",
+                "redo": "重做",
                 "cannotAutofillYet": "加载排班表信息。请稍后重试。",
                 "confirm": "确认排班表",
                 "description": {
@@ -9082,12 +9303,6 @@ export const zh: TLocale = {
                 "generating": "填充...",
                 "hidingFaults": "错误隐藏",
                 "intro": "即使失败，当前编辑的版本也会保留。\n您可以返回上一步并重新查看条件，或在此处重试并确认。",
-                "lastShiftBlankDialog": {
-                    "cancel": "确认输入",
-                    "confirm": "确认原样",
-                    "description": "上一个班次中有一个空格。\n如果您想继续上个月的工作，请输入。",
-                    "title": "您确认之前的班次了吗？"
-                },
                 "loading": "正在加载排班表。",
                 "previous": "之前的步骤",
                 "progressToast": "填写排班表表",
@@ -10131,6 +10346,7 @@ export const zh: TLocale = {
             },
             "shiftType": {
                 "add": "添加班次类型",
+                "dragAria": "拖动{{shiftName}}更改顺序",
                 "color": "颜色",
                 "colorOptionAria": "选择{{color}}",
                 "colorSelectAria": "{{shiftName}} 颜色选择",
@@ -11766,6 +11982,65 @@ export const th: TLocale = {
         "makeShift": {
             "aiRefill": {
                 "action": "เติมเงิน",
+                "fixedSelectionTools": "เครื่องมือตรึงเวรที่เลือก",
+                "fixSelection": "ตรึงเวรที่เลือก",
+                "unfixSelection": "ยกเลิกการตรึงเวรที่เลือก",
+                "fixSelectionSuccess": "ตรึงเซลล์ {{count}} รายการแล้ว",
+                "unfixSelectionSuccess": "ยกเลิกการตรึงเซลล์ {{count}} รายการแล้ว",
+                "prefillDecision": {
+                    "title": "ตรึงเวรที่ AI ไม่ควรเปลี่ยนแล้วหรือยัง?",
+                    "description": "AI จะเติมช่องว่างทั้งหมด ยกเว้นเวรที่ตรึงและเวรที่ขอ\nโปรดตรึงเวรที่ไม่ควรเปลี่ยนก่อนดำเนินการต่อ",
+                    "confirm": "ดำเนินการต่อ",
+                    "cancel": "แก้ไขอีกครั้ง"
+                },
+                "regenerateDecision": {
+                    "title": "จัดการเวรที่คุณแก้ไขอย่างไร?",
+                    "description": "หลังจากได้ผลลัพธ์จาก AI มีช่องที่แก้ไขแต่ยังไม่ได้ตรึง {{count}} ช่อง\nตรึงช่องเหล่านั้นหากต้องการเก็บไว้ หรือให้ AI สร้างใหม่ทั้งหมดเพื่อรับผลลัพธ์ใหม่",
+                    "confirm": "ตรึงช่องที่แก้ไข",
+                    "cancel": "สร้างช่องที่แก้ไขใหม่ด้วย"
+                },
+                "viewComplete": "แสดงการจัดเวรทั้งหมด",
+                "viewBaseline": "แสดงเฉพาะเวรที่ขอและเวรที่ตรึง",
+                "viewCompleteCompact": "ทั้งหมด",
+                "viewBaselineCompact": "คำขอ/ตรึง",
+                "viewCompleteTooltip": "กำลังแสดงการจัดเวรทั้งหมด คลิกเพื่อแสดงเฉพาะเวรที่ขอและเวรที่ตรึง",
+                "viewBaselineTooltip": "กำลังแสดงเฉพาะเวรที่ขอและเวรที่ตรึง คลิกเพื่อแสดงการจัดเวรทั้งหมด",
+                "baselineReadonlyToast": "กลับไปที่ “ทั้งหมด” เพื่อแก้ไขกำหนดการ",
+                "fixedDisplayHighlight": "ไฮไลต์เวรที่ตรึง",
+                "requestDisplayHighlight": "ไฮไลต์เวรที่ขอ",
+                "statusHighlightTools": "ตัวบ่งชี้เวรที่ขอและเวรที่ตรึง",
+                "loadingOverlay": {
+                    "title": "AI กำลังเติมตารางเวร",
+                    "description": "คงเวรที่ขอและเวรที่ตรึงไว้\nAI จะเติมช่องที่เหลือ",
+                    "elapsed": "ดำเนินการแล้ว {{seconds}} วินาที",
+                    "ariaLabel": "ความคืบหน้าการเติมตารางเวรด้วย AI",
+                    "checkingRequests": "กำลังตรวจสอบเวรที่ขอและเวรที่ตรึง",
+                    "fillingBlanks": "กำลังจัดเวรให้ช่องที่เหลือ",
+                    "finalReview": "กำลังตรวจสอบเงื่อนไขสุดท้ายอย่างละเอียด",
+                    "almostDone": "โปรดรออีกสักครู่"
+                },
+                "restCarryOverSyncFailed": "ยืนยันกำหนดการแล้ว แต่ไม่สามารถอัปเดตวันหยุดสะสมของเดือนถัดไปได้",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "มีช่องว่างในเวรก่อนหน้า",
+                    "descriptionHighlight": "กรอกข้อมูลหากต้องการให้ AI พิจารณาความต่อเนื่องจากเดือนก่อน",
+                    "confirmAiFill": "เติมอัตโนมัติตามเดิม",
+                    "cancel": "ตรวจสอบอินพุต",
+                    "confirm": "ยืนยันตามที่เป็นอยู่",
+                    "description": "เซลล์ที่เลื่อนก่อนหน้าบางเซลล์ว่างเปล่า กรอกหากกำหนดการนี้ควรพิจารณาเดือนก่อนหน้า",
+                    "title": "ทบทวนกะก่อนหน้าไหม?"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "มีการแก้ไขที่ยังไม่ได้บันทึก",
+                    "unsavedDescription": "บันทึกฉบับร่างหรือยืนยันกำหนดการเพื่อเก็บการแก้ไขไว้",
+                    "aiGeneratingTitle": "หยุดการเติมอัตโนมัติด้วย AI และออกใช่ไหม?",
+                    "aiGeneratingDescription": "หากออก ผลลัพธ์การเติมอัตโนมัติอาจไม่ถูกนำไปใช้",
+                    "leaveConfirm": "ออก",
+                    "stayCancel": "แก้ไขต่อ",
+                    "unsavedMessage": "มีการแก้ไขที่ยังไม่ได้บันทึก\nบันทึกฉบับร่างหรือยืนยันกำหนดการเพื่อเก็บการแก้ไขไว้",
+                    "aiGeneratingMessage": "AI กำลังเติมอัตโนมัติ\nหากออก ผลลัพธ์อาจไม่ถูกนำไปใช้\nยังต้องการออกหรือไม่?"
+                },
+                "undo": "เลิกทำ",
+                "redo": "ทำซ้ำ",
                 "cannotAutofillYet": "ข้อมูลกำหนดการยังคงโหลดอยู่ โปรดลองอีกครั้งในอีกสักครู่",
                 "confirm": "ยืนยันกำหนดการ",
                 "description": {
@@ -11791,12 +12066,6 @@ export const th: TLocale = {
                 "generating": "กำลังกรอก...",
                 "hidingFaults": "ข้อผิดพลาดที่ซ่อนอยู่",
                 "intro": "การแก้ไขปัจจุบันของคุณจะยังคงอยู่แม้ว่า AI จะล้มเหลวก็ตาม\nคุณสามารถกลับไปที่ขั้นตอนก่อนหน้าเพื่อทบทวนเงื่อนไขอีกครั้ง หรือลองอีกครั้งและยืนยันที่นี่",
-                "lastShiftBlankDialog": {
-                    "cancel": "ตรวจสอบอินพุต",
-                    "confirm": "ยืนยันตามที่เป็นอยู่",
-                    "description": "เซลล์ที่เลื่อนก่อนหน้าบางเซลล์ว่างเปล่า กรอกหากกำหนดการนี้ควรพิจารณาเดือนก่อนหน้า",
-                    "title": "ทบทวนกะก่อนหน้าไหม?"
-                },
                 "loading": "กำลังโหลดตารางการปฏิบัติหน้าที่",
                 "previous": "ขั้นตอนก่อนหน้า",
                 "progressToast": "กำหนดการเติม",
@@ -12840,6 +13109,7 @@ export const th: TLocale = {
             },
             "shiftType": {
                 "add": "เพิ่มประเภทกะ",
+                "dragAria": "ลาก {{shiftName}} เพื่อเปลี่ยนลำดับ",
                 "color": "สี",
                 "colorOptionAria": "เลือก {{color}}",
                 "colorSelectAria": "เลือกสีสำหรับ {{shiftName}}",
@@ -14475,6 +14745,65 @@ export const vi: TLocale = {
         "makeShift": {
             "aiRefill": {
                 "action": "Nạp tiền",
+                "fixedSelectionTools": "Công cụ cố định ca đã chọn",
+                "fixSelection": "Cố định các ca đã chọn",
+                "unfixSelection": "Bỏ cố định các ca đã chọn",
+                "fixSelectionSuccess": "Đã cố định {{count}} ô.",
+                "unfixSelectionSuccess": "Đã bỏ cố định {{count}} ô.",
+                "prefillDecision": {
+                    "title": "Bạn đã cố định các ca AI không được thay đổi chưa?",
+                    "description": "AI sẽ tự động điền mọi ô trống ngoại trừ ca cố định và ca đã yêu cầu.\nHãy cố định các ca không được thay đổi trước khi tiếp tục.",
+                    "confirm": "Tiếp tục",
+                    "cancel": "Chỉnh sửa lại"
+                },
+                "regenerateDecision": {
+                    "title": "Xử lý các ca bạn đã chỉnh sửa như thế nào?",
+                    "description": "Sau kết quả AI, có {{count}} ô đã chỉnh sửa nhưng chưa được cố định.\nHãy cố định nếu muốn giữ lại, hoặc tạo lại cả các ô đó để nhận kết quả mới.",
+                    "confirm": "Cố định các ô đã chỉnh sửa",
+                    "cancel": "Tạo lại cả phần đã chỉnh sửa"
+                },
+                "viewComplete": "Hiển thị tất cả phân ca",
+                "viewBaseline": "Chỉ hiển thị ca đã yêu cầu và ca cố định",
+                "viewCompleteCompact": "Tất cả",
+                "viewBaselineCompact": "Yêu cầu/cố định",
+                "viewCompleteTooltip": "Đang hiển thị tất cả phân ca. Nhấn để chỉ hiển thị ca đã yêu cầu và ca cố định.",
+                "viewBaselineTooltip": "Đang chỉ hiển thị ca đã yêu cầu và ca cố định. Nhấn để hiển thị tất cả phân ca.",
+                "baselineReadonlyToast": "Chuyển lại sang “Tất cả” để chỉnh sửa lịch.",
+                "fixedDisplayHighlight": "Làm nổi bật ca cố định",
+                "requestDisplayHighlight": "Làm nổi bật ca đã yêu cầu",
+                "statusHighlightTools": "Chỉ báo ca đã yêu cầu và ca cố định",
+                "loadingOverlay": {
+                    "title": "AI đang điền lịch",
+                    "description": "Giữ nguyên ca đã yêu cầu và ca cố định.\nAI sẽ điền các ô còn lại.",
+                    "elapsed": "Đã thực hiện {{seconds}} giây",
+                    "ariaLabel": "Tiến độ điền lịch bằng AI",
+                    "checkingRequests": "Đang kiểm tra ca đã yêu cầu và ca cố định",
+                    "fillingBlanks": "Đang phân ca cho các ô còn lại",
+                    "finalReview": "Đang kiểm tra kỹ các điều kiện cuối cùng",
+                    "almostDone": "Vui lòng đợi thêm một chút"
+                },
+                "restCarryOverSyncFailed": "Đã xác nhận lịch nhưng không thể cập nhật ngày nghỉ chuyển sang tháng sau.",
+                "lastShiftBlankDialog": {
+                    "descriptionLead": "Một số ô của ca trước đang trống.",
+                    "descriptionHighlight": "Hãy điền nếu AI cần xem xét tính liên tục từ tháng trước.",
+                    "confirmAiFill": "Tự động điền nguyên trạng",
+                    "cancel": "Xem lại thông tin đầu vào",
+                    "confirm": "Xác nhận nguyên trạng",
+                    "description": "Một số ô của ca trước trống. Điền vào chúng nếu lịch này nên được xem xét trong tháng trước.",
+                    "title": "Xem lại các ca trước?"
+                },
+                "exitGuard": {
+                    "unsavedTitle": "Bạn có chỉnh sửa chưa lưu",
+                    "unsavedDescription": "Hãy lưu bản nháp hoặc xác nhận lịch để giữ lại chỉnh sửa.",
+                    "aiGeneratingTitle": "Dừng Tự động điền AI và rời đi?",
+                    "aiGeneratingDescription": "Nếu rời đi, kết quả tự động điền có thể không được áp dụng.",
+                    "leaveConfirm": "Rời đi",
+                    "stayCancel": "Tiếp tục chỉnh sửa",
+                    "unsavedMessage": "Bạn có chỉnh sửa chưa lưu\nHãy lưu bản nháp hoặc xác nhận lịch để giữ lại chỉnh sửa.",
+                    "aiGeneratingMessage": "AI đang tự động điền.\nNếu rời đi, kết quả có thể không được áp dụng.\nVẫn rời đi?"
+                },
+                "undo": "Hoàn tác",
+                "redo": "Làm lại",
                 "cannotAutofillYet": "Dữ liệu lịch vẫn đang tải. Vui lòng thử lại trong thời gian ngắn.",
                 "confirm": "Xác nhận lịch",
                 "description": {
@@ -14500,12 +14829,6 @@ export const vi: TLocale = {
                 "generating": "Làm đầy...",
                 "hidingFaults": "Lỗi ẩn",
                 "intro": "Các chỉnh sửa hiện tại của bạn vẫn được giữ nguyên ngay cả khi AI bị lỗi.\nBạn có thể quay lại bước trước để xem lại các điều kiện hoặc thử lại và xác nhận tại đây.",
-                "lastShiftBlankDialog": {
-                    "cancel": "Xem lại thông tin đầu vào",
-                    "confirm": "Xác nhận nguyên trạng",
-                    "description": "Một số ô của ca trước trống. Điền vào chúng nếu lịch này nên được xem xét trong tháng trước.",
-                    "title": "Xem lại các ca trước?"
-                },
                 "loading": "Đang tải Lịch trực",
                 "previous": "Bước trước",
                 "progressToast": "lịch chiết rót",
@@ -15549,6 +15872,7 @@ export const vi: TLocale = {
             },
             "shiftType": {
                 "add": "Thêm loại ca",
+                "dragAria": "Kéo {{shiftName}} để thay đổi thứ tự",
                 "color": "Màu sắc",
                 "colorOptionAria": "Chọn {{color}}",
                 "colorSelectAria": "Chọn màu cho {{shiftName}}",

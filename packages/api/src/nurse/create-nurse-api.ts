@@ -35,7 +35,6 @@ const toUpdateNurseRequest = (updatedNurse: TCreateNurseDTO | TUpdateNurseDTO, o
         proficiency: updatedNurse.proficiency,
         isPreceptor: updatedNurse.isPreceptor,
         isPreceptee: updatedNurse.isPreceptee,
-        remainingAnnualLeaveDays: updatedNurse.remainingAnnualLeaveDays,
         workStartDate: toOptionalText(updatedNurse.workStartDate),
         workEndDate: toOptionalText(updatedNurse.workEndDate),
     });

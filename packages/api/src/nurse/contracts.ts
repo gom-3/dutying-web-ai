@@ -32,7 +32,6 @@ export type TCreateNurseDTO = {
     proficiency?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
-    remainingAnnualLeaveDays?: number | null;
     workStartDate?: string | null;
     workEndDate?: string | null;
 };
@@ -46,7 +45,6 @@ export type TUpdateNurseDTO = {
     proficiency?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
-    remainingAnnualLeaveDays?: number | null;
     workStartDate?: string | null;
     workEndDate?: string | null;
 };

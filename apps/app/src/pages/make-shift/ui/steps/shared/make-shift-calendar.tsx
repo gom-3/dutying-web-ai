@@ -33,7 +33,6 @@ import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days'
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
-import {formatAnnualLeaveDays} from '@/shared/lib/annual-leave';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
 type TViolationMap = Map<string, TViolation>;
@@ -130,7 +129,6 @@ const VIOLATION_CONTEXT_TONE: Record<TViolation['level'], {surface: string; acti
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const DRAG_HANDLE_COL = '28px';
 const NAME_COL = 'clamp(52px,3.7cqw,64px)';
-const ANNUAL_LEAVE_COL = 'clamp(28px,2cqw,34px)';
 const MIN_SKILL_COL = '34px';
 const SKILL_COL = 'clamp(34px,2.35cqw,40px)';
 const CARRY_COL = 'clamp(22px,1.55cqw,28px)';
@@ -148,10 +146,10 @@ const getLeftGridTemplateColumns = (
     skillColumnWidth: string,
     showDragHandleColumn: boolean,
 ) =>
-    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${ANNUAL_LEAVE_COL} ${showSkillColumn ? `${skillColumnWidth} ` : ''}${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
+    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${showSkillColumn ? `${skillColumnWidth} ` : ''}${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
 /** 전달·통계 열 없이 이름 + 일자만 */
 const getLeftGridTemplateColumnsSimplified = (showDragHandleColumn: boolean) =>
-    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${ANNUAL_LEAVE_COL} minmax(0,1fr)`;
+    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} minmax(0,1fr)`;
 const ROW_GAP_X = 'clamp(1px,0.18cqw,4px)';
 /**
  * division card ↔ division-summary 사이 간격.
@@ -204,8 +202,8 @@ const getShimmerInsetLeft = (
     showDragHandleColumn: boolean,
 ) =>
     isSimplified
-        ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X} + ${ANNUAL_LEAVE_COL} + ${ROW_GAP_X})`
-        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X} + ${ANNUAL_LEAVE_COL} + ${ROW_GAP_X}${showSkillColumn ? ` + ${skillColumnWidth} + ${ROW_GAP_X}` : ''}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
+        ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X})`
+        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X}${showSkillColumn ? ` + ${skillColumnWidth} + ${ROW_GAP_X}` : ''}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
 
 function getSkillColumnWidth() {
     return SKILL_COL;
@@ -1630,12 +1628,6 @@ export function MakeShiftCalendar({
                 >
                     {showDragHandleColumn ? <div className="make-shift-calendar__header-label--drag" aria-hidden="true" /> : null}
                     <HeaderLabel className="make-shift-calendar__header-label--name">{t('page.makeShift.calendar.name')}</HeaderLabel>
-                    <HeaderLabel
-                        className="make-shift-calendar__header-label--annual-leave"
-                        title={t('page.makeShift.calendar.annualLeaveFull')}
-                    >
-                        {t('page.makeShift.calendar.annualLeave')}
-                    </HeaderLabel>
                     {!isSimplified && (
                         <>
                             {showSkillColumn ? (
@@ -1918,7 +1910,6 @@ export function MakeShiftCalendar({
                                                             >
                                                                 <CalendarRowLeft
                                                                     nurseName={row.shiftNurse.name}
-                                                                    remainingAnnualLeaveDays={row.shiftNurse.remainingAnnualLeaveDays}
                                                                     skillLevel={skillColumn?.levelsByNurseId[row.shiftNurse.nurseId]}
                                                                     skillConfig={skillColumn?.config}
                                                                     carriedDays={
@@ -2057,7 +2048,6 @@ function HeaderLabel({children, className, title}: {children: React.ReactNode; c
 
 type TCalendarRowLeftProps = {
     nurseName: string;
-    remainingAnnualLeaveDays?: number;
     skillLevel?: TSkillLevelValue;
     skillConfig?: TSkillLevelConfig;
     carriedDays?: number;
@@ -2107,7 +2097,6 @@ type TCalendarRowLeftProps = {
  */
 function CalendarRowLeft({
     nurseName,
-    remainingAnnualLeaveDays,
     skillLevel,
     skillConfig,
     carriedDays,
@@ -2154,7 +2143,6 @@ function CalendarRowLeft({
     const {t} = useTypedTranslation();
     const rowViolationPrefix = `${shiftNurseId},`;
     const displayNurseName = formatNurseDisplayName(nurseName);
-    const annualLeaveLabel = formatAnnualLeaveDays(remainingAnnualLeaveDays);
     const violationsByDayCol = useMemo(() => {
         const byCol = new Map<number, TViolation[]>();
 
@@ -2293,17 +2281,6 @@ function CalendarRowLeft({
                 >
                     <span className="max-w-full min-w-0 truncate">{displayNurseName}</span>
                 </div>
-                <div
-                    data-selected-row-label={isRowSelected || undefined}
-                    className={cn(
-                        'make-shift-calendar__row-annual-leave flex min-h-0 min-w-0 items-center justify-center rounded-[clamp(5px,0.55cqw,8px)] font-poppins text-[clamp(11px,0.9cqw,14px)] font-semibold whitespace-nowrap text-sub-2 tabular-nums',
-                        isRowSelected && SELECTED_ROW_LABEL_CLASS,
-                    )}
-                    title={t('page.makeShift.calendar.annualLeaveDetail', {count: annualLeaveLabel})}
-                >
-                    {annualLeaveLabel}
-                </div>
-
                 {!simplified && (
                     <>
                         {showSkillColumn ? (
@@ -2798,7 +2775,6 @@ function DailySummary({
                         style={{gridTemplateColumns: leftGridTemplateColumns, columnGap: ROW_GAP_X}}
                     >
                         {showDragHandleColumn ? <div /> : null}
-                        <div />
                         <div />
                         {showSkillColumn ? <div /> : null}
                         {showCarryColumn ? <div /> : null}
