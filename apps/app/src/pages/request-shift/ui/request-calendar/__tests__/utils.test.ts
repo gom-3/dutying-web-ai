@@ -268,7 +268,47 @@ describe('request-calendar utils', () => {
         expect(data.doc.columns).toEqual(['2026-03-03']);
         expect(data.doc.rows[0]?.cells).toEqual(['D']);
         expect(data.doc.requestCells).toEqual({'11|2026-03-03': true});
+        expect(data.dimmedRequestCells).toEqual({});
         expect(data.rowsByDocIndex[0]).toEqual({shiftNurseId: 11, nurseId: 101, nurseName: '김간호'});
         expect(data.rowIndexByShiftNurseId.get(11)).toBe(0);
+    });
+
+    it('대기·거절 신청을 옅은 색 셀로 구분한다', () => {
+        const requestShift = createRequestShift();
+
+        requestShift.days = [{day: 3, dayType: 'workday'}];
+        requestShift.wardShiftTypes = [
+            {
+                wardShiftTypeId: 9,
+                name: '데이',
+                shortName: 'D',
+                startTime: '07:00',
+                endTime: '15:00',
+                color: '#000000',
+                isDefault: true,
+                isOff: false,
+                isCounted: true,
+                classification: 'DAY',
+            },
+        ];
+        requestShift.divisionShiftNurses[0]![0]!.wardReqShiftList = [9];
+
+        const data = requestShiftToCalendarData(requestShift, 2026, 3, [
+            {
+                wardReqShiftId: 1,
+                nurseId: 101,
+                nurseName: '김간호',
+                date: 3,
+                requestDate: '2026-03-03',
+                wardShiftTypeId: 9,
+                wardShiftTypeShortName: 'D',
+                wardShiftTypeColor: '#000000',
+                isRead: false,
+                isAccepted: false,
+            },
+        ]);
+
+        expect(data.doc.requestCells).toEqual({});
+        expect(data.dimmedRequestCells).toEqual({'11|2026-03-03': true});
     });
 });

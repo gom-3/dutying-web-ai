@@ -29,6 +29,7 @@ import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import i18n from '@/i18n';
 import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
 import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
+import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME} from '@/shared/constant/member-page-layout';
 import {MEMBER_CONNECTION_MANAGE_SEARCH_PARAM, MEMBER_CONNECTION_MANAGE_SEARCH_VALUE} from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
@@ -1070,7 +1071,13 @@ function MemberPage() {
                       modalRoot,
                   )
                 : null}
-            <div className="mx-auto flex min-h-screen w-full max-w-[1560px] min-w-0 gap-2 overflow-visible px-3 pt-5 pb-6 min-[1400px]:gap-3 min-[1400px]:px-4 min-[1400px]:pt-6 min-[1400px]:pb-8 min-[1600px]:min-w-[1360px] min-[1600px]:gap-5 min-[1600px]:px-10 min-[1600px]:pt-[52px] min-[1600px]:pb-14">
+            <div
+                className={cn(
+                    'flex min-h-screen gap-2 overflow-visible pt-5 pb-6 min-[1400px]:gap-3 min-[1400px]:pt-6 min-[1400px]:pb-8 min-[1600px]:gap-5 min-[1600px]:pt-[52px] min-[1600px]:pb-14',
+                    MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME,
+                    MEMBER_PAGE_FRAME_PADDING_CLASS_NAME,
+                )}
+            >
                 <section className="min-w-0 flex-1">
                     <div id="ward_info" className="flex min-w-0 flex-wrap items-center gap-3 min-[1600px]:gap-5">
                         <div className="shrink-0">
@@ -1630,6 +1637,7 @@ function MemberNurseRow({
     const fadedClass = isWorker ? '' : 'opacity-55';
     const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
     const unselectedSkillLabel = t('page.member.row.unselectedSkill');
+
     useEffect(() => {
         if (!skillMenuOpen) {
             return;

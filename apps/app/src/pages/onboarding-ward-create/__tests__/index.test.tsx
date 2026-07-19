@@ -774,6 +774,53 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();
     });
 
+    it('shows a toast when trying to edit or delete a previous-schedule shift type', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await prepareValidFinalStep(user);
+
+        fireEvent.paste(screen.getByLabelText('1행 간호사 이름'), {
+            clipboardData: {
+                getData: () => '김하늘\tD\tE\tN\tO',
+            },
+        });
+        await user.click(screen.getByRole('button', {name: '다음'}));
+
+        await waitFor(() => {
+            expect(screen.getByDisplayValue('D')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: '데이 삭제'})).toHaveAttribute('aria-disabled', 'true');
+        });
+
+        toastError.mockReset();
+        await user.click(screen.getByDisplayValue('D'));
+        expect(toastError).toHaveBeenCalledWith('이전 근무표에서 사용한 약자는 변경할 수 없어요.');
+
+        await user.click(screen.getByRole('button', {name: '데이 삭제'}));
+        expect(toastError).toHaveBeenCalledWith('이전 근무표에서 사용한 근무 유형은 삭제할 수 없어요.');
+    });
+
+    it('does not auto-add missing required shift types when next is clicked', async () => {
+        const user = userEvent.setup();
+
+        render(<OnboardingWardCreatePage />);
+        await moveToShiftTypeStep(user);
+
+        const firstClassificationSelect = screen.getAllByRole('combobox')[0]!;
+        await user.click(firstClassificationSelect);
+        await user.click(screen.getByRole('option', {name: '기타 근무'}));
+
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(4);
+        const nextButton = screen.getByRole('button', {name: '다음'});
+        expect(nextButton).toHaveAttribute('aria-disabled', 'true');
+
+        await user.click(nextButton);
+
+        expect(screen.getAllByPlaceholderText('-')).toHaveLength(4);
+        expect(toastSuccess).not.toHaveBeenCalled();
+        expect(toastError).toHaveBeenCalledWith(expect.stringContaining('다음 유형을 추가해 주세요'));
+    });
+
     it('disables next in step 3 when shift abbreviations are duplicated', async () => {
         const user = userEvent.setup();
 

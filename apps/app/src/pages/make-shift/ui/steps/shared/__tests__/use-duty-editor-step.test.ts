@@ -31,16 +31,16 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
     useTypedTranslation: () => ({t: (key: string) => key}),
 }));
 
-function createQueryWrapper() {
-    const queryClient = new QueryClient({
+function createQueryWrapper(
+    queryClient = new QueryClient({
         defaultOptions: {
             queries: {
                 gcTime: 0,
                 retry: false,
             },
         },
-    });
-
+    }),
+) {
     return function TestQueryWrapper({children}: {children: ReactNode}) {
         return React.createElement(QueryClientProvider, {client: queryClient}, children);
     };
@@ -203,6 +203,39 @@ describe('useDutyEditorStep', () => {
         await waitFor(() => {
             expect(useShiftEditorStore.getState().rulesHash).toBe('rules-v1');
         });
+    });
+
+    it('waits for a fresh workspace when the cached workspace is stale', async () => {
+        const queryClient = new QueryClient({
+            defaultOptions: {
+                queries: {
+                    gcTime: 0,
+                    retry: false,
+                },
+            },
+        });
+        const workspace = createDeferred<ReturnType<typeof makeWorkspaceSchedule>>();
+
+        queryClient.setQueryData(['ward', 1, 'shift-team', 10, 'schedule-workspace', 2026, 5], makeWorkspaceSchedule({fixed: false}));
+        wardApiMocks.getShift.mockResolvedValue(makeShift());
+        wardApiMocks.getWorkspaceSchedule.mockReturnValue(workspace.promise);
+
+        const {result} = renderHook(() => useDutyEditorStep(), {wrapper: createQueryWrapper(queryClient)});
+
+        await waitFor(() => {
+            expect(result.current.isHydratingEditor).toBe(true);
+        });
+        expect(useShiftEditorStore.getState().doc.columns).toEqual([]);
+
+        await act(async () => {
+            workspace.resolve(makeWorkspaceSchedule());
+            await workspace.promise;
+        });
+
+        await waitFor(() => {
+            expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'2|2026-05-01': true});
+        });
+        expect(result.current.isHydratingEditor).toBe(false);
     });
 
     it('hydrates request cells from accepted workspace requests', async () => {

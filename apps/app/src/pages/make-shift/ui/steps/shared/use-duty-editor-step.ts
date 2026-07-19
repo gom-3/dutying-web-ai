@@ -169,6 +169,9 @@ export function useDutyEditorStep({
         queryKey: ['ward', wardId, 'shift-team', currentShiftTeamId, 'schedule-workspace', year, month],
         queryFn: () => WardAPI.getWorkspaceSchedule(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
         enabled,
+        // 확정 후 4단계로 돌아오면 캐시에는 확정 전 workspace가 남아 있을 수 있다.
+        // 고정/신청근무 핀은 workspace가 최신 상태가 된 뒤에만 에디터에 반영한다.
+        refetchOnMount: 'always',
     });
     const previousYearMonth = useMemo(() => getPreviousYearMonth(year, month), [year, month]);
     const previousDutyQuery = useQuery({
@@ -193,7 +196,7 @@ export function useDutyEditorStep({
     const currentContextKey = `${wardId ?? 'none'}:${currentShiftTeamId ?? 'none'}:${year}:${month}`;
     const [hydratedEditorContextKey, setHydratedEditorContextKey] = useState<string | null>(null);
     const isHydratingLastShifts = hydratePreviousLastShifts && previousDutyQuery.isLoading;
-    const isHydratingWorkspace = enabled && workspaceQuery.isLoading && workspaceQuery.data === undefined;
+    const isHydratingWorkspace = enabled && workspaceQuery.isFetching;
     const isWaitingForEditorSources = isHydratingLastShifts || isHydratingWorkspace;
     const isAwaitingEditorHydration =
         enabled && dutyQuery.data !== undefined && !isWaitingForEditorSources && hydratedEditorContextKey !== currentContextKey;

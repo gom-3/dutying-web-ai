@@ -110,6 +110,19 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('shares one summary width across the header, rows, and daily footer', () => {
+        render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
+
+        const summaryWidths = [
+            document.querySelector<HTMLElement>('.make-shift-calendar__type-summary-header')?.style.width,
+            document.querySelector<HTMLElement>('.make-shift-calendar__division-summary')?.style.width,
+            document.querySelector<HTMLElement>('.make-shift-daily-summary__spacer')?.style.width,
+        ];
+
+        expect(summaryWidths[0]).toBeTruthy();
+        expect(summaryWidths.every((width) => width === summaryWidths[0])).toBe(true);
+    });
+
     it('renders a dedicated row reorder handle column when row reordering is enabled', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} canReorderRows />);
 

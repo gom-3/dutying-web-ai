@@ -3,8 +3,8 @@ import {wardQueryKeys} from '@/entities/ward';
 import {render, screen, userEvent, waitFor} from '@/shared/util/test-utils';
 import WardInfoSettingsPage from '..';
 
-const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, mockToastError, mockQuitWard, mockUseQuery} = vi.hoisted(
-    () => ({
+const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, mockToastError, mockQuitWard, mockUseQuery, mockAuthState} =
+    vi.hoisted(() => ({
         mockEditWard: vi.fn(),
         mockInvalidateQueries: vi.fn(),
         mockSetQueryData: vi.fn(),
@@ -12,8 +12,8 @@ const {mockEditWard, mockInvalidateQueries, mockSetQueryData, mockToastSuccess, 
         mockToastError: vi.fn(),
         mockQuitWard: vi.fn(),
         mockUseQuery: vi.fn(),
-    }),
-);
+        mockAuthState: {accessToken: null as string | null, wardId: 1},
+    }));
 
 vi.mock('@tanstack/react-query', async () => {
     const actual = await vi.importActual('@tanstack/react-query');
@@ -30,10 +30,12 @@ vi.mock('@tanstack/react-query', async () => {
 
 vi.mock('@/features/auth', () => ({
     default: () => ({
-        state: {
-            wardId: 1,
-        },
+        state: mockAuthState,
     }),
+}));
+
+vi.mock('@/features/auth/model/admin-token', () => ({
+    isWardAdminAccessToken: (accessToken?: string | null) => accessToken === 'ward-admin-token',
 }));
 
 vi.mock('@/features/account/model', () => ({
@@ -50,6 +52,14 @@ vi.mock('@/shared/api', () => ({
 
 vi.mock('@/pages/ward-admins', () => ({
     default: () => <div>ward admins panel</div>,
+}));
+
+vi.mock('@/widgets/notifications/notification-bell', () => ({
+    NotificationBell: () => (
+        <button type="button" aria-label="notification bell">
+            bell
+        </button>
+    ),
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -77,12 +87,28 @@ describe('WardInfoSettingsPage', () => {
         mockToastError.mockReset();
         mockQuitWard.mockReset();
         mockUseQuery.mockReset();
+        mockAuthState.accessToken = null;
         mockUseQuery.mockReturnValue({
             data: ward,
             isPending: false,
             isError: false,
             refetch: vi.fn(),
         });
+    });
+
+    it('anchors the notification bell to the same 480px frame as the save button', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+
+        render(<WardInfoSettingsPage />);
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationWrapper = notificationBell.parentElement;
+        const headerFrame = notificationWrapper?.parentElement;
+        const saveButton = screen.getByRole('button', {name: '변경사항 저장'});
+
+        expect(notificationWrapper).toHaveClass('pointer-events-none', 'absolute', 'top-0', 'right-0', 'z-[1002]');
+        expect(headerFrame).toHaveClass('relative', 'max-w-[480px]');
+        expect(saveButton.parentElement).toHaveClass('max-w-[480px]');
     });
 
     it('renders the current ward identity in the editable form', () => {
@@ -96,6 +122,7 @@ describe('WardInfoSettingsPage', () => {
         expect(screen.queryByText('현재 병동')).not.toBeInTheDocument();
         expect(screen.queryByRole('button', {name: '관리자'})).not.toBeInTheDocument();
         expect(screen.getByText('ward admins panel')).toBeInTheDocument();
+
         const quitWardButton = screen.getByRole('button', {name: '병동 나가기'});
         const saveButton = screen.getByRole('button', {name: '변경사항 저장'});
 

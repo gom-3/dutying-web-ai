@@ -13,6 +13,8 @@ type TShiftClassificationDropdownProps = {
     options: readonly TShiftClassificationDropdownOption[];
     ariaLabel: string;
     onChange: (value: string) => void;
+    disabled?: boolean;
+    onDisabledClick?: () => void;
     className?: string;
 };
 
@@ -26,7 +28,15 @@ type TMenuPosition = {
 const MENU_MAX_HEIGHT = 240;
 const VIEWPORT_PADDING = 12;
 
-export default function ShiftClassificationDropdown({value, options, ariaLabel, onChange, className}: TShiftClassificationDropdownProps) {
+export default function ShiftClassificationDropdown({
+    value,
+    options,
+    ariaLabel,
+    onChange,
+    disabled = false,
+    onDisabledClick,
+    className,
+}: TShiftClassificationDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<TMenuPosition | null>(null);
@@ -92,13 +102,21 @@ export default function ShiftClassificationDropdown({value, options, ariaLabel, 
                 aria-label={ariaLabel}
                 aria-haspopup="listbox"
                 aria-expanded={open}
+                aria-disabled={disabled}
                 onClick={() => {
+                    if (disabled) {
+                        onDisabledClick?.();
+
+                        return;
+                    }
+
                     if (!open) updateMenuPosition();
 
                     setOpen((previous) => !previous);
                 }}
                 className={cn(
                     'relative flex h-10 w-full cursor-pointer items-center justify-center rounded-[10px] border-0 bg-gray-7 px-3 pr-9 font-poppins text-[15px] leading-[1.4] text-sub-1 ring-1 ring-transparent transition-[background-color,box-shadow] duration-150 ease-out hover:bg-gray-6/50 focus-visible:bg-white focus-visible:ring-1 focus-visible:ring-main-1/70 focus-visible:outline-none',
+                    disabled && 'cursor-not-allowed bg-gray-6 text-gray-4 opacity-70 hover:bg-gray-6',
                     className,
                 )}
             >

@@ -1,6 +1,7 @@
 ﻿import {DragDropContext, Draggable, Droppable, type DropResult} from '@hello-pangea/dnd';
 import {Check, CircleAlert, Plus, X} from 'lucide-react';
 import {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import toast from 'react-hot-toast';
 import {SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
@@ -136,6 +137,12 @@ function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShif
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
+    const showProtectedShortNameToast = () => {
+        toast.error(t('page.onboardingWardCreate.toast.previousScheduleShortNameLocked'));
+    };
+    const showProtectedDeleteToast = () => {
+        toast.error(t('page.onboardingWardCreate.toast.previousScheduleDeleteLocked'));
+    };
     const duplicatedShiftShortNameKeys = useMemo(() => {
         const countByShortNameKey = new Map<string, number>();
 
@@ -307,6 +314,26 @@ function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShif
                                                     maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
                                                     readOnly={shiftType.protectedByPreviousSchedule}
                                                     aria-readonly={shiftType.protectedByPreviousSchedule}
+                                                    onClick={() => {
+                                                        if (shiftType.protectedByPreviousSchedule) {
+                                                            showProtectedShortNameToast();
+                                                        }
+                                                    }}
+                                                    onKeyDown={(event) => {
+                                                        if (
+                                                            shiftType.protectedByPreviousSchedule &&
+                                                            (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete')
+                                                        ) {
+                                                            event.preventDefault();
+                                                            showProtectedShortNameToast();
+                                                        }
+                                                    }}
+                                                    onPaste={(event) => {
+                                                        if (shiftType.protectedByPreviousSchedule) {
+                                                            event.preventDefault();
+                                                            showProtectedShortNameToast();
+                                                        }
+                                                    }}
                                                     onChange={(event) => {
                                                         const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 
@@ -502,9 +529,19 @@ function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShif
                                                         shiftType.shortName ||
                                                         t('page.onboardingWardCreate.shiftType.work'),
                                                 })}
-                                                disabled={shiftType.protectedByPreviousSchedule}
-                                                onClick={() => onDelete(shiftType.id)}
-                                                className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS}`}
+                                                aria-disabled={shiftType.protectedByPreviousSchedule}
+                                                onClick={() => {
+                                                    if (shiftType.protectedByPreviousSchedule) {
+                                                        showProtectedDeleteToast();
+
+                                                        return;
+                                                    }
+
+                                                    onDelete(shiftType.id);
+                                                }}
+                                                className={`flex w-10 justify-center self-start rounded-full text-gray-4 hover:bg-gray-7 hover:text-sub-1 ${SHIFT_TYPE_ROW_CONTROL_CLASS} ${
+                                                    shiftType.protectedByPreviousSchedule ? 'cursor-not-allowed opacity-50' : ''
+                                                }`}
                                             >
                                                 <X className="h-4 w-4" />
                                             </button>

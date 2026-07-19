@@ -43,7 +43,6 @@ function OnboardingWardCreatePage() {
         goPreviousStep,
         updateWardIdentity,
         skipOrComplete,
-        addRequiredShiftTypes,
         addShiftType,
         updateShiftType,
         deleteShiftType,
@@ -499,22 +498,6 @@ function OnboardingWardCreatePage() {
                         if (draft.currentStep === 1) {
                             setShowIdentityNameError(true);
                             focusFirstInvalidIdentityField();
-                        }
-
-                        const blockingIssues =
-                            draft.currentStep === 4 && !canComplete ? completionValidationIssues : currentStepValidation.issues;
-                        const codes = new Set(blockingIssues.map((issue) => issue.code));
-
-                        if (draft.currentStep === 3 && codes.has('missing-required-shift-types')) {
-                            const missingShiftTypes = getMissingRequiredShiftTypeLabels();
-                            addRequiredShiftTypes();
-                            toast.success(
-                                t('page.onboardingWardCreate.blocked.addedRequiredShiftTypes', {
-                                    shiftTypes: missingShiftTypes.join(', '),
-                                }),
-                            );
-
-                            return;
                         }
 
                         toast.error(getNextBlockedReasonMessage());

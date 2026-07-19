@@ -3,6 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {type TOnboardingWardParseApiResponse, type TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {
     createEmptyShiftType,
+    DEFAULT_OFF_SHIFT_TYPE_COLOR,
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
     isOnboardingShiftTypeActive,
@@ -330,6 +331,9 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): T
     const isOff = parsed.isOff ?? false;
     const classification = parsed.classification ?? inferClassificationFromShortName(shortName, isOff);
     const timeRange = !isOff ? SHIFT_CLASSIFICATION_TIME_RANGES[classification] : undefined;
+    const parsedColor = parsed.color?.trim() ?? '';
+    const isAutomaticOffColor = !parsedColor || PLACEHOLDER_CUSTOM_SHIFT_COLORS.has(parsedColor.toUpperCase());
+    const defaultColor = classification === 'OFF' && isAutomaticOffColor ? DEFAULT_OFF_SHIFT_TYPE_COLOR : getDefaultShiftTypeColor(shortName, colorIndex);
 
     return {
         ...base,
@@ -338,7 +342,7 @@ const toDraftShiftType = (parsed: TOnboardingParsedShiftType, colorIndex = 0): T
         shortName,
         startTime: parsed.startTime ?? timeRange?.startTime ?? base.startTime,
         endTime: parsed.endTime ?? timeRange?.endTime ?? base.endTime,
-        color: parsed.color ?? getDefaultShiftTypeColor(shortName, colorIndex),
+        color: defaultColor,
         isDefault: parsed.isDefault ?? false,
         isOff,
         isCounted: isOff ? false : base.isCounted,

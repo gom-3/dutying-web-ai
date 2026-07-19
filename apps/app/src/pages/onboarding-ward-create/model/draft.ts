@@ -163,7 +163,7 @@ export type TOnboardingActionState = {
 const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
     {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
-    {id: 'violet', colors: ['#E8D9FF', '#D8C3FF', '#C4A8FF', '#A382F5']},
+    {id: 'violet', colors: ['#FFE0EC', '#FFC4D7', '#FF9FBD', '#E85D8E']},
     {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
 
@@ -193,6 +193,7 @@ export const DEFAULT_SHIFT_TYPE_COLORS = [
     '#BFA7F3',
     '#F3A6CC',
 ] as const;
+export const DEFAULT_OFF_SHIFT_TYPE_COLOR = DEFAULT_SHIFT_TYPE_COLORS[3];
 export const CUSTOM_SHIFT_TYPE_COLORS = DEFAULT_SHIFT_TYPE_COLORS.slice(4);
 
 const REQUIRED_COMPLETION_STEPS: TOnboardingStep[] = [1, 2, 3, 4];
@@ -200,12 +201,6 @@ const WARD_IDENTITY_REGEX = /^[a-zA-Z\u3131-\u318E\uAC00-\uD7A3\u3040-\u30FF\u34
 const SHIFT_TIME_FORMAT_REGEX = /^\d{2}:\d{2}$/;
 const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 const REQUIRED_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT', 'OFF'] as const;
-const REQUIRED_SHIFT_TYPE_DEFINITIONS = [
-    {classification: 'DAY', nameKey: 'day', shortName: 'D', startTime: '07:00', endTime: '15:00', color: '#4DC2AD', isOff: false},
-    {classification: 'EVENING', nameKey: 'evening', shortName: 'E', startTime: '15:00', endTime: '23:00', color: '#FF8BA5', isOff: false},
-    {classification: 'NIGHT', nameKey: 'night', shortName: 'N', startTime: '23:00', endTime: '07:00', color: '#3580FF', isOff: false},
-    {classification: 'OFF', nameKey: 'off', shortName: 'O', startTime: '', endTime: '', color: '#465B7A', isOff: true},
-] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
 const DEFAULT_NEW_NURSE_PREFIX = '\uC2E0\uADDC \uAC04\uD638\uC0AC';
@@ -286,7 +281,7 @@ const createScheduleInputShiftType = (shortName: string, color: string): TOnboar
         shortName,
         startTime: isOff ? '' : '09:00',
         endTime: isOff ? '' : '18:00',
-        color,
+        color: isOff ? DEFAULT_OFF_SHIFT_TYPE_COLOR : color,
         isDefault: isOff,
         isOff,
         isCounted: !isOff,
@@ -408,7 +403,7 @@ export const getDefaultShiftTypeColor = (shortName?: string | null, fallbackInde
         case 'N':
             return '#3580FF';
         case 'O':
-            return '#465B7A';
+            return DEFAULT_OFF_SHIFT_TYPE_COLOR;
         default:
             return DEFAULT_SHIFT_TYPE_COLORS[fallbackIndex % DEFAULT_SHIFT_TYPE_COLORS.length] ?? DEFAULT_SHIFT_TYPE_COLORS[0];
     }
@@ -606,7 +601,7 @@ const getScheduleOffShiftShortName = (value: string): string | null => {
 
     if (!normalized || !SCHEDULE_OFF_SHIFT_ALIASES.has(normalized)) return null;
 
-    return normalized;
+    return normalized === 'OFF' ? DEFAULT_SCHEDULE_OFF_SHIFT_SHORT_NAME : normalized;
 };
 const normalizeScheduleShiftShortName = (value: string): string | null => {
     const normalized = normalizeOnboardingShiftCode(value);
@@ -615,7 +610,7 @@ const normalizeScheduleShiftShortName = (value: string): string | null => {
 
     // The previous schedule's code is an identifier. Preserve it even when it
     // looks like a built-in alias (e.g. N may mean a day shift at this ward).
-    return normalized;
+    return normalized === 'OFF' ? DEFAULT_SCHEDULE_OFF_SHIFT_SHORT_NAME : normalized;
 };
 const normalizeShiftCodeToRemap = (value: string | undefined) => {
     const normalized = value ? normalizeOnboardingShiftCode(value) : '';
@@ -1167,8 +1162,8 @@ export const updateShiftTypeDraft = (
     const targetShiftType = draft.shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
     const isShortNameUpdate = Object.prototype.hasOwnProperty.call(updater, 'shortName');
 
-    if (targetShiftType?.protectedByPreviousSchedule && isShortNameUpdate) {
-        const {shortName: _shortName, ...safeUpdater} = updater;
+    if (targetShiftType?.protectedByPreviousSchedule && (isShortNameUpdate || updater.isActive === false)) {
+        const {shortName: _shortName, isActive: _isActive, ...safeUpdater} = updater;
 
         return {
             ...draft,
@@ -1283,63 +1278,6 @@ export const addShiftTypeDraft = (draft: TOnboardingWardDraft): TOnboardingWardD
             possibleShiftTypeIds: nurse.possibleShiftTypeIds.includes(shiftType.id)
                 ? nurse.possibleShiftTypeIds
                 : [...nurse.possibleShiftTypeIds, shiftType.id],
-        })),
-    };
-};
-
-const getAvailableRequiredShiftShortName = (preferredShortName: string, shiftTypes: TOnboardingWardShiftType[]) => {
-    const usedShortNameKeys = new Set(
-        shiftTypes
-            .map((shiftType) => getShiftShortNameEntryKey(shiftType.shortName))
-            .filter((shortName): shortName is string => Boolean(shortName)),
-    );
-    const candidates = [preferredShortName, 'W', 'V', 'Q', 'X', 'Y', 'Z', '1', '2', '3', '4'];
-
-    return candidates.find((candidate) => !usedShortNameKeys.has(getShiftShortNameEntryKey(candidate))) ?? preferredShortName;
-};
-
-export const addRequiredShiftTypesDraft = (
-    draft: TOnboardingWardDraft,
-    labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
-): TOnboardingWardDraft => {
-    const activeShiftTypes = draft.shiftTypes.filter(isOnboardingShiftTypeActive);
-    const existingClassifications = new Set(activeShiftTypes.map((shiftType) => shiftType.classification));
-    const missingDefinitions = REQUIRED_SHIFT_TYPE_DEFINITIONS.filter(({classification}) => !existingClassifications.has(classification));
-    let nextShiftTypes = [...draft.shiftTypes];
-    const addedShiftTypeIds: string[] = [];
-
-    missingDefinitions.forEach((definition) => {
-        if (nextShiftTypes.filter(isOnboardingShiftTypeActive).length >= MAX_ONBOARDING_SHIFT_TYPES) {
-            return;
-        }
-
-        const shortName = getAvailableRequiredShiftShortName(definition.shortName, nextShiftTypes);
-        const shiftType = createShiftType({
-            name: labels.shiftNames[definition.nameKey],
-            shortName,
-            startTime: definition.startTime,
-            endTime: definition.endTime,
-            color: definition.color,
-            isDefault: true,
-            isOff: definition.isOff,
-            isCounted: !definition.isOff,
-            classification: definition.classification,
-        });
-
-        nextShiftTypes = [...nextShiftTypes, shiftType];
-        addedShiftTypeIds.push(shiftType.id);
-    });
-
-    if (addedShiftTypeIds.length === 0) {
-        return draft;
-    }
-
-    return {
-        ...draft,
-        shiftTypes: nextShiftTypes,
-        nurses: draft.nurses.map((nurse) => ({
-            ...nurse,
-            possibleShiftTypeIds: [...nurse.possibleShiftTypeIds, ...addedShiftTypeIds],
         })),
     };
 };

@@ -5,6 +5,7 @@ import {Outlet, useLocation, useNavigate} from 'react-router';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryOptions} from '@/entities/ward';
 import useAuth from '@/features/auth';
 import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
+import {MEMBER_PAGE_FRAME_PADDING_CLASS_NAME, MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME} from '@/shared/constant/member-page-layout';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import NavigationBar from '@/widgets/navigation-bar';
@@ -47,18 +48,12 @@ const NOTIFICATION_FRAME_BY_ROUTE = [
     {
         route: ROUTE.MEMBER,
         topClassName: 'top-5 min-[1400px]:top-6 min-[1600px]:top-[52px]',
-        innerClassName:
-            'mx-auto flex w-full max-w-[1560px] min-w-0 justify-end px-3 min-[1400px]:px-4 min-[1600px]:min-w-[1360px] min-[1600px]:px-10',
+        innerClassName: `flex ${MEMBER_PAGE_FRAME_WIDTH_CLASS_NAME} ${MEMBER_PAGE_FRAME_PADDING_CLASS_NAME} justify-end`,
     },
     {
         route: ROUTE.WARD_SETTINGS,
         topClassName: 'top-8',
-        innerClassName: 'mx-auto flex w-full max-w-[960px] justify-end px-4',
-    },
-    {
-        route: ROUTE.WARD_INFO_SETTINGS,
-        topClassName: 'top-8',
-        innerClassName: 'mx-auto flex w-full max-w-[560px] justify-end px-4 md:px-0',
+        innerClassName: 'mx-auto flex w-full max-w-[960px] justify-end pl-4 pr-8',
     },
     {
         route: ROUTE.PROFILE,
@@ -136,6 +131,7 @@ export const MainLayout = () => {
     const shouldKeepStableVerticalScroll = location.pathname === ROUTE.WARD_SETTINGS;
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
     const isHomeRoute = isRouteMatch(location.pathname, ROUTE.HOME);
+    const isPageAnchoredNotificationRoute = location.pathname === ROUTE.WARD_SETTINGS || location.pathname === ROUTE.WARD_INFO_SETTINGS;
     const isMakeRoute = isRouteMatch(location.pathname, ROUTE.MAKE);
     const isMemberRoute = isRouteMatch(location.pathname, ROUTE.MEMBER);
     const notificationFrameConfig = getNotificationFrameConfig(location.pathname);
@@ -257,7 +253,7 @@ export const MainLayout = () => {
             <NavigationBar compactMode={shouldUseCompactNavigation} />
             <main className={cn('relative min-w-0 flex-1 overflow-x-auto', shouldKeepStableVerticalScroll && 'overflow-y-scroll')}>
                 <Outlet />
-                {shouldShowNotificationBell && !isHomeRoute ? (
+                {shouldShowNotificationBell && !isHomeRoute && !isPageAnchoredNotificationRoute ? (
                     <div
                         className={cn(
                             'pointer-events-none absolute inset-x-0 z-[1002]',

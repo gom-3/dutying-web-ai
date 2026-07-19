@@ -237,20 +237,6 @@ describe('MainLayout', () => {
             frameClasses: ['max-w-[1560px]', 'px-3', 'min-[1600px]:px-10'],
         },
         {
-            route: ROUTE.WARD_SETTINGS,
-            routeLabel: 'ward settings',
-            pageText: 'ward settings page',
-            layerClasses: ['top-8'],
-            frameClasses: ['max-w-[960px]', 'px-4'],
-        },
-        {
-            route: ROUTE.WARD_INFO_SETTINGS,
-            routeLabel: 'ward info settings',
-            pageText: 'ward info settings page',
-            layerClasses: ['top-8'],
-            frameClasses: ['max-w-[560px]', 'px-4', 'md:px-0'],
-        },
-        {
             route: ROUTE.PROFILE,
             routeLabel: 'profile',
             pageText: 'profile page',
@@ -276,6 +262,22 @@ describe('MainLayout', () => {
 
         expect(notificationLayer).toHaveClass('pointer-events-none', 'absolute', 'inset-x-0', ...layerClasses);
         expect(notificationFrame).toHaveClass('mx-auto', 'justify-end', ...frameClasses);
+    });
+
+    it.each([ROUTE.WARD_SETTINGS, ROUTE.WARD_INFO_SETTINGS])('leaves page-owned notification bells to the %s content frame', (route) => {
+        mockAuthState.accessToken = 'ward-admin-token';
+
+        render(
+            <MemoryRouter initialEntries={[route]}>
+                <Routes>
+                    <Route element={<MainLayout />}>
+                        <Route path={route} element={<div>settings page</div>} />
+                    </Route>
+                </Routes>
+            </MemoryRouter>,
+        );
+
+        expect(screen.queryByRole('button', {name: 'notification bell'})).not.toBeInTheDocument();
     });
 
     it('moves the member notification bell before the nurse detail drawer when the drawer is open', async () => {

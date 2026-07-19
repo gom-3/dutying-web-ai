@@ -130,8 +130,10 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = 
                     {intro && <StepIntroDescription currentStep={currentStep} description={t(intro.descriptionKey)} />}
                 </div>
 
-                <div className="make-shift-step-content__intro-actions mt-6 grid w-[252px] grid-cols-[auto_auto] items-center justify-end gap-2 min-[1400px]:w-[260px] min-[1600px]:mt-[50px] min-[1600px]:w-[292px]">
-                    {currentStep > 1 ? (
+                <div
+                    className={`make-shift-step-content__intro-actions ${MAKE_SHIFT_STEP_HEADING_PADDING_CLASS} mt-6 grid w-[252px] grid-cols-[auto_auto] items-center justify-start gap-2 min-[1400px]:w-[260px] min-[1600px]:mt-[50px] min-[1600px]:w-[292px]`}
+                >
+                    {currentStep > 1 && (
                         <Button
                             variant="secondary"
                             size="md"
@@ -143,8 +145,6 @@ export function MakeShiftStepContent({currentStep, canPrev, canNext, nextBusy = 
                             <BouncingDotsSlot active={transitioning === 'prev'} className="w-5 shrink-0 text-main-1" />
                             {transitioning === 'prev' ? t('page.makeShift.navigation.moving') : t('page.makeShift.navigation.previous')}
                         </Button>
-                    ) : (
-                        <span aria-hidden="true" className={`invisible ${MAKE_SHIFT_STEP_NAV_BUTTON_CLASS}`} />
                     )}
                     <Button
                         size="md"

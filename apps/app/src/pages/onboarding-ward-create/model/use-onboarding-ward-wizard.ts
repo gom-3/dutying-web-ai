@@ -26,7 +26,6 @@ import {
 } from './adapter';
 import {
     addNurseDraft,
-    addRequiredShiftTypesDraft,
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
@@ -1130,10 +1129,6 @@ function useOnboardingWardWizard() {
         markDraftTouched();
         setDraft((prev) => addShiftTypeDraft(prev));
     };
-    const addRequiredShiftTypes = () => {
-        markDraftTouched();
-        setDraft((prev) => addRequiredShiftTypesDraft(prev, onboardingDraftLabels));
-    };
     const deleteShiftType = (shiftTypeId: string) => {
         markDraftTouched();
         setDraft((prev) => deleteShiftTypeDraft(prev, shiftTypeId));
@@ -1536,7 +1531,6 @@ function useOnboardingWardWizard() {
         updateWardIdentity,
         skipOrComplete,
         addShiftType,
-        addRequiredShiftTypes,
         updateShiftType,
         deleteShiftType,
         addTeam,

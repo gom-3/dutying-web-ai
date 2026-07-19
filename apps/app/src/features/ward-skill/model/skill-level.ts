@@ -42,7 +42,7 @@ const STORAGE_KEY = 'ward-skill-settings:v1';
 const SKILL_PALETTES: TSkillPalette[] = [
     {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
     {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
-    {id: 'violet', colors: ['#E8D9FF', '#D8C3FF', '#C4A8FF', '#A382F5']},
+    {id: 'violet', colors: ['#FFE0EC', '#FFC4D7', '#FF9FBD', '#E85D8E']},
     {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
 ];
 

@@ -36,6 +36,7 @@ type TRequestCalendarDocRowMeta = {
 export type TRequestCalendarData = {
     shift: TShift;
     doc: TDutyDoc;
+    dimmedRequestCells: Record<string, true>;
     rowsByDocIndex: TRequestCalendarDocRowMeta[];
     rowIndexByShiftNurseId: Map<number, number>;
 };
@@ -51,6 +52,7 @@ export function requestShiftToCalendarData(
     const columns = requestShift.days.map((day) => getDateKey(year, month, day.day));
     const workerMeta: TDutyDoc['workerMeta'] = {};
     const requestCells: TDutyDoc['requestCells'] = {};
+    const dimmedRequestCells: TRequestCalendarData['dimmedRequestCells'] = {};
     const rowsByDocIndex: TRequestCalendarDocRowMeta[] = [];
     const rowIndexByShiftNurseId = new Map<number, number>();
     const docRows: TDutyDoc['rows'] = [];
@@ -68,6 +70,10 @@ export function requestShiftToCalendarData(
                     const date = columns[dayIndex];
 
                     if (date) requestCells[`${workerId}|${date}`] = true;
+                } else if (displayShiftTypeId !== null) {
+                    const date = columns[dayIndex];
+
+                    if (date) dimmedRequestCells[`${workerId}|${date}`] = true;
                 }
 
                 if (displayShiftTypeId === null) return null;
@@ -117,6 +123,7 @@ export function requestShiftToCalendarData(
             fixedCells: {},
             requestCells,
         },
+        dimmedRequestCells,
         rowsByDocIndex,
         rowIndexByShiftNurseId,
     };

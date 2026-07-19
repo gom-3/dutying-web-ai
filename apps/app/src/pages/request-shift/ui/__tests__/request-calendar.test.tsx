@@ -302,10 +302,13 @@ describe('RequestCalendar', () => {
         renderRequestCalendar();
 
         const requestPin = document.querySelector<HTMLElement>('[data-cell-status-pin="request"]');
+        const requestCell = document.querySelector<HTMLElement>('[data-day-index="0"]');
 
         expect(requestPin).toBeInTheDocument();
         expect(requestPin).toHaveAttribute('title', '신청 근무');
         expect(screen.getByText('D')).toBeInTheDocument();
+        expect(requestCell).not.toHaveAttribute('data-dimmed-request-cell');
+        expect(requestCell?.querySelector('.make-shift-calendar__shift-badge')).not.toHaveClass('opacity-60');
     });
 
     it('캘린더 셀을 클릭하면 기존 focus 하이라이팅 상태를 요청한다', async () => {
@@ -363,18 +366,22 @@ describe('RequestCalendar', () => {
         ).toBe(true);
     });
 
-    it('수락하지 않은 신청 근무에는 핀을 표시하지 않는다', () => {
+    it.each([null, false] as const)('대기·거절 신청 근무는 옅은 색으로 표시하고 핀을 표시하지 않는다', (requestAccepted) => {
         mockUseRequestShift.mockReturnValue(
             createUseRequestShiftValue({
                 hasNurses: true,
                 hasRequest: true,
-                requestAccepted: null,
+                requestAccepted,
             }),
         );
 
         renderRequestCalendar();
 
+        const requestCell = document.querySelector<HTMLElement>('[data-day-index="0"]');
+
         expect(document.querySelector('[data-cell-status-pin="request"]')).not.toBeInTheDocument();
+        expect(requestCell).toHaveAttribute('data-dimmed-request-cell', 'true');
+        expect(requestCell?.querySelector('.make-shift-calendar__shift-badge')).toHaveClass('opacity-60');
         expect(screen.getByText('D')).toBeInTheDocument();
     });
 });

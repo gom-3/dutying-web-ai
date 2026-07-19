@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import {getWardDisplayCode, getWardDisplayTitle, wardQueryKeys, wardQueryOptions} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import WardAdminsPage from '@/pages/ward-admins';
 import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -13,6 +14,7 @@ import Card from '@/shared/ui/Card';
 import PageState from '@/shared/ui/PageState';
 import {Button} from '@/shared/ui/primitives/button';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
+import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import WardCodeGuideModal from '@/widgets/ward-code-guide-modal';
 
 type TWardInfoField = 'hospitalName' | 'name';
@@ -30,7 +32,7 @@ const sanitizeWardNameInput = (rawValue: string) => rawValue.replace(WARD_NAME_I
 function WardInfoSettingsPage() {
     const {t} = useTypedTranslation();
     const {
-        state: {wardId},
+        state: {accessToken, wardId},
     } = useAuth();
     const {quitWard} = useEditAccount();
     const queryClient = useQueryClient();
@@ -50,6 +52,7 @@ function WardInfoSettingsPage() {
     };
     const isDirty = draft.hospitalName.trim() !== originalDraft.hospitalName.trim() || draft.name.trim() !== originalDraft.name.trim();
     const isSaveDisabled = isSaving || !isDirty;
+    const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
     const getFieldLabel = (field: TWardInfoField) =>
         field === 'hospitalName' ? t('page.wardInfoSettings.hospitalName') : t('page.wardInfoSettings.wardName');
     const validateWardName = (field: TWardInfoField, value: string) => {
@@ -167,7 +170,12 @@ function WardInfoSettingsPage() {
 
     return (
         <div className="mx-auto w-full max-w-[560px] px-4 py-8 md:px-0">
-            <div className="mx-auto flex max-w-[480px] items-start justify-between gap-4">
+            <div className="relative mx-auto flex max-w-[480px] items-start justify-between gap-4">
+                {shouldShowNotificationBell ? (
+                    <div className="pointer-events-none absolute top-0 right-0 z-[1002]">
+                        <NotificationBell />
+                    </div>
+                ) : null}
                 <div>
                     <h1 className="font-apple text-[32px] font-semibold tracking-normal text-sub-1">{t('page.wardInfoSettings.title')}</h1>
                 </div>

@@ -481,6 +481,7 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.wardShiftTypes.map((shiftType) => shiftType.shortName)).toEqual(['DA', 'EV', 'N', '-']);
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.classification).toBe('OFF');
         expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.isOff).toBe(true);
+        expect(payload.wardShiftTypes.find((shiftType) => shiftType.shortName === '-')?.color).toBe('#465B7A');
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'D')).toBe(false);
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'E')).toBe(false);
         expect(payload.wardShiftTypes.some((shiftType) => shiftType.shortName === 'O')).toBe(false);

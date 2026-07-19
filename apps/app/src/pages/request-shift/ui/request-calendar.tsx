@@ -307,6 +307,7 @@ export default function ShiftCalendar({
                                     shift={requestCalendarData.shift}
                                     doc={requestCalendarData.doc}
                                     violationMap={EMPTY_VIOLATION_MAP}
+                                    dimmedRequestCells={requestCalendarData.dimmedRequestCells}
                                     showFaults={false}
                                     variant="simplified"
                                     readonly

@@ -50,6 +50,7 @@ import {useDutyEditorStep} from '../shared/use-duty-editor-step';
 import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
+import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
 import {AiSnapshotSidebar} from './ai-snapshot-sidebar';
 import {findFirstBlankLastShiftCell, getBlankLastShiftCellsWarningKey} from './last-shift-warning';
 
@@ -280,6 +281,7 @@ export function AiAutofill() {
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
     const [aiFillDecisionContext, setAiFillDecisionContext] = useState<TAiFillDecisionContext | null>(null);
+    const aiFillDecisionFixedCellsRef = useRef<TDutyDoc['fixedCells'] | null>(null);
     const collapseNavigationBar = useNavigationBarFoldStore((s) => s.collapse);
     const invalidateSnapshots = useInvalidateScheduleSnapshots();
     const snapshotsQuery = useScheduleSnapshots({
@@ -409,6 +411,7 @@ export function AiAutofill() {
         setLastShiftBlankWarningIntent(null);
         setLastShiftBlankWarningAcknowledgedKey(null);
         setAiFillDecisionContext(null);
+        aiFillDecisionFixedCellsRef.current = null;
         markLastAiGeneratedDoc(null);
         aiAbortControllerRef.current?.abort();
         aiAbortControllerRef.current = null;
@@ -480,6 +483,7 @@ export function AiAutofill() {
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
         [editorDoc, lastAiGeneratedDocVersion],
     );
+    const isAiFillDecisionPreviewOpen = aiFillDecisionContext !== null;
     const hasUnsavedEditableChanges = useMemo(
         () => hasAiGeneratedUnsavedChanges || hasEditableDutyDocChanges(editorDoc, savedEditableDocRef.current),
         [editorDoc, hasAiGeneratedUnsavedChanges, savedEditableDocVersion],
@@ -1017,12 +1021,50 @@ export function AiAutofill() {
             toast.success(t('page.makeShift.aiRefill.unfixSelectionSuccess', {count: changedCount}));
         }
     };
+    const openAiFillDecision = (context: TAiFillDecisionContext) => {
+        aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
+        setAiFillDecisionContext(context);
+    };
+    const restoreAiFillDecisionFixedCells = () => {
+        const snapshot = aiFillDecisionFixedCellsRef.current;
+
+        aiFillDecisionFixedCellsRef.current = null;
+
+        if (!snapshot) return;
+
+        const currentDoc = useShiftEditorStore.getState().doc;
+        const cellsToFix: TCellPos[] = [];
+        const cellsToUnfix: TCellPos[] = [];
+
+        for (let row = 0; row < currentDoc.rows.length; row += 1) {
+            for (let col = 0; col < currentDoc.columns.length; col += 1) {
+                const key = getDocCellKey(currentDoc, row, col);
+
+                if (key === null) continue;
+
+                const wasFixed = snapshot[key] === true;
+                const isFixed = currentDoc.fixedCells[key] === true;
+
+                if (wasFixed === isFixed) continue;
+
+                if (wasFixed) {
+                    cellsToFix.push({row, col});
+                } else {
+                    cellsToUnfix.push({row, col});
+                }
+            }
+        }
+
+        if (cellsToFix.length > 0) commands.setCellsFixed(cellsToFix, true);
+
+        if (cellsToUnfix.length > 0) commands.setCellsFixed(cellsToUnfix, false);
+    };
     const runAiFillWithDecision = (readyContext = getAiFillReadyContext()) => {
         if (!readyContext) return;
 
         if (!hasCompletedAiFill) {
             if (unprotectedFilledCells.length > 0) {
-                setAiFillDecisionContext({kind: 'initial', cellCount: unprotectedFilledCells.length});
+                openAiFillDecision({kind: 'initial', cellCount: unprotectedFilledCells.length});
 
                 return;
             }
@@ -1033,7 +1075,7 @@ export function AiAutofill() {
         }
 
         if (editedFilledCellsSinceLastAi.length > 0) {
-            setAiFillDecisionContext({kind: 'regenerate', cellCount: editedFilledCellsSinceLastAi.length});
+            openAiFillDecision({kind: 'regenerate', cellCount: editedFilledCellsSinceLastAi.length});
 
             return;
         }
@@ -1055,6 +1097,7 @@ export function AiAutofill() {
     const handleConfirmAiFillDecision = () => {
         const decisionContext = aiFillDecisionContext;
 
+        aiFillDecisionFixedCellsRef.current = null;
         setAiFillDecisionContext(null);
 
         if (!decisionContext) return;
@@ -1073,6 +1116,7 @@ export function AiAutofill() {
     const handleCancelAiFillDecision = () => {
         const decisionContext = aiFillDecisionContext;
 
+        aiFillDecisionFixedCellsRef.current = null;
         setAiFillDecisionContext(null);
 
         if (!decisionContext) return;
@@ -1085,6 +1129,31 @@ export function AiAutofill() {
 
         commands.resetAutofilled('user');
         void runAiFill();
+    };
+    const handleEditAiFillDecision = () => {
+        restoreAiFillDecisionFixedCells();
+        setAiFillDecisionContext(null);
+        setIsAiBlankPreviewVisible(false);
+    };
+    const handleToggleAiFillDecisionCell = (rowIndex: number, colIndex: number) => {
+        const currentDoc = useShiftEditorStore.getState().doc;
+        const cellKey = getDocCellKey(currentDoc, rowIndex, colIndex);
+        const cellValue = currentDoc.rows[rowIndex]?.cells[colIndex];
+
+        if (cellKey === null || cellValue == null) return;
+
+        if (currentDoc.requestCells[cellKey] === true) {
+            toast.error(t('page.makeShift.aiRefill.prefillDecision.requestLocked'));
+
+            return;
+        }
+
+        const nextFixed = currentDoc.fixedCells[cellKey] !== true;
+        const changedCount = commands.setCellsFixed([{row: rowIndex, col: colIndex}], nextFixed);
+
+        if (changedCount > 0) {
+            toast.success(t(nextFixed ? 'page.makeShift.calendar.fixCellSuccess' : 'page.makeShift.calendar.unfixCellSuccess'));
+        }
     };
     const handleConfirmLastShiftBlankWarning = () => {
         const warningIntent = lastShiftBlankWarningIntent;
@@ -1156,23 +1225,6 @@ export function AiAutofill() {
             </span>
         </>
     );
-    const aiFillDecisionTitle =
-        aiFillDecisionContext?.kind === 'initial'
-            ? t('page.makeShift.aiRefill.prefillDecision.title')
-            : t('page.makeShift.aiRefill.regenerateDecision.title');
-    const aiFillDecisionDescription = aiFillDecisionContext
-        ? aiFillDecisionContext.kind === 'initial'
-            ? t('page.makeShift.aiRefill.prefillDecision.description', {count: aiFillDecisionContext.cellCount})
-            : t('page.makeShift.aiRefill.regenerateDecision.description', {count: aiFillDecisionContext.cellCount})
-        : '';
-    const aiFillDecisionConfirmLabel =
-        aiFillDecisionContext?.kind === 'initial'
-            ? t('page.makeShift.aiRefill.prefillDecision.confirm')
-            : t('page.makeShift.aiRefill.regenerateDecision.confirm');
-    const aiFillDecisionCancelLabel =
-        aiFillDecisionContext?.kind === 'initial'
-            ? t('page.makeShift.aiRefill.prefillDecision.cancel')
-            : t('page.makeShift.aiRefill.regenerateDecision.cancel');
     const publishConfirmDescription =
         connectedNurseCount > 0
             ? t('page.makeShift.aiRefill.publishConfirm.description', {count: connectedNurseCount})
@@ -1226,7 +1278,7 @@ export function AiAutofill() {
                         action={{label: t('page.state.retry'), onClick: () => void dutyQuery.refetch()}}
                     />
                 )}
-                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && (
+                {!dutyQuery.isLoading && !isHydratingEditor && !dutyQuery.isError && orderedShift && !isAiFillDecisionPreviewOpen && (
                     <MakeShiftCalendar
                         shift={orderedShift}
                         doc={visibleCalendarDoc}
@@ -1271,15 +1323,23 @@ export function AiAutofill() {
                 onRequestDeleteSnapshot={setSnapshotDeleteTarget}
                 onRetry={() => void snapshotsQuery.refetch()}
             />
-            <ConfirmActionDialog
-                open={aiFillDecisionContext !== null}
-                title={aiFillDecisionTitle}
-                description={aiFillDecisionDescription}
-                confirmLabel={aiFillDecisionConfirmLabel}
-                cancelLabel={aiFillDecisionCancelLabel}
-                onClose={() => setAiFillDecisionContext(null)}
-                onCancel={handleCancelAiFillDecision}
-                onConfirm={handleConfirmAiFillDecision}
+            <AiFillDecisionDialog
+                open={isAiFillDecisionPreviewOpen}
+                kind={aiFillDecisionContext?.kind ?? 'initial'}
+                shift={orderedShift ?? null}
+                doc={editorDoc}
+                violationMap={violationMap}
+                teamViolations={teamViolations}
+                onClose={handleEditAiFillDecision}
+                onToggleCellFixed={handleToggleAiFillDecisionCell}
+                onEdit={handleEditAiFillDecision}
+                onConfirm={aiFillDecisionContext?.kind === 'regenerate' ? handleCancelAiFillDecision : handleConfirmAiFillDecision}
+                cancelLabel={t('shared.confirmActionDialog.cancel')}
+                confirmLabel={
+                    aiFillDecisionContext?.kind === 'regenerate'
+                        ? t('page.makeShift.aiRefill.regenerateDecision.cancel')
+                        : t('page.makeShift.aiRefill.prefillDecision.confirm')
+                }
             />
             <ConfirmActionDialog
                 open={publishConfirmOpen}

@@ -1,7 +1,6 @@
 import {describe, expect, it} from 'vitest';
 import {
     addNurseDraft,
-    addRequiredShiftTypesDraft,
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
@@ -123,24 +122,6 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(missingEveningDraft)).toBe(false);
     });
 
-    it('adds missing required shift types with non-conflicting short names', () => {
-        const initialDraft = createInitialDraft();
-        const dayShift = initialDraft.shiftTypes.find((shiftType) => shiftType.classification === 'DAY');
-
-        if (!dayShift) {
-            throw new Error('default day shift type is required for this test');
-        }
-
-        const missingDayDraft = updateShiftTypeDraft(initialDraft, dayShift.id, {classification: 'OTHER_WORK'});
-        const completedShiftTypesDraft = addRequiredShiftTypesDraft(missingDayDraft);
-        const addedDayShift = completedShiftTypesDraft.shiftTypes.find((shiftType) => shiftType.classification === 'DAY');
-
-        expect(addedDayShift).toEqual(expect.objectContaining({name: '데이', shortName: 'W', classification: 'DAY'}));
-        expect(getStepValidation(completedShiftTypesDraft, 3).issues).not.toEqual(
-            expect.arrayContaining([{code: 'missing-required-shift-types', step: 3}]),
-        );
-    });
-
     it('blocks duplicate shift short names', () => {
         const initialDraft = createInitialDraft();
         const firstShift = initialDraft.shiftTypes[0];
@@ -203,7 +184,7 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canGoNext(duplicateDraft)).toBe(false);
     });
 
-    it('allows three-character keyboard abbreviations and blocks invalid first keys', () => {
+    it('allows two-character keyboard abbreviations and blocks invalid first keys', () => {
         const initialDraft = createInitialDraft();
         const firstShift = initialDraft.shiftTypes[0];
 
@@ -217,7 +198,7 @@ describe('OnboardingWardCreatePage model', () => {
                 currentStep: 3,
             },
             firstShift.id,
-            {shortName: '_11'},
+            {shortName: '_1'},
         );
 
         expect(getStepValidation(symbolDraft, 3).issues).not.toEqual(
@@ -230,7 +211,7 @@ describe('OnboardingWardCreatePage model', () => {
             expect.arrayContaining([{code: 'invalid-shift-short-name', step: 3, targetId: firstShift.id}]),
         );
 
-        const tooLongDraft = updateShiftTypeDraft(symbolDraft, firstShift.id, {shortName: 'ABCD'});
+        const tooLongDraft = updateShiftTypeDraft(symbolDraft, firstShift.id, {shortName: 'ABC'});
 
         expect(getStepValidation(tooLongDraft, 3).issues).toEqual(
             expect.arrayContaining([{code: 'invalid-shift-short-name', step: 3, targetId: firstShift.id}]),
@@ -694,7 +675,7 @@ describe('OnboardingWardCreatePage model', () => {
             {date: '2026-05-01', shiftShortName: 'D'},
             {date: '2026-05-02', shiftShortName: '/'},
             {date: '2026-05-03', shiftShortName: '-'},
-            {date: '2026-05-04', shiftShortName: 'OFF'},
+            {date: '2026-05-04', shiftShortName: 'O'},
             {date: '2026-05-05', shiftShortName: '휴무'},
             {date: '2026-05-06', shiftShortName: '교육'},
         ]);

@@ -30,6 +30,7 @@ export type TWardConstraint = {
 
 export type TWardShiftType = {
     wardShiftTypeId: number;
+    displayOrder?: number;
     name: string;
     shortName: string;
     startTime: string;
@@ -40,6 +41,7 @@ export type TWardShiftType = {
     isCounted: boolean;
     classification: TWardShiftClassification;
     isActive?: boolean;
+    isUsed?: boolean;
 };
 
 export type TShiftNurse = {

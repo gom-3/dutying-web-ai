@@ -682,6 +682,7 @@ export type TCreateWardShiftTypeDTO = {
     isCounted: boolean;
     classification: TWardShiftClassification;
     isActive?: boolean;
+    displayOrder?: number;
 };
 
 export type TCreateWardSeedNurseDTO = {
@@ -804,4 +805,5 @@ export type TCreateShiftTypeDTO = {
     isDefault: boolean;
     isCounted: boolean;
     classification: TWardShiftClassification;
+    displayOrder?: number;
 };

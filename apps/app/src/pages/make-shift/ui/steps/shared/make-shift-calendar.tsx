@@ -62,6 +62,12 @@ type TMakeShiftCalendarProps = {
      */
     readonly?: boolean;
     /**
+     * true면 캘린더를 이미지처럼 표시한다. 포인터·키보드로 선택하거나 편집할 수 없다.
+     */
+    staticPreview?: boolean;
+    /** true면 정적 미리보기에서도 셀 클릭 콜백만 허용한다. 선택·편집은 여전히 막는다. */
+    interactivePreview?: boolean;
+    /**
      * true이면 기본 (0,0) 셀 선택을 한 번 지워 /duty 등에서 초기 포커스 링을 숨긴다.
      */
     disableInitialSelection?: boolean;
@@ -77,6 +83,8 @@ type TMakeShiftCalendarProps = {
      * true면 날짜 셀의 근무유형 칩 왼쪽 상단에 고정/신청 상태 핀을 표시한다.
      */
     showCellStatusPins?: boolean;
+    /** true인 셀은 신청 대기·거절 상태로, 실제 근무 색보다 옅게 표시한다. */
+    dimmedRequestCells?: Record<string, true>;
     /**
      * true면 날짜 셀에서 우클릭으로 해당 셀을 고정 근무로 표시한다.
      */
@@ -85,6 +93,10 @@ type TMakeShiftCalendarProps = {
     focusedCell?: TCellPos | null;
     skillColumn?: TSkillColumnConfig;
     restCheckByShiftNurseId?: Record<number, TRestCheckSummary>;
+    /** AI 자동채우기 확인 모달에서 고정된 셀만 선명하게 표시한다. */
+    fixedCellPreview?: boolean;
+    /** true면 미리보기 셀 배지의 기본 회색 테두리를 제거한다. */
+    borderlessPreview?: boolean;
     restPolicyControl?: ReactNode;
     canReorderRows?: boolean;
     rowReorderDisabled?: boolean;
@@ -183,6 +195,23 @@ const getSummaryGridTemplateColumns = (count: number, showRestCheckColumn: boole
     [count > 0 ? `repeat(${count}, minmax(${SUMMARY_CELL_SIZE}, 1fr))` : null, showRestCheckColumn ? REST_CHECK_COL : null]
         .filter(Boolean)
         .join(' ');
+/**
+ * 합계 영역은 헤더·본문·하단에서 각각 flex item으로 렌더링되므로
+ * 콘텐츠의 intrinsic width에 맡기면 좁은 화면에서 소수점 반올림 차이가 생길 수 있다.
+ * 동일한 최소 track + gap + padding을 하나의 폭으로 공유해 좌측 날짜 그리드의 끝을 고정한다.
+ */
+const getSummaryGridWidth = (count: number, showRestCheckColumn: boolean) => {
+    const columnCount = count + (showRestCheckColumn ? 1 : 0);
+    const terms = [
+        ...Array.from({length: count}, () => SUMMARY_CELL_SIZE),
+        ...(showRestCheckColumn ? [REST_CHECK_COL] : []),
+        ...Array.from({length: Math.max(0, columnCount - 1)}, () => SUMMARY_GAP),
+        SUMMARY_PADDING_X,
+        SUMMARY_PADDING_X,
+    ];
+
+    return terms.length > 0 ? `calc(${terms.join(' + ')})` : '0px';
+};
 /** 우측 row-summary 행 · footer daily-summary 행 공통 높이 */
 const ROW_SUMMARY_HEIGHT = 'h-[clamp(28px,2.4cqw,40px)]';
 /** row-summary 우측 합계 숫자 · daily-summary 일자별 셀 — 동일 글자 크기·색 */
@@ -1189,15 +1218,20 @@ export function MakeShiftCalendar({
     onCellClick,
     tutorialCellId,
     readonly = false,
+    staticPreview = false,
+    interactivePreview = false,
     disableInitialSelection = false,
     editableLastShifts = false,
     isShimmering = false,
     showCellStatusPins = false,
+    dimmedRequestCells,
     fixCellOnContextMenu = false,
     cellAttention = null,
     focusedCell,
     skillColumn,
     restCheckByShiftNurseId,
+    fixedCellPreview = false,
+    borderlessPreview = false,
     restPolicyControl,
     canReorderRows = false,
     rowReorderDisabled = false,
@@ -1215,7 +1249,13 @@ export function MakeShiftCalendar({
         [focusedCell],
     );
     const hasControlledSelection = focusedCell !== undefined;
-    const displaySelectionRect = hasControlledSelection ? controlledSelectionRect : readonly ? readonlySelectionRect : selectionRect;
+    const displaySelectionRect = staticPreview
+        ? null
+        : hasControlledSelection
+          ? controlledSelectionRect
+          : readonly
+            ? readonlySelectionRect
+            : selectionRect;
     const crosshairSelectionRect = isSingleCellSelectionRect(displaySelectionRect) ? displaySelectionRect : null;
     const didClearInitialSelection = useRef(false);
     const dragSelectionRef = useRef<{from: TCellPos; pointerId: number} | null>(null);
@@ -1294,10 +1334,11 @@ export function MakeShiftCalendar({
     }, [selectableShiftTypes.length]);
     const openShiftTypeDropdown = useCallback(
         (target: HTMLElement, rowIndex: number, colIndex: number, currentValue: TCellValue) => {
-            if (selectableShiftTypes.length === 0 || !canOpenShiftTypeDropdown(rowIndex, colIndex, readonly)) return;
+            if (staticPreview || selectableShiftTypes.length === 0 || !canOpenShiftTypeDropdown(rowIndex, colIndex, readonly)) return;
 
             const doc = useShiftEditorStore.getState().doc;
             const actionState = getShiftTypeDropdownActionState(doc, rowIndex, colIndex, currentValue);
+
             closeViolationPopover();
             commands.select({row: rowIndex, col: colIndex});
             onCellClick?.(rowIndex, colIndex);
@@ -1306,23 +1347,21 @@ export function MakeShiftCalendar({
                 rowIndex,
                 colIndex,
                 currentValue,
-                position: getShiftTypeDropdownPosition(
-                    target,
-                    getShiftTypeDropdownOptionCount(selectableShiftTypes.length, actionState),
-                ),
+                position: getShiftTypeDropdownPosition(target, getShiftTypeDropdownOptionCount(selectableShiftTypes.length, actionState)),
             });
         },
-        [closeViolationPopover, commands, onCellClick, readonly, selectableShiftTypes.length],
+        [closeViolationPopover, commands, onCellClick, readonly, selectableShiftTypes.length, staticPreview],
     );
     const handleShiftTypeDropdownFixedChange = useCallback(
         (rowIndex: number, colIndex: number, fixed: boolean) => {
-            if (readonly || colIndex < 0) {
+            if (staticPreview || readonly || colIndex < 0) {
                 closeShiftTypeDropdown();
 
                 return;
             }
 
             commands.select({row: rowIndex, col: colIndex});
+
             const changedCount = commands.setCellsFixed([{row: rowIndex, col: colIndex}], fixed);
 
             if (changedCount > 0) {
@@ -1332,11 +1371,11 @@ export function MakeShiftCalendar({
             closeShiftTypeDropdown();
             onCellClick?.(rowIndex, colIndex);
         },
-        [closeShiftTypeDropdown, commands, onCellClick, readonly, t],
+        [closeShiftTypeDropdown, commands, onCellClick, readonly, staticPreview, t],
     );
     const handleShiftTypeDropdownSelect = useCallback(
         (rowIndex: number, colIndex: number, value: TCellValue) => {
-            if (!isEditableDutyCell(rowIndex, colIndex, readonly)) {
+            if (staticPreview || !isEditableDutyCell(rowIndex, colIndex, readonly)) {
                 closeShiftTypeDropdown();
 
                 return;
@@ -1347,7 +1386,7 @@ export function MakeShiftCalendar({
             closeShiftTypeDropdown();
             onCellClick?.(rowIndex, colIndex);
         },
-        [closeShiftTypeDropdown, commands, onCellClick, readonly],
+        [closeShiftTypeDropdown, commands, onCellClick, readonly, staticPreview],
     );
 
     useEffect(() => {
@@ -1377,12 +1416,12 @@ export function MakeShiftCalendar({
     }, [cancelScheduledViolationPopover]);
 
     useEffect(() => {
-        if (readonly) closeShiftTypeDropdown();
-    }, [closeShiftTypeDropdown, readonly]);
+        if (staticPreview || readonly) closeShiftTypeDropdown();
+    }, [closeShiftTypeDropdown, readonly, staticPreview]);
 
     useEffect(() => {
-        if (!readonly) setReadonlySelectionRect(null);
-    }, [readonly]);
+        if (staticPreview || !readonly) setReadonlySelectionRect(null);
+    }, [readonly, staticPreview]);
 
     useEffect(() => {
         const finishDragSelection = () => {
@@ -1399,7 +1438,7 @@ export function MakeShiftCalendar({
     }, []);
 
     useEffect(() => {
-        if (readonly) return;
+        if (staticPreview || readonly) return;
 
         const handlePointerDown = (event: PointerEvent) => {
             const target = event.target;
@@ -1420,7 +1459,7 @@ export function MakeShiftCalendar({
         return () => {
             document.removeEventListener('pointerdown', handlePointerDown);
         };
-    }, [commands, readonly]);
+    }, [commands, readonly, staticPreview]);
 
     /**
      * 셀 클릭 처리.
@@ -1428,6 +1467,12 @@ export function MakeShiftCalendar({
      * - 부모의 onCellClick은 부가 동작(주로 editor 영역 focus)으로만 사용된다.
      */
     const handleCellClick = (rowIndex: number, colIndex: number) => {
+        if (staticPreview) {
+            onCellClick?.(rowIndex, colIndex);
+
+            return;
+        }
+
         if (!readonly) {
             commands.select({row: rowIndex, col: colIndex});
         } else if (!hasControlledSelection) {
@@ -1439,7 +1484,7 @@ export function MakeShiftCalendar({
     const handleCellPointerDown = (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => {
         cancelScheduledViolationPopover();
 
-        if (readonly || event.button !== 0) return;
+        if (staticPreview || readonly || event.button !== 0) return;
 
         const cell = {row: rowIndex, col: colIndex};
 
@@ -1449,7 +1494,7 @@ export function MakeShiftCalendar({
         onCellClick?.(rowIndex, colIndex);
     };
     const handleCellPointerEnter = (event: ReactPointerEvent<HTMLElement>, rowIndex: number, colIndex: number) => {
-        if (readonly) return;
+        if (staticPreview || readonly) return;
 
         const dragSelection = dragSelectionRef.current;
 
@@ -1463,7 +1508,7 @@ export function MakeShiftCalendar({
 
             event.preventDefault();
 
-            if (readonly || colIndex < 0) return;
+            if (staticPreview || readonly || colIndex < 0) return;
 
             cancelScheduledViolationPopover();
             closeViolationPopover();
@@ -1492,6 +1537,7 @@ export function MakeShiftCalendar({
             fixCellOnContextMenu,
             onCellClick,
             readonly,
+            staticPreview,
             t,
         ],
     );
@@ -1589,6 +1635,7 @@ export function MakeShiftCalendar({
         skillColumnInsetWidth,
         showDragHandleColumn,
     );
+    const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn);
 
     let didAssignTutorialCell = false;
 
@@ -1609,6 +1656,7 @@ export function MakeShiftCalendar({
             className={cn(
                 'make-shift-calendar @container relative isolate flex w-full min-w-0 flex-col gap-2',
                 isShimmering && 'make-shift-calendar--shimmering',
+                staticPreview && !interactivePreview && 'pointer-events-none select-none',
             )}
         >
             {/* HEADER */}
@@ -1675,7 +1723,7 @@ export function MakeShiftCalendar({
                                 <button
                                     key={j}
                                     type="button"
-                                    tabIndex={hasDayViolations ? 0 : -1}
+                                    tabIndex={staticPreview ? -1 : hasDayViolations ? 0 : -1}
                                     data-day-header-index={j}
                                     data-day-type={normalizedDayType}
                                     data-selected-column={isColumnSelected || undefined}
@@ -1743,6 +1791,7 @@ export function MakeShiftCalendar({
                     <div
                         className="make-shift-calendar__type-summary-header grid shrink-0 items-center justify-center justify-items-center"
                         style={{
+                            width: summaryGridWidth,
                             gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
                             gap: SUMMARY_GAP,
                             paddingInline: SUMMARY_PADDING_X,
@@ -1924,6 +1973,7 @@ export function MakeShiftCalendar({
                                                                     cells={docEntry.row.cells}
                                                                     fixedCells={doc.fixedCells}
                                                                     requestCells={doc.requestCells}
+                                                                    dimmedRequestCells={dimmedRequestCells}
                                                                     rowIndex={docEntry.index}
                                                                     shiftNurseId={row.shiftNurse.shiftNurseId}
                                                                     shortNameToType={shortNameToType}
@@ -1935,6 +1985,8 @@ export function MakeShiftCalendar({
                                                                     simplified={isSimplified}
                                                                     showCellStatusPins={showCellStatusPins}
                                                                     cellAttention={cellAttention}
+                                                                    fixedCellPreview={fixedCellPreview}
+                                                                    borderlessPreview={borderlessPreview}
                                                                     showSkillColumn={showSkillColumn}
                                                                     showCarryColumn={showCarryColumn}
                                                                     leftGridTemplateColumns={leftGridTemplateColumns}
@@ -1971,7 +2023,7 @@ export function MakeShiftCalendar({
                                     /* 우측 합계: 카드와 동일 DIVISION_PADDING_Y로 세로 정렬 */
                                     <div
                                         className="make-shift-calendar__division-summary flex shrink-0 flex-col"
-                                        style={{paddingBlock: DIVISION_PADDING_Y}}
+                                        style={{width: summaryGridWidth, paddingBlock: DIVISION_PADDING_Y}}
                                     >
                                         {rows.map((row) => {
                                             const workerId = String(row.shiftNurse.shiftNurseId);
@@ -2010,6 +2062,7 @@ export function MakeShiftCalendar({
                     showCarryColumn={showCarryColumn}
                     showDragHandleColumn={showDragHandleColumn}
                     showRestCheckColumn={showRestCheckColumn}
+                    summaryGridWidth={summaryGridWidth}
                 />
             )}
             <ShiftTypeDropdown
@@ -2058,6 +2111,7 @@ type TCalendarRowLeftProps = {
     cells: TDutyDoc['rows'][number]['cells'];
     fixedCells: TDutyDoc['fixedCells'];
     requestCells: TDutyDoc['requestCells'];
+    dimmedRequestCells?: Record<string, true>;
     rowIndex: number;
     shiftNurseId: number;
     shortNameToType: Map<string, TWardShiftType>;
@@ -2069,6 +2123,8 @@ type TCalendarRowLeftProps = {
     simplified: boolean;
     showCellStatusPins: boolean;
     cellAttention: TCellAttention | null;
+    fixedCellPreview: boolean;
+    borderlessPreview: boolean;
     showSkillColumn: boolean;
     showCarryColumn: boolean;
     leftGridTemplateColumns: string;
@@ -2107,6 +2163,7 @@ function CalendarRowLeft({
     cells,
     fixedCells,
     requestCells,
+    dimmedRequestCells,
     rowIndex,
     shiftNurseId,
     shortNameToType,
@@ -2118,6 +2175,8 @@ function CalendarRowLeft({
     simplified,
     showCellStatusPins,
     cellAttention,
+    fixedCellPreview,
+    borderlessPreview,
     showSkillColumn,
     showCarryColumn,
     leftGridTemplateColumns,
@@ -2430,6 +2489,8 @@ function CalendarRowLeft({
                         const cellLockKey = date ? `${shiftNurseId}|${date}` : null;
                         const isFixedCell = cellLockKey !== null && fixedCells[cellLockKey] === true;
                         const isRequestedCell = cellLockKey !== null && requestCells[cellLockKey] === true;
+                        const isProtectedPreviewCell = isFixedCell || isRequestedCell;
+                        const isDimmedRequestCell = cellLockKey !== null && dimmedRequestCells?.[cellLockKey] === true;
                         const showFixedStatusPin = isFixedCell && !isRequestedCell;
                         const isModifiedCell = cellLockKey !== null && cells[j] != null && !isFixedCell && !isRequestedCell;
                         const attentionKind =
@@ -2479,10 +2540,12 @@ function CalendarRowLeft({
                                 data-dimmed-violation-cell={isCellViolationDimmed ? 'true' : undefined}
                                 data-fixed-cell={showCellStatusPins && showFixedStatusPin ? 'true' : undefined}
                                 data-request-cell={showCellStatusPins && isRequestedCell ? 'true' : undefined}
+                                data-dimmed-request-cell={isDimmedRequestCell ? 'true' : undefined}
                                 data-modified-cell={isModifiedCell ? 'true' : undefined}
                                 data-attention-kind={attentionKind ?? undefined}
                                 data-attention-muted={isAttentionMuted ? 'true' : undefined}
                                 data-attention-nonce={attentionKind ? cellAttention?.nonce : undefined}
+                                aria-disabled={fixedCellPreview && isRequestedCell ? true : undefined}
                                 aria-haspopup={!readonly ? 'listbox' : undefined}
                                 onPointerDown={(event) => {
                                     onCellPointerDown(event, rowIndex, j);
@@ -2524,8 +2587,14 @@ function CalendarRowLeft({
                                 }}
                                 className={cn(
                                     'make-shift-calendar__day-cell',
-                                    'group relative z-[10] flex h-full min-w-0 items-center justify-center',
-                                    'cursor-pointer',
+                                    'group relative z-[10] flex h-full min-w-0 items-center justify-center border-0 bg-transparent p-0',
+                                    fixedCellPreview && !isProtectedPreviewCell && 'opacity-[0.28]',
+                                    fixedCellPreview && isRequestedCell
+                                        ? 'cursor-not-allowed'
+                                        : readonly && !fixedCellPreview
+                                          ? 'cursor-default'
+                                          : 'cursor-pointer',
+                                    fixedCellPreview && 'outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none',
                                     activeCellViolation && 'z-[50]',
                                     weekendBg,
                                 )}
@@ -2551,7 +2620,8 @@ function CalendarRowLeft({
                                 >
                                     <ShiftBadge
                                         shiftType={shiftType}
-                                        isOnlyRequest={shiftType === null && reqType !== null}
+                                        isOnlyRequest={isDimmedRequestCell || (shiftType === null && reqType !== null)}
+                                        borderless={borderlessPreview}
                                         className={SHIFT_BADGE_CELL_BADGE}
                                     />
                                     {showCellStatusPins && (
@@ -2688,6 +2758,7 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
                 ROW_SUMMARY_HEIGHT,
             )}
             style={{
+                width: '100%',
                 gridTemplateColumns: getSummaryGridTemplateColumns(summaryShiftTypes.length, showRestCheckColumn),
                 gap: SUMMARY_GAP,
                 paddingInline: SUMMARY_PADDING_X,
@@ -2739,6 +2810,7 @@ function DailySummary({
     showCarryColumn,
     showDragHandleColumn,
     showRestCheckColumn,
+    summaryGridWidth,
 }: {
     doc: TDutyDoc;
     shortNameToType: Map<string, TWardShiftType>;
@@ -2748,6 +2820,7 @@ function DailySummary({
     showCarryColumn: boolean;
     showDragHandleColumn: boolean;
     showRestCheckColumn: boolean;
+    summaryGridWidth: string;
 }) {
     const countByDay = (j: number, typeId: number) =>
         doc.rows.filter((row) => {
@@ -2814,7 +2887,11 @@ function DailySummary({
                 ))}
             </div>
 
-            <DailySummarySpacer count={summaryShiftTypes.length} showRestCheckColumn={showRestCheckColumn} />
+            <DailySummarySpacer
+                count={summaryShiftTypes.length}
+                showRestCheckColumn={showRestCheckColumn}
+                summaryGridWidth={summaryGridWidth}
+            />
         </div>
     );
 }
@@ -2826,11 +2903,20 @@ function DailySummary({
  *
  * row-summary와 daily-summary가 같은 summaryShiftTypes를 표시하므로 spacer도 동일 폭을 갖는다.
  */
-function DailySummarySpacer({count, showRestCheckColumn}: {count: number; showRestCheckColumn: boolean}) {
+function DailySummarySpacer({
+    count,
+    showRestCheckColumn,
+    summaryGridWidth,
+}: {
+    count: number;
+    showRestCheckColumn: boolean;
+    summaryGridWidth: string;
+}) {
     return (
         <div
             className="make-shift-daily-summary__spacer grid shrink-0 items-center justify-center justify-items-center"
             style={{
+                width: summaryGridWidth,
                 gridTemplateColumns: getSummaryGridTemplateColumns(count, showRestCheckColumn),
                 gap: SUMMARY_GAP,
                 paddingInline: SUMMARY_PADDING_X,

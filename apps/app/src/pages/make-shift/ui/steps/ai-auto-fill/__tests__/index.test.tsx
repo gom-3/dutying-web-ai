@@ -6,7 +6,11 @@ import {AiAutofill} from '../index';
 
 const mocks = vi.hoisted(() => ({
     calendarDocs: [] as TDutyDoc[],
-    calendarProps: [] as Array<{doc: TDutyDoc; fixCellOnContextMenu?: boolean}>,
+    calendarProps: [] as Array<{
+        doc: TDutyDoc;
+        fixCellOnContextMenu?: boolean;
+        onCellClick?: (rowIndex: number, colIndex: number) => void;
+    }>,
     requestAiSchedule: vi.fn(),
     setStepNavigationBusy: vi.fn(),
     moveScheduleRow: vi.fn(),
@@ -145,7 +149,11 @@ vi.mock('../../shared/make-shift-calendar-skeleton', () => ({
 }));
 
 vi.mock('../../shared/make-shift-calendar', () => ({
-    MakeShiftCalendar: (props: {doc: TDutyDoc; fixCellOnContextMenu?: boolean}) => {
+    MakeShiftCalendar: (props: {
+        doc: TDutyDoc;
+        fixCellOnContextMenu?: boolean;
+        onCellClick?: (rowIndex: number, colIndex: number) => void;
+    }) => {
         const {doc} = props;
 
         mocks.calendarDocs.push(doc);
@@ -154,9 +162,9 @@ vi.mock('../../shared/make-shift-calendar', () => ({
         return (
             <div data-testid="calendar">
                 {doc.rows[0]?.cells.map((cell, index) => (
-                    <span key={index} data-testid={`cell-${index}`}>
+                    <button key={index} type="button" data-testid={`cell-${index}`} onClick={() => props.onCellClick?.(0, index)}>
                         {cell ?? ''}
-                    </span>
+                    </button>
                 ))}
             </div>
         );
@@ -242,7 +250,7 @@ describe('AiAutofill blank preview', () => {
         );
     });
 
-    it('shows only fixed and requested cells as soon as auto fill is clicked, even before the decision dialog is handled', async () => {
+    it('shows every shift cell in the decision dialog before autofill starts', async () => {
         const user = userEvent.setup();
 
         render(<AiAutofill />);
@@ -256,8 +264,39 @@ describe('AiAutofill blank preview', () => {
         expect(await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'})).toBeInTheDocument();
         expect(screen.getByTestId('cell-0')).toHaveTextContent('D');
         expect(screen.getByTestId('cell-1')).toHaveTextContent('E');
-        expect(screen.getByTestId('cell-2')).toHaveTextContent('');
+        expect(screen.getByTestId('cell-2')).toHaveTextContent('N');
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+    });
+
+    it('toggles a non-empty decision-dialog cell between fixed and unfixed', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
+
+        await user.click(screen.getByTestId('cell-2'));
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
+
+        await user.click(screen.getByTestId('cell-2'));
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
+    });
+
+    it('does not change a requested shift when it is clicked in the decision dialog', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'auto fill'}));
+        await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
+
+        await user.click(screen.getByTestId('cell-1'));
+
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-02']).toBeUndefined();
+        expect(useShiftEditorStore.getState().doc.requestCells['10|2026-07-02']).toBe(true);
     });
 
     it('returns to editing without requesting AI when the initial decision is canceled', async () => {
@@ -268,6 +307,9 @@ describe('AiAutofill blank preview', () => {
         await user.click(screen.getByRole('button', {name: 'auto fill'}));
         await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.prefillDecision.title'});
 
+        await user.click(screen.getByTestId('cell-2'));
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBe(true);
+
         await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.prefillDecision.cancel'}));
 
         await waitFor(() =>
@@ -276,6 +318,7 @@ describe('AiAutofill blank preview', () => {
         expect(mocks.requestAiSchedule).not.toHaveBeenCalled();
         expect(screen.getByTestId('cell-2')).toHaveTextContent('N');
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', 'N']);
+        expect(useShiftEditorStore.getState().doc.fixedCells['10|2026-07-03']).toBeUndefined();
     });
 
     it('keeps the editable cells visually blank while AI generation is running after the dialog action', async () => {

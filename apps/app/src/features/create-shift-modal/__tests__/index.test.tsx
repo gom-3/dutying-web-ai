@@ -46,4 +46,22 @@ describe('CreateShiftModal', () => {
 
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
+
+    it('rejects a short name whose first character is already used', async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+
+        render(
+            <CreateShiftModal open shiftType={null} existingShortNames={['N']} close={vi.fn()} onSubmit={onSubmit} onDelete={vi.fn()} />,
+        );
+
+        const [nameInput, shortNameInput] = screen.getAllByRole('textbox');
+
+        await user.type(nameInput!, '데이');
+        await user.type(shortNameInput!, 'N');
+        await user.click(screen.getByRole('button', {name: '저장'}));
+
+        expect(onSubmit).not.toHaveBeenCalled();
+        expect(screen.getByRole('alert')).toHaveTextContent('약자의 첫 글자가 겹치지 않게 입력해 주세요.');
+    });
 });

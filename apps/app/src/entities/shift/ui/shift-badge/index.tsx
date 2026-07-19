@@ -7,9 +7,10 @@ interface IShiftBadgeProps extends React.DetailedHTMLProps<React.HTMLAttributes<
     shiftType: TWardShiftType | null | undefined;
     forwardRef?: Ref<HTMLDivElement>;
     isOnlyRequest?: boolean;
+    borderless?: boolean;
 }
 
-function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}: IShiftBadgeProps) {
+function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, borderless = false, ...props}: IShiftBadgeProps) {
     const shiftTypeColorStyle = useUIConfigStore((state) => state.shiftTypeColorStyle);
 
     return (
@@ -26,9 +27,10 @@ function ShiftBadge({shiftType, className, forwardRef, isOnlyRequest, ...props}:
                 shiftTypeColorStyle === 'background'
                     ? {
                           backgroundColor: shiftType ? shiftType.color : '#D6D6DE',
+                          ...(borderless ? {border: 'none'} : {}),
                       }
                     : {
-                          border: '.0625rem solid #E7E7EF',
+                          border: borderless ? 'none' : '.0625rem solid #E7E7EF',
                           backgroundColor: 'white',
                           color: shiftType ? shiftType.color : 'black',
                       }

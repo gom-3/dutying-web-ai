@@ -93,10 +93,18 @@ export function MakeShiftStepper({
     return (
         <nav
             id="make_stepper"
-            className="make-shift-stepper w-full px-2 pt-5 min-[1600px]:px-3 min-[1600px]:pt-8"
+            className={cn(
+                'make-shift-stepper w-full px-2 pt-5 min-[1600px]:px-3 min-[1600px]:pt-8',
+                isConfirmedStep && 'pt-2 min-[1600px]:pt-2',
+            )}
             aria-label={t('page.makeShift.progress.ariaLabel')}
         >
-            <div className="relative pb-4 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-[''] min-[1600px]:pb-6">
+            <div
+                className={cn(
+                    "relative pb-4 after:absolute after:right-6 after:bottom-0 after:left-6 after:h-px after:bg-gray-7 after:content-[''] min-[1600px]:pb-6",
+                    isConfirmedStep && 'pb-2 min-[1600px]:pb-2',
+                )}
+            >
                 <ol
                     className={cn(
                         'grid px-1 transition-[grid-template-columns] duration-300 ease-out motion-reduce:transition-none',
@@ -146,7 +154,10 @@ export function MakeShiftStepper({
                                     aria-busy={navigationDisabled ? true : undefined}
                                     aria-current={state === 'current' ? 'step' : undefined}
                                     className={cn(
-                                        'group relative z-10 flex w-full min-w-0 flex-col items-center gap-2.5 px-1 text-center transition-[color,opacity,filter] duration-200 ease-out',
+                                        'group relative z-10 flex w-full min-w-0 px-1 text-center transition-[color,opacity,filter] duration-200 ease-out',
+                                        isFinalConfirmedStep
+                                            ? 'flex-row items-center justify-center gap-2.5'
+                                            : 'flex-col items-center gap-2.5',
                                         state === 'done' && 'text-sub-2',
                                         state === 'current' && (isFinalConfirmedStep ? 'text-[#167A52]' : 'text-main-1'),
                                         state === 'available' && 'text-sub-2',
@@ -154,14 +165,14 @@ export function MakeShiftStepper({
                                         clickable ? 'cursor-pointer' : 'cursor-default',
                                     )}
                                 >
-                                    <span className="grid size-7 place-items-center">
+                                    <span className={cn('grid place-items-center', isFinalConfirmedStep ? 'size-6' : 'size-7')}>
                                         <span
                                             className={cn(
                                                 'grid place-items-center rounded-[8px] font-poppins leading-none font-semibold transition-[background-color,color,transform] duration-300 ease-out motion-reduce:transition-none',
                                                 state === 'current'
-                                                    ? `size-7 ${isFinalConfirmedStep ? 'bg-[#20A66A]' : 'bg-main-1'} text-[12px] text-white`
+                                                    ? `${isFinalConfirmedStep ? 'size-6 bg-[#20A66A]' : 'size-7 bg-main-1'} text-[12px] text-white`
                                                     : 'size-6 text-[11px]',
-                                                state === 'current' && 'motion-safe:scale-110',
+                                                state === 'current' && !isFinalConfirmedStep && 'motion-safe:scale-110',
                                                 state === 'done' && 'bg-[#DCD2FF] text-main-1 group-hover:motion-safe:scale-105',
                                                 state === 'available' &&
                                                     'bg-main-light text-main-1 group-hover:bg-main-1 group-hover:text-white group-hover:motion-safe:scale-105',

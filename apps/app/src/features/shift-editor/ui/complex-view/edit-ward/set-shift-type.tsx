@@ -127,6 +127,9 @@ function SetShiftType() {
                     setOpenModal(false);
                 }}
                 shiftType={tempShiftType}
+                existingShortNames={
+                    ward?.wardShiftTypes.filter((shiftType) => shiftType.isActive !== false).map((shiftType) => shiftType.shortName) ?? []
+                }
                 onSubmit={(shiftType) => handleWriteShift(shiftType, tempShiftType?.wardShiftTypeId)}
                 onDelete={() => tempShiftType && removeShiftType(tempShiftType?.wardShiftTypeId)}
             />

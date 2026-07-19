@@ -1,4 +1,4 @@
-export const SHIFT_SHORT_NAME_MAX_LENGTH = 3;
+export const SHIFT_SHORT_NAME_MAX_LENGTH = 2;
 
 const SHIFT_SHORT_NAME_ENTRY_KEY_REGEX = /^[!-~]$/;
 

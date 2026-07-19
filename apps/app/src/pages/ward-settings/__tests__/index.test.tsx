@@ -8,9 +8,32 @@ import WardSettingsPage from '../index';
 
 const mockUseWardSettings = vi.fn();
 const mockNavigate = vi.hoisted(() => vi.fn());
+const mockAuthState = vi.hoisted(() => ({
+    accessToken: null as string | null,
+}));
 
 vi.mock('../model/ward-settings-hook', () => ({
     useWardSettings: (...args: unknown[]) => mockUseWardSettings(...args),
+}));
+
+vi.mock('@/features/auth', () => ({
+    default: () => ({
+        state: {
+            accessToken: mockAuthState.accessToken,
+        },
+    }),
+}));
+
+vi.mock('@/features/auth/model/admin-token', () => ({
+    isWardAdminAccessToken: (accessToken?: string | null) => accessToken === 'ward-admin-token',
+}));
+
+vi.mock('@/widgets/notifications/notification-bell', () => ({
+    NotificationBell: () => (
+        <button type="button" aria-label="notification bell">
+            bell
+        </button>
+    ),
 }));
 
 vi.mock('react-router', async () => {
@@ -65,6 +88,7 @@ type TMockValue = {
             isOff: boolean;
             isCounted: boolean;
             classification: 'DAY' | 'EVENING' | 'NIGHT' | 'OTHER_WORK' | 'OFF' | 'OTHER_LEAVE';
+            isUsed?: boolean;
         }>;
         shiftTypesStatus: 'success' | 'pending' | 'error';
         shiftTeams: Array<{shiftTeamId: number; name: string; nurseCnt: number; nurses: []}>;
@@ -200,9 +224,24 @@ describe('WardSettingsPage', () => {
     beforeEach(() => {
         mockUseWardSettings.mockReset();
         mockNavigate.mockClear();
+        mockAuthState.accessToken = null;
         vi.mocked(toast.success).mockClear();
         vi.mocked(toast.error).mockClear();
         window.localStorage.removeItem('dutying:ward:1:rest-leave-policy');
+    });
+
+    it('anchors the notification bell to the same content frame as the ward settings header', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+        mockUseWardSettings.mockReturnValue(createValue());
+
+        render(<WardSettingsPage />);
+
+        const notificationBell = screen.getByRole('button', {name: 'notification bell'});
+        const notificationWrapper = notificationBell.parentElement;
+        const settingsHeaderFrame = notificationWrapper?.parentElement;
+
+        expect(notificationWrapper).toHaveClass('pointer-events-none', 'absolute', 'top-0', 'right-0', 'z-[1002]');
+        expect(settingsHeaderFrame).toHaveClass('relative', 'max-w-[960px]');
     });
 
     it('근무 유형 탭에서 피그마 컬럼과 행을 보여준다', () => {
@@ -673,6 +712,41 @@ describe('WardSettingsPage', () => {
         expect(screen.queryByDisplayValue('데이')).not.toBeInTheDocument();
     });
 
+    it('사용된 근무 유형은 약자·분류·색상 변경과 삭제를 막고 토스트로 안내한다', async () => {
+        const user = userEvent.setup();
+        const deleteShiftType = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypes: [{...baseValue().state.shiftTypes[0], isUsed: true}],
+                },
+                actions: {
+                    deleteShiftType,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        const shortNameInput = screen.getByDisplayValue('D');
+
+        expect(shortNameInput).toHaveAttribute('readonly');
+
+        await user.click(shortNameInput);
+        await user.keyboard('X');
+        await user.click(screen.getByRole('combobox', {name: '데이 근무 의미 선택'}));
+        await user.click(screen.getByRole('button', {name: '데이 색상 선택'}));
+        await user.click(screen.getByRole('button', {name: '데이 삭제'}));
+
+        expect(shortNameInput).toHaveValue('D');
+        expect(deleteShiftType).not.toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalledWith('근무표에 사용된 근무유형은 삭제하거나 비활성화할 수 없어요.');
+        expect(toast.error).toHaveBeenCalledWith(
+            '근무표에 사용된 근무유형은 약자·유형·색상을 변경할 수 없어요. 이름과 시간만 변경할 수 있어요.',
+        );
+    });
+
     it('기본 근무를 삭제하고 같은 의미의 근무를 추가하면 기존 근무를 수정한다', async () => {
         const user = userEvent.setup();
         const deleteShiftType = vi.fn().mockResolvedValue(true);
@@ -737,6 +811,8 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: '데이 색상 선택'}));
 
         expect(screen.getByRole('button', {name: '#63C8B8 선택'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '#5B6470 선택'})).toBeInTheDocument();
+        expect(screen.getAllByRole('button', {name: /#[0-9A-F]{6} 선택/})).toHaveLength(15);
     });
 
     it('근무 의미에서 휴무를 선택하면 draft만 휴무 상태로 바꾼다', async () => {
