@@ -1,6 +1,6 @@
 import type {TAutofillDTO, TSaveSnapshotDTO, TSnapshotCellDTO, TValidateSnapshotDTO} from '@dutying/api/ward';
 import type {TShift} from '@/entities';
-import {docToSnapshotCellsDTO, docToSnapshotRowOrderDTO} from './shift-adapter';
+import {docToCarryOverCellsDTO, docToSnapshotCellsDTO, docToSnapshotRowOrderDTO} from './shift-adapter';
 import type {TDutyDoc} from './types';
 
 export function buildCellKey(shiftNurseId: number, date: string): string {
@@ -47,6 +47,7 @@ export function buildValidateSnapshotDTO(params: {
         rulesHash,
         cells: docToSnapshotCellsDTO(doc, originalShift),
         rowOrder: docToSnapshotRowOrderDTO(doc),
+        carryOverCells: docToCarryOverCellsDTO(doc, originalShift, year, month),
     };
 }
 
@@ -71,6 +72,7 @@ export function buildAutofillDTO(params: {
         rulesHash,
         rowOrder: docToSnapshotRowOrderDTO(doc),
         cells: docToSnapshotCellsDTO(doc, originalShift),
+        carryOverCells: docToCarryOverCellsDTO(doc, originalShift, year, month),
         lockedCellKeys: lockedCellKeys ?? docToLockedCellKeys(doc),
         target,
         returnMode: 'PATCH',

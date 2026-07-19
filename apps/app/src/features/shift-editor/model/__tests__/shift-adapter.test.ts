@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest';
 import type {TShift} from '@/entities';
 import {
     buildWorkKeyMap,
+    docToCarryOverCellsDTO,
     docToFixedWardShiftsDTO,
     docToShift,
     docToSnapshotCellsDTO,
@@ -289,6 +290,130 @@ describe('shift-adapter', () => {
                 fixed: false,
             },
         ]);
+    });
+
+    it('maps carry-over cells onto the last calendar days of the previous month, right-aligned', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-04-01'],
+            rows: [{workerId: '1', lastCells: ['D', 'O', 'TR', 'D'], cells: [null]}],
+            workerMeta: {1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+            fixedCells: {},
+            requestCells: {},
+        };
+
+        // 2026-04 기준 직전 달은 2026-03(말일 31). 마지막 원소가 말일에 매핑된다.
+        expect(docToCarryOverCellsDTO(doc, shift, 2026, 4)).toEqual([
+            {
+                cellKey: '1:2026-03-31',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-31',
+                wardShiftTypeId: 10,
+                shiftCode: 'D',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+            {
+                cellKey: '1:2026-03-30',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-30',
+                wardShiftTypeId: 30,
+                shiftCode: 'TR',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+            {
+                cellKey: '1:2026-03-29',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-29',
+                wardShiftTypeId: 20,
+                shiftCode: 'O',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+            {
+                cellKey: '1:2026-03-28',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-28',
+                wardShiftTypeId: 10,
+                shiftCode: 'D',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+        ]);
+    });
+
+    it('skips left-padding blanks and unknown carry-over codes', () => {
+        const shift = createShift();
+        const doc = {
+            columns: ['2026-04-01'],
+            // 왼쪽 두 칸은 패딩 null, 'ZZ'는 알 수 없는 코드
+            rows: [{workerId: '1', lastCells: [null, 'ZZ', 'O', 'D'], cells: [null]}],
+            workerMeta: {1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+            fixedCells: {},
+            requestCells: {},
+        };
+
+        expect(docToCarryOverCellsDTO(doc, shift, 2026, 4)).toEqual([
+            {
+                cellKey: '1:2026-03-31',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-31',
+                wardShiftTypeId: 10,
+                shiftCode: 'D',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+            {
+                cellKey: '1:2026-03-30',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2026-03-30',
+                wardShiftTypeId: 20,
+                shiftCode: 'O',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+        ]);
+    });
+
+    it('rolls over to the previous December for January and emits nothing without carry-over data', () => {
+        const shift = createShift();
+        const withCarry = {
+            columns: ['2026-01-01'],
+            rows: [{workerId: '1', lastCells: ['D'], cells: [null]}],
+            workerMeta: {1: {name: 'Kim', nurseId: 100, priority: 0, divisionNum: 1}},
+            fixedCells: {},
+            requestCells: {},
+        };
+
+        expect(docToCarryOverCellsDTO(withCarry, shift, 2026, 1)).toEqual([
+            {
+                cellKey: '1:2025-12-31',
+                shiftNurseId: 1,
+                nurseId: 100,
+                date: '2025-12-31',
+                wardShiftTypeId: 10,
+                shiftCode: 'D',
+                source: 'CARRY_OVER',
+                fixed: true,
+            },
+        ]);
+
+        const noCarry = {
+            columns: ['2026-04-01'],
+            rows: [{workerId: '1', lastCells: [null, null, null, null], cells: [null]}],
+            workerMeta: {1: {name: 'Kim'}},
+            fixedCells: {},
+            requestCells: {},
+        };
+
+        expect(docToCarryOverCellsDTO(noCarry, shift, 2026, 4)).toEqual([]);
     });
 
     it('builds work key map from the first character of each short name', () => {
