@@ -125,11 +125,19 @@ export function AiFillDecisionDialog({
                             <Button
                                 type="button"
                                 variant="brand"
-                                className="h-11 w-full rounded-[12px] bg-[#6F52E8] px-5 text-[14px] font-semibold shadow-none hover:bg-[#5F43D6] sm:w-auto"
+                                className="group relative isolate inline-flex min-h-[43px] w-full cursor-pointer overflow-hidden rounded-[13px] bg-[linear-gradient(90deg,#C241F4_0%,#6B45F4_100%)] px-6 py-0 font-apple text-[13px] leading-none font-bold whitespace-nowrap text-white shadow-none transition-[filter,transform] duration-300 ease-out hover:-translate-y-0.5 hover:brightness-105 focus-visible:ring-2 focus-visible:ring-[#A978FF] focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.99] active:brightness-95 sm:w-auto"
                                 onClick={onConfirm}
                             >
-                                {confirmLabel}
-                                <ArrowRight className="size-4" strokeWidth={2.2} />
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute -inset-6 z-0 translate-y-3 scale-90 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.52),rgba(216,180,254,0.2)_34%,transparent_62%)] opacity-0 blur-xl transition-[opacity,transform] duration-500 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 motion-reduce:transition-none"
+                                />
+                                <span
+                                    aria-hidden
+                                    className="pointer-events-none absolute top-[-60%] bottom-[-60%] left-[-30%] z-0 w-10 -translate-x-[180%] rotate-12 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.58),transparent)] opacity-0 blur-[6px] transition-[opacity,transform] duration-700 ease-out group-hover:translate-x-[520%] group-hover:opacity-100 motion-reduce:transition-none"
+                                />
+                                <span className="relative z-10">{confirmLabel}</span>
+                                <ArrowRight className="relative z-10 size-4" strokeWidth={2.2} />
                             </Button>
                         </div>
                     </div>

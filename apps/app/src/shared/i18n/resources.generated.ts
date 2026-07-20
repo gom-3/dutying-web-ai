@@ -642,7 +642,7 @@ export const ko = {
                 "loadingAria": "홈을 불러오고 있어요"
             },
             "sort": {
-                "default": "기본",
+                "default": "임의순",
                 "label": "근무표 정렬 기준",
                 "nameAsc": "이름순",
                 "openAria": "근무표 정렬 기준 열기",
@@ -2597,7 +2597,7 @@ export const ko = {
                     "notFound": "이미 삭제했거나 최신 목록에서 찾을 수 없는 근무 유형이에요.",
                     "saveSuccess": "근무 설정을 저장했어요.",
                     "updateFailed": "근무 유형을 수정하지 못했어요.",
-                    "usedTypeLocked": "근무표에 사용된 근무유형은 약자·유형·색상을 변경할 수 없어요. 이름과 시간만 변경할 수 있어요.",
+                    "usedTypeLocked": "근무표에 사용된 근무유형은 약자·유형을 변경할 수 없어요. 이름·시간·색상은 변경할 수 있어요.",
                     "usedTypeDeleteLocked": "근무표에 사용된 근무유형은 삭제하거나 비활성화할 수 없어요."
                 },
                 "validation": {
@@ -3423,7 +3423,7 @@ export const en: TLocale = {
                 "loadingAria": "Loading home"
             },
             "sort": {
-                "default": "Default",
+                "default": "Custom order",
                 "label": "Schedule sort order",
                 "nameAsc": "Name",
                 "openAria": "Open schedule sort order",
@@ -5378,7 +5378,7 @@ export const en: TLocale = {
                     "notFound": "This shift type was already deleted or cannot be found in the latest list.",
                     "saveSuccess": "Saved duty settings.",
                     "updateFailed": "Could not update the shift type.",
-                    "usedTypeLocked": "A shift type used in a schedule cannot change its abbreviation",
+                    "usedTypeLocked": "A shift type used in a schedule cannot change its abbreviation or type. Its name and time and color can be changed.",
                     "usedTypeDeleteLocked": "A shift type used in a schedule cannot be deleted or deactivated."
                 },
                 "validation": {
@@ -6202,7 +6202,7 @@ export const ja: TLocale = {
                 "loadingAria": "ホームを読み込み中"
             },
             "sort": {
-                "default": "標準",
+                "default": "任意順",
                 "label": "勤務表の並び順",
                 "nameAsc": "名前順",
                 "openAria": "勤務表の並び順を開く",
@@ -8157,7 +8157,7 @@ export const ja: TLocale = {
                     "notFound": "すでに削除されたか、最新リストで見つからない勤務区分です。",
                     "saveSuccess": "勤務設定を保存しました。",
                     "updateFailed": "勤務区分を更新できませんでした。",
-                    "usedTypeLocked": " type",
+                    "usedTypeLocked": "勤務表で使用された勤務区分は略称・タイプを変更できません。名前・時間・色のみ変更できます。",
                     "usedTypeDeleteLocked": "勤務表で使用された勤務区分は削除または無効化できません。"
                 },
                 "validation": {
@@ -8981,7 +8981,7 @@ export const zh: TLocale = {
                 "loadingAria": "加载首页"
             },
             "sort": {
-                "default": "基本的",
+                "default": "自定义顺序",
                 "label": "考勤表排序标准",
                 "nameAsc": "按名字",
                 "openAria": "打开时间表排序标准",
@@ -10936,7 +10936,7 @@ export const zh: TLocale = {
                     "notFound": "这是已删除或在最新列表中找不到的班次类型。",
                     "saveSuccess": "您的工作设置已保存。",
                     "updateFailed": "无法编辑班次类型。",
-                    "usedTypeLocked": " or color. Only its name and time can be changed.",
+                    "usedTypeLocked": "在班次表中使用过的班次类型无法更改缩写或类型。只能更改名称、时间和颜色。",
                     "usedTypeDeleteLocked": "在班次表中使用过的班次类型无法删除或停用。"
                 },
                 "validation": {
@@ -11760,7 +11760,7 @@ export const th: TLocale = {
                 "loadingAria": "กำลังโหลดบ้าน."
             },
             "sort": {
-                "default": "ค่าเริ่มต้น",
+                "default": "ลำดับที่กำหนดเอง",
                 "label": "กำหนดการเรียงลำดับ",
                 "nameAsc": "ชื่อ",
                 "openAria": "เปิดลำดับการจัดเรียงกำหนดการ",
@@ -13715,7 +13715,7 @@ export const th: TLocale = {
                     "notFound": "ประเภทกะนี้ถูกลบไปแล้วหรือไม่พบในรายการล่าสุด",
                     "saveSuccess": "การตั้งค่าหน้าที่ที่บันทึกไว้",
                     "updateFailed": "ไม่สามารถอัปเดตประเภทกะได้",
-                    "usedTypeLocked": "勤務表で使用された勤務区分は略称・タイプ・色を変更できません。名前と時間のみ変更できます。",
+                    "usedTypeLocked": "ประเภทกะที่ใช้ในตารางเวรแล้วจะเปลี่ยนคำย่อหรือประเภทไม่ได้ เปลี่ยนได้เฉพาะชื่อ เวลา และสีเท่านั้น",
                     "usedTypeDeleteLocked": "ไม่สามารถลบหรือปิดใช้งานประเภทกะที่ใช้ในตารางเวรแล้วได้"
                 },
                 "validation": {
@@ -14539,7 +14539,7 @@ export const vi: TLocale = {
                 "loadingAria": "Đang tải về nhà"
             },
             "sort": {
-                "default": "Mặc định",
+                "default": "Thứ tự tùy chỉnh",
                 "label": "Lên lịch sắp xếp thứ tự",
                 "nameAsc": "Tên",
                 "openAria": "Thứ tự sắp xếp lịch mở",
@@ -16494,7 +16494,7 @@ export const vi: TLocale = {
                     "notFound": "Loại ca này đã bị xóa hoặc không thể tìm thấy trong danh sách mới nhất.",
                     "saveSuccess": "Cài đặt nhiệm vụ đã lưu.",
                     "updateFailed": "Không thể cập nhật loại ca làm việc.",
-                    "usedTypeLocked": "在班次表中使用过的班次类型无法更改缩写、类型或颜色。只能更改名称和时间。",
+                    "usedTypeLocked": "Không thể thay đổi viết tắt hoặc loại của ca đã dùng trong lịch. Chỉ có thể đổi tên thời gian và màu.",
                     "usedTypeDeleteLocked": "Không thể xóa hoặc vô hiệu hóa ca đã dùng trong lịch."
                 },
                 "validation": {

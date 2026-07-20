@@ -513,6 +513,12 @@ describe('OnboardingWardCreatePage', () => {
         expect(within(dialog).getByText('근무표 파일 업로드')).toBeInTheDocument();
         expect(within(dialog).getByText('엑셀 파일의 이름, 팀, 날짜별 근무를 읽어 초기 병동 설정에 반영해요.')).toBeInTheDocument();
         expect(within(dialog).getByRole('button', {name: /양식 다운로드/})).toBeInTheDocument();
+        expect(within(dialog).queryByTestId('schedule-file-upload-input')).not.toBeInTheDocument();
+
+        await user.click(within(dialog).getByRole('button', {name: /양식 다운로드/}));
+        await waitFor(() => {
+            expect(within(dialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
+        });
 
         const file = await createScheduleTemplateFile();
 
@@ -807,11 +813,14 @@ describe('OnboardingWardCreatePage', () => {
         await moveToShiftTypeStep(user);
 
         const firstClassificationSelect = screen.getAllByRole('combobox')[0]!;
+
         await user.click(firstClassificationSelect);
         await user.click(screen.getByRole('option', {name: '기타 근무'}));
 
         expect(screen.getAllByPlaceholderText('-')).toHaveLength(4);
+
         const nextButton = screen.getByRole('button', {name: '다음'});
+
         expect(nextButton).toHaveAttribute('aria-disabled', 'true');
 
         await user.click(nextButton);

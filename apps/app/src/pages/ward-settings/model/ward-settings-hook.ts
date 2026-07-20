@@ -29,7 +29,8 @@ function normalizeShiftType(shiftType: TRawWardShiftType): TWardShiftType {
 }
 
 function normalizeShiftTypes(input: unknown): TWardShiftType[] {
-    if (Array.isArray(input)) return (input as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
+    if (Array.isArray(input))
+        return (input as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
 
     if (input && typeof input === 'object') {
         const maybe = input as {shiftTypes?: unknown; wardShiftTypes?: unknown};
@@ -38,7 +39,9 @@ function normalizeShiftTypes(input: unknown): TWardShiftType[] {
             return (maybe.shiftTypes as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
 
         if (Array.isArray(maybe.wardShiftTypes))
-            return (maybe.wardShiftTypes as TRawWardShiftType[]).map(normalizeShiftType).filter((shiftType) => shiftType.isActive !== false);
+            return (maybe.wardShiftTypes as TRawWardShiftType[])
+                .map(normalizeShiftType)
+                .filter((shiftType) => shiftType.isActive !== false);
     }
 
     return [];
@@ -128,6 +131,10 @@ export function useWardSettings() {
             queryClient.invalidateQueries({queryKey: wardQueryKeys.shiftTypes(wardId)}),
             queryClient.invalidateQueries({queryKey: wardQueryKeys.id(wardId)}),
             queryClient.invalidateQueries({queryKey: wardQueryKeys.shift()}),
+            queryClient.invalidateQueries({queryKey: wardQueryKeys.constraintAll(wardId)}),
+            queryClient.invalidateQueries({queryKey: wardQueryKeys.dutyAll(wardId)}),
+            queryClient.invalidateQueries({queryKey: wardQueryKeys.requestAll(wardId)}),
+            queryClient.invalidateQueries({queryKey: wardQueryKeys.requestListAll(wardId)}),
         ]);
     };
     const addShiftType = async (payload: TCreateShiftTypeDTO) => {

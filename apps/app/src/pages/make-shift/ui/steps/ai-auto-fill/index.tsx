@@ -1366,6 +1366,8 @@ export function AiAutofill() {
                 onClose={() => setLastShiftBlankWarningIntent(null)}
                 onCancel={handleCancelLastShiftBlankWarning}
                 onConfirm={handleConfirmLastShiftBlankWarning}
+                confirmButtonVariant={lastShiftBlankWarningIntent === 'aiFill' ? 'ai' : 'default'}
+                spotlightSelector=".make-shift-calendar__header-label--last, .make-shift-calendar__row-last-shift-cell"
             />
             <ConfirmActionDialog
                 open={snapshotLoadTarget != null}

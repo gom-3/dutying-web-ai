@@ -111,6 +111,20 @@ describe('WardInfoSettingsPage', () => {
         expect(saveButton.parentElement).toHaveClass('max-w-[480px]');
     });
 
+    it('does not show the notification bell while the ward settings page is loading', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+        mockUseQuery.mockReturnValue({
+            data: undefined,
+            isPending: true,
+            isError: false,
+            refetch: vi.fn(),
+        });
+
+        render(<WardInfoSettingsPage />);
+
+        expect(screen.queryByRole('button', {name: 'notification bell'})).not.toBeInTheDocument();
+    });
+
     it('renders the current ward identity in the editable form', () => {
         render(<WardInfoSettingsPage />);
 

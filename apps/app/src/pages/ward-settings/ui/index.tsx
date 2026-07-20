@@ -749,8 +749,12 @@ function ShiftTypeTable({
                                                             data-shift-shortname-input={shiftType.wardShiftTypeId}
                                                             value={shiftType.shortName}
                                                             maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
+                                                            tabIndex={shiftType.isUsed ? -1 : undefined}
                                                             readOnly={shiftType.isUsed === true}
                                                             aria-readonly={shiftType.isUsed === true}
+                                                            onMouseDown={(event) => {
+                                                                if (shiftType.isUsed) event.preventDefault();
+                                                            }}
                                                             onClick={() => {
                                                                 if (shiftType.isUsed) showUsedShiftTypeLockedToast();
                                                             }}
@@ -823,7 +827,9 @@ function ShiftTypeTable({
                                                             }
                                                             className={cn(
                                                                 `h-10 w-16 px-1 text-center font-apple text-[15px] ${SHIFT_TYPE_INPUT_SURFACE_CLASS}`,
-                                                                shiftType.isUsed ? 'cursor-not-allowed bg-gray-6 text-gray-4' : '',
+                                                                shiftType.isUsed
+                                                                    ? 'cursor-not-allowed bg-gray-6 text-gray-4 hover:bg-gray-6 focus-visible:bg-gray-6 focus-visible:ring-0'
+                                                                    : '',
                                                                 showValidationHighlight &&
                                                                     getShiftShortNameError(shiftType.wardShiftTypeId, shiftType.shortName)
                                                                     ? SHIFT_TYPE_INPUT_ERROR_CLASS
@@ -973,15 +979,7 @@ function ShiftTypeTable({
                                                             })}
                                                             className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-[10px] bg-[#F1F3F5] transition-colors hover:bg-[#E9ECEF]"
                                                             onClick={(event) =>
-                                                                shiftType.isUsed
-                                                                    ? showUsedShiftTypeLockedToast()
-                                                                    : handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)
-                                                            }
-                                                            aria-disabled={shiftType.isUsed === true}
-                                                            title={
-                                                                shiftType.isUsed
-                                                                    ? t('page.wardSettings.shiftTypes.toast.usedTypeLocked')
-                                                                    : undefined
+                                                                handleColorButtonClick(shiftType.wardShiftTypeId, event.currentTarget)
                                                             }
                                                         >
                                                             <span
@@ -1193,7 +1191,15 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
     const [pendingTab, setPendingTab] = useState<TWardSettingsTab | null>(null);
     const [pendingNavigationPath, setPendingNavigationPath] = useState<string | null>(null);
     const unsavedDialogOpen = pendingTab !== null || pendingNavigationPath !== null;
-    const shouldShowNotificationBell = isWardAdminAccessToken(accessToken);
+    const isCurrentTabReady =
+        state.currentTab === 'shiftTypes'
+            ? state.shiftTypesStatus === 'success'
+            : state.currentTab === 'requestReception'
+              ? state.requestReceptionStatus === 'success'
+              : state.currentTab === 'restLeavePolicy'
+                ? state.shiftTypesStatus === 'success'
+                : state.shiftTeamsStatus === 'success';
+    const shouldShowNotificationBell = isWardAdminAccessToken(accessToken) && state.wardId !== null && isCurrentTabReady;
     const handleSelectTab = useCallback(
         (tab: TWardSettingsTab) => {
             if (tab === state.currentTab) return;

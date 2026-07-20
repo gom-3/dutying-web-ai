@@ -244,6 +244,21 @@ describe('WardSettingsPage', () => {
         expect(settingsHeaderFrame).toHaveClass('relative', 'max-w-[960px]');
     });
 
+    it('hides the notification bell while the active settings content is loading', () => {
+        mockAuthState.accessToken = 'ward-admin-token';
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    shiftTypesStatus: 'pending',
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        expect(screen.queryByRole('button', {name: 'notification bell'})).not.toBeInTheDocument();
+    });
+
     it('근무 유형 탭에서 피그마 컬럼과 행을 보여준다', () => {
         mockUseWardSettings.mockReturnValue(createValue());
 
@@ -712,17 +727,19 @@ describe('WardSettingsPage', () => {
         expect(screen.queryByDisplayValue('데이')).not.toBeInTheDocument();
     });
 
-    it('사용된 근무 유형은 약자·분류·색상 변경과 삭제를 막고 토스트로 안내한다', async () => {
+    it('사용된 근무 유형은 약자·분류와 삭제를 막지만 색상은 변경할 수 있다', async () => {
         const user = userEvent.setup();
         const deleteShiftType = vi.fn();
+        const updateShiftType = vi.fn().mockResolvedValue(true);
 
         mockUseWardSettings.mockReturnValue(
             createValue({
                 state: {
-                    shiftTypes: [{...baseValue().state.shiftTypes[0], isUsed: true}],
+                    shiftTypes: requiredShiftTypes().map((shiftType, index) => (index === 0 ? {...shiftType, isUsed: true} : shiftType)),
                 },
                 actions: {
                     deleteShiftType,
+                    updateShiftType,
                 },
             }),
         );
@@ -734,16 +751,21 @@ describe('WardSettingsPage', () => {
         expect(shortNameInput).toHaveAttribute('readonly');
 
         await user.click(shortNameInput);
+        expect(shortNameInput).not.toHaveFocus();
         await user.keyboard('X');
         await user.click(screen.getByRole('combobox', {name: '데이 근무 의미 선택'}));
         await user.click(screen.getByRole('button', {name: '데이 색상 선택'}));
+        await user.click(screen.getByRole('button', {name: '#63C8B8 선택'}));
         await user.click(screen.getByRole('button', {name: '데이 삭제'}));
+        await user.click(screen.getByRole('button', {name: '저장하기'}));
 
         expect(shortNameInput).toHaveValue('D');
+        expect(screen.getByRole('button', {name: '데이 색상 선택'}).firstElementChild).toHaveStyle({backgroundColor: '#63C8B8'});
         expect(deleteShiftType).not.toHaveBeenCalled();
+        expect(updateShiftType).toHaveBeenCalledWith(1, expect.objectContaining({color: '#63C8B8'}));
         expect(toast.error).toHaveBeenCalledWith('근무표에 사용된 근무유형은 삭제하거나 비활성화할 수 없어요.');
         expect(toast.error).toHaveBeenCalledWith(
-            '근무표에 사용된 근무유형은 약자·유형·색상을 변경할 수 없어요. 이름과 시간만 변경할 수 있어요.',
+            '근무표에 사용된 근무유형은 약자·유형을 변경할 수 없어요. 이름·시간·색상은 변경할 수 있어요.',
         );
     });
 

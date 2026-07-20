@@ -104,6 +104,7 @@ function ScheduleFileUploadModal({
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
+    const [hasDownloadedTemplate, setHasDownloadedTemplate] = useState(false);
     const [hasSubmitted, setHasSubmitted] = useState(false);
     const portalContainer = typeof document === 'undefined' ? undefined : (document.getElementById('modal-root') ?? document.body);
     const isUploading = uploadStatus === 'uploading';
@@ -150,6 +151,7 @@ function ScheduleFileUploadModal({
                     month: targetMonth,
                 }),
             });
+            setHasDownloadedTemplate(true);
         } finally {
             setIsDownloadingTemplate(false);
         }
@@ -168,6 +170,7 @@ function ScheduleFileUploadModal({
             setSelectedFile(null);
             setIsDragging(false);
             setIsDownloadingTemplate(false);
+            setHasDownloadedTemplate(false);
             setHasSubmitted(false);
         }
     }, [open]);
@@ -231,48 +234,50 @@ function ScheduleFileUploadModal({
                         <span className="font-poppins text-[12px] font-semibold text-[#4F9F6D]">.xlsx</span>
                     </button>
 
-                    <label
-                        className={cn(
-                            'mt-4 flex min-h-[154px] cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed px-6 py-7 text-center transition-colors',
-                            isDragging
-                                ? 'border-[#107C41] bg-[#F2F8F4]'
-                                : selectedFile
-                                  ? 'border-[#107C41] bg-[#F7FBF8]'
-                                  : 'border-[#D1D6DB] bg-[#F8FAFC] hover:border-[#8B95A1] hover:bg-[#F2F4F6]',
-                            isUploading && 'cursor-wait opacity-80',
-                        )}
-                        onDragOver={(event) => {
-                            event.preventDefault();
+                    {hasDownloadedTemplate ? (
+                        <label
+                            className={cn(
+                                'mt-4 flex min-h-[154px] cursor-pointer flex-col items-center justify-center rounded-[18px] border border-dashed px-6 py-7 text-center transition-colors',
+                                isDragging
+                                    ? 'border-[#107C41] bg-[#F2F8F4]'
+                                    : selectedFile
+                                      ? 'border-[#107C41] bg-[#F7FBF8]'
+                                      : 'border-[#D1D6DB] bg-[#F8FAFC] hover:border-[#8B95A1] hover:bg-[#F2F4F6]',
+                                isUploading && 'cursor-wait opacity-80',
+                            )}
+                            onDragOver={(event) => {
+                                event.preventDefault();
 
-                            if (!isUploading) {
-                                setIsDragging(true);
-                            }
-                        }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={handleDrop}
-                    >
-                        <input
-                            ref={inputRef}
-                            data-testid="schedule-file-upload-input"
-                            hidden
-                            type="file"
-                            accept=".xlsx,.xls"
-                            disabled={isUploading}
-                            onChange={(event) => {
-                                selectFile(event.target.files?.[0]);
-                                event.target.value = '';
+                                if (!isUploading) {
+                                    setIsDragging(true);
+                                }
                             }}
-                        />
-                        <span className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#107C41] shadow-[0_8px_24px_rgba(38,55,71,0.08)]">
-                            <UploadCloud className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
-                        </span>
-                        <span className="mt-4 font-apple text-[16px] font-semibold text-sub-1">
-                            {selectedFile ? selectedFile.name : t('page.onboardingWardCreate.scheduleUpload.dropzoneTitle')}
-                        </span>
-                        <span className="mt-1 font-apple text-[13px] text-gray-3">
-                            {t('page.onboardingWardCreate.scheduleUpload.fileSupport')}
-                        </span>
-                    </label>
+                            onDragLeave={() => setIsDragging(false)}
+                            onDrop={handleDrop}
+                        >
+                            <input
+                                ref={inputRef}
+                                data-testid="schedule-file-upload-input"
+                                hidden
+                                type="file"
+                                accept=".xlsx,.xls"
+                                disabled={isUploading}
+                                onChange={(event) => {
+                                    selectFile(event.target.files?.[0]);
+                                    event.target.value = '';
+                                }}
+                            />
+                            <span className="grid h-12 w-12 place-items-center rounded-full bg-white text-[#107C41] shadow-[0_8px_24px_rgba(38,55,71,0.08)]">
+                                <UploadCloud className="h-6 w-6" strokeWidth={2.2} aria-hidden="true" />
+                            </span>
+                            <span className="mt-4 font-apple text-[16px] font-semibold text-sub-1">
+                                {selectedFile ? selectedFile.name : t('page.onboardingWardCreate.scheduleUpload.dropzoneTitle')}
+                            </span>
+                            <span className="mt-1 font-apple text-[13px] text-gray-3">
+                                {t('page.onboardingWardCreate.scheduleUpload.fileSupport')}
+                            </span>
+                        </label>
+                    ) : null}
 
                     {displayedUploadError ? (
                         <p className="mt-3 rounded-[12px] bg-[#FFF5F5] px-4 py-3 font-apple text-[14px] leading-5 text-[#C55252]">

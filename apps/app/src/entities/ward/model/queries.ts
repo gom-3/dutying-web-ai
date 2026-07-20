@@ -10,6 +10,7 @@ export const wardQueryKeys = {
     searched: (code: string) => [...wardQueryKeys.all(), 'searched', code],
     waitingNurses: (wardId: number) => [...wardQueryKeys.all(), 'waitingNurses', wardId],
     constraint: (wardId: number, shiftTeamId: number) => [...wardQueryKeys.all(), 'constraint', wardId, shiftTeamId],
+    constraintAll: (wardId: number) => [...wardQueryKeys.all(), 'constraint', wardId],
     // Shift
     duty: (wardId: number, shiftTeamId: number, year: number, month: number) => [
         ...wardQueryKeys.all(),
@@ -19,6 +20,7 @@ export const wardQueryKeys = {
         year,
         month,
     ],
+    dutyAll: (wardId: number) => [...wardQueryKeys.all(), 'duty', wardId],
     request: (wardId: number, shiftTeamId: number, year: number, month: number) => [
         ...wardQueryKeys.all(),
         'request',
@@ -27,6 +29,7 @@ export const wardQueryKeys = {
         year,
         month,
     ],
+    requestAll: (wardId: number) => [...wardQueryKeys.all(), 'request', wardId],
     requestList: (wardId: number, shiftTeamId: number, year: number, month: number) => [
         ...wardQueryKeys.all(),
         'requestList',
@@ -35,6 +38,7 @@ export const wardQueryKeys = {
         year,
         month,
     ],
+    requestListAll: (wardId: number) => [...wardQueryKeys.all(), 'requestList', wardId],
     requestPendingCount: (wardId: number) => [...wardQueryKeys.all(), 'requestPendingCount', wardId],
     requestReceptionSettings: (wardId: number) => [...wardQueryKeys.all(), 'requestReceptionSettings', wardId],
     shift: () => [...wardQueryKeys.all(), 'shift'],
