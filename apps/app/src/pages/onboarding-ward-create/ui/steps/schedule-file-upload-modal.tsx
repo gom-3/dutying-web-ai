@@ -52,9 +52,9 @@ const downloadScheduleTemplate = async (year: number, month: number, copy: TSche
     const Excel = await import('exceljs');
     const workbook = new Excel.Workbook();
     const worksheet = workbook.addWorksheet(copy.worksheetName);
-    const days = Array.from({length: getDaysInMonth(year, month)}, (_, index) => String(index + 1));
+    const days = Array.from({length: getDaysInMonth(year, month)}, (_, index) => index + 1);
 
-    worksheet.columns = [{key: 'name', width: 14}, {key: 'team', width: 12}, ...days.map((day) => ({key: day, width: 6}))];
+    worksheet.columns = [{key: 'name', width: 14}, {key: 'team', width: 12}, ...days.map((day) => ({key: String(day), width: 6}))];
     worksheet.addRow([copy.nameHeader, copy.teamHeader, ...days]);
     worksheet.addRow([copy.sampleFirstName, copy.sampleFirstTeam, 'D', 'E', 'N', 'O']);
     worksheet.addRow([copy.sampleSecondName, copy.sampleSecondTeam, 'E', 'N', 'O', 'D']);
@@ -170,7 +170,6 @@ function ScheduleFileUploadModal({
             setSelectedFile(null);
             setIsDragging(false);
             setIsDownloadingTemplate(false);
-            setHasDownloadedTemplate(false);
             setHasSubmitted(false);
         }
     }, [open]);

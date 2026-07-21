@@ -671,6 +671,29 @@ describe('useOnboardingWardWizard upload flow', () => {
         });
     });
 
+    it('applies the local schedule immediately without waiting for server analysis', async () => {
+        mockParseOnboardingWardExcel.mockRejectedValue(new Error('분석 서버에서 파일을 읽지 못했어요.'));
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+        const file = await createScheduleTemplateFile();
+        const monthKey = getScheduleMonthKey(2026, 6);
+
+        await uploadFile(result.current.applyUploadedFile, file, {targetYear: 2026, targetMonth: 6});
+
+        expect(result.current.uploadStatus).toBe('success');
+        expect(result.current.uploadError).toBeNull();
+        expect(mockParseOnboardingWardExcel).not.toHaveBeenCalled();
+        expect(result.current.draft.uploadedFileName).toBe('schedule-template.xlsx');
+        expect(result.current.draft.teams.map((team) => team.name)).toEqual(['A팀', 'B팀']);
+        expect(result.current.draft.nurses.map((nurse) => nurse.name)).toEqual(['홍길동', '김철수']);
+        expect(result.current.draft.scheduleInputs[result.current.draft.teams[0]!.id]?.[monthKey]?.rows[0]).toMatchObject({
+            name: '홍길동',
+            shifts: {'1': 'D', '2': 'E', '3': 'N'},
+        });
+        expect(toastSuccess).toHaveBeenCalledWith('근무표 파일을 반영했어요.');
+        expect(toastError).not.toHaveBeenCalled();
+    });
+
     it('keeps a cleared uploaded schedule nurse out of the next registration step', async () => {
         let savedDraftPayload: unknown = null;
 

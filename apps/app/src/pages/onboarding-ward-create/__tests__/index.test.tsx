@@ -520,22 +520,29 @@ describe('OnboardingWardCreatePage', () => {
             expect(within(dialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
         });
 
-        const file = await createScheduleTemplateFile();
-
-        fireEvent.change(within(dialog).getByTestId('schedule-file-upload-input'), {
-            target: {files: [file]},
-        });
-        await user.click(within(dialog).getByRole('button', {name: '파일 적용'}));
-
-        await waitFor(() => {
-            expect(mockParseOnboardingWardExcel).toHaveBeenCalledWith(file, {
-                targetYear: currentMonth.year,
-                targetMonth: currentMonth.month,
-            });
-        });
+        await user.click(within(dialog).getByRole('button', {name: '취소'}));
         await waitFor(() => {
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
+
+        await user.click(screen.getByRole('button', {name: '근무표 파일 업로드'}));
+
+        const reopenedDialog = screen.getByRole('dialog');
+
+        expect(within(reopenedDialog).getByTestId('schedule-file-upload-input')).toBeInTheDocument();
+
+        const file = await createScheduleTemplateFile();
+
+        fireEvent.change(within(reopenedDialog).getByTestId('schedule-file-upload-input'), {
+            target: {files: [file]},
+        });
+        await user.click(within(reopenedDialog).getByRole('button', {name: '파일 적용'}));
+
+        await waitFor(() => {
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+
+        expect(mockParseOnboardingWardExcel).not.toHaveBeenCalled();
 
         await waitFor(() => {
             expect(screen.getByRole('button', {name: /A팀/})).toHaveAttribute('aria-pressed', 'true');

@@ -63,7 +63,7 @@ import {
     updateShiftTypeDraft,
     updateTeamNameDraft,
 } from './draft';
-import {parseOnboardingScheduleTemplate} from './schedule-template-parser';
+import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from './schedule-template-parser';
 import {sortNursesByMode} from './sort';
 import {createOnboardingWardCreateExecutor, type TOnboardingWardCreateSubmission} from './submission';
 import type {TSortMode} from './types';
@@ -1376,10 +1376,42 @@ function useOnboardingWardWizard() {
         setUploadWarnings([]);
 
         try {
-            const [response, scheduleTemplate] = await Promise.all([
-                FileAPI.parseOnboardingWardExcel(file, options),
-                parseScheduleTemplateSafely(file, options),
-            ]);
+            const fileForParsing = await normalizeOnboardingScheduleFile(file);
+            const scheduleTemplate = await parseScheduleTemplateSafely(fileForParsing, options);
+            const targetYear = options?.targetYear;
+            const targetMonth = options?.targetMonth;
+
+            if (targetYear && targetMonth && scheduleTemplate.length > 0) {
+                let nextActiveTeamId: string | null = null;
+
+                setDraft((prev) => {
+                    const result = applyUploadedScheduleTemplateDraft(
+                        prev,
+                        {
+                            fileName: file.name,
+                            year: targetYear,
+                            month: targetMonth,
+                            teamSchedules: scheduleTemplate,
+                        },
+                        onboardingDraftLabels,
+                    );
+
+                    nextActiveTeamId = result.activeTeamId;
+
+                    return result.draft;
+                });
+
+                if (nextActiveTeamId) {
+                    setSelectedTeamId(nextActiveTeamId);
+                }
+
+                setUploadStatus('success');
+                toast.success(t('page.onboardingWardCreate.toast.uploadApplied'));
+
+                return;
+            }
+
+            const response = await FileAPI.parseOnboardingWardExcel(fileForParsing, options);
             const {parsedWardData, warnings} = buildOnboardingParseDraftInjection(response, file.name, options, {
                 failedSheet: (sheetName) => t('page.onboardingWardCreate.upload.failedSheet', {sheetName}),
                 failedRow: (rowLabel) => t('page.onboardingWardCreate.upload.failedRow', {rowLabel}),
