@@ -139,8 +139,8 @@ const VIOLATION_CONTEXT_TONE: Record<TViolation['level'], {surface: string; acti
     },
 };
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
-const DRAG_HANDLE_COL = '28px';
-const NAME_COL = 'clamp(52px,3.7cqw,64px)';
+const DRAG_HANDLE_COL = '24px';
+const NAME_COL = 'clamp(84px,5.4cqw,96px)';
 const MIN_SKILL_COL = '34px';
 const SKILL_COL = 'clamp(34px,2.35cqw,40px)';
 const CARRY_COL = 'clamp(22px,1.55cqw,28px)';

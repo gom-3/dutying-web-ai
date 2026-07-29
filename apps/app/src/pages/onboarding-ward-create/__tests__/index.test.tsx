@@ -504,8 +504,6 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
         await prepareValidFinalStep(user);
 
-        const currentMonth = getRelativeScheduleMonth(0);
-
         await user.click(screen.getByRole('button', {name: '근무표 파일 업로드'}));
 
         const dialog = screen.getByRole('dialog');

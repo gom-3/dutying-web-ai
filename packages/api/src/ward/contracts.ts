@@ -62,6 +62,7 @@ export type TWardChatMessageResponse = {
     senderName: string;
     senderProfileImgUrl?: string | null;
     text: string;
+    imageUrls?: string[];
     sentAt: string;
     isDeleted: boolean;
 };
@@ -154,7 +155,8 @@ export type TWardChatMessageListOptions = {
 };
 
 export type TCreateWardChatMessageDTO = {
-    text: string;
+    text?: string;
+    imageUrls?: string[];
     clientMessageId: string;
 };
 

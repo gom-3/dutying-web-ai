@@ -368,6 +368,44 @@ describe('WardChatWidget', () => {
         expect(await screen.findByText('Reply message')).toBeInTheDocument();
     });
 
+    it('keeps long unbroken messages constrained to wrapping bubbles', async () => {
+        const user = userEvent.setup();
+        const longMessage = `https://example.com/${'a'.repeat(180)}`;
+
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+        wardApiMock.getWardChatMessages.mockResolvedValueOnce({
+            messages: [
+                {
+                    messageId: 5,
+                    moimId: 1,
+                    wardId: 1,
+                    senderAccountId: 101,
+                    senderWardAdminAccountId: null,
+                    senderType: 'ACCOUNT',
+                    senderName: 'Other Nurse',
+                    text: longMessage,
+                    sentAt: '2026-05-25T05:04:01.462Z',
+                    isDeleted: false,
+                },
+            ],
+            nextCursorMessageId: null,
+            lastReadMessageId: 0,
+            unreadCount: 0,
+        });
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+
+        const messageBubble = await screen.findByText(longMessage);
+
+        expect(messageBubble).toHaveClass('min-w-0', 'max-w-full');
+        expect(messageBubble.className).toContain('[overflow-wrap:anywhere]');
+        expect(messageBubble.parentElement).toHaveClass('min-w-0', 'max-w-full');
+        expect(messageBubble.parentElement?.parentElement).toHaveClass('min-w-0', 'max-w-[78%]');
+        expect(screen.getByRole('log')).toHaveClass('overflow-x-hidden');
+    });
+
     it('renders ward admin messages from the current admin as mine', async () => {
         const user = userEvent.setup();
 

@@ -50,7 +50,7 @@ export function WardChatPreviewBubble({
                     <span className="truncate text-[13px] leading-4 font-bold text-[#17171C]">{senderName}</span>
                     <span className="size-1.5 shrink-0 rounded-full bg-main-1" aria-hidden="true" />
                 </span>
-                <span className="mt-1 [display:-webkit-box] block overflow-hidden text-[13px] leading-5 font-medium break-words text-[#3F4652] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+                <span className="mt-1 [display:-webkit-box] block overflow-hidden text-[13px] leading-5 font-medium [overflow-wrap:anywhere] text-[#3F4652] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
                     {text}
                 </span>
             </span>

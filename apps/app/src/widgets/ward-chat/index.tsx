@@ -4,8 +4,8 @@ import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack
 import type {AnimationItem} from 'lottie-web';
 import {ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
 import {Fragment, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {ProfileImage} from '@/entities/account/ui/profile-image';
 import toast from 'react-hot-toast';
+import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {getWardAdminAccountIdFromAccessToken} from '@/features/auth/model/admin-token';
 import i18n from '@/i18n';
@@ -308,7 +308,7 @@ function ChatMessage({
     const text = message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text;
 
     return (
-        <div className={cn('flex w-full gap-2.5', isMine ? 'justify-end' : 'justify-start')}>
+        <div className={cn('flex w-full min-w-0 gap-2.5', isMine ? 'justify-end' : 'justify-start')}>
             {isMine ? null : (
                 <ProfileImage
                     name={message.senderName}
@@ -316,12 +316,12 @@ function ChatMessage({
                     className="mt-5 size-8 shrink-0 rounded-full"
                 />
             )}
-            <div className={cn('flex max-w-[78%] flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
+            <div className={cn('flex max-w-[78%] min-w-0 flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
                 {isMine ? null : <SenderName message={message} />}
-                <div className={cn('flex items-end gap-1.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
+                <div className={cn('flex max-w-full min-w-0 items-end gap-1.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
                     <p
                         className={cn(
-                            'rounded-[18px] px-3.5 py-2.5 text-[14px] leading-[21px] break-words whitespace-pre-wrap shadow-sm',
+                            'max-w-full min-w-0 rounded-[18px] px-3.5 py-2.5 text-[14px] leading-[21px] [overflow-wrap:anywhere] whitespace-pre-wrap shadow-sm',
                             message.isDeleted
                                 ? 'border border-[#E1E6EF] bg-[#F3F5F8] text-gray-4 italic shadow-none'
                                 : isMine
@@ -903,7 +903,11 @@ export default function WardChatWidget() {
                         </div>
                     </header>
 
-                    <div className="scrollbar-hide min-h-0 flex-1 overflow-y-auto px-4 py-4" role="log" aria-live="polite">
+                    <div
+                        className="scrollbar-hide min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4"
+                        role="log"
+                        aria-live="polite"
+                    >
                         {messagesQuery.isLoading && messages.length === 0 ? <MessageSkeleton /> : null}
 
                         {messagesQuery.isError && messages.length === 0 ? (
@@ -935,7 +939,7 @@ export default function WardChatWidget() {
                         ) : null}
 
                         {messages.length > 0 ? (
-                            <div className="space-y-4">
+                            <div className="min-w-0 space-y-4">
                                 <div className="flex justify-center">
                                     {hasOlderMessages ? (
                                         <button
@@ -992,7 +996,7 @@ export default function WardChatWidget() {
                                 value={draft}
                                 rows={1}
                                 placeholder={t('widget.wardChat.inputPlaceholder')}
-                                className="max-h-28 min-h-9 flex-1 resize-none bg-transparent py-2 text-[14px] leading-5 text-sub-1 placeholder:text-gray-4 focus:outline-none"
+                                className="max-h-28 min-h-9 min-w-0 flex-1 resize-none bg-transparent py-2 text-[14px] leading-5 text-sub-1 placeholder:text-gray-4 focus:outline-none"
                                 onChange={(event) => setDraft(event.target.value)}
                                 onKeyDown={handleTextareaKeyDown}
                             />

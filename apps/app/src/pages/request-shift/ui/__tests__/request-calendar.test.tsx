@@ -102,19 +102,21 @@ function createUseRequestShiftValue({
     requestAccepted = true,
     dayType = 'workday',
     focus = null,
+    nurseName = 'Kim',
 }: {
     hasNurses?: boolean;
     hasRequest?: boolean;
     requestAccepted?: boolean | null;
     dayType?: 'workday' | 'saturday' | 'sunday' | 'holiday';
     focus?: {shiftNurseName: string; shiftNurseId: number; day: number} | null;
+    nurseName?: string;
 } = {}) {
     const nurse = {
         nurseId: 10,
         accountId: null,
         shiftTeamId: 3,
         wardId: 1,
-        name: 'Kim',
+        name: nurseName,
         phoneNum: null,
         isConnected: false,
         nurseShiftTypes: [],
@@ -284,6 +286,14 @@ describe('RequestCalendar', () => {
         renderRequestCalendar();
 
         expect(screen.getByText('Kim').closest('.make-shift-calendar__row-name')).toHaveClass('text-[clamp(12px,1.05vw,16px)]');
+    });
+
+    it('신청근무 행 이름은 4자 뒤에 말줄임으로 표시한다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, nurseName: '박서연지희'}));
+
+        renderRequestCalendar();
+
+        expect(screen.getByText('박서연지…').closest('.make-shift-calendar__row-name')).toBeInTheDocument();
     });
 
     it('간호사 행 사이에 작은 세로 여백을 둔다', () => {
