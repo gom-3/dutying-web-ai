@@ -2,7 +2,9 @@ import {describe, expect, it} from 'vitest';
 import type {TWardShiftType} from '@/entities';
 import {
     calculateBaseRestTarget,
+    calculateRestTargetFromDays,
     calculateRestTarget,
+    countPublicHolidaysForRestTarget,
     DEFAULT_REST_LEAVE_POLICY,
     getDefaultCountedRestShiftTypeIds,
     getHolidayCountryForLanguage,
@@ -63,6 +65,17 @@ describe('rest leave policy', () => {
         expect(calculateBaseRestTarget(policy, 2026, 6)).toBe(6);
         expect(calculateRestTarget(policy, 2026, 6, 2)).toBe(8);
         expect(calculateRestTarget({...policy, includeHolidays: false}, 2026, 6, 2)).toBe(6);
+    });
+
+    it('목표 휴무일에 평일 공휴일만 추가한다', () => {
+        const days = [
+            {day: 15, dayType: 'holiday' as const},
+            {day: 17, dayType: 'holiday' as const},
+        ];
+        const policy = {...DEFAULT_REST_LEAVE_POLICY, targetMode: 'weekly' as const, weeklyOffDays: 2};
+
+        expect(countPublicHolidaysForRestTarget(2026, 8, days)).toBe(1);
+        expect(calculateRestTargetFromDays(policy, 2026, 8, days)).toBe(11);
     });
 
     it('휴무일 계산을 끄면 기준일을 계산하지 않는다', () => {

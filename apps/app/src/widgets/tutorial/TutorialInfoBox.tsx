@@ -24,7 +24,7 @@ export function TutorialInfoBox({currentStep, infoBoxElement, onNext, onPrevious
     return (
         <div
             id="InfoBox"
-            className="group/infobox fixed top-25 z-[1000] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-visible rounded-[1.25rem] bg-white px-5 py-4 font-apple shadow-[0_18px_48px_rgba(0,0,0,0.2)]"
+            className="group/infobox fixed top-25 z-[1004] flex w-[24rem] max-w-[calc(100vw-2rem)] flex-col overflow-visible rounded-[1.25rem] bg-white px-5 py-4 font-apple shadow-[0_18px_48px_rgba(0,0,0,0.2)]"
             ref={infoBoxElement}
         >
             <span

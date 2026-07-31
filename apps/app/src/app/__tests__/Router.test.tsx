@@ -59,4 +59,19 @@ describe('Router', () => {
 
         expect(screen.getByText('mobile landing route')).toBeInTheDocument();
     });
+
+    it('keeps service status routes available for phone visitors', async () => {
+        setPhoneDevice(true);
+
+        render(
+            <MemoryRouter initialEntries={[ROUTE.RENEWAL]}>
+                <Router />
+                <LocationProbe />
+            </MemoryRouter>,
+        );
+
+        await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(ROUTE.RENEWAL));
+
+        expect(await screen.findByRole('heading', {name: '곧 새로운 경험이 찾아와요'})).toBeInTheDocument();
+    });
 });

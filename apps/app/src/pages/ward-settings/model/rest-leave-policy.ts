@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useState} from 'react';
-import type {TWardShiftType} from '@/entities';
+import type {TDay, TWardShiftType} from '@/entities';
 import {normalizePreferredLanguage} from '@/shared/i18n/locale';
 
 export type TRestTargetMode = 'weekly' | 'fixed';
@@ -182,6 +182,27 @@ export function calculateRestTarget(policy: TRestLeavePolicy, year: number, mont
     if (!policy.enabled) return 0;
 
     return calculateBaseRestTarget(policy, year, month) + (policy.includeHolidays ? holidayCount : 0);
+}
+
+function normalizeDayType(dayType: TDay['dayType'] | string) {
+    return String(dayType)
+        .trim()
+        .replace(/[\s_-]/g, '')
+        .toLowerCase();
+}
+
+function isWeekendDate(year: number, month: number, day: number) {
+    const dayOfWeek = new Date(year, month - 1, day).getDay();
+
+    return dayOfWeek === 0 || dayOfWeek === 6;
+}
+
+export function countPublicHolidaysForRestTarget(year: number, month: number, days: Array<TDay | {day: number; dayType: string}> = []) {
+    return days.filter((day) => normalizeDayType(day.dayType).includes('holiday') && !isWeekendDate(year, month, day.day)).length;
+}
+
+export function calculateRestTargetFromDays(policy: TRestLeavePolicy, year: number, month: number, days: TDay[] = []) {
+    return calculateRestTarget(policy, year, month, countPublicHolidaysForRestTarget(year, month, days));
 }
 
 export function getRestShiftTypes(shiftTypes: TWardShiftType[]) {

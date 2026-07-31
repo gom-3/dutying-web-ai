@@ -247,6 +247,88 @@ describe('useOnboardingWardWizard upload flow', () => {
         ]);
     });
 
+    it('uses only the corrected schedule codes when moving to shift types', async () => {
+        let savedDraftPayload: unknown = null;
+
+        mockGetOnboardingWardDraft.mockImplementation(() =>
+            Promise.resolve(savedDraftPayload ? {ward: draftWardResponse, draftPayload: savedDraftPayload} : null),
+        );
+        mockSaveOnboardingWardDraft.mockImplementation((_wardId, draftDTO) => {
+            savedDraftPayload = draftDTO.draftPayload;
+
+            return Promise.resolve({ward: draftWardResponse, draftPayload: savedDraftPayload});
+        });
+        mockPreviewOnboardingScheduleInput.mockImplementation((request) =>
+            Promise.resolve({
+                targetYear: request.targetYear,
+                targetMonth: request.targetMonth,
+                nurses: [
+                    {
+                        name: '김하늘',
+                        displayOrder: 1,
+                        initialShifts: [{date: '2026-05-01', shiftShortName: 'Y'}],
+                    },
+                ],
+                wardShiftTypes: [
+                    {name: '데이', shortName: 'D', color: '#4DC2AD', isOff: false, isDefault: true, classification: 'DAY'},
+                    {name: '이브닝', shortName: 'E', color: '#FF8BA5', isOff: false, isDefault: true, classification: 'EVENING'},
+                    {name: '나이트', shortName: 'N', color: '#3580FF', isOff: false, isDefault: true, classification: 'NIGHT'},
+                    {name: '오프', shortName: 'O', color: '#465B7A', isOff: true, isDefault: true, classification: 'OFF'},
+                    {name: 'Y', shortName: 'Y', color: '#94A3B8', isOff: false, isDefault: false, classification: 'OTHER_WORK'},
+                ],
+                warnings: [],
+                unresolvedCodes: [],
+            }),
+        );
+
+        const {result} = renderHook(() => useOnboardingWardWizard());
+
+        act(() => {
+            result.current.updateWardIdentity({hospitalName: '듀팅병원', wardName: '중환자실'});
+        });
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const teamId = result.current.activeTeamId;
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 5,
+                rows: [{id: 'row-1', nurseId: null, name: '김하늘', shifts: {'1': 'X'}}],
+            });
+        });
+
+        const rowAfterWrongCode = result.current.draft.scheduleInputs[teamId]?.['2026-05']?.rows[0];
+
+        act(() => {
+            result.current.updateScheduleInput(teamId, {
+                year: 2026,
+                month: 5,
+                rows: [{id: 'row-1', nurseId: rowAfterWrongCode?.nurseId ?? null, name: '김하늘', shifts: {'1': 'Y'}}],
+            });
+        });
+
+        expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'X')).toBe(false);
+        expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'Y')).toBe(true);
+
+        await act(async () => {
+            await result.current.goNextStep();
+        });
+
+        const previewRequest = mockPreviewOnboardingScheduleInput.mock.calls[0]?.[0];
+
+        expect(previewRequest.dutyBlock.split('\t')[0]).toBe('Y');
+        expect(result.current.draft.currentStep).toBe(3);
+        expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'X')).toBe(false);
+        expect(result.current.draft.shiftTypes.some((shiftType) => shiftType.shortName === 'Y')).toBe(true);
+        expect(result.current.draft.nurses.find((nurse) => nurse.name === '김하늘')?.initialShifts).toEqual([
+            {date: '2026-05-01', shiftShortName: 'Y'},
+        ]);
+    });
+
     it('resets shift types when returning from schedule input and entering shift types again', async () => {
         let savedDraftPayload: unknown = null;
 

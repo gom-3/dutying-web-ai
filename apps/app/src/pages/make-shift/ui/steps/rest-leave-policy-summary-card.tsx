@@ -1,6 +1,13 @@
 import {Minus, Plus, Settings} from 'lucide-react';
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {calculateBaseRestTarget, getApproximateWeekCount, useRestLeavePolicy} from '@/pages/ward-settings/model/rest-leave-policy';
+import type {TShift} from '@/entities';
+import {
+    calculateBaseRestTarget,
+    calculateRestTargetFromDays,
+    countPublicHolidaysForRestTarget,
+    getApproximateWeekCount,
+    useRestLeavePolicy,
+} from '@/pages/ward-settings/model/rest-leave-policy';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {useRestTargetAdjustment} from '../../model/rest-target-adjustment';
 
@@ -9,6 +16,7 @@ type TRestLeavePolicySummaryCardProps = {
     shiftTeamId: number | null;
     year: number;
     month: number;
+    days?: TShift['days'] | null;
 };
 
 type TRestLeavePolicySummaryState = ReturnType<typeof useRestLeavePolicySummary>;
@@ -25,13 +33,15 @@ function formatAdjustmentLabel(adjustmentDays: number, t: ReturnType<typeof useT
         : t('page.makeShift.workers.restPolicy.adjustmentMinus', {count: Math.abs(adjustmentDays)});
 }
 
-function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeavePolicySummaryCardProps) {
+function useRestLeavePolicySummary({wardId, shiftTeamId, year, month, days}: TRestLeavePolicySummaryCardProps) {
     const {t} = useTypedTranslation();
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays, setAdjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId, year, month});
     const weekCount = useMemo(() => getApproximateWeekCount(year, month), [month, year]);
     const baseTarget = useMemo(() => calculateBaseRestTarget(policy, year, month), [month, policy, year]);
-    const adjustedTarget = Math.max(0, baseTarget + adjustmentDays);
+    const holidayCount = useMemo(() => countPublicHolidaysForRestTarget(year, month, days ?? []), [days, month, year]);
+    const targetWithHolidays = useMemo(() => calculateRestTargetFromDays(policy, year, month, days ?? []), [days, month, policy, year]);
+    const adjustedTarget = Math.max(0, targetWithHolidays + adjustmentDays);
     const baseTargetLabel =
         policy.targetMode === 'weekly'
             ? t('page.makeShift.workers.restPolicy.weeklyTarget', {
@@ -40,11 +50,17 @@ function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeav
                   count: baseTarget,
               })
             : t('page.makeShift.workers.restPolicy.fixedTarget', {count: baseTarget});
+    const holidayTargetLabel =
+        policy.includeHolidays && holidayCount > 0
+            ? `${t('page.wardSettings.restLeavePolicy.holiday.include.title')} +${holidayCount}${t(
+                  'page.makeShift.workers.restPolicy.dayUnit',
+              )}`
+            : null;
     const adjustmentLabel = formatAdjustmentLabel(adjustmentDays, t);
-    const canDecrease = adjustmentDays > -baseTarget;
+    const canDecrease = adjustmentDays > -targetWithHolidays;
     const canIncrease = adjustmentDays < 31;
     const patchAdjustment = (nextAdjustmentDays: number) => {
-        setAdjustmentDays(Math.max(-baseTarget, Math.min(31, nextAdjustmentDays)));
+        setAdjustmentDays(Math.max(-targetWithHolidays, Math.min(31, nextAdjustmentDays)));
     };
 
     return {
@@ -52,8 +68,9 @@ function useRestLeavePolicySummary({wardId, shiftTeamId, year, month}: TRestLeav
         enabled: Boolean(wardId && policy.enabled),
         targetLabel: getTargetLabel(month, t),
         adjustedTarget,
-        baseTarget,
+        baseTarget: targetWithHolidays,
         baseTargetLabel,
+        holidayTargetLabel,
         adjustmentDays,
         adjustmentLabel,
         canDecrease,
@@ -107,6 +124,7 @@ function RestTargetSummaryText({summary, tone = 'dark'}: {summary: TRestLeavePol
                 {summary.t('page.makeShift.workers.restPolicy.dayUnit')}
             </p>
             <p className={`mt-0.5 ${detailClassName}`}>{summary.baseTargetLabel}</p>
+            {summary.holidayTargetLabel ? <p className={detailClassName}>{summary.holidayTargetLabel}</p> : null}
             <p className={detailClassName}>{summary.adjustmentLabel}</p>
         </div>
     );

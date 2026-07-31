@@ -823,6 +823,21 @@ const isScheduleInputGeneratedShiftType = (shiftType: TOnboardingWardShiftType) 
         normalizeOnboardingShiftCode(shiftType.name) === shortName
     );
 };
+const setPreviousScheduleProtection = (shiftType: TOnboardingWardShiftType, shouldProtect: boolean): TOnboardingWardShiftType => {
+    if (shouldProtect) {
+        return shiftType.protectedByPreviousSchedule ? shiftType : {...shiftType, protectedByPreviousSchedule: true};
+    }
+
+    if (!shiftType.protectedByPreviousSchedule) {
+        return shiftType;
+    }
+
+    const nextShiftType = {...shiftType};
+
+    delete nextShiftType.protectedByPreviousSchedule;
+
+    return nextShiftType;
+};
 const syncScheduleInputShiftTypes = (
     shiftTypes: TOnboardingWardShiftType[],
     scheduleInputs: TOnboardingWardDraft['scheduleInputs'],
@@ -840,11 +855,9 @@ const syncScheduleInputShiftTypes = (
             shiftType.isDefault &&
             shiftType.isOff;
         const shouldProtect = Boolean(shortName && observedScheduleShortNames.has(shortName));
-        const nextShiftType =
-            shouldProtect && !shiftType.protectedByPreviousSchedule ? {...shiftType, protectedByPreviousSchedule: true} : shiftType;
+        const nextShiftType = setPreviousScheduleProtection(shiftType, shouldProtect);
         const shouldRemove =
-            !nextShiftType.protectedByPreviousSchedule &&
-            (isUnselectedDefaultOff || (isScheduleInputGeneratedShiftType(nextShiftType) && !scheduleShortNames.has(shortName)));
+            isUnselectedDefaultOff || (isScheduleInputGeneratedShiftType(nextShiftType) && !scheduleShortNames.has(shortName));
 
         if (shouldRemove) {
             return [];
@@ -1160,18 +1173,18 @@ export const updateShiftTypeDraft = (
     updater: Partial<TOnboardingWardShiftType>,
 ): TOnboardingWardDraft => {
     const targetShiftType = draft.shiftTypes.find((shiftType) => shiftType.id === shiftTypeId);
-    const isShortNameUpdate = Object.prototype.hasOwnProperty.call(updater, 'shortName');
+    const effectiveUpdater = {...updater};
 
-    if (targetShiftType?.protectedByPreviousSchedule && (isShortNameUpdate || updater.isActive === false)) {
-        const {shortName: _shortName, isActive: _isActive, ...safeUpdater} = updater;
+    if (targetShiftType?.protectedByPreviousSchedule && updater.isActive === false) {
+        delete effectiveUpdater.isActive;
 
-        return {
-            ...draft,
-            shiftTypes: draft.shiftTypes.map((shiftType) => (shiftType.id === shiftTypeId ? {...shiftType, ...safeUpdater} : shiftType)),
-        };
+        if (Object.keys(effectiveUpdater).length === 0) {
+            return draft;
+        }
     }
 
-    const nextShortName = isShortNameUpdate ? normalizeShiftCodeToRemap(updater.shortName) : null;
+    const isShortNameUpdate = Object.prototype.hasOwnProperty.call(effectiveUpdater, 'shortName');
+    const nextShortName = isShortNameUpdate ? normalizeShiftCodeToRemap(effectiveUpdater.shortName) : null;
     const canRemapShortName =
         isShortNameUpdate && nextShortName && targetShiftType
             ? !hasDuplicateShiftShortName(draft.shiftTypes, shiftTypeId, nextShortName)
@@ -1197,7 +1210,7 @@ export const updateShiftTypeDraft = (
             endTime: archivedShiftTypeWithSameShortName.endTime.trim()
                 ? archivedShiftTypeWithSameShortName.endTime
                 : targetShiftType.endTime,
-            ...updater,
+            ...effectiveUpdater,
             id: archivedShiftTypeWithSameShortName.id,
             isActive: true,
         };
@@ -1235,7 +1248,7 @@ export const updateShiftTypeDraft = (
         const nextAliases = new Set(
             isShortNameUpdate && !shouldRemap ? Array.from(getShiftTypeRemapCodes(shiftType, draft.shiftTypes)) : [],
         );
-        const {source: _source, shortNameAliases: _shortNameAliases, ...nextShiftTypeCandidate} = {...shiftType, ...updater};
+        const {source: _source, shortNameAliases: _shortNameAliases, ...nextShiftTypeCandidate} = {...shiftType, ...effectiveUpdater};
         const nextShiftType = nextShiftTypeCandidate;
 
         if (nextAliases.size === 0) {
@@ -1468,6 +1481,7 @@ export const reorderShiftTypes = (
     nextActiveShiftTypes.splice(destination.index, 0, moved);
 
     let activeShiftTypeIndex = 0;
+
     const nextShiftTypes = draft.shiftTypes.map((shiftType) => {
         if (!isOnboardingShiftTypeActive(shiftType)) {
             return shiftType;

@@ -282,12 +282,47 @@ const toSchedulePreviewShiftTypes = (response: TOnboardingScheduleInputPreviewRe
         };
     });
 const normalizeShiftTypeMergeKey = (shortName?: string | null) => shortName?.trim().toUpperCase();
+const collectScheduleInputObservedShiftTypeKeys = (scheduleInputs: TOnboardingWardDraft['scheduleInputs']) => {
+    const shiftTypeKeys = new Set<string>();
+
+    Object.values(scheduleInputs ?? {}).forEach((teamScheduleInputs) => {
+        Object.values(teamScheduleInputs ?? {}).forEach((teamSchedule) => {
+            teamSchedule?.rows.forEach((row) => {
+                Object.values(row.shifts).forEach((shortName) => {
+                    const shiftTypeKey = normalizeShiftTypeMergeKey(normalizeOnboardingShiftCode(shortName));
+
+                    if (shiftTypeKey) {
+                        shiftTypeKeys.add(shiftTypeKey);
+                    }
+                });
+            });
+        });
+    });
+
+    return shiftTypeKeys;
+};
+const setParsedPreviousScheduleProtection = (shiftType: TOnboardingParsedShiftType, shouldProtect: boolean): TOnboardingParsedShiftType => {
+    if (shouldProtect) {
+        return shiftType.protectedByPreviousSchedule ? shiftType : {...shiftType, protectedByPreviousSchedule: true};
+    }
+
+    if (!shiftType.protectedByPreviousSchedule) {
+        return shiftType;
+    }
+
+    const nextShiftType = {...shiftType};
+
+    delete nextShiftType.protectedByPreviousSchedule;
+
+    return nextShiftType;
+};
 const mergeSchedulePreviewShiftTypes = (
     draft: TOnboardingWardDraft,
     schedule: TOnboardingTeamScheduleDraft,
     response: TOnboardingScheduleInputPreviewResponse,
 ): TOnboardingParsedShiftType[] => {
     const draftShiftTypes = draft.shiftTypes.map(toParsedShiftType);
+    const currentObservedShortNames = collectScheduleInputObservedShiftTypeKeys(draft.scheduleInputs);
     const observedPreviewShortNames = new Set(
         schedule.rows.flatMap((row) =>
             Object.values(row.shifts)
@@ -332,16 +367,21 @@ const mergeSchedulePreviewShiftTypes = (
         .map((shortName) => {
             const draftShiftType = draftByShortName.get(shortName);
             const previewShiftType = previewByShortName.get(shortName);
+            const shouldProtect = currentObservedShortNames.has(shortName);
 
             if (!previewShiftType) {
+                if (draftShiftType?.source === 'schedule-input' && !shouldProtect) {
+                    return undefined;
+                }
+
+                return draftShiftType ? setParsedPreviousScheduleProtection(draftShiftType, shouldProtect) : undefined;
+            }
+
+            if (draftShiftType?.protectedByPreviousSchedule && shouldProtect) {
                 return draftShiftType;
             }
 
-            if (draftShiftType?.protectedByPreviousSchedule) {
-                return draftShiftType;
-            }
-
-            return {...previewShiftType, source: draftShiftType?.source};
+            return setParsedPreviousScheduleProtection({...previewShiftType, source: draftShiftType?.source}, shouldProtect);
         })
         .filter((shiftType): shiftType is TOnboardingParsedShiftType => Boolean(shiftType));
 };

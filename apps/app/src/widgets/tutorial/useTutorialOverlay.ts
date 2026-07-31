@@ -24,6 +24,7 @@ type THighlightedElement = {
 type TInfoBoxPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 const VIEWPORT_MARGIN = 10;
+const TUTORIAL_FOREGROUND_Z_INDEX = '1003';
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 function getCurrentStep(config: ITutorialConfig, stepIndex: number): ITutorialStepConfig | undefined {
@@ -232,7 +233,7 @@ export function useTutorialOverlay({config, closeCallback, initialStepIndex}: TU
                 element.inert = true;
                 element.style.isolation = 'isolate';
                 element.style.pointerEvents = 'none';
-                element.style.zIndex = '999';
+                element.style.zIndex = TUTORIAL_FOREGROUND_Z_INDEX;
 
                 if (computedPosition === 'static') {
                     element.style.position = 'relative';

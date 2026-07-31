@@ -11,6 +11,8 @@ const ROUTE = {
     SIGN_IN: '/login',
     SIGN_UP: '/signup',
     REFRESH: '/refresh',
+    MAINTENANCE: '/maintenance',
+    RENEWAL: '/renewal',
     UI_PREVIEW: '/__ui',
     REDIRECT: '/oauth2/redirect',
     ONBOARDING: '/onboarding',

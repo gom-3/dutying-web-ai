@@ -24,7 +24,7 @@ export const TutorialOverlay = ({config, closeCallback, initialStepIndex}: ITuto
         <>
             <div
                 aria-hidden="true"
-                className="fixed inset-0 z-[997] cursor-default touch-none"
+                className="fixed inset-0 z-[1003] cursor-default touch-none"
                 onClick={blockTutorialInteraction}
                 onMouseDown={blockTutorialInteraction}
                 onPointerDown={blockTutorialInteraction}
@@ -47,7 +47,7 @@ export const TutorialOverlay = ({config, closeCallback, initialStepIndex}: ITuto
                         ...style,
                         boxShadow: index === 0 ? '0 0 0 9999px rgba(0, 0, 0, 0.76), 0 18px 44px rgba(0, 0, 0, 0.28)' : undefined,
                     }}
-                    className="pointer-events-none fixed z-[998] box-content rounded-[1rem] transition-[top,left,width,height] duration-200 ease-out"
+                    className="pointer-events-none fixed z-[1003] box-content rounded-[1rem] transition-[top,left,width,height] duration-200 ease-out"
                 />
             ))}
         </>

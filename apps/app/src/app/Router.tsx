@@ -9,6 +9,8 @@ import {AuthLayout, MainLayout, NotAuthLayout} from '@/widgets/layouts';
 
 const LandingPage = lazy(() => import('@/pages/landing'));
 const RefreshPage = lazy(() => import('@/pages/refresh'));
+const MaintenancePage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.MaintenancePage})));
+const RenewalPage = lazy(() => import('@/pages/service-status').then((module) => ({default: module.RenewalPage})));
 const UiPreviewPage = lazy(() => import('@/pages/ui-preview'));
 const LoginPage = lazy(() => import('@/pages/login'));
 const RegisterPage = lazy(() => import('@/pages/register'));
@@ -49,6 +51,8 @@ export const Router = () => {
             >
                 <Routes>
                     <Route path={ROUTE.ROOT} element={<LandingPage />} />
+                    <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
+                    <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                     <Route path="*" element={<Navigate to={ROUTE.ROOT} replace />} />
                 </Routes>
             </Suspense>
@@ -69,6 +73,8 @@ export const Router = () => {
             <Routes>
                 <Route path={ROUTE.ROOT} element={<LandingPage />} />
                 <Route path={ROUTE.REFRESH} element={<RefreshPage />} />
+                <Route path={ROUTE.MAINTENANCE} element={<MaintenancePage />} />
+                <Route path={ROUTE.RENEWAL} element={<RenewalPage />} />
                 <Route path={ROUTE.REDIRECT} element={<RedirectPage />} />
                 {import.meta.env.DEV ? <Route path={ROUTE.UI_PREVIEW} element={<UiPreviewPage />} /> : null}
                 {/* 인증된 사용자가 접근할 수 없는 페이지 */}

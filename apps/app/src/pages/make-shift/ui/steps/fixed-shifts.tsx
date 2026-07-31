@@ -227,7 +227,13 @@ export function FixedShifts() {
                             void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
                         }}
                         restPolicyControl={
-                            <RestLeavePolicySummaryButton wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
+                            <RestLeavePolicySummaryButton
+                                wardId={wardId}
+                                shiftTeamId={currentShiftTeamId}
+                                year={year}
+                                month={month}
+                                days={orderedShift.days}
+                            />
                         }
                     />
                 </div>

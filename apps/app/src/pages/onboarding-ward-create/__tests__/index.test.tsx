@@ -785,7 +785,7 @@ describe('OnboardingWardCreatePage', () => {
         expect(screen.getByRole('option', {name: '저녁 근무 (Evening)'})).toBeInTheDocument();
     });
 
-    it('shows a toast when trying to edit or delete a previous-schedule shift type', async () => {
+    it('allows editing but blocks deleting a previous-schedule shift type', async () => {
         const user = userEvent.setup();
 
         render(<OnboardingWardCreatePage />);
@@ -804,8 +804,16 @@ describe('OnboardingWardCreatePage', () => {
         });
 
         toastError.mockReset();
-        await user.click(screen.getByDisplayValue('D'));
-        expect(toastError).toHaveBeenCalledWith('이전 근무표에서 사용한 약자는 변경할 수 없어요.');
+
+        const dayShortNameInput = screen.getByDisplayValue('D') as HTMLInputElement;
+
+        expect(dayShortNameInput).not.toHaveAttribute('readonly');
+
+        await user.clear(dayShortNameInput);
+        await user.type(dayShortNameInput, 'A');
+
+        expect(screen.getByDisplayValue('A')).toBeInTheDocument();
+        expect(toastError).not.toHaveBeenCalled();
 
         await user.click(screen.getByRole('button', {name: '데이 삭제'}));
         expect(toastError).toHaveBeenCalledWith('이전 근무표에서 사용한 근무 유형은 삭제할 수 없어요.');

@@ -51,7 +51,7 @@ function getAvailableShiftClassificationOptions(shiftTypes: TOnboardingWardShift
 
     return SHIFT_CLASSIFICATION_OPTIONS.filter(
         (option) =>
-            currentShiftType?.protectedByPreviousSchedule ||
+            (currentShiftType?.protectedByPreviousSchedule ?? false) ||
             !UNIQUE_SHIFT_CLASSIFICATIONS.has(option.value) ||
             option.value === currentShiftType?.classification ||
             !usedClassifications.has(option.value),
@@ -137,9 +137,6 @@ function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShif
     const [openedColorShiftTypeId, setOpenedColorShiftTypeId] = useState<string | null>(null);
     const [shortNameErrorById, setShortNameErrorById] = useState<Record<string, string>>({});
     const openedColorContainerRef = useRef<HTMLDivElement | null>(null);
-    const showProtectedShortNameToast = () => {
-        toast.error(t('page.onboardingWardCreate.toast.previousScheduleShortNameLocked'));
-    };
     const showProtectedDeleteToast = () => {
         toast.error(t('page.onboardingWardCreate.toast.previousScheduleDeleteLocked'));
     };
@@ -312,28 +309,6 @@ function ShiftTypeStep({shiftTypes, onChange, onDragEnd, onAdd, onDelete}: IShif
                                                 <Input
                                                     value={shiftType.shortName}
                                                     maxLength={SHIFT_SHORT_NAME_MAX_LENGTH}
-                                                    readOnly={shiftType.protectedByPreviousSchedule}
-                                                    aria-readonly={shiftType.protectedByPreviousSchedule}
-                                                    onClick={() => {
-                                                        if (shiftType.protectedByPreviousSchedule) {
-                                                            showProtectedShortNameToast();
-                                                        }
-                                                    }}
-                                                    onKeyDown={(event) => {
-                                                        if (
-                                                            shiftType.protectedByPreviousSchedule &&
-                                                            (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete')
-                                                        ) {
-                                                            event.preventDefault();
-                                                            showProtectedShortNameToast();
-                                                        }
-                                                    }}
-                                                    onPaste={(event) => {
-                                                        if (shiftType.protectedByPreviousSchedule) {
-                                                            event.preventDefault();
-                                                            showProtectedShortNameToast();
-                                                        }
-                                                    }}
                                                     onChange={(event) => {
                                                         const normalizedShortName = normalizeShiftShortNameInput(event.target.value);
 

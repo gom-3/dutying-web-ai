@@ -1,7 +1,7 @@
 import type {TShift} from '@/entities';
 import type {TDutyDoc} from '@/features/shift-editor/model';
 import {
-    calculateBaseRestTarget,
+    calculateRestTargetFromDays,
     resolveCountedRestShiftTypeIds,
     type TRestLeavePolicy,
 } from '@/pages/ward-settings/model/rest-leave-policy';
@@ -26,8 +26,7 @@ export function calculateRestCheckByShiftNurse(params: {
 
     if (!policy.enabled) return undefined;
 
-    // /make uses the ward setting as the initial target; only the make-page +/- adjustment changes the final target.
-    const monthlyTarget = calculateBaseRestTarget(policy, year, month) + adjustmentDays;
+    const monthlyTarget = calculateRestTargetFromDays(policy, year, month, shift.days) + adjustmentDays;
     const countedRestShiftTypeIds = new Set(resolveCountedRestShiftTypeIds(policy, shift.wardShiftTypes));
     const shiftTypeByShortName = new Map(shift.wardShiftTypes.map((shiftType) => [shiftType.shortName, shiftType]));
     const restCheckByShiftNurseId: Record<number, TRestCheckSummary> = {};
