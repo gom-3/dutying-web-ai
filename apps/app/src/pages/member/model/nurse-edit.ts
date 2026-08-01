@@ -1,10 +1,10 @@
 import {type TNurse} from '@/entities/nurse';
 import {type TNurseDrawerMode, type TNurseSaveStatus} from '@/features/edit-shift-team/model/store';
 import type {TI18nKey} from '@/shared/hook/use-typed-translation';
-import {getNurseShiftTypeKey} from './nurse-shift-types';
+import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, getNurseShiftTypeKey} from './nurse-shift-types';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from './nurse-role';
 
-const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager'] as const;
+const nurseProfileEditableKeys = ['name', 'phoneNum', 'birthDate', 'isWorker', 'isWardManager'] as const;
 
 export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
@@ -27,8 +27,11 @@ export function hasNurseChanges(original: TNurse | null | undefined, draft: TNur
     const draftShiftTypeByKey = new Map(draft.nurseShiftTypes.map((shiftType) => [getNurseShiftTypeKey(shiftType), shiftType]));
     const hasDraftShiftTypeChanges = draft.nurseShiftTypes.some((shiftType) => {
         const originalIsPossible = originalShiftTypeByKey.get(getNurseShiftTypeKey(shiftType))?.isPossible ?? true;
+        const originalTargetRatioWeight =
+            originalShiftTypeByKey.get(getNurseShiftTypeKey(shiftType))?.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT;
+        const draftTargetRatioWeight = shiftType.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT;
 
-        return originalIsPossible !== shiftType.isPossible;
+        return originalIsPossible !== shiftType.isPossible || originalTargetRatioWeight !== draftTargetRatioWeight;
     });
 
     if (hasDraftShiftTypeChanges) return true;

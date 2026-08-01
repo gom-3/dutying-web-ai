@@ -31,6 +31,18 @@ export const zh = {
             retry: '重试',
             empty: '没有新通知。',
         },
+        member: {
+            ...generatedZh.page.member,
+            detail: {
+                ...generatedZh.page.member.detail,
+                shiftRatio: '月度班次比例',
+                shiftRatioHelpAria: '月度班次比例说明',
+                shiftRatioHint: '仅按可排班的D/E/N/O班次调整月度目标天数',
+                shiftRatioEmpty: '选择可排班的D/E/N/O班次后即可设置比例',
+                shiftRatioInputAria: '{{shiftName}}月度班次天数',
+                shiftRatioReset: '展开月度班次比例',
+            },
+        },
         makeShift: {
             ...generatedZh.page.makeShift,
             calendar: {
@@ -104,21 +116,13 @@ export const zh = {
                         label: '个人条件',
                         sentence: '{nurse}不能在周末或节假日工作',
                     },
-                    NURSE_NOT_ALONE_N: {
-                        label: '熟练度条件',
-                        sentence: '{nurse}不能单独上N班',
+                    NURSE_PREFER_SHIFT: {
+                        label: '个人条件',
+                        sentence: '{nurse}偏好{shift}班',
                     },
-                    NEW_NURSE_NOT_ALONE_N: {
-                        label: '熟练度条件',
-                        sentence: '{nurse}不能单独上N班',
-                    },
-                    PRECEPTEE_NOT_ALONE_N: {
-                        label: '熟练度条件',
-                        sentence: '{preceptee}不能单独上N班',
-                    },
-                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
-                        label: '熟练度条件',
-                        sentence: '{shift}班至少需要{count}名LV{level}以上护士',
+                    NURSE_AVOID_SHIFT: {
+                        label: '个人条件',
+                        sentence: '{nurse}希望避免{shift}班',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '重要基础条件',
@@ -203,14 +207,6 @@ export const zh = {
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '个人条件',
                         sentence: '{nurse}不能在周末或节假日工作',
-                    },
-                    SOFT_NEWBIE_NO_SOLO_N: {
-                        label: '熟练度条件',
-                        sentence: '{nurse}不能单独上N班',
-                    },
-                    SOFT_MIN_SKILL_IN_DUTY: {
-                        label: '熟练度条件',
-                        sentence: '{duty}班至少需要{count}名LV{level}以上护士',
                     },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: '组合条件',

@@ -662,6 +662,7 @@ describe('@dutying/api public entry', () => {
             nurseApi.updateNurse(12, {
                 name: '김간호사',
                 phoneNum: '010-1234-5678',
+                birthDate: '1996-03-14',
                 gender: '여',
                 employmentDate: '2025-01-01',
                 isDutyManager: false,
@@ -674,6 +675,7 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
             name: '김간호사',
             phoneNum: '010-1234-5678',
+            birthDate: '1996-03-14',
             isWorker: true,
             isWardManager: false,
             memo: '메모',
@@ -695,6 +697,36 @@ describe('@dutying/api public entry', () => {
         });
     });
 
+    it('preserves explicit null birthDate values in nurse patch payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {nurseId: 12}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurse(12, {birthDate: null})).resolves.toEqual({nurseId: 12});
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            birthDate: null,
+        });
+    });
+
+    it('normalizes blank birthDate values to null in nurse patch payloads', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {nurseId: 12}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurse(12, {birthDate: ''})).resolves.toEqual({nurseId: 12});
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            birthDate: null,
+        });
+    });
+
     it('clears dummy phone values in nurse patch payloads', async () => {
         const client = createClient();
         const patchMock = client.patch as ReturnType<typeof vi.fn>;
@@ -712,6 +744,20 @@ describe('@dutying/api public entry', () => {
         });
     });
 
+    it('normalizes snake_case birth dates from nurse responses', async () => {
+        const client = createClient();
+        const getMock = client.get as ReturnType<typeof vi.fn>;
+
+        getMock.mockResolvedValueOnce({data: {nurseId: 12, name: 'Kim', birth_date: '1996-03-14'}});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.getNurse(12)).resolves.toMatchObject({
+            nurseId: 12,
+            birthDate: '1996-03-14',
+        });
+    });
+
     it('normalizes dummy phone values from shift-team responses', async () => {
         const client = createClient();
         const getMock = client.get as ReturnType<typeof vi.fn>;
@@ -723,7 +769,7 @@ describe('@dutying/api public entry', () => {
                         shiftTeamId: 3,
                         name: 'A',
                         nurseCnt: 1,
-                        nurses: [{nurseId: 12, name: 'Kim', phoneNum: '01000000000'}],
+                        nurses: [{nurseId: 12, name: 'Kim', phoneNum: '01000000000', birth_date: '1996-03-14'}],
                     },
                 ],
             },
@@ -736,7 +782,7 @@ describe('@dutying/api public entry', () => {
                 shiftTeamId: 3,
                 name: 'A',
                 nurseCnt: 1,
-                nurses: [{nurseId: 12, name: 'Kim', phoneNum: null}],
+                nurses: [{nurseId: 12, name: 'Kim', phoneNum: null, birth_date: '1996-03-14', birthDate: '1996-03-14'}],
             },
         ]);
     });

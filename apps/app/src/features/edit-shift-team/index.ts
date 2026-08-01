@@ -17,11 +17,13 @@ import useEditNurseStore from './model/store';
 const TEMP_NURSE_ID_BASE = -1_000_000;
 const DUMMY_PHONE_NUM = '01000000000';
 const LEGACY_NEW_NURSE_PREFIX = '\uC2E0\uADDC\uAC04\uD638\uC0AC';
+const DEFAULT_NURSE_SHIFT_RATIO_WEIGHT = 7;
 
 export type TUpdateNurseShiftMeta = {
     wardShiftTypeId?: number;
     name: string;
     shortName: string;
+    targetRatioWeight?: number;
 };
 
 const isTempNurseId = (nurseId: number) => nurseId <= TEMP_NURSE_ID_BASE;
@@ -36,6 +38,14 @@ const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clear
     if (isDummyPhoneNum(trimmedPhoneNum)) return options.clearBlank ? null : undefined;
 
     return trimmedPhoneNum.length > 0 ? trimmedPhoneNum : options.clearBlank ? null : undefined;
+};
+const toOptionalLocalDate = (value: string | null | undefined) => {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+
+    const trimmed = value.trim();
+
+    return trimmed.length > 0 ? trimmed : null;
 };
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
@@ -70,10 +80,7 @@ const appendNurseToShiftTeams = (shiftTeams: TWard['shiftTeams'], shiftTeamId: n
         shiftTeam.nurses.push(nurse);
         shiftTeam.nurseCnt = Math.max(shiftTeam.nurseCnt ?? 0, shiftTeam.nurses.length);
     });
-const resolveShiftTeams = (
-    wardShiftTeams: TWard['shiftTeams'] | undefined,
-    queriedShiftTeams: TWard['shiftTeams'] | undefined,
-) => {
+const resolveShiftTeams = (wardShiftTeams: TWard['shiftTeams'] | undefined, queriedShiftTeams: TWard['shiftTeams'] | undefined) => {
     const safeQueriedShiftTeams = Array.isArray(queriedShiftTeams) ? queriedShiftTeams : undefined;
 
     if (!safeQueriedShiftTeams) return wardShiftTeams;
@@ -101,6 +108,7 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     compactRequest({
         name: nurse.name?.trim(),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
+        birthDate: toOptionalLocalDate(nurse.birthDate),
         isWorker: nurse.isWorker,
         isWardManager: nurse.isWardManager,
         memo: nurse.memo ?? undefined,
@@ -470,6 +478,8 @@ const useEditShiftTeam = () => {
                                         shortName: shiftTypeMeta.shortName,
                                         isPossible: change.isPossible ?? true,
                                         isPreferred: change.isPreferred ?? change.isPrefer ?? false,
+                                        targetRatioWeight:
+                                            change.targetRatioWeight ?? shiftTypeMeta.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
                                     });
                                     targetShiftType = nurse.nurseShiftTypes[nurse.nurseShiftTypes.length - 1];
                                 }
@@ -484,6 +494,10 @@ const useEditShiftTeam = () => {
 
                                 if (typeof nextIsPreferred === 'boolean') {
                                     targetShiftType.isPreferred = nextIsPreferred;
+                                }
+
+                                if (typeof change.targetRatioWeight === 'number') {
+                                    targetShiftType.targetRatioWeight = change.targetRatioWeight;
                                 }
                             });
                         });

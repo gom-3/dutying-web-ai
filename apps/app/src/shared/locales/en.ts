@@ -764,7 +764,6 @@ export const en: TLocale = {
                     forbidden: 'Forbidden patterns',
                     workRest: 'Work/rest',
                     personal: 'Person limits',
-                    skill: 'Skill level',
                     combination: 'Worker pairing',
                 },
                 option: {
@@ -887,21 +886,13 @@ export const en: TLocale = {
                         label: 'Personal constraint',
                         sentence: '{nurse} cannot work weekends or holidays',
                     },
-                    NURSE_NOT_ALONE_N: {
-                        label: 'Skill constraint',
-                        sentence: '{nurse} cannot work N alone',
+                    NURSE_PREFER_SHIFT: {
+                        label: 'Personal constraint',
+                        sentence: '{nurse} prefers {shift} shifts',
                     },
-                    NEW_NURSE_NOT_ALONE_N: {
-                        label: 'Skill constraint',
-                        sentence: '{nurse} cannot work N alone',
-                    },
-                    PRECEPTEE_NOT_ALONE_N: {
-                        label: 'Skill constraint',
-                        sentence: '{preceptee} cannot work N alone',
-                    },
-                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
-                        label: 'Skill constraint',
-                        sentence: '{shift} needs at least {count} nurses at LV{level} or higher',
+                    NURSE_AVOID_SHIFT: {
+                        label: 'Personal constraint',
+                        sentence: '{nurse} prefers to avoid {shift} shifts',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'Default Important constraint',
@@ -987,14 +978,6 @@ export const en: TLocale = {
                         label: 'Person-specific constraint',
                         sentence: 'Avoid weekend/holiday shifts for {nurse}',
                     },
-                    SOFT_NEWBIE_NO_SOLO_N: {
-                        label: 'New nurse / skill constraint',
-                        sentence: 'Avoid solo N shifts for {nurse} as a new nurse',
-                    },
-                    SOFT_MIN_SKILL_IN_DUTY: {
-                        label: 'New nurse / skill constraint',
-                        sentence: '{duty} shifts need at least {count} nurses at {level} or higher',
-                    },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: 'Worker pairing',
                         sentence: 'Avoid assigning {nurseA} and {nurseB} to the same shift',
@@ -1026,12 +1009,10 @@ export const en: TLocale = {
                 totalCount: 'Total {{count}}',
                 sortBySavedOrder: 'Custom order',
                 sortByName: 'Name',
-                sortBySkill: 'Skill level',
                 sortListMenuAria: 'Open worker sort options',
                 preceptorActive: 'Yes',
                 column: {
                     name: 'Name',
-                    level: 'Level',
                     shiftTypes: 'Available shifts',
                     preceptor: 'Preceptor',
                     preceptee: 'Preceptee',
@@ -1073,8 +1054,7 @@ export const en: TLocale = {
                     title: 'Are there shifts AI should not change?',
                     description:
                         'AI will refill every cell except fixed and requested shifts.\nFix any shifts that should not change before continuing.',
-                    previewDescription:
-                        'If so, fix those shifts below. AI will not change fixed shifts.',
+                    previewDescription: 'If so, fix those shifts below. AI will not change fixed shifts.',
                     calendarTitle: 'AI fill scope',
                     aiFillArea: 'AI will fill',
                     keepArea: 'Stays in place',
@@ -1367,7 +1347,6 @@ export const en: TLocale = {
             calendar: {
                 ariaLabel: 'Request shift schedule',
                 nameColumn: 'Name',
-                skillColumn: 'Skill',
                 linkColumn: 'Link',
                 reorderAria: 'Reorder {{name}}',
                 status: {
@@ -1609,11 +1588,6 @@ export const en: TLocale = {
                 deleteTeamTitle: 'Delete this team?',
                 deleteTeamDescriptionSuffix: ' team and its {{count}} nurses will be deleted.',
             },
-            skillCta: {
-                aria: 'Skill level settings',
-                title: 'Set nurse skill levels?',
-                description: 'When creating schedules, nurses can be assigned automatically by skill level.',
-            },
             section: {
                 identity: {
                     title: 'Enter hospital and ward names',
@@ -1661,8 +1635,6 @@ export const en: TLocale = {
                 deleteTeamWithNurses: 'Deleted the team and its nurses.',
                 deleteNurse: 'Deleted the nurse.',
                 uploadApplied: 'Applied the schedule file.',
-                skillConfigSaved: 'Applied skill settings to the nurse list.',
-                skillConfigDisabled: 'Skill settings are disabled.',
                 completeSuccess: 'Ward creation is complete.',
                 completeError: 'Could not create the ward. Please try again.',
             },
@@ -1683,14 +1655,10 @@ export const en: TLocale = {
                 sort: {
                     manual: 'Manual order',
                     name: 'Name order',
-                    skill: 'Skill order',
                 },
                 sortAria: 'Sort nurses',
                 sortOptionsAria: 'Nurse sort options',
-                skillUnselectedBadge: 'Skill unselected',
-                skillUnselectedOption: 'Unselected',
                 dragAria: 'Drag to change order',
-                skillAria: 'Skill level for {{nurseName}}',
                 deleteNurseAria: 'Delete {{nurseName}}',
             },
             shiftType: {
@@ -1718,35 +1686,16 @@ export const en: TLocale = {
                     timeOrder: 'End time must be later than start time.',
                 },
             },
-            skillLevelModal: {
-                title: 'Set skill levels',
-                description: 'You can define the criteria freely.',
-                levelCountOption: '{{levelCount}} levels',
-                colorLabel: 'Color',
-                high: 'High',
-                low: 'Low',
-                levelLabel: 'Level',
-                categoryLabel: 'Category',
-                levelDisplay: 'LV. {{level}}',
-                autoAssign: 'Auto assign',
-                autoAssignTooltip: 'Automatically distributes registered nurses across levels for an initial assignment.',
-                levelCountAria: 'Skill level count',
-                disable: 'Cancel skill settings',
-                cancel: 'Cancel',
-                complete: 'Complete',
-            },
         },
         member: {
             title: 'Member Management',
-            description: 'Manage nurses, availability, and skill levels for each team in one place.',
-            skillSettings: 'Set nurse skill levels',
+            description: 'Manage nurses and availability for each team in one place.',
             addTeam: 'Add team',
             addNurse: 'Add nurse',
             addingNurse: 'Adding nurse…',
             addFirstNurse: 'Add the first nurse',
             deleteTeam: 'Delete team',
             teamMenu: 'Open team menu',
-            sortBySkill: 'Sort by skill',
             sortByPriorityOrder: 'Saved order',
             sortListMenuAria: 'Open list sort options',
             canMakeDuty: 'Duty schedule',
@@ -1757,7 +1706,6 @@ export const en: TLocale = {
             sort: {
                 manual: 'Custom order',
                 name: 'Name order',
-                skill: 'Skill order',
             },
             common: {
                 nurseFallback: 'Nurse',
@@ -1806,7 +1754,6 @@ export const en: TLocale = {
             },
             row: {
                 dragAria: 'Drag to change order',
-                unselectedSkill: 'Unselected',
                 preceptorAria: '{{nurseName}} preceptor',
                 precepteeAria: '{{nurseName}} preceptee',
                 workerAria: '{{nurseName}} included in duty',
@@ -1825,7 +1772,6 @@ export const en: TLocale = {
             },
             table: {
                 name: 'Name',
-                level: 'Skill',
                 shiftTypes: 'Available shifts',
                 memo: 'Note',
                 isWorker: 'Included',
@@ -1843,10 +1789,18 @@ export const en: TLocale = {
                 shiftTypes: 'Available shifts',
                 shiftTypesHelpAria: 'Available shifts guide',
                 shiftTypesHint: 'Select every shift this person can work',
+                shiftRatio: 'Monthly shift ratio',
+                shiftRatioHelpAria: 'Monthly shift ratio guide',
+                shiftRatioHint: 'Adjust monthly target days for available D/E/N/O shifts',
+                shiftRatioEmpty: 'Select available D/E/N/O shifts to set a ratio',
+                shiftRatioInputAria: 'Monthly shift days for {{shiftName}}',
+                shiftRatioReset: 'Expand monthly shift ratio',
                 memo: 'Note',
                 memoHint: 'Write down anything teammates should know',
+                birthDate: 'Date of birth',
+                birthDateEmpty: 'Not entered',
                 employmentDate: 'Employment date',
-                employmentDateHint: 'Used as the basis for auto skill assignment',
+                employmentDateHint: 'Used as part of the member record',
                 phone: 'Phone number',
                 phoneHint: 'Used for emergency contact',
                 isWorker: 'Include in duty',
@@ -1871,27 +1825,6 @@ export const en: TLocale = {
                 save: 'Save',
                 saving: 'Saving…',
                 genderToggle: 'Change gender',
-            },
-            skillLevelModal: {
-                title: 'Set skill levels',
-                description: 'You can define the criteria freely.',
-                levelCountOption: '{{levelCount}} levels',
-                colorLabel: 'Color',
-                high: 'High',
-                low: 'Low',
-                levelLabel: 'Skill',
-                categoryLabel: 'Category',
-                levelDisplay: 'LV. {{level}}',
-                autoAssign: 'Auto assign',
-                autoAssignTooltip: 'We will evenly distribute registered nurses by level for the initial setup.',
-                autoAssignTooltipAria: 'Show auto assign description',
-                temporarySave: 'Save for now',
-                complete: 'Complete',
-                close: 'Close skill settings',
-                disableAction: 'Turn off skill levels',
-                disableConfirmTitle: 'Turn off skill levels?',
-                disableConfirmDescription: 'Skill display, selection, and sorting will pause while this is off.',
-                disableConfirmAction: 'Turn off',
             },
             connectionManage: {
                 waiting: {
@@ -1990,11 +1923,7 @@ export const en: TLocale = {
                 },
                 edit: {
                     title: 'Edit nurse details',
-                    info: 'Use the right panel to edit name, skill, available shifts, roles, permissions, and notes.',
-                },
-                skill: {
-                    title: 'Set skill levels',
-                    info: 'Configure levels and colors to match your hospital and ward standards.',
+                    info: 'Use the right panel to edit name, available shifts, roles, permissions, and notes.',
                 },
             },
             shiftTeamList: {
@@ -2513,8 +2442,6 @@ export const en: TLocale = {
                 forbidNextShift: '{{nurseName}} cannot work {{nextShift}} on the day after {{prevShift}}.',
                 minMonthlyOff: '{{nurseName}} has {{actual}} monthly OFF days. Minimum required: {{expected}}.',
                 nurseForbidWeekend: '{{nurseName}} cannot work on weekends or holidays.',
-                notAloneNight: '{{nurseName}} cannot work an N shift alone.',
-                minProficiencyStaffByShift: '{{shift}} has {{actual}} nurse(s) at LV{{level}} or higher. Minimum required: {{expected}}.',
                 pairPreferSameShift: '{{nurseAName}} and {{nurseBName}} are recommended to work the same shift.',
                 pairForbidSameShift: '{{nurseAName}} and {{nurseBName}} cannot work the same shift.',
                 nightBeforeRequestedOff: '{{nurseName}} is assigned an N shift before a requested OFF day.',

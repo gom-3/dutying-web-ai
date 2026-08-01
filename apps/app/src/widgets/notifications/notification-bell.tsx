@@ -8,42 +8,12 @@ import useAuth from '@/features/auth';
 import {NotificationAPI} from '@/shared/api';
 import type {TNotification} from '@/shared/api/notification';
 import {RUNTIME_CONFIG} from '@/shared/config/runtime';
-import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
+import {resolveNotificationNavigationPath} from './notification-routing';
 
 const NOTIFICATION_LIST_SIZE = 20;
 const UNREAD_REFETCH_INTERVAL_MS = 30_000;
 const REALTIME_RECONNECT_DELAY_MS = 3000;
-const fallbackPathByDomain = (domain?: string | null) => {
-    if (domain === 'BOARD' || domain === 'CALENDAR') {
-        return ROUTE.BOARD;
-    }
-
-    return ROUTE.HOME;
-};
-const toNavigationPath = (notification: TNotification) => {
-    const rawUrl = notification.url?.trim();
-
-    if (!rawUrl) {
-        return fallbackPathByDomain(notification.domain);
-    }
-
-    if (rawUrl.startsWith('/')) {
-        return rawUrl;
-    }
-
-    try {
-        const parsedUrl = new URL(rawUrl);
-
-        if (parsedUrl.origin === window.location.origin) {
-            return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
-        }
-    } catch {
-        return fallbackPathByDomain(notification.domain);
-    }
-
-    return fallbackPathByDomain(notification.domain);
-};
 const formatTime = (value: string | undefined, t: ReturnType<typeof useTypedTranslation>['t']) => {
     if (!value) return '';
 
@@ -234,7 +204,7 @@ export function NotificationBell() {
         }
 
         setIsOpen(false);
-        navigate(toNavigationPath(notification));
+        navigate(resolveNotificationNavigationPath(notification));
     };
 
     return (

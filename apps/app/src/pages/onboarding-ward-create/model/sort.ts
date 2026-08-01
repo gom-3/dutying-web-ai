@@ -10,17 +10,6 @@ const compareNurseName = (left: TOnboardingNurseDraft, right: TOnboardingNurseDr
 
     return left.id.localeCompare(right.id);
 };
-const compareNurseSkillLevel = (left: TOnboardingNurseDraft, right: TOnboardingNurseDraft) => {
-    const leftLevel = left.level ?? Number.NEGATIVE_INFINITY;
-    const rightLevel = right.level ?? Number.NEGATIVE_INFINITY;
-
-    if (rightLevel !== leftLevel) {
-        return rightLevel - leftLevel;
-    }
-
-    return compareNurseName(left, right);
-};
-
 export const sortNursesByMode = (nurses: TOnboardingNurseDraft[], sortMode: TSortMode): TOnboardingNurseDraft[] => {
     const onNurses = nurses.filter((nurse) => nurse.isWorker);
     const offNurses = nurses.filter((nurse) => !nurse.isWorker);
@@ -29,7 +18,5 @@ export const sortNursesByMode = (nurses: TOnboardingNurseDraft[], sortMode: TSor
         return [...onNurses, ...offNurses];
     }
 
-    const sortComparator = sortMode === 'name' ? compareNurseName : compareNurseSkillLevel;
-
-    return [...onNurses].sort(sortComparator).concat([...offNurses].sort(sortComparator));
+    return [...onNurses].sort(compareNurseName).concat([...offNurses].sort(compareNurseName));
 };

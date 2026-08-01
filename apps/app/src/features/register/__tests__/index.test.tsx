@@ -379,7 +379,6 @@ describe('useRegister', () => {
                             memo: '프리셉터',
                             isWorker: false,
                             employmentDate: '2025-01-01',
-                            level: 2,
                             possibleShiftShortNames: ['D'],
                         },
                     ],
@@ -418,7 +417,7 @@ describe('useRegister', () => {
                 shiftTeams: expect.arrayContaining([
                     expect.objectContaining({
                         nurseNames: expect.arrayContaining([expect.any(String)]),
-                        nurses: expect.arrayContaining([expect.objectContaining({employmentDate: '2025-01-01', level: 2})]),
+                        nurses: expect.arrayContaining([expect.objectContaining({employmentDate: '2025-01-01'})]),
                     }),
                 ]),
             }),

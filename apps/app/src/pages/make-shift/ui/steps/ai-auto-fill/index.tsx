@@ -47,7 +47,6 @@ import {MakeShiftCalendar} from '../shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from '../shared/make-shift-calendar-skeleton';
 import {maskDutyDocCells} from '../shared/mask-duty-doc-non-fixed';
 import {useDutyEditorStep} from '../shared/use-duty-editor-step';
-import {useMakeShiftSkillColumn} from '../shared/use-make-shift-skill-column';
 import {AiAutofillLoadingOverlay} from './ai-autofill-loading-overlay';
 import {AiAutofillToolbar} from './ai-autofill-toolbar';
 import {AiFillDecisionDialog} from './ai-fill-decision-dialog';
@@ -320,7 +319,6 @@ export function AiAutofill() {
         [currentTeamNurses, dutyQuery.data],
     );
     const connectedNurseCount = useMemo(() => currentTeamNurses.filter((nurse) => nurse.isConnected).length, [currentTeamNurses]);
-    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const aiRequestSeqRef = useRef(0);
@@ -1293,7 +1291,6 @@ export function AiAutofill() {
                         fixCellOnContextMenu
                         cellAttention={cellAttention}
                         tutorialCellId="make_fixed_shift_sample_cell"
-                        skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         canReorderRows
                         rowReorderDisabled={isCalendarReadonly || isReorderingRows}

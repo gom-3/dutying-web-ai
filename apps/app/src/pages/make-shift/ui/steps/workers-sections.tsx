@@ -1,9 +1,6 @@
 import {Draggable, Droppable} from '@hello-pangea/dnd';
 import {Check} from 'lucide-react';
-import {type ComponentProps} from 'react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
-import {type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
-import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {SixDotsIcon} from '@/shared/assets/svg';
@@ -18,8 +15,6 @@ const FALLBACK_SHIFT_TYPE_STYLE: Record<string, {bg: string; text: string}> = {
     O: {bg: '#465b7a', text: '#ffffff'},
 };
 const DEFAULT_SHIFT_TYPE_STYLE = {bg: '#939ba9', text: '#ffffff'};
-const WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL =
-    'minmax(112px,0.72fr) minmax(76px,0.58fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
 const WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL =
     'minmax(112px,0.72fr) minmax(168px,1.28fr) minmax(68px,0.42fr) minmax(68px,0.42fr) minmax(64px,0.38fr) minmax(88px,0.52fr)';
 const WORKERS_GRID_GAP = 'gap-[clamp(6px,0.65vw,10px)]';
@@ -28,8 +23,6 @@ const WORKERS_NAME_TEXT_CLASS =
     'min-w-0 max-w-full overflow-hidden text-ellipsis py-px text-center font-apple text-[clamp(12px,1.05vw,16px)] leading-[1.35] font-normal whitespace-nowrap text-sub-1';
 const WORKERS_MUTED_TEXT_CLASS = 'font-apple text-[clamp(10px,0.85vw,13px)] font-normal text-gray-4';
 const MEMO_PREVIEW_LENGTH = 20;
-
-type TSkillConfig = ComponentProps<typeof SkillBadge>['config'];
 
 type TShiftTypeBadge = {
     key: string;
@@ -115,30 +108,21 @@ function RoleCheckIndicator({label}: {label: string}) {
     );
 }
 
-function getWorkerGridTemplateColumns(showSkill: boolean) {
-    return showSkill ? WORKERS_GRID_TEMPLATE_COLUMNS_WITH_SKILL : WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL;
-}
-
 function formatMemoPreview(memo: string) {
     return memo.length > MEMO_PREVIEW_LENGTH ? `${memo.slice(0, MEMO_PREVIEW_LENGTH)}...` : memo;
 }
 
-export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
+export function WorkersTableHeader() {
     const {t} = useTypedTranslation();
 
     return (
         <div
             className={`make-shift-workers__table-header grid h-7 items-center ${WORKERS_GRID_GAP} ${WORKERS_ROW_PADDING_X} font-apple text-[12px] font-semibold text-gray-4`}
-            style={{gridTemplateColumns: getWorkerGridTemplateColumns(showSkill)}}
+            style={{gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL}}
         >
             <p className="make-shift-workers__col-label make-shift-workers__col-label--name text-center">
                 {t('page.makeShift.workers.column.name')}
             </p>
-            {showSkill ? (
-                <p className="make-shift-workers__col-label make-shift-workers__col-label--level text-center">
-                    {t('page.makeShift.workers.column.level')}
-                </p>
-            ) : null}
             <p className="make-shift-workers__col-label make-shift-workers__col-label--shift-types text-center">
                 {t('page.makeShift.workers.column.shiftTypes')}
             </p>
@@ -161,8 +145,6 @@ export function WorkersTableHeader({showSkill}: {showSkill: boolean}) {
 type TWorkersListProps = {
     grouped: TGroupedDivisionNurses;
     shiftTeamId: number;
-    levelsByNurseId: Record<number, TSkillLevelValue>;
-    skillConfig: TSkillConfig;
     wardShiftTypes: TWardShiftType[] | undefined;
     isBusy: boolean;
     getWorkerState: (nurse: TNurse) => boolean;
@@ -173,16 +155,12 @@ type TWorkersListProps = {
 export function WorkersList({
     grouped,
     shiftTeamId,
-    levelsByNurseId,
-    skillConfig,
     wardShiftTypes,
     isBusy,
     getWorkerState,
     onToggleWorker,
     setRowRef,
 }: TWorkersListProps) {
-    const showSkill = skillConfig.enabled;
-
     return (
         <div className="make-shift-workers__list-wrapper mt-1.5 flex flex-col gap-2">
             {grouped.map(([division, divisionWorkers]) => (
@@ -199,10 +177,7 @@ export function WorkersList({
                                         key={nurse.nurseId}
                                         nurse={nurse}
                                         index={index}
-                                        level={levelsByNurseId[nurse.nurseId]}
-                                        skillConfig={skillConfig}
                                         wardShiftTypes={wardShiftTypes}
-                                        showSkill={showSkill}
                                         isWorker={getWorkerState(nurse)}
                                         isBusy={isBusy}
                                         onToggleWorker={onToggleWorker}
@@ -222,10 +197,7 @@ export function WorkersList({
 type TWorkerRowProps = {
     nurse: TNurse;
     index: number;
-    level: TSkillLevelValue | undefined;
-    skillConfig: TSkillConfig;
     wardShiftTypes: TWardShiftType[] | undefined;
-    showSkill: boolean;
     isWorker: boolean;
     isBusy: boolean;
     onToggleWorker: (nurse: TNurse, checked: boolean) => void;
@@ -235,10 +207,7 @@ type TWorkerRowProps = {
 function WorkerRow({
     nurse,
     index,
-    level,
-    skillConfig,
     wardShiftTypes,
-    showSkill,
     isWorker,
     isBusy,
     onToggleWorker,
@@ -268,7 +237,7 @@ function WorkerRow({
                         }`}
                         style={{
                             ...(dragStyle ?? {}),
-                            gridTemplateColumns: getWorkerGridTemplateColumns(showSkill),
+                            gridTemplateColumns: WORKERS_GRID_TEMPLATE_COLUMNS_WITHOUT_SKILL,
                         }}
                     >
                         <div className="make-shift-workers__row-name relative flex min-w-0 items-center justify-center px-7">
@@ -287,15 +256,6 @@ function WorkerRow({
                                 {formatNurseDisplayName(nurse.name)}
                             </p>
                         </div>
-                        {showSkill ? (
-                            <div className="make-shift-workers__row-level flex justify-center">
-                                <SkillBadge
-                                    level={level}
-                                    config={skillConfig}
-                                    className="make-shift-workers__skill-badge h-[clamp(18px,1.35vw,22px)] min-w-[clamp(36px,3vw,44px)] text-[clamp(10px,0.78vw,12px)]"
-                                />
-                            </div>
-                        ) : null}
                         <div className="make-shift-workers__row-shift-types flex items-center justify-center gap-[clamp(2px,0.24vw,4px)]">
                             {shiftTypeBadges.length > 0 ? (
                                 shiftTypeBadges.map((badge) => <ShiftTypeBadge key={badge.key} badge={badge} />)

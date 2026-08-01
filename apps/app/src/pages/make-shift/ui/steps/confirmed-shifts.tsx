@@ -20,7 +20,6 @@ import {calculateRestCheckByShiftNurse} from '../../model/rest-target-days';
 import {MAKE_SHIFT_STEP_NAV_BUTTON_CLASS} from '../make-shift-step-nav';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
-import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
 const EMPTY_VIOLATION_MAP: Map<string, TViolation> = new Map();
 
@@ -64,7 +63,6 @@ export function ConfirmedShifts() {
     const shift = dutyQuery.data ?? confirmedShiftSnapshot;
     const currentTeamNurses = shiftTeams.find((team) => team.shiftTeamId === currentShiftTeamId)?.nurses ?? [];
     const orderedShift = useMemo(() => sortScheduleByTeamNurseOrder(shift, currentTeamNurses), [currentTeamNurses, shift]);
-    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const doc = useMemo(() => toConfirmedDoc(orderedShift, year, month), [month, orderedShift, year]);
@@ -225,7 +223,6 @@ export function ConfirmedShifts() {
                                 showFaults={false}
                                 readonly
                                 disableInitialSelection
-                                skillColumn={skillColumn}
                                 restCheckByShiftNurseId={restCheckByShiftNurseId}
                             />
                         </ConfirmedCalendarBoundary>

@@ -147,7 +147,6 @@ const createTabNurse = (teamId: string, id: string, name: string): TOnboardingNu
     isWorker: true,
     employmentDate: '',
     possibleShiftTypeIds: [],
-    level: null,
     initialShifts: [],
 });
 const normalizeRange = ({start, end}: TCellRange): TNormalizedRange => ({

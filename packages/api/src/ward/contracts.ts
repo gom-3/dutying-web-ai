@@ -175,8 +175,6 @@ export type TShiftConstraintOption = {
     wardShiftTypeId?: number;
     code?: string;
     day?: number;
-    level?: number;
-    proficiency?: number;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
 };
@@ -343,7 +341,6 @@ export type TScheduleRowDto = {
     shiftNurseId: number;
     nurseId: number;
     name: string;
-    proficiency: number;
     isPreceptor: boolean;
     isPreceptee: boolean;
     isDutyManager: boolean;
@@ -351,6 +348,10 @@ export type TScheduleRowDto = {
     isWorker: boolean;
     divisionNum: number;
     priority: number;
+    shiftTypePreferencesConfigured?: boolean;
+    allowedWardShiftTypeIds?: number[];
+    preferredWardShiftTypeIds?: number[];
+    targetShiftRatioWeights?: Record<string, number>;
 };
 
 export type TScheduleRuleDto = {
@@ -698,7 +699,6 @@ export type TCreateWardSeedNurseDTO = {
     memo?: string;
     isWorker?: boolean;
     employmentDate?: string;
-    level?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
     possibleShiftShortNames?: string[];

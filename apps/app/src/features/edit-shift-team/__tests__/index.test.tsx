@@ -130,6 +130,7 @@ describe('useEditShiftTeam', () => {
             isSuccess = await result.current.actions.updateNurse(11, {
                 name: '김하나',
                 phoneNum: '',
+                birthDate: '1996-03-14',
                 gender: '남',
                 employmentDate: '2025-01-01',
                 isDutyManager: true,
@@ -139,6 +140,7 @@ describe('useEditShiftTeam', () => {
         expect(isSuccess).toBe(true);
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
             phoneNum: null,
+            birthDate: '1996-03-14',
             name: '김하나',
         });
     });
@@ -180,18 +182,14 @@ describe('useEditShiftTeam', () => {
             await result.current.actions.addNurse(10);
         });
 
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            1,
-            10,
-            {
-                name: '신규간호사1',
-                isWorker: true,
-                isWardManager: false,
-                isPreceptor: false,
-                isPreceptee: false,
-                memo: '',
-            },
-        );
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
+            name: '신규간호사1',
+            isWorker: true,
+            isWardManager: false,
+            isPreceptor: false,
+            isPreceptee: false,
+            memo: '',
+        });
         expect(result.current.state.isAddingNurse).toBe(false);
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
         expect(result.current.state.selectedNurseDrawerMode).toBe('create');
@@ -245,16 +243,12 @@ describe('useEditShiftTeam', () => {
             });
         });
 
-        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(
-            1,
-            10,
-            {
-                name: '김신규',
-                isWorker: true,
-                isWardManager: false,
-                memo: '',
-            },
-        );
+        expect(mockAddNurseIntoShiftTeam).toHaveBeenCalledWith(1, 10, {
+            name: '김신규',
+            isWorker: true,
+            isWardManager: false,
+            memo: '',
+        });
         expect(useEditNurseStore.getState().selectedNurseId).toBe(22);
     });
 

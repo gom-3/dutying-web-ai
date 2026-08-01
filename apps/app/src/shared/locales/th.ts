@@ -31,6 +31,18 @@ export const th = {
             retry: 'ลองอีกครั้ง',
             empty: 'ไม่มีการแจ้งเตือนใหม่',
         },
+        member: {
+            ...generatedTh.page.member,
+            detail: {
+                ...generatedTh.page.member.detail,
+                shiftRatio: 'อัตราส่วนเวรรายเดือน',
+                shiftRatioHelpAria: 'คำแนะนำอัตราส่วนเวรรายเดือน',
+                shiftRatioHint: 'ปรับจำนวนวันเป้าหมายรายเดือนสำหรับเวร D/E/N/O ที่ทำได้',
+                shiftRatioEmpty: 'เลือกเวร D/E/N/O ที่ทำได้เพื่อกำหนดอัตราส่วน',
+                shiftRatioInputAria: 'จำนวนวันเวรรายเดือนของ {{shiftName}}',
+                shiftRatioReset: 'ขยายอัตราส่วนเวรรายเดือน',
+            },
+        },
         makeShift: {
             ...generatedTh.page.makeShift,
             calendar: {
@@ -104,21 +116,13 @@ export const th = {
                         label: 'เงื่อนไขรายบุคคล',
                         sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด',
                     },
-                    NURSE_NOT_ALONE_N: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: '{nurse}ห้ามทำเวร N คนเดียว',
+                    NURSE_PREFER_SHIFT: {
+                        label: 'เงื่อนไขรายบุคคล',
+                        sentence: '{nurse}ชอบเวร{shift}',
                     },
-                    NEW_NURSE_NOT_ALONE_N: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: '{nurse}ห้ามทำเวร N คนเดียว',
-                    },
-                    PRECEPTEE_NOT_ALONE_N: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: '{preceptee}ห้ามทำเวร N คนเดียว',
-                    },
-                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: 'เวร{shift}ต้องมีพยาบาลระดับ LV{level} ขึ้นไปอย่างน้อย{count}คน',
+                    NURSE_AVOID_SHIFT: {
+                        label: 'เงื่อนไขรายบุคคล',
+                        sentence: '{nurse}ต้องการหลีกเลี่ยงเวร{shift}',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
@@ -203,14 +207,6 @@ export const th = {
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'เงื่อนไขรายบุคคล',
                         sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด',
-                    },
-                    SOFT_NEWBIE_NO_SOLO_N: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: '{nurse}ห้ามทำเวร N คนเดียว',
-                    },
-                    SOFT_MIN_SKILL_IN_DUTY: {
-                        label: 'เงื่อนไขทักษะ',
-                        sentence: 'เวร{duty}ต้องมีพยาบาลระดับ LV{level} ขึ้นไปอย่างน้อย{count}คน',
                     },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: 'เงื่อนไขคู่',

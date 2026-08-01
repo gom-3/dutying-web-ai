@@ -8,8 +8,6 @@ import {useTranslation} from 'react-i18next';
 import {type TShiftTeam} from '@/entities';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuthStore from '@/features/auth/model/store';
-import {DEFAULT_SKILL_LEVEL_CONFIG, getWardSkillSettings, type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
-import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import {hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TI18nKey, useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Skeleton} from '@/shared/ui/primitives/skeleton';
@@ -38,7 +36,6 @@ type TSelectOption = {
     color?: string;
     classification?: TShiftTypeLike['classification'];
     isOff?: boolean;
-    skillLevel?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
     raw?: TShiftConstraintOption;
@@ -86,7 +83,6 @@ type TShiftTypeLike = {
 type TNurseLike = {
     nurseId?: number;
     name?: string;
-    proficiency?: number | null;
     isPreceptor?: boolean | null;
     isPreceptee?: boolean | null;
     isWardManager?: boolean | null;
@@ -120,8 +116,6 @@ const CATEGORY_LABEL_KEY_BY_CATEGORY: Record<string, TI18nKey> = {
     WORK_REST: 'page.makeShift.constraints.category.workRest',
     PERSONAL: 'page.makeShift.constraints.category.personal',
     NURSE_LIMIT: 'page.makeShift.constraints.category.personal',
-    SKILL: 'page.makeShift.constraints.category.skill',
-    PROFICIENCY: 'page.makeShift.constraints.category.skill',
     COMBINATION: 'page.makeShift.constraints.category.combination',
     NURSE_COMBINATION: 'page.makeShift.constraints.category.combination',
     CORE: 'page.makeShift.constraints.category.recommended',
@@ -144,6 +138,32 @@ function getCategoryLabel(t: TTypedT, category: TModalCategory) {
 
 function isSkillConstraintCategory(category: string) {
     return category === 'SKILL' || category === 'PROFICIENCY';
+}
+
+const SKILL_CONSTRAINT_TEMPLATE_CODES = new Set([
+    'NURSE_NOT_ALONE_N',
+    'NEW_NURSE_NOT_ALONE_N',
+    'MIN_PROFICIENCY_STAFF_BY_SHIFT',
+    'SOFT_NEWBIE_NO_SOLO_N',
+    'SOFT_MIN_SKILL_IN_DUTY',
+]);
+
+function isSkillConstraintTemplateCode(templateCode: string | null | undefined) {
+    if (!templateCode) return false;
+
+    return SKILL_CONSTRAINT_TEMPLATE_CODES.has(templateCode) || /(?:SKILL|PROFICIENCY)/i.test(templateCode);
+}
+
+function isSkillConstraintTemplate(template: Pick<TSoftRuleTemplate, 'id' | 'category' | 'controls'>) {
+    return (
+        isSkillConstraintCategory(template.category) ||
+        isSkillConstraintTemplateCode(template.id) ||
+        template.controls.some((control) => control.key === 'level' || control.optionsKey === 'level')
+    );
+}
+
+function isVisibleConstraintRule(rule: Pick<TShiftConstraintRuleDraft, 'category' | 'templateCode'>) {
+    return !isSkillConstraintCategory(rule.category) && !isSkillConstraintTemplateCode(rule.templateCode);
 }
 
 function resolveDutyStyle(optionOrCode: TSelectOption) {
@@ -204,15 +224,7 @@ function RoleBadge({children}: {children: ReactNode}) {
     );
 }
 
-function SelectOptionContent({
-    option,
-    skillConfig,
-    compact = false,
-}: {
-    option: TSelectOption;
-    skillConfig?: TSkillLevelConfig;
-    compact?: boolean;
-}) {
+function SelectOptionContent({option, compact = false}: {option: TSelectOption; compact?: boolean}) {
     const {t} = useTypedTranslation();
 
     if (option.kind === 'duty') {
@@ -227,17 +239,13 @@ function SelectOptionContent({
         return <span className="max-w-[120px] truncate">{option.label}</span>;
     }
 
-    const showSkill = skillConfig?.enabled === true && option.skillLevel != null;
-    const hasBadges = [showSkill, option.isPreceptor, option.isPreceptee].some(Boolean);
+    const hasBadges = [option.isPreceptor, option.isPreceptee].some(Boolean);
 
     return (
         <span className={cn('flex min-w-0 items-center gap-2', compact ? 'max-w-[240px]' : 'w-full justify-between gap-3')}>
             <span className="min-w-0 truncate">{option.label}</span>
             {hasBadges ? (
                 <span className="flex shrink-0 items-center gap-1">
-                    {showSkill && skillConfig ? (
-                        <SkillBadge level={option.skillLevel} config={skillConfig} className="min-h-5 min-w-0 px-1.5 text-[10px]" />
-                    ) : null}
                     {option.isPreceptor ? <RoleBadge>{t('page.makeShift.workers.column.preceptor')}</RoleBadge> : null}
                     {option.isPreceptee ? <RoleBadge>{t('page.makeShift.workers.column.preceptee')}</RoleBadge> : null}
                 </span>
@@ -419,17 +427,19 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
     },
     {
-        id: 'NURSE_NOT_ALONE_N',
-        category: 'SKILL',
-        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
+        id: 'NURSE_PREFER_SHIFT',
+        category: 'PERSONAL',
+        controls: [
+            {key: 'nurse', kind: 'select', optionsKey: 'nurse'},
+            {key: 'shift', kind: 'select', optionsKey: 'dutyStrict'},
+        ],
     },
     {
-        id: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
-        category: 'SKILL',
+        id: 'NURSE_AVOID_SHIFT',
+        category: 'PERSONAL',
         controls: [
+            {key: 'nurse', kind: 'select', optionsKey: 'nurse'},
             {key: 'shift', kind: 'select', optionsKey: 'dutyStrict'},
-            {key: 'level', kind: 'select', optionsKey: 'level'},
-            {key: 'count', kind: 'number', min: 1, max: 100},
         ],
     },
     {
@@ -566,20 +576,6 @@ const SOFT_RULE_TEMPLATE_DEFINITIONS: TSoftRuleTemplateDefinition[] = [
         controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
     },
     {
-        id: 'SOFT_NEWBIE_NO_SOLO_N',
-        category: 'SKILL',
-        controls: [{key: 'nurse', kind: 'select', optionsKey: 'nurse'}],
-    },
-    {
-        id: 'SOFT_MIN_SKILL_IN_DUTY',
-        category: 'SKILL',
-        controls: [
-            {key: 'duty', kind: 'select', optionsKey: 'dutyStrict'},
-            {key: 'level', kind: 'select', optionsKey: 'level'},
-            {key: 'count', kind: 'number', min: 1, max: 6},
-        ],
-    },
-    {
         id: 'SOFT_NO_SAME_DUTY_PAIR',
         category: 'COMBINATION',
         controls: [
@@ -629,7 +625,6 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     OFF_AFTER_CONSECUTIVE_WORK: {count: '2'},
     MIN_OFF_AFTER_N: {count: '1'},
     MIN_MONTHLY_OFF: {count: '1'},
-    MIN_PROFICIENCY_STAFF_BY_SHIFT: {count: '1'},
 };
 const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     target: 'target',
@@ -648,14 +643,6 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     preceptees: 'preceptee',
     PRECEPTEE: 'preceptee',
     PRECEPTEES: 'preceptee',
-    proficiency: 'level',
-    proficiencies: 'level',
-    PROFICIENCY: 'level',
-    PROFICIENCIES: 'level',
-    level: 'level',
-    levels: 'level',
-    LEVEL: 'level',
-    LEVELS: 'level',
     date: 'date',
     dates: 'date',
     DATE: 'date',
@@ -673,6 +660,9 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     shift: 'duty',
     shifts: 'duty',
     shiftsWithAll: 'duty',
+    dutyStrict: 'dutyStrict',
+    DUTY_STRICT: 'dutyStrict',
+    DUTYSTRICT: 'dutyStrict',
     SHIFT: 'duty',
     SHIFTS: 'duty',
     SHIFT_TYPE: 'duty',
@@ -831,14 +821,7 @@ function getLeadingParticle(text: string) {
     return particlePairs.find((particle) => particle.withBatchim === firstChar || particle.withoutBatchim === firstChar) ?? null;
 }
 
-function normalizeLevelDisplayTemplate(displayTemplate: string, controls: TControlDef[]) {
-    if (!controls.some((control) => control.key === 'level')) return displayTemplate;
-
-    return displayTemplate.replace(/LV\.?\s*\{level\}/gi, '{level}');
-}
-
 function createSentenceFromPattern(displayTemplate: string, controls: TControlDef[]): TSentencePart[] {
-    const normalizedDisplayTemplate = normalizeLevelDisplayTemplate(displayTemplate, controls);
     const parts: TSentencePart[] = [];
     const controlKeys = new Set(controls.map((control) => control.key));
     const pattern = /\{([^}]+)\}/g;
@@ -846,9 +829,9 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
     let lastIndex = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = pattern.exec(normalizedDisplayTemplate))) {
+    while ((match = pattern.exec(displayTemplate))) {
         if (match.index > lastIndex) {
-            parts.push(...createTextSentenceParts(normalizedDisplayTemplate.slice(lastIndex, match.index)));
+            parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex, match.index)));
         }
 
         const key = match[1]?.trim() ?? '';
@@ -856,7 +839,7 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
         if (controlKeys.has(key)) {
             parts.push({type: 'control', key});
 
-            const particle = getLeadingParticle(normalizedDisplayTemplate.slice(match.index + match[0].length));
+            const particle = getLeadingParticle(displayTemplate.slice(match.index + match[0].length));
 
             if (particle) {
                 parts.push({type: 'particle', key, ...particle});
@@ -871,11 +854,11 @@ function createSentenceFromPattern(displayTemplate: string, controls: TControlDe
         lastIndex = match.index + match[0].length;
     }
 
-    if (lastIndex < normalizedDisplayTemplate.length) {
-        parts.push(...createTextSentenceParts(normalizedDisplayTemplate.slice(lastIndex)));
+    if (lastIndex < displayTemplate.length) {
+        parts.push(...createTextSentenceParts(displayTemplate.slice(lastIndex)));
     }
 
-    return parts.length ? parts : [{type: 'text', text: normalizedDisplayTemplate}];
+    return parts.length ? parts : [{type: 'text', text: displayTemplate}];
 }
 
 function createSentenceFromTemplate(template: TShiftConstraintTemplate, controls: TControlDef[]): TSentencePart[] {
@@ -894,8 +877,8 @@ function canUseLegacySentence(legacyTemplate: TSoftRuleTemplate | undefined, con
     return legacyTemplate.sentence.every((part) => part.type !== 'control' || controlKeys.has(part.key));
 }
 
-function interpolateDisplayTemplate(displayTemplate: string, controls: TControlDef[], params: Record<string, string>) {
-    return normalizeLevelDisplayTemplate(displayTemplate, controls).replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
+function interpolateDisplayTemplate(displayTemplate: string, _controls: TControlDef[], params: Record<string, string>) {
+    return displayTemplate.replace(/\{([^}]+)\}/g, (_, key: string) => params[key.trim()] ?? '');
 }
 
 function createLocalizedSoftRuleTemplate(definition: TSoftRuleTemplateDefinition, t: TTypedT): TSoftRuleTemplate {
@@ -1051,8 +1034,6 @@ function getOptionKey(option: TShiftConstraintOption) {
 
     if (option.day != null) return `day-${option.day}`;
 
-    if (option.level != null) return `level-${option.level}`;
-
     return `${option.type}-${option.label ?? option.name ?? option.code ?? ''}`;
 }
 
@@ -1081,8 +1062,6 @@ function normalizeDuplicateParamValue(value: unknown): unknown {
             nurseId: value.nurseId,
             wardShiftTypeId: value.wardShiftTypeId,
             day: value.day,
-            level: value.level,
-            proficiency: value.proficiency,
             code: value.code,
             label: value.label ?? value.name,
         };
@@ -1178,8 +1157,6 @@ function mergeConstraintOptionDetails(left: TShiftConstraintOption | undefined, 
         wardShiftTypeId: left.wardShiftTypeId ?? right.wardShiftTypeId,
         code: left.code ?? right.code,
         day: left.day ?? right.day,
-        level: left.level ?? right.level,
-        proficiency: left.proficiency ?? right.proficiency,
         isPreceptor: left.isPreceptor === true || right.isPreceptor === true ? true : (left.isPreceptor ?? right.isPreceptor),
         isPreceptee: left.isPreceptee === true || right.isPreceptee === true ? true : (left.isPreceptee ?? right.isPreceptee),
     };
@@ -1194,7 +1171,6 @@ function mergeSelectOptionDetails(left: TSelectOption, right: TSelectOption): TS
         color: left.color ?? right.color,
         classification: left.classification ?? right.classification,
         isOff: left.isOff ?? right.isOff,
-        skillLevel: left.skillLevel ?? right.skillLevel,
         isPreceptor: left.isPreceptor === true || right.isPreceptor === true ? true : (left.isPreceptor ?? right.isPreceptor),
         isPreceptee: left.isPreceptee === true || right.isPreceptee === true ? true : (left.isPreceptee ?? right.isPreceptee),
         raw: mergeConstraintOptionDetails(left.raw, right.raw),
@@ -1229,10 +1205,6 @@ function getCandidateOptionValue(option: TShiftConstraintOption) {
     if (option.wardShiftTypeId != null) return String(option.wardShiftTypeId);
 
     if (option.day != null) return String(option.day);
-
-    if (option.level != null) return String(option.level);
-
-    if (option.proficiency != null) return String(option.proficiency);
 
     if (option.code) return option.code;
 
@@ -1274,10 +1246,6 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
 
     if (option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});
 
-    if (option.level != null) return `LV. ${option.level}`;
-
-    if (option.proficiency != null) return `LV. ${option.proficiency}`;
-
     return shiftType?.name ?? option.type;
 }
 
@@ -1294,7 +1262,6 @@ function toSelectOption(option: TShiftConstraintOption, optionMapKey: string, sh
             value: getCandidateOptionValue(option),
             label,
             kind: isNurse ? 'nurse' : undefined,
-            skillLevel: isNurse ? (option.proficiency ?? null) : undefined,
             isPreceptor: isNurse ? hasPreceptorRole(option) : undefined,
             isPreceptee: isNurse ? hasPrecepteeRole(option) : undefined,
             raw: option,
@@ -1374,14 +1341,6 @@ function mergeCandidateOptionMap(
         nurse,
         preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
         preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee, shiftTypes, t),
-        level: getCandidateOptions(
-            candidates,
-            'level',
-            ['proficiencies', 'levels', 'PROFICIENCIES', 'LEVELS'],
-            fallback.level,
-            shiftTypes,
-            t,
-        ),
         dutyStrict: duty.filter((option) => !isAllSelectOption(option)),
     };
 }
@@ -1568,11 +1527,10 @@ type TInlineDropdownProps = {
     value: string;
     options: TSelectOption[];
     minWidth?: number;
-    skillConfig?: TSkillLevelConfig;
     onChange: (option: TSelectOption) => void;
 };
 
-function InlineDropdown({value, options, minWidth = 72, skillConfig, onChange}: TInlineDropdownProps) {
+function InlineDropdown({value, options, minWidth = 72, onChange}: TInlineDropdownProps) {
     const [open, setOpen] = useState(false);
     const [openUpward, setOpenUpward] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{left: number; top?: number; bottom?: number; minWidth: number} | null>(null);
@@ -1646,11 +1604,7 @@ function InlineDropdown({value, options, minWidth = 72, skillConfig, onChange}: 
                 className={buttonClassName}
                 style={{minWidth}}
             >
-                {selected ? (
-                    <SelectOptionContent option={selected} skillConfig={skillConfig} compact />
-                ) : (
-                    <span className="max-w-[120px] truncate">{value}</span>
-                )}
+                {selected ? <SelectOptionContent option={selected} compact /> : <span className="max-w-[120px] truncate">{value}</span>}
                 <ChevronDown className={`size-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
 
@@ -1683,7 +1637,7 @@ function InlineDropdown({value, options, minWidth = 72, skillConfig, onChange}: 
                                           setOpen(false);
                                       }}
                                   >
-                                      <SelectOptionContent option={option} skillConfig={skillConfig} />
+                                      <SelectOptionContent option={option} />
                                   </button>
                               );
                           })}
@@ -1699,11 +1653,10 @@ type TSoftSentenceProps = {
     template: TSoftRuleTemplate;
     params: Record<string, unknown>;
     optionMap: Record<string, TSelectOption[]>;
-    skillConfig?: TSkillLevelConfig;
     onParamChange: (key: string, value: unknown) => void;
 };
 
-function SoftSentence({template, params, optionMap, skillConfig, onParamChange}: TSoftSentenceProps) {
+function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenceProps) {
     const displayParams = useMemo(() => normalizeSoftRuleParams(template, params, optionMap), [optionMap, params, template]);
 
     return (
@@ -1780,7 +1733,6 @@ function SoftSentence({template, params, optionMap, skillConfig, onParamChange}:
                                   ? 104
                                   : 72
                         }
-                        skillConfig={skillConfig}
                         onChange={(nextOption) => onParamChange(control.key, getSelectOptionParamValue(nextOption))}
                     />
                 );
@@ -1836,7 +1788,6 @@ type TRuleRowProps = {
     softTemplate?: TSoftRuleTemplate;
     options: TShiftConstraintOptions;
     optionMap: Record<string, TSelectOption[]>;
-    skillConfig: TSkillLevelConfig;
     highlighted?: boolean;
     isImportant: boolean;
     isRecommended: boolean;
@@ -1886,7 +1837,6 @@ const RuleRow = memo(function RuleRow({
     softTemplate,
     options,
     optionMap,
-    skillConfig,
     highlighted = false,
     isImportant,
     isRecommended,
@@ -1911,7 +1861,6 @@ const RuleRow = memo(function RuleRow({
                         template={softTemplate}
                         params={rule.params}
                         optionMap={optionMap}
-                        skillConfig={skillConfig}
                         onParamChange={(key, value) => onSoftParamChange(softTemplate, key, value)}
                     />
                 ) : (
@@ -2165,12 +2114,11 @@ type TSoftModalProps = {
     open: boolean;
     templates: TSoftRuleTemplate[];
     optionMap: Record<string, TSelectOption[]>;
-    skillConfig: TSkillLevelConfig;
     onClose: () => void;
     onAdd: (template: TSoftRuleTemplate, params: Record<string, unknown>) => void;
 };
 
-function SoftRuleModal({open, templates, optionMap, skillConfig, onClose, onAdd}: TSoftModalProps) {
+function SoftRuleModal({open, templates, optionMap, onClose, onAdd}: TSoftModalProps) {
     const {t} = useTypedTranslation();
     const recommendedTemplates = useMemo(() => templates.filter((template) => template.isRecommended), [templates]);
     const categories = useMemo<TModalCategory[]>(() => {
@@ -2255,7 +2203,6 @@ function SoftRuleModal({open, templates, optionMap, skillConfig, onClose, onAdd}
                                             template={template}
                                             params={templateParams}
                                             optionMap={optionMap}
-                                            skillConfig={skillConfig}
                                             onParamChange={(key, value) =>
                                                 setDraftParams((prev) => ({
                                                     ...prev,
@@ -2416,20 +2363,18 @@ export function Constraints({
         enabled: wardId !== null && wardId !== undefined,
     });
     const templates = candidatesQuery.data?.templates ?? [];
-    const softTemplates = useMemo(() => createSoftRuleTemplates(templates, t), [t, templates]);
+    const softTemplates = useMemo(
+        () => createSoftRuleTemplates(templates, t).filter((template) => !isSkillConstraintTemplate(template)),
+        [t, templates],
+    );
     const templateByCode = useMemo(() => new Map(templates.map((template) => [template.templateCode, template] as const)), [templates]);
     const softTemplateByCode = useMemo(() => new Map(softTemplates.map((template) => [template.id, template] as const)), [softTemplates]);
     const options = candidatesQuery.data?.options ?? EMPTY_SHIFT_CONSTRAINT_OPTIONS;
     const nurses: TNurseLike[] = Array.isArray(nurseQuery.data) ? nurseQuery.data : EMPTY_NURSES;
     const shiftTypes = normalizeShiftTypes(shiftTypeQuery.data);
-    const skillConfig = useMemo(() => getWardSkillSettings(wardId)?.config ?? DEFAULT_SKILL_LEVEL_CONFIG, [wardId]);
     const addableSoftTemplates = useMemo(
-        () =>
-            softTemplates.filter(
-                (template) =>
-                    !isHiddenAddModalTemplate(template.id) && (skillConfig.enabled || !isSkillConstraintCategory(template.category)),
-            ),
-        [skillConfig.enabled, softTemplates],
+        () => softTemplates.filter((template) => !isHiddenAddModalTemplate(template.id) && !isSkillConstraintTemplate(template)),
+        [softTemplates],
     );
     const optionMap = useMemo(() => {
         const dutyOptions = uniqueByValue([
@@ -2453,25 +2398,19 @@ export function Constraints({
             label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
             raw: {type: 'DAY_OF_MONTH', day: idx + 1},
         }));
-        const toNurseOption = (nurse: TNurseLike): TSelectOption => {
-            const proficiency = typeof nurse.proficiency === 'number' ? nurse.proficiency : undefined;
-
-            return {
-                value: String(nurse.nurseId),
-                label: String(nurse.name),
-                kind: 'nurse',
-                skillLevel: proficiency ?? null,
+        const toNurseOption = (nurse: TNurseLike): TSelectOption => ({
+            value: String(nurse.nurseId),
+            label: String(nurse.name),
+            kind: 'nurse',
+            isPreceptor: hasPreceptorRole(nurse),
+            isPreceptee: hasPrecepteeRole(nurse),
+            raw: {
+                type: 'NURSE',
+                nurseId: nurse.nurseId,
                 isPreceptor: hasPreceptorRole(nurse),
                 isPreceptee: hasPrecepteeRole(nurse),
-                raw: {
-                    type: 'NURSE',
-                    nurseId: nurse.nurseId,
-                    ...(proficiency != null ? {proficiency} : {}),
-                    isPreceptor: hasPreceptorRole(nurse),
-                    isPreceptee: hasPrecepteeRole(nurse),
-                },
-            };
-        };
+            },
+        });
         const nurseOptions = nurses.filter((nurse) => nurse.nurseId != null && nurse.name).map(toNurseOption);
         const preceptorOptions = nurses
             .filter((nurse) => nurse.nurseId != null && nurse.name && hasPreceptorRole(nurse))
@@ -2490,20 +2429,13 @@ export function Constraints({
             nurse: nurseOptions,
             preceptor: preceptorOptions,
             preceptee: precepteeOptions,
-            level: Array.from({length: skillConfig.levelCount}, (_, index) => {
-                const level = skillConfig.levelCount - index;
-                const label = skillConfig.levelLabels?.[level] ?? `LV. ${level}`;
-
-                return {value: String(level), label, raw: {type: 'PROFICIENCY_AT_LEAST', level}};
-            }),
             dutyStrict: dutyOptions.filter((option) => option.value !== 'ALL_DUTY'),
         } as Record<string, TSelectOption[]>;
 
         return {
             ...mergeCandidateOptionMap(options, fallbackOptionMap, shiftTypes, t),
-            level: fallbackOptionMap.level,
         };
-    }, [nurses, options, shiftTypes, skillConfig, t, year, month]);
+    }, [nurses, options, shiftTypes, t, year, month]);
     const {mutate: mutateSaveRules} = useMutation({
         mutationKey: shiftConstraintRuleQueryKeys.save(wardId, currentShiftTeamId),
         mutationFn: ({rules}: {rules: TShiftConstraintRuleDraft[]; requestId: number}) => {
@@ -2531,7 +2463,7 @@ export function Constraints({
 
             queryClient.setQueryData(rulesQueryKey, response);
 
-            const savedRules = createRulesFromServer(response.rules);
+            const savedRules = createRulesFromServer(response.rules).filter(isVisibleConstraintRule);
 
             rulesRef.current = savedRules;
             setRules(savedRules);
@@ -2548,7 +2480,7 @@ export function Constraints({
             if (context?.previousRules) {
                 queryClient.setQueryData(rulesQueryKey, context.previousRules);
 
-                const previousRules = createRulesFromServer(context.previousRules.rules);
+                const previousRules = createRulesFromServer(context.previousRules.rules).filter(isVisibleConstraintRule);
 
                 rulesRef.current = previousRules;
                 setRules(previousRules);
@@ -2574,7 +2506,7 @@ export function Constraints({
     );
     const replaceRules = useCallback(
         (nextRules: TShiftConstraintRuleDraft[], options: {sync?: boolean} = {}) => {
-            const normalizedRules = nextRules.map((rule, index) => ({...rule, sortOrder: index + 1}));
+            const normalizedRules = nextRules.filter(isVisibleConstraintRule).map((rule, index) => ({...rule, sortOrder: index + 1}));
 
             rulesRef.current = normalizedRules;
             setRules(normalizedRules);
@@ -2626,7 +2558,9 @@ export function Constraints({
         return () => window.removeEventListener(MAKE_SHIFT_CONSTRAINTS_OPTIMIZE_EVENT, handleOptimize);
     }, [optimizeDuplicateRules, variant]);
 
-    const softRules = rules.filter((rule) => (rule.severity === 'SOFT' || rule.severity === 'HARD') && rule.selected !== false);
+    const softRules = rules.filter(
+        (rule) => (rule.severity === 'SOFT' || rule.severity === 'HARD') && rule.selected !== false && isVisibleConstraintRule(rule),
+    );
     const isLoading = candidatesQuery.isPending || rulesQuery.isPending;
     const isLoadError = rulesQuery.isError;
     const softRuleViewModels = useMemo(
@@ -2702,12 +2636,14 @@ export function Constraints({
                     queryKey: shiftConstraintRuleQueryKeys.rules(wardId, sourceShiftTeamId),
                     queryFn: () => getShiftConstraintRules(wardId, sourceShiftTeamId),
                 });
-                const next = createRulesFromServer(response.rules).map((rule, index) => ({
-                    ...rule,
-                    shiftConstraintRuleId: undefined,
-                    clientId: createClientId({templateCode: rule.templateCode}),
-                    sortOrder: index + 1,
-                }));
+                const next = createRulesFromServer(response.rules)
+                    .filter(isVisibleConstraintRule)
+                    .map((rule, index) => ({
+                        ...rule,
+                        shiftConstraintRuleId: undefined,
+                        clientId: createClientId({templateCode: rule.templateCode}),
+                        sortOrder: index + 1,
+                    }));
 
                 replaceRules(next);
                 setHighlightedRuleId(null);
@@ -2866,7 +2802,6 @@ export function Constraints({
                                         softTemplate={softTemplate}
                                         options={options}
                                         optionMap={optionMap}
-                                        skillConfig={skillConfig}
                                         highlighted={highlighted}
                                         isImportant={isImportant}
                                         isRecommended={isRecommended}
@@ -2892,7 +2827,6 @@ export function Constraints({
                 open={softModalOpen}
                 templates={addableSoftTemplates}
                 optionMap={optionMap}
-                skillConfig={skillConfig}
                 onClose={() => setSoftModalOpen(false)}
                 onAdd={addSoftRule}
             />

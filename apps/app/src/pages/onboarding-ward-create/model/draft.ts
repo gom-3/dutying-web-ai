@@ -34,7 +34,6 @@ export type TOnboardingNurseDraft = {
     isWorker: boolean;
     employmentDate: string;
     possibleShiftTypeIds: string[];
-    level: number | null;
     initialShifts: {
         date: string;
         shiftShortName: string;
@@ -81,19 +80,6 @@ export type TOnboardingConstraintDraft = {
     selected: boolean;
 };
 
-export type TSkillPalette = {
-    id: string;
-    colors: string[];
-};
-
-export type TSkillLevelConfig = {
-    enabled: boolean;
-    levelCount: number;
-    paletteId: string;
-    autoAssign: boolean;
-    levelLabels?: Record<number, string>;
-};
-
 export type TOnboardingInitialScheduleTarget = {
     teamId: string;
     year: number;
@@ -120,7 +106,6 @@ export type TOnboardingWardDraft = {
     nurses: TOnboardingNurseDraft[];
     scheduleInputs: Record<string, TOnboardingTeamScheduleInputDraft | undefined>;
     constraintCandidates: TOnboardingConstraintDraft[];
-    skillLevelConfig: TSkillLevelConfig;
 };
 
 export type TOnboardingValidationIssueCode =
@@ -158,20 +143,6 @@ export type TOnboardingActionState = {
     canGoPrev: boolean;
     canGoNext: boolean;
     canComplete: boolean;
-};
-
-const SKILL_PALETTES: TSkillPalette[] = [
-    {id: 'warm', colors: ['#FFF3B8', '#FFE9B8', '#FFD8B8', '#FFB3A7']},
-    {id: 'cool', colors: ['#BDE5FF', '#9FD7FF', '#7CC4FF', '#58ABF5']},
-    {id: 'violet', colors: ['#FFE0EC', '#FFC4D7', '#FF9FBD', '#E85D8E']},
-    {id: 'forest', colors: ['#D7F4C9', '#AEE6B8', '#6FCF97', '#2F9E6B']},
-];
-
-export const DEFAULT_SKILL_LEVEL_CONFIG: TSkillLevelConfig = {
-    enabled: false,
-    levelCount: 5,
-    paletteId: 'warm',
-    autoAssign: false,
 };
 
 const MIN_STEP = 1;
@@ -371,13 +342,6 @@ const createBaseTeams = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRA
 const getBaseNurseNames = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS) =>
     [labels.sampleNurseNames.first, labels.sampleNurseNames.second, labels.sampleNurseNames.skilled, labels.sampleNurseNames.off] as const;
 
-export const skillPalettes = SKILL_PALETTES;
-
-export const getSkillPalette = (paletteId: string) => skillPalettes.find((palette) => palette.id === paletteId) ?? skillPalettes[0];
-
-const normalizeSkillPaletteId = (paletteId: string) =>
-    skillPalettes.some((palette) => palette.id === paletteId) ? paletteId : skillPalettes[0].id;
-
 export const getScheduleMonthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, '0')}`;
 
 const parseShiftTimeToMinutes = (value: string): number | null => {
@@ -435,7 +399,6 @@ export const createEmptyNurse = (
         isWorker: true,
         employmentDate: '2024-01-01',
         possibleShiftTypeIds: getActiveShiftTypeIds(shiftTypes),
-        level: null,
         initialShifts: [],
     });
 
@@ -455,7 +418,6 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
             isWorker: !isOffNurse,
             employmentDate: '2024-01-01',
             possibleShiftTypeIds,
-            level: null,
             initialShifts: [],
             id: `nurse-${index + 1}`,
         });
@@ -471,36 +433,7 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
         nurses,
         scheduleInputs: {},
         constraintCandidates: [],
-        skillLevelConfig: DEFAULT_SKILL_LEVEL_CONFIG,
     };
-};
-
-export const applySkillLevels = (nurses: TOnboardingNurseDraft[], config: TSkillLevelConfig): TOnboardingNurseDraft[] => {
-    const levelCount = Math.min(Math.max(config.levelCount, 2), 5);
-
-    if (!config.autoAssign) {
-        return nurses.map((nurse) => ({
-            ...nurse,
-            level: nurse.level == null ? null : Math.min(nurse.level, levelCount),
-        }));
-    }
-
-    const sortedNurses = nurses
-        .map((nurse) => ({nurse}))
-        .sort((left, right) => left.nurse.employmentDate.localeCompare(right.nurse.employmentDate));
-    const levelById = new Map<string, number>();
-
-    sortedNurses.forEach(({nurse}, index) => {
-        const ratio = sortedNurses.length <= 1 ? 0 : index / (sortedNurses.length - 1);
-        const level = levelCount - Math.round(ratio * (levelCount - 1));
-
-        levelById.set(nurse.id, Math.max(1, Math.min(levelCount, level)));
-    });
-
-    return nurses.map((nurse) => ({
-        ...nurse,
-        level: levelById.get(nurse.id) ?? levelCount,
-    }));
 };
 
 export const goToStep = (draft: TOnboardingWardDraft, step: TOnboardingStep): TOnboardingWardDraft => ({
@@ -981,7 +914,6 @@ export const applyScheduleInputDraft = (
                     isWorker: true,
                     employmentDate: defaultEmploymentDate,
                     possibleShiftTypeIds,
-                    level: null,
                 });
             const normalizedNurse = {
                 ...nextNurse,
@@ -1129,7 +1061,6 @@ export const applyUploadedScheduleTemplateDraft = (
                                 isWorker: true,
                                 employmentDate: defaultEmploymentDate,
                                 possibleShiftTypeIds,
-                                level: null,
                             });
 
                             nurseId = nurse.id;
@@ -1493,19 +1424,6 @@ export const reorderShiftTypes = (
     return {
         ...draft,
         shiftTypes: nextShiftTypes,
-    };
-};
-
-export const saveSkillLevelConfig = (draft: TOnboardingWardDraft, config: TSkillLevelConfig): TOnboardingWardDraft => {
-    const normalizedConfig = {
-        ...config,
-        paletteId: normalizeSkillPaletteId(config.paletteId),
-    };
-
-    return {
-        ...draft,
-        skillLevelConfig: normalizedConfig,
-        nurses: applySkillLevels(draft.nurses, normalizedConfig),
     };
 };
 

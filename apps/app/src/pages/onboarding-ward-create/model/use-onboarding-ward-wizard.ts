@@ -8,12 +8,6 @@ import * as Sentry from '@sentry/react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import useRegister from '@/features/register';
-import {
-    clampSkillLevel,
-    saveWardSkillSettings,
-    type TSkillLevelValue,
-    type TWardSkillSettings,
-} from '@/features/ward-skill/model/skill-level';
 import {FileAPI} from '@/shared/api';
 import type {TOnboardingWardParseOptions} from '@/shared/api/file/type';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -34,7 +28,6 @@ import {
     canGoNext,
     canGoPrev,
     createInitialDraft,
-    DEFAULT_SKILL_LEVEL_CONFIG,
     deleteNurseDraft,
     deleteShiftTypeDraft,
     deleteTeamDraft,
@@ -47,17 +40,14 @@ import {
     isOnboardingShiftTypeActive,
     MAX_ONBOARDING_NURSES,
     MAX_ONBOARDING_TEAMS,
-    normalizeNurseNameForRequest,
     normalizeOnboardingShiftCode,
     prepareManualEntryDraft,
     reorderShiftTypes,
-    saveSkillLevelConfig,
     type TOnboardingDraftLabels,
     type TOnboardingNurseDraft,
     type TOnboardingConstraintDraft,
     type TOnboardingTeamScheduleDraft,
     type TOnboardingWardDraft,
-    type TSkillLevelConfig,
     updateConstraintCandidateDraft,
     updateNurseDraft,
     updateShiftTypeDraft,
@@ -124,7 +114,7 @@ const shouldResetStepFromHistoryState = () => {
 };
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
     value === 1 || value === 2 || value === 3 || value === 4;
-const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name' || value === 'skill';
+const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name';
 const isScheduleDraft = (value: unknown): value is TOnboardingTeamScheduleDraft =>
     isRecord(value) && typeof value.year === 'number' && typeof value.month === 'number' && Array.isArray(value.rows);
 const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['scheduleInputs'] => {
@@ -151,15 +141,18 @@ const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['schedule
         }),
     );
 };
-const normalizeRestoredSkillLevelConfig = (value: unknown, legacyEnabled: unknown): TOnboardingWardDraft['skillLevelConfig'] => {
-    const config = isRecord(value) ? (value as Partial<TSkillLevelConfig>) : {};
-    const enabled = typeof legacyEnabled === 'boolean' ? legacyEnabled : config.enabled;
+const SKILL_CONSTRAINT_TEMPLATE_CODES = new Set([
+    'NURSE_NOT_ALONE_N',
+    'NEW_NURSE_NOT_ALONE_N',
+    'MIN_PROFICIENCY_STAFF_BY_SHIFT',
+    'SOFT_NEWBIE_NO_SOLO_N',
+    'SOFT_MIN_SKILL_IN_DUTY',
+]);
+const isSkillConstraintCategory = (category: string | null | undefined) => category === 'SKILL' || category === 'PROFICIENCY';
+const isSkillConstraintTemplateCode = (templateCode: string | null | undefined) => {
+    if (!templateCode) return false;
 
-    return {
-        ...DEFAULT_SKILL_LEVEL_CONFIG,
-        ...config,
-        enabled: enabled ?? DEFAULT_SKILL_LEVEL_CONFIG.enabled,
-    };
+    return SKILL_CONSTRAINT_TEMPLATE_CODES.has(templateCode) || /(?:SKILL|PROFICIENCY)/i.test(templateCode);
 };
 const normalizeRestoredNurses = (nurses: TOnboardingWardDraft['nurses']): TOnboardingWardDraft['nurses'] =>
     nurses.map((nurse) => {
@@ -168,12 +161,48 @@ const normalizeRestoredNurses = (nurses: TOnboardingWardDraft['nurses']): TOnboa
         const hasPrecepteeMemo = trimmedMemo === PRECEPTEE_MEMO;
 
         return {
-            ...nurse,
+            id: nurse.id,
+            teamId: nurse.teamId,
+            name: nurse.name,
             memo: hasPreceptorMemo || hasPrecepteeMemo ? '' : nurse.memo,
             isPreceptor: nurse.isPreceptor ?? hasPreceptorMemo,
             isPreceptee: nurse.isPreceptee ?? hasPrecepteeMemo,
+            isWorker: nurse.isWorker,
+            employmentDate: nurse.employmentDate,
+            possibleShiftTypeIds: nurse.possibleShiftTypeIds,
+            initialShifts: nurse.initialShifts,
         };
     });
+const normalizeRestoredConstraintCandidates = (
+    constraints: TOnboardingWardDraft['constraintCandidates'],
+): TOnboardingWardDraft['constraintCandidates'] =>
+    constraints
+        .filter((constraint) => !isSkillConstraintCategory(constraint.category) && !isSkillConstraintTemplateCode(constraint.templateCode))
+        .map((constraint) => ({
+            id: constraint.id,
+            key: constraint.key,
+            templateCode: constraint.templateCode,
+            severity: constraint.severity,
+            category: constraint.category,
+            params: constraint.params,
+            severityRecommendation: constraint.severityRecommendation,
+            confidence: constraint.confidence,
+            confidenceBand: constraint.confidenceBand,
+            evidenceSummary: constraint.evidenceSummary,
+            riskNote: constraint.riskNote,
+            selected: constraint.selected,
+        }));
+const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDraft => ({
+    currentStep: draft.currentStep,
+    uploadedFileName: draft.uploadedFileName,
+    wardName: draft.wardName,
+    hospitalName: draft.hospitalName,
+    shiftTypes: draft.shiftTypes,
+    teams: draft.teams,
+    nurses: normalizeRestoredNurses(draft.nurses),
+    scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
+    constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
+});
 const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboardingWardDraft | null => {
     if (!isRecord(payload) || !isRecord(payload.draft)) {
         return null;
@@ -197,12 +226,7 @@ const readServerOnboardingWardDraftPayload = (payload: unknown): TPersistedOnboa
     const restoredDraft = draft as TOnboardingWardDraft;
 
     return {
-        draft: {
-            ...restoredDraft,
-            nurses: normalizeRestoredNurses(restoredDraft.nurses),
-            skillLevelConfig: normalizeRestoredSkillLevelConfig(restoredDraft.skillLevelConfig, payload.isSkillLevelEnabled),
-            scheduleInputs: normalizeScheduleInputs(restoredDraft.scheduleInputs),
-        },
+        draft: normalizePersistedDraft(restoredDraft),
         draftWardId,
         selectedTeamId: typeof payload.selectedTeamId === 'string' ? payload.selectedTeamId : '',
         sortMode: isSortMode(payload.sortMode) ? payload.sortMode : 'manual',
@@ -214,9 +238,8 @@ const buildServerOnboardingWardDraftPayload = (
     selectedTeamId: string,
     sortMode: TSortMode,
 ): Record<string, unknown> => ({
-    draft,
+    draft: normalizePersistedDraft(draft),
     draftWardId,
-    isSkillLevelEnabled: draft.skillLevelConfig.enabled,
     selectedTeamId,
     sortMode,
 });
@@ -469,7 +492,6 @@ const applySchedulePreviewToDraft = (
             isWorker: existingNurse?.isWorker ?? true,
             employmentDate: existingNurse?.employmentDate ?? defaultEmploymentDate,
             possibleShiftTypeIds: possibleShiftTypeIds.length > 0 ? possibleShiftTypeIds : fallbackPossibleShiftTypeIds,
-            level: existingNurse?.level ?? null,
             initialShifts: mergeInitialShifts(
                 existingNurse?.initialShifts,
                 nurse.initialShifts?.map((shift) => {
@@ -623,84 +645,6 @@ const buildDraftWardIdentityPayload = (draft: TOnboardingWardDraft, fallbackWard
     };
 };
 
-type TCreatedWardSkillNurse = {
-    nurseId: number;
-    name: string;
-    employmentDate: string;
-    proficiency?: number | null;
-    level?: number | null;
-};
-
-const getSkillLevelKey = (teamName: string | null | undefined, nurseName: string) =>
-    `${teamName?.trim() ?? ''}:${normalizeNurseNameForRequest(nurseName)}`;
-const getManualSkillLevel = (value: number | null | undefined, levelCount: number): TSkillLevelValue => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return null;
-    }
-
-    return clampSkillLevel(value, levelCount);
-};
-const buildOnboardingWardSkillSettings = (
-    draft: TOnboardingWardDraft,
-    ward: TOnboardingWardCreateSubmission['ward'],
-): TWardSkillSettings | null => {
-    if (!ward?.wardId) {
-        return null;
-    }
-
-    const config = draft.skillLevelConfig.enabled
-        ? draft.skillLevelConfig
-        : {
-              ...draft.skillLevelConfig,
-              enabled: false,
-              autoAssign: false,
-          };
-
-    if (!config.enabled || config.autoAssign) {
-        return {
-            config,
-            frozenLevelsByNurseId: {},
-        };
-    }
-
-    const teamNameById = new Map(draft.teams.map((team) => [team.id, team.name]));
-    const draftLevelByTeamAndNurseName = new Map(
-        draft.nurses.map((nurse) => [getSkillLevelKey(teamNameById.get(nurse.teamId), nurse.name), nurse.level]),
-    );
-    const frozenLevelsByNurseId: TWardSkillSettings['frozenLevelsByNurseId'] = {};
-
-    (ward.shiftTeams ?? []).forEach((shiftTeam) => {
-        (shiftTeam.nurses ?? []).forEach((nurse) => {
-            const skillNurse = nurse as TCreatedWardSkillNurse;
-            const skillLevelKey = getSkillLevelKey(shiftTeam.name, skillNurse.name);
-            const hasDraftLevel = draftLevelByTeamAndNurseName.has(skillLevelKey);
-            const draftLevel = draftLevelByTeamAndNurseName.get(skillLevelKey);
-            const serverLevel =
-                typeof skillNurse.proficiency === 'number'
-                    ? skillNurse.proficiency
-                    : typeof skillNurse.level === 'number'
-                      ? skillNurse.level
-                      : undefined;
-
-            frozenLevelsByNurseId[skillNurse.nurseId] = getManualSkillLevel(hasDraftLevel ? draftLevel : serverLevel, config.levelCount);
-        });
-    });
-
-    return {
-        config,
-        frozenLevelsByNurseId,
-    };
-};
-const saveOnboardingWardSkillSettings = (draft: TOnboardingWardDraft, ward: TOnboardingWardCreateSubmission['ward']) => {
-    const settings = buildOnboardingWardSkillSettings(draft, ward);
-
-    if (!settings || !ward?.wardId) {
-        return;
-    }
-
-    saveWardSkillSettings(ward.wardId, settings);
-};
-
 function useOnboardingWardWizard() {
     const {t} = useTypedTranslation();
     const {
@@ -739,7 +683,6 @@ function useOnboardingWardWizard() {
     const [draft, setDraft] = useState<TOnboardingWardDraft>(() => createInitialDraft(onboardingDraftLabels));
     const [selectedTeamId, setSelectedTeamId] = useState('');
     const [sortMode, setSortModeState] = useState<TSortMode>('manual');
-    const [showSkillModal, setShowSkillModal] = useState(false);
     const [submissionStatus, setSubmissionStatus] = useState<TSubmissionStatus>('idle');
     const [uploadStatus, setUploadStatus] = useState<TUploadStatus>('idle');
     const [uploadError, setUploadError] = useState<string | null>(null);
@@ -756,7 +699,6 @@ function useOnboardingWardWizard() {
         () => createOnboardingWardCreateExecutor(createWard, completeOnboardingWardDraft, draftWardId),
         [completeOnboardingWardDraft, createWard, draftWardId],
     );
-    const isSkillLevelEnabled = draft.skillLevelConfig.enabled;
     const markDraftTouched = () => {
         draftTouchedRef.current = true;
     };
@@ -837,12 +779,6 @@ function useOnboardingWardWizard() {
             setSelectedTeamId(draft.teams[0].id);
         }
     }, [draft.teams, selectedTeamId]);
-
-    useEffect(() => {
-        if (!isSkillLevelEnabled && sortMode === 'skill') {
-            setSortModeState('manual');
-        }
-    }, [isSkillLevelEnabled, sortMode]);
 
     const enqueueDraftSave = useCallback((save: () => Promise<TDraftSaveResult>) => {
         const nextSave = draftSaveChainRef.current.catch(() => undefined).then(save);
@@ -975,13 +911,6 @@ function useOnboardingWardWizard() {
     const completionValidationIssues = getCompletionValidationIssues(draftForCompletion);
     const setSortMode = (nextSortMode: TSortMode) => {
         markDraftTouched();
-
-        if (nextSortMode === 'skill' && !isSkillLevelEnabled) {
-            setSortModeState('manual');
-
-            return;
-        }
-
         setSortModeState(nextSortMode);
     };
     const ensureDraftWard = async () => {
@@ -1501,27 +1430,6 @@ function useOnboardingWardWizard() {
             toast.error(message);
         }
     };
-    const saveSkillConfig = (config: TSkillLevelConfig) => {
-        markDraftTouched();
-        setDraft((prev) => saveSkillLevelConfig(prev, {...config, enabled: true}));
-        toast.success(t('page.onboardingWardCreate.toast.skillConfigSaved'));
-    };
-    const disableSkillConfig = () => {
-        markDraftTouched();
-        setDraft((prev) =>
-            saveSkillLevelConfig(prev, {
-                ...prev.skillLevelConfig,
-                enabled: false,
-                autoAssign: false,
-            }),
-        );
-
-        if (sortMode === 'skill') {
-            setSortModeState('manual');
-        }
-
-        toast.success(t('page.onboardingWardCreate.toast.skillConfigDisabled'));
-    };
     const complete = async () => {
         if (submissionStatus === 'submitting') {
             return;
@@ -1547,7 +1455,6 @@ function useOnboardingWardWizard() {
         try {
             const submission = await onboardingWardCreateExecutor(nextDraft);
 
-            saveOnboardingWardSkillSettings(nextDraft, submission.ward);
             setCreatedWard(submission.ward ?? null);
             setSubmissionStatus('success');
             toast.success(t('page.onboardingWardCreate.toast.completeSuccess'));
@@ -1595,9 +1502,6 @@ function useOnboardingWardWizard() {
         setSelectedTeamId,
         sortMode,
         setSortMode,
-        showSkillModal,
-        setShowSkillModal,
-        isSkillLevelEnabled,
         goNextStep,
         goPreviousStep,
         updateWardIdentity,
@@ -1624,8 +1528,6 @@ function useOnboardingWardWizard() {
         uploadWarnings,
         draftCreationStatus,
         createdWard,
-        saveSkillConfig,
-        disableSkillConfig,
         complete,
         isStepTransitioning,
         canAddTeam: draft.teams.length < MAX_ONBOARDING_TEAMS,

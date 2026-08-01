@@ -12,7 +12,6 @@ const translations: Record<string, string> = {
     'page.request.calendar.noNurseDescription': '신청 근무를 확인하려면 먼저 근무자 관리에서 팀 간호사를 추가해 주세요.',
     'page.request.calendar.noNurseAction': '근무자 관리로 이동',
     'page.request.calendar.reorderAria': '{{name}} 순서 변경',
-    'page.request.calendar.skillColumn': '숙련도',
     'page.makeShift.calendar.name': '이름',
     'page.makeShift.calendar.requestStatusPin': '신청 근무',
 };
@@ -34,17 +33,6 @@ vi.mock('@/entities/ui/useUIConfig/store', () => ({
         selector({
             separateWeekendColor: false,
         }),
-}));
-
-vi.mock('@/features/ward-skill/model/skill-level', () => ({
-    getWardSkillSettings: () => ({}),
-    resolveWardSkillLevels: () => ({
-        config: {
-            enabled: false,
-            levels: [],
-        },
-        levelsByNurseId: {},
-    }),
 }));
 
 vi.mock('@/shared/hook/use-typed-translation', () => ({

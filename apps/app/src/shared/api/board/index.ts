@@ -45,15 +45,17 @@ export type TWardBoardDeadline = {
     writerName?: string;
 };
 
-export type TWardBoardScheduleSourceType = 'MANUAL' | 'BOARD_DEADLINE';
+export type TWardBoardScheduleId = string | number;
+export type TWardBoardScheduleSourceType = 'MANUAL' | 'BOARD_DEADLINE' | 'MEMBER_BIRTHDAY';
+export type TWardBoardScheduleEventType = 'BIRTHDAY' | string;
 type TBooleanLike = boolean | number | string | null;
 
 export type TWardBoardSchedule = {
-    id?: number;
-    scheduleId?: number;
+    id?: TWardBoardScheduleId;
+    scheduleId?: TWardBoardScheduleId;
     title: string;
     content?: string;
-    scheduleDate: string;
+    scheduleDate?: string;
     schedule_date?: string;
     startDate?: string;
     start_date?: string;
@@ -80,8 +82,14 @@ export type TWardBoardSchedule = {
     deletable_by_me?: TBooleanLike;
     sourceType?: TWardBoardScheduleSourceType;
     source_type?: TWardBoardScheduleSourceType;
+    eventType?: TWardBoardScheduleEventType;
+    event_type?: TWardBoardScheduleEventType;
     sourcePostId?: number | null;
     source_post_id?: number | null;
+    calendarId?: TWardBoardScheduleId | null;
+    calendar_id?: TWardBoardScheduleId | null;
+    calendarName?: string | null;
+    calendar_name?: string | null;
 };
 
 type TPostListResponse = {
@@ -160,9 +168,10 @@ const normalizeSchedule = (schedule: TWardBoardSchedule): TWardBoardSchedule => 
     const allDay = toBoolean(schedule.allDay ?? schedule.isAllDay ?? schedule.all_day ?? schedule.is_all_day);
     const editableByMe = toBoolean(schedule.editableByMe ?? schedule.editable_by_me);
     const deletableByMe = toBoolean(schedule.deletableByMe ?? schedule.deletable_by_me);
+    const startDate = schedule.startDate ?? schedule.start_date ?? schedule.scheduleDate ?? schedule.schedule_date;
     const normalizedSchedule = {...schedule};
 
-    assignIfMissing(normalizedSchedule, 'scheduleDate', schedule.schedule_date);
+    assignIfMissing(normalizedSchedule, 'scheduleDate', schedule.schedule_date ?? startDate);
     assignIfMissing(normalizedSchedule, 'startDate', schedule.start_date);
     assignIfMissing(normalizedSchedule, 'endDate', schedule.end_date);
     assignIfMissing(normalizedSchedule, 'allDay', allDay);
@@ -174,7 +183,10 @@ const normalizeSchedule = (schedule: TWardBoardSchedule): TWardBoardSchedule => 
     assignIfMissing(normalizedSchedule, 'editableByMe', editableByMe);
     assignIfMissing(normalizedSchedule, 'deletableByMe', deletableByMe);
     assignIfMissing(normalizedSchedule, 'sourceType', schedule.source_type);
+    assignIfMissing(normalizedSchedule, 'eventType', schedule.event_type);
     assignIfMissing(normalizedSchedule, 'sourcePostId', schedule.source_post_id);
+    assignIfMissing(normalizedSchedule, 'calendarId', schedule.calendar_id);
+    assignIfMissing(normalizedSchedule, 'calendarName', schedule.calendar_name);
 
     return normalizedSchedule;
 };
@@ -313,13 +325,13 @@ class ApiBoardAPI {
         return (await axiosInstance.post<TWardBoardSchedule>(`/wards/${wardId}/board/schedules`, withScheduleAllDayAlias(schedule))).data;
     }
 
-    public async updateSchedule(wardId: number, scheduleId: number, schedule: TUpdateWardBoardScheduleDTO) {
+    public async updateSchedule(wardId: number, scheduleId: TWardBoardScheduleId, schedule: TUpdateWardBoardScheduleDTO) {
         return (
             await axiosInstance.put<TWardBoardSchedule>(`/wards/${wardId}/board/schedules/${scheduleId}`, withScheduleAllDayAlias(schedule))
         ).data;
     }
 
-    public async deleteSchedule(wardId: number, scheduleId: number) {
+    public async deleteSchedule(wardId: number, scheduleId: TWardBoardScheduleId) {
         return (await axiosInstance.delete<void>(`/wards/${wardId}/board/schedules/${scheduleId}`)).data;
     }
 

@@ -1,5 +1,7 @@
 import {type TNurseShiftType, type TWardShiftType} from '@/entities';
 
+export const DEFAULT_NURSE_SHIFT_RATIO_WEIGHT = 7;
+
 export type TNurseShiftTypeOption = TNurseShiftType & {
     apiShiftTypeId: number;
 };
@@ -33,6 +35,7 @@ export const resolveNurseShiftTypeOptions = (
     if (!wardShiftTypes?.length) {
         return sortByWardShiftTypeId(nurseShiftTypes).map((shiftType) => ({
             ...shiftType,
+            targetRatioWeight: shiftType.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
             apiShiftTypeId: shiftType.nurseShiftTypeId,
         }));
     }
@@ -69,6 +72,7 @@ export const resolveNurseShiftTypeOptions = (
                 shortName,
                 isPossible: matched?.isPossible ?? true,
                 isPreferred: matched?.isPreferred ?? false,
+                targetRatioWeight: matched?.targetRatioWeight ?? DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
                 apiShiftTypeId: matched?.nurseShiftTypeId ?? wardShiftType.wardShiftTypeId,
             };
         });

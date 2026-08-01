@@ -6,7 +6,6 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest';
 import {type TShift} from '@/entities';
 import {useUIConfigStore} from '@/entities/ui/useUIConfig/store';
 import {type TDutyDoc, type TViolation, useShiftEditorStore} from '@/features/shift-editor/model';
-import {DEFAULT_SKILL_LEVEL_CONFIG} from '@/features/ward-skill/model/skill-level';
 import i18n from '@/i18n';
 import {MakeShiftCalendar} from '../make-shift-calendar';
 
@@ -325,106 +324,11 @@ describe('MakeShiftCalendar', () => {
         expect(document.querySelector('.make-shift-calendar__shimmer-sweep')).toBeInTheDocument();
     });
 
-    it('keeps the shimmer positioned when the skill column is visible', () => {
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map()}
-                showFaults={false}
-                readonly
-                isShimmering
-                skillColumn={{
-                    config: DEFAULT_SKILL_LEVEL_CONFIG,
-                    levelsByNurseId: {100: 3},
-                }}
-            />,
-        );
-
-        const shimmer = document.querySelector<HTMLElement>('.make-shift-calendar__shimmer');
-
-        expect(shimmer).toBeInTheDocument();
-        expect(shimmer?.style.left).not.toBe('');
-        expect(shimmer?.style.left).not.toContain('minmax');
-    });
-
     it('hides the carry column by default', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
 
         expect(screen.queryByText('이월')).not.toBeInTheDocument();
         expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
-    });
-
-    it('replaces the carry column with a skill badge when skillColumn is provided', () => {
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map()}
-                showFaults={false}
-                readonly
-                skillColumn={{
-                    config: DEFAULT_SKILL_LEVEL_CONFIG,
-                    levelsByNurseId: {100: 3},
-                }}
-            />,
-        );
-
-        expect(screen.getByText('숙련도')).toBeInTheDocument();
-        expect(screen.queryByText('이월')).not.toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-carried-value')).not.toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('LV. 3');
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveClass(
-            'min-h-[18px]',
-            'w-full',
-            'min-w-0',
-            'text-[10px]',
-        );
-    });
-
-    it('keeps custom skill badge labels visible', () => {
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map()}
-                showFaults={false}
-                readonly
-                skillColumn={{
-                    config: {
-                        ...DEFAULT_SKILL_LEVEL_CONFIG,
-                        levelLabels: {
-                            3: '책임간호',
-                        },
-                    },
-                    levelsByNurseId: {100: 3},
-                }}
-            />,
-        );
-
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).toHaveTextContent('책임간호');
-    });
-
-    it('hides the skill column when skill settings are disabled', () => {
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map()}
-                showFaults={false}
-                readonly
-                skillColumn={{
-                    config: {...DEFAULT_SKILL_LEVEL_CONFIG, enabled: false},
-                    levelsByNurseId: {100: 3},
-                }}
-            />,
-        );
-
-        expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
-        expect(screen.queryByText('이월')).not.toBeInTheDocument();
-        expect(screen.getByText('전달 근무')).toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-carry')).not.toBeInTheDocument();
-        expect(document.querySelector('.make-shift-calendar__row-skill-badge')).not.toBeInTheDocument();
     });
 
     it('shows the nurse once in the header and keeps violation rows compact', async () => {
@@ -699,51 +603,6 @@ describe('MakeShiftCalendar', () => {
         expect(popoverContent.getAllByText('D 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(popoverContent.getAllByText('E 근무 인원이 0명이에요. 최소 1명이 필요해요.')).toHaveLength(1);
         expect(screen.queryByRole('dialog', {name: '제약조건 위반 20개'})).not.toBeInTheDocument();
-    });
-
-    it('shows worker-management skill labels in proficiency staffing violations', async () => {
-        const user = userEvent.setup();
-        const violation: TViolation = {
-            ruleId: 'proficiency-staffing',
-            templateCode: 'MIN_PROFICIENCY_STAFF_BY_SHIFT',
-            message: 'N 근무에는 LV5 이상 간호사가 0명이에요. 최소 1명이 필요해요.',
-            level: 'warning',
-            cells: [{row: 0, col: 1}],
-            scope: 'team',
-        };
-
-        render(
-            <MakeShiftCalendar
-                shift={shift}
-                doc={doc}
-                violationMap={new Map()}
-                teamViolations={[violation]}
-                showFaults
-                readonly
-                skillColumn={{
-                    config: {
-                        ...DEFAULT_SKILL_LEVEL_CONFIG,
-                        levelCount: 5,
-                        levelLabels: {5: '전담'},
-                    },
-                    levelsByNurseId: {100: 5},
-                }}
-            />,
-        );
-
-        const dayHeader = document.querySelector<HTMLButtonElement>('[data-day-header-index="1"]');
-
-        expect(dayHeader).not.toBeNull();
-
-        await act(async () => {
-            await user.click(dayHeader!);
-        });
-
-        const popover = await screen.findByRole('dialog');
-        const popoverContent = within(popover);
-
-        expect(popoverContent.getByText('N 근무에는 전담 이상 간호사가 0명이에요. 최소 1명이 필요해요.')).toBeInTheDocument();
-        expect(popoverContent.queryByText(/LV5/)).not.toBeInTheDocument();
     });
 
     it('shows N interval violations as one concise issue without repeated N labels', async () => {

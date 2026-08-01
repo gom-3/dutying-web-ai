@@ -14,7 +14,6 @@ import {
     type TOnboardingTeamDraft,
     type TOnboardingWardDraft,
     type TOnboardingWardShiftType,
-    type TSkillLevelConfig,
 } from './draft';
 
 export type TOnboardingParsedShiftType = Partial<Omit<TCreateWardDTO['wardShiftTypes'][number], 'isCounted'>> & {
@@ -34,7 +33,7 @@ export type TOnboardingParsedInitialShift = {
 };
 
 export type TOnboardingParsedNurse = Partial<
-    Pick<TOnboardingNurseDraft, 'name' | 'memo' | 'isWorker' | 'employmentDate' | 'level' | 'isPreceptor' | 'isPreceptee'>
+    Pick<TOnboardingNurseDraft, 'name' | 'memo' | 'isWorker' | 'employmentDate' | 'isPreceptor' | 'isPreceptee'>
 > & {
     teamName?: string;
     possibleShiftShortNames?: string[];
@@ -51,7 +50,6 @@ export type TOnboardingParsedWardData = {
     teams?: TOnboardingParsedTeam[];
     nurses?: TOnboardingParsedNurse[];
     constraintCandidates?: TOnboardingParsedConstraintCandidate[];
-    skillLevelConfig?: Partial<TSkillLevelConfig>;
 };
 
 export type TOnboardingParseDraftInjection = {
@@ -506,7 +504,6 @@ const buildParsedNurses = (
             isWorker: nurse.isWorker ?? true,
             employmentDate: nurse.employmentDate ?? getTodayDate(),
             possibleShiftTypeIds: defaultShiftTypeIds,
-            level: nurse.level ?? null,
             initialShifts: nurse.initialShifts ?? [],
         };
     });
@@ -844,7 +841,6 @@ const normalizeParsedNurses = (
                     isPreceptee: nurse.isPreceptee ?? undefined,
                     isWorker: nurse.isWorker ?? undefined,
                     employmentDate: trimToUndefined(nurse.employmentDate),
-                    level: nurse.level ?? undefined,
                     teamName: trimToUndefined(nurse.teamName),
                     possibleShiftShortNames:
                         nurse.possibleShiftShortNames
@@ -996,7 +992,6 @@ export const applyParsedWardData = (draft: TOnboardingWardDraft, parsed: TOnboar
         constraintCandidates: parsed.constraintCandidates
             ? parsed.constraintCandidates.map(toDraftConstraintCandidate)
             : draft.constraintCandidates,
-        skillLevelConfig: parsed.skillLevelConfig ? {...draft.skillLevelConfig, ...parsed.skillLevelConfig} : draft.skillLevelConfig,
     };
 };
 
@@ -1046,7 +1041,6 @@ export const buildCreateWardPayload = (draft: TOnboardingWardDraft): TCreateWard
                     memo: getMemoWithoutNurseRoleMarker(nurse.memo),
                     isWorker: nurse.isWorker,
                     employmentDate: nurse.employmentDate,
-                    level: draft.skillLevelConfig.enabled ? nurse.level : null,
                     isPreceptor: nurse.isPreceptor,
                     isPreceptee: nurse.isPreceptee,
                     possibleShiftShortNames: nurse.possibleShiftTypeIds

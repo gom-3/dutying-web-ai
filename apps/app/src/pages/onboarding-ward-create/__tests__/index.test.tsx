@@ -51,19 +51,7 @@ const createScheduleTemplateFile = async () => {
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
 };
-const typedTranslations = {
-    'page.onboardingWardCreate.skillLevelModal.title': '숙련도 단계 설정',
-    'page.onboardingWardCreate.skillLevelModal.description': '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
-    'page.onboardingWardCreate.skillLevelModal.colorLabel': '색상',
-    'page.onboardingWardCreate.skillLevelModal.high': '높음',
-    'page.onboardingWardCreate.skillLevelModal.low': '낮음',
-    'page.onboardingWardCreate.skillLevelModal.levelLabel': '숙련도',
-    'page.onboardingWardCreate.skillLevelModal.categoryLabel': '구분',
-    'page.onboardingWardCreate.skillLevelModal.autoAssign': '자동 배정',
-    'page.onboardingWardCreate.skillLevelModal.autoAssignTooltip': '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정해요.',
-    'page.onboardingWardCreate.skillLevelModal.cancel': '닫기',
-    'page.onboardingWardCreate.skillLevelModal.complete': '완료',
-} as const;
+const typedTranslations = {} as const;
 
 vi.mock('react-hot-toast', () => ({
     CheckmarkIcon: () => <span data-testid="toast-checkmark-icon" />,
@@ -1129,15 +1117,6 @@ describe('OnboardingWardCreatePage', () => {
         render(<OnboardingWardCreatePage />);
 
         await prepareValidCreationState(user);
-        await user.click(screen.getByRole('button', {name: '숙련도 설정'}));
-
-        const skillLevelDialog = screen.getByRole('dialog');
-
-        await user.click(within(skillLevelDialog).getByRole('button', {name: '숙련도 단계'}));
-        await user.click(within(skillLevelDialog).getByRole('option', {name: '3단계'}));
-        await user.click(within(screen.getByRole('dialog')).getByRole('button', {name: '완료'}));
-
-        expect(screen.getAllByText((content) => content.trim() === '-').length).toBeGreaterThan(0);
 
         await user.click(screen.getByRole('button', {name: '완료'}));
 

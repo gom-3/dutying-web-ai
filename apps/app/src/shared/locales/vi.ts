@@ -31,6 +31,18 @@ export const vi = {
             retry: 'Thử lại',
             empty: 'Không có thông báo mới.',
         },
+        member: {
+            ...generatedVi.page.member,
+            detail: {
+                ...generatedVi.page.member.detail,
+                shiftRatio: 'Tỷ lệ ca hằng tháng',
+                shiftRatioHelpAria: 'Hướng dẫn tỷ lệ ca hằng tháng',
+                shiftRatioHint: 'Điều chỉnh số ngày mục tiêu hằng tháng cho các ca D/E/N/O có thể làm',
+                shiftRatioEmpty: 'Chọn ca D/E/N/O có thể làm để đặt tỷ lệ',
+                shiftRatioInputAria: 'Số ngày ca hằng tháng cho {{shiftName}}',
+                shiftRatioReset: 'Mở rộng tỷ lệ ca hằng tháng',
+            },
+        },
         makeShift: {
             ...generatedVi.page.makeShift,
             calendar: {
@@ -104,21 +116,13 @@ export const vi = {
                         label: 'Điều kiện cá nhân',
                         sentence: '{nurse} không được làm việc cuối tuần hoặc ngày lễ',
                     },
-                    NURSE_NOT_ALONE_N: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: '{nurse} không được làm ca N một mình',
+                    NURSE_PREFER_SHIFT: {
+                        label: 'Điều kiện cá nhân',
+                        sentence: '{nurse} ưu tiên ca {shift}',
                     },
-                    NEW_NURSE_NOT_ALONE_N: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: '{nurse} không được làm ca N một mình',
-                    },
-                    PRECEPTEE_NOT_ALONE_N: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: '{preceptee} không được làm ca N một mình',
-                    },
-                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: 'Ca {shift} cần ít nhất {count} điều dưỡng LV{level} trở lên',
+                    NURSE_AVOID_SHIFT: {
+                        label: 'Điều kiện cá nhân',
+                        sentence: '{nurse} muốn tránh ca {shift}',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: 'Điều kiện cơ bản quan trọng',
@@ -203,14 +207,6 @@ export const vi = {
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'Điều kiện cá nhân',
                         sentence: '{nurse} không được làm việc cuối tuần hoặc ngày lễ',
-                    },
-                    SOFT_NEWBIE_NO_SOLO_N: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: '{nurse} không được làm ca N một mình',
-                    },
-                    SOFT_MIN_SKILL_IN_DUTY: {
-                        label: 'Điều kiện kỹ năng',
-                        sentence: 'Ca {duty} cần ít nhất {count} điều dưỡng LV{level} trở lên',
                     },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: 'Điều kiện kết hợp',

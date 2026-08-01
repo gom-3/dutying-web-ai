@@ -8,7 +8,6 @@ import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import useEditShiftTeam from '@/features/edit-shift-team';
-import {getWardSkillSettings, resolveWardSkillLevels, type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
 import {getGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
 import {PersonIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
@@ -29,7 +28,6 @@ import {WorkersList, WorkersTableHeader} from './workers-sections';
 const MAKE_SHIFT_WORKER_SORT_OPTIONS = [
     {value: 'priority', labelKey: 'page.makeShift.workers.sortBySavedOrder'},
     {value: 'name', labelKey: 'page.makeShift.workers.sortByName'},
-    {value: 'skill', labelKey: 'page.makeShift.workers.sortBySkill'},
 ] as const;
 
 type TMakeShiftWorkerSortMode = (typeof MAKE_SHIFT_WORKER_SORT_OPTIONS)[number]['value'];
@@ -44,7 +42,6 @@ const compareWorkerName = (left: TNurse, right: TNurse) => {
 const sortWorkersForDisplay = (
     workers: TNurse[],
     sortMode: TMakeShiftWorkerSortMode,
-    levelsByNurseId: Record<number, TSkillLevelValue>,
     getWorkerState: (nurse: TNurse) => boolean,
 ) => {
     const activeWorkers = workers.filter((nurse) => getWorkerState(nurse));
@@ -52,17 +49,7 @@ const sortWorkersForDisplay = (
 
     if (sortMode === 'priority') return activeWorkers.concat(inactiveWorkers);
 
-    const comparator =
-        sortMode === 'name'
-            ? compareWorkerName
-            : (left: TNurse, right: TNurse) => {
-                  const leftLevel = levelsByNurseId[left.nurseId] ?? Number.NEGATIVE_INFINITY;
-                  const rightLevel = levelsByNurseId[right.nurseId] ?? Number.NEGATIVE_INFINITY;
-
-                  if (rightLevel !== leftLevel) return rightLevel - leftLevel;
-
-                  return compareWorkerName(left, right);
-              };
+    const comparator = compareWorkerName;
     const sortByDivision = (nurses: TNurse[]) =>
         getGroupedDivisionNurses(nurses).flatMap(([, divisionNurses]) => [...divisionNurses].sort(comparator));
 
@@ -148,30 +135,15 @@ export function Workers() {
         setLocalWorkers((prev) => freshenMakeShiftDisplayWorkers(prev, teamNurses));
     }, [teamNurses, orderCustomized]);
 
-    const allWardNurses = useMemo(
-        () => ward?.shiftTeams.flatMap((shiftTeam) => shiftTeam.nurses) ?? sortedFromServer,
-        [ward?.shiftTeams, sortedFromServer],
-    );
-    const skillSettings = useMemo(() => getWardSkillSettings(wardId), [wardId]);
-    const {config: skillConfig, levelsByNurseId} = useMemo(
-        () => resolveWardSkillLevels(allWardNurses, skillSettings),
-        [allWardNurses, skillSettings],
-    );
-    const availableSortOptions = useMemo(
-        () =>
-            skillConfig.enabled
-                ? MAKE_SHIFT_WORKER_SORT_OPTIONS
-                : MAKE_SHIFT_WORKER_SORT_OPTIONS.filter((option) => option.value !== 'skill'),
-        [skillConfig.enabled],
-    );
+    const availableSortOptions = MAKE_SHIFT_WORKER_SORT_OPTIONS;
     const getWorkerState = useCallback(
         (nurse: TNurse) => pendingWorkerByNurseId[nurse.nurseId] ?? nurse.isWorker,
         [pendingWorkerByNurseId],
     );
     const baseWorkers = orderCustomized ? localWorkers : sortedFromServer;
     const displayWorkers = useMemo(
-        () => sortWorkersForDisplay(baseWorkers, sortMode, levelsByNurseId, getWorkerState),
-        [baseWorkers, getWorkerState, levelsByNurseId, sortMode],
+        () => sortWorkersForDisplay(baseWorkers, sortMode, getWorkerState),
+        [baseWorkers, getWorkerState, sortMode],
     );
     const grouped = useMemo(() => getGroupedDivisionNurses(displayWorkers), [displayWorkers]);
 
@@ -364,12 +336,6 @@ export function Workers() {
     }, [activeWorkerCount, setWorkerConfirmationState, workerConfirmationStatus]);
 
     useEffect(() => {
-        if (skillConfig.enabled || sortMode !== 'skill') return;
-
-        setSortMode('priority');
-    }, [skillConfig.enabled, sortMode]);
-
-    useEffect(() => {
         if (!sortMenuOpen) return;
 
         const handlePointerDown = (event: MouseEvent) => {
@@ -559,12 +525,10 @@ export function Workers() {
                     </div>
                 ) : currentShiftTeamId !== null ? (
                     <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-                        <WorkersTableHeader showSkill={skillConfig.enabled} />
+                        <WorkersTableHeader />
                         <WorkersList
                             grouped={grouped}
                             shiftTeamId={currentShiftTeamId}
-                            levelsByNurseId={levelsByNurseId}
-                            skillConfig={skillConfig}
                             wardShiftTypes={ward?.wardShiftTypes}
                             isBusy={isWorkerToggleBusy}
                             getWorkerState={getWorkerState}

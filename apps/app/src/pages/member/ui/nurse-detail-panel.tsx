@@ -1,14 +1,12 @@
 ﻿import {cn} from '@dutying/utils/style';
 import {produce} from 'immer';
-import {ArrowRightLeft, Check, ChevronRight, Loader2} from 'lucide-react';
+import {ArrowRightLeft, Check, ChevronDown, ChevronRight, Loader2} from 'lucide-react';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {events, sendEvent} from '@/analytics';
 import {type TNurse, type TShiftTeam, type TWardShiftType} from '@/entities';
 import useEditShiftTeam from '@/features/edit-shift-team';
-import {type TSkillLevelConfig} from '@/features/ward-skill/model/skill-level';
-import {getSkillBadgeBackgroundColor, getSkillBadgeTextColor} from '@/features/ward-skill/ui/skill-badge';
 import {InfoIcon, LinkedIcon, UnlinkedIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import TextField from '@/shared/ui/form-controls/TextField';
@@ -16,31 +14,164 @@ import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {hasNurseChanges, hasNurseProfileChanges} from '../model/nurse-edit';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole, normalizeNurseRoleFields} from '../model/nurse-role';
-import {resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
+import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
 
 interface INurseDetailPanelProps {
     onClose: () => void;
     onOpenWardCodeGuide: () => void;
     onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void} | null) => void;
-    isSkillFeatureEnabled: boolean;
-    isSkillUnselected: boolean;
-    onSaveSkillLevel: (nextLevel: number | null) => void;
-    skillConfig: TSkillLevelConfig;
-    skillLevel: number | null | undefined;
     shiftTeams: TShiftTeam[] | undefined;
     onMoveShiftTeam: (shiftTeamId: number) => Promise<boolean>;
     wardShiftTypes: TWardShiftType[] | undefined;
+}
+
+const MIN_SHIFT_RATIO_WEIGHT = 1;
+const MAX_SHIFT_RATIO_WEIGHT = 99;
+const BIRTH_DATE_DIGIT_MAX_LENGTH = 8;
+const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const MONTHLY_SHIFT_RATIO_CLASSIFICATIONS = [
+    'DAY',
+    'EVENING',
+    'NIGHT',
+    'OFF',
+] as const satisfies readonly TWardShiftType['classification'][];
+
+const isValidBirthDateParts = (year: number, month: number, day: number) => {
+    if (!Number.isInteger(year) || year < 1000 || year > 9999) return false;
+    if (!Number.isInteger(month) || month < 1 || month > 12) return false;
+    if (!Number.isInteger(day) || day < 1) return false;
+
+    return day <= new Date(year, month, 0).getDate();
+};
+const getBirthDateDigits = (value: string) => value.replace(/\D/g, '').slice(0, BIRTH_DATE_DIGIT_MAX_LENGTH);
+const formatBirthDateDigits = (digits: string) => [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join('.');
+const formatBirthDateInput = (birthDate?: string | null) => {
+    if (!birthDate) return '';
+
+    const match = LOCAL_DATE_KEY_PATTERN.exec(birthDate);
+
+    if (match) return `${match[1]}.${match[2]}.${match[3]}`;
+
+    return formatBirthDateDigits(getBirthDateDigits(birthDate));
+};
+const toBirthDateKeyFromDigits = (digits: string) => {
+    if (digits.length !== BIRTH_DATE_DIGIT_MAX_LENGTH) return null;
+
+    const yearDigits = digits.slice(0, 4);
+    const monthDigits = digits.slice(4, 6);
+    const dayDigits = digits.slice(6, 8);
+    const year = Number(yearDigits);
+    const month = Number(monthDigits);
+    const day = Number(dayDigits);
+
+    if (!isValidBirthDateParts(year, month, day)) return null;
+
+    return `${yearDigits}-${monthDigits}-${dayDigits}`;
+};
+const toBirthDateInputText = (value: string) => formatBirthDateDigits(getBirthDateDigits(value));
+
+const toShiftRatioWeight = (value: number | null | undefined) =>
+    typeof value === 'number' && Number.isFinite(value)
+        ? Math.min(MAX_SHIFT_RATIO_WEIGHT, Math.max(MIN_SHIFT_RATIO_WEIGHT, Math.round(value)))
+        : DEFAULT_NURSE_SHIFT_RATIO_WEIGHT;
+const toShiftTypeColor = (value: string | null | undefined) => {
+    if (!value) return '#BFC7D4';
+
+    return value.startsWith('#') ? value : `#${value}`;
+};
+const isMonthlyShiftRatioClassification = (classification: TWardShiftType['classification'] | null | undefined) =>
+    MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.some((targetClassification) => targetClassification === classification);
+const getMonthlyShiftRatioClassificationOrder = (classification: TWardShiftType['classification'] | null | undefined) => {
+    const index = MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.findIndex((targetClassification) => targetClassification === classification);
+
+    return index === -1 ? MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.length : index;
+};
+
+function BirthDateInput({
+    value,
+    disabled,
+    onChange,
+    onValidityChange,
+}: {
+    value: string | null | undefined;
+    disabled: boolean;
+    onChange: (birthDate: string | null) => void;
+    onValidityChange: (isValid: boolean) => void;
+}) {
+    const {t} = useTypedTranslation();
+    const label = t('page.member.detail.birthDate');
+    const [inputText, setInputText] = useState(() => formatBirthDateInput(value));
+    const inputDigits = getBirthDateDigits(inputText);
+    const inputDateKey = toBirthDateKeyFromDigits(inputDigits);
+    const isInputValid = inputText.length === 0 || Boolean(inputDateKey);
+
+    useEffect(() => {
+        setInputText(formatBirthDateInput(value));
+    }, [value]);
+
+    useEffect(() => {
+        onValidityChange(isInputValid);
+    }, [isInputValid, onValidityChange]);
+
+    const handleInputChange = (nextValue: string) => {
+        const nextText = toBirthDateInputText(nextValue);
+        const nextDateKey = toBirthDateKeyFromDigits(getBirthDateDigits(nextText));
+
+        setInputText(nextText);
+
+        if (!nextText) {
+            onChange(null);
+
+            return;
+        }
+
+        if (nextDateKey) {
+            onChange(nextDateKey);
+        }
+    };
+
+    return (
+        <div className="mb-2.5">
+            <div className="flex items-center justify-between gap-3">
+                <label htmlFor="nurseBirthDate" className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
+                    {label}
+                </label>
+                {!value ? (
+                    <span className="font-apple text-[12px] font-medium text-gray-4 min-[1600px]:text-[13px]">
+                        {t('page.member.detail.birthDateEmpty')}
+                    </span>
+                ) : null}
+            </div>
+            <div
+                className={cn(
+                    'mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-main-bg px-2.5 transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1 min-[1600px]:text-[14px]',
+                    isInputValid ? undefined : 'border-[#E57373] bg-white focus-within:border-[#E57373] focus-within:outline-[#E57373]',
+                    disabled ? 'cursor-not-allowed opacity-50' : undefined,
+                )}
+            >
+                <input
+                    id="nurseBirthDate"
+                    type="text"
+                    inputMode="numeric"
+                    disabled={disabled}
+                    name="nurseBirthDate"
+                    aria-label={label}
+                    aria-invalid={!isInputValid}
+                    maxLength={10}
+                    placeholder="YYYY.MM.DD"
+                    className="h-full min-w-0 flex-1 bg-transparent font-poppins text-[13px] text-sub-1 outline-none placeholder:font-apple placeholder:text-gray-4 disabled:cursor-not-allowed min-[1600px]:text-[14px]"
+                    value={inputText}
+                    onChange={(event) => handleInputChange(event.target.value)}
+                />
+            </div>
+        </div>
+    );
 }
 
 function NurseDetailPanel({
     onClose,
     onOpenWardCodeGuide,
     onRegisterDraftActions,
-    isSkillFeatureEnabled,
-    isSkillUnselected,
-    onSaveSkillLevel,
-    skillConfig,
-    skillLevel,
     shiftTeams,
     onMoveShiftTeam,
     wardShiftTypes,
@@ -57,7 +188,8 @@ function NurseDetailPanel({
     const [moveTeamMenuOpen, setMoveTeamMenuOpen] = useState(false);
     const [isMovingTeam, setIsMovingTeam] = useState(false);
     const [exitConfirmModalOpen, setExitConfirmModalOpen] = useState(false);
-    const [skillDraftLevel, setSkillDraftLevel] = useState<number | null>(null);
+    const [isBirthDateDraftValid, setIsBirthDateDraftValid] = useState(true);
+    const [isShiftRatioOpen, setIsShiftRatioOpen] = useState(false);
     const textInputRef = useRef<HTMLInputElement>(null);
     const memoTextareaRef = useRef<HTMLTextAreaElement>(null);
     const moveTeamMenuRef = useRef<HTMLDivElement>(null);
@@ -69,16 +201,16 @@ function NurseDetailPanel({
     const isPreceptee = hasNursePrecepteeRole(writeNurse);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
-
     useEffect(() => {
         setWriteNurse(selectedNurse ? normalizeNurseRoleFields(selectedNurse) : null);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
         setIsMovingTeam(false);
-        setSkillDraftLevel(isSkillUnselected ? null : (skillLevel ?? null));
+        setIsBirthDateDraftValid(true);
+        setIsShiftRatioOpen(false);
 
         if (selectedNurse) textInputRef.current?.focus();
-    }, [isSkillUnselected, selectedNurse, skillLevel]);
+    }, [selectedNurse]);
 
     useEffect(() => {
         if (!moveTeamMenuOpen) return;
@@ -96,15 +228,16 @@ function NurseDetailPanel({
         };
     }, [moveTeamMenuOpen]);
 
-    const initialSkillLevel = isSkillUnselected ? null : (skillLevel ?? null);
-    const isSkillDirty = skillDraftLevel !== initialSkillLevel;
-
     useEffect(() => {
-        setNurseDraftDirty(isDirty || isSkillDirty);
-    }, [isDirty, isSkillDirty, setNurseDraftDirty]);
+        setNurseDraftDirty(isDirty);
+    }, [isDirty, setNurseDraftDirty]);
 
     const shiftTypeColorById = useMemo(
         () => new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType.color])),
+        [wardShiftTypes],
+    );
+    const wardShiftTypeById = useMemo(
+        () => new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType])),
         [wardShiftTypes],
     );
     const shiftTypeOptions = useMemo(() => {
@@ -112,6 +245,58 @@ function NurseDetailPanel({
 
         return resolveNurseShiftTypeOptions(writeNurse.nurseShiftTypes, wardShiftTypes);
     }, [wardShiftTypes, writeNurse]);
+    const possibleShiftRatioOptions = useMemo(
+        () =>
+            shiftTypeOptions
+                .filter((shiftType) => {
+                    const classification =
+                        typeof shiftType.wardShiftTypeId === 'number'
+                            ? wardShiftTypeById.get(shiftType.wardShiftTypeId)?.classification
+                            : undefined;
+
+                    return shiftType.isPossible && isMonthlyShiftRatioClassification(classification);
+                })
+                .sort((left, right) => {
+                    const leftClassification =
+                        typeof left.wardShiftTypeId === 'number' ? wardShiftTypeById.get(left.wardShiftTypeId)?.classification : undefined;
+                    const rightClassification =
+                        typeof right.wardShiftTypeId === 'number'
+                            ? wardShiftTypeById.get(right.wardShiftTypeId)?.classification
+                            : undefined;
+                    const classificationOrder =
+                        getMonthlyShiftRatioClassificationOrder(leftClassification) -
+                        getMonthlyShiftRatioClassificationOrder(rightClassification);
+
+                    if (classificationOrder !== 0) return classificationOrder;
+
+                    return (left.wardShiftTypeId ?? left.apiShiftTypeId) - (right.wardShiftTypeId ?? right.apiShiftTypeId);
+                }),
+        [shiftTypeOptions, wardShiftTypeById],
+    );
+    const shiftRatioTotal = useMemo(
+        () => possibleShiftRatioOptions.reduce((sum, shiftType) => sum + toShiftRatioWeight(shiftType.targetRatioWeight), 0),
+        [possibleShiftRatioOptions],
+    );
+    const shiftRatioDisplayOptions = useMemo(
+        () =>
+            possibleShiftRatioOptions.map((shiftType) => {
+                const weight = toShiftRatioWeight(shiftType.targetRatioWeight);
+                const percent = shiftRatioTotal > 0 ? (weight / shiftRatioTotal) * 100 : 0;
+                const color = toShiftTypeColor(
+                    typeof shiftType.wardShiftTypeId === 'number' ? shiftTypeColorById.get(shiftType.wardShiftTypeId) : undefined,
+                );
+
+                return {
+                    shiftType,
+                    label: shiftType.shortName || shiftType.name,
+                    weight,
+                    percent,
+                    roundedPercent: Math.round(percent),
+                    color,
+                };
+            }),
+        [possibleShiftRatioOptions, shiftRatioTotal, shiftTypeColorById],
+    );
     const selectedShiftTeamId = useMemo(() => {
         if (!selectedNurse) return null;
 
@@ -125,6 +310,51 @@ function NurseDetailPanel({
         () => (shiftTeams ?? []).filter((shiftTeam) => shiftTeam.shiftTeamId !== selectedShiftTeamId),
         [selectedShiftTeamId, shiftTeams],
     );
+    const updateShiftRatioWeight = useCallback(
+        (params: {
+            apiShiftTypeId: number;
+            wardShiftTypeId?: number;
+            name: string;
+            shortName?: string;
+            targetRatioWeight: number;
+            isPossible?: boolean;
+            isPreferred?: boolean;
+        }) => {
+            const nextTargetRatioWeight = toShiftRatioWeight(params.targetRatioWeight);
+
+            setWriteNurse((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          nurseShiftTypes: produce(prev.nurseShiftTypes, (draft) => {
+                              const target = draft.find(
+                                  (x) =>
+                                      (typeof params.wardShiftTypeId === 'number' && x.wardShiftTypeId === params.wardShiftTypeId) ||
+                                      x.nurseShiftTypeId === params.apiShiftTypeId,
+                              );
+
+                              if (target) {
+                                  target.targetRatioWeight = nextTargetRatioWeight;
+
+                                  return;
+                              }
+
+                              draft.push({
+                                  nurseShiftTypeId: params.apiShiftTypeId,
+                                  wardShiftTypeId: params.wardShiftTypeId,
+                                  name: params.name,
+                                  shortName: params.shortName ?? '',
+                                  isPossible: params.isPossible ?? true,
+                                  isPreferred: params.isPreferred ?? false,
+                                  targetRatioWeight: nextTargetRatioWeight,
+                              });
+                          }),
+                      }
+                    : prev,
+            );
+        },
+        [],
+    );
     const handleSave = useCallback(async () => {
         if (!selectedNurse || !writeNurse || isBusy) return false;
 
@@ -135,6 +365,8 @@ function NurseDetailPanel({
         }
 
         if (isCreateMode && !canSaveCreateDraft(writeNurse)) return false;
+
+        if (!isBirthDateDraftValid) return false;
 
         const originalShiftTypeByWardShiftTypeId = new Map(
             selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
@@ -150,19 +382,22 @@ function NurseDetailPanel({
                     ? originalShiftTypeByWardShiftTypeId.get(draftShiftType.wardShiftTypeId)
                     : undefined) ?? originalShiftTypeByNurseShiftTypeId.get(draftShiftType.apiShiftTypeId);
             const originalIsPossible = originalShiftType?.isPossible ?? true;
+            const originalTargetRatioWeight = toShiftRatioWeight(originalShiftType?.targetRatioWeight);
+            const draftTargetRatioWeight = toShiftRatioWeight(draftShiftType.targetRatioWeight);
 
-            return originalIsPossible !== draftShiftType.isPossible;
+            return originalIsPossible !== draftShiftType.isPossible || originalTargetRatioWeight !== draftTargetRatioWeight;
         });
 
         for (const shiftType of changedShiftTypes) {
             const saved = await updateNurseShift(
                 writeNurse.nurseId,
                 shiftType.apiShiftTypeId,
-                {isPossible: shiftType.isPossible},
+                {isPossible: shiftType.isPossible, targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight)},
                 {
                     wardShiftTypeId: shiftType.wardShiftTypeId,
                     name: shiftType.name,
                     shortName: shiftType.shortName ?? '',
+                    targetRatioWeight: toShiftRatioWeight(shiftType.targetRatioWeight),
                 },
             );
 
@@ -178,29 +413,23 @@ function NurseDetailPanel({
                 memo: getMemoWithoutRoleMarkers(writeNurse.memo),
                 isPreceptor,
                 isPreceptee,
+                birthDate: writeNurse.birthDate,
             });
 
             if (!saved) return false;
         }
 
-        if (isSkillFeatureEnabled && isSkillDirty) {
-            onSaveSkillLevel(skillDraftLevel);
-        }
-
-        if (isDirty || isSkillDirty) {
+        if (isDirty) {
             toast.success(t('page.member.toast.saveNurseInfo'));
         }
 
         return true;
     }, [
+        isBirthDateDraftValid,
         isBusy,
         isCreateMode,
         isDirty,
-        isSkillDirty,
-        isSkillFeatureEnabled,
-        onSaveSkillLevel,
         selectedNurse,
-        skillDraftLevel,
         t,
         shiftTypeOptions,
         updateNurse,
@@ -209,11 +438,11 @@ function NurseDetailPanel({
     ]);
     const handleDiscardDraft = useCallback(() => {
         setWriteNurse(selectedNurse ?? null);
-        setSkillDraftLevel(initialSkillLevel);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
+        setIsBirthDateDraftValid(true);
         setNurseDraftDirty(false);
-    }, [initialSkillLevel, selectedNurse, setNurseDraftDirty]);
+    }, [selectedNurse, setNurseDraftDirty]);
 
     useEffect(() => {
         if (!onRegisterDraftActions) return;
@@ -227,7 +456,7 @@ function NurseDetailPanel({
     }, [handleDiscardDraft, handleSave, onRegisterDraftActions]);
 
     const handleRequestClose = () => {
-        if (isDirty || isSkillDirty) {
+        if (isDirty) {
             setExitConfirmModalOpen(true);
 
             return;
@@ -313,50 +542,6 @@ function NurseDetailPanel({
                             ) : null}
                         </Tooltip>
                     </div>
-
-                    {isSkillFeatureEnabled ? <div className="mt-2.5 border-t border-gray-7 pt-2.5" /> : null}
-                    {isSkillFeatureEnabled ? (
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
-                                    {t('page.member.table.level')}
-                                </p>
-                            </div>
-                            <div
-                                className="mt-2 grid w-full gap-1.5"
-                                style={{gridTemplateColumns: `repeat(${skillConfig.levelCount}, minmax(0, 1fr))`}}
-                            >
-                                {Array.from({length: skillConfig.levelCount}, (_, index) => index + 1).map((level) => {
-                                    const backgroundColor = getSkillBadgeBackgroundColor(level, skillConfig);
-                                    const textColor = getSkillBadgeTextColor(backgroundColor, {level, levelCount: skillConfig.levelCount});
-                                    const isSelected = skillDraftLevel === level;
-
-                                    return (
-                                        <button
-                                            key={level}
-                                            type="button"
-                                            disabled={isBusy}
-                                            aria-pressed={isSelected}
-                                            className={cn(
-                                                'inline-flex min-h-6 w-full min-w-0 cursor-pointer items-center justify-center rounded-full border py-0.5 font-apple text-[12px] leading-none tabular-nums transition duration-150 hover:-translate-y-[1px] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 min-[1600px]:min-h-7 min-[1600px]:py-1 min-[1600px]:text-[13px]',
-                                                isSelected ? 'px-3 font-semibold' : 'px-1.5 font-normal',
-                                            )}
-                                            style={{
-                                                borderColor: isSelected ? backgroundColor : 'transparent',
-                                                color: isSelected ? textColor : '#9CA3AF',
-                                                backgroundColor: isSelected ? backgroundColor : '#ECEFF3',
-                                            }}
-                                            onClick={() => setSkillDraftLevel(isSelected ? null : level)}
-                                        >
-                                            <span className="block max-w-full min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                                                {skillConfig.levelLabels?.[level] ?? `LV. ${level}`}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    ) : null}
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
@@ -380,9 +565,9 @@ function NurseDetailPanel({
                         </div>
                         <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
                             {shiftTypeOptions.map(({isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId}) => {
-                                const baseColor =
-                                    (typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined) ??
-                                    '#BFC7D4';
+                                const baseColor = toShiftTypeColor(
+                                    typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined,
+                                );
 
                                 return (
                                     <button
@@ -425,6 +610,7 @@ function NurseDetailPanel({
                                                                   shortName: shortName ?? '',
                                                                   isPossible: !isPossible,
                                                                   isPreferred: false,
+                                                                  targetRatioWeight: DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
                                                               });
                                                           }),
                                                       }
@@ -454,6 +640,117 @@ function NurseDetailPanel({
                                     </button>
                                 );
                             })}
+                        </div>
+                        <div className="mt-3 border-t border-gray-7 pt-3">
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                    <p className="font-apple text-[12px] font-semibold text-[#5C667D] min-[1600px]:text-[13px]">
+                                        {t('page.member.detail.shiftRatio')}
+                                    </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
+                                                aria-label={t('page.member.detail.shiftRatioHelpAria')}
+                                            >
+                                                <InfoIcon className="size-4" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top">{t('page.member.detail.shiftRatioHint')}</TooltipContent>
+                                    </Tooltip>
+                                    <button
+                                        type="button"
+                                        className="grid size-6 place-items-center rounded-full text-gray-4 transition-colors hover:bg-gray-7 hover:text-sub-2 focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:size-7"
+                                        onClick={() => setIsShiftRatioOpen((current) => !current)}
+                                        aria-expanded={isShiftRatioOpen}
+                                        aria-label={t('page.member.detail.shiftRatio')}
+                                        title={t('page.member.detail.shiftRatio')}
+                                    >
+                                        <ChevronDown
+                                            className={cn('h-4 w-4 transition-transform', isShiftRatioOpen ? 'rotate-180' : undefined)}
+                                            strokeWidth={2.4}
+                                        />
+                                    </button>
+                                </div>
+                            </div>
+                            {shiftRatioDisplayOptions.length > 0 ? (
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    {shiftRatioDisplayOptions.map(({shiftType, label, weight, color}) => (
+                                        <span
+                                            key={`ratio-summary-${shiftType.apiShiftTypeId}`}
+                                            className="inline-flex min-w-0 items-center gap-1.5 font-poppins text-[11px] font-semibold text-sub-2 min-[1600px]:text-[12px]"
+                                        >
+                                            <span className="text-[10px] leading-none" style={{color}} aria-hidden="true">
+                                                ●
+                                            </span>
+                                            <span className="min-w-0 truncate">{label}</span>
+                                            <span className="shrink-0 font-apple text-[11px] font-semibold text-gray-3 min-[1600px]:text-[12px]">
+                                                {weight}일
+                                            </span>
+                                        </span>
+                                    ))}
+                                </div>
+                            ) : null}
+                            {isShiftRatioOpen ? (
+                                shiftRatioDisplayOptions.length > 0 ? (
+                                    <div className="mt-2 grid gap-1.5">
+                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, roundedPercent, color}) => (
+                                            <div
+                                                key={`ratio-input-${shiftType.apiShiftTypeId}`}
+                                                className="grid min-h-10 grid-cols-[minmax(0,1fr)_72px] items-center gap-2 rounded-[7px] bg-gray-7 px-2 py-1.5"
+                                            >
+                                                <div className="flex min-w-0 items-center gap-2">
+                                                    <span
+                                                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                                        style={{backgroundColor: color}}
+                                                        aria-hidden="true"
+                                                    />
+                                                    <span className="min-w-0 flex-1 truncate font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[13px]">
+                                                        {label}
+                                                    </span>
+                                                    <span className="shrink-0 font-poppins text-[11px] font-semibold text-gray-3">
+                                                        {roundedPercent}%
+                                                    </span>
+                                                </div>
+                                                <div className="grid h-6 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1">
+                                                    <input
+                                                        type="number"
+                                                        min={MIN_SHIFT_RATIO_WEIGHT}
+                                                        max={MAX_SHIFT_RATIO_WEIGHT}
+                                                        step={1}
+                                                        inputMode="numeric"
+                                                        disabled={isBusy}
+                                                        className="h-full min-w-0 bg-transparent px-1 text-right font-poppins text-[12px] font-semibold text-sub-1 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                                        value={weight}
+                                                        aria-label={t('page.member.detail.shiftRatioInputAria', {
+                                                            shiftName: shiftType.name,
+                                                        })}
+                                                        onChange={(event) =>
+                                                            updateShiftRatioWeight({
+                                                                apiShiftTypeId: shiftType.apiShiftTypeId,
+                                                                wardShiftTypeId: shiftType.wardShiftTypeId,
+                                                                name: shiftType.name,
+                                                                shortName: shiftType.shortName,
+                                                                isPossible: shiftType.isPossible,
+                                                                isPreferred: shiftType.isPreferred,
+                                                                targetRatioWeight: event.currentTarget.valueAsNumber,
+                                                            })
+                                                        }
+                                                    />
+                                                    <span className="pr-1.5 font-apple text-[11px] font-semibold text-gray-3">일</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2 font-apple text-[12px] font-medium text-gray-3">
+                                        {t('page.member.detail.shiftRatioEmpty')}
+                                    </p>
+                                )
+                            ) : null}
                         </div>
                     </div>
 
@@ -545,6 +842,12 @@ function NurseDetailPanel({
                     </div>
 
                     <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
+                        <BirthDateInput
+                            value={writeNurse.birthDate}
+                            disabled={isBusy}
+                            onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
+                            onValidityChange={setIsBirthDateDraftValid}
+                        />
                         <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.phone')}
                         </p>
@@ -566,11 +869,7 @@ function NurseDetailPanel({
                             value={getMemoWithoutRoleMarkers(writeNurse.memo)}
                             disabled={isBusy}
                             className="mt-2 h-14 w-full shrink-0 resize-none overflow-hidden rounded-[9px] border border-gray-6 bg-main-bg p-2.5 font-apple text-[13px] leading-5 text-sub-1 transition-colors focus:border-main-1 focus-visible:outline-1 focus-visible:outline-main-1 min-[1600px]:h-16 min-[1600px]:text-[14px]"
-                            onChange={(event) =>
-                                setWriteNurse((prev) =>
-                                    prev ? {...prev, memo: event.target.value} : prev,
-                                )
-                            }
+                            onChange={(event) => setWriteNurse((prev) => (prev ? {...prev, memo: event.target.value} : prev))}
                         />
                         <div ref={moveTeamMenuRef} className="relative shrink-0 pt-1.5">
                             <div className="grid grid-cols-2 gap-2">
@@ -652,7 +951,7 @@ function NurseDetailPanel({
                 <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                     <button
                         type="button"
-                        disabled={isBusy || (!isDirty && !isSkillDirty)}
+                        disabled={isBusy || !isDirty || !isBirthDateDraftValid}
                         className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >

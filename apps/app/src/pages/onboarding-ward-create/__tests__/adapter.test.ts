@@ -20,7 +20,6 @@ const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDra
     isWorker: overrides.isWorker ?? true,
     employmentDate: overrides.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: overrides.possibleShiftTypeIds ?? [],
-    level: overrides.level ?? null,
     initialShifts: overrides.initialShifts ?? [],
 });
 
@@ -117,26 +116,6 @@ describe('OnboardingWardCreatePage adapter', () => {
         expect(payload.shiftTeams[0]?.nurses?.map((nurse) => nurse.name)).toEqual(['신규 간호사 1', 'Nurse 1']);
     });
 
-    it('clears nurse levels from the create payload when skill levels are disabled', () => {
-        const initialDraft = createInitialDraft();
-        const firstTeamId = initialDraft.teams[0]?.id ?? '';
-        const payload = buildCreateWardPayload({
-            ...initialDraft,
-            skillLevelConfig: {
-                ...initialDraft.skillLevelConfig,
-                enabled: false,
-            },
-            nurses: [
-                createNurseDraft(firstTeamId, {
-                    name: 'Nurse A',
-                    level: 3,
-                }),
-            ],
-        });
-
-        expect(payload.shiftTeams[0]?.nurses?.[0]?.level).toBeNull();
-    });
-
     it('sends preceptor roles separately from nurse memo in the create payload', () => {
         const initialDraft = createInitialDraft();
         const firstTeamId = initialDraft.teams[0]?.id ?? '';
@@ -203,7 +182,6 @@ describe('OnboardingWardCreatePage adapter', () => {
                     teamName: 'A팀',
                     possibleShiftShortNames: ['D'],
                     employmentDate: '2025-01-01',
-                    level: 2,
                 },
             ],
         });
@@ -328,20 +306,6 @@ describe('OnboardingWardCreatePage adapter', () => {
 
         expect(nextDraft.teams.map((team) => team.name)).toEqual([fallbackTeamName, 'B팀']);
         expect(nextDraft.nurses.every((nurse) => nurse.teamId === nextDraft.teams[0]?.id)).toBe(true);
-    });
-
-    it('merges uploaded skill level config into the existing draft config', () => {
-        const draft = createInitialDraft();
-        const nextDraft = applyParsedWardData(draft, {
-            skillLevelConfig: {
-                levelCount: 4,
-            },
-        });
-
-        expect(nextDraft.skillLevelConfig).toEqual({
-            ...draft.skillLevelConfig,
-            levelCount: 4,
-        });
     });
 
     it('normalizes parse api responses into draft injection data', () => {

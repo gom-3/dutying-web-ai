@@ -1,7 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import {Check} from 'lucide-react';
-import SkillBadgeUi, {getSkillBadgeTextColor} from '@/features/ward-skill/ui/skill-badge';
-import {getSkillPalette, type TOnboardingWardShiftType, type TSkillLevelConfig} from '../../model';
+import {type TOnboardingWardShiftType} from '../../model';
 
 const SHIFT_BADGE_TEXT_STYLE = 'font-poppins text-[13px] font-medium leading-none text-white';
 const rgbToHex = ({red, green, blue}: {red: number; green: number; blue: number}) =>
@@ -38,27 +37,6 @@ const interpolateHexColor = (from: string, to: string, ratio: number) => {
     });
 };
 const tintHexColor = (hexColor: string, whiteRatio: number) => interpolateHexColor(hexColor, '#ffffff', whiteRatio);
-const getDistributedPaletteColors = (targetCount: number, colors: string[]) => {
-    if (targetCount <= 0) return [];
-
-    if (colors.length === 0) return [];
-
-    if (colors.length === 1) return Array.from({length: targetCount}, () => colors[0]);
-
-    if (targetCount === 1) return [colors[0]];
-
-    return Array.from({length: targetCount}, (_, index) => {
-        const position = index / (targetCount - 1);
-        const scaled = position * (colors.length - 1);
-        const leftIndex = Math.floor(scaled);
-        const rightIndex = Math.min(colors.length - 1, leftIndex + 1);
-        const blendRatio = scaled - leftIndex;
-        const leftColor = colors[leftIndex] ?? colors[colors.length - 1];
-        const rightColor = colors[rightIndex] ?? leftColor;
-
-        return interpolateHexColor(leftColor, rightColor, blendRatio);
-    });
-};
 
 export function ShiftBadge({shiftType, selected}: {shiftType: TOnboardingWardShiftType; selected?: boolean}) {
     const isSelected = Boolean(selected);
@@ -90,46 +68,5 @@ export function ShiftBadge({shiftType, selected}: {shiftType: TOnboardingWardShi
                 {shiftType.shortName || '-'}
             </span>
         </div>
-    );
-}
-
-export function SkillBadge({
-    level,
-    config,
-    className,
-    label,
-    backgroundColor,
-    textColor,
-}: {
-    level: number | null;
-    config: TSkillLevelConfig;
-    className?: string;
-    label?: string;
-    backgroundColor?: string;
-    textColor?: string;
-}) {
-    const derivedBackgroundColor = (() => {
-        if (backgroundColor || level == null) return backgroundColor;
-
-        const palette = getSkillPalette(config.paletteId);
-        const paletteColors = getDistributedPaletteColors(config.levelCount, palette.colors);
-
-        if (paletteColors.length === 0) return undefined;
-
-        const clampedLevel = Math.max(1, Math.min(config.levelCount, level));
-
-        return paletteColors[clampedLevel - 1] ?? paletteColors[paletteColors.length - 1];
-    })();
-    const derivedTextColor = textColor ?? (derivedBackgroundColor ? getSkillBadgeTextColor(derivedBackgroundColor, {level, levelCount: config.levelCount}) : undefined);
-
-    return (
-        <SkillBadgeUi
-            level={level}
-            config={config}
-            className={cn('min-h-[19.87px] min-w-[39.74px] px-[8px] py-0 text-[10px] leading-none', className)}
-            label={label}
-            backgroundColor={derivedBackgroundColor}
-            textColor={derivedTextColor}
-        />
     );
 }

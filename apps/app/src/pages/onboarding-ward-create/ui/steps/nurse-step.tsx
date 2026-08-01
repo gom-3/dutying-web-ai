@@ -14,13 +14,12 @@ import {
     type TOnboardingWardDraft,
     type TSortMode,
 } from '../../model';
-import {ShiftBadge, SkillBadge} from './badges';
+import {ShiftBadge} from './badges';
 import TeamTabs from './team-tabs';
 
 interface INurseStepProps {
     draft: TOnboardingWardDraft;
     selectedTeamId: string;
-    showSkillColumn: boolean;
     sortMode: TSortMode;
     onSortModeChange: (sortMode: TSortMode) => void;
     onSelectTeam: (teamId: string) => void;
@@ -36,17 +35,11 @@ interface INurseStepProps {
 const SORT_OPTIONS: {value: TSortMode; labelKey: TI18nKey}[] = [
     {value: 'manual', labelKey: 'page.onboardingWardCreate.nurse.sort.manual'},
     {value: 'name', labelKey: 'page.onboardingWardCreate.nurse.sort.name'},
-    {value: 'skill', labelKey: 'page.onboardingWardCreate.nurse.sort.skill'},
 ];
-const SKILL_UNSELECTED_BACKGROUND = '#E5E7EB';
-const SKILL_UNSELECTED_TEXT = '#6B7280';
 const NURSE_GRID_PADDING_X = 'px-6';
 const NURSE_GRID_GAP_CLASS = 'gap-x-3';
 const NURSE_GRID_COLS_STEP_3 =
     'grid-cols-[32px_minmax(168px,1.08fr)_minmax(220px,1.48fr)_minmax(84px,0.58fr)_minmax(84px,0.58fr)_minmax(96px,0.68fr)_40px]';
-const NURSE_GRID_COLS_STEP_4 =
-    'grid-cols-[32px_minmax(168px,1fr)_minmax(116px,0.72fr)_minmax(196px,1.28fr)_minmax(84px,0.56fr)_minmax(84px,0.56fr)_minmax(96px,0.66fr)_40px]';
-const getDefaultSkillLabel = (level: number) => `LV. ${level}`;
 const limitNurseNameInput = (value: string) => value.slice(0, MAX_ONBOARDING_NURSE_NAME_LENGTH);
 
 type TNurseRoleHelp = 'preceptor' | 'preceptee';
@@ -104,7 +97,6 @@ function NurseRoleHeaderHelp({
 function NurseStep({
     draft,
     selectedTeamId,
-    showSkillColumn,
     sortMode,
     onSortModeChange,
     onSelectTeam,
@@ -118,14 +110,12 @@ function NurseStep({
 }: INurseStepProps) {
     const {t} = useTypedTranslation();
     const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-    const [openedSkillMenuNurseId, setOpenedSkillMenuNurseId] = useState<string | null>(null);
     const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelp | null>(null);
     const sortMenuRef = useRef<HTMLDivElement | null>(null);
-    const skillMenuRef = useRef<HTMLDivElement | null>(null);
     const rowRefByNurseId = useRef<Record<string, HTMLDivElement | null>>({});
     const previousTopByNurseIdRef = useRef<Record<string, number>>({});
     const skipFlipAnimationOnceRef = useRef(false);
-    const availableSortOptions = showSkillColumn ? SORT_OPTIONS : SORT_OPTIONS.filter((option) => option.value !== 'skill');
+    const availableSortOptions = SORT_OPTIONS;
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
     const selectedSortOptionLabel = selectedSortOption ? t(selectedSortOption.labelKey) : '';
     const currentNurses = useMemo(() => draft.nurses.filter((nurse) => nurse.teamId === selectedTeamId), [draft.nurses, selectedTeamId]);
@@ -136,12 +126,7 @@ function NurseStep({
         () => draft.shiftTypes.filter((shiftType) => isOnboardingShiftTypeActive(shiftType) && shiftType.shortName),
         [draft.shiftTypes],
     );
-    const levelItems = useMemo(
-        () => Array.from({length: draft.skillLevelConfig.levelCount}, (_, index) => draft.skillLevelConfig.levelCount - index),
-        [draft.skillLevelConfig.levelCount],
-    );
-    const getSkillLabel = (level: number) => draft.skillLevelConfig.levelLabels?.[level] ?? getDefaultSkillLabel(level);
-    const gridTemplateClass = showSkillColumn ? NURSE_GRID_COLS_STEP_4 : NURSE_GRID_COLS_STEP_3;
+    const gridTemplateClass = NURSE_GRID_COLS_STEP_3;
     const handleDragEnd = (result: DropResult) => {
         skipFlipAnimationOnceRef.current = true;
         onDragEnd(result);
@@ -170,38 +155,11 @@ function NurseStep({
     }, []);
 
     useEffect(() => {
-        if (!openedSkillMenuNurseId) {
-            return;
-        }
-
-        const closeOnOutsideClick = (event: MouseEvent) => {
-            if (skillMenuRef.current?.contains(event.target as Node)) {
-                return;
-            }
-
-            setOpenedSkillMenuNurseId(null);
-        };
-
-        document.addEventListener('mousedown', closeOnOutsideClick);
-
-        return () => {
-            document.removeEventListener('mousedown', closeOnOutsideClick);
-        };
-    }, [openedSkillMenuNurseId]);
-
-    useEffect(() => {
-        if (!showSkillColumn) {
-            setOpenedSkillMenuNurseId(null);
-        }
-    }, [showSkillColumn]);
-
-    useEffect(() => {
         if (hasNursesInSelectedTeam) {
             return;
         }
 
         setIsSortMenuOpen(false);
-        setOpenedSkillMenuNurseId(null);
     }, [hasNursesInSelectedTeam]);
 
     useLayoutEffect(() => {
@@ -345,11 +303,6 @@ function NurseStep({
                             </span>
                         </span>
                     </div>
-                    {showSkillColumn ? (
-                        <div className="flex h-8 w-full items-center justify-center">
-                            <span className="block w-full text-center">{t('page.member.table.level')}</span>
-                        </div>
-                    ) : null}
                     <div className="flex h-8 w-full items-center justify-center">
                         <span className="block w-full text-center">{t('page.member.table.shiftTypes')}</span>
                     </div>
@@ -380,13 +333,8 @@ function NurseStep({
                         {(provided) => (
                             <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
                                 {sortedNurses.map((nurse, index) => {
-                                    const isSkillMenuOpen = openedSkillMenuNurseId === nurse.id;
                                     const isPreceptor = nurse.isPreceptor;
                                     const isPreceptee = nurse.isPreceptee;
-                                    const isSkillUnselected = nurse.level == null;
-                                    const skillBadgeLabel = isSkillUnselected
-                                        ? t('page.onboardingWardCreate.nurse.skillUnselectedBadge')
-                                        : getSkillLabel(nurse.level ?? 1);
                                     const fadedClass = nurse.isWorker ? '' : 'opacity-45';
                                     const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
 
@@ -404,7 +352,6 @@ function NurseStep({
                                                         NURSE_GRID_GAP_CLASS,
                                                         NURSE_GRID_PADDING_X,
                                                         gridTemplateClass,
-                                                        isSkillMenuOpen && 'relative z-[1500]',
                                                         !nurse.isWorker && 'bg-[#FAFBFD]',
                                                     )}
                                                 >
@@ -431,107 +378,6 @@ function NurseStep({
                                                         placeholder={t('page.member.table.name')}
                                                         maxLength={MAX_ONBOARDING_NURSE_NAME_LENGTH}
                                                     />
-
-                                                    {showSkillColumn ? (
-                                                        <div
-                                                            ref={isSkillMenuOpen ? skillMenuRef : null}
-                                                            className="relative z-[1200] flex justify-center"
-                                                        >
-                                                            <button
-                                                                type="button"
-                                                                aria-haspopup="listbox"
-                                                                aria-expanded={isSkillMenuOpen}
-                                                                className="flex h-[24px] min-w-[94px] items-center justify-center gap-1 rounded-[6px] bg-transparent px-2"
-                                                                onClick={() =>
-                                                                    setOpenedSkillMenuNurseId((prev) => {
-                                                                        const nextOpenedNurseId = prev === nurse.id ? null : nurse.id;
-
-                                                                        return nextOpenedNurseId;
-                                                                    })
-                                                                }
-                                                            >
-                                                                <SkillBadge
-                                                                    level={nurse.level}
-                                                                    config={draft.skillLevelConfig}
-                                                                    label={skillBadgeLabel}
-                                                                    backgroundColor={
-                                                                        isSkillUnselected ? SKILL_UNSELECTED_BACKGROUND : undefined
-                                                                    }
-                                                                    textColor={isSkillUnselected ? SKILL_UNSELECTED_TEXT : undefined}
-                                                                    className="text-[12px]"
-                                                                />
-                                                                <ChevronDown
-                                                                    className={cn(
-                                                                        'h-3 w-3 text-gray-4 transition-transform',
-                                                                        isSkillMenuOpen && 'rotate-180',
-                                                                    )}
-                                                                />
-                                                            </button>
-                                                            {isSkillMenuOpen ? (
-                                                                <div
-                                                                    role="listbox"
-                                                                    aria-label={t('page.onboardingWardCreate.nurse.skillAria', {
-                                                                        nurseName: nurseNameForAria,
-                                                                    })}
-                                                                    className="absolute top-full left-1/2 z-[1300] mt-2 min-w-[120px] -translate-x-1/2 rounded-[10px] border border-gray-6 bg-white p-2 opacity-100 shadow-[0px_12px_28px_rgba(61,70,88,0.18)]"
-                                                                >
-                                                                    <div className="space-y-1.5">
-                                                                        <button
-                                                                            type="button"
-                                                                            role="option"
-                                                                            aria-selected={isSkillUnselected}
-                                                                            className={cn(
-                                                                                'flex w-full items-center justify-center rounded-[6px] px-2 py-1 text-[14px] transition-colors hover:bg-gray-7',
-                                                                                isSkillUnselected && 'text-main-1',
-                                                                            )}
-                                                                            onClick={() => {
-                                                                                onNurseChange(nurse.id, {level: null});
-                                                                                setOpenedSkillMenuNurseId(null);
-                                                                            }}
-                                                                        >
-                                                                            <SkillBadge
-                                                                                level={null}
-                                                                                config={draft.skillLevelConfig}
-                                                                                label={t(
-                                                                                    'page.onboardingWardCreate.nurse.skillUnselectedOption',
-                                                                                )}
-                                                                                backgroundColor={SKILL_UNSELECTED_BACKGROUND}
-                                                                                textColor={SKILL_UNSELECTED_TEXT}
-                                                                                className="text-[12px]"
-                                                                            />
-                                                                        </button>
-                                                                        {levelItems.map((level) => {
-                                                                            const isSelected = nurse.level === level;
-
-                                                                            return (
-                                                                                <button
-                                                                                    key={level}
-                                                                                    type="button"
-                                                                                    role="option"
-                                                                                    aria-selected={isSelected}
-                                                                                    className={cn(
-                                                                                        'flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7',
-                                                                                        isSelected && 'font-semibold',
-                                                                                    )}
-                                                                                    onClick={() => {
-                                                                                        onNurseChange(nurse.id, {level});
-                                                                                        setOpenedSkillMenuNurseId(null);
-                                                                                    }}
-                                                                                >
-                                                                                    <SkillBadge
-                                                                                        level={level}
-                                                                                        config={draft.skillLevelConfig}
-                                                                                        label={getSkillLabel(level)}
-                                                                                        className="text-[12px]"
-                                                                                    />
-                                                                                </button>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            ) : null}
-                                                        </div>
-                                                    ) : null}
 
                                                     <div className={cn('flex flex-wrap items-center justify-center gap-1.5', fadedClass)}>
                                                         {activeShiftTypes.map((shiftType) => {

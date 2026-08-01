@@ -27,17 +27,6 @@ vi.mock('@/entities/ui/useUIConfig/store', () => ({
         }),
 }));
 
-vi.mock('@/features/ward-skill/model/skill-level', () => ({
-    getWardSkillSettings: () => ({}),
-    resolveWardSkillLevels: () => ({
-        config: {
-            enabled: false,
-            levels: [],
-        },
-        levelsByNurseId: {},
-    }),
-}));
-
 vi.mock('@/shared/api', () => ({
     NurseAPI: {
         updateNurseOrder: apiMocks.updateNurseOrder,

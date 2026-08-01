@@ -37,10 +37,6 @@ vi.mock('../ui/connection-manage', () => ({
     default: ({open}: {open: boolean}) => <span data-testid="connection-manage-open">{String(open)}</span>,
 }));
 
-vi.mock('../ui/member-skill-level-modal', () => ({
-    default: () => null,
-}));
-
 vi.mock('../ui/nurse-detail-panel', () => ({
     default: ({onRegisterDraftActions}: {onRegisterDraftActions?: (actions: {save: () => Promise<boolean>; discard: () => void}) => void}) => {
         onRegisterDraftActions?.({

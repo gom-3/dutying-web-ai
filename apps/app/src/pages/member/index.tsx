@@ -8,7 +8,7 @@ import {
     type DraggableProvidedDraggableProps,
     type DropResult,
 } from '@hello-pangea/dnd';
-import {Check, ChevronDown, Copy, Info, Link2, Plus, Settings2, Trash2, X} from 'lucide-react';
+import {Check, ChevronDown, Copy, Info, Link2, Plus, Trash2, X} from 'lucide-react';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
@@ -17,15 +17,6 @@ import {events, sendEvent} from '@/analytics';
 import {getWardDisplayCode, getWardDisplayTitle, type TNurse, type TWardShiftType} from '@/entities';
 import useEditShiftTeam, {type TUpdateNurseShiftMeta} from '@/features/edit-shift-team';
 import useEditWard from '@/features/edit-ward';
-import {
-    createWardSkillSettings,
-    getWardSkillSettings,
-    resolveWardSkillLevels,
-    saveWardSkillSettings,
-    type TSkillLevelValue,
-    type TWardSkillSettings,
-} from '@/features/ward-skill/model/skill-level';
-import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import i18n from '@/i18n';
 import {MAX_ONBOARDING_NURSES, MAX_ONBOARDING_TEAMS} from '@/pages/onboarding-ward-create/model/draft';
 import {LinkedIcon, PersonIcon, SixDotsIcon, UnlinkedIcon} from '@/shared/assets/svg';
@@ -46,10 +37,9 @@ import {
 import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
 import {createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
-import MemberSkillLevelModal from './ui/member-skill-level-modal';
 import NurseDetailPanel from './ui/nurse-detail-panel';
 
-type TMemberNurseSortMode = 'manual' | 'name' | 'skill';
+type TMemberNurseSortMode = 'manual' | 'name';
 type TManualOrderByTeamId = Record<number, number[]>;
 type TNurseDraftActions = {save: () => Promise<boolean>; discard: () => void};
 
@@ -86,14 +76,11 @@ const parseManualOrderByTeamId = (value: string | null): TManualOrderByTeamId =>
 const TEAM_NAME_MAX_LENGTH = 12;
 const MEMBER_GRID_PADDING_X = 'px-3 min-[1600px]:px-4';
 const MEMBER_GRID_GAP_CLASS = 'gap-x-1.5 min-[1600px]:gap-x-2';
-const MEMBER_GRID_COLS_WITH_SKILL =
-    'grid-cols-[24px_minmax(72px,0.9fr)_minmax(56px,0.66fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_GRID_COLS_WITHOUT_SKILL =
     'grid-cols-[24px_minmax(72px,0.9fr)_minmax(136px,1.35fr)_minmax(76px,0.78fr)_minmax(76px,0.78fr)_minmax(60px,0.64fr)_minmax(56px,0.58fr)_44px]';
 const MEMBER_SORT_OPTIONS: {value: TMemberNurseSortMode; labelKey: Parameters<ReturnType<typeof useTypedTranslation>['t']>[0]}[] = [
     {value: 'manual', labelKey: 'page.member.sort.manual'},
     {value: 'name', labelKey: 'page.member.sort.name'},
-    {value: 'skill', labelKey: 'page.member.sort.skill'},
 ];
 const compareMemberNurseName = (left: TNurse, right: TNurse, collator: Intl.Collator) => {
     const byName = collator.compare(left.name, right.name);
@@ -103,21 +90,6 @@ const compareMemberNurseName = (left: TNurse, right: TNurse, collator: Intl.Coll
     }
 
     return left.nurseId - right.nurseId;
-};
-const compareMemberNurseSkill = (
-    left: TNurse,
-    right: TNurse,
-    levelsByNurseId: Record<number, TSkillLevelValue>,
-    collator: Intl.Collator,
-) => {
-    const leftLevel = levelsByNurseId[left.nurseId] ?? Number.NEGATIVE_INFINITY;
-    const rightLevel = levelsByNurseId[right.nurseId] ?? Number.NEGATIVE_INFINITY;
-
-    if (rightLevel !== leftLevel) {
-        return rightLevel - leftLevel;
-    }
-
-    return compareMemberNurseName(left, right, collator);
 };
 const rgbToHex = ({red, green, blue}: {red: number; green: number; blue: number}) =>
     `#${[red, green, blue]
@@ -209,7 +181,6 @@ function MemberPage() {
             ward,
             shiftTeams,
             selectedNurse,
-            selectedNurseDrawerMode,
             isNurseDraftDirty,
             isAddingNurse,
             nurseSaveStatus,
@@ -233,11 +204,8 @@ function MemberPage() {
     const [nurseSortMode, setNurseSortMode] = useState<TMemberNurseSortMode>('manual');
     const [sortMenuOpen, setSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
-    const [skillSettings, setSkillSettings] = useState<TWardSkillSettings | null>(null);
-    const [unselectedSkillNurseIds, setUnselectedSkillNurseIds] = useState<Set<number>>(new Set());
     const [pendingWorkerByNurseId, setPendingWorkerByNurseId] = useState<Record<number, boolean>>({});
     const [manualOrderByTeamId, setManualOrderByTeamId] = useState<Record<number, number[]>>({});
-    const [skillModalOpen, setSkillModalOpen] = useState(false);
     const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelpType | null>(null);
     const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
     const [editingTeamName, setEditingTeamName] = useState('');
@@ -269,9 +237,6 @@ function MemberPage() {
         [t],
     );
 
-    useEffect(() => {
-        setSkillSettings(getWardSkillSettings(wardId));
-    }, [wardId]);
     useEffect(() => {
         if (!wardId) {
             setManualOrderByTeamId({});
@@ -309,20 +274,13 @@ function MemberPage() {
         setSearchParams(nextSearchParams, {replace: true});
     }, [searchParams, setSearchParams]);
 
-    const {config: skillConfig, levelsByNurseId} = useMemo(
-        () => resolveWardSkillLevels(allNurses, skillSettings),
-        [allNurses, skillSettings],
-    );
-    const isSkillFeatureEnabled = skillConfig.enabled;
     const availableSortOptions = useMemo(
         () =>
-            (isSkillFeatureEnabled ? MEMBER_SORT_OPTIONS : MEMBER_SORT_OPTIONS.filter((option) => option.value !== 'skill')).map(
-                (option) => ({
-                    value: option.value,
-                    label: t(option.labelKey),
-                }),
-            ),
-        [isSkillFeatureEnabled, t],
+            MEMBER_SORT_OPTIONS.map((option) => ({
+                value: option.value,
+                label: t(option.labelKey),
+            })),
+        [t],
     );
     const activeShiftTeam = useMemo(
         () => shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === activeShiftTeamId) ?? shiftTeams?.[0],
@@ -347,16 +305,12 @@ function MemberPage() {
             return onNurses.concat(offNurses);
         }
 
-        const comparator =
-            nurseSortMode === 'name'
-                ? (left: TNurse, right: TNurse) => compareMemberNurseName(left, right, memberNameCollator)
-                : (left: TNurse, right: TNurse) => compareMemberNurseSkill(left, right, levelsByNurseId, memberNameCollator);
+        const comparator = (left: TNurse, right: TNurse) => compareMemberNurseName(left, right, memberNameCollator);
 
         return [...onNurses].sort(comparator).concat([...offNurses].sort(comparator));
     }, [
         activeShiftTeam?.nurses,
         activeShiftTeam?.shiftTeamId,
-        levelsByNurseId,
         manualOrderByTeamId,
         memberNameCollator,
         nurseSortMode,
@@ -421,13 +375,6 @@ function MemberPage() {
         return () => document.removeEventListener('mousedown', handlePointerDown);
     }, [sortMenuOpen]);
     useEffect(() => {
-        if (isSkillFeatureEnabled) return;
-
-        if (nurseSortMode !== 'skill') return;
-
-        setNurseSortMode('manual');
-    }, [isSkillFeatureEnabled, nurseSortMode]);
-    useEffect(() => {
         if (!editingTeamId) {
             return;
         }
@@ -467,19 +414,6 @@ function MemberPage() {
 
         setSortMenuOpen(false);
     }, [hasActiveTeamNurses]);
-    useEffect(() => {
-        if (!selectedNurse || selectedNurseDrawerMode !== 'create') return;
-
-        setUnselectedSkillNurseIds((prev) => {
-            if (prev.has(selectedNurse.nurseId)) return prev;
-
-            const next = new Set(prev);
-
-            next.add(selectedNurse.nurseId);
-
-            return next;
-        });
-    }, [selectedNurse, selectedNurseDrawerMode]);
     useLayoutEffect(() => {
         const nextTopByNurseId: Record<number, number> = {};
         const currentNurseIds = displayedNurses.map((nurse) => nurse.nurseId);
@@ -667,58 +601,6 @@ function MemberPage() {
         nextSearchParams.set('shiftTeamId', String(shiftTeamId));
         setSearchParams(nextSearchParams, {replace: true});
     };
-    const handleSaveSkillSettings = (nextConfig: TWardSkillSettings['config']) => {
-        if (!wardId) return;
-
-        const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
-
-        saveWardSkillSettings(wardId, nextSettings);
-        setSkillSettings(nextSettings);
-    };
-    const handleDisableSkillFeature = () => {
-        if (!wardId) return;
-
-        const nextSettings = createWardSkillSettings(
-            allNurses,
-            {
-                ...skillConfig,
-                enabled: false,
-                autoAssign: false,
-            },
-            skillSettings,
-        );
-
-        nextSettings.frozenLevelsByNurseId = {};
-        saveWardSkillSettings(wardId, nextSettings);
-        setSkillSettings(nextSettings);
-        setNurseSortMode('manual');
-    };
-    const saveNurseSkillLevel = useCallback(
-        (nurseId: number, nextLevel: number | null) => {
-            setUnselectedSkillNurseIds((prev) => {
-                const next = new Set(prev);
-
-                if (nextLevel === null) {
-                    next.add(nurseId);
-                } else {
-                    next.delete(nurseId);
-                }
-
-                return next;
-            });
-
-            if (!wardId) return;
-
-            const normalized = nextLevel === null ? null : Math.max(1, Math.min(skillConfig.levelCount, nextLevel));
-            const nextConfig = {...skillConfig, autoAssign: false};
-            const nextSettings = createWardSkillSettings(allNurses, nextConfig, skillSettings);
-
-            nextSettings.frozenLevelsByNurseId[nurseId] = normalized;
-            saveWardSkillSettings(wardId, nextSettings);
-            setSkillSettings(nextSettings);
-        },
-        [allNurses, skillConfig, skillSettings, wardId],
-    );
     const handleDeleteActiveTeam = async () => {
         if (
             shouldBlockForUnsavedChanges(async () => {
@@ -1173,22 +1055,6 @@ function MemberPage() {
                                 <Link2 className="h-[18px] w-[18px] text-main-1 min-[1600px]:h-5 min-[1600px]:w-5" strokeWidth={2.8} />
                             </button>
                         </div>
-                        <button
-                            id="member_skill_settings_button"
-                            type="button"
-                            aria-label={t('page.member.skillSettings')}
-                            title={t('page.member.skillSettings')}
-                            className={cn(
-                                'mr-12 ml-auto flex h-10 w-10 shrink-0 items-center justify-center gap-0 rounded-[8px] bg-[#F3EEFF] px-0 font-apple text-[14px] font-medium text-[#6746C3] transition-colors hover:bg-[#E9DFFF] focus-visible:outline-2 focus-visible:outline-main-1 min-[1600px]:h-[42px]',
-                                selectedNurse
-                                    ? 'min-[1600px]:w-[42px] min-[1600px]:px-0'
-                                    : 'min-[1600px]:w-auto min-[1600px]:gap-1.5 min-[1600px]:px-4',
-                            )}
-                            onClick={() => setSkillModalOpen(true)}
-                        >
-                            <span className={cn('hidden', !selectedNurse && 'min-[1600px]:inline')}>{t('page.member.skillSettings')}</span>
-                            <Settings2 className="h-5 w-5 text-[#7658D8]" />
-                        </button>
                     </div>
                     <ConnectionManage open={connectionManageModalOpen} setOpen={setConnectionManageModalOpen} />
 
@@ -1366,12 +1232,11 @@ function MemberPage() {
                                     'grid items-center py-2 font-apple text-[14px] text-gray-3 min-[1600px]:text-[16px]',
                                     MEMBER_GRID_GAP_CLASS,
                                     MEMBER_GRID_PADDING_X,
-                                    isSkillFeatureEnabled ? MEMBER_GRID_COLS_WITH_SKILL : MEMBER_GRID_COLS_WITHOUT_SKILL,
+                                    MEMBER_GRID_COLS_WITHOUT_SKILL,
                                 )}
                             >
                                 <span />
                                 <span className="text-center">{t('page.member.table.name')}</span>
-                                {isSkillFeatureEnabled ? <span className="text-center">{t('page.member.table.level')}</span> : null}
                                 <span className="text-center">{t('page.member.table.shiftTypes')}</span>
                                 <span className="flex justify-center text-center">
                                     <MemberRoleHeaderHelp
@@ -1407,13 +1272,6 @@ function MemberPage() {
                                                                 nurse={nurse}
                                                                 isWorker={pendingWorkerByNurseId[nurse.nurseId] ?? nurse.isWorker}
                                                                 isSelected={selectedNurse?.nurseId === nurse.nurseId}
-                                                                isSkillUnselected={
-                                                                    unselectedSkillNurseIds.has(nurse.nurseId) ||
-                                                                    levelsByNurseId[nurse.nurseId] == null
-                                                                }
-                                                                isSkillFeatureEnabled={isSkillFeatureEnabled}
-                                                                skillLevel={levelsByNurseId[nurse.nurseId]}
-                                                                skillConfig={skillConfig}
                                                                 wardShiftTypes={ward?.wardShiftTypes}
                                                                 isBusy={nurseSaveStatus === 'saving' || isDeletingNurse}
                                                                 dragRef={(element) => {
@@ -1433,9 +1291,6 @@ function MemberPage() {
                                                                     return handleUpdateNurse(nurse, nextNurse);
                                                                 }}
                                                                 onUpdateNurseShift={updateNurseShift}
-                                                                onSaveSkillLevel={(nextLevel) => {
-                                                                    saveNurseSkillLevel(nurse.nurseId, nextLevel);
-                                                                }}
                                                                 onSelect={() => {
                                                                     if (
                                                                         shouldBlockForUnsavedChanges(() => {
@@ -1535,17 +1390,6 @@ function MemberPage() {
                                 onClose={handleDismissDetailPanel}
                                 onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
                                 onRegisterDraftActions={handleRegisterNurseDraftActions}
-                                isSkillFeatureEnabled={isSkillFeatureEnabled}
-                                isSkillUnselected={
-                                    unselectedSkillNurseIds.has(selectedNurse.nurseId) || levelsByNurseId[selectedNurse.nurseId] == null
-                                }
-                                onSaveSkillLevel={(nextLevel) => {
-                                    if (!isSkillFeatureEnabled) return;
-
-                                    saveNurseSkillLevel(selectedNurse.nurseId, nextLevel);
-                                }}
-                                skillConfig={skillConfig}
-                                skillLevel={levelsByNurseId[selectedNurse.nurseId]}
                                 shiftTeams={shiftTeams}
                                 onMoveShiftTeam={handleMoveSelectedNurseToTeam}
                                 wardShiftTypes={ward?.wardShiftTypes}
@@ -1555,13 +1399,6 @@ function MemberPage() {
                 </aside>
             </div>
 
-            <MemberSkillLevelModal
-                open={skillModalOpen}
-                config={skillConfig}
-                onClose={() => setSkillModalOpen(false)}
-                onSave={handleSaveSkillSettings}
-                onDisable={handleDisableSkillFeature}
-            />
         </div>
     );
 }
@@ -1571,10 +1408,6 @@ function MemberNurseRow({
     nurse,
     isWorker,
     isSelected,
-    isSkillUnselected,
-    isSkillFeatureEnabled,
-    skillLevel,
-    skillConfig,
     wardShiftTypes,
     isBusy,
     dragRef,
@@ -1585,17 +1418,12 @@ function MemberNurseRow({
     onDeleteNurse,
     onDisconnectNurse,
     onOpenWardCodeGuide,
-    onSaveSkillLevel,
     onSelect,
 }: {
     rowId?: string;
     nurse: TNurse;
     isWorker: boolean;
     isSelected: boolean;
-    isSkillUnselected: boolean;
-    isSkillFeatureEnabled: boolean;
-    skillLevel: number | null | undefined;
-    skillConfig: TWardSkillSettings['config'];
     wardShiftTypes: TWardShiftType[] | undefined;
     isBusy: boolean;
     dragRef: (element: HTMLDivElement | null) => void;
@@ -1611,15 +1439,12 @@ function MemberNurseRow({
     onDeleteNurse: (shiftTeamId: number, nurseId: number) => Promise<void>;
     onDisconnectNurse: (nurseId: number) => Promise<boolean>;
     onOpenWardCodeGuide: () => void;
-    onSaveSkillLevel: (nextLevel: number | null) => void;
     onSelect: () => void;
 }) {
     const {t} = useTypedTranslation();
     const [nameDraft, setNameDraft] = useState(nurse.name);
-    const [skillMenuOpen, setSkillMenuOpen] = useState(false);
     const [disconnectConfirmModalOpen, setDisconnectConfirmModalOpen] = useState(false);
     const [deleteConfirmModalOpen, setDeleteConfirmModalOpen] = useState(false);
-    const skillMenuRef = useRef<HTMLDivElement | null>(null);
     const modalRoot = document.getElementById('modal-root') ?? document.body;
 
     useEffect(() => {
@@ -1636,27 +1461,6 @@ function MemberNurseRow({
     const isPreceptee = hasNursePrecepteeRole(nurse);
     const fadedClass = isWorker ? '' : 'opacity-55';
     const nurseNameForAria = nurse.name || t('page.member.common.nurseFallback');
-    const unselectedSkillLabel = t('page.member.row.unselectedSkill');
-
-    useEffect(() => {
-        if (!skillMenuOpen) {
-            return;
-        }
-
-        const closeOnOutsideClick = (event: MouseEvent) => {
-            if (skillMenuRef.current?.contains(event.target as Node)) {
-                return;
-            }
-
-            setSkillMenuOpen(false);
-        };
-
-        document.addEventListener('mousedown', closeOnOutsideClick);
-
-        return () => {
-            document.removeEventListener('mousedown', closeOnOutsideClick);
-        };
-    }, [skillMenuOpen]);
 
     return (
         <>
@@ -1668,9 +1472,9 @@ function MemberNurseRow({
                     'relative grid w-full items-center rounded-[12px] border py-1 text-left transition-colors focus-visible:outline-2 focus-visible:outline-main-1',
                     MEMBER_GRID_GAP_CLASS,
                     MEMBER_GRID_PADDING_X,
-                    isSkillFeatureEnabled ? MEMBER_GRID_COLS_WITH_SKILL : MEMBER_GRID_COLS_WITHOUT_SKILL,
+                    MEMBER_GRID_COLS_WITHOUT_SKILL,
                     'cursor-pointer',
-                    skillMenuOpen ? 'z-40' : 'z-0',
+                    'z-0',
                     isSelected
                         ? 'border-main-2 bg-white ring-1 ring-main-2/25'
                         : 'border-gray-7 bg-white hover:border-main-3/40 hover:bg-main-light/40',
@@ -1718,69 +1522,6 @@ function MemberNurseRow({
                     placeholder="-"
                     maxLength={30}
                 />
-                {isSkillFeatureEnabled ? (
-                    <div className="flex justify-center">
-                        <div ref={skillMenuRef} className="relative">
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    onSelect();
-                                    setSkillMenuOpen((prev) => !prev);
-                                }}
-                                className="inline-flex items-center gap-1"
-                            >
-                                <SkillBadge
-                                    level={isSkillUnselected ? null : skillLevel}
-                                    config={skillConfig}
-                                    label={isSkillUnselected ? unselectedSkillLabel : undefined}
-                                    backgroundColor={isSkillUnselected ? '#E5E7EB' : undefined}
-                                    textColor={isSkillUnselected ? '#6B7280' : undefined}
-                                />
-                                <ChevronDown className={cn('h-3 w-3 text-gray-4 transition-transform', skillMenuOpen && 'rotate-180')} />
-                            </button>
-                            {skillMenuOpen ? (
-                                <div className="absolute top-full left-1/2 z-30 mt-2 min-w-[120px] -translate-x-1/2 rounded-[10px] border border-gray-6 bg-white p-2 opacity-100 shadow-[0px_12px_28px_rgba(61,70,88,0.18)]">
-                                    <div className="space-y-1.5">
-                                        <button
-                                            type="button"
-                                            className="flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7"
-                                            onClick={(event) => {
-                                                event.stopPropagation();
-                                                onSaveSkillLevel(null);
-                                                setSkillMenuOpen(false);
-                                            }}
-                                        >
-                                            <SkillBadge
-                                                level={null}
-                                                config={skillConfig}
-                                                label={unselectedSkillLabel}
-                                                backgroundColor="#E5E7EB"
-                                                textColor="#6B7280"
-                                            />
-                                        </button>
-                                        {Array.from({length: skillConfig.levelCount}, (_, index) => skillConfig.levelCount - index).map(
-                                            (level) => (
-                                                <button
-                                                    key={level}
-                                                    type="button"
-                                                    className="flex w-full items-center justify-center rounded-[6px] px-2 py-1 transition-colors hover:bg-gray-7"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        onSaveSkillLevel(level);
-                                                        setSkillMenuOpen(false);
-                                                    }}
-                                                >
-                                                    <SkillBadge level={level} config={skillConfig} />
-                                                </button>
-                                            ),
-                                        )}
-                                    </div>
-                                </div>
-                            ) : null}
-                        </div>
-                    </div>
-                ) : null}
                 <div className={cn('flex min-w-0 flex-wrap items-center justify-center gap-x-1 gap-y-0.5 overflow-hidden', fadedClass)}>
                     {shiftTypeOptions.length > 0 ? (
                         shiftTypeOptions.map((shiftType) => {

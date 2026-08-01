@@ -761,7 +761,6 @@ export const ko = {
                     forbidden: '금지 패턴',
                     workRest: '연속 근무/휴식',
                     personal: '사람별 제한',
-                    skill: '숙련도',
                     combination: '근무자 조합',
                 },
                 option: {
@@ -884,21 +883,13 @@ export const ko = {
                         label: '개인 조건',
                         sentence: '{nurse}는 주말/공휴일 근무를 하면 안 돼요',
                     },
-                    NURSE_NOT_ALONE_N: {
-                        label: '숙련도 조건',
-                        sentence: '{nurse}는 혼자 N 근무를 하면 안 돼요',
+                    NURSE_PREFER_SHIFT: {
+                        label: '개인 조건',
+                        sentence: '{nurse}는 {shift} 근무를 선호해요',
                     },
-                    NEW_NURSE_NOT_ALONE_N: {
-                        label: '숙련도 조건',
-                        sentence: '{nurse}는 혼자 N 근무를 하면 안 돼요',
-                    },
-                    PRECEPTEE_NOT_ALONE_N: {
-                        label: '숙련도 조건',
-                        sentence: '{preceptee}는 혼자 N 근무를 하면 안 돼요',
-                    },
-                    MIN_PROFICIENCY_STAFF_BY_SHIFT: {
-                        label: '숙련도 조건',
-                        sentence: '{shift} 근무에는 LV{level} 이상 간호사가 최소 {count}명 필요해요',
+                    NURSE_AVOID_SHIFT: {
+                        label: '개인 조건',
+                        sentence: '{nurse}는 {shift} 근무를 피하고 싶어요',
                     },
                     IMPORTANT_MAX_WORK_STREAK: {
                         label: '중요 기본 조건',
@@ -984,14 +975,6 @@ export const ko = {
                         label: '사람별 근무 제한',
                         sentence: '{nurse}은 주말/공휴일 근무를 피해요',
                     },
-                    SOFT_NEWBIE_NO_SOLO_N: {
-                        label: '신규 / 경력 / 숙련도 규칙',
-                        sentence: '{nurse}은 (신규) 혼자 N 근무를 피해요',
-                    },
-                    SOFT_MIN_SKILL_IN_DUTY: {
-                        label: '신규 / 경력 / 숙련도 규칙',
-                        sentence: '{duty} 근무에는 {level} 이상 간호사가 {count}명 이상 있어야 해요',
-                    },
                     SOFT_NO_SAME_DUTY_PAIR: {
                         label: '근무자 조합',
                         sentence: '{nurseA}과 {nurseB}은 같은 근무를 피해요',
@@ -1023,12 +1006,10 @@ export const ko = {
                 totalCount: '총 {{count}}명',
                 sortBySavedOrder: '임의순',
                 sortByName: '가나다순',
-                sortBySkill: '숙련도 순',
                 sortListMenuAria: '근무자 정렬 기준 열기',
                 preceptorActive: '해당',
                 column: {
                     name: '이름',
-                    level: '숙련도',
                     shiftTypes: '가능 근무',
                     preceptor: '프리셉터',
                     preceptee: '프리셉티',
@@ -1069,8 +1050,7 @@ export const ko = {
                     eyebrow: 'AI 자동채우기 미리보기',
                     title: 'AI가 바꾸면 안 되는 근무가 있나요?',
                     description: 'AI는 고정 근무와 신청 근무를 제외한 빈칸을 자동으로 채워요.\n바뀌면 안 되는 근무는 먼저 고정해 주세요.',
-                    previewDescription:
-                        '있다면 아래에서 해당 근무를 고정해 주세요. 고정한 근무는 AI가 바꾸지 않아요.',
+                    previewDescription: '있다면 아래에서 해당 근무를 고정해 주세요. 고정한 근무는 AI가 바꾸지 않아요.',
                     calendarTitle: 'AI 자동채우기 범위',
                     aiFillArea: 'AI가 채울 영역',
                     keepArea: '그대로 유지',
@@ -1364,7 +1344,6 @@ export const ko = {
             calendar: {
                 ariaLabel: '신청 근무표',
                 nameColumn: '이름',
-                skillColumn: '숙련도',
                 linkColumn: '연동',
                 reorderAria: '{{name}} 순서 변경',
                 status: {
@@ -1606,11 +1585,6 @@ export const ko = {
                 deleteTeamTitle: '팀을 삭제할까요?',
                 deleteTeamDescriptionSuffix: ' 팀을 삭제하면 소속 간호사 {{count}}명도 함께 삭제돼요.',
             },
-            skillCta: {
-                aria: '숙련도 설정',
-                title: '간호사 숙련도를 설정해볼까요?',
-                description: '근무표 작성시, 숙련도에 따라 자동으로 배정할 수 있어요',
-            },
             section: {
                 identity: {
                     title: '병원명과 병동명을 입력해 주세요',
@@ -1658,8 +1632,6 @@ export const ko = {
                 deleteTeamWithNurses: '팀을 삭제했어요. 팀에 속한 간호사도 함께 삭제했어요.',
                 deleteNurse: '간호사를 삭제했어요.',
                 uploadApplied: '근무표 파일을 반영했어요.',
-                skillConfigSaved: '숙련도 설정이 간호사 목록에 반영됐어요.',
-                skillConfigDisabled: '숙련도 설정을 사용하지 않아요.',
                 completeSuccess: '병동 생성을 완료했어요.',
                 completeError: '병동을 만들지 못했어요. 다시 시도해 주세요.',
             },
@@ -1680,14 +1652,10 @@ export const ko = {
                 sort: {
                     manual: '수동순',
                     name: '가나다순',
-                    skill: '숙련도순',
                 },
                 sortAria: '간호사 정렬',
                 sortOptionsAria: '간호사 정렬 옵션',
-                skillUnselectedBadge: '숙련도 미선택',
-                skillUnselectedOption: '미선택',
                 dragAria: '드래그하여 순서 변경',
-                skillAria: '{{nurseName}} 숙련도',
                 deleteNurseAria: '{{nurseName}} 삭제',
             },
             shiftType: {
@@ -1715,35 +1683,16 @@ export const ko = {
                     timeOrder: '퇴근 시간은 출근 시간보다 늦어야 해요.',
                 },
             },
-            skillLevelModal: {
-                title: '숙련도 단계 설정',
-                description: '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
-                levelCountOption: '{{levelCount}}단계',
-                colorLabel: '색상',
-                high: '높음',
-                low: '낮음',
-                levelLabel: '숙련도',
-                categoryLabel: '구분',
-                levelDisplay: 'LV. {{level}}',
-                autoAssign: '자동 배정',
-                autoAssignTooltip: '등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정해요.',
-                levelCountAria: '숙련도 단계',
-                disable: '숙련도 설정 취소',
-                cancel: '닫기',
-                complete: '완료',
-            },
         },
         member: {
             title: '근무자 관리',
-            description: '팀별 근무자와 숙련도를 한 화면에서 관리할 수 있어요.',
-            skillSettings: '간호사 숙련도 설정하기',
+            description: '팀별 근무자와 근무 가능 정보를 한 화면에서 관리할 수 있어요.',
             addTeam: '팀 추가하기',
             addNurse: '간호사 추가하기',
             addingNurse: '간호사 추가 중…',
             addFirstNurse: '첫 간호사 추가하기',
             deleteTeam: '팀 삭제하기',
             teamMenu: '팀 메뉴 열기',
-            sortBySkill: '숙련도 순',
             sortByPriorityOrder: '저장된 순서',
             sortListMenuAria: '목록 정렬 기준 열기',
             canMakeDuty: '근무표 작성',
@@ -1754,7 +1703,6 @@ export const ko = {
             sort: {
                 manual: '임의순',
                 name: '가나다순',
-                skill: '숙련도 순',
             },
             common: {
                 nurseFallback: '간호사',
@@ -1803,7 +1751,6 @@ export const ko = {
             },
             row: {
                 dragAria: '드래그해서 순서 변경',
-                unselectedSkill: '선택안함',
                 preceptorAria: '{{nurseName}} 프리셉터',
                 precepteeAria: '{{nurseName}} 프리셉티',
                 workerAria: '{{nurseName}} 근무투입',
@@ -1822,7 +1769,6 @@ export const ko = {
             },
             table: {
                 name: '이름',
-                level: '숙련도',
                 shiftTypes: '가능 근무',
                 memo: '비고',
                 isWorker: '근무 투입',
@@ -1840,10 +1786,18 @@ export const ko = {
                 shiftTypes: '가능 근무',
                 shiftTypesHelpAria: '가능 근무 안내',
                 shiftTypesHint: '가능한 근무를 모두 선택해 주세요',
+                shiftRatio: '월간 근무 비율',
+                shiftRatioHelpAria: '월간 근무 비율 안내',
+                shiftRatioHint: 'D/E/N/O 가능 근무 기준으로 월간 배정 목표 일수를 조정해요',
+                shiftRatioEmpty: 'D/E/N/O 가능 근무를 선택하면 비율을 설정할 수 있어요',
+                shiftRatioInputAria: '{{shiftName}} 월간 근무 일수',
+                shiftRatioReset: '월간 근무 비율 펼치기',
                 memo: '비고',
                 memoHint: '근무자의 특이사항을 작성해 주세요',
+                birthDate: '생년월일',
+                birthDateEmpty: '미입력',
                 employmentDate: '입사 년도',
-                employmentDateHint: '숙련도 자동 배정 기준으로 활용돼요',
+                employmentDateHint: '근무자 정보를 기록하는 데 활용돼요',
                 phone: '전화 번호',
                 phoneHint: '비상 연락망으로 사용돼요',
                 isWorker: '근무 투입',
@@ -1868,27 +1822,6 @@ export const ko = {
                 save: '저장',
                 saving: '저장 중…',
                 genderToggle: '성별 변경',
-            },
-            skillLevelModal: {
-                title: '숙련도 단계 설정',
-                description: '숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요',
-                levelCountOption: '{{levelCount}}단계',
-                colorLabel: '색상',
-                high: '높음',
-                low: '낮음',
-                levelLabel: '숙련도',
-                categoryLabel: '구분',
-                levelDisplay: 'LV. {{level}}',
-                autoAssign: '자동 배정',
-                autoAssignTooltip: '등록된 간호사 목록을 단계별로 등분해서 자동으로 1차 배정해요',
-                autoAssignTooltipAria: '자동 배정 설명 보기',
-                temporarySave: '임시 저장',
-                complete: '완료',
-                close: '숙련도 설정 닫기',
-                disableAction: '숙련도 사용하지 않기',
-                disableConfirmTitle: '숙련도 기능을 끌까요?',
-                disableConfirmDescription: '끄면 숙련도 표시, 선택, 정렬을 잠시 멈춰요.',
-                disableConfirmAction: '사용하지 않기',
             },
             connectionManage: {
                 waiting: {
@@ -1988,11 +1921,7 @@ export const ko = {
                 },
                 edit: {
                     title: '간호사 정보 수정하기',
-                    info: '오른쪽 패널에서 이름, 숙련도, 가능한 근무, 역할·권한, 메모를 바로 수정할 수 있어요.',
-                },
-                skill: {
-                    title: '숙련도 설정하기',
-                    info: '숙련도 기능을 쓰려면 병원·병동 기준에 맞춰 단계와 색상을 설정해 주세요.',
+                    info: '오른쪽 패널에서 이름, 가능한 근무, 역할·권한, 메모를 바로 수정할 수 있어요.',
                 },
             },
             shiftTeamList: {
@@ -2509,9 +2438,6 @@ export const ko = {
                 forbidNextShift: '{{nurseName}}님은 {{prevShift}} 다음 날 {{nextShift}} 근무를 할 수 없어요.',
                 minMonthlyOff: '{{nurseName}}님은 월 OFF가 {{actual}}일이에요. 최소 {{expected}}일이 필요해요.',
                 nurseForbidWeekend: '{{nurseName}}님은 주말이나 공휴일 근무를 할 수 없어요.',
-                notAloneNight: '{{nurseName}}님은 혼자 N 근무를 할 수 없어요.',
-                minProficiencyStaffByShift:
-                    '{{shift}} 근무에 LV{{level}} 이상 간호사가 {{actual}}명이에요. 최소 {{expected}}명이 필요해요.',
                 pairPreferSameShift: '{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 권장해요.',
                 pairForbidSameShift: '{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 할 수 없어요.',
                 nightBeforeRequestedOff: '{{nurseName}}님은 신청 OFF 전날 N 근무가 배정돼 있어요.',

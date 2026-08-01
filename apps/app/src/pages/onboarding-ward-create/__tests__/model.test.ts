@@ -18,7 +18,6 @@ import {
     prepareManualEntryDraft,
     reorderNursesWithinTeam,
     reorderShiftTypes,
-    saveSkillLevelConfig,
     type TOnboardingDraftLabels,
     updateNurseDraft,
     updateShiftTypeDraft,
@@ -1075,28 +1074,4 @@ describe('OnboardingWardCreatePage model', () => {
         expect(canComplete(invalidShiftDraft)).toBe(false);
     });
 
-    it('clamps nurse levels to the configured range when auto assignment is disabled', () => {
-        const draft = createInitialDraft();
-        const withCustomLevels = {
-            ...draft,
-            nurses: draft.nurses.map((nurse, index) => ({
-                ...nurse,
-                level: index === 0 ? null : 5,
-            })),
-        };
-        const nextDraft = saveSkillLevelConfig(withCustomLevels, {
-            enabled: true,
-            levelCount: 3,
-            paletteId: 'cool',
-            autoAssign: false,
-        });
-
-        expect(nextDraft.skillLevelConfig).toEqual({
-            enabled: true,
-            levelCount: 3,
-            paletteId: 'cool',
-            autoAssign: false,
-        });
-        expect(nextDraft.nurses.map((nurse) => nurse.level)).toEqual([null, 3, 3, 3]);
-    });
 });

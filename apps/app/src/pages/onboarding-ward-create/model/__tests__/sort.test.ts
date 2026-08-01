@@ -12,7 +12,6 @@ const createNurse = (params: Partial<TOnboardingNurseDraft>): TOnboardingNurseDr
     isWorker: params.isWorker ?? true,
     employmentDate: params.employmentDate ?? '2024-01-01',
     possibleShiftTypeIds: params.possibleShiftTypeIds ?? [],
-    level: params.level ?? null,
     initialShifts: params.initialShifts ?? [],
 });
 
@@ -58,27 +57,4 @@ describe('sortNursesByMode', () => {
         ]);
     });
 
-    it('returns 숙련도 순(내림차순) when sort mode is skill', () => {
-        const nurses = [
-            createNurse({id: 'n1', name: 'A', level: 2}),
-            createNurse({id: 'n2', name: 'B', level: null}),
-            createNurse({id: 'n3', name: 'C', level: 5}),
-            createNurse({id: 'n4', name: 'D', level: 3}),
-        ];
-        const sorted = sortNursesByMode(nurses, 'skill');
-
-        expect(sorted.map((nurse) => nurse.level)).toEqual([5, 3, 2, null]);
-    });
-
-    it('places off nurses at the bottom while keeping 숙련도 순 inside each group', () => {
-        const nurses = [
-            createNurse({id: 'n1', name: 'A', level: 2, isWorker: false}),
-            createNurse({id: 'n2', name: 'B', level: 1, isWorker: true}),
-            createNurse({id: 'n3', name: 'C', level: 5, isWorker: false}),
-            createNurse({id: 'n4', name: 'D', level: 3, isWorker: true}),
-        ];
-        const sorted = sortNursesByMode(nurses, 'skill');
-
-        expect(sorted.map((nurse) => `${nurse.isWorker ? 'on' : 'off'}-${nurse.level}`)).toEqual(['on-3', 'on-1', 'off-5', 'off-2']);
-    });
 });

@@ -169,14 +169,19 @@ const toAddShiftTeamNurseRequest = (nurse: TAddShiftTeamNurseDTO) =>
         isWorker: nurse.isWorker,
         isWardManager: nurse.isWardManager,
         memo: nurse.memo ?? undefined,
-        proficiency: nurse.proficiency,
         isPreceptor: nurse.isPreceptor,
         isPreceptee: nurse.isPreceptee,
         workStartDate: toOptionalText(nurse.workStartDate),
         workEndDate: toOptionalText(nurse.workEndDate),
     });
-const normalizeNurseResponse = <T extends {phoneNum?: string | null}>(nurse: T): T =>
-    isDummyPhoneNum(nurse.phoneNum) ? {...nurse, phoneNum: null} : nurse;
+const normalizeNurseResponse = <T extends {phoneNum?: string | null; birthDate?: string | null; birth_date?: string | null}>(
+    nurse: T,
+): T & {birthDate?: string | null} => {
+    const normalizedNurse = isDummyPhoneNum(nurse.phoneNum) ? {...nurse, phoneNum: null} : nurse;
+    const birthDate = normalizedNurse.birthDate ?? normalizedNurse.birth_date;
+
+    return birthDate === undefined ? normalizedNurse : {...normalizedNurse, birthDate};
+};
 const normalizeShiftTeamResponse = (shiftTeam: TShiftTeamResponse): TShiftTeamResponse => ({
     ...shiftTeam,
     nurses: (shiftTeam.nurses ?? []).map(normalizeNurseResponse),
@@ -273,18 +278,9 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         getReqShiftPendingCount: async (wardId: number) =>
             (await client.get<TWardReqShiftPendingCountResponse>(wardPath(`/${wardId}/req-shifts/pending-count`))).data,
         getReqShiftReceptionSettings: async (wardId: number) =>
-            (
-                await client.get<TReqShiftReceptionSettingsResponse>(
-                    wardPath(`/${wardId}/req-shifts/reception-settings`),
-                )
-            ).data,
+            (await client.get<TReqShiftReceptionSettingsResponse>(wardPath(`/${wardId}/req-shifts/reception-settings`))).data,
         updateReqShiftReceptionSettings: async (wardId: number, settings: TUpdateReqShiftReceptionSettingsDTO) =>
-            (
-                await client.put<TReqShiftReceptionSettingsResponse>(
-                    wardPath(`/${wardId}/req-shifts/reception-settings`),
-                    settings,
-                )
-            ).data,
+            (await client.put<TReqShiftReceptionSettingsResponse>(wardPath(`/${wardId}/req-shifts/reception-settings`), settings)).data,
         updateShift: async (
             wardId: number,
             year: number,
@@ -440,8 +436,13 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
                 )
             ).data,
         autofillSchedule: async (wardId, shiftTeamId, autofillDTO, options) =>
-            (await client.post<TAutofillResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`), autofillDTO, options))
-                .data,
+            (
+                await client.post<TAutofillResponse>(
+                    wardPath(`/${wardId}/shift-teams/${shiftTeamId}/schedule/autofill`),
+                    autofillDTO,
+                    options,
+                )
+            ).data,
         getSnapshots: async (wardId, shiftTeamId, year, month) =>
             (
                 await client.get<TSnapshotListRes>(

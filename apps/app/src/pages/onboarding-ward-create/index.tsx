@@ -1,12 +1,11 @@
 import {cn} from '@dutying/utils/style';
-import {ArrowLeft, ArrowRight, Trash2} from 'lucide-react';
+import {ArrowLeft, Trash2} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useNavigate} from 'react-router';
 import {getWardDisplayTitle} from '@/entities/ward';
 import useAuth from '@/features/auth';
-import skillBubbleBadgeIcon from '@/shared/assets/images/skill-bubble-badge.png';
 import {isOnboardingWardCreatePreviewAllowed} from '@/shared/config/feature-flags';
 import ROUTE from '@/shared/constant/path';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -17,7 +16,6 @@ import SectionHeader from './ui/section-header';
 import NurseStep from './ui/steps/nurse-step';
 import ScheduleInputStep from './ui/steps/schedule-input-step';
 import ShiftTypeStep from './ui/steps/shift-type-step';
-import SkillLevelModal from './ui/steps/skill-level-modal';
 import WardIdentityStep from './ui/steps/ward-identity-step';
 import WardCreationProgressOverlay from './ui/ward-creation-progress-overlay';
 import WizardButton from './ui/wizard-button';
@@ -36,9 +34,6 @@ function OnboardingWardCreatePage() {
         setSelectedTeamId,
         sortMode,
         setSortMode,
-        showSkillModal,
-        setShowSkillModal,
-        isSkillLevelEnabled,
         goNextStep,
         goPreviousStep,
         updateWardIdentity,
@@ -60,8 +55,6 @@ function OnboardingWardCreatePage() {
         uploadError,
         draftCreationStatus,
         createdWard,
-        saveSkillConfig,
-        disableSkillConfig,
         complete,
         isStepTransitioning,
         canGoNext,
@@ -88,7 +81,6 @@ function OnboardingWardCreatePage() {
             (schedule?.rows.filter((row) => row.name.trim() || Object.values(row.shifts).some((shift) => shift.trim())).length ?? 0),
         0,
     );
-    const openSkillModal = () => setShowSkillModal(true);
     const getDeleteTeamModalDescription = () => {
         if (activeTeamNurseCount > 0 && activeTeamScheduleRowCount > 0) {
             return t('page.onboardingWardCreate.modal.deleteTeamDescriptionWithNursesAndSchedule', {
@@ -226,33 +218,6 @@ function OnboardingWardCreatePage() {
 
         toast.error(getNextBlockedReasonMessage());
     };
-    const headerAside =
-        draft.currentStep === 4 ? (
-            <div className="space-y-3">
-                <button
-                    type="button"
-                    aria-label={t('page.onboardingWardCreate.skillCta.aria')}
-                    className="group relative w-full cursor-pointer rounded-[16px] bg-[#E9E4FF] px-6 py-5 pr-16 text-left transition-colors duration-200 before:absolute before:inset-0 before:rounded-[16px] before:bg-[#DDD2FF] before:opacity-0 before:transition-opacity before:duration-200 before:content-[''] group-hover:before:opacity-100 after:absolute after:right-8 after:-bottom-2.5 after:h-5 after:w-5 after:rotate-45 after:rounded-[2px] after:bg-[#E9E4FF] after:transition-colors after:duration-200 after:content-[''] group-hover:after:bg-[#DDD2FF] focus-visible:ring-2 focus-visible:ring-main-1/25 focus-visible:outline-none"
-                    onClick={openSkillModal}
-                >
-                    <img
-                        src={skillBubbleBadgeIcon}
-                        alt=""
-                        className="pointer-events-none absolute -top-[17px] -left-[15px] z-20 h-[37px] w-[37px]"
-                    />
-                    <div className="relative z-10 space-y-1.5">
-                        <p className="font-apple text-[19px] font-semibold text-[#5E45C1]">
-                            {t('page.onboardingWardCreate.skillCta.title')}
-                        </p>
-                        <p className="font-apple text-[16px] text-gray-3">{t('page.onboardingWardCreate.skillCta.description')}</p>
-                    </div>
-                    <span className="pointer-events-none absolute top-1/2 right-5 z-10 -translate-y-1/2 text-[#6A4AE1] transition-transform duration-200 group-hover:translate-x-0.5">
-                        <ArrowRight className="h-6 w-6" />
-                    </span>
-                </button>
-            </div>
-        ) : undefined;
-
     useEffect(() => {
         if (isOnboardingWardCreatePreviewAllowed()) return;
 
@@ -378,7 +343,6 @@ function OnboardingWardCreatePage() {
                     <NurseStep
                         draft={draft}
                         selectedTeamId={activeTeamId}
-                        showSkillColumn={isSkillLevelEnabled}
                         sortMode={sortMode}
                         onSortModeChange={setSortMode}
                         onSelectTeam={setSelectedTeamId}
@@ -400,16 +364,6 @@ function OnboardingWardCreatePage() {
     return (
         <div className="relative min-h-screen bg-main-bg">
             <HeaderLogo />
-            <SkillLevelModal
-                open={showSkillModal}
-                config={draft.skillLevelConfig}
-                onClose={() => setShowSkillModal(false)}
-                onSave={saveSkillConfig}
-                onDisable={() => {
-                    disableSkillConfig();
-                    setShowSkillModal(false);
-                }}
-            />
             {showDeleteTeamModal && activeTeam
                 ? createPortal(
                       <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/45 px-4 backdrop-blur-[1px]">
@@ -471,7 +425,7 @@ function OnboardingWardCreatePage() {
                         ? t('page.onboardingWardCreate.backToWardSelect')
                         : t('page.onboardingWardCreate.action.previous')}
                 </button>
-                <SectionHeader step={draft.currentStep} aside={headerAside} />
+                <SectionHeader step={draft.currentStep} />
                 <OnboardingStepLayout
                     step={draft.currentStep}
                     onPrev={goPreviousStep}

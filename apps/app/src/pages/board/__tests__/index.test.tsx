@@ -123,7 +123,9 @@ describe('BoardPage', () => {
         mockGetComments.mockResolvedValue({comments: []});
         mockGetCheckers.mockResolvedValue({checkers: [], checkedUserNames: []});
         mockGetPostId.mockImplementation((post: {postId?: number; id?: number}) => post.postId ?? post.id ?? 0);
-        mockGetScheduleId.mockImplementation((schedule: {scheduleId?: number; id?: number}) => schedule.scheduleId ?? schedule.id ?? 0);
+        mockGetScheduleId.mockImplementation(
+            (schedule: {scheduleId?: string | number; id?: string | number}) => schedule.scheduleId ?? schedule.id ?? 0,
+        );
     });
 
     it('matches the backend post content length contract in the composer', async () => {
@@ -480,5 +482,48 @@ describe('BoardPage', () => {
         const editDialog = await screen.findByRole('dialog', {name: '병동 일정 수정'});
 
         expect(within(editDialog).getByLabelText('종일')).toBeChecked();
+    });
+
+    it('renders member birthday events as read-only all-day schedules', async () => {
+        const user = userEvent.setup();
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(
+            2,
+            '0',
+        )}`;
+
+        mockGetSchedules.mockResolvedValue([
+            {
+                id: 'birthday-7-42-2026',
+                wardId: 7,
+                title: '김듀티 생일',
+                startDate: todayKey,
+                endDate: todayKey,
+                isAllDay: true,
+                sourceType: 'MEMBER_BIRTHDAY',
+                eventType: 'BIRTHDAY',
+                calendarId: 'ward-board-calendar',
+                calendarName: '병동 캘린더',
+                editableByMe: false,
+                deletableByMe: false,
+            },
+        ]);
+
+        renderPage(<BoardPage />);
+
+        const birthdayButton = (await screen.findByText('김듀티 생일')).closest('button');
+
+        expect(birthdayButton).not.toBeNull();
+        expect(birthdayButton!.querySelector('svg')).toBeNull();
+
+        await user.click(birthdayButton!);
+
+        const viewDialog = await screen.findByRole('dialog', {name: '병동 일정 보기'});
+
+        expect(within(viewDialog).getByRole('heading', {name: '김듀티 생일'})).toBeInTheDocument();
+        expect(within(viewDialog).getByText('종일')).toBeInTheDocument();
+        expect(within(viewDialog).queryByRole('button', {name: '병동 일정 수정'})).not.toBeInTheDocument();
+        expect(within(viewDialog).queryByRole('button', {name: '삭제'})).not.toBeInTheDocument();
+        expect(within(viewDialog).queryByText(/생년월일|나이|1996/)).not.toBeInTheDocument();
     });
 });

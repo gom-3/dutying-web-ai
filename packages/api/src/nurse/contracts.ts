@@ -26,10 +26,10 @@ export interface INurseAPI {
 export type TCreateNurseDTO = {
     name: string;
     phoneNum?: string | null;
+    birthDate?: string | null;
     isWorker?: boolean;
     isWardManager?: boolean;
     memo?: string | null;
-    proficiency?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
     workStartDate?: string | null;
@@ -39,10 +39,10 @@ export type TCreateNurseDTO = {
 export type TUpdateNurseDTO = {
     name?: string;
     phoneNum?: string | null;
+    birthDate?: string | null;
     isWorker?: boolean;
     isWardManager?: boolean;
     memo?: string | null;
-    proficiency?: number | null;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
     workStartDate?: string | null;
@@ -52,6 +52,7 @@ export type TUpdateNurseDTO = {
 export type TUpdateNurseShiftTypeRequest = {
     isPossible?: boolean;
     isPreferred?: boolean;
+    targetRatioWeight?: number;
     /** @deprecated use isPreferred */
     isPrefer?: boolean;
 };

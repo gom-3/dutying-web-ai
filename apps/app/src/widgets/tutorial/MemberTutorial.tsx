@@ -74,18 +74,11 @@ const MemberTutorial = () => {
                     selectNurseRef.current(null);
                     scrollTutorialTargetIntoView('member_add_nurse_button');
                 },
+                onNextStep: () => {
+                    selectNurseRef.current(null);
+                },
             });
         }
-
-        steps.push({
-            highlightIds: ['member_skill_settings_button'],
-            title: t('page.member.tutorial.skill.title'),
-            info: t('page.member.tutorial.skill.info'),
-            infoBoxAlignment: 'right',
-            onNextStep: () => {
-                selectNurseRef.current(null);
-            },
-        });
 
         return {
             steps,

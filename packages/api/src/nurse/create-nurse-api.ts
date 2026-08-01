@@ -24,26 +24,44 @@ const toOptionalText = (value: string | null | undefined) => {
 
     return value.trim();
 };
+const toOptionalLocalDate = (value: string | null | undefined) => {
+    if (value === undefined) return undefined;
+    if (value === null) return null;
+
+    const trimmed = value.trim();
+
+    return trimmed.length > 0 ? trimmed : null;
+};
 
 const toUpdateNurseRequest = (updatedNurse: TCreateNurseDTO | TUpdateNurseDTO, options: {clearDummyPhoneNum?: boolean} = {}) =>
     compactRequest({
         name: toOptionalText(updatedNurse.name),
         phoneNum: toOptionalPhoneNum(updatedNurse.phoneNum, {clearDummy: options.clearDummyPhoneNum}),
+        birthDate: toOptionalLocalDate(updatedNurse.birthDate),
         isWorker: updatedNurse.isWorker,
         isWardManager: updatedNurse.isWardManager,
         memo: updatedNurse.memo ?? undefined,
-        proficiency: updatedNurse.proficiency,
         isPreceptor: updatedNurse.isPreceptor,
         isPreceptee: updatedNurse.isPreceptee,
         workStartDate: toOptionalText(updatedNurse.workStartDate),
         workEndDate: toOptionalText(updatedNurse.workEndDate),
     });
-const normalizeNurseResponse = (nurse: TNurseResponse): TNurseResponse =>
-    isDummyPhoneNum(nurse.phoneNum) ? {...nurse, phoneNum: null} : nurse;
+type TNurseResponseWithAliases = TNurseResponse & {
+    birth_date?: string | null;
+};
+
+const normalizeNurseResponse = (nurse: TNurseResponseWithAliases): TNurseResponse => {
+    const normalizedNurse = isDummyPhoneNum(nurse.phoneNum) ? {...nurse, phoneNum: null} : nurse;
+    const birthDate = normalizedNurse.birthDate ?? normalizedNurse.birth_date;
+
+    return birthDate === undefined ? normalizedNurse : {...normalizedNurse, birthDate};
+};
 
 export const createNurseApi = (client: IApiClient): INurseAPI => ({
     createAccountNurse: async (accountId: number, createNurse: TCreateNurseDTO) =>
-        normalizeNurseResponse((await client.post<TNurseResponse>(`/nurses?accountId=${accountId}`, toUpdateNurseRequest(createNurse))).data),
+        normalizeNurseResponse(
+            (await client.post<TNurseResponse>(`/nurses?accountId=${accountId}`, toUpdateNurseRequest(createNurse))).data,
+        ),
     getNurse: async (nurseId: number) => normalizeNurseResponse((await client.get<TNurseResponse>(`/nurses/${nurseId}`)).data),
     updateNurse: async (nurseId: number, updatedNurse: TUpdateNurseDTO) =>
         normalizeNurseResponse(
@@ -83,9 +101,7 @@ export const createNurseApi = (client: IApiClient): INurseAPI => ({
     updateNurseShiftType: async (nurseId: number, nurseShiftTypeId: number, change: TUpdateNurseShiftTypeRequest) => {
         const {isPrefer, ...payload} = change;
         const normalizedPayload =
-            typeof isPrefer === 'boolean' && typeof payload.isPreferred !== 'boolean'
-                ? {...payload, isPreferred: isPrefer}
-                : payload;
+            typeof isPrefer === 'boolean' && typeof payload.isPreferred !== 'boolean' ? {...payload, isPreferred: isPrefer} : payload;
 
         return (await client.patch<void>(`/nurses/${nurseId}/shift-types/${nurseShiftTypeId}`, normalizedPayload)).data;
     },

@@ -26,8 +26,6 @@ import {
 } from '@/features/shift-editor/model';
 import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-editor/model/duty-doc-cells';
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
-import {type TSkillLevelConfig, type TSkillLevelValue} from '@/features/ward-skill/model/skill-level';
-import SkillBadge from '@/features/ward-skill/ui/skill-badge';
 import i18n from '@/i18n';
 import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days';
 import {SixDotsIcon} from '@/shared/assets/svg';
@@ -36,10 +34,6 @@ import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {formatNurseDisplayName} from './format-nurse-display-name';
 
 type TViolationMap = Map<string, TViolation>;
-type TSkillColumnConfig = {
-    config: TSkillLevelConfig;
-    levelsByNurseId: Record<number, TSkillLevelValue>;
-};
 
 type TMakeShiftCalendarProps = {
     shift: TShift;
@@ -91,7 +85,6 @@ type TMakeShiftCalendarProps = {
     fixCellOnContextMenu?: boolean;
     cellAttention?: TCellAttention | null;
     focusedCell?: TCellPos | null;
-    skillColumn?: TSkillColumnConfig;
     restCheckByShiftNurseId?: Record<number, TRestCheckSummary>;
     /** AI 자동채우기 확인 모달에서 고정된 셀만 선명하게 표시한다. */
     fixedCellPreview?: boolean;
@@ -141,24 +134,19 @@ const VIOLATION_CONTEXT_TONE: Record<TViolation['level'], {surface: string; acti
 const VIOLATION_LEVEL_PRIORITY: Record<TViolation['level'], number> = {error: 2, warning: 1};
 const DRAG_HANDLE_COL = '24px';
 const NAME_COL = 'clamp(84px,5.4cqw,96px)';
-const MIN_SKILL_COL = '34px';
-const SKILL_COL = 'clamp(34px,2.35cqw,40px)';
 const CARRY_COL = 'clamp(22px,1.55cqw,28px)';
 const REST_CHECK_COL = 'clamp(48px,3.1cqw,56px)';
 const LAST_COL = 'clamp(58px,4.05cqw,76px)';
-const ROW_SKILL_BADGE_CLASS = 'make-shift-calendar__row-skill-badge min-h-[18px] w-full min-w-0 px-1 text-[10px] whitespace-nowrap';
 /**
  * 행의 좌측(카드 안에 들어가는) 그리드.
  * 사진처럼 division 카드는 이 좌측만 감싸고, 우측 합계(row-summary-counts)는
  * 카드 밖에 별도로 배치된다.
  */
 const getLeftGridTemplateColumns = (
-    showSkillColumn: boolean,
     showCarryColumn: boolean,
-    skillColumnWidth: string,
     showDragHandleColumn: boolean,
 ) =>
-    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${showSkillColumn ? `${skillColumnWidth} ` : ''}${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
+    `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
 /** 전달·통계 열 없이 이름 + 일자만 */
 const getLeftGridTemplateColumnsSimplified = (showDragHandleColumn: boolean) =>
     `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} minmax(0,1fr)`;
@@ -225,26 +213,12 @@ const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const getDayGridTemplateColumns = (dayCount: number) => `repeat(${dayCount}, minmax(0, 1fr))`;
 const getShimmerInsetLeft = (
     isSimplified: boolean,
-    showSkillColumn: boolean,
     showCarryColumn: boolean,
-    skillColumnWidth: string,
     showDragHandleColumn: boolean,
 ) =>
     isSimplified
         ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X})`
-        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X}${showSkillColumn ? ` + ${skillColumnWidth} + ${ROW_GAP_X}` : ''}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
-
-function getSkillColumnWidth() {
-    return SKILL_COL;
-}
-
-function getSkillColumnInsetWidth() {
-    return SKILL_COL;
-}
-
-function getSkillLevelLabel(config: TSkillLevelConfig, level: number) {
-    return config.levelLabels?.[level] ?? `LV. ${level}`;
-}
+        : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
 
 function formatSignedDays(value: number | undefined) {
     if (value === undefined) return '-';
@@ -333,7 +307,6 @@ const LEGACY_OFF_AFTER_NIGHT_PATTERN =
 const KOREAN_DAY_CONTEXT_PATTERN = /(?:\d{1,2}\uC77C|\d{1,2}\/\d{1,2})/;
 const MIN_NIGHT_INTERVAL_TEMPLATE_PATTERN = /MIN_(?:NIGHT|N)_INTERVAL/i;
 const MIN_NIGHT_INTERVAL_RULE_PATTERN = /minNightInterval|MIN_(?:NIGHT|N)_INTERVAL/i;
-const MIN_PROFICIENCY_STAFF_TEMPLATE_CODE = 'MIN_PROFICIENCY_STAFF_BY_SHIFT';
 const MIN_NIGHT_INTERVAL_MESSAGE_PATTERNS = [
     /N\s*\uADFC\uBB34\s*\uAC04\uACA9/,
     /N\s*\uADFC\uBB34\s*\uC0AC\uC774/,
@@ -395,7 +368,6 @@ type TShiftTypeDropdownActionState = {
 type TViolationReasonPopoverProps = {
     popover: TViolationPopover | null;
     activeViolationKey: string | null;
-    skillConfig?: TSkillLevelConfig;
     onActiveViolationChange: (violationKey: string | null) => void;
     onClose: () => void;
 };
@@ -486,23 +458,11 @@ function formatMinNightIntervalSentence(violation: TViolation, message: string):
         : i18n.t('feature.shiftEditor.validation.legacy.minNightIntervalFallback');
 }
 
-function formatProficiencyViolationMessage(violation: TViolation, message: string, skillConfig?: TSkillLevelConfig): string {
-    if (violation.templateCode !== MIN_PROFICIENCY_STAFF_TEMPLATE_CODE || !skillConfig) return message;
-
-    return message.replace(/LV\.?\s*(\d+)/gi, (match, levelValue: string) => {
-        const level = Number(levelValue);
-
-        if (!Number.isInteger(level) || level < 1 || level > skillConfig.levelCount) return match;
-
-        return getSkillLevelLabel(skillConfig, level);
-    });
-}
-
-function getViolationProblemSentence(violation: TViolation, skillConfig?: TSkillLevelConfig): string {
+function getViolationProblemSentence(violation: TViolation): string {
     const [rawTitle, ...detailParts] = violation.message.split(': ');
     const fallback = normalizeViolationTitle(rawTitle.trim() || violation.message.trim());
     const detail = detailParts.join(': ').trim();
-    const source = formatProficiencyViolationMessage(violation, detail || fallback || violation.message.trim(), skillConfig);
+    const source = detail || fallback || violation.message.trim();
     const withoutName = source.replace(KOREAN_NURSE_SUBJECT_PATTERN, '');
     const offAfterNightMatch = withoutName.match(LEGACY_OFF_AFTER_NIGHT_PATTERN);
 
@@ -844,7 +804,6 @@ function hasDateContext(value: string | undefined): boolean {
 function ViolationReasonPopover({
     popover,
     activeViolationKey,
-    skillConfig,
     onActiveViolationChange,
     onClose,
 }: TViolationReasonPopoverProps) {
@@ -955,7 +914,7 @@ function ViolationReasonPopover({
                                         {levelLabel}
                                     </span>
                                     <p className="min-w-0 flex-1 text-[13px] leading-[1.45] font-semibold whitespace-normal text-sub-1">
-                                        {getViolationProblemSentence(violation, skillConfig)}
+                                        {getViolationProblemSentence(violation)}
                                     </p>
                                 </div>
                                 {metaLabel && <p className="mt-1 text-[11px] leading-none font-medium text-sub-3">{metaLabel}</p>}
@@ -1228,7 +1187,6 @@ export function MakeShiftCalendar({
     fixCellOnContextMenu = false,
     cellAttention = null,
     focusedCell,
-    skillColumn,
     restCheckByShiftNurseId,
     fixedCellPreview = false,
     borderlessPreview = false,
@@ -1617,24 +1575,15 @@ export function MakeShiftCalendar({
     }, [shift.wardShiftTypes, stickySummaryShiftTypeIds, visibleSummaryShiftTypeIds]);
     const hasSummaryShiftTypes = summaryShiftTypes.length > 0;
     const isSimplified = variant === 'simplified';
-    const showSkillColumn = !isSimplified && skillColumn?.config.enabled === true;
     const showRestCheckColumn = !isSimplified && restCheckByShiftNurseId !== undefined;
     const showCarryColumn =
         showRestCheckColumn && Object.values(restCheckByShiftNurseId ?? {}).some((restCheck) => restCheck.carryOverApplied);
     const hasRightColumns = hasSummaryShiftTypes || showRestCheckColumn;
-    const skillColumnWidth = useMemo(() => (showSkillColumn ? getSkillColumnWidth() : MIN_SKILL_COL), [showSkillColumn]);
-    const skillColumnInsetWidth = useMemo(() => (showSkillColumn ? getSkillColumnInsetWidth() : MIN_SKILL_COL), [showSkillColumn]);
     const showDragHandleColumn = canReorderRows;
     const leftGridTemplateColumns = isSimplified
         ? getLeftGridTemplateColumnsSimplified(showDragHandleColumn)
-        : getLeftGridTemplateColumns(showSkillColumn, showCarryColumn, skillColumnWidth, showDragHandleColumn);
-    const shimmerInsetLeft = getShimmerInsetLeft(
-        isSimplified,
-        showSkillColumn,
-        showCarryColumn,
-        skillColumnInsetWidth,
-        showDragHandleColumn,
-    );
+        : getLeftGridTemplateColumns(showCarryColumn, showDragHandleColumn);
+    const shimmerInsetLeft = getShimmerInsetLeft(isSimplified, showCarryColumn, showDragHandleColumn);
     const summaryGridWidth = getSummaryGridWidth(summaryShiftTypes.length, showRestCheckColumn);
 
     let didAssignTutorialCell = false;
@@ -1678,11 +1627,6 @@ export function MakeShiftCalendar({
                     <HeaderLabel className="make-shift-calendar__header-label--name">{t('page.makeShift.calendar.name')}</HeaderLabel>
                     {!isSimplified && (
                         <>
-                            {showSkillColumn ? (
-                                <HeaderLabel className="make-shift-calendar__header-label--carry">
-                                    {t('page.request.calendar.skillColumn')}
-                                </HeaderLabel>
-                            ) : null}
                             {showCarryColumn ? (
                                 <HeaderLabel
                                     className="make-shift-calendar__header-label--carried"
@@ -1959,8 +1903,6 @@ export function MakeShiftCalendar({
                                                             >
                                                                 <CalendarRowLeft
                                                                     nurseName={row.shiftNurse.name}
-                                                                    skillLevel={skillColumn?.levelsByNurseId[row.shiftNurse.nurseId]}
-                                                                    skillConfig={skillColumn?.config}
                                                                     carriedDays={
                                                                         restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]?.carriedDays
                                                                     }
@@ -1987,7 +1929,6 @@ export function MakeShiftCalendar({
                                                                     cellAttention={cellAttention}
                                                                     fixedCellPreview={fixedCellPreview}
                                                                     borderlessPreview={borderlessPreview}
-                                                                    showSkillColumn={showSkillColumn}
                                                                     showCarryColumn={showCarryColumn}
                                                                     leftGridTemplateColumns={leftGridTemplateColumns}
                                                                     readonly={readonly}
@@ -2058,7 +1999,6 @@ export function MakeShiftCalendar({
                     shortNameToType={shortNameToType}
                     summaryShiftTypes={summaryShiftTypes}
                     leftGridTemplateColumns={leftGridTemplateColumns}
-                    showSkillColumn={showSkillColumn}
                     showCarryColumn={showCarryColumn}
                     showDragHandleColumn={showDragHandleColumn}
                     showRestCheckColumn={showRestCheckColumn}
@@ -2076,7 +2016,6 @@ export function MakeShiftCalendar({
             <ViolationReasonPopover
                 popover={violationPopover}
                 activeViolationKey={activeViolationKey}
-                skillConfig={skillColumn?.config}
                 onActiveViolationChange={setActiveViolationKey}
                 onClose={closeViolationPopover}
             />
@@ -2101,8 +2040,6 @@ function HeaderLabel({children, className, title}: {children: React.ReactNode; c
 
 type TCalendarRowLeftProps = {
     nurseName: string;
-    skillLevel?: TSkillLevelValue;
-    skillConfig?: TSkillLevelConfig;
     carriedDays?: number;
     lastShifts: (TWardShiftType | null)[];
     lastShiftCells?: TCellValue[];
@@ -2125,7 +2062,6 @@ type TCalendarRowLeftProps = {
     cellAttention: TCellAttention | null;
     fixedCellPreview: boolean;
     borderlessPreview: boolean;
-    showSkillColumn: boolean;
     showCarryColumn: boolean;
     leftGridTemplateColumns: string;
     readonly: boolean;
@@ -2153,8 +2089,6 @@ type TCalendarRowLeftProps = {
  */
 function CalendarRowLeft({
     nurseName,
-    skillLevel,
-    skillConfig,
     carriedDays,
     lastShifts,
     lastShiftCells,
@@ -2177,7 +2111,6 @@ function CalendarRowLeft({
     cellAttention,
     fixedCellPreview,
     borderlessPreview,
-    showSkillColumn,
     showCarryColumn,
     leftGridTemplateColumns,
     readonly,
@@ -2342,13 +2275,6 @@ function CalendarRowLeft({
                 </div>
                 {!simplified && (
                     <>
-                        {showSkillColumn ? (
-                            <div className="make-shift-calendar__row-carry flex min-h-0 items-center justify-center">
-                                {skillConfig ? (
-                                    <SkillBadge level={skillLevel} config={skillConfig} className={ROW_SKILL_BADGE_CLASS} />
-                                ) : null}
-                            </div>
-                        ) : null}
                         {showCarryColumn ? (
                             <div
                                 data-selected-row-label={isRowSelected || undefined}
@@ -2806,7 +2732,6 @@ function DailySummary({
     shortNameToType,
     summaryShiftTypes,
     leftGridTemplateColumns,
-    showSkillColumn,
     showCarryColumn,
     showDragHandleColumn,
     showRestCheckColumn,
@@ -2816,7 +2741,6 @@ function DailySummary({
     shortNameToType: Map<string, TWardShiftType>;
     summaryShiftTypes: TWardShiftType[];
     leftGridTemplateColumns: string;
-    showSkillColumn: boolean;
     showCarryColumn: boolean;
     showDragHandleColumn: boolean;
     showRestCheckColumn: boolean;
@@ -2849,7 +2773,6 @@ function DailySummary({
                     >
                         {showDragHandleColumn ? <div /> : null}
                         <div />
-                        {showSkillColumn ? <div /> : null}
                         {showCarryColumn ? <div /> : null}
                         <div className="make-shift-daily-summary__label flex items-center justify-end">
                             <div

@@ -31,6 +31,7 @@ import {
     type TWardBoardDeadline,
     type TWardBoardPost,
     type TWardBoardSchedule,
+    type TWardBoardScheduleId,
     type TUpdateWardBoardScheduleDTO,
 } from '@/shared/api/board';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
@@ -132,12 +133,19 @@ const readBooleanLike = (value: unknown) => {
 const getScheduleWriterName = (schedule: TWardBoardSchedule) =>
     schedule.writerName ?? schedule.writer_name ?? schedule.authorName ?? schedule.author_name ?? boardT('common.author');
 const getScheduleSourceType = (schedule: TWardBoardSchedule) => schedule.sourceType ?? schedule.source_type;
+const getScheduleEventType = (schedule: TWardBoardSchedule) => schedule.eventType ?? schedule.event_type;
 const isBoardDeadlineSchedule = (schedule: TWardBoardSchedule) => getScheduleSourceType(schedule) === 'BOARD_DEADLINE';
+const isMemberBirthdaySchedule = (schedule: TWardBoardSchedule) =>
+    getScheduleSourceType(schedule) === 'MEMBER_BIRTHDAY' || getScheduleEventType(schedule) === 'BIRTHDAY';
 const isManualSchedule = (schedule: TWardBoardSchedule) => !getScheduleSourceType(schedule) || getScheduleSourceType(schedule) === 'MANUAL';
 const canEditSchedule = (schedule: TWardBoardSchedule) =>
-    isManualSchedule(schedule) && (readBooleanLike(schedule.editableByMe ?? schedule.editable_by_me) ?? schedule.isMine ?? false);
+    isManualSchedule(schedule) &&
+    !isMemberBirthdaySchedule(schedule) &&
+    (readBooleanLike(schedule.editableByMe ?? schedule.editable_by_me) ?? schedule.isMine ?? false);
 const canDeleteSchedule = (schedule: TWardBoardSchedule) =>
-    isManualSchedule(schedule) && (readBooleanLike(schedule.deletableByMe ?? schedule.deletable_by_me) ?? schedule.isMine ?? false);
+    isManualSchedule(schedule) &&
+    !isMemberBirthdaySchedule(schedule) &&
+    (readBooleanLike(schedule.deletableByMe ?? schedule.deletable_by_me) ?? schedule.isMine ?? false);
 const getDeadlineEventKey = (deadline: Pick<TWardBoardDeadline, 'postId' | 'deadlineDate'>) =>
     `deadline-${deadline.postId}-${deadline.deadlineDate}`;
 const getDeadlineFromSchedule = (schedule: TWardBoardSchedule): TWardBoardDeadline | null => {
@@ -253,7 +261,7 @@ const normalizeScheduleDateRange = (startDate: string, endDate?: string) => {
     };
 };
 const getScheduleStartDate = (schedule: TWardBoardSchedule) =>
-    schedule.startDate ?? schedule.start_date ?? schedule.scheduleDate ?? schedule.schedule_date;
+    schedule.startDate ?? schedule.start_date ?? schedule.scheduleDate ?? schedule.schedule_date ?? '';
 const getScheduleEndDate = (schedule: TWardBoardSchedule) =>
     normalizeScheduleDateRange(
         getScheduleStartDate(schedule),
@@ -1813,7 +1821,7 @@ function BoardPage() {
     const [calendarMonth, setCalendarMonth] = useState({year: today.getFullYear(), month: today.getMonth() + 1});
     const [scheduleModalMode, setScheduleModalMode] = useState<TScheduleModalMode | null>(null);
     const [selectedSchedule, setSelectedSchedule] = useState<TWardBoardSchedule | null>(null);
-    const [editingScheduleId, setEditingScheduleId] = useState<number | null>(null);
+    const [editingScheduleId, setEditingScheduleId] = useState<TWardBoardScheduleId | null>(null);
     const [scheduleDraft, setScheduleDraft] = useState<TScheduleDraft>(() => createInitialScheduleDraft());
     const [scheduleDraftSubmitAttempted, setScheduleDraftSubmitAttempted] = useState(false);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -2005,7 +2013,7 @@ function BoardPage() {
         },
     });
     const updateScheduleMutation = useMutation({
-        mutationFn: ({scheduleId, draft}: {scheduleId: number; draft: TUpdateWardBoardScheduleDTO}) =>
+        mutationFn: ({scheduleId, draft}: {scheduleId: TWardBoardScheduleId; draft: TUpdateWardBoardScheduleDTO}) =>
             BoardAPI.updateSchedule(activeWardId!, scheduleId, draft),
         onSuccess: async () => {
             if (!activeWardId) return;
@@ -2019,7 +2027,7 @@ function BoardPage() {
         },
     });
     const deleteScheduleMutation = useMutation({
-        mutationFn: (scheduleId: number) => BoardAPI.deleteSchedule(activeWardId!, scheduleId),
+        mutationFn: (scheduleId: TWardBoardScheduleId) => BoardAPI.deleteSchedule(activeWardId!, scheduleId),
         onSuccess: async () => {
             if (!activeWardId) return;
 
@@ -2124,8 +2132,6 @@ function BoardPage() {
         const endDate = getScheduleEndDate(schedule);
         const allDay = getScheduleAllDay(schedule);
 
-        if (!scheduleId) return;
-
         setScheduleDraft({
             title: schedule.title,
             content: schedule.content ?? '',
@@ -2137,7 +2143,7 @@ function BoardPage() {
         });
         setScheduleDraftSubmitAttempted(false);
         setSelectedSchedule(schedule);
-        setEditingScheduleId(scheduleId);
+        setEditingScheduleId(scheduleId || null);
         setScheduleModalMode('view');
     };
     const openEditSchedule = () => {

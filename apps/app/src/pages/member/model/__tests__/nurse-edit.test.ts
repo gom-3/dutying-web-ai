@@ -56,6 +56,25 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges(nurse, draft)).toBe(true);
     });
 
+    it('detects birthDate changes', () => {
+        const nurse = createNurse();
+
+        expect(hasNurseChanges(nurse, {...nurse, birthDate: '1996-03-14'})).toBe(true);
+        expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(true);
+    });
+
+    it('detects shift type target ratio changes', () => {
+        const nurse = createNurse();
+        const draft = {
+            ...nurse,
+            nurseShiftTypes: nurse.nurseShiftTypes.map((shiftType, index) =>
+                index === 0 ? {...shiftType, targetRatioWeight: 14} : shiftType,
+            ),
+        };
+
+        expect(hasNurseChanges(nurse, draft)).toBe(true);
+    });
+
     it('detects a synthetic ward shift type only when availability changes from the default', () => {
         const nurse = createNurse();
         const syntheticShiftType = {
@@ -176,8 +195,8 @@ describe('resolveNurseShiftTypeOptions', () => {
         );
 
         expect(options).toMatchObject([
-            {apiShiftTypeId: 101, wardShiftTypeId: 10, name: 'OnCall', shortName: 'O', isPossible: false},
-            {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'Orientation', shortName: 'O', isPossible: true},
+            {apiShiftTypeId: 101, wardShiftTypeId: 10, name: 'OnCall', shortName: 'O', isPossible: false, targetRatioWeight: 7},
+            {apiShiftTypeId: 102, wardShiftTypeId: 20, name: 'Orientation', shortName: 'O', isPossible: true, targetRatioWeight: 7},
         ]);
     });
 

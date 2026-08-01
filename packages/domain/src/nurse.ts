@@ -7,6 +7,7 @@ export type TNurseShiftType = {
     shortName: string;
     isPossible: boolean;
     isPreferred: boolean;
+    targetRatioWeight?: number;
 };
 
 export type TDayShift = {
@@ -21,6 +22,7 @@ export type TNurse = {
     wardId: number;
     name: string;
     phoneNum: string | null;
+    birthDate?: string | null;
     isConnected: boolean;
     nurseShiftTypes: TNurseShiftType[];
     isWorker: boolean;

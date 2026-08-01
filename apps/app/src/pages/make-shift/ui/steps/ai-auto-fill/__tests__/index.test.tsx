@@ -121,10 +121,6 @@ vi.mock('../../rest-leave-policy-summary-card', () => ({
     RestLeavePolicySummaryButton: () => null,
 }));
 
-vi.mock('../../shared/use-make-shift-skill-column', () => ({
-    useMakeShiftSkillColumn: () => undefined,
-}));
-
 vi.mock('../../shared/use-duty-editor-step', () => ({
     useDutyEditorStep: () => ({
         dutyQuery: {

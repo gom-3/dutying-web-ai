@@ -30,7 +30,6 @@ import {RestLeavePolicySummaryButton} from './rest-leave-policy-summary-card';
 import {MakeShiftCalendar} from './shared/make-shift-calendar';
 import {MakeShiftCalendarSkeleton} from './shared/make-shift-calendar-skeleton';
 import {useDutyEditorStep} from './shared/use-duty-editor-step';
-import {useMakeShiftSkillColumn} from './shared/use-make-shift-skill-column';
 
 /**
  * 고정 근무 화면에서는 violation을 절대 표시하지 않으므로,
@@ -80,7 +79,6 @@ export function FixedShifts() {
         () => sortScheduleByTeamNurseOrder(dutyQuery.data, currentTeamNurses),
         [currentTeamNurses, dutyQuery.data],
     );
-    const skillColumn = useMakeShiftSkillColumn(orderedShift);
     const {policy} = useRestLeavePolicy(wardId);
     const {adjustmentDays} = useRestTargetAdjustment({wardId, shiftTeamId: currentShiftTeamId, year, month});
     const handleNext = useCallback(async () => {
@@ -219,7 +217,6 @@ export function FixedShifts() {
                         editableLastShifts
                         showCellStatusPins
                         fixCellOnContextMenu
-                        skillColumn={skillColumn}
                         restCheckByShiftNurseId={restCheckByShiftNurseId}
                         canReorderRows
                         rowReorderDisabled={isSaving || isReorderingRows}

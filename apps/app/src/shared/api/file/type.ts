@@ -28,7 +28,6 @@ export type TOnboardingWardParseApiNurse = {
     isPreceptee?: boolean | null;
     isWorker?: boolean | null;
     employmentDate?: string | null;
-    level?: number | null;
     teamName?: string | null;
     possibleShiftShortNames?: Array<string | null> | null;
     assignments?: Record<string, string | null> | null;
@@ -55,7 +54,6 @@ export type TOnboardingWardParseApiConstraintCandidate = {
     template_code?: string | null;
     category?: string | null;
     params?: Record<string, unknown> | null;
-    level?: string | null;
     candidateValue?: unknown;
     candidate_value?: unknown;
     severityRecommendation?: string | null;

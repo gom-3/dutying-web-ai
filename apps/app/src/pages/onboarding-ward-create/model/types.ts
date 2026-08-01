@@ -1,1 +1,1 @@
-export type TSortMode = 'manual' | 'name' | 'skill';
+export type TSortMode = 'manual' | 'name';

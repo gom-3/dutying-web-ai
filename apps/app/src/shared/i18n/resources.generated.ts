@@ -309,10 +309,8 @@ export const ko = {
                 "minMonthlyOff": "{{nurseName}}님은 월 OFF가 {{actual}}일이에요. 최소 {{expected}}일이 필요해요.",
                 "minNightInterval": "{{nurseName}}님은 N 근무 사이를 {{expected}}일 이상 띄워야 해요.",
                 "minOffAfterNight": "{{nurseName}}님은 N 근무 뒤 OFF가 부족해요. 최소 {{expected}}일이 필요해요.",
-                "minProficiencyStaffByShift": "{{shift}} 근무에 LV{{level}} 이상 간호사가 {{actual}}명이에요. 최소 {{expected}}명이 필요해요.",
                 "minStaffByShift": "{{shift}} 근무 인원이 {{actual}}명이에요. 최소 {{expected}}명이 필요해요.",
                 "nightBeforeRequestedOff": "{{nurseName}}님은 신청 OFF 전날 N 근무가 배정돼 있어요.",
-                "notAloneNight": "{{nurseName}}님은 혼자 N 근무를 할 수 없어요.",
                 "nurseForbidWeekend": "{{nurseName}}님은 주말이나 공휴일 근무를 할 수 없어요.",
                 "pairForbidSameShift": "{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 할 수 없어요.",
                 "pairPreferSameShift": "{{nurseAName}}님과 {{nurseBName}}님은 같은 근무를 권장해요.",
@@ -1153,7 +1151,6 @@ export const ko = {
                     "forbidden": "금지 패턴",
                     "personal": "사람별 제한",
                     "recommended": "권장",
-                    "skill": "숙련도",
                     "staffing": "인원수",
                     "workRest": "연속 근무/휴식"
                 },
@@ -1283,10 +1280,6 @@ export const ko = {
                         "label": "연속 근무 / 휴식 규칙",
                         "sentence": "{target}은 한 달에 최소 {days}일 OFF가 있어야 해요"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "신규 / 경력 / 숙련도 규칙",
-                        "sentence": "{duty} 근무에는 {level} 이상 간호사가 {count}명 이상 있어야 해요"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "인원수 규칙",
                         "sentence": "{date}에는 {duty} 근무에 최소 {count}명이 필요해요"
@@ -1306,10 +1299,6 @@ export const ko = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "연속 근무 / 휴식 규칙",
                         "sentence": "{target}은 N 근무 후 최소 {days}일 OFF가 필요해요"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "신규 / 경력 / 숙련도 규칙",
-                        "sentence": "{nurse}은 (신규) 혼자 N 근무를 피해요"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "금지 패턴 규칙",
@@ -1521,7 +1510,6 @@ export const ko = {
                 "activeCount": "투입 {{count}}명",
                 "column": {
                     "isWorker": "근무투입",
-                    "level": "숙련도",
                     "memo": "비고",
                     "name": "이름",
                     "preceptee": "프리셉티",
@@ -1548,7 +1536,6 @@ export const ko = {
                 "preceptorActive": "해당",
                 "sortByName": "가나다순",
                 "sortBySavedOrder": "임의순",
-                "sortBySkill": "숙련도 순",
                 "sortListMenuAria": "근무자 정렬 기준 열기",
                 "totalCount": "총 {{count}}명"
             },
@@ -1640,7 +1627,7 @@ export const ko = {
                 }
             },
             "deleteTeam": "팀 삭제하기",
-            "description": "팀별 근무자와 숙련도를 한 화면에서 관리할 수 있어요.",
+            "description": "팀별 근무자와 근무 가능 정보를 한 화면에서 관리할 수 있어요.",
             "detail": {
                 "cancel": "닫기",
                 "canMakeDuty": "작성 가능",
@@ -1655,7 +1642,7 @@ export const ko = {
                 "disconnected": "연동 안 됨",
                 "disconnectedTooltip": "연동이 안 되고 있어요.",
                 "employmentDate": "입사 년도",
-                "employmentDateHint": "숙련도 자동 배정 기준으로 활용돼요",
+                "employmentDateHint": "근무자 정보를 기록하는 데 활용돼요",
                 "emptyDescription": "왼쪽 목록에서 사람을 선택하면 상세 정보를 편집할 수 있어요.",
                 "emptyPinnedDescription": "간호사를 선택하면 상세 정보가 여기에 고정되어 보여요.",
                 "emptyTitle": "근무자를 선택해 주세요",
@@ -1740,7 +1727,6 @@ export const ko = {
                 "dragAria": "드래그해서 순서 변경",
                 "precepteeAria": "{{nurseName}} 프리셉티",
                 "preceptorAria": "{{nurseName}} 프리셉터",
-                "unselectedSkill": "선택안함",
                 "workerAria": "{{nurseName}} 근무투입"
             },
             "shiftTeamList": {
@@ -1762,35 +1748,11 @@ export const ko = {
                 "subtitle": "팀마다 근무표를 1개씩 만들 수 있어요.",
                 "title": "팀"
             },
-            "skillLevelModal": {
-                "autoAssign": "자동 배정",
-                "autoAssignTooltip": "등록된 간호사 목록을 단계별로 등분해서 자동으로 1차 배정해요",
-                "autoAssignTooltipAria": "자동 배정 설명 보기",
-                "categoryLabel": "구분",
-                "close": "숙련도 설정 닫기",
-                "colorLabel": "색상",
-                "complete": "완료",
-                "description": "숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요",
-                "disableAction": "숙련도 사용하지 않기",
-                "disableConfirmAction": "사용하지 않기",
-                "disableConfirmDescription": "끄면 숙련도 표시, 선택, 정렬을 잠시 멈춰요.",
-                "disableConfirmTitle": "숙련도 기능을 끌까요?",
-                "high": "높음",
-                "levelCountOption": "{{levelCount}}단계",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "숙련도",
-                "low": "낮음",
-                "temporarySave": "임시 저장",
-                "title": "숙련도 단계 설정"
-            },
-            "skillSettings": "간호사 숙련도 설정하기",
             "sort": {
                 "manual": "임의순",
-                "name": "가나다순",
-                "skill": "숙련도 순"
+                "name": "가나다순"
             },
             "sortByPriorityOrder": "저장된 순서",
-            "sortBySkill": "숙련도 순",
             "sortListMenuAria": "목록 정렬 기준 열기",
             "summary": {
                 "connected": "연동됨",
@@ -1805,7 +1767,6 @@ export const ko = {
                 "connection": "연동",
                 "isDutyManager": "근무표 작성",
                 "isWorker": "근무 투입",
-                "level": "숙련도",
                 "memo": "비고",
                 "name": "이름",
                 "shiftTypes": "가능 근무"
@@ -1827,12 +1788,8 @@ export const ko = {
                     "title": "간호사 추가하기"
                 },
                 "edit": {
-                    "info": "오른쪽 패널에서 이름, 숙련도, 가능한 근무, 역할·권한, 메모를 바로 수정할 수 있어요.",
+                    "info": "오른쪽 패널에서 이름, 가능한 근무, 역할·권한, 메모를 바로 수정할 수 있어요.",
                     "title": "간호사 정보 수정하기"
-                },
-                "skill": {
-                    "info": "숙련도 기능을 쓰려면 병원·병동 기준에 맞춰 단계와 색상을 설정해 주세요.",
-                    "title": "숙련도 설정하기"
                 },
                 "team": {
                     "info": "근무팀별 간호사 목록을 한눈에 볼 수 있어요.\n팀명을 두 번 클릭하면 팀 이름도 바꿀 수 있어요.",
@@ -1983,13 +1940,9 @@ export const ko = {
                 "emptyTeamsDescription": "팀을 만든 뒤 간호사를 등록할 수 있어요.",
                 "emptyTeamsTitle": "먼저 팀을 추가해 주세요.",
                 "selectedTeamCountAria": "{{teamName}} 간호사 {{count}}명",
-                "skillAria": "{{nurseName}} 숙련도",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "미선택",
                 "sort": {
                     "manual": "수동순",
-                    "name": "가나다순",
-                    "skill": "숙련도순"
+                    "name": "가나다순"
                 },
                 "sortAria": "간호사 정렬",
                 "sortOptionsAria": "간호사 정렬 옵션"
@@ -2099,28 +2052,6 @@ export const ko = {
                 "work": "근무",
                 "workTime": "근무 시간"
             },
-            "skillCta": {
-                "aria": "숙련도 설정",
-                "description": "근무표 작성시, 숙련도에 따라 자동으로 배정할 수 있어요",
-                "title": "간호사 숙련도를 설정해볼까요?"
-            },
-            "skillLevelModal": {
-                "autoAssign": "자동 배정",
-                "autoAssignTooltip": "등록된 간호사 목록을 단계별로 분배해서 자동으로 1차 배정해요.",
-                "cancel": "닫기",
-                "categoryLabel": "구분",
-                "colorLabel": "색상",
-                "complete": "완료",
-                "description": "숙련도 기준, 단계, 용어, 색상은 자유롭게 맞춤 설정할 수 있어요",
-                "disable": "숙련도 설정 취소",
-                "high": "높음",
-                "levelCountAria": "숙련도 단계",
-                "levelCountOption": "{{levelCount}}단계",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "숙련도",
-                "low": "낮음",
-                "title": "숙련도 단계 설정"
-            },
             "teamTabs": {
                 "addTeam": "팀 추가하기"
             },
@@ -2139,8 +2070,6 @@ export const ko = {
                 "reloadDraftError": "저장된 병동 생성 정보를 불러오지 못했어요.",
                 "saveDraftError": "병동 기본 정보를 저장하지 못했어요. 다시 시도해 주세요.",
                 "saveScheduleError": "초기 근무표를 저장하지 못했어요.",
-                "skillConfigDisabled": "숙련도 설정을 사용하지 않아요.",
-                "skillConfigSaved": "숙련도 설정이 간호사 목록에 반영됐어요.",
                 "uploadApplied": "근무표 파일을 반영했어요."
             },
             "upload": {
@@ -2322,7 +2251,6 @@ export const ko = {
                 "noNurseDescription": "신청 근무를 확인하려면 먼저 근무자 관리에서 팀 간호사를 추가해 주세요.",
                 "noNurseTitleSuffix": "에는 아직 간호사가 없어요",
                 "reorderAria": "{{name}} 순서 변경",
-                "skillColumn": "숙련도",
                 "status": {
                     "accepted": "반영됨",
                     "pending": "확인 필요",
@@ -3090,10 +3018,8 @@ export const en: TLocale = {
                 "minMonthlyOff": "{{nurseName}} has {{actual}} monthly OFF days. Minimum required: {{expected}}.",
                 "minNightInterval": "{{nurseName}} needs at least {{expected}} day(s) between N shifts.",
                 "minOffAfterNight": "{{nurseName}} needs at least {{expected}} OFF day(s) after an N shift.",
-                "minProficiencyStaffByShift": "{{shift}} has {{actual}} nurse(s) at LV{{level}} or higher. Minimum required: {{expected}}.",
                 "minStaffByShift": "{{shift}} staffing is {{actual}}. Minimum required: {{expected}}.",
                 "nightBeforeRequestedOff": "{{nurseName}} is assigned an N shift before a requested OFF day.",
-                "notAloneNight": "{{nurseName}} cannot work an N shift alone.",
                 "nurseForbidWeekend": "{{nurseName}} cannot work on weekends or holidays.",
                 "pairForbidSameShift": "{{nurseAName}} and {{nurseBName}} cannot work the same shift.",
                 "pairPreferSameShift": "{{nurseAName}} and {{nurseBName}} are recommended to work the same shift.",
@@ -3934,7 +3860,6 @@ export const en: TLocale = {
                     "forbidden": "Forbidden patterns",
                     "personal": "Person limits",
                     "recommended": "Recommended",
-                    "skill": "Skill level",
                     "staffing": "Staffing",
                     "workRest": "Work/rest"
                 },
@@ -4064,10 +3989,6 @@ export const en: TLocale = {
                         "label": "Work/rest constraint",
                         "sentence": "{target} needs at least {days} OFF days per month"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "New nurse / skill constraint",
-                        "sentence": "{duty} shifts need at least {count} nurses at {level} or higher"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "Staffing constraint",
                         "sentence": "On {date}, {duty} shifts need at least {count} people"
@@ -4087,10 +4008,6 @@ export const en: TLocale = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "Work/rest constraint",
                         "sentence": "{target} needs at least {days} OFF day after an N shift"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "New nurse / skill constraint",
-                        "sentence": "Avoid solo N shifts for {nurse} as a new nurse"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "Forbidden pattern constraint",
@@ -4302,7 +4219,6 @@ export const en: TLocale = {
                 "activeCount": "{{count}} included",
                 "column": {
                     "isWorker": "Included",
-                    "level": "Level",
                     "memo": "Memo",
                     "name": "Name",
                     "preceptee": "Preceptee",
@@ -4329,7 +4245,6 @@ export const en: TLocale = {
                 "preceptorActive": "Yes",
                 "sortByName": "Name",
                 "sortBySavedOrder": "Custom order",
-                "sortBySkill": "Skill level",
                 "sortListMenuAria": "Open worker sort options",
                 "totalCount": "Total {{count}}"
             },
@@ -4421,7 +4336,7 @@ export const en: TLocale = {
                 }
             },
             "deleteTeam": "Delete team",
-            "description": "Manage nurses, availability, and skill levels for each team in one place.",
+            "description": "Manage nurses and availability for each team in one place.",
             "detail": {
                 "cancel": "Cancel",
                 "canMakeDuty": "Can create",
@@ -4436,7 +4351,7 @@ export const en: TLocale = {
                 "disconnected": "Not connected",
                 "disconnectedTooltip": "This nurse is not connected.",
                 "employmentDate": "Employment date",
-                "employmentDateHint": "Used as the basis for auto skill assignment",
+                "employmentDateHint": "Used as part of the member record",
                 "emptyDescription": "Choose a person from the list on the left to edit the detailed information.",
                 "emptyPinnedDescription": "Select a nurse to keep their details pinned here.",
                 "emptyTitle": "Select a nurse",
@@ -4521,7 +4436,6 @@ export const en: TLocale = {
                 "dragAria": "Drag to change order",
                 "precepteeAria": "{{nurseName}} preceptee",
                 "preceptorAria": "{{nurseName}} preceptor",
-                "unselectedSkill": "Unselected",
                 "workerAria": "{{nurseName}} included in duty"
             },
             "shiftTeamList": {
@@ -4543,35 +4457,11 @@ export const en: TLocale = {
                 "subtitle": "You can create one duty schedule per team.",
                 "title": "Team"
             },
-            "skillLevelModal": {
-                "autoAssign": "Auto assign",
-                "autoAssignTooltip": "We will evenly distribute registered nurses by level for the initial setup.",
-                "autoAssignTooltipAria": "Show auto assign description",
-                "categoryLabel": "Category",
-                "close": "Close skill settings",
-                "colorLabel": "Color",
-                "complete": "Complete",
-                "description": "You can define the criteria freely.",
-                "disableAction": "Turn off skill levels",
-                "disableConfirmAction": "Turn off",
-                "disableConfirmDescription": "Skill display, selection, and sorting will pause while this is off.",
-                "disableConfirmTitle": "Turn off skill levels?",
-                "high": "High",
-                "levelCountOption": "{{levelCount}} levels",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "Skill",
-                "low": "Low",
-                "temporarySave": "Save for now",
-                "title": "Set skill levels"
-            },
-            "skillSettings": "Set nurse skill levels",
             "sort": {
                 "manual": "Custom order",
-                "name": "Name order",
-                "skill": "Skill order"
+                "name": "Name order"
             },
             "sortByPriorityOrder": "Saved order",
-            "sortBySkill": "Sort by skill",
             "sortListMenuAria": "Open list sort options",
             "summary": {
                 "connected": "Connected",
@@ -4586,7 +4476,6 @@ export const en: TLocale = {
                 "connection": "Connected",
                 "isDutyManager": "Can create duty",
                 "isWorker": "Included",
-                "level": "Skill",
                 "memo": "Note",
                 "name": "Name",
                 "shiftTypes": "Available shifts"
@@ -4608,12 +4497,8 @@ export const en: TLocale = {
                     "title": "Add nurses"
                 },
                 "edit": {
-                    "info": "Use the right panel to edit name, skill, available shifts, roles, permissions, and notes.",
+                    "info": "Use the right panel to edit name, available shifts, roles, permissions, and notes.",
                     "title": "Edit nurse details"
-                },
-                "skill": {
-                    "info": "Configure levels and colors to match your hospital and ward standards.",
-                    "title": "Set skill levels"
                 },
                 "team": {
                     "info": "See nurses in each duty team at a glance.\nDouble-click a team name to rename it.",
@@ -4764,13 +4649,9 @@ export const en: TLocale = {
                 "emptyTeamsDescription": "Create a team before registering nurses.",
                 "emptyTeamsTitle": "Add a team first.",
                 "selectedTeamCountAria": "{{teamName}} nurses: {{count}}",
-                "skillAria": "Skill level for {{nurseName}}",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "Unselected",
                 "sort": {
                     "manual": "Manual order",
-                    "name": "Name order",
-                    "skill": "Skill order"
+                    "name": "Name order"
                 },
                 "sortAria": "Sort nurses",
                 "sortOptionsAria": "Nurse sort options"
@@ -4880,28 +4761,6 @@ export const en: TLocale = {
                 "work": "Work",
                 "workTime": "Shift time"
             },
-            "skillCta": {
-                "aria": "Skill level settings",
-                "description": "When creating schedules, nurses can be assigned automatically by skill level.",
-                "title": "Set nurse skill levels?"
-            },
-            "skillLevelModal": {
-                "autoAssign": "Auto assign",
-                "autoAssignTooltip": "Automatically distributes registered nurses across levels for an initial assignment.",
-                "cancel": "Cancel",
-                "categoryLabel": "Category",
-                "colorLabel": "Color",
-                "complete": "Complete",
-                "description": "You can define the criteria freely.",
-                "disable": "Cancel skill settings",
-                "high": "High",
-                "levelCountAria": "Skill level count",
-                "levelCountOption": "{{levelCount}} levels",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "Level",
-                "low": "Low",
-                "title": "Set skill levels"
-            },
             "teamTabs": {
                 "addTeam": "Add team"
             },
@@ -4920,8 +4779,6 @@ export const en: TLocale = {
                 "reloadDraftError": "Could not load the saved ward setup draft.",
                 "saveDraftError": "Could not save the basic ward information. Please try again.",
                 "saveScheduleError": "Could not save the initial schedule.",
-                "skillConfigDisabled": "Skill settings are disabled.",
-                "skillConfigSaved": "Applied skill settings to the nurse list.",
                 "uploadApplied": "Applied the schedule file."
             },
             "upload": {
@@ -5103,7 +4960,6 @@ export const en: TLocale = {
                 "noNurseDescription": "Add nurses to this team from Member Management before reviewing requested shifts.",
                 "noNurseTitleSuffix": " has no nurses yet",
                 "reorderAria": "Reorder {{name}}",
-                "skillColumn": "Skill",
                 "status": {
                     "accepted": "Applied",
                     "pending": "Needs review",
@@ -5869,10 +5725,8 @@ export const ja: TLocale = {
                 "minMonthlyOff": "{{nurseName}}さんの月間休みは{{actual}}日です。最低{{expected}}日必要です。",
                 "minNightInterval": "{{nurseName}}さんはN勤務の間隔が短いです。最低{{expected}}日空けてください。",
                 "minOffAfterNight": "{{nurseName}}さんはN勤務後の休みが不足しています。最低{{expected}}日必要です。",
-                "minProficiencyStaffByShift": "{{shift}}勤務のLV{{level}}以上の看護師は{{actual}}人です。最低{{expected}}人必要です。",
                 "minStaffByShift": "{{shift}}勤務の人数は{{actual}}人です。最低{{expected}}人必要です。",
                 "nightBeforeRequestedOff": "{{nurseName}}さんは休み希望の前日にN勤務が割り当てられています。",
-                "notAloneNight": "{{nurseName}}さんは単独でN勤務を行えません。",
                 "nurseForbidWeekend": "{{nurseName}}さんは週末または祝日に勤務できません。",
                 "pairForbidSameShift": "{{nurseAName}}さんと{{nurseBName}}さんは同じ勤務にできません。",
                 "pairPreferSameShift": "{{nurseAName}}さんと{{nurseBName}}さんは同じ勤務が推奨されます。",
@@ -6713,7 +6567,6 @@ export const ja: TLocale = {
                     "forbidden": "禁止パターン",
                     "personal": "看護師別制限",
                     "recommended": "推奨",
-                    "skill": "習熟度",
                     "staffing": "人数",
                     "workRest": "連続勤務/休息"
                 },
@@ -6843,10 +6696,6 @@ export const ja: TLocale = {
                         "label": "連続勤務/休息条件",
                         "sentence": "{target}は1か月に最低{days}日の休みが必要です"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "新人/経験/習熟度条件",
-                        "sentence": "{duty}勤務には{level}以上の看護師が{count}人以上必要です"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "人数条件",
                         "sentence": "{date}には{duty}勤務で最低{count}人が必要です"
@@ -6866,10 +6715,6 @@ export const ja: TLocale = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "連続勤務/休息条件",
                         "sentence": "{target}はN勤務後、最低{days}日の休みが必要です"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "新人/経験/習熟度条件",
-                        "sentence": "{nurse}は新人として単独N勤務を避けます"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "禁止パターン条件",
@@ -7081,7 +6926,6 @@ export const ja: TLocale = {
                 "activeCount": "投入 {{count}}名",
                 "column": {
                     "isWorker": "勤務投入",
-                    "level": "熟練度",
                     "memo": "メモ",
                     "name": "名前",
                     "preceptee": "プリセプティ",
@@ -7108,7 +6952,6 @@ export const ja: TLocale = {
                 "preceptorActive": "該当",
                 "sortByName": "五十音順",
                 "sortBySavedOrder": "任意順",
-                "sortBySkill": "熟練度順",
                 "sortListMenuAria": "看護師の並び順を開く",
                 "totalCount": "合計 {{count}}名"
             },
@@ -7200,7 +7043,7 @@ export const ja: TLocale = {
                 }
             },
             "deleteTeam": "チームを削除",
-            "description": "チーム別の看護師と習熟度を一つの画面で管理できます。",
+            "description": "チーム別スタッフと勤務可能情報を一つの画面で管理できます。",
             "detail": {
                 "cancel": "閉じる",
                 "canMakeDuty": "作成可能",
@@ -7215,7 +7058,7 @@ export const ja: TLocale = {
                 "disconnected": "未連携",
                 "disconnectedTooltip": "連携されていません。",
                 "employmentDate": "入職年度",
-                "employmentDateHint": "習熟度の自動配分基準として使用されます",
+                "employmentDateHint": "スタッフ情報の記録に使用します",
                 "emptyDescription": "左の一覧から人を選択すると詳細情報を編集できます。",
                 "emptyPinnedDescription": "看護師を選択すると詳細情報がここに固定表示されます。",
                 "emptyTitle": "看護師を選択してください",
@@ -7300,7 +7143,6 @@ export const ja: TLocale = {
                 "dragAria": "ドラッグして順序を変更",
                 "precepteeAria": "{{nurseName}} プリセプティ",
                 "preceptorAria": "{{nurseName}} プリセプター",
-                "unselectedSkill": "未選択",
                 "workerAria": "{{nurseName}} 勤務投入"
             },
             "shiftTeamList": {
@@ -7322,35 +7164,11 @@ export const ja: TLocale = {
                 "subtitle": "チームごとに勤務表を1つ作成できます。",
                 "title": "チーム"
             },
-            "skillLevelModal": {
-                "autoAssign": "自動配分",
-                "autoAssignTooltip": "登録された看護師を段階別に分配して初期配分します",
-                "autoAssignTooltipAria": "自動配分の説明を見る",
-                "categoryLabel": "区分",
-                "close": "習熟度設定を閉じる",
-                "colorLabel": "色",
-                "complete": "完了",
-                "description": "習熟度の基準、段階、名称、色は自由に設定できます",
-                "disableAction": "習熟度を使用しない",
-                "disableConfirmAction": "使用しない",
-                "disableConfirmDescription": "オフにすると習熟度の表示、選択、並び替えを一時停止します。",
-                "disableConfirmTitle": "習熟度機能をオフにしますか？",
-                "high": "高い",
-                "levelCountOption": "{{levelCount}}段階",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "習熟度",
-                "low": "低い",
-                "temporarySave": "一時保存",
-                "title": "習熟度段階設定"
-            },
-            "skillSettings": "看護師の習熟度を設定",
             "sort": {
                 "manual": "任意順",
-                "name": "名前順",
-                "skill": "習熟度順"
+                "name": "名前順"
             },
             "sortByPriorityOrder": "保存順",
-            "sortBySkill": "習熟度順",
             "sortListMenuAria": "並び替え基準を開く",
             "summary": {
                 "connected": "連携済み",
@@ -7365,7 +7183,6 @@ export const ja: TLocale = {
                 "connection": "連携",
                 "isDutyManager": "勤務表作成",
                 "isWorker": "勤務投入",
-                "level": "習熟度",
                 "memo": "備考",
                 "name": "名前",
                 "shiftTypes": "可能勤務"
@@ -7387,12 +7204,8 @@ export const ja: TLocale = {
                     "title": "看護師を追加する"
                 },
                 "edit": {
-                    "info": "右側パネルで名前、習熟度、設定可能な勤務、役割・権限、メモをすぐ編集できます。",
+                    "info": "右側パネルで名前、設定可能な勤務、役割・権限、メモをすぐ編集できます。",
                     "title": "看護師情報を編集する"
-                },
-                "skill": {
-                    "info": "習熟度機能を使うには、病院・病棟の基準に合わせて段階と色を設定してください。",
-                    "title": "習熟度を設定する"
                 },
                 "team": {
                     "info": "勤務チーム別の看護師一覧を一目で確認できます。\nチーム名をダブルクリックすると名前も変更できます。",
@@ -7543,13 +7356,9 @@ export const ja: TLocale = {
                 "emptyTeamsDescription": "チームを作成すると看護師を登録できます。",
                 "emptyTeamsTitle": "先にチームを追加してください。",
                 "selectedTeamCountAria": "{{teamName}} 看護師{{count}}名",
-                "skillAria": "{{nurseName}}の習熟度",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "未選択",
                 "sort": {
                     "manual": "手動順",
-                    "name": "名前順",
-                    "skill": "習熟度順"
+                    "name": "名前順"
                 },
                 "sortAria": "看護師を並び替え",
                 "sortOptionsAria": "看護師の並び替えオプション"
@@ -7659,28 +7468,6 @@ export const ja: TLocale = {
                 "work": "勤務",
                 "workTime": "勤務時間"
             },
-            "skillCta": {
-                "aria": "習熟度設定",
-                "description": "勤務表作成時、習熟度に応じて自動で割り当てできます",
-                "title": "看護師の習熟度を設定しますか？"
-            },
-            "skillLevelModal": {
-                "autoAssign": "自動配分",
-                "autoAssignTooltip": "登録された看護師を段階別に分配して初期配分します。",
-                "cancel": "閉じる",
-                "categoryLabel": "区分",
-                "colorLabel": "色",
-                "complete": "完了",
-                "description": "習熟度の基準、段階、名称、色は自由に設定できます",
-                "disable": "習熟度設定をキャンセル",
-                "high": "高い",
-                "levelCountAria": "習熟度段階",
-                "levelCountOption": "{{levelCount}}段階",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "習熟度",
-                "low": "低い",
-                "title": "習熟度段階設定"
-            },
             "teamTabs": {
                 "addTeam": "チームを追加"
             },
@@ -7699,8 +7486,6 @@ export const ja: TLocale = {
                 "reloadDraftError": "保存済みの病棟作成情報を読み込めませんでした。",
                 "saveDraftError": "病棟の基本情報を保存できませんでした。もう一度お試しください。",
                 "saveScheduleError": "初期勤務表を保存できませんでした。",
-                "skillConfigDisabled": "習熟度設定を使用しません。",
-                "skillConfigSaved": "習熟度設定を看護師一覧に反映しました。",
                 "uploadApplied": "勤務表ファイルを反映しました。"
             },
             "upload": {
@@ -7882,7 +7667,6 @@ export const ja: TLocale = {
                 "noNurseDescription": "勤務希望を確認するには、先に看護師管理でチームの看護師を追加してください。",
                 "noNurseTitleSuffix": "にはまだ看護師がいません",
                 "reorderAria": "{{name}}の順序を変更",
-                "skillColumn": "熟練度",
                 "status": {
                     "accepted": "反映済み",
                     "pending": "確認必要",
@@ -8648,10 +8432,8 @@ export const zh: TLocale = {
                 "minMonthlyOff": "{{nurseName}} 的每月休息日是 {{actual}}。至少需要 {{expected}} 天。",
                 "minNightInterval": "{{nurseName}} N 个班次之间必须有至少 {{expected}} 天的间隔。",
                 "minOffAfterNight": "{{nurseName}} 工作 N 后没有足够的 OFF 时间。至少需要 {{expected}} 天。",
-                "minProficiencyStaffByShift": "在{{shift}}工作的护士有LV{{level}}多名，还有{{actual}}护士。至少需要{{expected}}人。",
                 "minStaffByShift": "{{shift}} 有 {{actual}} 员工。至少需要{{expected}}人。",
                 "nightBeforeRequestedOff": "{{nurseName}} 在申请关闭的前一天被分配到 N 班。",
-                "notAloneNight": "{{nurseName}}不能单独工作N。",
                 "nurseForbidWeekend": "{{nurseName}} 不能在周末或公共假期工作。",
                 "pairForbidSameShift": "{{nurseAName}} 和 {{nurseBName}} 不能同班工作。",
                 "pairPreferSameShift": "建议{{nurseAName}}和{{nurseBName}}一起工作。",
@@ -9492,7 +9274,6 @@ export const zh: TLocale = {
                     "forbidden": "禁止图案",
                     "personal": "每人限制",
                     "recommended": "受到推崇的",
-                    "skill": "熟练程度",
                     "staffing": "人数",
                     "workRest": "连续工作/休息"
                 },
@@ -9622,10 +9403,6 @@ export const zh: TLocale = {
                         "label": "连续工作/休息规则",
                         "sentence": "{target} 每月必须至少有 {days} 个假期"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "新人/经验丰富/熟练规则",
-                        "sentence": "必须至少有 {count} 名 {level} 或更高级别的护士执行 {duty} 值班。"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "人数规则",
                         "sentence": "{date} 的 {duty} 至少需要 {count} 人"
@@ -9645,10 +9422,6 @@ export const zh: TLocale = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "连续工作/休息规则",
                         "sentence": "{target} 工作 N 后至少需要休息 {day}"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "新人/经验丰富/熟练规则",
-                        "sentence": "{护士}（新）避免单独工作 N"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "禁止模式规则",
@@ -9860,7 +9633,6 @@ export const zh: TLocale = {
                 "activeCount": "输入{{count}}人",
                 "column": {
                     "isWorker": "投入工作",
-                    "level": "熟练程度",
                     "memo": "笔记",
                     "name": "姓名",
                     "preceptee": "戒律",
@@ -9887,7 +9659,6 @@ export const zh: TLocale = {
                 "preceptorActive": "相应的",
                 "sortByName": "按字母顺序",
                 "sortBySavedOrder": "随机顺序",
-                "sortBySkill": "按照熟练程度的顺序",
                 "sortListMenuAria": "按排班人员开放排序",
                 "totalCount": "总计 {{count}} 人"
             },
@@ -9979,7 +9750,7 @@ export const zh: TLocale = {
                 }
             },
             "deleteTeam": "删除团队",
-            "description": "您可以在一个屏幕上管理每个团队的排班人员和技能。",
+            "description": "您可以在一个屏幕上管理每个团队的排班人员和可用信息。",
             "detail": {
                 "cancel": "关闭",
                 "canMakeDuty": "可写",
@@ -9994,7 +9765,7 @@ export const zh: TLocale = {
                 "disconnected": "未链接",
                 "disconnectedTooltip": "连接不工作。",
                 "employmentDate": "加入年份",
-                "employmentDateHint": "它用作自动技能分配的标准。",
+                "employmentDateHint": "用于记录人员信息。",
                 "emptyDescription": "如果您从左侧列表中选择一个人，您可以编辑其详细信息。",
                 "emptyPinnedDescription": "当您选择护士时，详细信息将显示在此处。",
                 "emptyTitle": "请选择一名排班人员",
@@ -10079,7 +9850,6 @@ export const zh: TLocale = {
                 "dragAria": "通过拖动更改顺序",
                 "precepteeAria": "{{nurseName}} 理念",
                 "preceptorAria": "{{nurseName}} 导师",
-                "unselectedSkill": "未选择",
                 "workerAria": "{{nurseName}}投入使用"
             },
             "shiftTeamList": {
@@ -10101,35 +9871,11 @@ export const zh: TLocale = {
                 "subtitle": "每个团队可以创建一个排班表。",
                 "title": "团队"
             },
-            "skillLevelModal": {
-                "autoAssign": "自动分配",
-                "autoAssignTooltip": "注册护士名单分为几个阶段，并自动分配到第一阶段。",
-                "autoAssignTooltipAria": "查看自动分配说明",
-                "categoryLabel": "分配",
-                "close": "关闭熟练度设置",
-                "colorLabel": "颜色",
-                "complete": "完全的",
-                "description": "掌握标准、级别、术语、颜色均可自由定制。",
-                "disableAction": "不使用熟练度",
-                "disableConfirmAction": "请勿使用",
-                "disableConfirmDescription": "关闭时，显示、选择和排序熟练程度将暂停片刻。",
-                "disableConfirmTitle": "要关闭熟练度功能吗？",
-                "high": "高度",
-                "levelCountOption": "{{levelCount}}步",
-                "levelDisplay": "LV。 {{level}}",
-                "levelLabel": "熟练程度",
-                "low": "卑微",
-                "temporarySave": "临时储存",
-                "title": "设置熟练程度"
-            },
-            "skillSettings": "设定护士熟练程度",
             "sort": {
                 "manual": "随机顺序",
-                "name": "按字母顺序",
-                "skill": "按照熟练程度的顺序"
+                "name": "按字母顺序"
             },
             "sortByPriorityOrder": "已保存订单",
-            "sortBySkill": "按照熟练程度的顺序",
             "sortListMenuAria": "打开列表排序依据",
             "summary": {
                 "connected": "链接",
@@ -10144,7 +9890,6 @@ export const zh: TLocale = {
                 "connection": "蠕动",
                 "isDutyManager": "写一个排班表",
                 "isWorker": "工作承诺",
-                "level": "熟练程度",
                 "memo": "笔记",
                 "name": "姓名",
                 "shiftTypes": "可用的工作"
@@ -10166,12 +9911,8 @@ export const zh: TLocale = {
                     "title": "添加护士"
                 },
                 "edit": {
-                    "info": "您可以在右侧面板中直接编辑姓名、技能级别、可用工作、角色/权限和注释。",
+                    "info": "您可以在右侧面板中直接编辑姓名、可用班次、角色/权限和注释。",
                     "title": "编辑护士信息"
-                },
-                "skill": {
-                    "info": "要使用熟练度功能，请根据医院和病区标准设置级别和颜色。",
-                    "title": "设置熟练程度"
                 },
                 "team": {
                     "info": "您可以一目了然地看到按工作组划分的护士名单。\n您还可以通过双击团队名称来更改团队名称。",
@@ -10322,13 +10063,9 @@ export const zh: TLocale = {
                 "emptyTeamsDescription": "创建团队后，您可以注册护士。",
                 "emptyTeamsTitle": "请先添加一个团队。",
                 "selectedTeamCountAria": "{{teamName}} 护士 {{count}}",
-                "skillAria": "{{nurseName}} 熟练度",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "未选择",
                 "sort": {
                     "manual": "手动订单",
-                    "name": "按字母顺序",
-                    "skill": "按技能等级顺序"
+                    "name": "按字母顺序"
                 },
                 "sortAria": "护士分拣",
                 "sortOptionsAria": "护士排序选项"
@@ -10438,28 +10175,6 @@ export const zh: TLocale = {
                 "work": "在职的",
                 "workTime": "时间"
             },
-            "skillCta": {
-                "aria": "熟练度设置",
-                "description": "创建排班表时，可以根据技能水平自动进行分配。",
-                "title": "要设置护士熟练程度吗？"
-            },
-            "skillLevelModal": {
-                "autoAssign": "自动分配",
-                "autoAssignTooltip": "注册护士名单分为几个阶段，并自动分配到第一阶段。",
-                "cancel": "关闭",
-                "categoryLabel": "分配",
-                "colorLabel": "颜色",
-                "complete": "完全的",
-                "description": "掌握标准、级别、术语、颜色均可自由定制。",
-                "disable": "取消精通设置",
-                "high": "高度",
-                "levelCountAria": "掌握程度",
-                "levelCountOption": "{{levelCount}}步",
-                "levelDisplay": "LV。 {{level}}",
-                "levelLabel": "熟练程度",
-                "low": "卑微",
-                "title": "设置熟练程度"
-            },
             "teamTabs": {
                 "addTeam": "添加团队"
             },
@@ -10478,8 +10193,6 @@ export const zh: TLocale = {
                 "reloadDraftError": "无法加载保存的病区创建信息。",
                 "saveDraftError": "病区基本信息无法保存。请再试一次。",
                 "saveScheduleError": "无法保存初始时间表。",
-                "skillConfigDisabled": "不使用熟练度设置。",
-                "skillConfigSaved": "技能水平设置反映在护士列表中。",
                 "uploadApplied": "反映了时间表文件。"
             },
             "upload": {
@@ -10661,7 +10374,6 @@ export const zh: TLocale = {
                 "noNurseDescription": "要确认所请求的轮班，首先在排班人员管理中添加团队护士。",
                 "noNurseTitleSuffix": "目前还没有护士",
                 "reorderAria": "{{name}} 更改订单",
-                "skillColumn": "熟练程度",
                 "status": {
                     "accepted": "反映",
                     "pending": "需要确认",
@@ -11427,10 +11139,8 @@ export const th: TLocale = {
                 "minMonthlyOff": "{{nurseName}} มี {{actual}} วันต่อเดือน OFF ขั้นต่ำที่ต้องการ: {{expected}}",
                 "minNightInterval": "{{nurseName}} ต้องการอย่างน้อย {{expected}} วันระหว่าง N กะ",
                 "minOffAfterNight": "{{nurseName}} ต้องการอย่างน้อย {{expected}} OFF วันหลังจากการเปลี่ยน N",
-                "minProficiencyStaffByShift": "{{shift}} มีพยาบาล {{actual}} ที่ LV{{level}} หรือสูงกว่า ขั้นต่ำที่ต้องการ: {{expected}}",
                 "minStaffByShift": "{{shift}} พนักงานคือ {{actual}} ขั้นต่ำที่ต้องการ: {{expected}}",
                 "nightBeforeRequestedOff": "{{nurseName}} ได้รับการกำหนดให้มีกะ N ก่อนวันที่ OFF ที่ร้องขอ",
-                "notAloneNight": "{{nurseName}} ไม่สามารถทำงาน N shift เพียงอย่างเดียวได้",
                 "nurseForbidWeekend": "{{nurseName}} ไม่สามารถทำงานในวันหยุดสุดสัปดาห์หรือวันหยุดนักขัตฤกษ์",
                 "pairForbidSameShift": "{{nurseAName}} และ {{nurseBName}} ไม่สามารถทำงานกะเดียวกันได้",
                 "pairPreferSameShift": "แนะนำให้ใช้ {{nurseAName}} และ {{nurseBName}} เพื่อทำงานในกะเดียวกัน",
@@ -12271,7 +11981,6 @@ export const th: TLocale = {
                     "forbidden": "รูปแบบต้องห้าม",
                     "personal": "ข้อจำกัดของบุคคล",
                     "recommended": "ที่แนะนำ",
-                    "skill": "ระดับทักษะ",
                     "staffing": "การจัดหาพนักงาน",
                     "workRest": "ทำงาน/พักผ่อน"
                 },
@@ -12401,10 +12110,6 @@ export const th: TLocale = {
                         "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
                         "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันต่อเดือน"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "พยาบาลใหม่ / ข้อจำกัดด้านทักษะ",
-                        "sentence": "กะ {duty} กะ ต้องการพยาบาลอย่างน้อย {count} คนที่ระดับ {level} หรือสูงกว่า"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "ข้อจำกัดด้านบุคลากร",
                         "sentence": "ในวันที่ {date} กะงาน {duty} ต้องมีอย่างน้อย {count} คน"
@@ -12424,10 +12129,6 @@ export const th: TLocale = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "ข้อจำกัดในการทำงาน/พักผ่อน",
                         "sentence": "{target} ต้องการอย่างน้อย {days} OFF วันหลังจากการเปลี่ยน N"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "พยาบาลใหม่ / ข้อจำกัดด้านทักษะ",
-                        "sentence": "หลีกเลี่ยงการกะ N เดี่ยวสำหรับ {nurse} ในฐานะพยาบาลใหม่"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "ข้อจำกัดรูปแบบที่ต้องห้าม",
@@ -12639,7 +12340,6 @@ export const th: TLocale = {
                 "activeCount": "{{count}} รวมอยู่ด้วย",
                 "column": {
                     "isWorker": "รวมอยู่ด้วย",
-                    "level": "ระดับ",
                     "memo": "บันทึก",
                     "name": "ชื่อ",
                     "preceptee": "ผู้รับอุปการะ",
@@ -12666,7 +12366,6 @@ export const th: TLocale = {
                 "preceptorActive": "ใช่",
                 "sortByName": "ชื่อ",
                 "sortBySavedOrder": "คำสั่งซื้อที่กำหนดเอง",
-                "sortBySkill": "ระดับทักษะ",
                 "sortListMenuAria": "เปิดตัวเลือกการเรียงลำดับผู้ปฏิบัติงาน",
                 "totalCount": "รวม {{count}}"
             },
@@ -12758,7 +12457,7 @@ export const th: TLocale = {
                 }
             },
             "deleteTeam": "ลบทีม",
-            "description": "จัดการพยาบาล ความพร้อมใช้งาน และระดับทักษะของแต่ละทีมได้ในที่เดียว",
+            "description": "จัดการพยาบาลและความพร้อมใช้งานของแต่ละทีมได้ในที่เดียว",
             "detail": {
                 "cancel": "ยกเลิก",
                 "canMakeDuty": "สามารถสร้าง",
@@ -12773,7 +12472,7 @@ export const th: TLocale = {
                 "disconnected": "ไม่ได้เชื่อมต่อ",
                 "disconnectedTooltip": "พยาบาลคนนี้ไม่ได้เชื่อมต่อ",
                 "employmentDate": "วันที่เข้าทำงาน",
-                "employmentDateHint": "ใช้เป็นพื้นฐานสำหรับการกำหนดทักษะอัตโนมัติ",
+                "employmentDateHint": "ใช้เป็นส่วนหนึ่งของข้อมูลบุคลากร",
                 "emptyDescription": "เลือกบุคคลจากรายการด้านซ้ายเพื่อแก้ไขข้อมูลโดยละเอียด",
                 "emptyPinnedDescription": "เลือกพยาบาลเพื่อปักหมุดรายละเอียดไว้ที่นี่",
                 "emptyTitle": "เลือกพยาบาล",
@@ -12858,7 +12557,6 @@ export const th: TLocale = {
                 "dragAria": "ลากเพื่อเปลี่ยนลำดับ",
                 "precepteeAria": "{{nurseName}} ผู้รับศีล",
                 "preceptorAria": "{{nurseName}} อุปัชฌาย์",
-                "unselectedSkill": "ไม่ได้เลือก",
                 "workerAria": "{{nurseName}} รวมปฏิบัติหน้าที่แล้ว"
             },
             "shiftTeamList": {
@@ -12880,35 +12578,11 @@ export const th: TLocale = {
                 "subtitle": "คุณสามารถสร้างตารางปฏิบัติหน้าที่ได้หนึ่งตารางต่อทีม",
                 "title": "ทีม"
             },
-            "skillLevelModal": {
-                "autoAssign": "มอบหมายอัตโนมัติ",
-                "autoAssignTooltip": "เราจะกระจายพยาบาลวิชาชีพเท่าๆ กันตามระดับสำหรับการตั้งค่าเริ่มต้น",
-                "autoAssignTooltipAria": "แสดงคำอธิบายการมอบหมายอัตโนมัติ",
-                "categoryLabel": "หมวดหมู่",
-                "close": "ปิดการตั้งค่าทักษะ",
-                "colorLabel": "สี",
-                "complete": "สมบูรณ์",
-                "description": "คุณสามารถกำหนดเกณฑ์ได้อย่างอิสระ",
-                "disableAction": "ปิดระดับทักษะ",
-                "disableConfirmAction": "ปิดเครื่อง",
-                "disableConfirmDescription": "การแสดงทักษะ การเลือก และการเรียงลำดับจะหยุดชั่วคราวในขณะที่ปิดอยู่",
-                "disableConfirmTitle": "ปิดระดับทักษะ?",
-                "high": "สูง",
-                "levelCountOption": "ระดับ {{levelCount}}",
-                "levelDisplay": "แอลวี. {{level}}",
-                "levelLabel": "ทักษะ",
-                "low": "ต่ำ",
-                "temporarySave": "บันทึกไว้ตอนนี้",
-                "title": "กำหนดระดับทักษะ"
-            },
-            "skillSettings": "กำหนดระดับทักษะพยาบาล",
             "sort": {
                 "manual": "คำสั่งซื้อที่กำหนดเอง",
-                "name": "ลำดับชื่อ",
-                "skill": "ลำดับทักษะ"
+                "name": "ลำดับชื่อ"
             },
             "sortByPriorityOrder": "บันทึกคำสั่งซื้อแล้ว",
-            "sortBySkill": "เรียงตามความสามารถ",
             "sortListMenuAria": "เปิดตัวเลือกการจัดเรียงรายการ",
             "summary": {
                 "connected": "เชื่อมต่อแล้ว",
@@ -12923,7 +12597,6 @@ export const th: TLocale = {
                 "connection": "เชื่อมต่อแล้ว",
                 "isDutyManager": "สามารถสร้างหน้าที่",
                 "isWorker": "รวมอยู่ด้วย",
-                "level": "ทักษะ",
                 "memo": "บันทึก",
                 "name": "ชื่อ",
                 "shiftTypes": "กะที่มีอยู่"
@@ -12945,12 +12618,8 @@ export const th: TLocale = {
                     "title": "เพิ่มพยาบาล"
                 },
                 "edit": {
-                    "info": "ใช้แผงด้านขวาเพื่อแก้ไขชื่อ ทักษะ กะที่มีอยู่ บทบาท สิทธิ์ และบันทึกย่อ",
+                    "info": "ใช้แผงด้านขวาเพื่อแก้ไขชื่อ กะที่ทำได้ บทบาท สิทธิ์ และบันทึกย่อ",
                     "title": "แก้ไขรายละเอียดพยาบาล"
-                },
-                "skill": {
-                    "info": "กำหนดค่าระดับและสีให้ตรงกับมาตรฐานของโรงพยาบาลและวอร์ดของคุณ",
-                    "title": "กำหนดระดับทักษะ"
                 },
                 "team": {
                     "info": "ดูพยาบาลในแต่ละทีมได้อย่างรวดเร็ว\nดับเบิลคลิกชื่อทีมเพื่อเปลี่ยนชื่อ",
@@ -13101,13 +12770,9 @@ export const th: TLocale = {
                 "emptyTeamsDescription": "สร้างทีมก่อนขึ้นทะเบียนพยาบาล",
                 "emptyTeamsTitle": "เพิ่มทีมก่อนครับ",
                 "selectedTeamCountAria": "{{teamName}} พยาบาล: {{count}}",
-                "skillAria": "ระดับทักษะสำหรับ {{nurseName}}",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "ไม่ได้เลือก",
                 "sort": {
                     "manual": "สั่งซื้อด้วยตนเอง",
-                    "name": "ลำดับชื่อ",
-                    "skill": "ลำดับทักษะ"
+                    "name": "ลำดับชื่อ"
                 },
                 "sortAria": "เรียงลำดับพยาบาล",
                 "sortOptionsAria": "ตัวเลือกการเรียงลำดับพยาบาล"
@@ -13217,28 +12882,6 @@ export const th: TLocale = {
                 "work": "งาน",
                 "workTime": "เวลากะ"
             },
-            "skillCta": {
-                "aria": "การตั้งค่าระดับทักษะ",
-                "description": "เมื่อสร้างตารางเวลา พยาบาลสามารถมอบหมายโดยอัตโนมัติตามระดับทักษะ",
-                "title": "กำหนดระดับทักษะพยาบาล?"
-            },
-            "skillLevelModal": {
-                "autoAssign": "มอบหมายอัตโนมัติ",
-                "autoAssignTooltip": "กระจายพยาบาลวิชาชีพข้ามระดับโดยอัตโนมัติสำหรับการมอบหมายงานเบื้องต้น",
-                "cancel": "ยกเลิก",
-                "categoryLabel": "หมวดหมู่",
-                "colorLabel": "สี",
-                "complete": "สมบูรณ์",
-                "description": "คุณสามารถกำหนดเกณฑ์ได้อย่างอิสระ",
-                "disable": "ยกเลิกการตั้งค่าทักษะ",
-                "high": "สูง",
-                "levelCountAria": "การนับระดับทักษะ",
-                "levelCountOption": "ระดับ {{levelCount}}",
-                "levelDisplay": "แอลวี. {{level}}",
-                "levelLabel": "ระดับ",
-                "low": "ต่ำ",
-                "title": "กำหนดระดับทักษะ"
-            },
             "teamTabs": {
                 "addTeam": "เพิ่มทีม"
             },
@@ -13257,8 +12900,6 @@ export const th: TLocale = {
                 "reloadDraftError": "ไม่สามารถโหลดแบบร่างการตั้งค่าวอร์ดที่บันทึกไว้ได้",
                 "saveDraftError": "ไม่สามารถบันทึกข้อมูลวอร์ดพื้นฐานได้ โปรดลองอีกครั้ง",
                 "saveScheduleError": "ไม่สามารถบันทึกกำหนดการเริ่มต้นได้",
-                "skillConfigDisabled": "การตั้งค่าทักษะถูกปิดใช้งาน",
-                "skillConfigSaved": "Appนำการตั้งค่าทักษะไปใช้กับรายชื่อพยาบาล",
                 "uploadApplied": "Appโกหกไฟล์กำหนดการ"
             },
             "upload": {
@@ -13440,7 +13081,6 @@ export const th: TLocale = {
                 "noNurseDescription": "เพิ่มพยาบาลให้กับทีมนี้จากฝ่ายบริหารสมาชิก ก่อนที่จะตรวจสอบกะที่ร้องขอ",
                 "noNurseTitleSuffix": "ยังไม่มีพยาบาล",
                 "reorderAria": "สั่งซื้อ {{name}} ใหม่",
-                "skillColumn": "ทักษะ",
                 "status": {
                     "accepted": "Appโกหก",
                     "pending": "จำเป็นต้องตรวจสอบ",
@@ -14206,10 +13846,8 @@ export const vi: TLocale = {
                 "minMonthlyOff": "{{nurseName}} có {{actual}} ngày OFF hàng tháng. Yêu cầu tối thiểu: {{expected}}.",
                 "minNightInterval": "{{nurseName}} cần ít nhất {{expected}} ngày giữa N ca.",
                 "minOffAfterNight": "{{nurseName}} cần ít nhất {{expected}} ngày TẮT sau ca N.",
-                "minProficiencyStaffByShift": "{{shift}} có {{actual}} điều dưỡng ở LV{{level}} trở lên. Yêu cầu tối thiểu: {{expected}}.",
                 "minStaffByShift": "{{shift}} nhân sự là {{actual}}. Yêu cầu tối thiểu: {{expected}}.",
                 "nightBeforeRequestedOff": "{{nurseName}} được chỉ định ca N trước ngày TẮT được yêu cầu.",
-                "notAloneNight": "{{nurseName}} không thể làm việc một ca N.",
                 "nurseForbidWeekend": "{{nurseName}} không thể làm việc vào cuối tuần hoặc ngày lễ.",
                 "pairForbidSameShift": "{{nurseAName}} và {{nurseBName}} không thể làm việc cùng một ca.",
                 "pairPreferSameShift": "{{nurseAName}} và {{nurseBName}} nên làm việc cùng một ca.",
@@ -15050,7 +14688,6 @@ export const vi: TLocale = {
                     "forbidden": "mẫu bị cấm",
                     "personal": "Giới hạn người",
                     "recommended": "Được đề xuất",
-                    "skill": "Cấp độ kỹ năng",
                     "staffing": "nhân sự",
                     "workRest": "Làm việc/nghỉ ngơi"
                 },
@@ -15180,10 +14817,6 @@ export const vi: TLocale = {
                         "label": "Hạn chế làm việc/nghỉ ngơi",
                         "sentence": "{target} cần ít nhất {days} ngày OFF mỗi tháng"
                     },
-                    "SOFT_MIN_SKILL_IN_DUTY": {
-                        "label": "điều dưỡng mới/hạn chế về kỹ năng",
-                        "sentence": "{duty} ca cần ít nhất {count} điều dưỡng ở trình độ {level} trở lên"
-                    },
                     "SOFT_MIN_STAFF_BY_DATE_DUTY": {
                         "label": "Hạn chế về nhân sự",
                         "sentence": "Vào ca {date}, {duty} cần ít nhất {count} người"
@@ -15203,10 +14836,6 @@ export const vi: TLocale = {
                     "SOFT_NEED_OFF_AFTER_N": {
                         "label": "Hạn chế làm việc/nghỉ ngơi",
                         "sentence": "{target} cần ít nhất {days} ngày TẮT sau ca N"
-                    },
-                    "SOFT_NEWBIE_NO_SOLO_N": {
-                        "label": "điều dưỡng mới/hạn chế về kỹ năng",
-                        "sentence": "Tránh làm ca N một mình trong {nurse} với tư cách là điều dưỡng mới"
                     },
                     "SOFT_NO_E_TO_D": {
                         "label": "Ràng buộc mẫu bị cấm",
@@ -15418,7 +15047,6 @@ export const vi: TLocale = {
                 "activeCount": "Đã bao gồm {{count}}",
                 "column": {
                     "isWorker": "Bao gồm",
-                    "level": "Cấp độ",
                     "memo": "Bản ghi nhớ",
                     "name": "Tên",
                     "preceptee": "giới luật",
@@ -15445,7 +15073,6 @@ export const vi: TLocale = {
                 "preceptorActive": "Có",
                 "sortByName": "Tên",
                 "sortBySavedOrder": "Thứ tự tùy chỉnh",
-                "sortBySkill": "Cấp độ kỹ năng",
                 "sortListMenuAria": "Mở tùy chọn sắp xếp nhân viên",
                 "totalCount": "Tổng cộng {{count}}"
             },
@@ -15537,7 +15164,7 @@ export const vi: TLocale = {
                 }
             },
             "deleteTeam": "Xóa đội",
-            "description": "Quản lý điều dưỡng, tình trạng sẵn sàng và trình độ kỹ năng của mỗi nhóm ở một nơi.",
+            "description": "Quản lý điều dưỡng và tình trạng sẵn sàng của từng nhóm ở một nơi.",
             "detail": {
                 "cancel": "Hủy bỏ",
                 "canMakeDuty": "Có thể tạo",
@@ -15552,7 +15179,7 @@ export const vi: TLocale = {
                 "disconnected": "Không được kết nối",
                 "disconnectedTooltip": "điều dưỡng này không được kết nối.",
                 "employmentDate": "Ngày làm việc",
-                "employmentDateHint": "Được sử dụng làm cơ sở cho việc phân công kỹ năng tự động",
+                "employmentDateHint": "Dùng như một phần của hồ sơ nhân sự.",
                 "emptyDescription": "Chọn một người từ danh sách bên trái để chỉnh sửa thông tin chi tiết.",
                 "emptyPinnedDescription": "Chọn một điều dưỡng để ghim thông tin chi tiết của họ ở đây.",
                 "emptyTitle": "Chọn điều dưỡng",
@@ -15637,7 +15264,6 @@ export const vi: TLocale = {
                 "dragAria": "Kéo để thay đổi thứ tự",
                 "precepteeAria": "{{nurseName}} giới luật",
                 "preceptorAria": "{{nurseName}} thầy giáo",
-                "unselectedSkill": "Bỏ chọn",
                 "workerAria": "{{nurseName}} được bao gồm trong nghĩa vụ"
             },
             "shiftTeamList": {
@@ -15659,35 +15285,11 @@ export const vi: TLocale = {
                 "subtitle": "Bạn có thể tạo một Lịch trực cho mỗi đội.",
                 "title": "đội"
             },
-            "skillLevelModal": {
-                "autoAssign": "Tự động gán",
-                "autoAssignTooltip": "Chúng tôi sẽ phân bổ đều điều dưỡng đã đăng ký theo cấp độ cho thiết lập ban đầu.",
-                "autoAssignTooltipAria": "Hiển thị mô tả tự động gán",
-                "categoryLabel": "Danh mục",
-                "close": "Đóng cài đặt kỹ năng",
-                "colorLabel": "Màu sắc",
-                "complete": "Hoàn thành",
-                "description": "Bạn có thể xác định các tiêu chí một cách tự do.",
-                "disableAction": "nghỉ cấp độ kỹ năng",
-                "disableConfirmAction": "nghỉ",
-                "disableConfirmDescription": "Hiển thị, lựa chọn và sắp xếp kỹ năng sẽ tạm dừng khi tính năng này nghỉ.",
-                "disableConfirmTitle": "nghỉ cấp độ kỹ năng?",
-                "high": "Cao",
-                "levelCountOption": "{{levelCount}} cấp độ",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "kỹ năng",
-                "low": "Thấp",
-                "temporarySave": "Lưu ngay bây giờ",
-                "title": "Đặt cấp độ kỹ năng"
-            },
-            "skillSettings": "Đặt cấp độ kỹ năng của điều dưỡng",
             "sort": {
                 "manual": "Thứ tự tùy chỉnh",
-                "name": "Thứ tự tên",
-                "skill": "Thứ tự kỹ năng"
+                "name": "Thứ tự tên"
             },
             "sortByPriorityOrder": "Đơn hàng đã lưu",
-            "sortBySkill": "Sắp xếp theo kỹ năng",
             "sortListMenuAria": "Mở tùy chọn sắp xếp danh sách",
             "summary": {
                 "connected": "Đã kết nối",
@@ -15702,7 +15304,6 @@ export const vi: TLocale = {
                 "connection": "Đã kết nối",
                 "isDutyManager": "Có thể tạo lịch trực",
                 "isWorker": "Bao gồm",
-                "level": "kỹ năng",
                 "memo": "Lưu ý",
                 "name": "Tên",
                 "shiftTypes": "ca có sẵn"
@@ -15724,12 +15325,8 @@ export const vi: TLocale = {
                     "title": "Thêm điều dưỡng"
                 },
                 "edit": {
-                    "info": "Sử dụng bảng bên phải để chỉnh sửa tên, kỹ năng, ca làm việc có sẵn, vai trò, quyền và ghi chú.",
+                    "info": "Sử dụng bảng bên phải để chỉnh sửa tên, ca làm việc có sẵn, vai trò, quyền và ghi chú.",
                     "title": "Chỉnh sửa chi tiết điều dưỡng"
-                },
-                "skill": {
-                    "info": "Định cấu hình cấp độ và màu sắc để phù hợp với tiêu chuẩn bệnh viện và khoa của bạn.",
-                    "title": "Đặt cấp độ kỹ năng"
                 },
                 "team": {
                     "info": "Xem nhanh điều dưỡng trong từng nhóm trực.\nBấm đúp vào tên nhóm để đổi tên.",
@@ -15880,13 +15477,9 @@ export const vi: TLocale = {
                 "emptyTeamsDescription": "Tạo một nhóm trước khi đăng ký điều dưỡng.",
                 "emptyTeamsTitle": "Thêm một đội đầu tiên.",
                 "selectedTeamCountAria": "{{teamName}} điều dưỡng: {{count}}",
-                "skillAria": "Cấp độ kỹ năng cho {{nurseName}}",
-                "skillUnselectedBadge": "-",
-                "skillUnselectedOption": "Bỏ chọn",
                 "sort": {
                     "manual": "Đặt hàng thủ công",
-                    "name": "Thứ tự tên",
-                    "skill": "Thứ tự kỹ năng"
+                    "name": "Thứ tự tên"
                 },
                 "sortAria": "Sắp xếp điều dưỡng",
                 "sortOptionsAria": "Tùy chọn sắp xếp điều dưỡng"
@@ -15996,28 +15589,6 @@ export const vi: TLocale = {
                 "work": "công việc",
                 "workTime": "thời gian thay đổi"
             },
-            "skillCta": {
-                "aria": "Cài đặt cấp độ kỹ năng",
-                "description": "Khi tạo lịch, điều dưỡng có thể được phân công tự động theo cấp độ kỹ năng.",
-                "title": "Đặt cấp độ kỹ năng của điều dưỡng?"
-            },
-            "skillLevelModal": {
-                "autoAssign": "Tự động gán",
-                "autoAssignTooltip": "Tự động phân bổ các điều dưỡng đã đăng ký theo các cấp độ cho nhiệm vụ ban đầu.",
-                "cancel": "Hủy bỏ",
-                "categoryLabel": "Danh mục",
-                "colorLabel": "Màu sắc",
-                "complete": "Hoàn thành",
-                "description": "Bạn có thể xác định các tiêu chí một cách tự do.",
-                "disable": "Hủy cài đặt kỹ năng",
-                "high": "Cao",
-                "levelCountAria": "Số cấp độ kỹ năng",
-                "levelCountOption": "{{levelCount}} cấp độ",
-                "levelDisplay": "LV. {{level}}",
-                "levelLabel": "Cấp độ",
-                "low": "Thấp",
-                "title": "Đặt cấp độ kỹ năng"
-            },
             "teamTabs": {
                 "addTeam": "Thêm đội"
             },
@@ -16036,8 +15607,6 @@ export const vi: TLocale = {
                 "reloadDraftError": "Không thể tải bản nháp thiết lập khoa đã lưu.",
                 "saveDraftError": "Không thể lưu thông tin khoa cơ bản. Vui lòng thử lại.",
                 "saveScheduleError": "Không thể lưu lịch ban đầu.",
-                "skillConfigDisabled": "Cài đặt kỹ năng bị vô hiệu hóa.",
-                "skillConfigSaved": "Áp dụng cài đặt kỹ năng cho danh sách điều dưỡng.",
                 "uploadApplied": "Đã áp dụng tệp lịch."
             },
             "upload": {
@@ -16219,7 +15788,6 @@ export const vi: TLocale = {
                 "noNurseDescription": "Thêm điều dưỡng vào nhóm này từ Quản lý thành viên trước khi xem xét các ca được yêu cầu.",
                 "noNurseTitleSuffix": "vẫn chưa có điều dưỡng",
                 "reorderAria": "Sắp xếp lại {{name}}",
-                "skillColumn": "kỹ năng",
                 "status": {
                     "accepted": "Đã áp dụng",
                     "pending": "Cần xem xét",
