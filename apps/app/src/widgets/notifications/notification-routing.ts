@@ -49,6 +49,8 @@ export const resolveNotificationNavigationPath = (
 
     if (!rawUrl) return fallbackPath;
 
+    if (rawUrl.startsWith('//')) return fallbackPath;
+
     if (rawUrl.startsWith('/')) {
         const parsedUrl = new URL(rawUrl, LOCAL_URL_BASE);
 

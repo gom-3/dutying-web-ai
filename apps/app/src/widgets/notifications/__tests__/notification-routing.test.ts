@@ -64,5 +64,14 @@ describe('notification routing', () => {
                 'https://www.dutying.ai',
             ),
         ).toBe(ROUTE.DUTY);
+        expect(
+            resolveNotificationNavigationPath(
+                notification({
+                    domain: 'BOARD',
+                    url: '//example.com/phishing',
+                }),
+                'https://www.dutying.ai',
+            ),
+        ).toBe(ROUTE.BOARD);
     });
 });
