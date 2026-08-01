@@ -102,7 +102,7 @@ export const zh = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '个人条件',
-                        sentence: '{nurse}不能在周末工作',
+                        sentence: '{nurse}不能在周末或节假日工作',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: '熟练度条件',
@@ -202,7 +202,7 @@ export const zh = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '个人条件',
-                        sentence: '{nurse}不能在周末工作',
+                        sentence: '{nurse}不能在周末或节假日工作',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: '熟练度条件',

@@ -102,7 +102,7 @@ export const vi = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: 'Điều kiện cá nhân',
-                        sentence: '{nurse} không được làm việc cuối tuần',
+                        sentence: '{nurse} không được làm việc cuối tuần hoặc ngày lễ',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: 'Điều kiện kỹ năng',
@@ -202,7 +202,7 @@ export const vi = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'Điều kiện cá nhân',
-                        sentence: '{nurse} không được làm việc cuối tuần',
+                        sentence: '{nurse} không được làm việc cuối tuần hoặc ngày lễ',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: 'Điều kiện kỹ năng',

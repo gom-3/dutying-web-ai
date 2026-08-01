@@ -147,6 +147,7 @@ function toWardChatMessage(payload: TWardChatRealtimePayload): TWardChatMessageR
         text: typeof payload.text === 'string' ? payload.text : '',
         sentAt: typeof payload.sentAt === 'string' ? payload.sentAt : new Date().toISOString(),
         isDeleted: payload.isDeleted === true,
+        unreadMemberCount: toUnreadCount(payload.unreadMemberCount),
     };
 }
 
@@ -256,7 +257,16 @@ function compareMessages(a: TWardChatMessageResponse, b: TWardChatMessageRespons
 function mergeMessages(current: TWardChatMessageResponse[], incoming: TWardChatMessageResponse[]) {
     const messages = new Map(current.map((message) => [message.messageId, message]));
 
-    incoming.forEach((message) => messages.set(message.messageId, message));
+    incoming.forEach((message) => {
+        const existingMessage = messages.get(message.messageId);
+
+        messages.set(message.messageId, {
+            ...existingMessage,
+            ...message,
+            imageUrls: message.imageUrls ?? existingMessage?.imageUrls,
+            unreadMemberCount: message.unreadMemberCount ?? existingMessage?.unreadMemberCount,
+        });
+    });
 
     return Array.from(messages.values()).sort(compareMessages);
 }
@@ -306,6 +316,7 @@ function ChatMessage({
 }) {
     const {t} = useTypedTranslation();
     const text = message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text;
+    const unreadMemberCount = isMine ? Math.max(0, Math.trunc(message.unreadMemberCount ?? 0)) : 0;
 
     return (
         <div className={cn('flex w-full min-w-0 gap-2.5', isMine ? 'justify-end' : 'justify-start')}>
@@ -331,7 +342,17 @@ function ChatMessage({
                     >
                         {text}
                     </p>
-                    <span className="mb-1 shrink-0 text-[11px] font-medium text-gray-4">{formatTime(message.sentAt)}</span>
+                    <span
+                        className={cn(
+                            'mb-1 flex shrink-0 flex-col gap-0.5 text-[11px] font-medium text-gray-4',
+                            isMine ? 'items-end' : 'items-start',
+                        )}
+                    >
+                        {unreadMemberCount > 0 ? (
+                            <span className="font-bold text-main-1">{getUnreadLabel(unreadMemberCount)}</span>
+                        ) : null}
+                        <span>{formatTime(message.sentAt)}</span>
+                    </span>
                 </div>
             </div>
         </div>

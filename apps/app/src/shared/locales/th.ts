@@ -102,7 +102,7 @@ export const th = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: 'เงื่อนไขรายบุคคล',
-                        sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์',
+                        sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: 'เงื่อนไขทักษะ',
@@ -202,7 +202,7 @@ export const th = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'เงื่อนไขรายบุคคล',
-                        sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์',
+                        sentence: '{nurse}ห้ามทำงานวันหยุดสุดสัปดาห์หรือวันหยุด',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: 'เงื่อนไขทักษะ',

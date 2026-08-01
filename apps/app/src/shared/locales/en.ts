@@ -885,7 +885,7 @@ export const en: TLocale = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: 'Personal constraint',
-                        sentence: '{nurse} cannot work weekends',
+                        sentence: '{nurse} cannot work weekends or holidays',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: 'Skill constraint',
@@ -985,7 +985,7 @@ export const en: TLocale = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: 'Person-specific constraint',
-                        sentence: 'Avoid weekend shifts for {nurse}',
+                        sentence: 'Avoid weekend/holiday shifts for {nurse}',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: 'New nurse / skill constraint',

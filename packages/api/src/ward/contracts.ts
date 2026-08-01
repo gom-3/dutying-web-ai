@@ -65,6 +65,7 @@ export type TWardChatMessageResponse = {
     imageUrls?: string[];
     sentAt: string;
     isDeleted: boolean;
+    unreadMemberCount?: number | null;
 };
 
 export type TWardChatMessagesResponse = {

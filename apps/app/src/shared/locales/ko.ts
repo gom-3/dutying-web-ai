@@ -882,7 +882,7 @@ export const ko = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '개인 조건',
-                        sentence: '{nurse}는 주말 근무를 하면 안 돼요',
+                        sentence: '{nurse}는 주말/공휴일 근무를 하면 안 돼요',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: '숙련도 조건',
@@ -982,7 +982,7 @@ export const ko = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '사람별 근무 제한',
-                        sentence: '{nurse}은 주말 근무를 피해요',
+                        sentence: '{nurse}은 주말/공휴일 근무를 피해요',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: '신규 / 경력 / 숙련도 규칙',

@@ -119,6 +119,7 @@ describe('WardChatWidget', () => {
             text: 'Reply message',
             sentAt: '2026-05-25T04:57:01.462Z',
             isDeleted: false,
+            unreadMemberCount: 2,
         });
         wardApiMock.getShiftTeams.mockResolvedValue([
             {
@@ -366,6 +367,7 @@ describe('WardChatWidget', () => {
             ),
         );
         expect(await screen.findByText('Reply message')).toBeInTheDocument();
+        expect(await screen.findByText('2')).toBeInTheDocument();
     });
 
     it('keeps long unbroken messages constrained to wrapping bubbles', async () => {

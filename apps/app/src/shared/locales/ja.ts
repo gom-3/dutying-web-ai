@@ -1514,7 +1514,7 @@ export const ja: TLocale = {
                     },
                     NURSE_FORBID_WEEKEND: {
                         label: '個人条件',
-                        sentence: '{nurse}は週末勤務をしてはいけません',
+                        sentence: '{nurse}は週末・祝日勤務をしてはいけません',
                     },
                     NURSE_NOT_ALONE_N: {
                         label: '熟練度条件',
@@ -1614,7 +1614,7 @@ export const ja: TLocale = {
                     },
                     SOFT_NO_WEEKEND_FOR_NURSE: {
                         label: '個人別勤務制限',
-                        sentence: '{nurse}は週末勤務を避けます',
+                        sentence: '{nurse}は週末・祝日勤務を避けます',
                     },
                     SOFT_NEWBIE_NO_SOLO_N: {
                         label: '新人/経験/習熟度条件',

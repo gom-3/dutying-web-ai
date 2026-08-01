@@ -1329,7 +1329,7 @@ export const ko = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "사람별 근무 제한",
-                        "sentence": "{nurse}은 주말 근무를 피해요"
+                        "sentence": "{nurse}은 주말/공휴일 근무를 피해요"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "근무자 조합",
@@ -4110,7 +4110,7 @@ export const en: TLocale = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "Person-specific constraint",
-                        "sentence": "Avoid weekend shifts for {nurse}"
+                        "sentence": "Avoid weekend/holiday shifts for {nurse}"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "Worker pairing",
@@ -6889,7 +6889,7 @@ export const ja: TLocale = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "看護師別勤務条件",
-                        "sentence": "{nurse}は週末勤務を避けます"
+                        "sentence": "{nurse}は週末・祝日勤務を避けます"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "看護師の組み合わせ",
@@ -9668,7 +9668,7 @@ export const zh: TLocale = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "每人工作限制",
-                        "sentence": "{nurse} 避免在周末工作"
+                        "sentence": "{nurse} 避免在周末或节假日工作"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "工会",
@@ -12447,7 +12447,7 @@ export const th: TLocale = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "ข้อจำกัดเฉพาะบุคคล",
-                        "sentence": "หลีกเลี่ยงการกะวันหยุดสุดสัปดาห์สำหรับ {nurse}"
+                        "sentence": "หลีกเลี่ยงการกะวันหยุดสุดสัปดาห์หรือวันหยุดสำหรับ {nurse}"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "การจับคู่คนงาน",
@@ -15226,7 +15226,7 @@ export const vi: TLocale = {
                     },
                     "SOFT_NO_WEEKEND_FOR_NURSE": {
                         "label": "Ràng buộc dành riêng cho từng người",
-                        "sentence": "Tránh làm ca cuối tuần trong {nurse}"
+                        "sentence": "Tránh làm ca cuối tuần hoặc ngày lễ cho {nurse}"
                     },
                     "SOFT_PREFER_SAME_DUTY_PAIR": {
                         "label": "Ghép đôi công nhân",
