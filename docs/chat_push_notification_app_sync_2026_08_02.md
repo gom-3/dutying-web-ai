@@ -78,6 +78,8 @@ FCM `data` 값은 모두 string으로 내려옵니다.
 
 ## FCM Notification 문구
 
+Android는 앱이 `chat` 알림 채널을 등록한 버전 이상에서 서버가 `channel_id=chat`을 함께 보냅니다. 해당 채널을 등록한 앱 버전 번호를 서버에 공유해 주세요.
+
 | 항목 | 병동톡 | 모임톡 |
 | --- | --- | --- |
 | title | `{wardName} 병동톡` | `{moimName}` |
