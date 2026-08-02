@@ -140,7 +140,6 @@ describe('useEditShiftTeam', () => {
         expect(isSuccess).toBe(true);
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
             phoneNum: null,
-            birthDate: '1996-03-14',
             name: '김하나',
         });
     });

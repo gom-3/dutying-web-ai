@@ -19,6 +19,8 @@ export const createAccountApi = (client: IApiClient): IAccountAPI => ({
         (await client.patch<TAccountResponse>(`/accounts/${accountId}/status?status=${status}`)).data,
     initAccount: async ({accountId, ...dto}: TEditProfileRequest) =>
         (await client.patch<TAccountResponse>(`/accounts/v2/${accountId}/init`, dto)).data,
+    updateBirthDate: async (birthDate: string | null) =>
+        (await client.patch<TAccountResponse>('/accounts/me/birth-date', {birthDate})).data,
     updatePreferences: async (dto: TUpdateAccountPreferencesRequest) =>
         (await client.patch<TAccountResponse>('/accounts/me/preferences', dto)).data,
     deleteAccount: async (accountId) => (await client.delete<void>(`/accounts/${accountId}`)).data,

@@ -16,22 +16,24 @@ const {
     mockNavigate,
     mockSetLoading,
     mockToastError,
+    mockUpdateBirthDate,
     mockUseAuth,
     mockWardQuitWard,
 } = vi.hoisted(() => ({
-        mockAdminDeleteMe: vi.fn(),
-        mockAdminQuitWard: vi.fn(),
-        mockCaptureException: vi.fn(),
-        mockDeleteAccount: vi.fn(),
-        mockEditAccountStatus: vi.fn(),
-        mockHandleGetAccountMe: vi.fn(),
-        mockHandleLogout: vi.fn(),
-        mockNavigate: vi.fn(),
-        mockSetLoading: vi.fn(),
-        mockToastError: vi.fn(),
-        mockUseAuth: vi.fn(),
-        mockWardQuitWard: vi.fn(),
-    }));
+    mockAdminDeleteMe: vi.fn(),
+    mockAdminQuitWard: vi.fn(),
+    mockCaptureException: vi.fn(),
+    mockDeleteAccount: vi.fn(),
+    mockEditAccountStatus: vi.fn(),
+    mockHandleGetAccountMe: vi.fn(),
+    mockHandleLogout: vi.fn(),
+    mockNavigate: vi.fn(),
+    mockSetLoading: vi.fn(),
+    mockToastError: vi.fn(),
+    mockUpdateBirthDate: vi.fn(),
+    mockUseAuth: vi.fn(),
+    mockWardQuitWard: vi.fn(),
+}));
 
 vi.mock('@sentry/react', () => ({
     captureException: mockCaptureException,
@@ -70,6 +72,7 @@ vi.mock('@/shared/api', () => ({
         deleteAccount: mockDeleteAccount,
         editAccount: vi.fn(),
         editAccountStatus: mockEditAccountStatus,
+        updateBirthDate: mockUpdateBirthDate,
     },
     AdminAPI: {
         deleteMe: mockAdminDeleteMe,
@@ -201,6 +204,44 @@ describe('useEditAccount.deleteAccount', () => {
             }),
         );
         expect(mockToastError).toHaveBeenCalled();
+        expect(mockSetLoading).toHaveBeenLastCalledWith(false);
+    });
+});
+
+describe('useEditAccount.updateBirthDate', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mockHandleGetAccountMe.mockResolvedValue(undefined);
+        mockUpdateBirthDate.mockResolvedValue({accountId: 7, birthDate: '1996-03-14'});
+        mockUseAuth.mockReturnValue({
+            state: {
+                accountMe: {
+                    accountId: 7,
+                    wardId: 3,
+                    nurseId: 11,
+                    email: 'user@example.com',
+                    name: 'User',
+                    profileImgUrl: '',
+                    status: 'LINKED',
+                },
+                accessToken: createJwt({principalType: 'ACCOUNT'}),
+            },
+            actions: {
+                handleGetAccountMe: mockHandleGetAccountMe,
+                handleLogout: mockHandleLogout,
+            },
+        });
+    });
+
+    it('saves through the account birthDate endpoint and refreshes accountMe', async () => {
+        const queryClient = new QueryClient();
+        const {result} = renderHook(() => useEditAccount(), {wrapper: createWrapper(queryClient)});
+
+        await expect(result.current.updateBirthDate('1996-03-14')).resolves.toBe(true);
+
+        expect(mockUpdateBirthDate).toHaveBeenCalledWith('1996-03-14');
+        expect(mockHandleGetAccountMe).toHaveBeenCalledTimes(1);
+        expect(mockSetLoading).toHaveBeenNthCalledWith(1, true);
         expect(mockSetLoading).toHaveBeenLastCalledWith(false);
     });
 });

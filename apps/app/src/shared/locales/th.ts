@@ -31,6 +31,14 @@ export const th = {
             retry: 'ลองอีกครั้ง',
             empty: 'ไม่มีการแจ้งเตือนใหม่',
         },
+        profile: {
+            ...generatedTh.page.profile,
+            birthDate: 'วันเกิด',
+            validation: {
+                ...generatedTh.page.profile.validation,
+                birthDateInvalid: 'กรุณาใส่วันที่ตั้งแต่ 1900-01-01 ถึงวันนี้',
+            },
+        },
         member: {
             ...generatedTh.page.member,
             detail: {
@@ -217,6 +225,16 @@ export const th = {
                         sentence: '{nurseA}ควรทำเวรเดียวกับ{nurseB}',
                     },
                 },
+            },
+        },
+    },
+    feature: {
+        ...generatedTh.feature,
+        account: {
+            ...generatedTh.feature.account,
+            edit: {
+                ...generatedTh.feature.account.edit,
+                birthDateFailed: 'ไม่สามารถบันทึกวันเกิดได้',
             },
         },
     },

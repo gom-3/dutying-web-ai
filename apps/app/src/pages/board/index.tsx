@@ -113,6 +113,7 @@ const boardT = (key: string, options?: Record<string, string | number | boolean 
     i18n.t(`${BOARD_I18N_PREFIX}${key}`, options);
 const getPostId = (post: TWardBoardPost) => BoardAPI.getPostId(post);
 const getScheduleId = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleId(schedule);
+const getScheduleEventKey = (schedule: TWardBoardSchedule) => BoardAPI.getScheduleEventKey(schedule);
 const getCommentId = (comment: TWardBoardComment) => comment.commentId ?? comment.id ?? 0;
 const getAuthorName = (post: TWardBoardPost) => post.writerName ?? post.authorName ?? boardT('common.author');
 const readBooleanLike = (value: unknown) => {
@@ -1528,7 +1529,7 @@ function DeadlineCalendar({
 
             return {
                 kind: 'schedule',
-                key: `schedule-${getScheduleId(schedule)}`,
+                key: getScheduleEventKey(schedule),
                 date: startDate,
                 title: schedule.title,
                 meta: `${dateRange} · ${timeRange || getScheduleWriterName(schedule)}`,
@@ -1548,7 +1549,7 @@ function DeadlineCalendar({
 
                 return getDateKeysInRange(startDate, endDate).map((dateKey) => ({
                     kind: 'schedule',
-                    key: `schedule-${getScheduleId(schedule)}-${dateKey}`,
+                    key: `${getScheduleEventKey(schedule)}-${dateKey}`,
                     date: dateKey,
                     title: schedule.title,
                     meta: timeRange || getScheduleWriterName(schedule),
@@ -1575,9 +1576,17 @@ function DeadlineCalendar({
             [...events].sort((a, b) => {
                 if (a.date !== b.date) return a.date.localeCompare(b.date);
 
-                if (a.kind !== b.kind) return a.kind === 'schedule' ? -1 : 1;
+                const aAllDay = a.kind === 'schedule' ? getScheduleAllDay(a.schedule) : true;
+                const bAllDay = b.kind === 'schedule' ? getScheduleAllDay(b.schedule) : true;
 
-                return a.title.localeCompare(b.title);
+                if (aAllDay !== bAllDay) return aAllDay ? -1 : 1;
+
+                const aStartTime = a.kind === 'schedule' ? (getScheduleStartTime(a.schedule) ?? '') : '';
+                const bStartTime = b.kind === 'schedule' ? (getScheduleStartTime(b.schedule) ?? '') : '';
+
+                if (aStartTime !== bStartTime) return aStartTime.localeCompare(bStartTime);
+
+                return a.key.localeCompare(b.key);
             });
 
         return {

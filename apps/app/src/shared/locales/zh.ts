@@ -31,6 +31,14 @@ export const zh = {
             retry: '重试',
             empty: '没有新通知。',
         },
+        profile: {
+            ...generatedZh.page.profile,
+            birthDate: '出生日期',
+            validation: {
+                ...generatedZh.page.profile.validation,
+                birthDateInvalid: '请输入 1900-01-01 至今天之间的日期。',
+            },
+        },
         member: {
             ...generatedZh.page.member,
             detail: {
@@ -217,6 +225,16 @@ export const zh = {
                         sentence: '{nurseA}最好与{nurseB}安排相同班次',
                     },
                 },
+            },
+        },
+    },
+    feature: {
+        ...generatedZh.feature,
+        account: {
+            ...generatedZh.feature.account,
+            edit: {
+                ...generatedZh.feature.account.edit,
+                birthDateFailed: '无法保存出生日期。',
             },
         },
     },

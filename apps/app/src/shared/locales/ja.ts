@@ -548,6 +548,7 @@ export const ja: TLocale = {
             namePlaceholder: '名前を入力してください',
             phoneNum: '電話番号',
             phoneNumPlaceholder: '電話番号を入力してください',
+            birthDate: '生年月日',
             randomAvatar: 'ランダムアバター',
             uploadPhoto: '写真をアップロード',
             logout: 'ログアウト',
@@ -562,6 +563,7 @@ export const ja: TLocale = {
                 nameInvalid: "名前は20文字以内で、韓国語・英語・日本語、スペース、'-'、'·'のみ使用できます。",
                 phoneRequired: '電話番号を入力してください。',
                 phoneInvalid: '選択した言語または地域に合う電話番号を入力してください。',
+                birthDateInvalid: '1900-01-01から今日までの日付を入力してください。',
             },
             confirm: {
                 deleteTitle: 'アカウントを削除しますか？',
@@ -1886,6 +1888,7 @@ export const ja: TLocale = {
             edit: {
                 profileFailed: 'プロフィールを更新できませんでした。',
                 basicFailed: 'アカウント情報を更新できませんでした。',
+                birthDateFailed: '生年月日を保存できませんでした。',
                 quitWardConfirm: '病棟から退出しますか？',
                 quitWardFailed: '病棟から退出できませんでした。',
                 deleteAccountFailed: 'アカウントを削除できませんでした。',

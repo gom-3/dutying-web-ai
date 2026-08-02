@@ -124,6 +124,28 @@ const useEditAccount = () => {
             setLoading(false);
         }
     };
+    const updateBirthDate = async (birthDate: string | null) => {
+        if (!accountMe || isWardAdmin) return false;
+
+        try {
+            setLoading(true);
+
+            await AccountAPI.updateBirthDate(birthDate);
+            await handleGetAccountMe();
+
+            return true;
+        } catch (e) {
+            Sentry.captureException(e, {
+                tags: {feature: 'account', action: 'update-birth-date'},
+                extra: {accountId: accountMe.accountId, birthDate},
+            });
+            toast.error(t('feature.account.edit.birthDateFailed'));
+
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    };
     const quitWard = async () => {
         if (!accountMe?.wardId) return;
 
@@ -176,7 +198,7 @@ const useEditAccount = () => {
         }
     };
 
-    return {quitWard, handleEditProfile, handleEditAccountBasic, updateAccountPreferences, deleteAccount};
+    return {quitWard, handleEditProfile, handleEditAccountBasic, updateBirthDate, updateAccountPreferences, deleteAccount};
 };
 
 export default useEditAccount;

@@ -31,6 +31,14 @@ export const vi = {
             retry: 'Thử lại',
             empty: 'Không có thông báo mới.',
         },
+        profile: {
+            ...generatedVi.page.profile,
+            birthDate: 'Ngày sinh',
+            validation: {
+                ...generatedVi.page.profile.validation,
+                birthDateInvalid: 'Nhập ngày từ 1900-01-01 đến hôm nay.',
+            },
+        },
         member: {
             ...generatedVi.page.member,
             detail: {
@@ -217,6 +225,16 @@ export const vi = {
                         sentence: '{nurseA} nên làm cùng ca với {nurseB}',
                     },
                 },
+            },
+        },
+    },
+    feature: {
+        ...generatedVi.feature,
+        account: {
+            ...generatedVi.feature.account,
+            edit: {
+                ...generatedVi.feature.account.edit,
+                birthDateFailed: 'Không thể lưu ngày sinh.',
             },
         },
     },

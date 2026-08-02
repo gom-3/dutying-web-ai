@@ -30,6 +30,7 @@ export type TAccount = {
     email: string;
     name: string;
     phoneNum?: string | null;
+    birthDate?: string | null;
     /** @deprecated use profileImgUrl */
     profileImgBase64?: string;
     profileImgUrl: string;

@@ -72,7 +72,12 @@ describe('BoardAPI', () => {
 
         mockGet.mockResolvedValue({data: response});
 
-        await expect(BoardAPI.getSchedules(287, '2026-05-01', '2026-05-31')).resolves.toEqual(response);
+        await expect(BoardAPI.getSchedules(287, '2026-05-01', '2026-05-31')).resolves.toEqual(
+            response.map((schedule) => ({
+                ...schedule,
+                eventKey: `event-${schedule.scheduleId}`,
+            })),
+        );
 
         expect(mockGet).toHaveBeenCalledWith('/wards/287/board/schedules?startDate=2026-05-01&endDate=2026-05-31');
     });
@@ -91,13 +96,20 @@ describe('BoardAPI', () => {
 
         mockGet.mockResolvedValue({data: response});
 
-        await expect(BoardAPI.getSchedules(287, '2026-06-01', '2026-06-30')).resolves.toEqual(response.schedules);
+        await expect(BoardAPI.getSchedules(287, '2026-06-01', '2026-06-30')).resolves.toEqual([
+            {
+                ...response.schedules[0],
+                eventKey: 'event-3',
+            },
+        ]);
     });
 
     it('normalizes snake_case board schedule response fields', async () => {
         const response = [
             {
-                scheduleId: 4,
+                id: null,
+                ward_calendar_event_id: null,
+                event_key: 'birthday-100-2026-03-14',
                 title: '종일 교육',
                 scheduleDate: '2026-06-03',
                 start_date: '2026-06-03',
@@ -108,6 +120,9 @@ describe('BoardAPI', () => {
                 editable_by_me: 1,
                 deletable_by_me: 1,
                 source_type: 'MANUAL' as const,
+                source_account_id: 100,
+                source_nurse_id: 10,
+                created_origin: 'SYSTEM',
             },
         ];
 
@@ -124,9 +139,26 @@ describe('BoardAPI', () => {
                 endTime: null,
                 editableByMe: true,
                 deletableByMe: true,
+                eventKey: 'birthday-100-2026-03-14',
+                wardCalendarEventId: null,
                 sourceType: 'MANUAL',
+                sourceAccountId: 100,
+                sourceNurseId: 10,
+                createdOrigin: 'SYSTEM',
             },
         ]);
+    });
+
+    it('uses eventKey as the stable schedule list key when id is null', () => {
+        expect(
+            BoardAPI.getScheduleEventKey({
+                id: null,
+                eventKey: 'birthday-100-2026-03-14',
+                title: '김듀티님 생일',
+                startDate: '2026-03-14',
+                endDate: '2026-03-14',
+            }),
+        ).toBe('birthday-100-2026-03-14');
     });
 
     it('creates, updates, and deletes board schedules on the schedule endpoints', async () => {

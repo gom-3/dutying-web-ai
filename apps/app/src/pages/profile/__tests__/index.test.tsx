@@ -6,7 +6,7 @@ import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
 import useProfileImage from '@/features/file';
 import ROUTE from '@/shared/constant/path';
-import {render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
+import {fireEvent, render, screen, userEvent, waitFor, within} from '@/shared/util/test-utils';
 import ProfilePage from '..';
 
 vi.mock('@/features/auth', () => ({
@@ -31,6 +31,7 @@ const mockedUseProfileImage = vi.mocked(useProfileImage);
 const mockHandleLogout = vi.fn();
 const mockDeleteAccount = vi.fn();
 const mockHandleEditAccountBasic = vi.fn();
+const mockUpdateBirthDate = vi.fn();
 const mockUpdateAccountPreferences = vi.fn();
 
 describe('ProfilePage account actions', () => {
@@ -39,8 +40,10 @@ describe('ProfilePage account actions', () => {
         mockHandleLogout.mockReset();
         mockDeleteAccount.mockReset();
         mockHandleEditAccountBasic.mockReset();
+        mockUpdateBirthDate.mockReset();
         mockUpdateAccountPreferences.mockReset();
         mockHandleEditAccountBasic.mockResolvedValue(true);
+        mockUpdateBirthDate.mockResolvedValue(true);
         mockUpdateAccountPreferences.mockResolvedValue(true);
         mockedUseAuth.mockReturnValue({
             state: {
@@ -52,6 +55,7 @@ describe('ProfilePage account actions', () => {
                     name: '홍길동',
                     phoneNum: '01012345678',
                     profileImgUrl: '',
+                    birthDate: null,
                     status: 'WARD_SELECT_PENDING',
                     preferredLanguage: 'ko',
                     serviceRegion: 'KR',
@@ -68,6 +72,7 @@ describe('ProfilePage account actions', () => {
             quitWard: vi.fn(),
             handleEditProfile: vi.fn(),
             handleEditAccountBasic: mockHandleEditAccountBasic,
+            updateBirthDate: mockUpdateBirthDate,
             updateAccountPreferences: mockUpdateAccountPreferences,
             deleteAccount: mockDeleteAccount,
         });
@@ -109,6 +114,22 @@ describe('ProfilePage account actions', () => {
         });
     });
 
+    it('updates birthDate through the dedicated account endpoint', async () => {
+        render(
+            <MemoryRouter>
+                <ProfilePage />
+            </MemoryRouter>,
+        );
+
+        fireEvent.change(screen.getByLabelText('생년월일'), {target: {value: '1996-03-14'}});
+        await userEvent.click(screen.getByRole('button', {name: '변경사항 저장'}));
+
+        await waitFor(() => {
+            expect(mockUpdateBirthDate).toHaveBeenCalledWith('1996-03-14');
+        });
+        expect(mockHandleEditAccountBasic).not.toHaveBeenCalled();
+    });
+
     it('accepts an international phone number for a Japanese profile', async () => {
         mockedUseAuth.mockReturnValue({
             state: {
@@ -120,6 +141,7 @@ describe('ProfilePage account actions', () => {
                     name: 'Yamada',
                     phoneNum: '',
                     profileImgUrl: '',
+                    birthDate: null,
                     status: 'WARD_SELECT_PENDING',
                     preferredLanguage: 'ja',
                     serviceRegion: 'JP',

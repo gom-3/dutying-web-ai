@@ -556,6 +556,7 @@ export const en: TLocale = {
             namePlaceholder: 'Enter your name',
             phoneNum: 'Phone number',
             phoneNumPlaceholder: 'Enter your phone number',
+            birthDate: 'Date of birth',
             randomAvatar: 'Random avatar',
             uploadPhoto: 'Upload photo',
             logout: 'Sign out',
@@ -570,6 +571,7 @@ export const en: TLocale = {
                 nameInvalid: "Use up to 20 Korean, English, or Japanese characters, spaces, '-', or '·'.",
                 phoneRequired: 'Enter your phone number.',
                 phoneInvalid: 'Enter a valid phone number for the selected language or region.',
+                birthDateInvalid: 'Enter a date from 1900-01-01 through today.',
             },
             confirm: {
                 deleteTitle: 'Delete account?',
@@ -2171,6 +2173,7 @@ export const en: TLocale = {
             edit: {
                 profileFailed: 'Could not update the profile.',
                 basicFailed: 'Could not update account information.',
+                birthDateFailed: 'Could not save the date of birth.',
                 quitWardConfirm: 'Leave this ward?',
                 quitWardFailed: 'Could not leave the ward.',
                 deleteAccountFailed: 'Could not delete the account.',

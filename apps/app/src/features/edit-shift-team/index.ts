@@ -39,14 +39,6 @@ const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clear
 
     return trimmedPhoneNum.length > 0 ? trimmedPhoneNum : options.clearBlank ? null : undefined;
 };
-const toOptionalLocalDate = (value: string | null | undefined) => {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-
-    const trimmed = value.trim();
-
-    return trimmed.length > 0 ? trimmed : null;
-};
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
 const getNextNewNurseName = (names: string[], prefix: string) => {
@@ -108,7 +100,6 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     compactRequest({
         name: nurse.name?.trim(),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
-        birthDate: toOptionalLocalDate(nurse.birthDate),
         isWorker: nurse.isWorker,
         isWardManager: nurse.isWardManager,
         memo: nurse.memo ?? undefined,

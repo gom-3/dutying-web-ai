@@ -35,6 +35,21 @@ describe('@dutying/api public entry', () => {
         expect(postMock).toHaveBeenCalledWith('/wards/7/shift-teams/3/post?year=2026&month=03');
     });
 
+    it('updates account birthDate through the dedicated endpoint', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: {accountId: 12, birthDate: '1996-03-14'}});
+
+        const accountApi = createAccountApi(client);
+
+        await expect(accountApi.updateBirthDate('1996-03-14')).resolves.toEqual({accountId: 12, birthDate: '1996-03-14'});
+
+        expect(patchMock).toHaveBeenCalledWith('/accounts/me/birth-date', {
+            birthDate: '1996-03-14',
+        });
+    });
+
     it('posts onboarding ward creation payload to /wards once', async () => {
         const client = createClient();
         const postMock = client.post as ReturnType<typeof vi.fn>;
@@ -675,7 +690,6 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
             name: '김간호사',
             phoneNum: '010-1234-5678',
-            birthDate: '1996-03-14',
             isWorker: true,
             isWardManager: false,
             memo: '메모',
@@ -697,7 +711,7 @@ describe('@dutying/api public entry', () => {
         });
     });
 
-    it('preserves explicit null birthDate values in nurse patch payloads', async () => {
+    it('does not send retired birthDate values in nurse patch payloads', async () => {
         const client = createClient();
         const patchMock = client.patch as ReturnType<typeof vi.fn>;
 
@@ -705,26 +719,9 @@ describe('@dutying/api public entry', () => {
 
         const nurseApi = createNurseApi(client);
 
-        await expect(nurseApi.updateNurse(12, {birthDate: null})).resolves.toEqual({nurseId: 12});
+        await expect(nurseApi.updateNurse(12, {birthDate: null} as never)).resolves.toEqual({nurseId: 12});
 
-        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
-            birthDate: null,
-        });
-    });
-
-    it('normalizes blank birthDate values to null in nurse patch payloads', async () => {
-        const client = createClient();
-        const patchMock = client.patch as ReturnType<typeof vi.fn>;
-
-        patchMock.mockResolvedValueOnce({data: {nurseId: 12}});
-
-        const nurseApi = createNurseApi(client);
-
-        await expect(nurseApi.updateNurse(12, {birthDate: ''})).resolves.toEqual({nurseId: 12});
-
-        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
-            birthDate: null,
-        });
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {});
     });
 
     it('clears dummy phone values in nurse patch payloads', async () => {
@@ -800,6 +797,22 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenCalledWith('/nurses/7/shift-types/104', {
             isPossible: false,
             isPreferred: true,
+        });
+    });
+
+    it('sends nurse shift type target ratio weight values', async () => {
+        const client = createClient();
+        const patchMock = client.patch as ReturnType<typeof vi.fn>;
+
+        patchMock.mockResolvedValueOnce({data: undefined});
+
+        const nurseApi = createNurseApi(client);
+
+        await expect(nurseApi.updateNurseShiftType(7, 104, {isPossible: true, targetRatioWeight: 14})).resolves.toBeUndefined();
+
+        expect(patchMock).toHaveBeenCalledWith('/nurses/7/shift-types/104', {
+            isPossible: true,
+            targetRatioWeight: 14,
         });
     });
 });

@@ -26,7 +26,6 @@ export interface INurseAPI {
 export type TCreateNurseDTO = {
     name: string;
     phoneNum?: string | null;
-    birthDate?: string | null;
     isWorker?: boolean;
     isWardManager?: boolean;
     memo?: string | null;
@@ -39,7 +38,6 @@ export type TCreateNurseDTO = {
 export type TUpdateNurseDTO = {
     name?: string;
     phoneNum?: string | null;
-    birthDate?: string | null;
     isWorker?: boolean;
     isWardManager?: boolean;
     memo?: string | null;

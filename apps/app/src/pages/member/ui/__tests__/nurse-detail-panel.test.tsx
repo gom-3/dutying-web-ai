@@ -80,40 +80,19 @@ describe('NurseDetailPanel', () => {
         mockUseEditShiftTeam.mockReset();
     });
 
-    it('formats numeric birthDate input with a four-digit year and saves it as a local date', async () => {
-        const {updateNurse} = renderPanel(createNurse({birthDate: '1996-03-14'}));
+    it('shows birthDate as a read-only field and leaves it out of the nurse patch payload', async () => {
+        const {container, updateNurse} = renderPanel(createNurse({birthDate: '1996-03-14'}));
 
         const birthDateInput = screen.getByLabelText('생년월일');
+        const phoneInput = container.querySelector<HTMLInputElement>('input[name="nursePhoneNum"]');
         const saveButton = screen.getByRole('button', {name: '저장하기'});
 
+        expect(phoneInput).not.toBeNull();
         expect(birthDateInput).toHaveValue('1996.03.14');
+        expect(birthDateInput).toHaveAttribute('readonly');
         expect(saveButton).toBeDisabled();
 
-        fireEvent.change(birthDateInput, {target: {value: '19981025'}});
-
-        await waitFor(() => expect(saveButton).toBeEnabled());
-
-        expect(birthDateInput).toHaveValue('1998.10.25');
-
-        fireEvent.click(saveButton);
-
-        await waitFor(() =>
-            expect(updateNurse).toHaveBeenCalledWith(
-                101,
-                expect.objectContaining({
-                    birthDate: '1998-10-25',
-                }),
-            ),
-        );
-    });
-
-    it('saves null when birthDate is cleared', async () => {
-        const {updateNurse} = renderPanel(createNurse({birthDate: '1996-03-14'}));
-
-        const birthDateInput = screen.getByLabelText('생년월일');
-        const saveButton = screen.getByRole('button', {name: '저장하기'});
-
-        fireEvent.change(birthDateInput, {target: {value: ''}});
+        fireEvent.change(phoneInput!, {target: {value: '01012345678'}});
 
         await waitFor(() => expect(saveButton).toBeEnabled());
 
@@ -122,8 +101,8 @@ describe('NurseDetailPanel', () => {
         await waitFor(() =>
             expect(updateNurse).toHaveBeenCalledWith(
                 101,
-                expect.objectContaining({
-                    birthDate: null,
+                expect.not.objectContaining({
+                    birthDate: expect.anything(),
                 }),
             ),
         );
@@ -136,7 +115,7 @@ describe('NurseDetailPanel', () => {
         expect(screen.queryByRole('dialog', {name: '생년월일 날짜 선택'})).not.toBeInTheDocument();
     });
 
-    it('shows birthDate in the editable date field', () => {
+    it('shows birthDate in the date field', () => {
         renderPanel(createNurse({birthDate: '1996-03-14'}));
 
         expect(screen.getByLabelText('생년월일')).toHaveValue('1996.03.14');

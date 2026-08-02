@@ -51,8 +51,12 @@ export type TWardBoardScheduleEventType = 'BIRTHDAY' | string;
 type TBooleanLike = boolean | number | string | null;
 
 export type TWardBoardSchedule = {
-    id?: TWardBoardScheduleId;
-    scheduleId?: TWardBoardScheduleId;
+    id?: TWardBoardScheduleId | null;
+    scheduleId?: TWardBoardScheduleId | null;
+    wardCalendarEventId?: TWardBoardScheduleId | null;
+    ward_calendar_event_id?: TWardBoardScheduleId | null;
+    eventKey?: string;
+    event_key?: string;
     title: string;
     content?: string;
     scheduleDate?: string;
@@ -84,6 +88,12 @@ export type TWardBoardSchedule = {
     source_type?: TWardBoardScheduleSourceType;
     eventType?: TWardBoardScheduleEventType;
     event_type?: TWardBoardScheduleEventType;
+    sourceAccountId?: number | null;
+    source_account_id?: number | null;
+    sourceNurseId?: number | null;
+    source_nurse_id?: number | null;
+    createdOrigin?: string | null;
+    created_origin?: string | null;
     sourcePostId?: number | null;
     source_post_id?: number | null;
     calendarId?: TWardBoardScheduleId | null;
@@ -139,7 +149,21 @@ type TCreateWardBoardCommentDTO = {
 };
 
 const readPostId = (post: TWardBoardPost) => post.postId ?? post.id ?? 0;
-const readScheduleId = (schedule: TWardBoardSchedule) => schedule.scheduleId ?? schedule.id ?? 0;
+const readScheduleId = (schedule: TWardBoardSchedule) =>
+    schedule.scheduleId ?? schedule.wardCalendarEventId ?? schedule.ward_calendar_event_id ?? schedule.id ?? 0;
+const readScheduleEventKey = (schedule: TWardBoardSchedule) => {
+    const explicitEventKey = schedule.eventKey ?? schedule.event_key;
+
+    if (explicitEventKey) return explicitEventKey;
+
+    const scheduleId = readScheduleId(schedule);
+
+    if (scheduleId) return `event-${scheduleId}`;
+
+    const startDate = schedule.startDate ?? schedule.start_date ?? schedule.scheduleDate ?? schedule.schedule_date ?? 'unknown-date';
+
+    return `event-${startDate}-${schedule.title}`;
+};
 const normalizePosts = (response: TPostListResponse) => response.posts ?? response.items ?? response.data ?? [];
 const normalizeComments = (response: TCommentListResponse) => response.comments ?? response.items ?? response.data ?? [];
 const toBoolean = (value: unknown) => {
@@ -182,8 +206,13 @@ const normalizeSchedule = (schedule: TWardBoardSchedule): TWardBoardSchedule => 
     assignIfMissing(normalizedSchedule, 'authorName', schedule.author_name);
     assignIfMissing(normalizedSchedule, 'editableByMe', editableByMe);
     assignIfMissing(normalizedSchedule, 'deletableByMe', deletableByMe);
+    assignIfMissing(normalizedSchedule, 'eventKey', schedule.event_key ?? readScheduleEventKey(schedule));
+    assignIfMissing(normalizedSchedule, 'wardCalendarEventId', schedule.ward_calendar_event_id);
     assignIfMissing(normalizedSchedule, 'sourceType', schedule.source_type);
     assignIfMissing(normalizedSchedule, 'eventType', schedule.event_type);
+    assignIfMissing(normalizedSchedule, 'sourceAccountId', schedule.source_account_id);
+    assignIfMissing(normalizedSchedule, 'sourceNurseId', schedule.source_nurse_id);
+    assignIfMissing(normalizedSchedule, 'createdOrigin', schedule.created_origin);
     assignIfMissing(normalizedSchedule, 'sourcePostId', schedule.source_post_id);
     assignIfMissing(normalizedSchedule, 'calendarId', schedule.calendar_id);
     assignIfMissing(normalizedSchedule, 'calendarName', schedule.calendar_name);
@@ -341,6 +370,10 @@ class ApiBoardAPI {
 
     public getScheduleId(schedule: TWardBoardSchedule) {
         return readScheduleId(schedule);
+    }
+
+    public getScheduleEventKey(schedule: TWardBoardSchedule) {
+        return readScheduleEventKey(schedule);
     }
 }
 

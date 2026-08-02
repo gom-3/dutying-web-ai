@@ -14,7 +14,16 @@ import {Switch} from '@/shared/ui/primitives/switch';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/shared/ui/primitives/tooltip';
 import {hasNurseChanges, hasNurseProfileChanges} from '../model/nurse-edit';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole, normalizeNurseRoleFields} from '../model/nurse-role';
-import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, resolveNurseShiftTypeOptions} from '../model/nurse-shift-types';
+import {
+    DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
+    getDefaultMonthlyNurseShiftRatioWeight,
+    getMonthlyNurseShiftRatioClassificationOrder,
+    getNurseShiftTypeKey,
+    isDefaultMonthlyNurseShiftRatioWeight,
+    isMonthlyNurseShiftRatioClassification,
+    resolveNurseShiftTypeOptions,
+    type TNurseShiftTypeOption,
+} from '../model/nurse-shift-types';
 
 interface INurseDetailPanelProps {
     onClose: () => void;
@@ -27,48 +36,16 @@ interface INurseDetailPanelProps {
 
 const MIN_SHIFT_RATIO_WEIGHT = 1;
 const MAX_SHIFT_RATIO_WEIGHT = 99;
-const BIRTH_DATE_DIGIT_MAX_LENGTH = 8;
 const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const MONTHLY_SHIFT_RATIO_CLASSIFICATIONS = [
-    'DAY',
-    'EVENING',
-    'NIGHT',
-    'OFF',
-] as const satisfies readonly TWardShiftType['classification'][];
-
-const isValidBirthDateParts = (year: number, month: number, day: number) => {
-    if (!Number.isInteger(year) || year < 1000 || year > 9999) return false;
-    if (!Number.isInteger(month) || month < 1 || month > 12) return false;
-    if (!Number.isInteger(day) || day < 1) return false;
-
-    return day <= new Date(year, month, 0).getDate();
-};
-const getBirthDateDigits = (value: string) => value.replace(/\D/g, '').slice(0, BIRTH_DATE_DIGIT_MAX_LENGTH);
-const formatBirthDateDigits = (digits: string) => [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean).join('.');
-const formatBirthDateInput = (birthDate?: string | null) => {
+const formatBirthDateText = (birthDate?: string | null) => {
     if (!birthDate) return '';
 
     const match = LOCAL_DATE_KEY_PATTERN.exec(birthDate);
 
     if (match) return `${match[1]}.${match[2]}.${match[3]}`;
 
-    return formatBirthDateDigits(getBirthDateDigits(birthDate));
+    return birthDate;
 };
-const toBirthDateKeyFromDigits = (digits: string) => {
-    if (digits.length !== BIRTH_DATE_DIGIT_MAX_LENGTH) return null;
-
-    const yearDigits = digits.slice(0, 4);
-    const monthDigits = digits.slice(4, 6);
-    const dayDigits = digits.slice(6, 8);
-    const year = Number(yearDigits);
-    const month = Number(monthDigits);
-    const day = Number(dayDigits);
-
-    if (!isValidBirthDateParts(year, month, day)) return null;
-
-    return `${yearDigits}-${monthDigits}-${dayDigits}`;
-};
-const toBirthDateInputText = (value: string) => formatBirthDateDigits(getBirthDateDigits(value));
 
 const toShiftRatioWeight = (value: number | null | undefined) =>
     typeof value === 'number' && Number.isFinite(value)
@@ -79,56 +56,12 @@ const toShiftTypeColor = (value: string | null | undefined) => {
 
     return value.startsWith('#') ? value : `#${value}`;
 };
-const isMonthlyShiftRatioClassification = (classification: TWardShiftType['classification'] | null | undefined) =>
-    MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.some((targetClassification) => targetClassification === classification);
-const getMonthlyShiftRatioClassificationOrder = (classification: TWardShiftType['classification'] | null | undefined) => {
-    const index = MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.findIndex((targetClassification) => targetClassification === classification);
-
-    return index === -1 ? MONTHLY_SHIFT_RATIO_CLASSIFICATIONS.length : index;
-};
-
-function BirthDateInput({
-    value,
-    disabled,
-    onChange,
-    onValidityChange,
-}: {
-    value: string | null | undefined;
-    disabled: boolean;
-    onChange: (birthDate: string | null) => void;
-    onValidityChange: (isValid: boolean) => void;
-}) {
+const getShiftRatioOptionKey = ({apiShiftTypeId, wardShiftTypeId}: Pick<TNurseShiftTypeOption, 'apiShiftTypeId' | 'wardShiftTypeId'>) =>
+    typeof wardShiftTypeId === 'number' ? `ward:${wardShiftTypeId}` : `nurse:${apiShiftTypeId}`;
+function BirthDateField({value}: {value: string | null | undefined}) {
     const {t} = useTypedTranslation();
     const label = t('page.member.detail.birthDate');
-    const [inputText, setInputText] = useState(() => formatBirthDateInput(value));
-    const inputDigits = getBirthDateDigits(inputText);
-    const inputDateKey = toBirthDateKeyFromDigits(inputDigits);
-    const isInputValid = inputText.length === 0 || Boolean(inputDateKey);
-
-    useEffect(() => {
-        setInputText(formatBirthDateInput(value));
-    }, [value]);
-
-    useEffect(() => {
-        onValidityChange(isInputValid);
-    }, [isInputValid, onValidityChange]);
-
-    const handleInputChange = (nextValue: string) => {
-        const nextText = toBirthDateInputText(nextValue);
-        const nextDateKey = toBirthDateKeyFromDigits(getBirthDateDigits(nextText));
-
-        setInputText(nextText);
-
-        if (!nextText) {
-            onChange(null);
-
-            return;
-        }
-
-        if (nextDateKey) {
-            onChange(nextDateKey);
-        }
-    };
+    const displayValue = formatBirthDateText(value);
 
     return (
         <div className="mb-2.5">
@@ -142,26 +75,16 @@ function BirthDateInput({
                     </span>
                 ) : null}
             </div>
-            <div
-                className={cn(
-                    'mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-main-bg px-2.5 transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1 min-[1600px]:text-[14px]',
-                    isInputValid ? undefined : 'border-[#E57373] bg-white focus-within:border-[#E57373] focus-within:outline-[#E57373]',
-                    disabled ? 'cursor-not-allowed opacity-50' : undefined,
-                )}
-            >
+            <div className="mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-gray-7 px-2.5 min-[1600px]:text-[14px]">
                 <input
                     id="nurseBirthDate"
                     type="text"
-                    inputMode="numeric"
-                    disabled={disabled}
+                    readOnly
                     name="nurseBirthDate"
                     aria-label={label}
-                    aria-invalid={!isInputValid}
-                    maxLength={10}
-                    placeholder="YYYY.MM.DD"
-                    className="h-full min-w-0 flex-1 bg-transparent font-poppins text-[13px] text-sub-1 outline-none placeholder:font-apple placeholder:text-gray-4 disabled:cursor-not-allowed min-[1600px]:text-[14px]"
-                    value={inputText}
-                    onChange={(event) => handleInputChange(event.target.value)}
+                    className="h-full min-w-0 flex-1 cursor-default bg-transparent font-poppins text-[13px] text-sub-1 outline-none placeholder:font-apple placeholder:text-gray-4 min-[1600px]:text-[14px]"
+                    value={displayValue}
+                    placeholder={t('page.member.detail.birthDateEmpty')}
                 />
             </div>
         </div>
@@ -188,13 +111,13 @@ function NurseDetailPanel({
     const [moveTeamMenuOpen, setMoveTeamMenuOpen] = useState(false);
     const [isMovingTeam, setIsMovingTeam] = useState(false);
     const [exitConfirmModalOpen, setExitConfirmModalOpen] = useState(false);
-    const [isBirthDateDraftValid, setIsBirthDateDraftValid] = useState(true);
     const [isShiftRatioOpen, setIsShiftRatioOpen] = useState(false);
+    const [manualShiftRatioWeightKeys, setManualShiftRatioWeightKeys] = useState<ReadonlySet<string>>(() => new Set());
+    const [manualShiftRatioBaselineWeights, setManualShiftRatioBaselineWeights] = useState<ReadonlyMap<string, number>>(() => new Map());
     const textInputRef = useRef<HTMLInputElement>(null);
     const memoTextareaRef = useRef<HTMLTextAreaElement>(null);
     const moveTeamMenuRef = useRef<HTMLDivElement>(null);
     const modalRoot = document.getElementById('modal-root') ?? document.body;
-    const isDirty = hasNurseChanges(selectedNurse, writeNurse);
     const isBusy = nurseSaveStatus === 'saving' || isDeletingNurse || isMovingTeam;
     const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptor = hasNursePreceptorRole(writeNurse);
@@ -206,11 +129,15 @@ function NurseDetailPanel({
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
         setIsMovingTeam(false);
-        setIsBirthDateDraftValid(true);
         setIsShiftRatioOpen(false);
 
         if (selectedNurse) textInputRef.current?.focus();
     }, [selectedNurse]);
+
+    useEffect(() => {
+        setManualShiftRatioWeightKeys(new Set());
+        setManualShiftRatioBaselineWeights(new Map());
+    }, [selectedNurse?.nurseId, selectedNurseDrawerMode]);
 
     useEffect(() => {
         if (!moveTeamMenuOpen) return;
@@ -228,10 +155,6 @@ function NurseDetailPanel({
         };
     }, [moveTeamMenuOpen]);
 
-    useEffect(() => {
-        setNurseDraftDirty(isDirty);
-    }, [isDirty, setNurseDraftDirty]);
-
     const shiftTypeColorById = useMemo(
         () => new Map((wardShiftTypes ?? []).map((shiftType) => [shiftType.wardShiftTypeId, shiftType.color])),
         [wardShiftTypes],
@@ -243,8 +166,76 @@ function NurseDetailPanel({
     const shiftTypeOptions = useMemo(() => {
         if (!writeNurse) return [];
 
-        return resolveNurseShiftTypeOptions(writeNurse.nurseShiftTypes, wardShiftTypes);
-    }, [wardShiftTypes, writeNurse]);
+        return resolveNurseShiftTypeOptions(writeNurse.nurseShiftTypes, wardShiftTypes, {
+            preserveTargetRatioWeightKeys: manualShiftRatioWeightKeys,
+        });
+    }, [manualShiftRatioWeightKeys, wardShiftTypes, writeNurse]);
+    const hasManualShiftRatioWeightChanges = useMemo(() => {
+        if (manualShiftRatioWeightKeys.size === 0) return false;
+
+        return shiftTypeOptions.some((shiftType) => {
+            const shiftTypeKey = getNurseShiftTypeKey(shiftType);
+            const baselineWeight = manualShiftRatioBaselineWeights.get(shiftTypeKey);
+
+            return (
+                manualShiftRatioWeightKeys.has(shiftTypeKey) &&
+                typeof baselineWeight === 'number' &&
+                baselineWeight !== toShiftRatioWeight(shiftType.targetRatioWeight)
+            );
+        });
+    }, [manualShiftRatioBaselineWeights, manualShiftRatioWeightKeys, shiftTypeOptions]);
+    const isDirty = hasNurseChanges(selectedNurse, writeNurse) || hasManualShiftRatioWeightChanges;
+
+    useEffect(() => {
+        setNurseDraftDirty(isDirty);
+    }, [isDirty, setNurseDraftDirty]);
+    const getTargetShiftRatioDefaultWeight = useCallback(
+        (targetShiftType: TNurseShiftTypeOption, nextIsPossible: boolean) => {
+            const targetClassification =
+                typeof targetShiftType.wardShiftTypeId === 'number'
+                    ? wardShiftTypeById.get(targetShiftType.wardShiftTypeId)?.classification
+                    : undefined;
+            const nextPossibleClassifications = shiftTypeOptions.flatMap((shiftType) => {
+                const classification =
+                    typeof shiftType.wardShiftTypeId === 'number'
+                        ? wardShiftTypeById.get(shiftType.wardShiftTypeId)?.classification
+                        : undefined;
+
+                if (!isMonthlyNurseShiftRatioClassification(classification)) return [];
+
+                const isTarget =
+                    (typeof targetShiftType.wardShiftTypeId === 'number' &&
+                        shiftType.wardShiftTypeId === targetShiftType.wardShiftTypeId) ||
+                    shiftType.apiShiftTypeId === targetShiftType.apiShiftTypeId;
+                const isPossibleAfterToggle = isTarget ? nextIsPossible : shiftType.isPossible;
+
+                return isPossibleAfterToggle ? [classification] : [];
+            });
+
+            return getDefaultMonthlyNurseShiftRatioWeight(targetClassification, nextPossibleClassifications);
+        },
+        [shiftTypeOptions, wardShiftTypeById],
+    );
+    const getNextPossibleShiftRatioClassifications = useCallback(
+        (targetShiftType: TNurseShiftTypeOption, nextIsPossible: boolean) =>
+            shiftTypeOptions.flatMap((shiftType) => {
+                const classification =
+                    typeof shiftType.wardShiftTypeId === 'number'
+                        ? wardShiftTypeById.get(shiftType.wardShiftTypeId)?.classification
+                        : undefined;
+
+                if (!isMonthlyNurseShiftRatioClassification(classification)) return [];
+
+                const isTarget =
+                    (typeof targetShiftType.wardShiftTypeId === 'number' &&
+                        shiftType.wardShiftTypeId === targetShiftType.wardShiftTypeId) ||
+                    shiftType.apiShiftTypeId === targetShiftType.apiShiftTypeId;
+                const isPossibleAfterToggle = isTarget ? nextIsPossible : shiftType.isPossible;
+
+                return isPossibleAfterToggle ? [classification] : [];
+            }),
+        [shiftTypeOptions, wardShiftTypeById],
+    );
     const possibleShiftRatioOptions = useMemo(
         () =>
             shiftTypeOptions
@@ -254,7 +245,7 @@ function NurseDetailPanel({
                             ? wardShiftTypeById.get(shiftType.wardShiftTypeId)?.classification
                             : undefined;
 
-                    return shiftType.isPossible && isMonthlyShiftRatioClassification(classification);
+                    return shiftType.isPossible && isMonthlyNurseShiftRatioClassification(classification);
                 })
                 .sort((left, right) => {
                     const leftClassification =
@@ -264,8 +255,8 @@ function NurseDetailPanel({
                             ? wardShiftTypeById.get(right.wardShiftTypeId)?.classification
                             : undefined;
                     const classificationOrder =
-                        getMonthlyShiftRatioClassificationOrder(leftClassification) -
-                        getMonthlyShiftRatioClassificationOrder(rightClassification);
+                        getMonthlyNurseShiftRatioClassificationOrder(leftClassification) -
+                        getMonthlyNurseShiftRatioClassificationOrder(rightClassification);
 
                     if (classificationOrder !== 0) return classificationOrder;
 
@@ -317,11 +308,23 @@ function NurseDetailPanel({
             name: string;
             shortName?: string;
             targetRatioWeight: number;
+            currentTargetRatioWeight: number;
             isPossible?: boolean;
             isPreferred?: boolean;
         }) => {
+            const shiftRatioOptionKey = getShiftRatioOptionKey(params);
             const nextTargetRatioWeight = toShiftRatioWeight(params.targetRatioWeight);
 
+            setManualShiftRatioWeightKeys((prev) => {
+                if (prev.has(shiftRatioOptionKey)) return prev;
+
+                return new Set(prev).add(shiftRatioOptionKey);
+            });
+            setManualShiftRatioBaselineWeights((prev) => {
+                if (prev.has(shiftRatioOptionKey)) return prev;
+
+                return new Map(prev).set(shiftRatioOptionKey, toShiftRatioWeight(params.currentTargetRatioWeight));
+            });
             setWriteNurse((prev) =>
                 prev
                     ? {
@@ -366,8 +369,6 @@ function NurseDetailPanel({
 
         if (isCreateMode && !canSaveCreateDraft(writeNurse)) return false;
 
-        if (!isBirthDateDraftValid) return false;
-
         const originalShiftTypeByWardShiftTypeId = new Map(
             selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
                 typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
@@ -377,6 +378,7 @@ function NurseDetailPanel({
             selectedNurse.nurseShiftTypes.map((shiftType) => [shiftType.nurseShiftTypeId, shiftType]),
         );
         const changedShiftTypes = shiftTypeOptions.filter((draftShiftType) => {
+            const draftShiftTypeKey = getNurseShiftTypeKey(draftShiftType);
             const originalShiftType =
                 (typeof draftShiftType.wardShiftTypeId === 'number'
                     ? originalShiftTypeByWardShiftTypeId.get(draftShiftType.wardShiftTypeId)
@@ -384,8 +386,17 @@ function NurseDetailPanel({
             const originalIsPossible = originalShiftType?.isPossible ?? true;
             const originalTargetRatioWeight = toShiftRatioWeight(originalShiftType?.targetRatioWeight);
             const draftTargetRatioWeight = toShiftRatioWeight(draftShiftType.targetRatioWeight);
+            const baselineTargetRatioWeight = manualShiftRatioBaselineWeights.get(draftShiftTypeKey);
+            const hasManualTargetRatioWeightChange =
+                manualShiftRatioWeightKeys.has(draftShiftTypeKey) &&
+                typeof baselineTargetRatioWeight === 'number' &&
+                baselineTargetRatioWeight !== draftTargetRatioWeight;
 
-            return originalIsPossible !== draftShiftType.isPossible || originalTargetRatioWeight !== draftTargetRatioWeight;
+            return (
+                originalIsPossible !== draftShiftType.isPossible ||
+                originalTargetRatioWeight !== draftTargetRatioWeight ||
+                hasManualTargetRatioWeightChange
+            );
         });
 
         for (const shiftType of changedShiftTypes) {
@@ -404,6 +415,22 @@ function NurseDetailPanel({
             if (!saved) return false;
         }
 
+        if (changedShiftTypes.length > 0) {
+            setManualShiftRatioBaselineWeights((prev) => {
+                const next = new Map(prev);
+
+                changedShiftTypes.forEach((shiftType) => {
+                    const shiftTypeKey = getNurseShiftTypeKey(shiftType);
+
+                    if (manualShiftRatioWeightKeys.has(shiftTypeKey)) {
+                        next.set(shiftTypeKey, toShiftRatioWeight(shiftType.targetRatioWeight));
+                    }
+                });
+
+                return next;
+            });
+        }
+
         if (hasNurseProfileChanges(selectedNurse, writeNurse)) {
             const saved = await updateNurse(writeNurse.nurseId, {
                 name: writeNurse.name,
@@ -413,7 +440,6 @@ function NurseDetailPanel({
                 memo: getMemoWithoutRoleMarkers(writeNurse.memo),
                 isPreceptor,
                 isPreceptee,
-                birthDate: writeNurse.birthDate,
             });
 
             if (!saved) return false;
@@ -425,10 +451,11 @@ function NurseDetailPanel({
 
         return true;
     }, [
-        isBirthDateDraftValid,
         isBusy,
         isCreateMode,
         isDirty,
+        manualShiftRatioBaselineWeights,
+        manualShiftRatioWeightKeys,
         selectedNurse,
         t,
         shiftTypeOptions,
@@ -440,7 +467,8 @@ function NurseDetailPanel({
         setWriteNurse(selectedNurse ?? null);
         setShowNameRequiredError(false);
         setMoveTeamMenuOpen(false);
-        setIsBirthDateDraftValid(true);
+        setManualShiftRatioWeightKeys(new Set());
+        setManualShiftRatioBaselineWeights(new Map());
         setNurseDraftDirty(false);
     }, [selectedNurse, setNurseDraftDirty]);
 
@@ -564,10 +592,14 @@ function NurseDetailPanel({
                             </Tooltip>
                         </div>
                         <div className="mt-2 grid w-full grid-cols-4 gap-1.5">
-                            {shiftTypeOptions.map(({isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId}) => {
+                            {shiftTypeOptions.map((shiftType) => {
+                                const {isPossible, name, shortName, apiShiftTypeId, wardShiftTypeId} = shiftType;
                                 const baseColor = toShiftTypeColor(
                                     typeof wardShiftTypeId === 'number' ? shiftTypeColorById.get(wardShiftTypeId) : undefined,
                                 );
+                                const nextIsPossible = !isPossible;
+                                const defaultTargetRatioWeight = getTargetShiftRatioDefaultWeight(shiftType, nextIsPossible);
+                                const nextPossibleClassifications = getNextPossibleShiftRatioClassifications(shiftType, nextIsPossible);
 
                                 return (
                                     <button
@@ -598,19 +630,59 @@ function NurseDetailPanel({
                                                               );
 
                                                               if (target) {
-                                                                  target.isPossible = !isPossible;
-
-                                                                  return;
+                                                                  target.isPossible = nextIsPossible;
+                                                              } else {
+                                                                  draft.push({
+                                                                      nurseShiftTypeId: apiShiftTypeId,
+                                                                      wardShiftTypeId,
+                                                                      name,
+                                                                      shortName: shortName ?? '',
+                                                                      isPossible: nextIsPossible,
+                                                                      isPreferred: false,
+                                                                      targetRatioWeight: defaultTargetRatioWeight,
+                                                                  });
                                                               }
 
-                                                              draft.push({
-                                                                  nurseShiftTypeId: apiShiftTypeId,
-                                                                  wardShiftTypeId,
-                                                                  name,
-                                                                  shortName: shortName ?? '',
-                                                                  isPossible: !isPossible,
-                                                                  isPreferred: false,
-                                                                  targetRatioWeight: DEFAULT_NURSE_SHIFT_RATIO_WEIGHT,
+                                                              draft.forEach((draftShiftType) => {
+                                                                  const option = shiftTypeOptions.find(
+                                                                      (candidate) =>
+                                                                          (typeof candidate.wardShiftTypeId === 'number' &&
+                                                                              candidate.wardShiftTypeId ===
+                                                                                  draftShiftType.wardShiftTypeId) ||
+                                                                          candidate.apiShiftTypeId === draftShiftType.nurseShiftTypeId,
+                                                                  );
+                                                                  const classification =
+                                                                      typeof option?.wardShiftTypeId === 'number'
+                                                                          ? wardShiftTypeById.get(option.wardShiftTypeId)?.classification
+                                                                          : undefined;
+
+                                                                  if (!isMonthlyNurseShiftRatioClassification(classification)) return;
+
+                                                                  const isTarget =
+                                                                      (typeof wardShiftTypeId === 'number' &&
+                                                                          draftShiftType.wardShiftTypeId === wardShiftTypeId) ||
+                                                                      draftShiftType.nurseShiftTypeId === apiShiftTypeId;
+                                                                  const isPossibleAfterToggle = isTarget
+                                                                      ? nextIsPossible
+                                                                      : draftShiftType.isPossible;
+
+                                                                  if (!isPossibleAfterToggle) return;
+                                                                  if (manualShiftRatioWeightKeys.has(getNurseShiftTypeKey(draftShiftType))) {
+                                                                      return;
+                                                                  }
+                                                                  if (
+                                                                      !isDefaultMonthlyNurseShiftRatioWeight(
+                                                                          classification,
+                                                                          draftShiftType.targetRatioWeight,
+                                                                      )
+                                                                  ) {
+                                                                      return;
+                                                                  }
+
+                                                                  draftShiftType.targetRatioWeight = getDefaultMonthlyNurseShiftRatioWeight(
+                                                                      classification,
+                                                                      nextPossibleClassifications,
+                                                                  );
                                                               });
                                                           }),
                                                       }
@@ -677,45 +749,62 @@ function NurseDetailPanel({
                                 </div>
                             </div>
                             {shiftRatioDisplayOptions.length > 0 ? (
-                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                    {shiftRatioDisplayOptions.map(({shiftType, label, weight, color}) => (
-                                        <span
-                                            key={`ratio-summary-${shiftType.apiShiftTypeId}`}
-                                            className="inline-flex min-w-0 items-center gap-1.5 font-poppins text-[11px] font-semibold text-sub-2 min-[1600px]:text-[12px]"
-                                        >
-                                            <span className="text-[10px] leading-none" style={{color}} aria-hidden="true">
-                                                ●
+                                <>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, roundedPercent, color}) => (
+                                            <span
+                                                key={`ratio-summary-${shiftType.apiShiftTypeId}`}
+                                                className="inline-flex min-w-0 items-center gap-1.5 font-poppins text-[11px] font-semibold text-sub-2 min-[1600px]:text-[12px]"
+                                            >
+                                                <span className="text-[10px] leading-none" style={{color}} aria-hidden="true">
+                                                    ●
+                                                </span>
+                                                <span className="min-w-0 truncate">{label}</span>
+                                                <span className="shrink-0 font-apple text-[11px] font-semibold text-gray-3 min-[1600px]:text-[12px]">
+                                                    {weight}일
+                                                    <span className="ml-0.5 font-poppins text-[10px] font-semibold text-gray-4 min-[1600px]:text-[11px]">
+                                                        ({roundedPercent}%)
+                                                    </span>
+                                                </span>
                                             </span>
-                                            <span className="min-w-0 truncate">{label}</span>
-                                            <span className="shrink-0 font-apple text-[11px] font-semibold text-gray-3 min-[1600px]:text-[12px]">
-                                                {weight}일
-                                            </span>
-                                        </span>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-2 flex h-1.5 w-full overflow-hidden rounded-full bg-gray-7">
+                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, percent, roundedPercent, color}) => (
+                                            <span
+                                                key={`ratio-bar-${shiftType.apiShiftTypeId}`}
+                                                className="h-full min-w-[2px]"
+                                                style={{width: `${percent}%`, backgroundColor: color}}
+                                                title={`${label} ${roundedPercent}% · ${weight}일`}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
                             ) : null}
                             {isShiftRatioOpen ? (
                                 shiftRatioDisplayOptions.length > 0 ? (
-                                    <div className="mt-2 grid gap-1.5">
-                                        {shiftRatioDisplayOptions.map(({shiftType, label, weight, roundedPercent, color}) => (
-                                            <div
-                                                key={`ratio-input-${shiftType.apiShiftTypeId}`}
-                                                className="grid min-h-10 grid-cols-[minmax(0,1fr)_72px] items-center gap-2 rounded-[7px] bg-gray-7 px-2 py-1.5"
-                                            >
-                                                <div className="flex min-w-0 items-center gap-2">
-                                                    <span
-                                                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                                        style={{backgroundColor: color}}
-                                                        aria-hidden="true"
-                                                    />
-                                                    <span className="min-w-0 flex-1 truncate font-apple text-[12px] font-medium text-sub-2 min-[1600px]:text-[13px]">
+                                    <div className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2">
+                                        <div
+                                            className="grid gap-x-1.5 gap-y-1"
+                                            style={{
+                                                gridTemplateColumns: `repeat(${shiftRatioDisplayOptions.length}, minmax(0, 1fr))`,
+                                            }}
+                                        >
+                                            {shiftRatioDisplayOptions.map(({shiftType, label}) => (
+                                                <div
+                                                    key={`ratio-label-${shiftType.apiShiftTypeId}`}
+                                                    className="flex min-w-0 items-center justify-center"
+                                                >
+                                                    <span className="min-w-0 truncate font-apple text-[12px] font-semibold text-sub-2 min-[1600px]:text-[13px]">
                                                         {label}
                                                     </span>
-                                                    <span className="shrink-0 font-poppins text-[11px] font-semibold text-gray-3">
-                                                        {roundedPercent}%
-                                                    </span>
                                                 </div>
-                                                <div className="grid h-6 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1">
+                                            ))}
+                                            {shiftRatioDisplayOptions.map(({shiftType, weight}) => (
+                                                <div
+                                                    key={`ratio-input-${shiftType.apiShiftTypeId}`}
+                                                    className="grid h-7 min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center rounded-[6px] border border-gray-6 bg-white transition-colors focus-within:border-main-1 focus-within:outline-1 focus-within:outline-main-1"
+                                                >
                                                     <input
                                                         type="number"
                                                         min={MIN_SHIFT_RATIO_WEIGHT}
@@ -723,7 +812,7 @@ function NurseDetailPanel({
                                                         step={1}
                                                         inputMode="numeric"
                                                         disabled={isBusy}
-                                                        className="h-full min-w-0 bg-transparent px-1 text-right font-poppins text-[12px] font-semibold text-sub-1 outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                                                        className="h-full min-w-0 bg-transparent px-1 text-center font-poppins text-[12px] font-semibold text-sub-1 outline-none disabled:cursor-not-allowed disabled:opacity-50"
                                                         value={weight}
                                                         aria-label={t('page.member.detail.shiftRatioInputAria', {
                                                             shiftName: shiftType.name,
@@ -737,13 +826,14 @@ function NurseDetailPanel({
                                                                 isPossible: shiftType.isPossible,
                                                                 isPreferred: shiftType.isPreferred,
                                                                 targetRatioWeight: event.currentTarget.valueAsNumber,
+                                                                currentTargetRatioWeight: weight,
                                                             })
                                                         }
                                                     />
-                                                    <span className="pr-1.5 font-apple text-[11px] font-semibold text-gray-3">일</span>
+                                                    <span className="pr-1 font-apple text-[10px] font-semibold text-gray-3">일</span>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
                                     <p className="mt-2 rounded-[7px] bg-gray-7 px-2 py-2 font-apple text-[12px] font-medium text-gray-3">
@@ -753,7 +843,6 @@ function NurseDetailPanel({
                             ) : null}
                         </div>
                     </div>
-
                     <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                         <p className="font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.rolesAndPermissions')}
@@ -842,12 +931,7 @@ function NurseDetailPanel({
                     </div>
 
                     <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
-                        <BirthDateInput
-                            value={writeNurse.birthDate}
-                            disabled={isBusy}
-                            onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
-                            onValidityChange={setIsBirthDateDraftValid}
-                        />
+                        <BirthDateField value={writeNurse.birthDate} />
                         <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.phone')}
                         </p>
@@ -951,7 +1035,7 @@ function NurseDetailPanel({
                 <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                     <button
                         type="button"
-                        disabled={isBusy || !isDirty || !isBirthDateDraftValid}
+                        disabled={isBusy || !isDirty}
                         className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >

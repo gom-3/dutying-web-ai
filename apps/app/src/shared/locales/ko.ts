@@ -553,6 +553,7 @@ export const ko = {
             namePlaceholder: '이름을 입력하세요',
             phoneNum: '전화번호',
             phoneNumPlaceholder: '전화번호를 입력하세요',
+            birthDate: '생년월일',
             randomAvatar: '랜덤 아바타',
             uploadPhoto: '사진 업로드',
             logout: '로그아웃',
@@ -567,6 +568,7 @@ export const ko = {
                 nameInvalid: "이름은 20자 이하, 한글/영문/일문과 공백, '-', '·'만 입력할 수 있어요.",
                 phoneRequired: '전화번호를 입력해 주세요.',
                 phoneInvalid: '국가번호를 포함하거나 지역 형식에 맞는 전화번호를 입력해 주세요.',
+                birthDateInvalid: '1900-01-01부터 오늘까지의 날짜를 입력해 주세요.',
             },
             confirm: {
                 deleteTitle: '회원 탈퇴할까요?',
@@ -2167,6 +2169,7 @@ export const ko = {
             edit: {
                 profileFailed: '프로필을 업데이트하지 못했어요.',
                 basicFailed: '계정 정보를 업데이트하지 못했어요.',
+                birthDateFailed: '생년월일을 저장하지 못했어요.',
                 quitWardConfirm: '병동을 나갈까요?',
                 quitWardFailed: '병동을 나가지 못했어요.',
                 deleteAccountFailed: '계정을 삭제하지 못했어요.',

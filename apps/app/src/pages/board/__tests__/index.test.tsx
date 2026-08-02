@@ -13,6 +13,7 @@ const {
     mockGetSchedules,
     mockGetPostId,
     mockGetScheduleId,
+    mockGetScheduleEventKey,
     mockCreatePost,
     mockDeletePost,
     mockCreateSchedule,
@@ -35,6 +36,7 @@ const {
     mockGetSchedules: vi.fn(),
     mockGetPostId: vi.fn(),
     mockGetScheduleId: vi.fn(),
+    mockGetScheduleEventKey: vi.fn(),
     mockCreatePost: vi.fn(),
     mockDeletePost: vi.fn(),
     mockCreateSchedule: vi.fn(),
@@ -78,6 +80,7 @@ vi.mock('@/shared/api', () => ({
         deleteComment: mockDeleteComment,
         getPostId: mockGetPostId,
         getScheduleId: mockGetScheduleId,
+        getScheduleEventKey: mockGetScheduleEventKey,
     },
 }));
 
@@ -124,7 +127,11 @@ describe('BoardPage', () => {
         mockGetCheckers.mockResolvedValue({checkers: [], checkedUserNames: []});
         mockGetPostId.mockImplementation((post: {postId?: number; id?: number}) => post.postId ?? post.id ?? 0);
         mockGetScheduleId.mockImplementation(
-            (schedule: {scheduleId?: string | number; id?: string | number}) => schedule.scheduleId ?? schedule.id ?? 0,
+            (schedule: {scheduleId?: string | number | null; id?: string | number | null}) => schedule.scheduleId ?? schedule.id ?? 0,
+        );
+        mockGetScheduleEventKey.mockImplementation(
+            (schedule: {eventKey?: string; event_key?: string; scheduleId?: string | number | null; id?: string | number | null}) =>
+                schedule.eventKey ?? schedule.event_key ?? `event-${schedule.scheduleId ?? schedule.id ?? 0}`,
         );
     });
 
@@ -494,7 +501,8 @@ describe('BoardPage', () => {
 
         mockGetSchedules.mockResolvedValue([
             {
-                id: 'birthday-7-42-2026',
+                id: null,
+                eventKey: `birthday-42-${todayKey}`,
                 wardId: 7,
                 title: '김듀티 생일',
                 startDate: todayKey,

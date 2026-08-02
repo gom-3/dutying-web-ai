@@ -11,6 +11,7 @@ import {type TNurse} from '@/entities/nurse';
 import {wardQueryOptions} from '@/entities/ward';
 import {useEditAccount} from '@/features/account/model';
 import useAuth from '@/features/auth';
+import {isWardAdminAccessToken} from '@/features/auth/model/admin-token';
 import useProfileImage from '@/features/file';
 import {CameraIcon, RandomIcon} from '@/shared/assets/svg';
 import ROUTE from '@/shared/constant/path';
@@ -47,6 +48,27 @@ const FIELD_CLASS =
 const SELECT_FIELD_CLASS =
     'h-11 w-full rounded-[12px] border border-transparent bg-gray-7 px-3.5 text-[15px] font-medium text-sub-1 outline-none transition-colors focus-visible:bg-main-light';
 const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
+const BIRTH_DATE_MIN = '1900-01-01';
+const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+const pad2 = (value: number) => value.toString().padStart(2, '0');
+const getDateKeyFromDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const getTodayDateKey = () => getDateKeyFromDate(new Date());
+const normalizeBirthDateForStorage = (value: string | null | undefined) => {
+    const trimmed = value?.trim() ?? '';
+
+    return trimmed.length > 0 ? trimmed : null;
+};
+const isValidBirthDate = (value: string | null | undefined, maxDate: string) => {
+    const birthDate = normalizeBirthDateForStorage(value);
+
+    if (!birthDate) return true;
+    if (!LOCAL_DATE_KEY_PATTERN.test(birthDate)) return false;
+    if (birthDate < BIRTH_DATE_MIN || birthDate > maxDate) return false;
+
+    const parsedDate = new Date(`${birthDate}T00:00:00`);
+
+    return !Number.isNaN(parsedDate.getTime()) && birthDate === getDateKeyFromDate(parsedDate);
+};
 const validateName = (value: string, messages: {required: string; invalid: string}) => {
     const requestName = normalizeNurseNameForRequest(value);
 
@@ -174,13 +196,15 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
     const {i18n} = useTranslation();
     const isModalLayout = layout === 'modal';
     const {
-        state: {accountMe, accountMeStatus, _loaded},
+        state: {accountMe, accountMeStatus, _loaded, accessToken},
         actions: {handleGetAccountMe, handleLogout},
     } = useAuth();
-    const {quitWard, handleEditProfile, handleEditAccountBasic, updateAccountPreferences, deleteAccount} = useEditAccount();
+    const {quitWard, handleEditProfile, handleEditAccountBasic, updateBirthDate, updateAccountPreferences, deleteAccount} =
+        useEditAccount();
     const [writeNurse, setWriteNurse] = useState<TNurse | null>(null);
     const [draftName, setDraftName] = useState('');
     const [draftPhoneNum, setDraftPhoneNum] = useState('');
+    const [draftBirthDate, setDraftBirthDate] = useState('');
     const [draftPreferredLanguage, setDraftPreferredLanguage] = useState<TPreferredLanguage>('ko');
     const [isSavingPreferences, setIsSavingPreferences] = useState(false);
     const [hasEditedPhoneNum, setHasEditedPhoneNum] = useState(false);
@@ -193,6 +217,12 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         enabled: Boolean(accountMe?.wardId),
     });
     const selectedNurse = findProfileNurse(wardQuery.data, accountMe?.accountId);
+    const isWardAdmin = isWardAdminAccessToken(accessToken);
+    const savedBirthDate = accountMe?.birthDate ?? selectedNurse?.birthDate ?? null;
+    const birthDateMax = getTodayDateKey();
+    const nextBirthDate = normalizeBirthDateForStorage(draftBirthDate);
+    const isBirthDateValid = isValidBirthDate(draftBirthDate, birthDateMax);
+    const isBirthDateDirty = !isWardAdmin && nextBirthDate !== savedBirthDate;
     const validationMessages = {
         nameRequired: t('page.profile.validation.nameRequired'),
         nameInvalid: t('page.profile.validation.nameInvalid'),
@@ -228,8 +258,8 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         normalizeContactPhoneForStorage(draftPhoneNum) !== normalizeContactPhoneForStorage(accountMe?.phoneNum ?? '');
     const isPreferenceDirty = draftPreferredLanguage !== savedPreferredLanguage;
     const hasProfileChanges = hasNurseProfile ? isDirty : isAccountFormDirty;
-    const hasUnsavedChanges = hasProfileChanges || isPreferenceDirty;
-    const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges;
+    const hasUnsavedChanges = hasProfileChanges || isBirthDateDirty || isPreferenceDirty;
+    const isSaveDisabled = isProfileImageLoading || isSavingPreferences || !hasUnsavedChanges || (isBirthDateDirty && !isBirthDateValid);
     const validateField = (field: TProfileField, value: string) => {
         if (field === 'name') {
             return validateName(value, {
@@ -353,6 +383,14 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
             resetProfileImage();
         }
 
+        if (isBirthDateDirty) {
+            if (!isBirthDateValid) return;
+
+            const isBirthDateSaved = await updateBirthDate(nextBirthDate);
+
+            if (!isBirthDateSaved) return;
+        }
+
         if (isPreferenceDirty) {
             await savePreferences();
         }
@@ -364,10 +402,11 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         setWriteNurse(null);
         setDraftName(accountMe?.name ?? '');
         setDraftPhoneNum(normalizeContactPhoneForStorage(accountMe?.phoneNum ?? ''));
+        setDraftBirthDate(accountMe?.birthDate ?? '');
         setHasEditedPhoneNum(false);
         setFieldErrors({});
         setFieldTouched({});
-    }, [accountMe?.accountId, accountMe?.name, accountMe?.phoneNum, selectedNurse]);
+    }, [accountMe?.accountId, accountMe?.birthDate, accountMe?.name, accountMe?.phoneNum, selectedNurse]);
 
     useEffect(() => {
         if (!selectedNurse) return;
@@ -388,6 +427,10 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
         setFieldErrors({});
         setFieldTouched({});
     }, [profileImg, selectedNurse]);
+
+    useEffect(() => {
+        setDraftBirthDate(savedBirthDate ?? '');
+    }, [savedBirthDate]);
 
     useEffect(() => {
         setHasEditedPhoneNum(false);
@@ -706,6 +749,33 @@ export function ProfileContent({layout = 'page'}: TProfileContentProps = {}) {
                                 </p>
                             ) : null}
                         </div>
+                        {!isWardAdmin ? (
+                            <div className={fieldContainerClassName}>
+                                <label htmlFor="birthDate" className="mb-1.5 block font-apple text-[13px] font-medium text-[#4E5968]">
+                                    {t('page.profile.birthDate')}
+                                </label>
+                                <input
+                                    id="birthDate"
+                                    type="date"
+                                    min={BIRTH_DATE_MIN}
+                                    max={birthDateMax}
+                                    className={cn(
+                                        FIELD_CLASS,
+                                        modalFieldClassName,
+                                        !isBirthDateValid && 'border-red bg-[#FFF7F8] focus-visible:bg-white',
+                                    )}
+                                    value={draftBirthDate}
+                                    onChange={(event) => setDraftBirthDate(event.target.value)}
+                                    aria-invalid={!isBirthDateValid}
+                                    aria-describedby={!isBirthDateValid ? 'profile-birth-date-error' : undefined}
+                                />
+                                {!isBirthDateValid ? (
+                                    <p id="profile-birth-date-error" className="mt-1 font-apple text-xs text-red">
+                                        {t('page.profile.validation.birthDateInvalid')}
+                                    </p>
+                                ) : null}
+                            </div>
+                        ) : null}
                     </div>
                 </Card>
                 <Card className={basicInfoSectionClassName}>

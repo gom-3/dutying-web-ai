@@ -18,6 +18,7 @@ export interface IAccountAPI {
     editAccount: (dto: TEditProfileRequest) => Promise<TAccountResponse>;
     editAccountStatus: (accountId: number, status: TAccountStatus) => Promise<TAccountResponse>;
     initAccount: (dto: TEditProfileRequest) => Promise<TAccountResponse>;
+    updateBirthDate: (birthDate: string | null) => Promise<TAccountResponse>;
     updatePreferences: (dto: TUpdateAccountPreferencesRequest) => Promise<TAccountResponse>;
     deleteAccount: (accountId: number) => Promise<void>;
     markTutorialSeen: (tutorialKey: TTutorialKey) => Promise<void>;

@@ -56,11 +56,11 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges(nurse, draft)).toBe(true);
     });
 
-    it('detects birthDate changes', () => {
+    it('ignores read-only birthDate changes', () => {
         const nurse = createNurse();
 
-        expect(hasNurseChanges(nurse, {...nurse, birthDate: '1996-03-14'})).toBe(true);
-        expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(true);
+        expect(hasNurseChanges(nurse, {...nurse, birthDate: '1996-03-14'})).toBe(false);
+        expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(false);
     });
 
     it('detects shift type target ratio changes', () => {
@@ -166,6 +166,21 @@ const createWardShiftType = (overrides: Partial<TWardShiftType>): TWardShiftType
     classification: 'OTHER_WORK',
     ...overrides,
 });
+const monthlyShiftTypeMeta = {
+    DAY: {name: 'Day', shortName: 'D'},
+    EVENING: {name: 'Evening', shortName: 'E'},
+    NIGHT: {name: 'Night', shortName: 'N'},
+    OFF: {name: 'Off', shortName: '/'},
+} as const satisfies Record<'DAY' | 'EVENING' | 'NIGHT' | 'OFF', Pick<TWardShiftType, 'name' | 'shortName'>>;
+const createMonthlyWardShiftTypes = (classifications: Array<TWardShiftType['classification']>) =>
+    classifications.map((classification, index) =>
+        createWardShiftType({
+            wardShiftTypeId: index + 1,
+            ...monthlyShiftTypeMeta[classification as keyof typeof monthlyShiftTypeMeta],
+            classification,
+            isOff: classification === 'OFF',
+        }),
+    );
 
 describe('resolveNurseShiftTypeOptions', () => {
     it('matches nurse shift type rows by wardShiftTypeId instead of duplicated short names', () => {
@@ -227,6 +242,263 @@ describe('resolveNurseShiftTypeOptions', () => {
         );
 
         expect(options).toMatchObject([{wardShiftTypeId: 10, shortName: 'D'}]);
+    });
+
+    it.each([
+        [['DAY', 'EVENING', 'NIGHT', 'OFF'], {D: 9, E: 6, N: 5, '/': 10}],
+        [['DAY', 'EVENING', 'NIGHT'], {D: 9, E: 6, N: 5}],
+        [['DAY', 'EVENING', 'OFF'], {D: 11, E: 10, '/': 9}],
+        [['DAY', 'NIGHT', 'OFF'], {D: 15, N: 5, '/': 10}],
+        [['EVENING', 'NIGHT', 'OFF'], {E: 15, N: 5, '/': 10}],
+        [['DAY', 'EVENING'], {D: 11, E: 10}],
+        [['DAY', 'NIGHT'], {D: 15, N: 5}],
+        [['EVENING', 'NIGHT'], {E: 15, N: 5}],
+        [['DAY', 'OFF'], {D: 21, '/': 9}],
+        [['EVENING', 'OFF'], {E: 21, '/': 9}],
+        [['NIGHT', 'OFF'], {N: 15, '/': 15}],
+        [['DAY'], {D: 21}],
+        [['EVENING'], {E: 21}],
+        [['NIGHT'], {N: 14}],
+        [['OFF'], {'/': 30}],
+    ] as Array<[Array<TWardShiftType['classification']>, Record<string, number>]>)(
+        'applies monthly default ratio weights for %s',
+        (classifications, expectedWeightsByShortName) => {
+            const options = resolveNurseShiftTypeOptions([], createMonthlyWardShiftTypes(classifications));
+
+            expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual(
+                expectedWeightsByShortName,
+            );
+        },
+    );
+
+    it('calculates monthly default ratio weights from possible D/E/N/O classifications only', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Evening',
+                    shortName: 'E',
+                    isPossible: false,
+                    isPreferred: false,
+                },
+            ],
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            D: 15,
+            E: 7,
+            N: 5,
+            '/': 10,
+        });
+    });
+
+    it('preserves explicit monthly target ratio weights over computed defaults', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 1,
+                    name: 'Day',
+                    shortName: 'D',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 12,
+                },
+            ],
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            D: 12,
+            E: 6,
+            N: 5,
+            '/': 10,
+        });
+    });
+
+    it('preserves stored custom weights that overlap default-like numbers', () => {
+        const denoOptions = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Evening',
+                    shortName: 'E',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 7,
+                },
+            ],
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(denoOptions.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            D: 9,
+            E: 7,
+            N: 5,
+            '/': 10,
+        });
+
+        const nightKeepOptions = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 1,
+                    name: 'Night',
+                    shortName: 'N',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 15,
+                },
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Off',
+                    shortName: '/',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 16,
+                },
+            ],
+            createMonthlyWardShiftTypes(['NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(nightKeepOptions.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            N: 15,
+            '/': 16,
+        });
+    });
+
+    it('treats stored neutral defaults as unset and applies the monthly combination defaults', () => {
+        const options = resolveNurseShiftTypeOptions(
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']).map((shiftType) => ({
+                nurseShiftTypeId: shiftType.wardShiftTypeId,
+                wardShiftTypeId: shiftType.wardShiftTypeId,
+                name: shiftType.name,
+                shortName: shiftType.shortName,
+                isPossible: true,
+                isPreferred: false,
+                targetRatioWeight: 7,
+            })),
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            D: 9,
+            E: 6,
+            N: 5,
+            '/': 10,
+        });
+    });
+
+    it('preserves manually edited default-like monthly target ratio weights', () => {
+        const denoOptions = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Evening',
+                    shortName: 'E',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 7,
+                },
+            ],
+            createMonthlyWardShiftTypes(['DAY', 'EVENING', 'NIGHT', 'OFF']),
+            {preserveTargetRatioWeightKeys: new Set(['ward:2'])},
+        );
+
+        expect(Object.fromEntries(denoOptions.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            D: 9,
+            E: 7,
+            N: 5,
+            '/': 10,
+        });
+
+        const nightKeepOptions = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Off',
+                    shortName: '/',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 16,
+                },
+            ],
+            createMonthlyWardShiftTypes(['NIGHT', 'OFF']),
+            {preserveTargetRatioWeightKeys: new Set(['ward:2'])},
+        );
+
+        expect(Object.fromEntries(nightKeepOptions.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            N: 15,
+            '/': 16,
+        });
+    });
+
+    it('replaces previous default-like night-keep weights with a half night and half off default', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 1,
+                    name: 'Night',
+                    shortName: 'N',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 5,
+                },
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Off',
+                    shortName: '/',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 16,
+                },
+            ],
+            createMonthlyWardShiftTypes(['NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            N: 15,
+            '/': 15,
+        });
+    });
+
+    it('preserves non-default custom night-keep weights', () => {
+        const options = resolveNurseShiftTypeOptions(
+            [
+                {
+                    nurseShiftTypeId: 101,
+                    wardShiftTypeId: 1,
+                    name: 'Night',
+                    shortName: 'N',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 12,
+                },
+                {
+                    nurseShiftTypeId: 102,
+                    wardShiftTypeId: 2,
+                    name: 'Off',
+                    shortName: '/',
+                    isPossible: true,
+                    isPreferred: false,
+                    targetRatioWeight: 18,
+                },
+            ],
+            createMonthlyWardShiftTypes(['NIGHT', 'OFF']),
+        );
+
+        expect(Object.fromEntries(options.map((shiftType) => [shiftType.shortName, shiftType.targetRatioWeight]))).toEqual({
+            N: 12,
+            '/': 18,
+        });
     });
 });
 
