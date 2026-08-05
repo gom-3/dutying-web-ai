@@ -8,8 +8,8 @@ import {
     type DraggableProvidedDraggableProps,
     type DropResult,
 } from '@hello-pangea/dnd';
-import {Check, ChevronDown, Copy, Info, Link2, Plus, Trash2, X} from 'lucide-react';
-import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {Check, ChevronDown, Copy, Info, Link2, Minus, Plus, Trash2, X} from 'lucide-react';
+import {Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import toast from 'react-hot-toast';
 import {useSearchParams} from 'react-router';
@@ -35,15 +35,25 @@ import {
     type TNurseRoleHelpType,
 } from './model/nurse-role';
 import {resolveNurseShiftTypeOptions} from './model/nurse-shift-types';
-import {createMoveNurseToTeamPayload} from './model/shift-team-list';
+import {createMoveNurseOrderPayload, createMoveNurseToTeamPayload} from './model/shift-team-list';
 import ConnectionManage from './ui/connection-manage';
 import NurseDetailPanel from './ui/nurse-detail-panel';
 
 type TMemberNurseSortMode = 'manual' | 'name';
 type TManualOrderByTeamId = Record<number, number[]>;
 type TNurseDraftActions = {save: () => Promise<boolean>; discard: () => void};
+type TMemberDivisionGroup = {
+    divisionNum: number;
+    divisionName?: string | null;
+    nurses: TNurse[];
+};
+type TEditingDivisionKey = {
+    shiftTeamId: number;
+    divisionNum: number;
+} | null;
 
 const getMemberManualOrderStorageKey = (wardId: number | null) => `member:manual-order:${wardId ?? 'unknown'}`;
+const getMemberDivisionDroppableId = (shiftTeamId: number, divisionNum: number) => `${shiftTeamId},${divisionNum}`;
 const parsePositiveInt = (value: string | null): number | null => {
     if (!value) return null;
 
@@ -130,6 +140,98 @@ const getWorkerBoundaryIndex = (orderedNurseIds: number[], isWorkerByNurseId: Ma
 
     return firstOffIndex === -1 ? orderedNurseIds.length : firstOffIndex;
 };
+const getDivisionFallbackLabel = (divisionNum: number) => `그룹${divisionNum}`;
+const getDivisionDisplayLabel = (divisionNum: number, divisionName?: string | null) => {
+    const trimmedDivisionName = divisionName?.trim();
+
+    return trimmedDivisionName != null && trimmedDivisionName.length > 0 ? trimmedDivisionName : getDivisionFallbackLabel(divisionNum);
+};
+const groupMemberNursesByDivision = (
+    nurses: TNurse[],
+    divisions: Array<{divisionNum: number; name?: string | null; displayOrder?: number}>,
+): TMemberDivisionGroup[] => {
+    const divisionNameByNum = new Map(divisions.map((division) => [division.divisionNum, division.name]));
+    const nursesByDivision = new Map<number, TNurse[]>();
+
+    nurses.forEach((nurse) => {
+        const divisionNum = nurse.divisionNum ?? 1;
+        const divisionNurses = nursesByDivision.get(divisionNum) ?? [];
+
+        divisionNurses.push(nurse);
+        nursesByDivision.set(divisionNum, divisionNurses);
+    });
+
+    const orderedDivisionNums = [
+        ...divisions
+            .slice()
+            .sort((left, right) => (left.displayOrder ?? left.divisionNum) - (right.displayOrder ?? right.divisionNum))
+            .map((division) => division.divisionNum),
+        ...Array.from(nursesByDivision.keys()).sort((left, right) => left - right),
+    ];
+    const seen = new Set<number>();
+
+    return orderedDivisionNums.flatMap((divisionNum) => {
+        if (seen.has(divisionNum)) return [];
+
+        seen.add(divisionNum);
+
+        const divisionNurses = nursesByDivision.get(divisionNum) ?? [];
+
+        if (divisionNurses.length === 0) return [];
+
+        return [
+            {
+                divisionNum,
+                divisionName: divisionNameByNum.get(divisionNum),
+                nurses: divisionNurses,
+            },
+        ];
+    });
+};
+const parseDivisionNumFromDroppableId = (droppableId: string) => {
+    const [, divisionNumText] = droppableId.split(',');
+    const divisionNum = Number.parseInt(divisionNumText ?? '', 10);
+
+    return Number.isInteger(divisionNum) ? divisionNum : null;
+};
+const createOptimisticMemberDragOrder = ({
+    groups,
+    sourceDroppableId,
+    destinationDroppableId,
+    sourceIndex,
+    destinationIndex,
+}: {
+    groups: TMemberDivisionGroup[];
+    sourceDroppableId: string;
+    destinationDroppableId: string;
+    sourceIndex: number;
+    destinationIndex: number;
+}) => {
+    const sourceDivisionNum = parseDivisionNumFromDroppableId(sourceDroppableId);
+    const destinationDivisionNum = parseDivisionNumFromDroppableId(destinationDroppableId);
+
+    if (sourceDivisionNum == null || destinationDivisionNum == null) return null;
+
+    const nextGroups = groups.map((group) => ({
+        ...group,
+        nurses: [...group.nurses],
+    }));
+    const sourceGroup = nextGroups.find((group) => group.divisionNum === sourceDivisionNum);
+    const destinationGroup = nextGroups.find((group) => group.divisionNum === destinationDivisionNum);
+
+    if (!sourceGroup || !destinationGroup) return null;
+
+    const [movedNurse] = sourceGroup.nurses.splice(sourceIndex, 1);
+
+    if (!movedNurse) return null;
+
+    destinationGroup.nurses.splice(destinationIndex, 0, {
+        ...movedNurse,
+        divisionNum: destinationDivisionNum,
+    });
+
+    return nextGroups.flatMap((group) => group.nurses.map((nurse) => nurse.nurseId));
+};
 
 function MemberRoleHeaderHelp({
     type,
@@ -177,15 +279,7 @@ function MemberPage() {
         state: {watingNurses},
     } = useEditWard();
     const {
-        state: {
-            ward,
-            shiftTeams,
-            selectedNurse,
-            isNurseDraftDirty,
-            isAddingNurse,
-            nurseSaveStatus,
-            isDeletingNurse,
-        },
+        state: {ward, shiftTeams, selectedNurse, isNurseDraftDirty, isAddingNurse, nurseSaveStatus, isDeletingNurse},
         actions: {
             selectNurse,
             setNurseDraftDirty,
@@ -193,6 +287,8 @@ function MemberPage() {
             addNurse,
             deleteNurse,
             deleteShiftTeam,
+            editDivision,
+            updateShiftTeamDivisionName,
             moveNurseOrder,
             updateShiftTeam,
             updateNurse,
@@ -205,15 +301,19 @@ function MemberPage() {
     const [sortMenuOpen, setSortMenuOpen] = useState(false);
     const sortMenuRef = useRef<HTMLDivElement>(null);
     const [pendingWorkerByNurseId, setPendingWorkerByNurseId] = useState<Record<number, boolean>>({});
+    const [pendingDivisionByNurseId, setPendingDivisionByNurseId] = useState<Record<number, number>>({});
     const [manualOrderByTeamId, setManualOrderByTeamId] = useState<Record<number, number[]>>({});
     const [openedRoleHelp, setOpenedRoleHelp] = useState<TNurseRoleHelpType | null>(null);
     const [editingTeamId, setEditingTeamId] = useState<number | null>(null);
     const [editingTeamName, setEditingTeamName] = useState('');
+    const [editingDivisionKey, setEditingDivisionKey] = useState<TEditingDivisionKey>(null);
+    const [editingDivisionName, setEditingDivisionName] = useState('');
     const [activeIndicatorStyle, setActiveIndicatorStyle] = useState<{left: number; width: number} | null>(null);
     const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
     const [showUnsavedGuardModal, setShowUnsavedGuardModal] = useState(false);
     const [connectionManageModalOpen, setConnectionManageModalOpen] = useState(false);
     const [wardCodeGuideOpen, setWardCodeGuideOpen] = useState(false);
+    const [isDraggingNurse, setIsDraggingNurse] = useState(false);
     const hasInitializedSelectionRef = useRef(false);
     const rowRefByNurseId = useRef<Record<number, HTMLDivElement | null>>({});
     const previousTopByNurseIdRef = useRef<Record<number, number>>({});
@@ -287,7 +387,16 @@ function MemberPage() {
         [activeShiftTeamId, shiftTeams],
     );
     const displayedNurses = useMemo(() => {
-        const teamNurses = [...(activeShiftTeam?.nurses ?? [])];
+        const teamNurses = (activeShiftTeam?.nurses ?? []).map((nurse) => {
+            const pendingDivisionNum = pendingDivisionByNurseId[nurse.nurseId];
+
+            return pendingDivisionNum == null || pendingDivisionNum === nurse.divisionNum
+                ? nurse
+                : {
+                      ...nurse,
+                      divisionNum: pendingDivisionNum,
+                  };
+        });
         const teamId = activeShiftTeam?.shiftTeamId;
 
         if (!teamId) return teamNurses;
@@ -314,8 +423,14 @@ function MemberPage() {
         manualOrderByTeamId,
         memberNameCollator,
         nurseSortMode,
+        pendingDivisionByNurseId,
         pendingWorkerByNurseId,
     ]);
+    const divisionGroups = useMemo(
+        () => groupMemberNursesByDivision(displayedNurses, activeShiftTeam?.divisions ?? []),
+        [activeShiftTeam?.divisions, displayedNurses],
+    );
+    const renderedNurses = useMemo(() => divisionGroups.flatMap((group) => group.nurses), [divisionGroups]);
     const hasShiftTeams = (shiftTeams?.length ?? 0) > 0;
     const activeTeamNurseCount = activeShiftTeam?.nurseCnt ?? activeShiftTeam?.nurses.length ?? 0;
     const hasActiveTeamNurses = hasShiftTeams && activeTeamNurseCount > 0;
@@ -414,9 +529,36 @@ function MemberPage() {
 
         setSortMenuOpen(false);
     }, [hasActiveTeamNurses]);
+    useEffect(() => {
+        setEditingDivisionKey(null);
+        setEditingDivisionName('');
+        setPendingDivisionByNurseId({});
+    }, [activeShiftTeam?.shiftTeamId]);
+    useEffect(() => {
+        if (Object.keys(pendingDivisionByNurseId).length === 0) return;
+
+        const nurseById = new Map(allNurses.map((nurse) => [nurse.nurseId, nurse]));
+
+        setPendingDivisionByNurseId((prev) => {
+            const next = {...prev};
+
+            let changed = false;
+
+            Object.entries(prev).forEach(([nurseIdText, divisionNum]) => {
+                const nurseId = Number.parseInt(nurseIdText, 10);
+
+                if (nurseById.get(nurseId)?.divisionNum !== divisionNum) return;
+
+                delete next[nurseId];
+                changed = true;
+            });
+
+            return changed ? next : prev;
+        });
+    }, [allNurses, pendingDivisionByNurseId]);
     useLayoutEffect(() => {
         const nextTopByNurseId: Record<number, number> = {};
-        const currentNurseIds = displayedNurses.map((nurse) => nurse.nurseId);
+        const currentNurseIds = renderedNurses.map((nurse) => nurse.nurseId);
         const previousNurseIds = previousNurseIdsRef.current;
         const hasStructuralListChange =
             previousNurseIds.length !== currentNurseIds.length ||
@@ -428,7 +570,7 @@ function MemberPage() {
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         const shouldSkipFlipAnimation = skipFlipAnimationOnceRef.current || hasStructuralListChange;
 
-        displayedNurses.forEach((nurse) => {
+        renderedNurses.forEach((nurse) => {
             const rowElement = rowRefByNurseId.current[nurse.nurseId];
 
             if (!rowElement) {
@@ -477,7 +619,7 @@ function MemberPage() {
 
         previousTopByNurseIdRef.current = nextTopByNurseId;
         previousNurseIdsRef.current = currentNurseIds;
-    }, [displayedNurses]);
+    }, [renderedNurses]);
     useEffect(() => {
         const skipFlipForReentry = () => {
             skipFlipAnimationOnceRef.current = true;
@@ -583,6 +725,17 @@ function MemberPage() {
 
         return true;
     };
+    const finishDragMotion = () => {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                skipFlipAnimationOnceRef.current = false;
+            });
+        });
+    };
+    const handleDragStart = () => {
+        skipFlipAnimationOnceRef.current = true;
+        setIsDraggingNurse(true);
+    };
     const handleSelectTeam = (shiftTeamId: number) => {
         if (!shiftTeams) return;
 
@@ -645,30 +798,194 @@ function MemberPage() {
         await updateShiftTeam(shiftTeamId, {name: nextName});
         setEditingTeamId(null);
     };
-    const handleDragEnd = (result: DropResult) => {
-        const teamId = activeShiftTeam?.shiftTeamId;
-        const {source, destination} = result;
+    const handleStartEditingDivision = (group: TMemberDivisionGroup) => {
+        if (!activeShiftTeam) return;
 
-        if (!teamId || !destination || source.index === destination.index) return;
+        setEditingDivisionKey({
+            shiftTeamId: activeShiftTeam.shiftTeamId,
+            divisionNum: group.divisionNum,
+        });
+        setEditingDivisionName(group.divisionName?.trim() ?? '');
+    };
+    const handleCancelEditingDivision = () => {
+        setEditingDivisionKey(null);
+        setEditingDivisionName('');
+    };
+    const handleSubmitDivisionName = async () => {
+        if (!activeShiftTeam || !editingDivisionKey) return;
+
+        const nextName = editingDivisionName.trim();
+        const currentDivision = activeShiftTeam.divisions?.find((division) => division.divisionNum === editingDivisionKey.divisionNum);
+        const currentName = currentDivision?.name?.trim() ?? '';
+
+        if (nextName === currentName) {
+            handleCancelEditingDivision();
+
+            return;
+        }
+
+        const saved = await updateShiftTeamDivisionName(
+            editingDivisionKey.shiftTeamId,
+            editingDivisionKey.divisionNum,
+            nextName.length > 0 ? nextName : null,
+        );
+
+        if (saved) {
+            handleCancelEditingDivision();
+        }
+    };
+    const handleAddDivisionAfter = async (nurse: TNurse) => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleAddDivisionAfter(nurse);
+            })
+        )
+            return;
+
+        if (!activeShiftTeam) return;
+
+        try {
+            await editDivision(activeShiftTeam.shiftTeamId, nurse.priority, 1, DateUtil.getDateString(new Date(), 'yyyy-MM'));
+            toast.success('그룹을 추가했습니다.');
+        } catch {
+            toast.error('그룹을 추가하지 못했습니다.');
+        }
+    };
+    const handleDeleteDivision = async (groupIndex: number) => {
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleDeleteDivision(groupIndex);
+            })
+        )
+            return;
+
+        if (!activeShiftTeam || groupIndex <= 0) return;
+
+        const previousGroup = divisionGroups[groupIndex - 1];
+        const previousBoundaryNurse = previousGroup?.nurses[previousGroup.nurses.length - 1];
+
+        if (!previousBoundaryNurse) return;
+
+        try {
+            await editDivision(
+                activeShiftTeam.shiftTeamId,
+                previousBoundaryNurse.priority,
+                -1,
+                DateUtil.getDateString(new Date(), 'yyyy-MM'),
+            );
+            toast.success('그룹을 삭제했습니다.');
+        } catch {
+            toast.error('그룹을 삭제하지 못했습니다.');
+        }
+    };
+    const handleDragEnd = async (result: DropResult) => {
+        setIsDraggingNurse(false);
+
+        const teamId = activeShiftTeam?.shiftTeamId;
+        const {source, destination, draggableId} = result;
+
+        if (
+            shouldBlockForUnsavedChanges(async () => {
+                await handleDragEnd(result);
+            })
+        ) {
+            finishDragMotion();
+
+            return;
+        }
+
+        if (
+            !teamId ||
+            !activeShiftTeam ||
+            !shiftTeams ||
+            !destination ||
+            (source.droppableId === destination.droppableId && source.index === destination.index)
+        ) {
+            finishDragMotion();
+
+            return;
+        }
 
         skipFlipAnimationOnceRef.current = true;
+
+        const shiftTeamsForPayload = shiftTeams.map((shiftTeam) =>
+            shiftTeam.shiftTeamId === teamId
+                ? {
+                      ...shiftTeam,
+                      nurses: renderedNurses,
+                  }
+                : shiftTeam,
+        );
+        const movePayload = createMoveNurseOrderPayload({
+            shiftTeams: shiftTeamsForPayload,
+            sourceDroppableId: source.droppableId,
+            destinationDroppableId: destination.droppableId,
+            destinationIndex: destination.index,
+            sourceIndex: source.index,
+            draggableId,
+        });
+        const nextManualOrder = createOptimisticMemberDragOrder({
+            groups: divisionGroups,
+            sourceDroppableId: source.droppableId,
+            destinationDroppableId: destination.droppableId,
+            sourceIndex: source.index,
+            destinationIndex: destination.index,
+        });
+
+        if (!movePayload || !nextManualOrder) {
+            finishDragMotion();
+
+            return;
+        }
+
         setNurseSortMode('manual');
-        setManualOrderByTeamId((prev) => {
-            // Always reorder from the currently rendered order to avoid stale manual order drift.
-            const current = displayedNurses.map((nurse) => nurse.nurseId);
-            const next = [...current];
-            const [moved] = next.splice(source.index, 1);
 
-            if (moved == null) return prev;
+        const previousManualOrder = manualOrderByTeamId[teamId] ?? renderedNurses.map((nurse) => nurse.nurseId);
+        const draggedNurse = renderedNurses.find((nurse) => nurse.nurseId === movePayload.nurseId);
 
-            next.splice(destination.index, 0, moved);
+        setPendingDivisionByNurseId((prev) => {
+            const next = {...prev};
 
-            return {...prev, [teamId]: next};
+            if (!draggedNurse || draggedNurse.divisionNum === movePayload.divisionNum) {
+                delete next[movePayload.nurseId];
+
+                return next;
+            }
+
+            next[movePayload.nurseId] = movePayload.divisionNum;
+
+            return next;
         });
+        setManualOrderByTeamId((prev) => ({...prev, [teamId]: nextManualOrder}));
 
-        requestAnimationFrame(() => {
-            skipFlipAnimationOnceRef.current = false;
-        });
+        try {
+            const moved = await moveNurseOrder(
+                movePayload.nurseId,
+                movePayload.sourceShiftTeamId,
+                movePayload.destinationShiftTeamId,
+                movePayload.divisionNum,
+                movePayload.prevPriority,
+                movePayload.nextPriority,
+                DateUtil.getDateString(new Date(), 'yyyy-MM'),
+            );
+
+            if (!moved) {
+                setPendingDivisionByNurseId((prev) => {
+                    const next = {...prev};
+
+                    delete next[movePayload.nurseId];
+
+                    return next;
+                });
+                setManualOrderByTeamId((prev) => ({...prev, [teamId]: previousManualOrder}));
+
+                return;
+            }
+
+            sendEvent(events.memberPage.moveNurse);
+        } finally {
+            finishDragMotion();
+        }
     };
     const reorderNurseForWorkerToggle = (teamId: number, nurseId: number, isWorker: boolean) => {
         setNurseSortMode('manual');
@@ -676,7 +993,7 @@ function MemberPage() {
             const teamNurses = shiftTeams?.find((shiftTeam) => shiftTeam.shiftTeamId === teamId)?.nurses ?? [];
             const teamNurseIds = teamNurses.map((nurse) => nurse.nurseId);
             const renderedOrderForActiveTeam =
-                activeShiftTeam?.shiftTeamId === teamId ? displayedNurses.map((nurse) => nurse.nurseId) : undefined;
+                activeShiftTeam?.shiftTeamId === teamId ? renderedNurses.map((nurse) => nurse.nurseId) : undefined;
             const currentOrder = renderedOrderForActiveTeam?.length ? renderedOrderForActiveTeam : (prev[teamId] ?? teamNurseIds);
             const mergedOrder = [...currentOrder, ...teamNurseIds.filter((id) => !currentOrder.includes(id))];
             const nextOrder = mergedOrder.filter((id) => id !== nurseId);
@@ -1260,57 +1577,118 @@ function MemberPage() {
 
                         <div className="space-y-1.5 pb-4">
                             {hasActiveTeamNurses ? (
-                                <DragDropContext onDragEnd={handleDragEnd}>
-                                    <Droppable droppableId={String(activeShiftTeam?.shiftTeamId ?? 0)}>
-                                        {(provided) => (
-                                            <div ref={provided.innerRef} {...provided.droppableProps} className="space-y-1.5">
-                                                {displayedNurses.map((nurse, index) => (
-                                                    <Draggable key={nurse.nurseId} draggableId={String(nurse.nurseId)} index={index}>
-                                                        {(dragProvided) => (
-                                                            <MemberNurseRow
-                                                                rowId={index === 0 ? 'nurse_sample' : undefined}
-                                                                nurse={nurse}
-                                                                isWorker={pendingWorkerByNurseId[nurse.nurseId] ?? nurse.isWorker}
-                                                                isSelected={selectedNurse?.nurseId === nurse.nurseId}
-                                                                wardShiftTypes={ward?.wardShiftTypes}
-                                                                isBusy={nurseSaveStatus === 'saving' || isDeletingNurse}
-                                                                dragRef={(element) => {
-                                                                    dragProvided.innerRef(element);
-                                                                    rowRefByNurseId.current[nurse.nurseId] = element;
-                                                                }}
-                                                                draggableProps={dragProvided.draggableProps}
-                                                                dragHandleProps={dragProvided.dragHandleProps}
-                                                                onDeleteNurse={deleteNurse}
-                                                                onDisconnectNurse={disconnectNurse}
-                                                                onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
-                                                                onUpdateNurse={(nurseId, nextNurse) => {
-                                                                    if (nurseId !== nurse.nurseId) {
-                                                                        return updateNurse(nurseId, nextNurse);
-                                                                    }
+                                <DragDropContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                                    <div className="space-y-1.5">
+                                        {divisionGroups.map((group, groupIndex) => {
+                                            const isEditingDivision =
+                                                editingDivisionKey?.shiftTeamId === activeShiftTeam?.shiftTeamId &&
+                                                editingDivisionKey?.divisionNum === group.divisionNum;
+                                            const canDeleteDivision = groupIndex > 0 && nurseSaveStatus !== 'saving' && !isDeletingNurse;
 
-                                                                    return handleUpdateNurse(nurse, nextNurse);
-                                                                }}
-                                                                onUpdateNurseShift={updateNurseShift}
-                                                                onSelect={() => {
-                                                                    if (
-                                                                        shouldBlockForUnsavedChanges(() => {
-                                                                            selectNurse(nurse.nurseId);
-                                                                            sendEvent(events.memberPage.focusNurse);
-                                                                        })
-                                                                    )
-                                                                        return;
-
-                                                                    selectNurse(nurse.nurseId);
-                                                                    sendEvent(events.memberPage.focusNurse);
-                                                                }}
-                                                            />
+                                            return (
+                                                <div
+                                                    key={`${activeShiftTeam?.shiftTeamId ?? 0}:${group.divisionNum}`}
+                                                    className="flex flex-col"
+                                                >
+                                                    <MemberDivisionHeader
+                                                        divisionNum={group.divisionNum}
+                                                        divisionName={group.divisionName}
+                                                        nurseCount={group.nurses.length}
+                                                        isEditing={isEditingDivision}
+                                                        draftName={editingDivisionName}
+                                                        canDelete={canDeleteDivision}
+                                                        onStartEdit={() => handleStartEditingDivision(group)}
+                                                        onDraftNameChange={setEditingDivisionName}
+                                                        onSubmit={() => void handleSubmitDivisionName()}
+                                                        onCancel={handleCancelEditingDivision}
+                                                        onDelete={() => void handleDeleteDivision(groupIndex)}
+                                                    />
+                                                    <Droppable
+                                                        droppableId={getMemberDivisionDroppableId(
+                                                            activeShiftTeam?.shiftTeamId ?? 0,
+                                                            group.divisionNum,
                                                         )}
-                                                    </Draggable>
-                                                ))}
-                                                {provided.placeholder}
-                                            </div>
-                                        )}
-                                    </Droppable>
+                                                    >
+                                                        {(provided) => (
+                                                            <div
+                                                                ref={provided.innerRef}
+                                                                {...provided.droppableProps}
+                                                                className="flex flex-col"
+                                                            >
+                                                                {group.nurses.map((nurse, nurseIndex) => (
+                                                                    <Fragment key={nurse.nurseId}>
+                                                                        <Draggable
+                                                                            draggableId={String(nurse.nurseId)}
+                                                                            index={nurseIndex}
+                                                                            isDragDisabled={nurseSaveStatus === 'saving' || isDeletingNurse}
+                                                                        >
+                                                                            {(dragProvided) => (
+                                                                                <MemberNurseRow
+                                                                                    rowId={
+                                                                                        renderedNurses[0]?.nurseId === nurse.nurseId
+                                                                                            ? 'nurse_sample'
+                                                                                            : undefined
+                                                                                    }
+                                                                                    nurse={nurse}
+                                                                                    isWorker={
+                                                                                        pendingWorkerByNurseId[nurse.nurseId] ??
+                                                                                        nurse.isWorker
+                                                                                    }
+                                                                                    isSelected={selectedNurse?.nurseId === nurse.nurseId}
+                                                                                    wardShiftTypes={ward?.wardShiftTypes}
+                                                                                    isBusy={nurseSaveStatus === 'saving' || isDeletingNurse}
+                                                                                    dragRef={(element) => {
+                                                                                        dragProvided.innerRef(element);
+                                                                                        rowRefByNurseId.current[nurse.nurseId] = element;
+                                                                                    }}
+                                                                                    draggableProps={dragProvided.draggableProps}
+                                                                                    dragHandleProps={dragProvided.dragHandleProps}
+                                                                                    onDeleteNurse={deleteNurse}
+                                                                                    onDisconnectNurse={disconnectNurse}
+                                                                                    onOpenWardCodeGuide={() => setWardCodeGuideOpen(true)}
+                                                                                    onUpdateNurse={(nurseId, nextNurse) => {
+                                                                                        if (nurseId !== nurse.nurseId) {
+                                                                                            return updateNurse(nurseId, nextNurse);
+                                                                                        }
+
+                                                                                        return handleUpdateNurse(nurse, nextNurse);
+                                                                                    }}
+                                                                                    onUpdateNurseShift={updateNurseShift}
+                                                                                    onSelect={() => {
+                                                                                        if (
+                                                                                            shouldBlockForUnsavedChanges(() => {
+                                                                                                selectNurse(nurse.nurseId);
+                                                                                                sendEvent(events.memberPage.focusNurse);
+                                                                                            })
+                                                                                        )
+                                                                                            return;
+
+                                                                                        selectNurse(nurse.nurseId);
+                                                                                        sendEvent(events.memberPage.focusNurse);
+                                                                                    }}
+                                                                                />
+                                                                            )}
+                                                                        </Draggable>
+                                                                        {nurseIndex < group.nurses.length - 1 ? (
+                                                                            <MemberAddDivisionButton
+                                                                                disabled={
+                                                                                    isDraggingNurse ||
+                                                                                    nurseSaveStatus === 'saving' ||
+                                                                                    isDeletingNurse
+                                                                                }
+                                                                                onClick={() => void handleAddDivisionAfter(nurse)}
+                                                                            />
+                                                                        ) : null}
+                                                                    </Fragment>
+                                                                ))}
+                                                                {provided.placeholder}
+                                                            </div>
+                                                        )}
+                                                    </Droppable>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </DragDropContext>
                             ) : !hasShiftTeams ? (
                                 <div className="mt-2 flex min-h-[280px] flex-col items-center justify-center rounded-[14px] border border-dashed border-[#C8CFDB] bg-white px-6 py-12 text-center">
@@ -1398,8 +1776,146 @@ function MemberPage() {
                     </div>
                 </aside>
             </div>
-
         </div>
+    );
+}
+
+function MemberDivisionHeader({
+    divisionNum,
+    divisionName,
+    nurseCount,
+    isEditing,
+    draftName,
+    canDelete,
+    onStartEdit,
+    onDraftNameChange,
+    onSubmit,
+    onCancel,
+    onDelete,
+}: {
+    divisionNum: number;
+    divisionName?: string | null;
+    nurseCount: number;
+    isEditing: boolean;
+    draftName: string;
+    canDelete: boolean;
+    onStartEdit: () => void;
+    onDraftNameChange: (value: string) => void;
+    onSubmit: () => void;
+    onCancel: () => void;
+    onDelete: () => void;
+}) {
+    const label = getDivisionDisplayLabel(divisionNum, divisionName);
+
+    return (
+        <div className="mb-1.5 flex h-8 items-center gap-2 px-1">
+            {isEditing ? (
+                <input
+                    autoFocus
+                    value={draftName}
+                    maxLength={50}
+                    placeholder={getDivisionFallbackLabel(divisionNum)}
+                    className="h-7 w-[168px] rounded-[7px] border border-main-2 bg-white px-2 font-apple text-[13px] font-semibold text-sub-1 ring-2 ring-main-2/15 outline-none"
+                    onChange={(event) => onDraftNameChange(event.target.value)}
+                    onFocus={(event) => event.currentTarget.select()}
+                    onBlur={onSubmit}
+                    onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                            event.preventDefault();
+                            onCancel();
+                        }
+
+                        if (event.key === 'Enter') {
+                            event.preventDefault();
+                            onSubmit();
+                        }
+                    }}
+                />
+            ) : (
+                <button
+                    type="button"
+                    className="inline-flex h-7 max-w-[240px] items-center gap-1.5 rounded-[7px] px-2.5 font-apple text-[13px] font-semibold text-gray-3 transition-colors hover:bg-white hover:text-sub-1 focus-visible:outline-2 focus-visible:outline-main-1"
+                    title={label}
+                    onClick={onStartEdit}
+                >
+                    <span className="truncate">{label}</span>
+                    <span className="inline-flex items-center gap-0.5 font-poppins text-[11px] font-semibold text-gray-4 tabular-nums">
+                        <PersonIcon className="h-3 w-3" aria-hidden="true" />
+                        {nurseCount}
+                    </span>
+                </button>
+            )}
+            <span className="h-px flex-1 bg-[#D8DEE8]" />
+            {canDelete ? (
+                <button
+                    type="button"
+                    className="inline-flex h-7 items-center gap-1 rounded-[7px] px-2 font-apple text-[12px] font-semibold text-gray-4 transition-colors hover:bg-white hover:text-[#D14343] focus-visible:outline-2 focus-visible:outline-main-1"
+                    title="그룹 삭제"
+                    aria-label={`${label} 그룹 삭제`}
+                    onClick={onDelete}
+                >
+                    <Minus className="h-3.5 w-3.5" strokeWidth={2.4} />
+                    그룹 삭제
+                </button>
+            ) : null}
+        </div>
+    );
+}
+
+function MemberAddDivisionButton({disabled, onClick}: {disabled: boolean; onClick: () => void}) {
+    const [isVisible, setIsVisible] = useState(false);
+    const handleShow = useCallback(() => {
+        if (disabled) return;
+
+        setIsVisible(true);
+    }, [disabled]);
+    const handleHide = useCallback(() => {
+        setIsVisible(false);
+    }, []);
+    const handleClick = useCallback(() => {
+        if (disabled || !isVisible) return;
+
+        onClick();
+    }, [disabled, isVisible, onClick]);
+
+    useEffect(() => {
+        if (!disabled) return;
+
+        handleHide();
+    }, [disabled, handleHide]);
+
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            aria-label="그룹 추가"
+            className={cn(
+                'relative flex h-2 w-full items-center justify-start px-1 text-main-1 focus-visible:outline-2 focus-visible:outline-main-1 disabled:cursor-not-allowed',
+                disabled ? 'opacity-0' : 'opacity-100',
+            )}
+            onPointerEnter={handleShow}
+            onPointerLeave={handleHide}
+            onFocus={handleShow}
+            onBlur={handleHide}
+            onClick={handleClick}
+        >
+            <span
+                className={cn(
+                    'absolute inset-x-1 top-1/2 h-px -translate-y-1/2 bg-main-3 transition-opacity duration-150',
+                    isVisible ? 'opacity-100' : 'opacity-0',
+                )}
+            />
+            <span
+                aria-hidden="true"
+                className={cn(
+                    'absolute top-1/2 left-1 z-10 inline-flex h-6 -translate-y-1/2 items-center gap-1 rounded-[7px] bg-white px-2 font-apple text-[12px] font-semibold text-main-1 shadow-[0_4px_14px_rgba(95,100,135,0.12)] transition-opacity duration-100',
+                    isVisible ? 'opacity-100' : 'opacity-0',
+                )}
+            >
+                <Plus className="h-3 w-3" strokeWidth={2.5} />
+                그룹 추가
+            </span>
+        </button>
     );
 }
 

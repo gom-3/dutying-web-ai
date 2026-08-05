@@ -49,9 +49,17 @@ export type TShiftNurse = {
     name: string;
     carried: number;
     divisionNum: number;
+    divisionName?: string | null;
     priority: number;
     isWorker: true;
     nurseId: number;
+};
+
+export type TShiftTeamDivision = {
+    shiftTeamDivisionId: number;
+    divisionNum: number;
+    name: string | null;
+    displayOrder: number;
 };
 
 export type TShiftTeam = {
@@ -59,4 +67,5 @@ export type TShiftTeam = {
     name: string;
     nurseCnt: number;
     nurses: TNurse[];
+    divisions?: TShiftTeamDivision[];
 };

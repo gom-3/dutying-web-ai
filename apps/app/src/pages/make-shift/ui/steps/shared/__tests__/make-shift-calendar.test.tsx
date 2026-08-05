@@ -109,6 +109,27 @@ describe('MakeShiftCalendar', () => {
         expect(headerGrid?.style.gridTemplateColumns).toBe(cellGrid?.style.gridTemplateColumns);
     });
 
+    it('shows division header with group name and member count when enabled', () => {
+        const namedShift = {
+            ...shift,
+            divisionShiftNurses: [
+                [],
+                shift.divisionShiftNurses[1]!.map((row) => ({
+                    ...row,
+                    shiftNurse: {...row.shiftNurse, divisionName: '나이트킵'},
+                })),
+            ],
+        } satisfies TShift;
+
+        render(<MakeShiftCalendar shift={namedShift} doc={doc} violationMap={new Map()} showFaults={false} readonly showDivisionHeaders />);
+
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__division-header');
+
+        expect(header).toHaveTextContent('나이트킵');
+        expect(header).toHaveTextContent('1');
+        expect(header?.querySelector('svg')).toBeInTheDocument();
+    });
+
     it('shares one summary width across the header, rows, and daily footer', () => {
         render(<MakeShiftCalendar shift={shift} doc={doc} violationMap={new Map()} showFaults={false} readonly />);
 

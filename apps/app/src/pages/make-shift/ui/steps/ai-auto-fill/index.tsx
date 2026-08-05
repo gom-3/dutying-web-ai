@@ -258,6 +258,16 @@ export function AiAutofill() {
     const rulesHash = useShiftEditorStore((s) => s.rulesHash);
     const useCase = useMakeShiftUseCase();
     const {currentTeamNurses, isReorderingRows, moveScheduleRow} = useMakeShiftNurseOrder();
+    const divisionLabelByNum = useMemo(
+        () =>
+            new Map(
+                (shiftTeams?.find((team) => team.shiftTeamId === currentShiftTeamId)?.divisions ?? []).map((division) => [
+                    division.divisionNum,
+                    division.name,
+                ]),
+            ),
+        [currentShiftTeamId, shiftTeams],
+    );
     const setStepNavigationBusy = useMakeShiftStore((s) => s.setStepNavigationBusy);
     const [cellAttention, setCellAttention] = useState<{target: 'fixed' | 'request'; nonce: number} | null>(null);
     const [showFaults, setShowFaults] = useState(true);
@@ -1297,6 +1307,8 @@ export function AiAutofill() {
                         onRowDragEnd={(result) => {
                             void moveScheduleRow(orderedShift, result, {scheduleKind: 'duty', doc: editorDoc});
                         }}
+                        showDivisionHeaders
+                        divisionLabelByNum={divisionLabelByNum}
                         restPolicyControl={
                             <RestLeavePolicySummaryButton
                                 wardId={wardId}

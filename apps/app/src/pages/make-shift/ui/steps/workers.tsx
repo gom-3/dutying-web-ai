@@ -39,11 +39,7 @@ const compareWorkerName = (left: TNurse, right: TNurse) => {
 
     return left.nurseId - right.nurseId;
 };
-const sortWorkersForDisplay = (
-    workers: TNurse[],
-    sortMode: TMakeShiftWorkerSortMode,
-    getWorkerState: (nurse: TNurse) => boolean,
-) => {
+const sortWorkersForDisplay = (workers: TNurse[], sortMode: TMakeShiftWorkerSortMode, getWorkerState: (nurse: TNurse) => boolean) => {
     const activeWorkers = workers.filter((nurse) => getWorkerState(nurse));
     const inactiveWorkers = workers.filter((nurse) => !getWorkerState(nurse));
 
@@ -104,6 +100,10 @@ export function Workers() {
     const wardQuery = useQuery({
         ...wardQueryOptions.id(wardId ?? -1),
         enabled: wardId !== null,
+    });
+    const dutyQuery = useQuery({
+        ...wardQueryOptions.duty(wardId ?? -1, currentShiftTeamId ?? -1, year, month),
+        enabled,
     });
     const teamNurses = teamNursesQuery.data ?? [];
     const ward = wardQuery.data;
@@ -303,18 +303,19 @@ export function Workers() {
             setLocalWorkers(nextDisplay);
             setSortMode('priority');
 
-            void moveNurseOrder(
-                payload,
-            );
+            void moveNurseOrder(payload);
         } finally {
             releaseDragFlipSkip();
         }
     };
     const workerCount = displayWorkers.length;
     const activeWorkerCount = displayWorkers.filter((nurse) => getWorkerState(nurse)).length;
-    const currentShiftTeamName =
-        ward?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId)?.name ??
-        t('page.makeShift.overview.noTeamsLabel');
+    const currentShiftTeam = ward?.shiftTeams.find((shiftTeam) => shiftTeam.shiftTeamId === currentShiftTeamId);
+    const currentShiftTeamName = currentShiftTeam?.name ?? t('page.makeShift.overview.noTeamsLabel');
+    const divisionLabelByNum = useMemo(
+        () => new Map((currentShiftTeam?.divisions ?? []).map((division) => [division.divisionNum, division.name])),
+        [currentShiftTeam?.divisions],
+    );
     const noNurseTitle = t('page.makeShift.workers.noNurseTitle', {teamName: currentShiftTeamName});
     const noNurseDescription = t('page.makeShift.workers.noNurseDescription');
     const selectedSortOption = availableSortOptions.find((option) => option.value === sortMode) ?? availableSortOptions[0];
@@ -431,7 +432,13 @@ export function Workers() {
                                         {t('page.makeShift.workers.activeCount', {count: activeWorkerCount})}
                                     </span>
                                 </span>
-                                <RestLeavePolicySummaryCard wardId={wardId} shiftTeamId={currentShiftTeamId} year={year} month={month} />
+                                <RestLeavePolicySummaryCard
+                                    wardId={wardId}
+                                    shiftTeamId={currentShiftTeamId}
+                                    year={year}
+                                    month={month}
+                                    days={dutyQuery.data?.days}
+                                />
                             </div>
                             <div ref={sortMenuRef} className="relative">
                                 <button
@@ -529,6 +536,7 @@ export function Workers() {
                         <WorkersList
                             grouped={grouped}
                             shiftTeamId={currentShiftTeamId}
+                            divisionLabelByNum={divisionLabelByNum}
                             wardShiftTypes={ward?.wardShiftTypes}
                             isBusy={isWorkerToggleBusy}
                             getWorkerState={getWorkerState}

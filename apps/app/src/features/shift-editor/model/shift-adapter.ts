@@ -145,7 +145,8 @@ export function shiftToDoc(shift: TShift, year: number, month: number, options: 
                     name: row.shiftNurse.name,
                     nurseId: row.shiftNurse.nurseId,
                     priority: row.shiftNurse.priority,
-                    divisionNum: divisionIdx + 1,
+                    divisionNum: row.shiftNurse.divisionNum ?? divisionIdx + 1,
+                    ...(row.shiftNurse.divisionName != null ? {divisionName: row.shiftNurse.divisionName} : {}),
                 };
 
                 return {workerId, lastCells, cells};
@@ -362,6 +363,7 @@ export function docToSnapshotRowOrderDTO(doc: TDutyDoc): TSnapshotRowOrderDTO[] 
             displayOrder,
             priority: meta?.priority ?? displayOrder * 1024,
             divisionNum: meta?.divisionNum ?? 1,
+            ...(meta?.divisionName != null ? {divisionName: meta.divisionName} : {}),
         };
     });
 }

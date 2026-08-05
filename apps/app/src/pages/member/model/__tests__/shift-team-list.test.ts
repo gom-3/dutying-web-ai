@@ -75,6 +75,46 @@ describe('createMoveNurseOrderPayload', () => {
         });
     });
 
+    it('creates a same-team payload when moving into another division', () => {
+        expect(
+            createMoveNurseOrderPayload({
+                shiftTeams: createShiftTeams(),
+                sourceDroppableId: '10,1',
+                destinationDroppableId: '10,2',
+                sourceIndex: 1,
+                destinationIndex: 0,
+                draggableId: '2',
+            }),
+        ).toEqual({
+            nurseId: 2,
+            sourceShiftTeamId: 10,
+            destinationShiftTeamId: 10,
+            divisionNum: 2,
+            prevPriority: 0,
+            nextPriority: 300,
+        });
+    });
+
+    it('creates a same-team payload when moving from another division into a middle position', () => {
+        expect(
+            createMoveNurseOrderPayload({
+                shiftTeams: createShiftTeams(),
+                sourceDroppableId: '10,2',
+                destinationDroppableId: '10,1',
+                sourceIndex: 0,
+                destinationIndex: 1,
+                draggableId: '3',
+            }),
+        ).toEqual({
+            nurseId: 3,
+            sourceShiftTeamId: 10,
+            destinationShiftTeamId: 10,
+            divisionNum: 1,
+            prevPriority: 100,
+            nextPriority: 200,
+        });
+    });
+
     it('creates a cross-team payload when appending to another team', () => {
         expect(
             createMoveNurseOrderPayload({

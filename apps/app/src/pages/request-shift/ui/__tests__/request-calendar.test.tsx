@@ -91,6 +91,7 @@ function createUseRequestShiftValue({
     dayType = 'workday',
     focus = null,
     nurseName = 'Kim',
+    divisionName,
 }: {
     hasNurses?: boolean;
     hasRequest?: boolean;
@@ -98,6 +99,7 @@ function createUseRequestShiftValue({
     dayType?: 'workday' | 'saturday' | 'sunday' | 'holiday';
     focus?: {shiftNurseName: string; shiftNurseId: number; day: number} | null;
     nurseName?: string;
+    divisionName?: string | null;
 } = {}) {
     const nurse = {
         nurseId: 10,
@@ -185,6 +187,10 @@ function createUseRequestShiftValue({
                 name: 'A팀',
                 nurseCnt: nurses.length,
                 nurses,
+                divisions:
+                    divisionName === undefined
+                        ? undefined
+                        : [{shiftTeamDivisionId: 1, divisionNum: 1, name: divisionName, displayOrder: 1}],
             },
             shiftTeams: [
                 {
@@ -192,6 +198,10 @@ function createUseRequestShiftValue({
                     name: 'A팀',
                     nurseCnt: nurses.length,
                     nurses,
+                    divisions:
+                        divisionName === undefined
+                            ? undefined
+                            : [{shiftTeamDivisionId: 1, divisionNum: 1, name: divisionName, displayOrder: 1}],
                 },
             ],
             editAvailability: {
@@ -266,6 +276,18 @@ describe('RequestCalendar', () => {
         expect(screen.getByText('Kim')).toBeInTheDocument();
         expect(screen.queryByText('연동')).not.toBeInTheDocument();
         expect(screen.queryByText('숙련도')).not.toBeInTheDocument();
+    });
+
+    it('신청근무 캘린더에 그룹 구분선을 보여준다', () => {
+        mockUseRequestShift.mockReturnValue(createUseRequestShiftValue({hasNurses: true, divisionName: '나이트킵'}));
+
+        renderRequestCalendar();
+
+        const header = document.querySelector<HTMLElement>('.make-shift-calendar__division-header');
+
+        expect(header).toHaveTextContent('나이트킵');
+        expect(header).toHaveTextContent('1');
+        expect(header?.querySelector('svg')).toBeInTheDocument();
     });
 
     it('신청근무 행 이름 글자 크기를 근무표 만들기 화면 기준으로 맞춘다', () => {

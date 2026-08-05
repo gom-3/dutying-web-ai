@@ -322,6 +322,7 @@ export type TSnapshotRowOrderDTO = {
     displayOrder: number;
     priority?: number;
     divisionNum: number;
+    divisionName?: string | null;
 };
 
 export type TScheduleShiftTypeDto = {
@@ -347,6 +348,7 @@ export type TScheduleRowDto = {
     isWardManager: boolean;
     isWorker: boolean;
     divisionNum: number;
+    divisionName?: string | null;
     priority: number;
     shiftTypePreferencesConfigured?: boolean;
     allowedWardShiftTypeIds?: number[];
@@ -634,6 +636,12 @@ export interface IWardAPI {
     createShiftTeam: (wardId: number) => Promise<TShiftTeamResponse>;
     buildShiftTeam: (wardId: number, shiftTeamId: number, year: number, month: number) => Promise<TShiftTeamResponse>;
     updateShiftTeam: (wardId: number, shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) => Promise<TShiftTeamResponse>;
+    updateShiftTeamDivisionName: (
+        wardId: number,
+        shiftTeamId: number,
+        divisionNum: number,
+        updateShiftTeamDivisionDTO: TUpdateShiftTeamDivisionDTO,
+    ) => Promise<TShiftTeamResponse>;
     removeNurseFromShiftTeam: (wardId: number, shiftTeamId: number, nurseId: number) => Promise<TNurseResponse>;
     deleteShiftTeam: (wardId: number, shiftTeamId: number) => Promise<TShiftTeamResponse>;
     getShiftTypes: (wardId: number) => Promise<TWardShiftTypeResponse[]>;
@@ -724,6 +732,10 @@ export type TCreateWardDTO = {
     hospitalName: string;
     wardShiftTypes: TCreateWardShiftTypeDTO[];
     shiftTeams: TCreateWardShiftTeamDTO[];
+};
+
+export type TUpdateShiftTeamDivisionDTO = {
+    name: string | null;
 };
 
 export type TCreateOnboardingWardDraftDTO = {

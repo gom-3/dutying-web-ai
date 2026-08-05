@@ -237,6 +237,10 @@ export default function ShiftCalendar({
         () => (orderedRequestShift ? createShiftNurseIdByNurseId(orderedRequestShift) : new Map<number, number>()),
         [orderedRequestShift],
     );
+    const divisionLabelByNum = useMemo(
+        () => new Map((currentShiftTeam?.divisions ?? []).map((division) => [division.divisionNum, division.name])),
+        [currentShiftTeam?.divisions],
+    );
     const canEditRequests = editAvailability.canEdit;
     const shouldShowRowReorder = canReorderRows || onRowDragEnd === undefined;
     const isRowReorderDisabled = rowReorderDisabled;
@@ -319,6 +323,8 @@ export default function ShiftCalendar({
                                     canReorderRows={shouldShowRowReorder}
                                     rowReorderDisabled={isRowReorderDisabled}
                                     onRowDragEnd={handleStandaloneRowDragEnd}
+                                    showDivisionHeaders
+                                    divisionLabelByNum={divisionLabelByNum}
                                     onCellClick={handleCalendarCellClick}
                                 />
                             </div>

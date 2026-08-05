@@ -31,6 +31,7 @@ const toPhoneDigits = (phoneNum: string | null | undefined) => (phoneNum ?? '').
 const isDummyPhoneNum = (phoneNum: string | null | undefined) => toPhoneDigits(phoneNum) === DUMMY_PHONE_NUM;
 const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clearBlank?: boolean} = {}) => {
     if (phoneNum === undefined) return undefined;
+
     if (phoneNum === null) return options.clearBlank ? null : undefined;
 
     const trimmedPhoneNum = phoneNum.trim();
@@ -50,14 +51,16 @@ const getNextNewNurseName = (names: string[], prefix: string) => {
 
             const suffix = name.slice(matchedPrefix.length).trim();
             const parsed = Number.parseInt(suffix, 10);
+
             return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
         })
         .filter((value): value is number => value != null);
-
     const nextNumber = (usedNumbers.length ? Math.max(...usedNumbers) : 0) + 1;
+
     return `${prefix}${nextNumber}`;
 };
 const canCreateNurse = (nurse: TUpdateNurseDTO) => (nurse.name ?? '').trim().length > 0;
+
 type TShiftTeamNurse = TWard['shiftTeams'][number]['nurses'][number];
 
 const getShiftTeamNurseCount = (shiftTeams: TWard['shiftTeams'] | undefined) =>
@@ -67,6 +70,7 @@ const appendNurseToShiftTeams = (shiftTeams: TWard['shiftTeams'], shiftTeamId: n
         const shiftTeam = draft.find((team) => team.shiftTeamId === shiftTeamId);
 
         if (!shiftTeam) return;
+
         if (shiftTeam.nurses.some((currentNurse) => currentNurse.nurseId === nurse.nurseId)) return;
 
         shiftTeam.nurses.push(nurse);
@@ -76,6 +80,7 @@ const resolveShiftTeams = (wardShiftTeams: TWard['shiftTeams'] | undefined, quer
     const safeQueriedShiftTeams = Array.isArray(queriedShiftTeams) ? queriedShiftTeams : undefined;
 
     if (!safeQueriedShiftTeams) return wardShiftTeams;
+
     if (!wardShiftTeams) return safeQueriedShiftTeams;
 
     const queriedNurseCount = getShiftTeamNurseCount(safeQueriedShiftTeams);
@@ -544,6 +549,23 @@ const useEditShiftTeam = () => {
         },
         [invalidateWardShiftAndRequest],
     );
+    const updateShiftTeamDivisionName = useCallback(
+        async (shiftTeamId: number, divisionNum: number, name: string | null) => {
+            if (!wardId) return false;
+
+            try {
+                await WardAPI.updateShiftTeamDivisionName(wardId, shiftTeamId, divisionNum, {name});
+                await invalidateWardShiftAndRequest();
+
+                return true;
+            } catch (error) {
+                showActionErrorFeedback(error, '그룹 이름을 저장하지 못했습니다.');
+
+                return false;
+            }
+        },
+        [invalidateWardShiftAndRequest, wardId],
+    );
     const moveNurseOrder = useCallback(
         async (
             nurseId: number,
@@ -750,6 +772,7 @@ const useEditShiftTeam = () => {
             createShiftTeam,
             deleteShiftTeam,
             editDivision,
+            updateShiftTeamDivisionName,
             moveNurseOrder,
             updateShiftTeam,
             setNurseDraftDirty,

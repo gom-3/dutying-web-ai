@@ -28,7 +28,7 @@ import {getDutyCellLockKey, isDutyCellPositionInBounds} from '@/features/shift-e
 import {normalizeSelection} from '@/features/shift-editor/model/selection';
 import i18n from '@/i18n';
 import type {TRestCheckSummary} from '@/pages/make-shift/model/rest-target-days';
-import {SixDotsIcon} from '@/shared/assets/svg';
+import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {getLocaleForLanguage} from '@/shared/i18n/locale';
 import {formatNurseDisplayName} from './format-nurse-display-name';
@@ -94,6 +94,8 @@ type TMakeShiftCalendarProps = {
     canReorderRows?: boolean;
     rowReorderDisabled?: boolean;
     onRowDragEnd?: (result: DropResult) => void;
+    showDivisionHeaders?: boolean;
+    divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
     rowNameClassName?: string;
     rowGapClassName?: string;
 };
@@ -142,10 +144,7 @@ const LAST_COL = 'clamp(58px,4.05cqw,76px)';
  * 사진처럼 division 카드는 이 좌측만 감싸고, 우측 합계(row-summary-counts)는
  * 카드 밖에 별도로 배치된다.
  */
-const getLeftGridTemplateColumns = (
-    showCarryColumn: boolean,
-    showDragHandleColumn: boolean,
-) =>
+const getLeftGridTemplateColumns = (showCarryColumn: boolean, showDragHandleColumn: boolean) =>
     `${showDragHandleColumn ? `${DRAG_HANDLE_COL} ` : ''}${NAME_COL} ${showCarryColumn ? `${CARRY_COL} ` : ''}${LAST_COL} minmax(0,1fr)`;
 /** 전달·통계 열 없이 이름 + 일자만 */
 const getLeftGridTemplateColumnsSimplified = (showDragHandleColumn: boolean) =>
@@ -211,11 +210,7 @@ const SUMMARY_COUNT_TEXT_CLASS = 'font-poppins text-[clamp(12px,1.02cqw,18px)] l
  */
 const DAY_CELL_PADDING_X = 'clamp(1px,0.18cqw,3px)';
 const getDayGridTemplateColumns = (dayCount: number) => `repeat(${dayCount}, minmax(0, 1fr))`;
-const getShimmerInsetLeft = (
-    isSimplified: boolean,
-    showCarryColumn: boolean,
-    showDragHandleColumn: boolean,
-) =>
+const getShimmerInsetLeft = (isSimplified: boolean, showCarryColumn: boolean, showDragHandleColumn: boolean) =>
     isSimplified
         ? `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X})`
         : `calc(${DIVISION_PADDING_X}${showDragHandleColumn ? ` + ${DRAG_HANDLE_COL} + ${ROW_GAP_X}` : ''} + ${NAME_COL} + ${ROW_GAP_X}${showCarryColumn ? ` + ${CARRY_COL} + ${ROW_GAP_X}` : ''} + ${LAST_COL} + ${ROW_GAP_X})`;
@@ -322,6 +317,21 @@ const MIN_NIGHT_INTERVAL_EXPECTED_PATTERNS = [
     /\u6700\u4F4E\s*(\d+)\s*\u65E5/,
     /(\d+)\s*\u65E5/,
 ];
+
+function getDivisionHeaderLabel(
+    rows: TShift['divisionShiftNurses'][number],
+    divisionNum: number,
+    divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>,
+) {
+    const mappedName = divisionLabelByNum?.get(divisionNum)?.trim();
+
+    if (mappedName && mappedName.length > 0) return mappedName;
+
+    const trimmedName = rows[0]?.shiftNurse.divisionName?.trim();
+
+    return trimmedName && trimmedName.length > 0 ? trimmedName : `그룹${divisionNum}`;
+}
+
 const VIOLATION_POPOVER_WIDTH = 360;
 const VIOLATION_POPOVER_VIEWPORT_PADDING = 8;
 const VIOLATION_POPOVER_MAX_ESTIMATED_HEIGHT = 360;
@@ -801,12 +811,7 @@ function hasDateContext(value: string | undefined): boolean {
     return KOREAN_DAY_CONTEXT_PATTERN.test(value);
 }
 
-function ViolationReasonPopover({
-    popover,
-    activeViolationKey,
-    onActiveViolationChange,
-    onClose,
-}: TViolationReasonPopoverProps) {
+function ViolationReasonPopover({popover, activeViolationKey, onActiveViolationChange, onClose}: TViolationReasonPopoverProps) {
     useEffect(() => {
         if (!popover) return;
 
@@ -948,7 +953,12 @@ function isSameShiftTypeDropdownPosition(a: TShiftTypeDropdownPosition, b: TShif
     return a.left === b.left && a.top === b.top && a.bottom === b.bottom && a.width === b.width && a.placement === b.placement;
 }
 
-function getShiftTypeDropdownActionState(doc: TDutyDoc, rowIndex: number, colIndex: number, currentValue: TCellValue): TShiftTypeDropdownActionState {
+function getShiftTypeDropdownActionState(
+    doc: TDutyDoc,
+    rowIndex: number,
+    colIndex: number,
+    currentValue: TCellValue,
+): TShiftTypeDropdownActionState {
     const currentCellKey = colIndex >= 0 ? getDutyCellLockKey(doc, rowIndex, colIndex) : null;
     const isFixed = currentCellKey !== null && doc.fixedCells[currentCellKey] === true;
     const isRequested = currentCellKey !== null && doc.requestCells[currentCellKey] === true;
@@ -1140,28 +1150,32 @@ function ShiftTypeDropdown({
                     <span className="min-w-0 truncate font-apple text-[13px] font-semibold">{t('page.makeShift.calendar.clearCell')}</span>
                 </button>
             )}
-            {actionState.canEditValue && selectableShiftTypes.map((shiftType) => {
-                const isSelected = dropdown.currentValue === shiftType.shortName;
+            {actionState.canEditValue &&
+                selectableShiftTypes.map((shiftType) => {
+                    const isSelected = dropdown.currentValue === shiftType.shortName;
 
-                return (
-                    <button
-                        key={shiftType.wardShiftTypeId}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        className={cn(
-                            'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
-                            isSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
-                        )}
-                        onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, shiftType.shortName)}
-                    >
-                        <ShiftBadge shiftType={shiftType} className="size-6 shrink-0 text-[12px]" />
-                        <span className="min-w-0 flex-1 truncate font-poppins text-[13px] font-semibold" style={{color: shiftType.color}}>
-                            {shiftType.shortName}
-                        </span>
-                    </button>
-                );
-            })}
+                    return (
+                        <button
+                            key={shiftType.wardShiftTypeId}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            className={cn(
+                                'flex min-h-10 w-full cursor-pointer items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-gray-7 focus-visible:outline-2 focus-visible:outline-main-1',
+                                isSelected ? 'bg-main-light text-main-1' : 'text-sub-1',
+                            )}
+                            onClick={() => onSelect(dropdown.rowIndex, dropdown.colIndex, shiftType.shortName)}
+                        >
+                            <ShiftBadge shiftType={shiftType} className="size-6 shrink-0 text-[12px]" />
+                            <span
+                                className="min-w-0 flex-1 truncate font-poppins text-[13px] font-semibold"
+                                style={{color: shiftType.color}}
+                            >
+                                {shiftType.shortName}
+                            </span>
+                        </button>
+                    );
+                })}
         </div>,
         document.body,
     );
@@ -1194,6 +1208,8 @@ export function MakeShiftCalendar({
     canReorderRows = false,
     rowReorderDisabled = false,
     onRowDragEnd,
+    showDivisionHeaders = false,
+    divisionLabelByNum,
     rowNameClassName,
     rowGapClassName,
 }: TMakeShiftCalendarProps) {
@@ -1731,7 +1747,7 @@ export function MakeShiftCalendar({
                      * 사진 기준: 헤더 우측 D/E/N/O/WO 라벨은 박스 없이
                      * 모두 동일한 회색의 "컬럼 헤더" 텍스트 라벨이다.
                      * (footer의 daily-summary 배지와는 정반대 — 그쪽은 배경 채움.)
-                    */
+                     */
                     <div
                         className="make-shift-calendar__type-summary-header grid shrink-0 items-center justify-center justify-items-center"
                         style={{
@@ -1782,210 +1798,231 @@ export function MakeShiftCalendar({
                         if (rows.length === 0) return null;
 
                         const divisionNum = rows[0]?.shiftNurse.divisionNum ?? level + 1;
+                        const divisionLabel = getDivisionHeaderLabel(rows, divisionNum, divisionLabelByNum);
 
                         return (
-                            <div
-                                key={level}
-                                data-division-level={level}
-                                className="make-shift-calendar__division flex w-full min-w-0 items-stretch"
-                                style={{gap: isSimplified || !hasRightColumns ? 0 : DIVISION_TO_SUMMARY_GAP}}
-                            >
-                                {/*
-                                 * 카드 상·하만 DIVISION_PADDING_Y(첫·끝 행 래퍼). 좌는 이름 열만 인셋, 일자는 우측까지.
-                                 * 행 그리드는 items-stretch → 주말 셀이 행 높이 전체를 칠함(행 안에서 잘리지 않음).
-                                 */}
-                                <Droppable droppableId={String(divisionNum)} isDropDisabled={!canReorderRows || rowReorderDisabled}>
-                                    {(droppableProvided) => (
-                                        <div
-                                            ref={droppableProvided.innerRef}
-                                            className={cn(
-                                                'make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-[16px] bg-white',
-                                                rowGapClassName,
-                                            )}
-                                            {...droppableProvided.droppableProps}
+                            <div key={level} className={cn('make-shift-calendar__division-section flex w-full min-w-0 flex-col')}>
+                                {showDivisionHeaders ? (
+                                    <div className="make-shift-calendar__division-header flex h-6 w-full min-w-0 items-center gap-2 px-1">
+                                        <span
+                                            className="max-w-[260px] truncate font-apple text-[12px] font-semibold text-gray-3"
+                                            title={divisionLabel}
                                         >
-                                            {isShimmering && (
-                                                <div
-                                                    aria-hidden="true"
-                                                    data-shimmer-scope="duty-cells"
-                                                    className="make-shift-calendar__shimmer pointer-events-none absolute top-0 right-0 bottom-0 z-[80] overflow-hidden bg-main-light/25"
-                                                    style={{left: shimmerInsetLeft}}
-                                                >
-                                                    <span className="absolute inset-0 bg-white/10" />
-                                                    <span className="make-shift-calendar__shimmer-sweep absolute top-0 bottom-0 w-[18%]" />
-                                                </div>
-                                            )}
-                                            {rowGapClassName &&
-                                                shift.days.some((day) => getCalendarDayBackgroundClass(day.dayType) !== '') && (
+                                            {divisionLabel}
+                                        </span>
+                                        <span
+                                            className="inline-flex items-center gap-0.5 font-apple text-[11px] font-medium text-gray-4 tabular-nums"
+                                            aria-label={`${divisionLabel} ${rows.length}명`}
+                                        >
+                                            <PersonIcon className="h-3 w-3" aria-hidden="true" />
+                                            {rows.length}
+                                        </span>
+                                        <span className="h-px flex-1 bg-gray-6" />
+                                    </div>
+                                ) : null}
+                                <div
+                                    data-division-level={level}
+                                    className="make-shift-calendar__division flex w-full min-w-0 items-stretch"
+                                    style={{gap: isSimplified || !hasRightColumns ? 0 : DIVISION_TO_SUMMARY_GAP}}
+                                >
+                                    {/*
+                                     * 카드 상·하만 DIVISION_PADDING_Y(첫·끝 행 래퍼). 좌는 이름 열만 인셋, 일자는 우측까지.
+                                     * 행 그리드는 items-stretch → 주말 셀이 행 높이 전체를 칠함(행 안에서 잘리지 않음).
+                                     */}
+                                    <Droppable droppableId={String(divisionNum)} isDropDisabled={!canReorderRows || rowReorderDisabled}>
+                                        {(droppableProvided) => (
+                                            <div
+                                                ref={droppableProvided.innerRef}
+                                                className={cn(
+                                                    'make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-l-[16px] bg-white',
+                                                    rowGapClassName,
+                                                )}
+                                                {...droppableProvided.droppableProps}
+                                            >
+                                                {isShimmering && (
                                                     <div
                                                         aria-hidden="true"
-                                                        data-division-day-background-layer="true"
-                                                        className="make-shift-calendar__division-day-background pointer-events-none absolute top-0 right-0 bottom-0 z-0 grid"
-                                                        style={{
-                                                            left: shimmerInsetLeft,
-                                                            gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
-                                                        }}
+                                                        data-shimmer-scope="duty-cells"
+                                                        className="make-shift-calendar__shimmer pointer-events-none absolute top-0 right-0 bottom-0 z-[80] overflow-hidden bg-main-light/25"
+                                                        style={{left: shimmerInsetLeft}}
                                                     >
-                                                        {shift.days.map((day, j) => {
-                                                            const backgroundClass = getCalendarDayBackgroundClass(day.dayType);
+                                                        <span className="absolute inset-0 bg-white/10" />
+                                                        <span className="make-shift-calendar__shimmer-sweep absolute top-0 bottom-0 w-[18%]" />
+                                                    </div>
+                                                )}
+                                                {rowGapClassName &&
+                                                    shift.days.some((day) => getCalendarDayBackgroundClass(day.dayType) !== '') && (
+                                                        <div
+                                                            aria-hidden="true"
+                                                            data-division-day-background-layer="true"
+                                                            className="make-shift-calendar__division-day-background pointer-events-none absolute top-0 right-0 bottom-0 z-0 grid"
+                                                            style={{
+                                                                left: shimmerInsetLeft,
+                                                                gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
+                                                            }}
+                                                        >
+                                                            {shift.days.map((day, j) => {
+                                                                const backgroundClass = getCalendarDayBackgroundClass(day.dayType);
 
-                                                            return backgroundClass ? (
-                                                                <span
-                                                                    key={j}
-                                                                    className={backgroundClass}
-                                                                    style={{gridRow: 1, gridColumn: j + 1}}
-                                                                />
-                                                            ) : null;
-                                                        })}
-                                                    </div>
-                                                )}
-                                            {rowGapClassName &&
-                                                crosshairSelectionRect !== null &&
-                                                rows.some(
-                                                    (row) =>
-                                                        workerRowMap.get(String(row.shiftNurse.shiftNurseId))?.index ===
-                                                        crosshairSelectionRect.top,
-                                                ) && (
-                                                    <div
-                                                        aria-hidden="true"
-                                                        data-selection-column-layer="true"
-                                                        data-selection-division-column-layer="true"
-                                                        className="make-shift-calendar__selection-division-column pointer-events-none absolute top-0 right-0 bottom-0 z-[1] grid"
-                                                        style={{
-                                                            left: shimmerInsetLeft,
-                                                            gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
-                                                        }}
-                                                    >
-                                                        {shift.days.map((_, j) =>
-                                                            j >= crosshairSelectionRect.left && j <= crosshairSelectionRect.right ? (
-                                                                <span
-                                                                    key={j}
-                                                                    className={GRID_SELECTION_CROSSHAIR_LAYER_CLASS}
-                                                                    style={{gridRow: 1, gridColumn: j + 1}}
-                                                                />
-                                                            ) : null,
-                                                        )}
-                                                    </div>
-                                                )}
-                                            {rows.map((row, i) => {
+                                                                return backgroundClass ? (
+                                                                    <span
+                                                                        key={j}
+                                                                        className={backgroundClass}
+                                                                        style={{gridRow: 1, gridColumn: j + 1}}
+                                                                    />
+                                                                ) : null;
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                {rowGapClassName &&
+                                                    crosshairSelectionRect !== null &&
+                                                    rows.some(
+                                                        (row) =>
+                                                            workerRowMap.get(String(row.shiftNurse.shiftNurseId))?.index ===
+                                                            crosshairSelectionRect.top,
+                                                    ) && (
+                                                        <div
+                                                            aria-hidden="true"
+                                                            data-selection-column-layer="true"
+                                                            data-selection-division-column-layer="true"
+                                                            className="make-shift-calendar__selection-division-column pointer-events-none absolute top-0 right-0 bottom-0 z-[1] grid"
+                                                            style={{
+                                                                left: shimmerInsetLeft,
+                                                                gridTemplateColumns: getDayGridTemplateColumns(shift.days.length),
+                                                            }}
+                                                        >
+                                                            {shift.days.map((_, j) =>
+                                                                j >= crosshairSelectionRect.left && j <= crosshairSelectionRect.right ? (
+                                                                    <span
+                                                                        key={j}
+                                                                        className={GRID_SELECTION_CROSSHAIR_LAYER_CLASS}
+                                                                        style={{gridRow: 1, gridColumn: j + 1}}
+                                                                    />
+                                                                ) : null,
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                {rows.map((row, i) => {
+                                                    const workerId = String(row.shiftNurse.shiftNurseId);
+                                                    const docEntry = workerRowMap.get(workerId);
+
+                                                    if (!docEntry) return null;
+
+                                                    const rowTutorialCellId =
+                                                        tutorialCellId && !didAssignTutorialCell ? tutorialCellId : undefined;
+
+                                                    didAssignTutorialCell = didAssignTutorialCell || rowTutorialCellId !== undefined;
+
+                                                    return (
+                                                        <Draggable
+                                                            key={row.shiftNurse.shiftNurseId}
+                                                            draggableId={String(row.shiftNurse.shiftNurseId)}
+                                                            index={i}
+                                                            isDragDisabled={!canReorderRows || rowReorderDisabled}
+                                                        >
+                                                            {(draggableProvided, draggableSnapshot) => (
+                                                                <div
+                                                                    ref={draggableProvided.innerRef}
+                                                                    {...draggableProvided.draggableProps}
+                                                                    className={cn(
+                                                                        draggableSnapshot.isDragging &&
+                                                                            'relative z-[90] rounded-[10px] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]',
+                                                                    )}
+                                                                    style={{
+                                                                        ...draggableProvided.draggableProps.style,
+                                                                        paddingLeft: DIVISION_PADDING_X,
+                                                                        paddingRight: 0,
+                                                                        paddingTop: i === 0 ? DIVISION_PADDING_Y : 0,
+                                                                        paddingBottom: i === rows.length - 1 ? DIVISION_PADDING_Y : 0,
+                                                                    }}
+                                                                >
+                                                                    <CalendarRowLeft
+                                                                        nurseName={row.shiftNurse.name}
+                                                                        carriedDays={
+                                                                            restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]
+                                                                                ?.carriedDays
+                                                                        }
+                                                                        lastShifts={row.lastWardShiftList.map((id) =>
+                                                                            id != null ? (idToType.get(id) ?? null) : null,
+                                                                        )}
+                                                                        lastShiftCells={docEntry.row.lastCells}
+                                                                        days={shift.days}
+                                                                        columns={doc.columns}
+                                                                        cells={docEntry.row.cells}
+                                                                        fixedCells={doc.fixedCells}
+                                                                        requestCells={doc.requestCells}
+                                                                        dimmedRequestCells={dimmedRequestCells}
+                                                                        rowIndex={docEntry.index}
+                                                                        shiftNurseId={row.shiftNurse.shiftNurseId}
+                                                                        shortNameToType={shortNameToType}
+                                                                        idToType={idToType}
+                                                                        wardReqShiftList={row.wardReqShiftList}
+                                                                        violations={violationMap}
+                                                                        showFaults={showFaults}
+                                                                        activeViolationKey={activeViolationKey}
+                                                                        simplified={isSimplified}
+                                                                        showCellStatusPins={showCellStatusPins}
+                                                                        cellAttention={cellAttention}
+                                                                        fixedCellPreview={fixedCellPreview}
+                                                                        borderlessPreview={borderlessPreview}
+                                                                        showCarryColumn={showCarryColumn}
+                                                                        leftGridTemplateColumns={leftGridTemplateColumns}
+                                                                        readonly={readonly}
+                                                                        editableLastShifts={editableLastShifts}
+                                                                        selectionRect={displaySelectionRect}
+                                                                        crosshairSelectionRect={crosshairSelectionRect}
+                                                                        useDivisionGapLayers={Boolean(rowGapClassName)}
+                                                                        tutorialCellId={rowTutorialCellId}
+                                                                        canReorderRows={canReorderRows}
+                                                                        rowReorderDisabled={rowReorderDisabled}
+                                                                        dragHandleProps={draggableProvided.dragHandleProps}
+                                                                        rowNameClassName={rowNameClassName}
+                                                                        onCellClick={handleCellClick}
+                                                                        onCellPointerDown={handleCellPointerDown}
+                                                                        onCellPointerEnter={handleCellPointerEnter}
+                                                                        onCellContextMenu={handleCellContextMenu}
+                                                                        onCellDoubleClick={openShiftTypeDropdown}
+                                                                        onViolationClick={showViolationPopover}
+                                                                        onViolationHoverStart={scheduleViolationPopover}
+                                                                        onViolationHoverEnd={cancelScheduledViolationPopover}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </Draggable>
+                                                    );
+                                                })}
+                                                {droppableProvided.placeholder}
+                                            </div>
+                                        )}
+                                    </Droppable>
+
+                                    {!isSimplified && hasRightColumns && (
+                                        /* 우측 합계: 카드와 동일 DIVISION_PADDING_Y로 세로 정렬 */
+                                        <div
+                                            className="make-shift-calendar__division-summary flex shrink-0 flex-col"
+                                            style={{width: summaryGridWidth, paddingBlock: DIVISION_PADDING_Y}}
+                                        >
+                                            {rows.map((row) => {
                                                 const workerId = String(row.shiftNurse.shiftNurseId);
                                                 const docEntry = workerRowMap.get(workerId);
 
                                                 if (!docEntry) return null;
 
-                                                const rowTutorialCellId =
-                                                    tutorialCellId && !didAssignTutorialCell ? tutorialCellId : undefined;
-
-                                                didAssignTutorialCell = didAssignTutorialCell || rowTutorialCellId !== undefined;
-
                                                 return (
-                                                    <Draggable
+                                                    <CalendarRowSummary
                                                         key={row.shiftNurse.shiftNurseId}
-                                                        draggableId={String(row.shiftNurse.shiftNurseId)}
-                                                        index={i}
-                                                        isDragDisabled={!canReorderRows || rowReorderDisabled}
-                                                    >
-                                                        {(draggableProvided, draggableSnapshot) => (
-                                                            <div
-                                                                ref={draggableProvided.innerRef}
-                                                                {...draggableProvided.draggableProps}
-                                                                className={cn(
-                                                                    draggableSnapshot.isDragging &&
-                                                                        'relative z-[90] rounded-[10px] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.16)]',
-                                                                )}
-                                                                style={{
-                                                                    ...draggableProvided.draggableProps.style,
-                                                                    paddingLeft: DIVISION_PADDING_X,
-                                                                    paddingRight: 0,
-                                                                    paddingTop: i === 0 ? DIVISION_PADDING_Y : 0,
-                                                                    paddingBottom: i === rows.length - 1 ? DIVISION_PADDING_Y : 0,
-                                                                }}
-                                                            >
-                                                                <CalendarRowLeft
-                                                                    nurseName={row.shiftNurse.name}
-                                                                    carriedDays={
-                                                                        restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]?.carriedDays
-                                                                    }
-                                                                    lastShifts={row.lastWardShiftList.map((id) =>
-                                                                        id != null ? (idToType.get(id) ?? null) : null,
-                                                                    )}
-                                                                    lastShiftCells={docEntry.row.lastCells}
-                                                                    days={shift.days}
-                                                                    columns={doc.columns}
-                                                                    cells={docEntry.row.cells}
-                                                                    fixedCells={doc.fixedCells}
-                                                                    requestCells={doc.requestCells}
-                                                                    dimmedRequestCells={dimmedRequestCells}
-                                                                    rowIndex={docEntry.index}
-                                                                    shiftNurseId={row.shiftNurse.shiftNurseId}
-                                                                    shortNameToType={shortNameToType}
-                                                                    idToType={idToType}
-                                                                    wardReqShiftList={row.wardReqShiftList}
-                                                                    violations={violationMap}
-                                                                    showFaults={showFaults}
-                                                                    activeViolationKey={activeViolationKey}
-                                                                    simplified={isSimplified}
-                                                                    showCellStatusPins={showCellStatusPins}
-                                                                    cellAttention={cellAttention}
-                                                                    fixedCellPreview={fixedCellPreview}
-                                                                    borderlessPreview={borderlessPreview}
-                                                                    showCarryColumn={showCarryColumn}
-                                                                    leftGridTemplateColumns={leftGridTemplateColumns}
-                                                                    readonly={readonly}
-                                                                    editableLastShifts={editableLastShifts}
-                                                                    selectionRect={displaySelectionRect}
-                                                                    crosshairSelectionRect={crosshairSelectionRect}
-                                                                    useDivisionGapLayers={Boolean(rowGapClassName)}
-                                                                    tutorialCellId={rowTutorialCellId}
-                                                                    canReorderRows={canReorderRows}
-                                                                    rowReorderDisabled={rowReorderDisabled}
-                                                                    dragHandleProps={draggableProvided.dragHandleProps}
-                                                                    rowNameClassName={rowNameClassName}
-                                                                    onCellClick={handleCellClick}
-                                                                    onCellPointerDown={handleCellPointerDown}
-                                                                    onCellPointerEnter={handleCellPointerEnter}
-                                                                    onCellContextMenu={handleCellContextMenu}
-                                                                    onCellDoubleClick={openShiftTypeDropdown}
-                                                                    onViolationClick={showViolationPopover}
-                                                                    onViolationHoverStart={scheduleViolationPopover}
-                                                                    onViolationHoverEnd={cancelScheduledViolationPopover}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </Draggable>
+                                                        cells={docEntry.row.cells}
+                                                        days={shift.days}
+                                                        shortNameToType={shortNameToType}
+                                                        summaryShiftTypes={summaryShiftTypes}
+                                                        restCheck={restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]}
+                                                        showRestCheckColumn={showRestCheckColumn}
+                                                    />
                                                 );
                                             })}
-                                            {droppableProvided.placeholder}
                                         </div>
                                     )}
-                                </Droppable>
-
-                                {!isSimplified && hasRightColumns && (
-                                    /* 우측 합계: 카드와 동일 DIVISION_PADDING_Y로 세로 정렬 */
-                                    <div
-                                        className="make-shift-calendar__division-summary flex shrink-0 flex-col"
-                                        style={{width: summaryGridWidth, paddingBlock: DIVISION_PADDING_Y}}
-                                    >
-                                        {rows.map((row) => {
-                                            const workerId = String(row.shiftNurse.shiftNurseId);
-                                            const docEntry = workerRowMap.get(workerId);
-
-                                            if (!docEntry) return null;
-
-                                            return (
-                                                <CalendarRowSummary
-                                                    key={row.shiftNurse.shiftNurseId}
-                                                    cells={docEntry.row.cells}
-                                                    days={shift.days}
-                                                    shortNameToType={shortNameToType}
-                                                    summaryShiftTypes={summaryShiftTypes}
-                                                    restCheck={restCheckByShiftNurseId?.[row.shiftNurse.shiftNurseId]}
-                                                    showRestCheckColumn={showRestCheckColumn}
-                                                />
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                </div>
                             </div>
                         );
                     })}
@@ -2520,7 +2557,8 @@ function CalendarRowLeft({
                                         : readonly && !fixedCellPreview
                                           ? 'cursor-default'
                                           : 'cursor-pointer',
-                                    fixedCellPreview && 'outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none',
+                                    fixedCellPreview &&
+                                        'outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none',
                                     activeCellViolation && 'z-[50]',
                                     weekendBg,
                                 )}
@@ -2680,7 +2718,7 @@ function CalendarRowSummary({cells, days, shortNameToType, summaryShiftTypes, re
     return (
         <div
             className={cn(
-                'make-shift-calendar__row-summary grid shrink-0 self-stretch items-center justify-center justify-items-center',
+                'make-shift-calendar__row-summary grid shrink-0 items-center justify-center justify-items-center self-stretch',
                 ROW_SUMMARY_HEIGHT,
             )}
             style={{

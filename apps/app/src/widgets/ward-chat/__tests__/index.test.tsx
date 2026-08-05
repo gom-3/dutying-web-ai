@@ -12,6 +12,10 @@ const wardApiMock = vi.hoisted(() => ({
     getShiftTeams: vi.fn(),
     readWardChat: vi.fn(),
 }));
+const fileApiMock = vi.hoisted(() => ({
+    getPresignedUrl: vi.fn(),
+}));
+const uploadImageToS3Mock = vi.hoisted(() => vi.fn());
 const authStateMock = vi.hoisted(() => ({
     accessToken: null as string | null,
     accountId: 100 as number | null,
@@ -27,6 +31,11 @@ vi.mock('@/features/auth', () => ({
 
 vi.mock('@/shared/api', () => ({
     WardAPI: wardApiMock,
+    FileAPI: fileApiMock,
+}));
+
+vi.mock('@/features/file/model/upload-file', () => ({
+    uploadImageToS3: uploadImageToS3Mock,
 }));
 
 function renderWithQueryClient(children: ReactNode) {
@@ -83,9 +92,23 @@ describe('WardChatWidget', () => {
         vi.stubEnv('VITE_ENABLE_WARD_CHAT', '');
         vi.stubEnv('VITE_SERVER_URL', 'https://dev.api.dutying.ai');
         vi.stubGlobal(
+            'URL',
+            Object.assign(URL, {
+                createObjectURL: vi.fn(() => 'blob:chat-image-preview'),
+                revokeObjectURL: vi.fn(),
+            }),
+        );
+        vi.stubGlobal(
             'fetch',
             vi.fn(() => pendingFetch()),
         );
+        fileApiMock.getPresignedUrl.mockResolvedValue({
+            presignedUrl: 'https://s3.example.com/presigned-chat-image',
+            fileUrl: 'https://cdn.example.com/chat_img/uploaded-chat-image.jpg',
+            fileName: 'chat_uploaded-chat-image.jpg',
+            expiresIn: 300,
+        });
+        uploadImageToS3Mock.mockResolvedValue(undefined);
         wardApiMock.getWardChatUnreadCount.mockResolvedValue({moimId: 1, wardId: 1, unreadCount: 5});
         wardApiMock.getWardChatMessages.mockResolvedValue({
             messages: [
@@ -370,6 +393,101 @@ describe('WardChatWidget', () => {
         expect(await screen.findByText('2')).toBeInTheDocument();
     });
 
+    it('renders image-only ward chat messages from the app', async () => {
+        const user = userEvent.setup();
+
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+        wardApiMock.getWardChatMessages.mockResolvedValueOnce({
+            messages: [
+                {
+                    messageId: 12,
+                    moimId: 1,
+                    wardId: 1,
+                    senderAccountId: 101,
+                    senderWardAdminAccountId: null,
+                    senderType: 'ACCOUNT',
+                    senderName: 'Other Nurse',
+                    text: '',
+                    imageUrls: ['https://cdn.example.com/chat_img/app-photo.jpg'],
+                    sentAt: '2026-05-25T05:06:01.462Z',
+                    isDeleted: false,
+                },
+            ],
+            nextCursorMessageId: null,
+            lastReadMessageId: 0,
+            unreadCount: 0,
+        });
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+
+        await waitFor(() =>
+            expect(document.querySelector('img[src="https://cdn.example.com/chat_img/app-photo.jpg"]')).toBeInTheDocument(),
+        );
+        expect(screen.getByRole('button', {name: '사진 1/1 미리보기'})).toBeInTheDocument();
+    });
+
+    it('uploads and sends selected ward chat photos from the web', async () => {
+        const user = userEvent.setup();
+
+        wardApiMock.getWardChatUnreadCount.mockResolvedValueOnce({moimId: 1, wardId: 1, unreadCount: 0});
+        wardApiMock.getWardChatMessages.mockResolvedValueOnce({
+            messages: [],
+            nextCursorMessageId: null,
+            lastReadMessageId: 0,
+            unreadCount: 0,
+        });
+        wardApiMock.createWardChatMessage.mockResolvedValueOnce({
+            messageId: 13,
+            moimId: 1,
+            wardId: 1,
+            senderAccountId: 100,
+            senderWardAdminAccountId: null,
+            senderType: 'ACCOUNT',
+            senderName: 'Me',
+            text: '',
+            imageUrls: ['https://cdn.example.com/chat_img/uploaded-chat-image.jpg'],
+            sentAt: '2026-05-25T05:07:01.462Z',
+            isDeleted: false,
+            unreadMemberCount: 2,
+        });
+
+        renderWithQueryClient(<WardChatWidget />);
+
+        await user.click(await findOpenWardChatButton());
+
+        const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement | null;
+
+        expect(fileInput).not.toBeNull();
+
+        const file = new File(['image'], 'shift-note.jpeg', {type: 'image/jpeg'});
+
+        await user.upload(fileInput as HTMLInputElement, file);
+
+        await waitFor(() => expect(fileApiMock.getPresignedUrl).toHaveBeenCalledWith('CHAT_IMAGE', 'jpg'));
+        expect(uploadImageToS3Mock).toHaveBeenCalledWith('https://s3.example.com/presigned-chat-image', file);
+
+        const sendButton = screen.getByRole('button', {name: '메시지 보내기'});
+
+        await waitFor(() => expect(sendButton).toBeEnabled());
+        await user.click(sendButton);
+
+        await waitFor(() =>
+            expect(wardApiMock.createWardChatMessage).toHaveBeenCalledWith(
+                1,
+                expect.objectContaining({
+                    imageUrls: ['https://cdn.example.com/chat_img/uploaded-chat-image.jpg'],
+                }),
+            ),
+        );
+
+        const lastCreateCall = wardApiMock.createWardChatMessage.mock.calls[wardApiMock.createWardChatMessage.mock.calls.length - 1];
+
+        expect(lastCreateCall?.[1]).not.toHaveProperty('text');
+        expect(await screen.findByRole('button', {name: '사진 1/1 미리보기'})).toBeInTheDocument();
+    });
+
     it('keeps long unbroken messages constrained to wrapping bubbles', async () => {
         const user = userEvent.setup();
         const longMessage = `https://example.com/${'a'.repeat(180)}`;
@@ -404,7 +522,8 @@ describe('WardChatWidget', () => {
         expect(messageBubble).toHaveClass('min-w-0', 'max-w-full');
         expect(messageBubble.className).toContain('[overflow-wrap:anywhere]');
         expect(messageBubble.parentElement).toHaveClass('min-w-0', 'max-w-full');
-        expect(messageBubble.parentElement?.parentElement).toHaveClass('min-w-0', 'max-w-[78%]');
+        expect(messageBubble.parentElement?.parentElement).toHaveClass('min-w-0', 'max-w-full');
+        expect(messageBubble.parentElement?.parentElement?.parentElement).toHaveClass('min-w-0', 'max-w-[78%]');
         expect(screen.getByRole('log')).toHaveClass('overflow-x-hidden');
     });
 

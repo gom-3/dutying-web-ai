@@ -1732,15 +1732,15 @@ export const ko = {
             "shiftTeamList": {
                 "addTeam": "팀 추가하기",
                 "card": {
-                    "addDividerAria": "{{nurseName}} 아래에 구분선 추가",
+                    "addDividerAria": "{{nurseName}} 아래에 그룹 추가",
                     "addNurse": "간호사 만들기",
                     "addNurseTooltip": "초대하지 않아도 가상의 간호사를 만들어 관리할 수 있어요. 언제든 초대해서 연동할 수 있어요.",
                     "deleteTeam": "팀 삭제하기",
-                    "divider": "구분선",
+                    "divider": "그룹",
                     "editTeamNameAria": "{{teamName}} 팀 이름 수정",
                     "empty": "간호사를 추가하면 여기에 보여요.",
                     "openMenuAria": "{{teamName}} 팀 메뉴 열기",
-                    "removeDividerAria": "{{nurseName}} 아래 구분선 제거",
+                    "removeDividerAria": "{{nurseName}} 아래 그룹 제거",
                     "selectNurseAria": "{{nurseName}} 간호사 선택",
                     "viewShift": "근무표 보러가기",
                     "virtualNurseTooltip": "아직 앱과 연동하지 않은 가상의 간호사예요."

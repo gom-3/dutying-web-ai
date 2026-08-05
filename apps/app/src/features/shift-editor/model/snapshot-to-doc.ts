@@ -7,7 +7,7 @@ function cellValueFromSnapshotCell(
     cell: TSnapshotCellDTO | undefined,
     idToType: ReturnType<typeof buildWardShiftTypeMaps>['idToType'],
 ): string | null {
-    if (!cell || cell.wardShiftTypeId == null) return null;
+    if (cell?.wardShiftTypeId == null) return null;
 
     const currentShortName = idToType.get(cell.wardShiftTypeId)?.shortName;
 
@@ -30,14 +30,9 @@ export function snapshotDetailToDoc(
     const base = shiftToDoc(shift, year, month);
     const {idToType} = buildWardShiftTypeMaps(shift);
     const cellByKey = new Map<string, TSnapshotCellDTO>(detail.cells.map((cell) => [`${cell.shiftNurseId}:${cell.date}`, cell]));
-
-    const orderedRowIds = [...detail.rowOrder]
-        .sort((a, b) => a.displayOrder - b.displayOrder)
-        .map((item) => String(item.shiftNurseId));
-
+    const orderedRowIds = [...detail.rowOrder].sort((a, b) => a.displayOrder - b.displayOrder).map((item) => String(item.shiftNurseId));
     const baseRowIds = base.rows.map((row) => row.workerId);
     const rowIds = [...new Set([...orderedRowIds, ...baseRowIds])];
-
     const fixedCells: TDutyDoc['fixedCells'] = {...locks.fixedCells};
 
     for (const cell of detail.cells) {
@@ -47,17 +42,21 @@ export function snapshotDetailToDoc(
     }
 
     const workerMeta: TDutyDoc['workerMeta'] = {...base.workerMeta};
-
     const applyRowMeta = (shiftNurseId: string, rowOrder?: TSnapshotRowOrderDTO) => {
         const workerId = shiftNurseId;
         const prev = workerMeta[workerId] ?? {name: ''};
-
-        workerMeta[workerId] = {
+        const nextMeta: TDutyDoc['workerMeta'][string] = {
             ...prev,
             nurseId: rowOrder?.nurseId ?? prev.nurseId,
             priority: rowOrder?.priority ?? prev.priority,
             divisionNum: rowOrder?.divisionNum ?? prev.divisionNum,
         };
+
+        if (rowOrder?.divisionName != null || prev.divisionName != null) {
+            nextMeta.divisionName = rowOrder?.divisionName ?? prev.divisionName;
+        }
+
+        workerMeta[workerId] = nextMeta;
     };
 
     for (const item of detail.rowOrder) {

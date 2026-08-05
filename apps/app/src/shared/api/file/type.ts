@@ -2,6 +2,7 @@ import {type TValues} from '@dutying/utils';
 
 export const FILE_TYPE = {
     PROFILE_IMAGE: 'PROFILE_IMAGE',
+    CHAT_IMAGE: 'CHAT_IMAGE',
 };
 
 export type TPresignedUrlRequest = TValues<typeof FILE_TYPE>;

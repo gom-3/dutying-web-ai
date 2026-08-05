@@ -2,14 +2,16 @@ import type {TShiftTeamResponse, TWardChatMessageResponse, TWardChatUnreadCountR
 import {cn} from '@dutying/utils/style';
 import {type QueryClient, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import type {AnimationItem} from 'lottie-web';
-import {ChevronUp, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
+import {ChevronUp, ImagePlus, Loader2, RefreshCcw, SendHorizontal, ShieldCheck, Users, X} from 'lucide-react';
 import {Fragment, type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import toast from 'react-hot-toast';
 import {ProfileImage} from '@/entities/account/ui/profile-image';
 import useAuth from '@/features/auth';
 import {getWardAdminAccountIdFromAccessToken} from '@/features/auth/model/admin-token';
+import {uploadImageToS3} from '@/features/file/model/upload-file';
 import i18n from '@/i18n';
-import {WardAPI} from '@/shared/api';
+import {FileAPI, WardAPI} from '@/shared/api';
+import {FILE_TYPE} from '@/shared/api/file/type';
 import popiconsChatDotsAnimation from '@/shared/assets/animation/popicons-chat-dots.json';
 import wardCodeChatImage from '@/shared/assets/images/ward-code-chat.png';
 import {isWardChatEnabled} from '@/shared/config/feature-flags';
@@ -29,6 +31,11 @@ const WARD_CHAT_ICON_REST_FRAME = 40;
 const WARD_CHAT_ICON_HOVER_SEGMENT: [number, number] = [40, 80];
 const WARD_CHAT_ICON_HOVER_SPEED = 0.45;
 const WARD_CHAT_MESSAGE_PREVIEW_MS = 4800;
+const CHAT_IMAGE_MAX_COUNT = 5;
+const CHAT_IMAGE_MAX_SIZE_MB = 10;
+const CHAT_IMAGE_MAX_SIZE_BYTES = CHAT_IMAGE_MAX_SIZE_MB * 1024 * 1024;
+const CHAT_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']);
+const CHAT_IMAGE_URL_KEYS = ['imageUrls', 'images', 'photoUrls', 'photos', 'attachments'] as const;
 const wardChatQueryKeys = {
     connectedMembers: (wardId: number) => ['ward-chat', 'connected-members', wardId] as const,
     messages: (wardId: number) => ['ward-chat', 'messages', wardId] as const,
@@ -42,6 +49,19 @@ type TWardChatMessagePreview = {
     senderName: string;
     senderProfileImgUrl?: string | null;
     text: string;
+};
+type TChatImageAttachment = {
+    id: string;
+    file: File;
+    name: string;
+    previewUrl: string;
+    extension: string;
+    uploadedUrl?: string;
+    isUploading: boolean;
+};
+type TSendWardChatMessageInput = {
+    text: string;
+    imageUrls: string[];
 };
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -70,6 +90,46 @@ function toUnreadCount(value: unknown): number | null {
     if (unreadCount == null) return null;
 
     return Math.max(0, Math.trunc(unreadCount));
+}
+
+function toTrimmedStringList(value: unknown) {
+    if (!Array.isArray(value)) return [];
+
+    return value.map((item) => (typeof item === 'string' ? item.trim() : '')).filter((item) => item.length > 0);
+}
+
+function readChatImageUrls(record: Record<string, unknown>) {
+    const imageUrls: string[] = [];
+    const seenUrls = new Set<string>();
+
+    CHAT_IMAGE_URL_KEYS.forEach((key) => {
+        toTrimmedStringList(record[key]).forEach((imageUrl) => {
+            if (seenUrls.has(imageUrl)) return;
+
+            seenUrls.add(imageUrl);
+            imageUrls.push(imageUrl);
+        });
+    });
+
+    return imageUrls.slice(0, CHAT_IMAGE_MAX_COUNT);
+}
+
+function getChatImageUrls(message: TWardChatMessageResponse) {
+    if (message.isDeleted) return [];
+
+    return toTrimmedStringList(message.imageUrls).slice(0, CHAT_IMAGE_MAX_COUNT);
+}
+
+function getWardChatPreviewText(message: TWardChatMessageResponse, t: ReturnType<typeof useTypedTranslation>['t']) {
+    if (message.isDeleted) return t('widget.wardChat.deletedMessage');
+
+    const text = message.text.trim();
+
+    if (text) return text;
+
+    if (getChatImageUrls(message).length > 0) return t('widget.wardChat.photoPreview');
+
+    return t('widget.wardChat.emptyPreview');
 }
 
 function setWardChatUnreadCount(queryClient: QueryClient, wardId: number, unreadCount: number) {
@@ -145,6 +205,7 @@ function toWardChatMessage(payload: TWardChatRealtimePayload): TWardChatMessageR
         senderName: typeof payload.senderName === 'string' ? payload.senderName : '',
         senderProfileImgUrl: typeof payload.senderProfileImgUrl === 'string' ? payload.senderProfileImgUrl : null,
         text: typeof payload.text === 'string' ? payload.text : '',
+        imageUrls: readChatImageUrls(payload),
         sentAt: typeof payload.sentAt === 'string' ? payload.sentAt : new Date().toISOString(),
         isDeleted: payload.isDeleted === true,
         unreadMemberCount: toUnreadCount(payload.unreadMemberCount),
@@ -230,6 +291,22 @@ function createClientMessageId() {
     return globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function getChatImageFileExtension(file: File) {
+    const filenameExtension = file.name.split('.').pop()?.toLowerCase() ?? '';
+    const mimeExtension = file.type.split('/').pop()?.toLowerCase() ?? '';
+    const extension = filenameExtension || mimeExtension;
+
+    if (extension === 'jpeg') return 'jpg';
+
+    return CHAT_IMAGE_EXTENSIONS.has(extension) ? extension : 'jpg';
+}
+
+function isChatImageFile(file: File) {
+    if (file.type.toLowerCase().startsWith('image/')) return true;
+
+    return CHAT_IMAGE_EXTENSIONS.has(getChatImageFileExtension(file));
+}
+
 function getMessageTime(value: string, formatter: Intl.DateTimeFormat) {
     const date = new Date(value);
 
@@ -305,17 +382,50 @@ function SenderName({message}: {message: TWardChatMessageResponse}) {
     );
 }
 
+function ChatImageGrid({imageUrls, onPreviewImage}: {imageUrls: string[]; onPreviewImage: (imageUrl: string) => void}) {
+    const {t} = useTypedTranslation();
+    const urls = imageUrls.slice(0, CHAT_IMAGE_MAX_COUNT);
+    const gridClassName =
+        urls.length === 1 ? 'grid-cols-1 w-[184px]' : urls.length === 2 ? 'grid-cols-2 w-[212px]' : 'grid-cols-3 w-[212px]';
+    const imageClassName = urls.length === 1 ? 'size-[184px]' : urls.length === 2 ? 'size-[104px]' : 'size-[68px]';
+
+    return (
+        <div className={cn('grid shrink-0 gap-1 overflow-hidden rounded-[12px]', gridClassName)}>
+            {urls.map((imageUrl, index) => (
+                <button
+                    key={`${imageUrl}-${index}`}
+                    type="button"
+                    className={cn(
+                        'block overflow-hidden bg-gray-6 transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none',
+                        imageClassName,
+                    )}
+                    aria-label={t('widget.wardChat.imagePreviewAria', {index: index + 1, total: urls.length})}
+                    title={t('widget.wardChat.imagePreviewTitle')}
+                    onClick={() => onPreviewImage(imageUrl)}
+                >
+                    <img src={imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
+                </button>
+            ))}
+        </div>
+    );
+}
+
 function ChatMessage({
     message,
     isMine,
     formatTime,
+    onPreviewImage,
 }: {
     message: TWardChatMessageResponse;
     isMine: boolean;
     formatTime: (value: string) => string;
+    onPreviewImage: (imageUrl: string) => void;
 }) {
     const {t} = useTypedTranslation();
     const text = message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text;
+    const imageUrls = getChatImageUrls(message);
+    const hasText = text.trim().length > 0;
+    const hasImages = imageUrls.length > 0;
     const unreadMemberCount = isMine ? Math.max(0, Math.trunc(message.unreadMemberCount ?? 0)) : 0;
 
     return (
@@ -330,30 +440,69 @@ function ChatMessage({
             <div className={cn('flex max-w-[78%] min-w-0 flex-col gap-1', isMine ? 'items-end' : 'items-start')}>
                 {isMine ? null : <SenderName message={message} />}
                 <div className={cn('flex max-w-full min-w-0 items-end gap-1.5', isMine ? 'flex-row-reverse' : 'flex-row')}>
-                    <p
+                    <div
                         className={cn(
-                            'max-w-full min-w-0 rounded-[18px] px-3.5 py-2.5 text-[14px] leading-[21px] [overflow-wrap:anywhere] whitespace-pre-wrap shadow-sm',
+                            'max-w-full min-w-0 rounded-[18px] shadow-sm',
                             message.isDeleted
                                 ? 'border border-[#E1E6EF] bg-[#F3F5F8] text-gray-4 italic shadow-none'
                                 : isMine
                                   ? 'rounded-br-[7px] bg-main-1 text-white shadow-[0_8px_18px_rgba(102,61,250,0.18)]'
                                   : 'rounded-bl-[7px] border border-[#EDF0F4] bg-white text-[#242428]',
+                            hasImages ? 'p-2' : 'px-3.5 py-2.5',
                         )}
                     >
-                        {text}
-                    </p>
+                        {hasImages ? <ChatImageGrid imageUrls={imageUrls} onPreviewImage={onPreviewImage} /> : null}
+                        {hasText ? (
+                            <p
+                                className={cn(
+                                    'max-w-full min-w-0 text-[14px] leading-[21px] [overflow-wrap:anywhere] whitespace-pre-wrap',
+                                    hasImages ? 'mt-2 px-1' : '',
+                                )}
+                            >
+                                {text}
+                            </p>
+                        ) : null}
+                    </div>
                     <span
                         className={cn(
                             'mb-1 flex shrink-0 flex-col gap-0.5 text-[11px] font-medium text-gray-4',
                             isMine ? 'items-end' : 'items-start',
                         )}
                     >
-                        {unreadMemberCount > 0 ? (
-                            <span className="font-bold text-main-1">{getUnreadLabel(unreadMemberCount)}</span>
-                        ) : null}
+                        {unreadMemberCount > 0 ? <span className="font-bold text-main-1">{getUnreadLabel(unreadMemberCount)}</span> : null}
                         <span>{formatTime(message.sentAt)}</span>
                     </span>
                 </div>
+            </div>
+        </div>
+    );
+}
+
+function ChatImagePreviewModal({imageUrl, onClose}: {imageUrl: string; onClose: () => void}) {
+    const {t} = useTypedTranslation();
+
+    return (
+        <div
+            className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/72 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('widget.wardChat.imagePreviewTitle')}
+            onClick={onClose}
+        >
+            <div className="relative max-h-full max-w-full" onClick={(event) => event.stopPropagation()}>
+                <button
+                    type="button"
+                    className="absolute -top-3 -right-3 z-10 flex size-9 items-center justify-center rounded-full bg-white text-sub-1 shadow-[0_10px_30px_rgba(0,0,0,0.25)] transition-colors hover:bg-gray-7 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none"
+                    aria-label={t('widget.wardChat.closeImagePreviewAria')}
+                    onClick={onClose}
+                >
+                    <X className="size-5" aria-hidden="true" />
+                </button>
+                <img
+                    src={imageUrl}
+                    alt=""
+                    className="max-h-[84vh] max-w-[92vw] rounded-[8px] bg-white object-contain shadow-[0_18px_60px_rgba(0,0,0,0.35)]"
+                />
             </div>
         </div>
     );
@@ -517,11 +666,15 @@ export default function WardChatWidget() {
     const [isFloatingButtonHovered, setIsFloatingButtonHovered] = useState(false);
     const [messagePreview, setMessagePreview] = useState<TWardChatMessagePreview | null>(null);
     const [draft, setDraft] = useState('');
+    const [selectedImages, setSelectedImages] = useState<TChatImageAttachment[]>([]);
+    const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
     const [messages, setMessages] = useState<TWardChatMessageResponse[]>([]);
     const [nextCursorMessageId, setNextCursorMessageId] = useState<number | null>(null);
     const chatPanelRef = useRef<HTMLElement | null>(null);
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const imageInputRef = useRef<HTMLInputElement | null>(null);
+    const imagePreviewUrlsRef = useRef<Set<string>>(new Set());
     const isOpenRef = useRef(isOpen);
     const messagePreviewTimerRef = useRef<number | null>(null);
     const acknowledgedMessageIdRef = useRef<number | null>(null);
@@ -530,6 +683,131 @@ export default function WardChatWidget() {
     const skipNextUnreadPreviewRef = useRef(false);
     const effectiveWardId = wardId ?? 0;
     const isWidgetAvailable = Boolean(wardId) && !isDemoExpired && isWardChatEnabled();
+    const revokeImagePreviewUrl = useCallback((previewUrl: string) => {
+        if (!imagePreviewUrlsRef.current.delete(previewUrl)) return;
+
+        URL.revokeObjectURL(previewUrl);
+    }, []);
+    const clearSelectedImages = useCallback(() => {
+        setSelectedImages((current) => {
+            current.forEach((image) => revokeImagePreviewUrl(image.previewUrl));
+
+            return [];
+        });
+
+        if (imageInputRef.current) imageInputRef.current.value = '';
+    }, [revokeImagePreviewUrl]);
+    const removeSelectedImage = useCallback(
+        (imageId: string) => {
+            setSelectedImages((current) => {
+                const target = current.find((image) => image.id === imageId);
+
+                if (target) revokeImagePreviewUrl(target.previewUrl);
+
+                return current.filter((image) => image.id !== imageId);
+            });
+        },
+        [revokeImagePreviewUrl],
+    );
+    const uploadSelectedImage = useCallback(
+        async (attachment: TChatImageAttachment) => {
+            try {
+                const {presignedUrl, fileUrl} = await FileAPI.getPresignedUrl(FILE_TYPE.CHAT_IMAGE, attachment.extension);
+
+                await uploadImageToS3(presignedUrl, attachment.file);
+
+                setSelectedImages((current) =>
+                    current.map((image) =>
+                        image.id === attachment.id
+                            ? {
+                                  ...image,
+                                  uploadedUrl: fileUrl,
+                                  isUploading: false,
+                              }
+                            : image,
+                    ),
+                );
+            } catch {
+                setSelectedImages((current) => {
+                    const target = current.find((image) => image.id === attachment.id);
+
+                    if (target) revokeImagePreviewUrl(target.previewUrl);
+
+                    return current.filter((image) => image.id !== attachment.id);
+                });
+                toast.error(t('widget.wardChat.toast.imageUploadFailed'));
+            }
+        },
+        [revokeImagePreviewUrl, t],
+    );
+    const handleSelectImages = useCallback(
+        (files: FileList | null) => {
+            const selectedFiles = Array.from(files ?? []);
+
+            if (imageInputRef.current) imageInputRef.current.value = '';
+
+            if (selectedFiles.length === 0) return;
+
+            const availableCount = CHAT_IMAGE_MAX_COUNT - selectedImages.length;
+
+            if (availableCount <= 0) {
+                toast.error(t('widget.wardChat.toast.maxImageCount', {count: CHAT_IMAGE_MAX_COUNT}));
+
+                return;
+            }
+
+            const acceptedImages: TChatImageAttachment[] = [];
+
+            let rejectedForType = false;
+            let rejectedForSize = false;
+
+            const omittedForCount = selectedFiles.length > availableCount;
+
+            selectedFiles.slice(0, availableCount).forEach((file) => {
+                if (!isChatImageFile(file)) {
+                    rejectedForType = true;
+
+                    return;
+                }
+
+                if (file.size > CHAT_IMAGE_MAX_SIZE_BYTES) {
+                    rejectedForSize = true;
+
+                    return;
+                }
+
+                const previewUrl = URL.createObjectURL(file);
+
+                imagePreviewUrlsRef.current.add(previewUrl);
+                acceptedImages.push({
+                    id: createClientMessageId(),
+                    file,
+                    name: file.name || t('widget.wardChat.imageFallbackName'),
+                    previewUrl,
+                    extension: getChatImageFileExtension(file),
+                    isUploading: true,
+                });
+            });
+
+            if (acceptedImages.length === 0) {
+                if (rejectedForType) toast.error(t('widget.wardChat.toast.imageOnly'));
+
+                if (rejectedForSize) toast.error(t('widget.wardChat.toast.maxImageSize', {size: CHAT_IMAGE_MAX_SIZE_MB}));
+
+                return;
+            }
+
+            setSelectedImages((current) => [...current, ...acceptedImages].slice(0, CHAT_IMAGE_MAX_COUNT));
+            acceptedImages.forEach((attachment) => void uploadSelectedImage(attachment));
+
+            if (omittedForCount) toast.error(t('widget.wardChat.toast.maxImageCount', {count: CHAT_IMAGE_MAX_COUNT}));
+
+            if (rejectedForType) toast.error(t('widget.wardChat.toast.imageOnly'));
+
+            if (rejectedForSize) toast.error(t('widget.wardChat.toast.maxImageSize', {size: CHAT_IMAGE_MAX_SIZE_MB}));
+        },
+        [selectedImages.length, t, uploadSelectedImage],
+    );
     const unreadQuery = useQuery({
         queryKey: wardChatQueryKeys.unread(effectiveWardId),
         queryFn: () => WardAPI.getWardChatUnreadCount(effectiveWardId),
@@ -569,20 +847,27 @@ export default function WardChatWidget() {
         },
     });
     const sendMutation = useMutation({
-        mutationFn: (text: string) =>
+        mutationFn: ({text, imageUrls}: TSendWardChatMessageInput) =>
             WardAPI.createWardChatMessage(effectiveWardId, {
-                text,
+                ...(text ? {text} : {}),
+                ...(imageUrls.length > 0 ? {imageUrls} : {}),
                 clientMessageId: createClientMessageId(),
             }),
         onSuccess: (message) => {
             setMessages((prev) => mergeMessages(prev, [message]));
             setDraft('');
+            clearSelectedImages();
             void queryClient.invalidateQueries({queryKey: wardChatQueryKeys.messages(effectiveWardId)});
         },
         onError: () => {
             toast.error(t('widget.wardChat.toast.sendFailed'));
         },
     });
+    const isUploadingImages = selectedImages.some((image) => image.isUploading);
+    const uploadedImageUrls = selectedImages
+        .map((image) => image.uploadedUrl?.trim())
+        .filter((imageUrl): imageUrl is string => Boolean(imageUrl));
+    const canSendMessage = (draft.trim().length > 0 || uploadedImageUrls.length > 0) && !isUploadingImages && !sendMutation.isPending;
     const unreadCount = unreadQuery.data?.unreadCount ?? messagesQuery.data?.unreadCount ?? 0;
     const connectedMemberLabel =
         typeof connectedMemberCountQuery.data === 'number'
@@ -636,7 +921,7 @@ export default function WardChatWidget() {
                 messageId: message.messageId,
                 senderName: message.senderName,
                 senderProfileImgUrl: message.senderProfileImgUrl ?? null,
-                text: message.isDeleted ? t('widget.wardChat.deletedMessage') : message.text,
+                text: getWardChatPreviewText(message, t),
             });
             messagePreviewTimerRef.current = window.setTimeout(() => {
                 setMessagePreview(null);
@@ -696,14 +981,24 @@ export default function WardChatWidget() {
         setMessages([]);
         setNextCursorMessageId(null);
         setDraft('');
+        clearSelectedImages();
+        setPreviewImageUrl(null);
         hideMessagePreview();
         acknowledgedMessageIdRef.current = null;
         lastPreviewedMessageIdRef.current = null;
         lastPreviewedUnreadCountRef.current = null;
         skipNextUnreadPreviewRef.current = false;
-    }, [effectiveWardId, hideMessagePreview]);
+    }, [clearSelectedImages, effectiveWardId, hideMessagePreview]);
 
     useEffect(() => hideMessagePreview, [hideMessagePreview]);
+
+    useEffect(
+        () => () => {
+            imagePreviewUrlsRef.current.forEach((previewUrl) => URL.revokeObjectURL(previewUrl));
+            imagePreviewUrlsRef.current.clear();
+        },
+        [],
+    );
 
     useEffect(() => {
         const handleOpenWardChat = () => setIsOpen(true);
@@ -866,9 +1161,9 @@ export default function WardChatWidget() {
     const sendDraft = () => {
         const text = draft.trim();
 
-        if (!text || sendMutation.isPending) return;
+        if (!canSendMessage) return;
 
-        sendMutation.mutate(text);
+        sendMutation.mutate({text, imageUrls: uploadedImageUrls});
     };
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -1001,6 +1296,7 @@ export default function WardChatWidget() {
                                                 message={message}
                                                 isMine={isMyMessage(message, accountId, wardAdminAccountId)}
                                                 formatTime={formatMessageTime}
+                                                onPreviewImage={setPreviewImageUrl}
                                             />
                                         </Fragment>
                                     );
@@ -1011,7 +1307,52 @@ export default function WardChatWidget() {
                     </div>
 
                     <form className="shrink-0 border-t border-[#EDF0F4] bg-white p-3" onSubmit={handleSubmit}>
+                        {selectedImages.length > 0 ? (
+                            <div className="mb-2 flex max-w-full gap-2 overflow-x-auto pb-1">
+                                {selectedImages.map((image) => (
+                                    <div key={image.id} className="relative size-16 shrink-0 overflow-hidden rounded-[8px] bg-gray-6">
+                                        <img src={image.previewUrl} alt="" className="h-full w-full object-cover" />
+                                        {image.isUploading ? (
+                                            <div
+                                                className="absolute inset-0 flex items-center justify-center bg-black/35 text-white"
+                                                role="status"
+                                                aria-label={t('widget.wardChat.imageUploadingAria')}
+                                            >
+                                                <Loader2 className="size-5 animate-spin" aria-hidden="true" />
+                                            </div>
+                                        ) : null}
+                                        <button
+                                            type="button"
+                                            className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-black/55 text-white transition-colors hover:bg-black/70 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-1 focus-visible:outline-none"
+                                            aria-label={t('widget.wardChat.removeImageAria', {name: image.name})}
+                                            title={t('widget.wardChat.removeImageTitle')}
+                                            onClick={() => removeSelectedImage(image.id)}
+                                        >
+                                            <X className="size-3" aria-hidden="true" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : null}
                         <div className="flex items-end gap-2 rounded-[20px] border border-[#E1E6EF] bg-[#F8FAFC] px-3 py-2 transition-colors focus-within:border-main-3 focus-within:bg-white">
+                            <input
+                                ref={imageInputRef}
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={(event) => handleSelectImages(event.currentTarget.files)}
+                            />
+                            <button
+                                type="button"
+                                aria-label={t('widget.wardChat.addImageAria')}
+                                title={t('widget.wardChat.addImageTitle')}
+                                disabled={selectedImages.length >= CHAT_IMAGE_MAX_COUNT || sendMutation.isPending}
+                                className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full text-gray-3 transition-colors hover:bg-gray-7 hover:text-main-1 focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none disabled:text-gray-5"
+                                onClick={() => imageInputRef.current?.click()}
+                            >
+                                <ImagePlus className="size-4.5" strokeWidth={2.2} aria-hidden="true" />
+                            </button>
                             <textarea
                                 ref={textareaRef}
                                 value={draft}
@@ -1024,10 +1365,10 @@ export default function WardChatWidget() {
                             <button
                                 type="submit"
                                 aria-label={t('widget.wardChat.sendAria')}
-                                disabled={!draft.trim() || sendMutation.isPending}
+                                disabled={!canSendMessage}
                                 className="mb-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-main-1 text-white transition-colors hover:bg-[#5631E7] focus-visible:ring-2 focus-visible:ring-main-3 focus-visible:ring-offset-2 focus-visible:outline-none disabled:bg-gray-6 disabled:text-gray-4"
                             >
-                                {sendMutation.isPending ? (
+                                {sendMutation.isPending || isUploadingImages ? (
                                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                                 ) : (
                                     <SendHorizontal className="size-4" strokeWidth={2.4} aria-hidden="true" />
@@ -1035,6 +1376,7 @@ export default function WardChatWidget() {
                             </button>
                         </div>
                     </form>
+                    {previewImageUrl ? <ChatImagePreviewModal imageUrl={previewImageUrl} onClose={() => setPreviewImageUrl(null)} /> : null}
                 </section>
             ) : (
                 <TooltipProvider delayDuration={200}>

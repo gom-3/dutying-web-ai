@@ -3,7 +3,7 @@ import {Check} from 'lucide-react';
 import {type TNurse, type TNurseShiftType, type TWardShiftType} from '@/entities';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from '@/pages/member/model/nurse-role';
 import {type TGroupedDivisionNurses} from '@/pages/member/model/shift-team-list';
-import {SixDotsIcon} from '@/shared/assets/svg';
+import {PersonIcon, SixDotsIcon} from '@/shared/assets/svg';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {Switch} from '@/shared/ui/primitives/switch';
 import {formatNurseDisplayName} from './shared/format-nurse-display-name';
@@ -145,6 +145,7 @@ export function WorkersTableHeader() {
 type TWorkersListProps = {
     grouped: TGroupedDivisionNurses;
     shiftTeamId: number;
+    divisionLabelByNum?: ReadonlyMap<number, string | null | undefined>;
     wardShiftTypes: TWardShiftType[] | undefined;
     isBusy: boolean;
     getWorkerState: (nurse: TNurse) => boolean;
@@ -155,6 +156,7 @@ type TWorkersListProps = {
 export function WorkersList({
     grouped,
     shiftTeamId,
+    divisionLabelByNum,
     wardShiftTypes,
     isBusy,
     getWorkerState,
@@ -163,33 +165,50 @@ export function WorkersList({
 }: TWorkersListProps) {
     return (
         <div className="make-shift-workers__list-wrapper mt-1.5 flex flex-col gap-2">
-            {grouped.map(([division, divisionWorkers]) => (
-                <div key={`${shiftTeamId},${division}`} className="make-shift-workers__division-block">
-                    <Droppable droppableId={`${shiftTeamId},${division}`}>
-                        {(provided) => (
-                            <div
-                                ref={provided.innerRef}
-                                {...provided.droppableProps}
-                                className="make-shift-workers__list flex flex-col gap-1"
-                            >
-                                {divisionWorkers.map((nurse, index) => (
-                                    <WorkerRow
-                                        key={nurse.nurseId}
-                                        nurse={nurse}
-                                        index={index}
-                                        wardShiftTypes={wardShiftTypes}
-                                        isWorker={getWorkerState(nurse)}
-                                        isBusy={isBusy}
-                                        onToggleWorker={onToggleWorker}
-                                        setRowRef={setRowRef}
-                                    />
-                                ))}
-                                {provided.placeholder}
-                            </div>
-                        )}
-                    </Droppable>
-                </div>
-            ))}
+            {grouped.map(([division, divisionWorkers]) => {
+                const divisionNum = Number.parseInt(division, 10);
+                const trimmedDivisionLabel = divisionLabelByNum?.get(divisionNum)?.trim();
+                const divisionLabel =
+                    trimmedDivisionLabel != null && trimmedDivisionLabel.length > 0 ? trimmedDivisionLabel : `그룹${divisionNum}`;
+
+                return (
+                    <div key={`${shiftTeamId},${division}`} className="make-shift-workers__division-block">
+                        <div className="mb-1.5 flex h-6 items-center gap-2 px-1">
+                            <span className="max-w-[260px] truncate font-apple text-[12px] font-semibold text-gray-3" title={divisionLabel}>
+                                {divisionLabel}
+                            </span>
+                            <span className="inline-flex items-center gap-0.5 font-apple text-[11px] font-medium text-gray-4 tabular-nums">
+                                <PersonIcon className="h-3 w-3" aria-hidden="true" />
+                                {divisionWorkers.length}
+                            </span>
+                            <span className="h-px flex-1 bg-gray-6" />
+                        </div>
+                        <Droppable droppableId={`${shiftTeamId},${division}`}>
+                            {(provided) => (
+                                <div
+                                    ref={provided.innerRef}
+                                    {...provided.droppableProps}
+                                    className="make-shift-workers__list flex flex-col gap-1"
+                                >
+                                    {divisionWorkers.map((nurse, index) => (
+                                        <WorkerRow
+                                            key={nurse.nurseId}
+                                            nurse={nurse}
+                                            index={index}
+                                            wardShiftTypes={wardShiftTypes}
+                                            isWorker={getWorkerState(nurse)}
+                                            isBusy={isBusy}
+                                            onToggleWorker={onToggleWorker}
+                                            setRowRef={setRowRef}
+                                        />
+                                    ))}
+                                    {provided.placeholder}
+                                </div>
+                            )}
+                        </Droppable>
+                    </div>
+                );
+            })}
         </div>
     );
 }
@@ -204,15 +223,7 @@ type TWorkerRowProps = {
     setRowRef: (nurseId: number, element: HTMLDivElement | null) => void;
 };
 
-function WorkerRow({
-    nurse,
-    index,
-    wardShiftTypes,
-    isWorker,
-    isBusy,
-    onToggleWorker,
-    setRowRef,
-}: TWorkerRowProps) {
+function WorkerRow({nurse, index, wardShiftTypes, isWorker, isBusy, onToggleWorker, setRowRef}: TWorkerRowProps) {
     const {t} = useTypedTranslation();
     const shiftTypeBadges = buildShiftTypeBadges(nurse, wardShiftTypes);
     const isPreceptor = hasNursePreceptorRole(nurse);
@@ -220,6 +231,7 @@ function WorkerRow({
     const memo = getMemoWithoutRoleMarkers(nurse.memo).trim();
     const memoPreview = memo ? formatMemoPreview(memo) : '';
     const fadedRowClass = isWorker ? '' : 'opacity-55';
+
     return (
         <Draggable draggableId={String(nurse.nurseId)} index={index} isDragDisabled={!isWorker}>
             {(dragProvided, dragSnapshot) => {

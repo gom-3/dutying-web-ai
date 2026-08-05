@@ -32,6 +32,7 @@ import type {
     TUpdateReqShiftReceptionSettingsDTO,
     TUpdateShiftConstraintRulesDTO,
     TUpdateShiftWorkflowDTO,
+    TUpdateShiftTeamDivisionDTO,
     TUpdateShiftTeamDTO,
     TValidationRes,
     TWaitingNurseResponse,
@@ -185,11 +186,19 @@ const normalizeNurseResponse = <T extends {phoneNum?: string | null; birthDate?:
 const normalizeShiftTeamResponse = (shiftTeam: TShiftTeamResponse): TShiftTeamResponse => ({
     ...shiftTeam,
     nurses: (shiftTeam.nurses ?? []).map(normalizeNurseResponse),
+    divisions: shiftTeam.divisions ?? [],
 });
 const normalizeWardResponse = (ward: TWardResponse): TWardResponse => ({
     ...ward,
     shiftTeams: (ward.shiftTeams ?? []).map(normalizeShiftTeamResponse),
 });
+const toShiftTeamDivisionRequest = (division: TUpdateShiftTeamDivisionDTO): TUpdateShiftTeamDivisionDTO => {
+    const name = division.name == null ? null : division.name.trim();
+
+    return {
+        name: name && name.length > 0 ? name : null,
+    };
+};
 const normalizeOnboardingWardDraftResponse = (
     response: TOnboardingWardDraftResponse | null | undefined,
 ): TOnboardingWardDraftResponse | null => {
@@ -385,6 +394,20 @@ export const createWardApi = (client: IApiClient, options: TCreateWardApiOptions
         updateShiftTeam: async (wardId: number, shiftTeamId: number, updateShiftTeamDTO: TUpdateShiftTeamDTO) =>
             normalizeShiftTeamResponse(
                 (await client.patch<TShiftTeamResponse>(wardPath(`/${wardId}/shift-teams/${shiftTeamId}`), updateShiftTeamDTO)).data,
+            ),
+        updateShiftTeamDivisionName: async (
+            wardId: number,
+            shiftTeamId: number,
+            divisionNum: number,
+            updateShiftTeamDivisionDTO: TUpdateShiftTeamDivisionDTO,
+        ) =>
+            normalizeShiftTeamResponse(
+                (
+                    await client.patch<TShiftTeamResponse>(
+                        wardPath(`/${wardId}/shift-teams/${shiftTeamId}/divisions/${divisionNum}`),
+                        toShiftTeamDivisionRequest(updateShiftTeamDivisionDTO),
+                    )
+                ).data,
             ),
         getShiftTypes: async (wardId: number) => (await client.get<TWardShiftTypeResponse[]>(wardPath(`/${wardId}/shift-types`))).data,
         createShiftType: async (wardId: number, createShiftTypeDTO: TCreateShiftTypeDTO) =>
