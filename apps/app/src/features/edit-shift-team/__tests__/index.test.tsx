@@ -141,6 +141,7 @@ describe('useEditShiftTeam', () => {
         expect(mockUpdateNurse).toHaveBeenCalledWith(11, {
             phoneNum: null,
             name: '김하나',
+            birthDate: '1996-03-14',
         });
     });
 
