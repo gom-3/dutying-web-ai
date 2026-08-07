@@ -56,11 +56,11 @@ describe('hasNurseChanges', () => {
         expect(hasNurseChanges(nurse, draft)).toBe(true);
     });
 
-    it('ignores read-only birthDate changes', () => {
+    it('detects birthDate changes', () => {
         const nurse = createNurse();
 
-        expect(hasNurseChanges(nurse, {...nurse, birthDate: '1996-03-14'})).toBe(false);
-        expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(false);
+        expect(hasNurseChanges(nurse, {...nurse, birthDate: '1996-03-14'})).toBe(true);
+        expect(hasNurseChanges({...nurse, birthDate: '1996-03-14'}, {...nurse, birthDate: null})).toBe(true);
     });
 
     it('detects shift type target ratio changes', () => {

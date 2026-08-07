@@ -1798,6 +1798,7 @@ export const ko = {
                 memoHint: '근무자의 특이사항을 작성해 주세요',
                 birthDate: '생년월일',
                 birthDateEmpty: '미입력',
+                birthDateInvalid: '1900-01-01부터 오늘까지의 날짜를 입력해 주세요.',
                 employmentDate: '입사 년도',
                 employmentDateHint: '근무자 정보를 기록하는 데 활용돼요',
                 phone: '전화 번호',
@@ -1953,12 +1954,14 @@ export const ko = {
                 restLeavePolicy: '목표 휴무일과 계산에 포함할 휴무 유형을 관리해요.',
                 requestReception: '신청근무 접수 기간을 관리해요.',
                 constraints: '근무 규칙을 관리해요.',
+                calendar: '병동 캘린더에 표시할 공유 일정을 관리해요.',
             },
             tabs: {
                 shiftTypes: '근무 유형',
                 restLeavePolicy: '휴무일 계산',
                 requestReception: '신청근무 접수',
                 constraints: '제약 조건',
+                calendar: '캘린더',
             },
             addShiftType: '근무 추가하기',
             type: {
@@ -2034,6 +2037,18 @@ export const ko = {
                 toast: {
                     saveSuccess: '신청근무 접수 설정을 저장했어요.',
                     updateFailed: '신청근무 접수 설정을 저장하지 못했어요.',
+                },
+            },
+            calendar: {
+                loading: '캘린더 설정을 불러오는 중이에요',
+                error: '캘린더 설정을 불러오지 못했어요',
+                sectionTitle: '병동 캘린더 공유 일정',
+                birthdayTitle: '생일 챙기기',
+                birthdayDescription: '근무자 생년월일이 입력되어 있으면 병동 캘린더에 종일 생일 일정으로 보여요.',
+                birthdaySwitchAria: '생일 챙기기 사용',
+                toast: {
+                    saveSuccess: '캘린더 설정을 저장했어요.',
+                    updateFailed: '캘린더 설정을 저장하지 못했어요.',
                 },
             },
             constraints: {

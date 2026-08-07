@@ -786,8 +786,9 @@ export type TOnboardingScheduleInputPreviewResponse = {
 };
 
 export type TEditWardDTO = {
-    name: string;
-    hospitalName: string;
+    name?: string;
+    hospitalName?: string;
+    showMemberBirthdaysInCalendar?: boolean;
 };
 
 export type TAddShiftTeamNurseDTO = Omit<TUpdateNurseDTO, 'name'> & {

@@ -6,14 +6,14 @@
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router';
-import {type TShiftTeam, type TWardShiftType} from '@/entities/ward';
+import {type TShiftTeam, type TWard, type TWardShiftType} from '@/entities/ward';
 import {wardQueryKeys, wardQueryOptions} from '@/entities/ward/model/queries';
 import useAuth from '@/features/auth';
 import {WardAPI} from '@/shared/api';
 import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {showActionErrorFeedback} from '@/shared/util/feedback';
 
-export type TWardSettingsTab = 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
+export type TWardSettingsTab = 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints' | 'calendar';
 type TQueryStatus = 'idle' | 'pending' | 'error' | 'success';
 type TRawWardShiftType = Omit<TWardShiftType, 'startTime' | 'endTime'> & {
     startTime?: string | null;
@@ -67,7 +67,8 @@ async function getReqShiftReceptionSettingsOrDefault(wardId: number): Promise<TR
 }
 
 function parseWardSettingsTab(raw: string | null): TWardSettingsTab | null {
-    if (raw === 'shiftTypes' || raw === 'restLeavePolicy' || raw === 'requestReception' || raw === 'constraints') return raw;
+    if (raw === 'shiftTypes' || raw === 'restLeavePolicy' || raw === 'requestReception' || raw === 'constraints' || raw === 'calendar')
+        return raw;
 
     return null;
 }
@@ -82,6 +83,11 @@ export function useWardSettings() {
     const [currentTab, setCurrentTab] = useState<TWardSettingsTab>(() => parseWardSettingsTab(searchParams.get('tab')) ?? 'shiftTypes');
     const [currentShiftTeamId, setCurrentShiftTeamId] = useState<number | null>(null);
     const shouldLoadRequestReceptionSettings = wardId !== null && currentTab === 'requestReception';
+    const wardQuery = useQuery({
+        ...wardQueryOptions.id(wardId ?? -1),
+        enabled: wardId !== null,
+        staleTime: 1000 * 60 * 5,
+    });
     const shiftTypesQuery = useQuery({
         ...wardQueryOptions.shiftTypes(wardId ?? -1),
         enabled: wardId !== null,
@@ -213,6 +219,24 @@ export function useWardSettings() {
             return false;
         }
     };
+    const updateCalendarSettings = async (settings: Pick<TWard, 'showMemberBirthdaysInCalendar'>) => {
+        if (!wardId) return false;
+
+        try {
+            await WardAPI.editWard(wardId, settings);
+            await Promise.all([
+                queryClient.invalidateQueries({queryKey: wardQueryKeys.id(wardId)}),
+                queryClient.invalidateQueries({queryKey: ['ward-board', 'schedules', wardId]}),
+                queryClient.invalidateQueries({queryKey: ['home', 'board-schedules']}),
+            ]);
+
+            return true;
+        } catch (error) {
+            showActionErrorFeedback(error, t('page.wardSettings.calendar.toast.updateFailed'));
+
+            return false;
+        }
+    };
     const selectTab = (tab: TWardSettingsTab) => {
         setCurrentTab(tab);
         setSearchParams((prev) => {
@@ -225,8 +249,11 @@ export function useWardSettings() {
 
         if (tab === 'shiftTypes') {
             void shiftTypesQuery.refetch();
+        } else if (tab === 'calendar') {
+            void wardQuery.refetch();
         }
     };
+    const wardStatus: TQueryStatus = wardQuery.isPending ? 'pending' : wardQuery.isError ? 'error' : 'success';
     const shiftTypesStatus: TQueryStatus = shiftTypesQuery.isPending ? 'pending' : shiftTypesQuery.isError ? 'error' : 'success';
     const shiftTeamsStatus: TQueryStatus = shiftTeamsQuery.isPending ? 'pending' : shiftTeamsQuery.isError ? 'error' : 'success';
     const requestReceptionStatus: TQueryStatus =
@@ -239,6 +266,8 @@ export function useWardSettings() {
     return {
         state: {
             wardId,
+            ward: wardQuery.data,
+            wardStatus,
             currentTab,
             shiftTypes: normalizeShiftTypes(shiftTypesQuery.data),
             shiftTypesStatus,
@@ -258,6 +287,7 @@ export function useWardSettings() {
             retryShiftTeams,
             retryRequestReceptionSettings,
             updateRequestReceptionSettings,
+            updateCalendarSettings,
         },
     };
 }

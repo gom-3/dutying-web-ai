@@ -24,10 +24,17 @@ const toOptionalText = (value: string | null | undefined) => {
 
     return value.trim();
 };
+const toOptionalBirthDate = (birthDate: string | null | undefined) => {
+    if (birthDate === undefined) return undefined;
+    if (birthDate === null) return '';
+
+    return birthDate.trim();
+};
 const toUpdateNurseRequest = (updatedNurse: TCreateNurseDTO | TUpdateNurseDTO, options: {clearDummyPhoneNum?: boolean} = {}) =>
     compactRequest({
         name: toOptionalText(updatedNurse.name),
         phoneNum: toOptionalPhoneNum(updatedNurse.phoneNum, {clearDummy: options.clearDummyPhoneNum}),
+        birthDate: toOptionalBirthDate(updatedNurse.birthDate),
         isWorker: updatedNurse.isWorker,
         isWardManager: updatedNurse.isWardManager,
         memo: updatedNurse.memo ?? undefined,

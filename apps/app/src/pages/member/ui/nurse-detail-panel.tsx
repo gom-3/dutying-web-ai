@@ -37,14 +37,25 @@ interface INurseDetailPanelProps {
 const MIN_SHIFT_RATIO_WEIGHT = 1;
 const MAX_SHIFT_RATIO_WEIGHT = 99;
 const LOCAL_DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const formatBirthDateText = (birthDate?: string | null) => {
-    if (!birthDate) return '';
+const BIRTH_DATE_MIN = '1900-01-01';
+const pad2 = (value: number) => value.toString().padStart(2, '0');
+const getDateKeyFromDate = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const getTodayDateKey = () => getDateKeyFromDate(new Date());
+const normalizeBirthDateForStorage = (value: string | null | undefined) => {
+    const trimmed = value?.trim() ?? '';
 
-    const match = LOCAL_DATE_KEY_PATTERN.exec(birthDate);
+    return trimmed.length > 0 ? trimmed : null;
+};
+const isValidBirthDate = (value: string | null | undefined, maxDate: string) => {
+    const birthDate = normalizeBirthDateForStorage(value);
 
-    if (match) return `${match[1]}.${match[2]}.${match[3]}`;
+    if (!birthDate) return true;
+    if (!LOCAL_DATE_KEY_PATTERN.test(birthDate)) return false;
+    if (birthDate < BIRTH_DATE_MIN || birthDate > maxDate) return false;
 
-    return birthDate;
+    const parsedDate = new Date(`${birthDate}T00:00:00`);
+
+    return !Number.isNaN(parsedDate.getTime()) && birthDate === getDateKeyFromDate(parsedDate);
 };
 
 const toShiftRatioWeight = (value: number | null | undefined) =>
@@ -58,10 +69,21 @@ const toShiftTypeColor = (value: string | null | undefined) => {
 };
 const getShiftRatioOptionKey = ({apiShiftTypeId, wardShiftTypeId}: Pick<TNurseShiftTypeOption, 'apiShiftTypeId' | 'wardShiftTypeId'>) =>
     typeof wardShiftTypeId === 'number' ? `ward:${wardShiftTypeId}` : `nurse:${apiShiftTypeId}`;
-function BirthDateField({value}: {value: string | null | undefined}) {
+function BirthDateField({
+    value,
+    disabled,
+    maxDate,
+    isInvalid,
+    onChange,
+}: {
+    value: string | null | undefined;
+    disabled: boolean;
+    maxDate: string;
+    isInvalid: boolean;
+    onChange: (value: string) => void;
+}) {
     const {t} = useTypedTranslation();
     const label = t('page.member.detail.birthDate');
-    const displayValue = formatBirthDateText(value);
 
     return (
         <div className="mb-2.5">
@@ -78,15 +100,27 @@ function BirthDateField({value}: {value: string | null | undefined}) {
             <div className="mt-2 flex h-10 w-full shrink-0 items-center gap-2 rounded-[9px] border border-gray-6 bg-gray-7 px-2.5 min-[1600px]:text-[14px]">
                 <input
                     id="nurseBirthDate"
-                    type="text"
-                    readOnly
+                    type="date"
+                    min={BIRTH_DATE_MIN}
+                    max={maxDate}
+                    disabled={disabled}
                     name="nurseBirthDate"
                     aria-label={label}
-                    className="h-full min-w-0 flex-1 cursor-default bg-transparent font-poppins text-[13px] text-sub-1 outline-none placeholder:font-apple placeholder:text-gray-4 min-[1600px]:text-[14px]"
-                    value={displayValue}
-                    placeholder={t('page.member.detail.birthDateEmpty')}
+                    aria-invalid={isInvalid}
+                    aria-describedby={isInvalid ? 'nurse-birth-date-error' : undefined}
+                    className={cn(
+                        'h-full min-w-0 flex-1 bg-transparent font-poppins text-[13px] text-sub-1 outline-none placeholder:font-apple placeholder:text-gray-4 disabled:cursor-not-allowed disabled:text-gray-4 min-[1600px]:text-[14px]',
+                        isInvalid && 'text-red',
+                    )}
+                    value={value ?? ''}
+                    onChange={(event) => onChange(event.target.value)}
                 />
             </div>
+            {isInvalid ? (
+                <p id="nurse-birth-date-error" className="mt-1 font-apple text-xs text-red">
+                    {t('page.member.detail.birthDateInvalid')}
+                </p>
+            ) : null}
         </div>
     );
 }
@@ -122,6 +156,9 @@ function NurseDetailPanel({
     const isCreateMode = selectedNurseDrawerMode === 'create';
     const isPreceptor = hasNursePreceptorRole(writeNurse);
     const isPreceptee = hasNursePrecepteeRole(writeNurse);
+    const birthDateMax = getTodayDateKey();
+    const isBirthDateValid = isValidBirthDate(writeNurse?.birthDate, birthDateMax);
+    const canEditBirthDate = Boolean(writeNurse?.accountId);
     const canSaveCreateDraft = (draft: TNurse) => draft.name.trim().length > 0;
     const nurseNameForAria = writeNurse?.name.trim() ? writeNurse.name : t('page.member.common.nurseFallback');
     useEffect(() => {
@@ -369,6 +406,8 @@ function NurseDetailPanel({
 
         if (isCreateMode && !canSaveCreateDraft(writeNurse)) return false;
 
+        if (!isBirthDateValid) return false;
+
         const originalShiftTypeByWardShiftTypeId = new Map(
             selectedNurse.nurseShiftTypes.flatMap((shiftType) =>
                 typeof shiftType.wardShiftTypeId === 'number' ? ([[shiftType.wardShiftTypeId, shiftType]] as const) : [],
@@ -438,6 +477,7 @@ function NurseDetailPanel({
                 isWorker: writeNurse.isWorker,
                 isWardManager: writeNurse.isWardManager,
                 memo: getMemoWithoutRoleMarkers(writeNurse.memo),
+                birthDate: normalizeBirthDateForStorage(writeNurse.birthDate),
                 isPreceptor,
                 isPreceptee,
             });
@@ -454,6 +494,7 @@ function NurseDetailPanel({
         isBusy,
         isCreateMode,
         isDirty,
+        isBirthDateValid,
         manualShiftRatioBaselineWeights,
         manualShiftRatioWeightKeys,
         selectedNurse,
@@ -931,7 +972,13 @@ function NurseDetailPanel({
                     </div>
 
                     <div className="flex shrink-0 flex-col border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
-                        <BirthDateField value={writeNurse.birthDate} />
+                        <BirthDateField
+                            value={writeNurse.birthDate}
+                            disabled={isBusy || !canEditBirthDate}
+                            maxDate={birthDateMax}
+                            isInvalid={!isBirthDateValid}
+                            onChange={(birthDate) => setWriteNurse((prev) => (prev ? {...prev, birthDate} : prev))}
+                        />
                         <p className="shrink-0 font-apple text-[13px] font-semibold text-[#5C667D] min-[1600px]:text-[14px]">
                             {t('page.member.detail.phone')}
                         </p>
@@ -1035,7 +1082,7 @@ function NurseDetailPanel({
                 <div className="shrink-0 border-t border-gray-7 px-3 py-2.5 min-[1600px]:px-4 min-[1600px]:py-3">
                     <button
                         type="button"
-                        disabled={isBusy || !isDirty}
+                        disabled={isBusy || !isDirty || !isBirthDateValid}
                         className="h-10 w-full rounded-[10px] bg-main-1 px-3 font-apple text-[14px] font-semibold text-white transition-colors hover:bg-main-1-hover disabled:cursor-not-allowed disabled:bg-[#C7D0DE]"
                         onClick={() => void handleSave()}
                     >

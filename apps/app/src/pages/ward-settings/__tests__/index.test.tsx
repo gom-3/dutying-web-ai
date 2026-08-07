@@ -76,7 +76,18 @@ vi.mock('@/pages/make-shift/ui/steps/constraints', () => ({
 type TMockValue = {
     state: {
         wardId: number | null;
-        currentTab: 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints';
+        currentTab: 'shiftTypes' | 'restLeavePolicy' | 'requestReception' | 'constraints' | 'calendar';
+        ward: {
+            wardId: number;
+            name: string;
+            hospitalName: string;
+            code: string;
+            nurseCnt: number;
+            showMemberBirthdaysInCalendar?: boolean;
+            wardShiftTypes: [];
+            shiftTeams: [];
+        };
+        wardStatus: 'success' | 'pending' | 'error';
         shiftTypes: Array<{
             wardShiftTypeId: number;
             name: string;
@@ -116,6 +127,7 @@ type TMockValue = {
         retryShiftTeams: ReturnType<typeof vi.fn>;
         retryRequestReceptionSettings: ReturnType<typeof vi.fn>;
         updateRequestReceptionSettings: ReturnType<typeof vi.fn>;
+        updateCalendarSettings: ReturnType<typeof vi.fn>;
     };
 };
 
@@ -124,6 +136,17 @@ function baseValue() {
         state: {
             wardId: 1,
             currentTab: 'shiftTypes' as const,
+            ward: {
+                wardId: 1,
+                name: '중환자실',
+                hospitalName: '듀팅병원',
+                code: 'A7K29Q',
+                nurseCnt: 1,
+                showMemberBirthdaysInCalendar: true,
+                wardShiftTypes: [],
+                shiftTeams: [],
+            },
+            wardStatus: 'success' as const,
             shiftTypes: [
                 {
                     wardShiftTypeId: 1,
@@ -164,6 +187,7 @@ function baseValue() {
             retryShiftTeams: vi.fn(),
             retryRequestReceptionSettings: vi.fn(),
             updateRequestReceptionSettings: vi.fn(),
+            updateCalendarSettings: vi.fn(),
         },
     };
 }
@@ -488,6 +512,55 @@ describe('WardSettingsPage', () => {
         await user.click(screen.getByRole('button', {name: /신청근무 접수|근무 신청/}));
 
         expect(selectTab).toHaveBeenCalledWith('requestReception');
+    });
+
+    it('캘린더 탭 버튼 클릭 시 탭 전환 액션을 호출한다', async () => {
+        const user = userEvent.setup();
+        const selectTab = vi.fn();
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                actions: {
+                    selectTab,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        await user.click(screen.getByRole('button', {name: '캘린더'}));
+
+        expect(selectTab).toHaveBeenCalledWith('calendar');
+    });
+
+    it('캘린더 탭에서 생일 챙기기 설정을 저장한다', async () => {
+        const user = userEvent.setup();
+        const updateCalendarSettings = vi.fn().mockResolvedValue(true);
+
+        mockUseWardSettings.mockReturnValue(
+            createValue({
+                state: {
+                    currentTab: 'calendar',
+                },
+                actions: {
+                    updateCalendarSettings,
+                },
+            }),
+        );
+
+        render(<WardSettingsPage />);
+
+        const birthdaySwitch = screen.getByRole('switch', {name: '생일 챙기기 사용'});
+
+        expect(screen.getByText('생일 챙기기')).toBeInTheDocument();
+        expect(birthdaySwitch).toHaveAttribute('aria-checked', 'true');
+
+        await user.click(birthdaySwitch);
+
+        await waitFor(() => {
+            expect(updateCalendarSettings).toHaveBeenCalledWith({showMemberBirthdaysInCalendar: false});
+        });
+        expect(toast.success).toHaveBeenCalledWith('캘린더 설정을 저장했어요.');
     });
 
     it('신청근무 접수 설정을 저장한다', async () => {

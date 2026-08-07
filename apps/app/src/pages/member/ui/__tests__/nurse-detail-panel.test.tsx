@@ -80,19 +80,17 @@ describe('NurseDetailPanel', () => {
         mockUseEditShiftTeam.mockReset();
     });
 
-    it('shows birthDate as a read-only field and leaves it out of the nurse patch payload', async () => {
-        const {container, updateNurse} = renderPanel(createNurse({birthDate: '1996-03-14'}));
+    it('lets a connected nurse birthDate be edited and sends it in the nurse patch payload', async () => {
+        const {updateNurse} = renderPanel(createNurse({birthDate: null}));
 
         const birthDateInput = screen.getByLabelText('생년월일');
-        const phoneInput = container.querySelector<HTMLInputElement>('input[name="nursePhoneNum"]');
         const saveButton = screen.getByRole('button', {name: '저장하기'});
 
-        expect(phoneInput).not.toBeNull();
-        expect(birthDateInput).toHaveValue('1996.03.14');
-        expect(birthDateInput).toHaveAttribute('readonly');
+        expect(birthDateInput).toHaveValue('');
+        expect(birthDateInput).not.toBeDisabled();
         expect(saveButton).toBeDisabled();
 
-        fireEvent.change(phoneInput!, {target: {value: '01012345678'}});
+        fireEvent.change(birthDateInput, {target: {value: '1996-03-14'}});
 
         await waitFor(() => expect(saveButton).toBeEnabled());
 
@@ -101,8 +99,8 @@ describe('NurseDetailPanel', () => {
         await waitFor(() =>
             expect(updateNurse).toHaveBeenCalledWith(
                 101,
-                expect.not.objectContaining({
-                    birthDate: expect.anything(),
+                expect.objectContaining({
+                    birthDate: '1996-03-14',
                 }),
             ),
         );
@@ -118,7 +116,7 @@ describe('NurseDetailPanel', () => {
     it('shows birthDate in the date field', () => {
         renderPanel(createNurse({birthDate: '1996-03-14'}));
 
-        expect(screen.getByLabelText('생년월일')).toHaveValue('1996.03.14');
+        expect(screen.getByLabelText('생년월일')).toHaveValue('1996-03-14');
     });
 
     it('shows a clear empty state when birthDate is missing', () => {
@@ -127,5 +125,6 @@ describe('NurseDetailPanel', () => {
         expect(screen.getByText('생년월일')).toBeInTheDocument();
         expect(screen.getByText('미입력')).toBeInTheDocument();
         expect(screen.getByLabelText('생년월일')).toHaveValue('');
+        expect(screen.getByLabelText('생년월일')).toBeDisabled();
     });
 });

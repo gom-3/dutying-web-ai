@@ -40,6 +40,14 @@ const toOptionalPhoneNum = (phoneNum: string | null | undefined, options: {clear
 
     return trimmedPhoneNum.length > 0 ? trimmedPhoneNum : options.clearBlank ? null : undefined;
 };
+const toOptionalBirthDate = (birthDate: string | null | undefined) => {
+    if (birthDate === undefined) return undefined;
+    if (birthDate === null) return null;
+
+    const trimmedBirthDate = birthDate.trim();
+
+    return trimmedBirthDate.length > 0 ? trimmedBirthDate : null;
+};
 const compactRequest = <T extends Record<string, unknown>>(request: T) =>
     Object.fromEntries(Object.entries(request).filter(([, value]) => value !== undefined)) as T;
 const getNextNewNurseName = (names: string[], prefix: string) => {
@@ -105,6 +113,7 @@ const toNursePayload = (nurse: TUpdateNurseDTO, options: {clearBlankPhoneNum?: b
     compactRequest({
         name: nurse.name?.trim(),
         phoneNum: toOptionalPhoneNum(nurse.phoneNum, {clearBlank: options.clearBlankPhoneNum}),
+        birthDate: toOptionalBirthDate(nurse.birthDate),
         isWorker: nurse.isWorker,
         isWardManager: nurse.isWardManager,
         memo: nurse.memo ?? undefined,
@@ -170,6 +179,8 @@ const useEditShiftTeam = () => {
 
         if (wardId) {
             await queryClient.invalidateQueries({queryKey: [...wardQueryKeys.all(), 'shiftTeamNurses', wardId]});
+            await queryClient.invalidateQueries({queryKey: ['ward-board', 'schedules', wardId]});
+            await queryClient.invalidateQueries({queryKey: ['home', 'board-schedules']});
         }
     }, [queryClient, requestShiftQueryKey, shiftQueryKey, shiftTeamsQueryKey, wardId, wardQueryKey]);
     const addNurse = useCallback(

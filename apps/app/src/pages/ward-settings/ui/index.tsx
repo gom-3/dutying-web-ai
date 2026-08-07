@@ -21,6 +21,7 @@ import {
 import ConfirmActionDialog from '@/shared/ui/ConfirmActionDialog';
 import PageState from '@/shared/ui/PageState';
 import {Input} from '@/shared/ui/primitives/input';
+import {Switch} from '@/shared/ui/primitives/switch';
 import ShiftClassificationDropdown from '@/shared/ui/ShiftClassificationDropdown';
 import {NotificationBell} from '@/widgets/notifications/notification-bell';
 import {formatShiftDuration} from '../model/utils';
@@ -38,7 +39,7 @@ type TWardSettingsPageViewProps = {
     actions: TWardSettingsActions;
 };
 
-const TAB_ORDER: TWardSettingsTab[] = ['constraints', 'shiftTypes', 'restLeavePolicy', 'requestReception'];
+const TAB_ORDER: TWardSettingsTab[] = ['constraints', 'shiftTypes', 'restLeavePolicy', 'requestReception', 'calendar'];
 const SHIFT_COLOR_OPTIONS = [
     '#63C8B8',
     '#F790A4',
@@ -256,6 +257,8 @@ function getTabDescriptionKey(tab: TWardSettingsTab) {
 
     if (tab === 'requestReception') return 'page.wardSettings.description.requestReception';
 
+    if (tab === 'calendar') return 'page.wardSettings.description.calendar';
+
     return 'page.wardSettings.description.constraints';
 }
 
@@ -268,7 +271,7 @@ function Tabs({currentTab, onSelect}: {currentTab: TWardSettingsTab; onSelect: (
 
     return (
         <div
-            className="grid grid-cols-2 gap-1 rounded-[12px] bg-[#F2F4F6] p-1 lg:grid-cols-4"
+            className="grid grid-cols-2 gap-1 rounded-[12px] bg-[#F2F4F6] p-1 lg:grid-cols-5"
             role="group"
             aria-label={t('page.wardSettings.title')}
         >
@@ -1087,6 +1090,83 @@ function ShiftTypeTable({
     );
 }
 
+function CalendarSettingsContent({
+    state,
+    actions,
+}: {
+    state: Pick<TWardSettingsState, 'ward' | 'wardStatus'>;
+    actions: Pick<TWardSettingsActions, 'updateCalendarSettings'>;
+}) {
+    const {t} = useTypedTranslation();
+    const [isSaving, setIsSaving] = useState(false);
+    const persistedShowBirthdays = state.ward?.showMemberBirthdaysInCalendar !== false;
+    const [draftShowBirthdays, setDraftShowBirthdays] = useState(persistedShowBirthdays);
+
+    useEffect(() => {
+        setDraftShowBirthdays(persistedShowBirthdays);
+    }, [persistedShowBirthdays]);
+
+    if (state.wardStatus === 'pending') {
+        return (
+            <SettingsStateFrame>
+                <PageState tone="loading" title={t('page.wardSettings.calendar.loading')} className="py-0" />
+            </SettingsStateFrame>
+        );
+    }
+
+    if (state.wardStatus === 'error' || !state.ward) {
+        return (
+            <SettingsStateFrame>
+                <PageState
+                    tone="error"
+                    title={t('page.wardSettings.calendar.error')}
+                    description={t('page.state.errorDescription')}
+                    className="py-0"
+                />
+            </SettingsStateFrame>
+        );
+    }
+
+    return (
+        <div className="rounded-[16px] bg-white px-5 py-5">
+            <p className="font-apple text-[15px] font-semibold text-sub-1">{t('page.wardSettings.calendar.sectionTitle')}</p>
+            <div className="mt-4 flex min-h-[88px] items-center justify-between gap-4 rounded-[12px] bg-gray-7 px-4 py-4">
+                <div className="min-w-0">
+                    <p className="font-apple text-[14px] font-semibold text-sub-1">{t('page.wardSettings.calendar.birthdayTitle')}</p>
+                    <p className="mt-1 font-apple text-[13px] leading-5 text-gray-3">
+                        {t('page.wardSettings.calendar.birthdayDescription')}
+                    </p>
+                </div>
+                <Switch
+                    checked={draftShowBirthdays}
+                    disabled={isSaving}
+                    onCheckedChange={async (checked) => {
+                        const previousShowBirthdays = draftShowBirthdays;
+
+                        setDraftShowBirthdays(checked);
+                        setIsSaving(true);
+
+                        try {
+                            const saved = await actions.updateCalendarSettings({showMemberBirthdaysInCalendar: checked});
+
+                            if (saved) {
+                                toast.success(t('page.wardSettings.calendar.toast.saveSuccess'));
+                            } else {
+                                setDraftShowBirthdays(previousShowBirthdays);
+                            }
+                        } finally {
+                            setIsSaving(false);
+                        }
+                    }}
+                    className="relative h-7 w-12 shrink-0 justify-start border-0 bg-sub-4 p-0 shadow-none data-[state=checked]:bg-main-1 data-[state=unchecked]:bg-sub-4"
+                    thumbClassName="absolute top-0.5 left-0.5 h-6 w-6 translate-x-0 bg-white shadow-sm data-[state=checked]:translate-x-5"
+                    aria-label={t('page.wardSettings.calendar.birthdaySwitchAria')}
+                />
+            </div>
+        </div>
+    );
+}
+
 function ConstraintsContent({
     state,
     actions,
@@ -1191,14 +1271,19 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
     const [pendingTab, setPendingTab] = useState<TWardSettingsTab | null>(null);
     const [pendingNavigationPath, setPendingNavigationPath] = useState<string | null>(null);
     const unsavedDialogOpen = pendingTab !== null || pendingNavigationPath !== null;
-    const isCurrentTabReady =
-        state.currentTab === 'shiftTypes'
-            ? state.shiftTypesStatus === 'success'
-            : state.currentTab === 'requestReception'
-              ? state.requestReceptionStatus === 'success'
-              : state.currentTab === 'restLeavePolicy'
-                ? state.shiftTypesStatus === 'success'
-                : state.shiftTeamsStatus === 'success';
+    const isCurrentTabReady = (() => {
+        switch (state.currentTab) {
+            case 'shiftTypes':
+            case 'restLeavePolicy':
+                return state.shiftTypesStatus === 'success';
+            case 'requestReception':
+                return state.requestReceptionStatus === 'success';
+            case 'calendar':
+                return state.wardStatus === 'success';
+            case 'constraints':
+                return state.shiftTeamsStatus === 'success';
+        }
+    })();
     const shouldShowNotificationBell = isWardAdminAccessToken(accessToken) && state.wardId !== null && isCurrentTabReady;
     const handleSelectTab = useCallback(
         (tab: TWardSettingsTab) => {
@@ -1313,6 +1398,16 @@ export function WardSettingsPageView({state, actions}: TWardSettingsPageViewProp
                         status={state.requestReceptionStatus}
                         onSave={actions.updateRequestReceptionSettings}
                         onRetry={actions.retryRequestReceptionSettings}
+                    />
+                ) : state.currentTab === 'calendar' ? (
+                    <CalendarSettingsContent
+                        state={{
+                            ward: state.ward,
+                            wardStatus: state.wardStatus,
+                        }}
+                        actions={{
+                            updateCalendarSettings: actions.updateCalendarSettings,
+                        }}
                     />
                 ) : (
                     <ConstraintsContent

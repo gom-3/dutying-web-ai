@@ -1801,6 +1801,7 @@ export const en: TLocale = {
                 memoHint: 'Write down anything teammates should know',
                 birthDate: 'Date of birth',
                 birthDateEmpty: 'Not entered',
+                birthDateInvalid: 'Enter a date from 1900-01-01 through today.',
                 employmentDate: 'Employment date',
                 employmentDateHint: 'Used as part of the member record',
                 phone: 'Phone number',
@@ -1956,12 +1957,14 @@ export const en: TLocale = {
                 restLeavePolicy: 'Manage target rest days and counted shift types.',
                 requestReception: 'Manage requested shift intake periods.',
                 constraints: 'Manage scheduling constraints.',
+                calendar: 'Manage shared events shown on the ward calendar.',
             },
             tabs: {
                 shiftTypes: 'Shift types',
                 restLeavePolicy: 'Rest day rules',
                 requestReception: 'Request intake',
                 constraints: 'Constraints',
+                calendar: 'Calendar',
             },
             addShiftType: 'Add shift type',
             type: {
@@ -2037,6 +2040,18 @@ export const en: TLocale = {
                 toast: {
                     saveSuccess: 'Saved request intake settings.',
                     updateFailed: 'Could not save request intake settings.',
+                },
+            },
+            calendar: {
+                loading: 'Loading calendar settings',
+                error: 'Failed to load calendar settings.',
+                sectionTitle: 'Ward calendar shared events',
+                birthdayTitle: 'Celebrate birthdays',
+                birthdayDescription: 'When a member has a date of birth, show an all-day birthday event on the ward calendar.',
+                birthdaySwitchAria: 'Celebrate birthdays',
+                toast: {
+                    saveSuccess: 'Saved calendar settings.',
+                    updateFailed: 'Could not save calendar settings.',
                 },
             },
             constraints: {

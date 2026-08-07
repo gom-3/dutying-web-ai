@@ -665,7 +665,7 @@ describe('@dutying/api public entry', () => {
         });
     });
 
-    it('filters retired fields from nurse patch payloads', async () => {
+    it('filters retired fields and sends birthDate in nurse patch payloads', async () => {
         const client = createClient();
         const patchMock = client.patch as ReturnType<typeof vi.fn>;
 
@@ -690,6 +690,7 @@ describe('@dutying/api public entry', () => {
         expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
             name: '김간호사',
             phoneNum: '010-1234-5678',
+            birthDate: '1996-03-14',
             isWorker: true,
             isWardManager: false,
             memo: '메모',
@@ -711,7 +712,7 @@ describe('@dutying/api public entry', () => {
         });
     });
 
-    it('does not send retired birthDate values in nurse patch payloads', async () => {
+    it('clears birthDate values in nurse patch payloads', async () => {
         const client = createClient();
         const patchMock = client.patch as ReturnType<typeof vi.fn>;
 
@@ -721,7 +722,9 @@ describe('@dutying/api public entry', () => {
 
         await expect(nurseApi.updateNurse(12, {birthDate: null} as never)).resolves.toEqual({nurseId: 12});
 
-        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {});
+        expect(patchMock).toHaveBeenCalledWith('/nurses/12', {
+            birthDate: '',
+        });
     });
 
     it('clears dummy phone values in nurse patch payloads', async () => {
@@ -779,6 +782,7 @@ describe('@dutying/api public entry', () => {
                 shiftTeamId: 3,
                 name: 'A',
                 nurseCnt: 1,
+                divisions: [],
                 nurses: [{nurseId: 12, name: 'Kim', phoneNum: null, birth_date: '1996-03-14', birthDate: '1996-03-14'}],
             },
         ]);

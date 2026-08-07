@@ -4,7 +4,7 @@ import type {TI18nKey} from '@/shared/hook/use-typed-translation';
 import {DEFAULT_NURSE_SHIFT_RATIO_WEIGHT, getNurseShiftTypeKey} from './nurse-shift-types';
 import {getMemoWithoutRoleMarkers, hasNursePrecepteeRole, hasNursePreceptorRole} from './nurse-role';
 
-const nurseProfileEditableKeys = ['name', 'phoneNum', 'isWorker', 'isWardManager'] as const;
+const nurseProfileEditableKeys = ['name', 'phoneNum', 'birthDate', 'isWorker', 'isWardManager'] as const;
 
 export function hasNurseProfileChanges(original: TNurse | null | undefined, draft: TNurse | null | undefined) {
     if (!original || !draft) return false;
