@@ -1046,8 +1046,17 @@ export const ko = {
                 fixedSelectionTools: '선택한 근무 고정 도구',
                 fixSelection: '선택한 근무 고정',
                 unfixSelection: '선택한 고정 해제',
+                clearUnlockedCells: '고정 제외 전체 비우기',
                 fixSelectionSuccess: '{{count}}칸을 고정했어요.',
                 unfixSelectionSuccess: '{{count}}칸의 고정을 해제했어요.',
+                clearUnlockedCellsSuccess: '{{count}}칸을 비웠어요.',
+                clearUnlockedCellsDialog: {
+                    title: '고정되지 않은 근무를 모두 비울까요?',
+                    description:
+                        '고정 근무와 신청 근무는 그대로 두고, 나머지 {{count}}칸의 입력을 삭제해요.\n삭제 후에도 실행 취소로 되돌릴 수 있어요.',
+                    confirm: '비우기',
+                    cancel: '취소',
+                },
                 prefillDecision: {
                     eyebrow: 'AI 자동채우기 미리보기',
                     title: 'AI가 바꾸면 안 되는 근무가 있나요?',
@@ -1649,6 +1658,11 @@ export const ko = {
             },
             teamTabs: {
                 addTeam: '팀 추가하기',
+            },
+            division: {
+                add: '그룹 추가',
+                delete: '그룹 삭제',
+                deleteAria: '{{divisionName}} 그룹 삭제',
             },
             nurse: {
                 sort: {

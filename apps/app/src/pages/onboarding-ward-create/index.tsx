@@ -47,7 +47,12 @@ function OnboardingWardCreatePage() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        updateTeamDivisionName,
+        addDivisionAfterNurse,
+        deleteDivision,
         updateScheduleInput,
+        addScheduleDivisionAfterRow,
+        deleteScheduleDivision,
         handleNurseDragEnd,
         handleShiftTypeDragEnd,
         applyUploadedFile,
@@ -218,6 +223,7 @@ function OnboardingWardCreatePage() {
 
         toast.error(getNextBlockedReasonMessage());
     };
+
     useEffect(() => {
         if (isOnboardingWardCreatePreviewAllowed()) return;
 
@@ -320,6 +326,9 @@ function OnboardingWardCreatePage() {
                         onAddTeam={addTeam}
                         canAddTeam={canAddTeam}
                         onTeamNameChange={updateTeamName}
+                        onDivisionNameChange={updateTeamDivisionName}
+                        onAddDivisionAfterRow={addScheduleDivisionAfterRow}
+                        onDeleteDivision={deleteScheduleDivision}
                         onScheduleChange={updateScheduleInput}
                         onUploadFile={applyUploadedFile}
                         uploadStatus={uploadStatus}
@@ -352,6 +361,9 @@ function OnboardingWardCreatePage() {
                         onDeleteNurse={deleteNurse}
                         onNurseChange={updateNurse}
                         onTeamNameChange={updateTeamName}
+                        onDivisionNameChange={updateTeamDivisionName}
+                        onAddDivisionAfterNurse={addDivisionAfterNurse}
+                        onDeleteDivision={deleteDivision}
                         onDragEnd={handleNurseDragEnd}
                     />
                 );

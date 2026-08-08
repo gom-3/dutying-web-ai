@@ -1049,8 +1049,17 @@ export const en: TLocale = {
                 fixedSelectionTools: 'Selected shift fixing tools',
                 fixSelection: 'Fix selected shifts',
                 unfixSelection: 'Unfix selected shifts',
+                clearUnlockedCells: 'Clear all except fixed shifts',
                 fixSelectionSuccess: 'Fixed {{count}} cells.',
                 unfixSelectionSuccess: 'Unfixed {{count}} cells.',
+                clearUnlockedCellsSuccess: 'Cleared {{count}} cells.',
+                clearUnlockedCellsDialog: {
+                    title: 'Clear all non-fixed shifts?',
+                    description:
+                        'Fixed and requested shifts will stay in place. The other {{count}} filled cells will be cleared.\nYou can still undo this afterward.',
+                    confirm: 'Clear',
+                    cancel: 'Cancel',
+                },
                 prefillDecision: {
                     eyebrow: 'AI autofill preview',
                     title: 'Are there shifts AI should not change?',
@@ -1652,6 +1661,11 @@ export const en: TLocale = {
             },
             teamTabs: {
                 addTeam: 'Add team',
+            },
+            division: {
+                add: 'Add group',
+                delete: 'Delete group',
+                deleteAria: 'Delete group {{divisionName}}',
             },
             nurse: {
                 sort: {

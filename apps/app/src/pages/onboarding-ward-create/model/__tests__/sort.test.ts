@@ -5,6 +5,7 @@ import {sortNursesByMode} from '../sort';
 const createNurse = (params: Partial<TOnboardingNurseDraft>): TOnboardingNurseDraft => ({
     id: params.id ?? 'nurse',
     teamId: params.teamId ?? 'team-1',
+    divisionNum: params.divisionNum ?? 1,
     name: params.name ?? '',
     memo: params.memo ?? '',
     isPreceptor: params.isPreceptor ?? false,
@@ -56,5 +57,4 @@ describe('sortNursesByMode', () => {
             'off-홍길동',
         ]);
     });
-
 });

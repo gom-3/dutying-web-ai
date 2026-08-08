@@ -19,6 +19,7 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
                 'page.makeShift.aiRefill.fixedSelectionTools': 'Fixed selection tools',
                 'page.makeShift.aiRefill.fixSelection': 'Fix selected shifts',
                 'page.makeShift.aiRefill.unfixSelection': 'Unfix selected shifts',
+                'page.makeShift.aiRefill.clearUnlockedCells': 'Clear all except fixed shifts',
                 'page.makeShift.aiRefill.requestDisplay': 'Requested shifts',
                 'page.makeShift.aiRefill.requestDisplayHidden': 'Requested shifts hidden',
                 'page.makeShift.aiRefill.requestDisplayShown': 'Requested shifts shown',
@@ -48,6 +49,8 @@ function renderToolbar({
     onRequestShiftsAttentionStart = vi.fn(),
     onRequestShiftsAttentionEnd = vi.fn(),
     onToggleFaults = vi.fn(),
+    onRequestClearUnlockedCells = vi.fn(),
+    canClearUnlockedCells = true,
 }: {
     showFaults?: boolean;
     onFixedShiftsAttentionStart?: () => void;
@@ -55,6 +58,8 @@ function renderToolbar({
     onRequestShiftsAttentionStart?: () => void;
     onRequestShiftsAttentionEnd?: () => void;
     onToggleFaults?: () => void;
+    onRequestClearUnlockedCells?: () => void;
+    canClearUnlockedCells?: boolean;
 } = {}) {
     render(
         <AiAutofillToolbar
@@ -66,6 +71,8 @@ function renderToolbar({
             canUnfixSelection
             onFixSelection={vi.fn()}
             onUnfixSelection={vi.fn()}
+            canClearUnlockedCells={canClearUnlockedCells}
+            onRequestClearUnlockedCells={onRequestClearUnlockedCells}
             showFaults={showFaults}
             onToggleFaults={onToggleFaults}
             canUndo={false}
@@ -99,6 +106,7 @@ describe('AiAutofillToolbar', () => {
         expect(screen.queryByRole('button', {name: 'Highlight requested shifts'})).not.toBeInTheDocument();
         expect(screen.getByRole('button', {name: 'Fix selected shifts'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Unfix selected shifts'})).toBeEnabled();
+        expect(screen.getByRole('button', {name: 'Clear all except fixed shifts'})).toBeEnabled();
         expect(
             screen
                 .getAllByRole('button')
@@ -106,6 +114,23 @@ describe('AiAutofillToolbar', () => {
                 .filter(Boolean),
         ).toEqual(['Autofill', 'Confirm']);
         expect(screen.getByRole('button', {name: 'Constraint violations shown'})).toHaveTextContent('');
+    });
+
+    it('requests confirmation before clearing non-fixed shifts', async () => {
+        const user = userEvent.setup();
+        const onRequestClearUnlockedCells = vi.fn();
+
+        renderToolbar({onRequestClearUnlockedCells});
+
+        await user.click(screen.getByRole('button', {name: 'Clear all except fixed shifts'}));
+
+        expect(onRequestClearUnlockedCells).toHaveBeenCalledTimes(1);
+    });
+
+    it('disables the clear-all tool when no unlocked cells can be cleared', () => {
+        renderToolbar({canClearUnlockedCells: false});
+
+        expect(screen.getByRole('button', {name: 'Clear all except fixed shifts'})).toBeDisabled();
     });
 
     it('shows fixed and requested indicators inside the status display menu', async () => {

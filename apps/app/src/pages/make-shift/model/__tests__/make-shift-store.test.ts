@@ -157,6 +157,36 @@ describe('make-shift-store', () => {
         });
     });
 
+    it('returns to the overview and clears the previous schedule status when another month is selected', () => {
+        saveDraftStep(1, 10, 2026, 7, 5);
+        saveMaxReachedStep(1, 10, 2026, 7, 5);
+        useMakeShiftStore.setState({
+            phase: 'stepping',
+            currentStep: 5,
+            maxReachedStep: 5,
+            month: 6,
+            shiftStatus: 'success',
+            shiftExists: true,
+            shiftFullyAssigned: true,
+            restoreDraftModalOpen: true,
+        });
+
+        useMakeShiftStore.getState().goNextMonth();
+
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            phase: 'overview',
+            currentStep: 1,
+            maxReachedStep: 5,
+            month: 7,
+            shiftStatus: 'idle',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+            confirmedShiftSnapshot: null,
+            restoreDraftModalOpen: false,
+            stepNavigationBusy: {},
+        });
+    });
+
     it('blocks moving past worker confirmation when no nurse is included', () => {
         useMakeShiftStore.setState({
             phase: 'stepping',

@@ -22,11 +22,18 @@ export type TOnboardingWardShiftType = TCreateWardDTO['wardShiftTypes'][number] 
 export type TOnboardingTeamDraft = {
     id: string;
     name: string;
+    divisions?: TOnboardingTeamDivisionDraft[];
+};
+
+export type TOnboardingTeamDivisionDraft = {
+    divisionNum: number;
+    name: string;
 };
 
 export type TOnboardingNurseDraft = {
     id: string;
     teamId: string;
+    divisionNum?: number;
     name: string;
     memo: string;
     isPreceptor: boolean;
@@ -43,6 +50,7 @@ export type TOnboardingNurseDraft = {
 export type TOnboardingScheduleRowDraft = {
     id: string;
     nurseId: string | null;
+    divisionNum?: number;
     name: string;
     shifts: Record<string, string>;
 };
@@ -145,6 +153,12 @@ export type TOnboardingActionState = {
     canComplete: boolean;
 };
 
+export type TOnboardingDivisionGroup<TItem> = {
+    divisionNum: number;
+    divisionName?: string | null;
+    items: TItem[];
+};
+
 const MIN_STEP = 1;
 const MAX_STEP = 4;
 
@@ -152,6 +166,7 @@ export const MAX_ONBOARDING_TEAMS = 8;
 export const MAX_ONBOARDING_SHIFT_TYPES = 10;
 export const MAX_ONBOARDING_NURSES = 40;
 export const MAX_ONBOARDING_NURSE_NAME_LENGTH = NURSE_NAME_MAX_LENGTH;
+export const DEFAULT_ONBOARDING_DIVISION_NUM = 1;
 export const DEFAULT_SHIFT_TYPE_COLORS = [
     '#4DC2AD',
     '#FF8BA5',
@@ -174,6 +189,7 @@ const CORE_SHIFT_SHORT_NAMES = new Set(['D', 'E', 'N', 'O']);
 const REQUIRED_SHIFT_CLASSIFICATIONS = ['DAY', 'EVENING', 'NIGHT', 'OFF'] as const;
 const DEFAULT_TEAM_NAME_PREFIX = '\uAC04\uD638\uC0AC ';
 const DEFAULT_TEAM_NAME_SUFFIX = '\uD300';
+const DEFAULT_DIVISION_NAME_PREFIX = '\uADF8\uB8F9';
 const DEFAULT_NEW_NURSE_PREFIX = '\uC2E0\uADDC \uAC04\uD638\uC0AC';
 const DEFAULT_SAMPLE_NURSE_NAMES = {
     first: '\uD64D\uAE38\uB3D9',
@@ -236,6 +252,103 @@ export const getOnboardingShiftCodeColor = (shortName: string): string => {
 let nextId = 7;
 
 const createId = (prefix: string) => `${prefix}-${nextId++}`;
+const normalizeDivisionNum = (divisionNum: number | null | undefined) =>
+    Number.isInteger(divisionNum) && (divisionNum ?? 0) >= DEFAULT_ONBOARDING_DIVISION_NUM ? divisionNum! : DEFAULT_ONBOARDING_DIVISION_NUM;
+const trimToUndefined = (value?: string | null) => {
+    const trimmed = value?.trim();
+
+    if (!trimmed) {
+        return undefined;
+    }
+
+    return trimmed;
+};
+const createTeamDivision = (divisionNum = DEFAULT_ONBOARDING_DIVISION_NUM, name?: string | null): TOnboardingTeamDivisionDraft => {
+    const normalizedDivisionNum = normalizeDivisionNum(divisionNum);
+    const normalizedName = trimToUndefined(name);
+
+    return {
+        divisionNum: normalizedDivisionNum,
+        name: normalizedName ?? getDivisionFallbackLabel(normalizedDivisionNum),
+    };
+};
+
+export const getDivisionFallbackLabel = (divisionNum: number) => `${DEFAULT_DIVISION_NAME_PREFIX}${normalizeDivisionNum(divisionNum)}`;
+export const getDivisionDisplayLabel = (divisionNum: number, divisionName?: string | null) => {
+    const trimmedDivisionName = trimToUndefined(divisionName);
+
+    return trimmedDivisionName ?? getDivisionFallbackLabel(divisionNum);
+};
+
+const normalizeTeamDivisions = (
+    divisions: TOnboardingTeamDivisionDraft[] | undefined,
+    itemDivisionNums: Iterable<number | null | undefined> = [],
+): TOnboardingTeamDivisionDraft[] => {
+    const divisionByNum = new Map<number, TOnboardingTeamDivisionDraft>();
+
+    (divisions ?? []).forEach((division) => {
+        const divisionNum = normalizeDivisionNum(division.divisionNum);
+
+        if (!divisionByNum.has(divisionNum)) {
+            divisionByNum.set(divisionNum, createTeamDivision(divisionNum, division.name));
+        }
+    });
+
+    Array.from(itemDivisionNums).forEach((divisionNumValue) => {
+        const divisionNum = normalizeDivisionNum(divisionNumValue);
+
+        if (!divisionByNum.has(divisionNum)) {
+            divisionByNum.set(divisionNum, createTeamDivision(divisionNum));
+        }
+    });
+
+    if (!divisionByNum.has(DEFAULT_ONBOARDING_DIVISION_NUM)) {
+        divisionByNum.set(DEFAULT_ONBOARDING_DIVISION_NUM, createTeamDivision());
+    }
+
+    return Array.from(divisionByNum.values()).sort((left, right) => left.divisionNum - right.divisionNum);
+};
+const normalizeTeam = (team: TOnboardingTeamDraft, itemDivisionNums: Iterable<number | null | undefined> = []): TOnboardingTeamDraft => ({
+    ...team,
+    divisions: normalizeTeamDivisions(team.divisions, itemDivisionNums),
+});
+
+export const groupItemsByDivision = <TItem extends {divisionNum?: number | null}>(
+    items: TItem[],
+    divisions: TOnboardingTeamDivisionDraft[] | undefined,
+): TOnboardingDivisionGroup<TItem>[] => {
+    const normalizedDivisions = normalizeTeamDivisions(
+        divisions,
+        items.map((item) => item.divisionNum),
+    );
+    const divisionNameByNum = new Map(normalizedDivisions.map((division) => [division.divisionNum, division.name]));
+    const itemsByDivision = new Map<number, TItem[]>();
+
+    items.forEach((item) => {
+        const divisionNum = normalizeDivisionNum(item.divisionNum);
+        const divisionItems = itemsByDivision.get(divisionNum) ?? [];
+
+        divisionItems.push(item);
+        itemsByDivision.set(divisionNum, divisionItems);
+    });
+
+    return normalizedDivisions.flatMap((division) => {
+        const divisionItems = itemsByDivision.get(division.divisionNum) ?? [];
+
+        if (divisionItems.length === 0) {
+            return [];
+        }
+
+        return [
+            {
+                divisionNum: division.divisionNum,
+                divisionName: divisionNameByNum.get(division.divisionNum),
+                items: divisionItems,
+            },
+        ];
+    });
+};
+
 const createShiftType = (
     input: Omit<TOnboardingWardShiftType, 'id'> & {
         id?: string;
@@ -270,6 +383,7 @@ const createNurse = (
 ): TOnboardingNurseDraft => ({
     id: input.id ?? createId('nurse'),
     ...input,
+    divisionNum: normalizeDivisionNum(input.divisionNum),
     isPreceptor: input.isPreceptor ?? false,
     isPreceptee: input.isPreceptee ?? false,
     initialShifts: input.initialShifts ?? [],
@@ -281,6 +395,7 @@ const createScheduleRow = (
 ): TOnboardingScheduleRowDraft => ({
     id: input.id ?? createId('schedule-row'),
     nurseId: input.nurseId ?? null,
+    divisionNum: normalizeDivisionNum(input.divisionNum),
     name: input.name ?? '',
     shifts: input.shifts ?? {},
 });
@@ -335,9 +450,9 @@ const createBaseShiftTypes = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDIN
     }),
 ];
 const createBaseTeams = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS): TOnboardingTeamDraft[] => [
-    {id: 'team-4', name: getDefaultTeamName(1, labels)},
-    {id: 'team-5', name: getDefaultTeamName(2, labels)},
-    {id: 'team-6', name: getDefaultTeamName(3, labels)},
+    {id: 'team-4', name: getDefaultTeamName(1, labels), divisions: [createTeamDivision()]},
+    {id: 'team-5', name: getDefaultTeamName(2, labels), divisions: [createTeamDivision()]},
+    {id: 'team-6', name: getDefaultTeamName(3, labels), divisions: [createTeamDivision()]},
 ];
 const getBaseNurseNames = (labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS) =>
     [labels.sampleNurseNames.first, labels.sampleNurseNames.second, labels.sampleNurseNames.skilled, labels.sampleNurseNames.off] as const;
@@ -394,6 +509,7 @@ export const createEmptyNurse = (
 ): TOnboardingNurseDraft =>
     createNurse({
         teamId,
+        divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
         name: labels.newNurseName(nurseNumber),
         memo: '',
         isWorker: true,
@@ -413,6 +529,7 @@ export const createInitialDraft = (labels: TOnboardingDraftLabels = DEFAULT_ONBO
 
         return createNurse({
             teamId: firstTeamId,
+            divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
             name,
             memo: '',
             isWorker: !isOffNurse,
@@ -456,7 +573,9 @@ export const prepareManualEntryDraft = (
     labels: TOnboardingDraftLabels = DEFAULT_ONBOARDING_DRAFT_LABELS,
 ): TOnboardingWardDraft => ({
     ...draft,
-    teams: draft.teams[0] ? [draft.teams[0]] : [{id: createId('team'), name: getDefaultTeamName(1, labels)}],
+    teams: draft.teams[0]
+        ? [normalizeTeam(draft.teams[0])]
+        : [{id: createId('team'), name: getDefaultTeamName(1, labels), divisions: [createTeamDivision()]}],
     nurses: [],
     scheduleInputs: {},
     constraintCandidates: [],
@@ -513,6 +632,7 @@ export const getOnboardingInitialScheduleTargets = (
 const normalizeScheduleRow = (row: TOnboardingScheduleRowDraft): TOnboardingScheduleRowDraft => ({
     ...createScheduleRow(row),
     name: row.name,
+    divisionNum: normalizeDivisionNum(row.divisionNum),
     shifts: Object.fromEntries(Object.entries(row.shifts).map(([day, value]) => [day, value.trim()])),
 });
 const SCHEDULE_OFF_SHIFT_ALIASES = new Set([
@@ -909,6 +1029,7 @@ export const applyScheduleInputDraft = (
                 sameNameNurse ??
                 createNurse({
                     teamId,
+                    divisionNum: normalizeDivisionNum(row.divisionNum),
                     name: trimmedName,
                     memo: '',
                     isWorker: true,
@@ -918,6 +1039,7 @@ export const applyScheduleInputDraft = (
             const normalizedNurse = {
                 ...nextNurse,
                 teamId,
+                divisionNum: normalizeDivisionNum(row.divisionNum),
                 name: trimmedName,
             };
 
@@ -958,18 +1080,134 @@ export const applyScheduleInputDraft = (
 
     const nextTeamNurses = Array.from(nextNurseById.values()).map((nurse) => ({
         ...nurse,
+        divisionNum: normalizeDivisionNum(nurse.divisionNum),
         initialShifts: (initialShiftsByNurseId.get(nurse.id) ?? []).sort((left, right) => left.date.localeCompare(right.date)),
     }));
+    const nextNurses = pruneUnavailableShiftTypeIds([...otherNurses, ...nextTeamNurses], nextShiftTypes);
+    const nextTeamDivisionNums = nextNurses.filter((nurse) => nurse.teamId === teamId).map((nurse) => nurse.divisionNum);
+    const nextTeams = draft.teams.map((team) =>
+        team.id === teamId
+            ? normalizeTeam(team, nextTeamDivisionNums)
+            : normalizeTeam(
+                  team,
+                  nextNurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.divisionNum),
+              ),
+    );
 
     return {
         ...draft,
         shiftTypes: nextShiftTypes,
-        nurses: pruneUnavailableShiftTypeIds([...otherNurses, ...nextTeamNurses], nextShiftTypes),
+        teams: nextTeams,
+        nurses: nextNurses,
         scheduleInputs: {
             ...(draft.scheduleInputs ?? {}),
             [teamId]: updatedTeamScheduleInputsWithNurseIds,
         },
     };
+};
+
+const updateScheduleRowsAfterDivisionBoundary = (
+    schedule: TOnboardingTeamScheduleDraft,
+    boundaryRowId: string,
+    changeValue: 1 | -1,
+): {schedule: TOnboardingTeamScheduleDraft; boundaryDivisionNum: number} | null => {
+    const boundaryIndex = schedule.rows.findIndex((row) => row.id === boundaryRowId);
+    const boundaryRow = schedule.rows[boundaryIndex];
+
+    if (!boundaryRow || boundaryIndex >= schedule.rows.length - 1) {
+        return null;
+    }
+
+    const boundaryDivisionNum = normalizeDivisionNum(boundaryRow.divisionNum);
+    const rows = schedule.rows.map((row, rowIndex) =>
+        rowIndex > boundaryIndex
+            ? {
+                  ...row,
+                  divisionNum: normalizeDivisionNum(row.divisionNum) + changeValue,
+              }
+            : row,
+    );
+
+    return {
+        boundaryDivisionNum,
+        schedule: {
+            ...schedule,
+            rows,
+        },
+    };
+};
+
+export const addScheduleDivisionAfterRowDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    schedule: TOnboardingTeamScheduleDraft,
+    boundaryRowId: string,
+): TOnboardingWardDraft => {
+    const team = draft.teams.find((candidate) => candidate.id === teamId);
+    const result = updateScheduleRowsAfterDivisionBoundary(schedule, boundaryRowId, 1);
+
+    if (!team || !result) {
+        return draft;
+    }
+
+    return applyScheduleInputDraft(
+        {
+            ...draft,
+            teams: draft.teams.map((candidate) =>
+                candidate.id === teamId
+                    ? {
+                          ...candidate,
+                          divisions: shiftTeamDivisionsAfterBoundary(team.divisions, result.boundaryDivisionNum, 1),
+                      }
+                    : candidate,
+            ),
+        },
+        teamId,
+        result.schedule,
+    );
+};
+
+export const deleteScheduleDivisionDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    schedule: TOnboardingTeamScheduleDraft,
+    divisionNum: number,
+): TOnboardingWardDraft => {
+    const normalizedDivisionNum = normalizeDivisionNum(divisionNum);
+    const previousDivisionNum = normalizedDivisionNum - 1;
+    const team = draft.teams.find((candidate) => candidate.id === teamId);
+
+    if (!team || normalizedDivisionNum <= DEFAULT_ONBOARDING_DIVISION_NUM) {
+        return draft;
+    }
+
+    const previousBoundaryRow = [...schedule.rows].reverse().find((row) => normalizeDivisionNum(row.divisionNum) === previousDivisionNum);
+
+    if (!previousBoundaryRow) {
+        return draft;
+    }
+
+    const result = updateScheduleRowsAfterDivisionBoundary(schedule, previousBoundaryRow.id, -1);
+
+    if (!result) {
+        return draft;
+    }
+
+    return applyScheduleInputDraft(
+        {
+            ...draft,
+            teams: draft.teams.map((candidate) =>
+                candidate.id === teamId
+                    ? {
+                          ...candidate,
+                          divisions: shiftTeamDivisionsAfterBoundary(team.divisions, previousDivisionNum, -1),
+                      }
+                    : candidate,
+            ),
+        },
+        teamId,
+        result.schedule,
+    );
 };
 
 const createUniqueUploadedTeamName = (
@@ -1031,6 +1269,7 @@ export const applyUploadedScheduleTemplateDraft = (
         const team = {
             id: createId('team'),
             name: createUniqueUploadedTeamName(teamSchedule.teamName, teamIndex, usedTeamNames, labels),
+            divisions: [createTeamDivision()],
         };
         const nurseIdByName = new Map<string, string>();
 
@@ -1056,6 +1295,7 @@ export const applyUploadedScheduleTemplateDraft = (
                         if (!nurseId) {
                             const nurse = createNurse({
                                 teamId: team.id,
+                                divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
                                 name: trimmedName,
                                 memo: '',
                                 isWorker: true,
@@ -1071,6 +1311,7 @@ export const applyUploadedScheduleTemplateDraft = (
 
                     return createScheduleRow({
                         nurseId,
+                        divisionNum: DEFAULT_ONBOARDING_DIVISION_NUM,
                         name: trimmedName,
                         shifts,
                     });
@@ -1267,7 +1508,9 @@ export const updateNurseDraft = (
     updater: Partial<TOnboardingNurseDraft>,
 ): TOnboardingWardDraft => ({
     ...draft,
-    nurses: draft.nurses.map((nurse) => (nurse.id === nurseId ? {...nurse, ...updater} : nurse)),
+    nurses: draft.nurses.map((nurse) =>
+        nurse.id === nurseId ? {...nurse, ...updater, divisionNum: normalizeDivisionNum(updater.divisionNum ?? nurse.divisionNum)} : nurse,
+    ),
 });
 
 export const updateTeamNameDraft = (draft: TOnboardingWardDraft, teamId: string, teamName: string): TOnboardingWardDraft => {
@@ -1286,6 +1529,39 @@ export const updateTeamNameDraft = (draft: TOnboardingWardDraft, teamId: string,
     return {
         ...draft,
         teams: draft.teams.map((team) => (team.id === teamId ? {...team, name: trimmedName} : team)),
+    };
+};
+
+export const updateTeamDivisionNameDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    divisionNum: number,
+    divisionName: string | null,
+): TOnboardingWardDraft => {
+    const normalizedDivisionNum = normalizeDivisionNum(divisionNum);
+    const trimmedName = trimToUndefined(divisionName);
+
+    return {
+        ...draft,
+        teams: draft.teams.map((team) => {
+            if (team.id !== teamId) {
+                return normalizeTeam(
+                    team,
+                    draft.nurses.filter((nurse) => nurse.teamId === team.id).map((nurse) => nurse.divisionNum),
+                );
+            }
+
+            const divisions = normalizeTeamDivisions(team.divisions, [normalizedDivisionNum]).map((division) =>
+                division.divisionNum === normalizedDivisionNum
+                    ? createTeamDivision(normalizedDivisionNum, trimmedName ?? getDivisionFallbackLabel(normalizedDivisionNum))
+                    : division,
+            );
+
+            return {
+                ...team,
+                divisions,
+            };
+        }),
     };
 };
 
@@ -1321,6 +1597,7 @@ export const addTeamDraft = (draft: TOnboardingWardDraft, labels: TOnboardingDra
     const team = {
         id: `team-new-${draft.teams.length + 1}`,
         name: nextTeamName,
+        divisions: [createTeamDivision()],
     };
 
     return {
@@ -1342,11 +1619,149 @@ export const addNurseDraft = (
     }
 
     const nurseNumber = draft.nurses.length + 1;
+    const targetTeam = draft.teams.find((team) => team.id === teamId);
+    const targetTeamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
+    const lastDivisionNum =
+        targetTeamNurses[targetTeamNurses.length - 1]?.divisionNum ??
+        targetTeam?.divisions?.[targetTeam.divisions.length - 1]?.divisionNum ??
+        DEFAULT_ONBOARDING_DIVISION_NUM;
+    const nextNurse = createEmptyNurse(teamId, draft.shiftTypes, nurseNumber, labels);
 
     return {
         ...draft,
-        nurses: [...draft.nurses, createEmptyNurse(teamId, draft.shiftTypes, nurseNumber, labels)],
+        teams: draft.teams.map((team) =>
+            team.id === teamId ? normalizeTeam(team, [...targetTeamNurses.map((nurse) => nurse.divisionNum), lastDivisionNum]) : team,
+        ),
+        nurses: [...draft.nurses, {...nextNurse, divisionNum: normalizeDivisionNum(lastDivisionNum)}],
     };
+};
+
+const shiftTeamDivisionsAfterBoundary = (
+    divisions: TOnboardingTeamDivisionDraft[] | undefined,
+    boundaryDivisionNum: number,
+    changeValue: 1 | -1,
+): TOnboardingTeamDivisionDraft[] => {
+    const boundary = normalizeDivisionNum(boundaryDivisionNum);
+    const currentDivisions = normalizeTeamDivisions(divisions, [DEFAULT_ONBOARDING_DIVISION_NUM, boundary]);
+
+    if (changeValue === 1) {
+        return normalizeTeamDivisions([
+            ...currentDivisions
+                .filter((division) => division.divisionNum !== boundary + 1)
+                .map((division) => (division.divisionNum > boundary ? {...division, divisionNum: division.divisionNum + 1} : division)),
+            createTeamDivision(boundary + 1),
+        ]);
+    }
+
+    const removedDivisionNum = boundary + 1;
+
+    return normalizeTeamDivisions(
+        currentDivisions
+            .filter((division) => division.divisionNum !== removedDivisionNum)
+            .map((division) =>
+                division.divisionNum > removedDivisionNum ? {...division, divisionNum: division.divisionNum - 1} : division,
+            ),
+    );
+};
+const getOrderedTeamNurses = (draft: TOnboardingWardDraft, teamId: string, orderedNurseIds?: string[]): TOnboardingNurseDraft[] => {
+    const teamNurses = draft.nurses.filter((nurse) => nurse.teamId === teamId);
+
+    if (!orderedNurseIds?.length) {
+        return teamNurses;
+    }
+
+    const nurseById = new Map(teamNurses.map((nurse) => [nurse.id, nurse]));
+    const orderedNurses = orderedNurseIds
+        .map((nurseId) => nurseById.get(nurseId))
+        .filter((nurse): nurse is TOnboardingNurseDraft => Boolean(nurse));
+    const orderedNurseIdSet = new Set(orderedNurses.map((nurse) => nurse.id));
+
+    return [...orderedNurses, ...teamNurses.filter((nurse) => !orderedNurseIdSet.has(nurse.id))];
+};
+const updateTeamNurseDivisions = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    updaterByNurseId: Map<string, number>,
+    nextDivisions: TOnboardingTeamDivisionDraft[],
+): TOnboardingWardDraft => {
+    const nextNurses = draft.nurses.map((nurse) => {
+        const nextDivisionNum = updaterByNurseId.get(nurse.id);
+
+        return nextDivisionNum == null ? nurse : {...nurse, divisionNum: normalizeDivisionNum(nextDivisionNum)};
+    });
+
+    return {
+        ...draft,
+        teams: draft.teams.map((team) => (team.id === teamId ? {...team, divisions: nextDivisions} : team)),
+        nurses: nextNurses,
+    };
+};
+
+export const addDivisionAfterNurseDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    boundaryNurseId: string,
+    orderedNurseIds?: string[],
+): TOnboardingWardDraft => {
+    const team = draft.teams.find((candidate) => candidate.id === teamId);
+    const orderedTeamNurses = getOrderedTeamNurses(draft, teamId, orderedNurseIds);
+    const boundaryIndex = orderedTeamNurses.findIndex((nurse) => nurse.id === boundaryNurseId);
+    const boundaryNurse = orderedTeamNurses[boundaryIndex];
+
+    if (!team || !boundaryNurse || boundaryIndex >= orderedTeamNurses.length - 1) {
+        return draft;
+    }
+
+    const updaterByNurseId = new Map<string, number>();
+
+    orderedTeamNurses.slice(boundaryIndex + 1).forEach((nurse) => {
+        updaterByNurseId.set(nurse.id, normalizeDivisionNum(nurse.divisionNum) + 1);
+    });
+
+    return updateTeamNurseDivisions(
+        draft,
+        teamId,
+        updaterByNurseId,
+        shiftTeamDivisionsAfterBoundary(team.divisions, normalizeDivisionNum(boundaryNurse.divisionNum), 1),
+    );
+};
+
+export const deleteDivisionDraft = (
+    draft: TOnboardingWardDraft,
+    teamId: string,
+    divisionNum: number,
+    orderedNurseIds?: string[],
+): TOnboardingWardDraft => {
+    const normalizedDivisionNum = normalizeDivisionNum(divisionNum);
+    const previousDivisionNum = normalizedDivisionNum - 1;
+    const team = draft.teams.find((candidate) => candidate.id === teamId);
+    const orderedTeamNurses = getOrderedTeamNurses(draft, teamId, orderedNurseIds);
+    const previousBoundaryIndex = (() => {
+        for (let index = orderedTeamNurses.length - 1; index >= 0; index -= 1) {
+            if (normalizeDivisionNum(orderedTeamNurses[index]?.divisionNum) === previousDivisionNum) {
+                return index;
+            }
+        }
+
+        return -1;
+    })();
+
+    if (!team || normalizedDivisionNum <= DEFAULT_ONBOARDING_DIVISION_NUM || previousBoundaryIndex === -1) {
+        return draft;
+    }
+
+    const updaterByNurseId = new Map<string, number>();
+
+    orderedTeamNurses.slice(previousBoundaryIndex + 1).forEach((nurse) => {
+        updaterByNurseId.set(nurse.id, normalizeDivisionNum(nurse.divisionNum) - 1);
+    });
+
+    return updateTeamNurseDivisions(
+        draft,
+        teamId,
+        updaterByNurseId,
+        shiftTeamDivisionsAfterBoundary(team.divisions, previousDivisionNum, -1),
+    );
 };
 
 export const deleteTeamDraft = (draft: TOnboardingWardDraft, teamId: string): TOnboardingWardDraft => ({

@@ -118,6 +118,40 @@ describe('useShiftEditorCommands', () => {
         expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({});
     });
 
+    it('clears every filled cell except fixed and requested shifts with undo support', () => {
+        const {result} = renderHook(() => useShiftEditorCommands());
+        const doc: TDutyDoc = {
+            ...createDoc(),
+            fixedCells: {'2|2026-03-01': true},
+            requestCells: {'1|2026-03-02': true},
+        };
+
+        act(() => {
+            result.current.init(doc);
+        });
+
+        act(() => {
+            expect(result.current.clearUnlockedCells()).toBe(1);
+        });
+
+        const afterClear = useShiftEditorStore.getState();
+
+        expect(afterClear.doc.rows.map((row) => row.cells)).toEqual([
+            ['D', null, null],
+            [null, 'E', null],
+        ]);
+        expect(afterClear.doc.fixedCells).toEqual({'2|2026-03-01': true});
+        expect(afterClear.doc.requestCells).toEqual({'1|2026-03-02': true});
+        expect(afterClear.history.past).toHaveLength(1);
+
+        act(() => result.current.undo());
+
+        expect(useShiftEditorStore.getState().doc.rows.map((row) => row.cells)).toEqual([
+            ['D', null, 'N'],
+            [null, 'E', null],
+        ]);
+    });
+
     it('pastes payload from the selection anchor and trims cells outside document bounds', () => {
         const {result} = renderHook(() => useShiftEditorCommands());
         const payload: TClipboardPayload = {

@@ -18,12 +18,14 @@ import {useTypedTranslation} from '@/shared/hook/use-typed-translation';
 import {
     getAvailableOnboardingShiftColor,
     getDefaultShiftTypeColor,
+    groupItemsByDivision,
     normalizeOnboardingShiftCode,
     type TOnboardingNurseDraft,
     type TOnboardingScheduleRowDraft,
     type TOnboardingTeamScheduleDraft,
     type TOnboardingWardDraft,
 } from '../../model';
+import {OnboardingAddDivisionButton, OnboardingDivisionHeader} from './division-controls';
 import ScheduleFileUploadModal from './schedule-file-upload-modal';
 import TeamTabs from './team-tabs';
 
@@ -41,6 +43,9 @@ interface IScheduleInputStepProps {
     onAddTeam: () => void;
     canAddTeam: boolean;
     onTeamNameChange: (teamId: string, teamName: string) => void;
+    onDivisionNameChange: (teamId: string, divisionNum: number, divisionName: string | null) => void;
+    onAddDivisionAfterRow: (teamId: string, schedule: TOnboardingTeamScheduleDraft, rowId: string) => void;
+    onDeleteDivision: (teamId: string, schedule: TOnboardingTeamScheduleDraft, divisionNum: number) => void;
     onScheduleChange: (teamId: string, schedule: TOnboardingTeamScheduleDraft) => void;
     onUploadFile: (file: File, options: TScheduleFileUploadTargetMonth) => Promise<void>;
     uploadStatus: TScheduleFileUploadStatus;
@@ -137,9 +142,10 @@ const moveMonthOption = (monthOption: TMonthOption, monthDelta: number): TMonthO
         month,
     };
 };
-const createTabNurse = (teamId: string, id: string, name: string): TOnboardingNurseDraft => ({
+const createTabNurse = (teamId: string, id: string, name: string, divisionNum: number): TOnboardingNurseDraft => ({
     id,
     teamId,
+    divisionNum,
     name,
     memo: '',
     isPreceptor: false,
@@ -305,6 +311,9 @@ function ScheduleInputStep({
     onAddTeam,
     canAddTeam,
     onTeamNameChange,
+    onDivisionNameChange,
+    onAddDivisionAfterRow,
+    onDeleteDivision,
     onScheduleChange,
     onUploadFile,
     uploadStatus,
@@ -325,8 +334,11 @@ function ScheduleInputStep({
     const [shiftTermOrderBySchedule, setShiftTermOrderBySchedule] = useState<Record<string, string[]>>({});
     const [selectedMonthOption, setSelectedMonthOption] = useState<TMonthOption>(() => getCurrentMonthOption());
     const [isScheduleFileUploadModalOpen, setIsScheduleFileUploadModalOpen] = useState(false);
+    const [editingDivisionNum, setEditingDivisionNum] = useState<number | null>(null);
+    const [editingDivisionName, setEditingDivisionName] = useState('');
     const maxMonthOption = useMemo(() => getCurrentMonthOption(), []);
     const hasActiveTeam = draft.teams.some((team) => team.id === selectedTeamId);
+    const activeTeam = draft.teams.find((team) => team.id === selectedTeamId);
     const currentSchedule = draft.scheduleInputs?.[selectedTeamId]?.[selectedMonthOption.key];
     const activeMonthOption = selectedMonthOption;
     const maxMonthIndex = maxMonthOption.year * 12 + maxMonthOption.month;
@@ -348,6 +360,7 @@ function ScheduleInputStep({
         return {
             id: input.id ?? `schedule-row-${Date.now()}-${rowIdRef.current}`,
             nurseId: input.nurseId ?? null,
+            divisionNum: input.divisionNum ?? 1,
             name: input.name ?? '',
             shifts: input.shifts ?? {},
         };
@@ -358,7 +371,7 @@ function ScheduleInputStep({
             const targetLength = Math.max(requiredLength, keepInitialRows ? MIN_VISIBLE_ROWS : 0);
 
             while (nextRows.length < targetLength) {
-                nextRows.push(createRow());
+                nextRows.push(createRow({divisionNum: nextRows[nextRows.length - 1]?.divisionNum ?? 1}));
             }
 
             return nextRows;
@@ -387,6 +400,26 @@ function ScheduleInputStep({
 
         return ensureMinimumRows([], MIN_VISIBLE_ROWS, true);
     }, [currentSchedule, draft.nurses, ensureMinimumRows, hasActiveTeam]);
+    const activeScheduleDraft = useMemo(
+        () => ({
+            year: activeMonthOption.year,
+            month: activeMonthOption.month,
+            rows,
+        }),
+        [activeMonthOption.month, activeMonthOption.year, rows],
+    );
+    const rowDivisionGroups = useMemo(
+        () =>
+            groupItemsByDivision(
+                rows.map((row, rowIndex) => ({
+                    row,
+                    rowIndex,
+                    divisionNum: row.divisionNum,
+                })),
+                activeTeam?.divisions,
+            ),
+        [activeTeam?.divisions, rows],
+    );
     const ensureShiftTermOrder = useCallback((scheduleKey: string, sourceRows: TOnboardingScheduleRowDraft[]) => {
         setShiftTermOrderBySchedule((prev) => {
             const currentOrder = prev[scheduleKey] ?? [];
@@ -424,7 +457,7 @@ function ScheduleInputStep({
                 const key = row.nurseId ? `${team.id}:${row.nurseId}` : `${team.id}:${trimmedName}`;
 
                 if (!nurseByKey.has(key)) {
-                    nurseByKey.set(key, createTabNurse(team.id, row.nurseId ?? row.id, trimmedName));
+                    nurseByKey.set(key, createTabNurse(team.id, row.nurseId ?? row.id, trimmedName, row.divisionNum ?? 1));
                 }
             });
         });
@@ -432,10 +465,28 @@ function ScheduleInputStep({
         return Array.from(nurseByKey.values());
     }, [draft.scheduleInputs, draft.teams]);
     const activeTeamNurseCount = tabNurses.filter((nurse) => nurse.teamId === selectedTeamId).length;
+    const handleSubmitDivisionName = () => {
+        if (!activeTeam || editingDivisionNum == null) {
+            return;
+        }
+
+        onDivisionNameChange(activeTeam.id, editingDivisionNum, editingDivisionName.trim() || null);
+        setEditingDivisionNum(null);
+        setEditingDivisionName('');
+    };
+    const handleCancelDivisionName = () => {
+        setEditingDivisionNum(null);
+        setEditingDivisionName('');
+    };
 
     useEffect(() => {
         ensureShiftTermOrder(activeScheduleKey, rows);
     }, [activeScheduleKey, ensureShiftTermOrder, rows]);
+
+    useEffect(() => {
+        setEditingDivisionNum(null);
+        setEditingDivisionName('');
+    }, [selectedTeamId]);
 
     const pushUndoSnapshot = useCallback(
         (previousRows: TOnboardingScheduleRowDraft[], previousSelection: TCellRange, month: TMonthOption) => {
@@ -575,7 +626,7 @@ function ScheduleInputStep({
 
         for (let rowIndex = range.minRow; rowIndex <= range.maxRow; rowIndex += 1) {
             if (!nextRows[rowIndex]) {
-                nextRows[rowIndex] = createRow();
+                nextRows[rowIndex] = createRow({divisionNum: nextRows[rowIndex - 1]?.divisionNum ?? 1});
             }
 
             for (let colIndex = range.minCol; colIndex <= range.maxCol; colIndex += 1) {
@@ -657,7 +708,7 @@ function ScheduleInputStep({
                     }
 
                     if (!nextRows[rowIndex]) {
-                        nextRows[rowIndex] = createRow();
+                        nextRows[rowIndex] = createRow({divisionNum: nextRows[rowIndex - 1]?.divisionNum ?? 1});
                     }
 
                     if (colIndex === NAME_COLUMN_INDEX) {
@@ -703,7 +754,7 @@ function ScheduleInputStep({
                     const value = limitCellValue(getCellValue(rows, sourceRow, sourceCol));
 
                     if (!nextRows[rowIndex]) {
-                        nextRows[rowIndex] = createRow();
+                        nextRows[rowIndex] = createRow({divisionNum: nextRows[rowIndex - 1]?.divisionNum ?? 1});
                     }
 
                     if (colIndex === NAME_COLUMN_INDEX) {
@@ -740,7 +791,7 @@ function ScheduleInputStep({
         requestAnimationFrame(() => focusCell(nextRowIndex, 0));
     };
     const addRow = () => {
-        const nextRows = [...rows, createRow()];
+        const nextRows = [...rows, createRow({divisionNum: rows[rows.length - 1]?.divisionNum ?? 1})];
         const nextRowIndex = nextRows.length - 1;
 
         commitRows(nextRows);
@@ -926,79 +977,122 @@ function ScheduleInputStep({
                             <div className="make-shift-calendar__body flex w-full min-w-0 flex-col gap-2">
                                 <div className="make-shift-calendar__division flex w-full min-w-0 items-stretch" style={{gap: 0}}>
                                     <div className="make-shift-calendar__division-card relative flex min-w-0 flex-1 flex-col overflow-hidden rounded-[16px] bg-white">
-                                        {rows.map((row, rowIndex) => (
-                                            <div key={row.id} style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
-                                                <div
-                                                    data-row-index={rowIndex}
-                                                    className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
-                                                    style={{
-                                                        gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
-                                                        columnGap: ROW_GAP_X,
-                                                    }}
-                                                >
-                                                    <NameCell
-                                                        row={row}
-                                                        rowIndex={rowIndex}
-                                                        selection={selection}
-                                                        isSelectionVisible={isSelectionVisible}
-                                                        selectedRange={selectedRange}
-                                                        fillRange={fillRange}
-                                                        inputRefByCell={inputRefByCell}
-                                                        isSelecting={isSelecting}
-                                                        fillDrag={fillDrag}
-                                                        onFocusCell={focusCell}
-                                                        onShowSelection={() => setIsSelectionVisible(true)}
-                                                        onSetSelection={setSelection}
-                                                        onSetIsSelecting={setIsSelecting}
-                                                        onSetFillDrag={setFillDrag}
-                                                        onUpdate={updateCellValue}
-                                                        onMove={moveSelection}
-                                                        onClearSelection={clearSelectedCells}
-                                                        onCopySelection={buildSelectionText}
-                                                        onUndo={undoLastScheduleEdit}
-                                                        onQueueCompositionMove={queueCompositionMove}
-                                                        onFlushCompositionMove={flushCompositionMove}
-                                                    />
-                                                    <div
-                                                        className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
-                                                        style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
-                                                    >
-                                                        {days.map((day, dayIndex) => (
-                                                            <ShiftCell
-                                                                key={day}
-                                                                row={row}
-                                                                rowIndex={rowIndex}
-                                                                colIndex={dayIndex + 1}
-                                                                day={day}
-                                                                dayType={getDayType(activeMonthOption.year, activeMonthOption.month, day)}
-                                                                value={getCellValue(rows, rowIndex, dayIndex + 1)}
-                                                                termColorMap={shiftTermColorMap}
-                                                                selection={selection}
-                                                                isSelectionVisible={isSelectionVisible}
-                                                                selectedRange={selectedRange}
-                                                                fillRange={fillRange}
-                                                                inputRefByCell={inputRefByCell}
-                                                                isSelecting={isSelecting}
-                                                                fillDrag={fillDrag}
-                                                                onFocusCell={focusCell}
-                                                                onShowSelection={() => setIsSelectionVisible(true)}
-                                                                onSetSelection={setSelection}
-                                                                onSetIsSelecting={setIsSelecting}
-                                                                onSetFillDrag={setFillDrag}
-                                                                onUpdate={updateCellValue}
-                                                                onMove={moveSelection}
-                                                                onClearSelection={clearSelectedCells}
-                                                                onCopySelection={buildSelectionText}
-                                                                onUndo={undoLastScheduleEdit}
-                                                                onQueueCompositionMove={queueCompositionMove}
-                                                                onFlushCompositionMove={flushCompositionMove}
-                                                            />
-                                                        ))}
+                                        {rowDivisionGroups.map((group, groupIndex) => {
+                                            const isEditingDivision = editingDivisionNum === group.divisionNum;
+                                            const canDeleteDivision = groupIndex > 0;
+
+                                            return (
+                                                <div key={`${selectedTeamId}:${group.divisionNum}`} className="flex flex-col">
+                                                    <div style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
+                                                        <OnboardingDivisionHeader
+                                                            divisionNum={group.divisionNum}
+                                                            divisionName={group.divisionName}
+                                                            itemCount={group.items.filter(({row}) => row.name.trim()).length}
+                                                            isEditing={isEditingDivision}
+                                                            draftName={editingDivisionName}
+                                                            canDelete={canDeleteDivision}
+                                                            onStartEdit={() => {
+                                                                setEditingDivisionNum(group.divisionNum);
+                                                                setEditingDivisionName(group.divisionName?.trim() ?? '');
+                                                            }}
+                                                            onDraftNameChange={setEditingDivisionName}
+                                                            onSubmit={handleSubmitDivisionName}
+                                                            onCancel={handleCancelDivisionName}
+                                                            onDelete={() =>
+                                                                onDeleteDivision(selectedTeamId, activeScheduleDraft, group.divisionNum)
+                                                            }
+                                                        />
                                                     </div>
-                                                    <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
+                                                    {group.items.map(({row, rowIndex}, groupRowIndex) => (
+                                                        <div
+                                                            key={row.id}
+                                                            style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}
+                                                        >
+                                                            <div
+                                                                data-row-index={rowIndex}
+                                                                className="make-shift-calendar__row make-shift-calendar__row-left grid h-[clamp(32px,2.7cqw,44px)] w-full min-w-0 items-stretch"
+                                                                style={{
+                                                                    gridTemplateColumns: LEFT_GRID_TEMPLATE_COLUMNS,
+                                                                    columnGap: ROW_GAP_X,
+                                                                }}
+                                                            >
+                                                                <NameCell
+                                                                    row={row}
+                                                                    rowIndex={rowIndex}
+                                                                    selection={selection}
+                                                                    isSelectionVisible={isSelectionVisible}
+                                                                    selectedRange={selectedRange}
+                                                                    fillRange={fillRange}
+                                                                    inputRefByCell={inputRefByCell}
+                                                                    isSelecting={isSelecting}
+                                                                    fillDrag={fillDrag}
+                                                                    onFocusCell={focusCell}
+                                                                    onShowSelection={() => setIsSelectionVisible(true)}
+                                                                    onSetSelection={setSelection}
+                                                                    onSetIsSelecting={setIsSelecting}
+                                                                    onSetFillDrag={setFillDrag}
+                                                                    onUpdate={updateCellValue}
+                                                                    onMove={moveSelection}
+                                                                    onClearSelection={clearSelectedCells}
+                                                                    onCopySelection={buildSelectionText}
+                                                                    onUndo={undoLastScheduleEdit}
+                                                                    onQueueCompositionMove={queueCompositionMove}
+                                                                    onFlushCompositionMove={flushCompositionMove}
+                                                                />
+                                                                <div
+                                                                    className="make-shift-calendar__row-days grid h-full min-w-0 items-stretch px-0"
+                                                                    style={{gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))`}}
+                                                                >
+                                                                    {days.map((day, dayIndex) => (
+                                                                        <ShiftCell
+                                                                            key={day}
+                                                                            row={row}
+                                                                            rowIndex={rowIndex}
+                                                                            colIndex={dayIndex + 1}
+                                                                            day={day}
+                                                                            dayType={getDayType(
+                                                                                activeMonthOption.year,
+                                                                                activeMonthOption.month,
+                                                                                day,
+                                                                            )}
+                                                                            value={getCellValue(rows, rowIndex, dayIndex + 1)}
+                                                                            termColorMap={shiftTermColorMap}
+                                                                            selection={selection}
+                                                                            isSelectionVisible={isSelectionVisible}
+                                                                            selectedRange={selectedRange}
+                                                                            fillRange={fillRange}
+                                                                            inputRefByCell={inputRefByCell}
+                                                                            isSelecting={isSelecting}
+                                                                            fillDrag={fillDrag}
+                                                                            onFocusCell={focusCell}
+                                                                            onShowSelection={() => setIsSelectionVisible(true)}
+                                                                            onSetSelection={setSelection}
+                                                                            onSetIsSelecting={setIsSelecting}
+                                                                            onSetFillDrag={setFillDrag}
+                                                                            onUpdate={updateCellValue}
+                                                                            onMove={moveSelection}
+                                                                            onClearSelection={clearSelectedCells}
+                                                                            onCopySelection={buildSelectionText}
+                                                                            onUndo={undoLastScheduleEdit}
+                                                                            onQueueCompositionMove={queueCompositionMove}
+                                                                            onFlushCompositionMove={flushCompositionMove}
+                                                                        />
+                                                                    ))}
+                                                                </div>
+                                                                <RowDeleteCell row={row} rowIndex={rowIndex} onDelete={deleteRow} />
+                                                            </div>
+                                                            {groupRowIndex < group.items.length - 1 ? (
+                                                                <OnboardingAddDivisionButton
+                                                                    onClick={() =>
+                                                                        onAddDivisionAfterRow(selectedTeamId, activeScheduleDraft, row.id)
+                                                                    }
+                                                                />
+                                                            ) : null}
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                         <div className="pt-3" style={{paddingLeft: DIVISION_PADDING_X, paddingRight: DIVISION_PADDING_X}}>
                                             <button
                                                 type="button"

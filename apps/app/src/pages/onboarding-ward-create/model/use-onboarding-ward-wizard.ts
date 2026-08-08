@@ -20,6 +20,8 @@ import {
 } from './adapter';
 import {
     addNurseDraft,
+    addDivisionAfterNurseDraft,
+    addScheduleDivisionAfterRowDraft,
     addShiftTypeDraft,
     addTeamDraft,
     applyScheduleInputDraft,
@@ -29,6 +31,8 @@ import {
     canGoPrev,
     createInitialDraft,
     deleteNurseDraft,
+    deleteDivisionDraft,
+    deleteScheduleDivisionDraft,
     deleteShiftTypeDraft,
     deleteTeamDraft,
     getCompletionValidationIssues,
@@ -51,6 +55,7 @@ import {
     updateConstraintCandidateDraft,
     updateNurseDraft,
     updateShiftTypeDraft,
+    updateTeamDivisionNameDraft,
     updateTeamNameDraft,
 } from './draft';
 import {normalizeOnboardingScheduleFile, parseOnboardingScheduleTemplate} from './schedule-template-parser';
@@ -115,8 +120,53 @@ const shouldResetStepFromHistoryState = () => {
 const isOnboardingStep = (value: unknown): value is TOnboardingWardDraft['currentStep'] =>
     value === 1 || value === 2 || value === 3 || value === 4;
 const isSortMode = (value: unknown): value is TSortMode => value === 'manual' || value === 'name';
+const normalizeRestoredDivisionNum = (value: unknown) => (typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : 1);
+const getRestoredDivisionFallbackName = (divisionNum: number) => `그룹${divisionNum}`;
+const normalizeRestoredTeams = (
+    teams: TOnboardingWardDraft['teams'],
+    nurses: TOnboardingWardDraft['nurses'],
+): TOnboardingWardDraft['teams'] =>
+    teams.map((team) => {
+        const divisionByNum = new Map<number, {divisionNum: number; name: string}>();
+
+        team.divisions?.forEach((division) => {
+            const divisionNum = normalizeRestoredDivisionNum(division.divisionNum);
+
+            if (!divisionByNum.has(divisionNum)) {
+                divisionByNum.set(divisionNum, {
+                    divisionNum,
+                    name: division.name?.trim() || getRestoredDivisionFallbackName(divisionNum),
+                });
+            }
+        });
+        nurses
+            .filter((nurse) => nurse.teamId === team.id)
+            .forEach((nurse) => {
+                const divisionNum = normalizeRestoredDivisionNum(nurse.divisionNum);
+
+                if (!divisionByNum.has(divisionNum)) {
+                    divisionByNum.set(divisionNum, {divisionNum, name: getRestoredDivisionFallbackName(divisionNum)});
+                }
+            });
+
+        if (!divisionByNum.has(1)) {
+            divisionByNum.set(1, {divisionNum: 1, name: getRestoredDivisionFallbackName(1)});
+        }
+
+        return {
+            ...team,
+            divisions: Array.from(divisionByNum.values()).sort((left, right) => left.divisionNum - right.divisionNum),
+        };
+    });
 const isScheduleDraft = (value: unknown): value is TOnboardingTeamScheduleDraft =>
     isRecord(value) && typeof value.year === 'number' && typeof value.month === 'number' && Array.isArray(value.rows);
+const normalizeRestoredSchedule = (schedule: TOnboardingTeamScheduleDraft): TOnboardingTeamScheduleDraft => ({
+    ...schedule,
+    rows: schedule.rows.map((row) => ({
+        ...row,
+        divisionNum: normalizeRestoredDivisionNum(row.divisionNum),
+    })),
+});
 const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['scheduleInputs'] => {
     if (!isRecord(value)) {
         return {};
@@ -125,7 +175,7 @@ const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['schedule
     return Object.fromEntries(
         Object.entries(value).map(([teamId, teamValue]) => {
             if (isScheduleDraft(teamValue)) {
-                return [teamId, {[getScheduleMonthKey(teamValue.year, teamValue.month)]: teamValue}];
+                return [teamId, {[getScheduleMonthKey(teamValue.year, teamValue.month)]: normalizeRestoredSchedule(teamValue)}];
             }
 
             if (!isRecord(teamValue)) {
@@ -135,7 +185,12 @@ const normalizeScheduleInputs = (value: unknown): TOnboardingWardDraft['schedule
             return [
                 teamId,
                 Object.fromEntries(
-                    Object.entries(teamValue).filter(([, scheduleValue]) => isScheduleDraft(scheduleValue)),
+                    Object.entries(teamValue)
+                        .filter(([, scheduleValue]) => isScheduleDraft(scheduleValue))
+                        .map(([scheduleKey, scheduleValue]) => [
+                            scheduleKey,
+                            normalizeRestoredSchedule(scheduleValue as TOnboardingTeamScheduleDraft),
+                        ]),
                 ) as TOnboardingWardDraft['scheduleInputs'][string],
             ];
         }),
@@ -163,6 +218,7 @@ const normalizeRestoredNurses = (nurses: TOnboardingWardDraft['nurses']): TOnboa
         return {
             id: nurse.id,
             teamId: nurse.teamId,
+            divisionNum: normalizeRestoredDivisionNum(nurse.divisionNum),
             name: nurse.name,
             memo: hasPreceptorMemo || hasPrecepteeMemo ? '' : nurse.memo,
             isPreceptor: nurse.isPreceptor ?? hasPreceptorMemo,
@@ -198,7 +254,7 @@ const normalizePersistedDraft = (draft: TOnboardingWardDraft): TOnboardingWardDr
     wardName: draft.wardName,
     hospitalName: draft.hospitalName,
     shiftTypes: draft.shiftTypes,
-    teams: draft.teams,
+    teams: normalizeRestoredTeams(draft.teams, normalizeRestoredNurses(draft.nurses)),
     nurses: normalizeRestoredNurses(draft.nurses),
     scheduleInputs: normalizeScheduleInputs(draft.scheduleInputs),
     constraintCandidates: normalizeRestoredConstraintCandidates(draft.constraintCandidates),
@@ -485,6 +541,7 @@ const applySchedulePreviewToDraft = (
             ...existingNurse,
             id,
             teamId,
+            divisionNum: schedule.rows[nurse.displayOrder - 1]?.divisionNum ?? existingNurse?.divisionNum ?? 1,
             name: nurse.name,
             memo: existingNurse?.memo ?? '',
             isPreceptor: existingNurse?.isPreceptor ?? false,
@@ -534,18 +591,6 @@ const applySchedulePreviewToDraft = (
 };
 const hasServerSavableDraftSignal = (draft: TOnboardingWardDraft) =>
     [draft.wardName.trim(), draft.hospitalName.trim(), draft.uploadedFileName].some(Boolean) || draft.currentStep > 1;
-const reorderByIndex = <T>(items: T[], sourceIndex: number, destinationIndex: number) => {
-    const next = [...items];
-    const [moved] = next.splice(sourceIndex, 1);
-
-    if (!moved) {
-        return items;
-    }
-
-    next.splice(destinationIndex, 0, moved);
-
-    return next;
-};
 const replaceTeamNurses = (draft: TOnboardingWardDraft, teamId: string, nextTeamNurses: TOnboardingNurseDraft[]): TOnboardingWardDraft => {
     const nextNurses: TOnboardingNurseDraft[] = [];
 
@@ -572,6 +617,15 @@ const replaceTeamNurses = (draft: TOnboardingWardDraft, teamId: string, nextTeam
     return {
         ...draft,
         nurses: nextNurses,
+    };
+};
+const parseDivisionDroppableId = (droppableId: string) => {
+    const [teamId, divisionNumText] = droppableId.split(',');
+    const divisionNum = Number.parseInt(divisionNumText ?? '', 10);
+
+    return {
+        teamId,
+        divisionNum: Number.isInteger(divisionNum) && divisionNum > 0 ? divisionNum : 1,
     };
 };
 const enforceWorkerGroupOrder = (teamNurses: TOnboardingNurseDraft[]) => sortNursesByMode(teamNurses, 'manual');
@@ -1220,9 +1274,36 @@ function useOnboardingWardWizard() {
         markDraftTouched();
         setDraft((prev) => updateTeamNameDraft(prev, teamId, teamName));
     };
+    const updateTeamDivisionName = (teamId: string, divisionNum: number, divisionName: string | null) => {
+        markDraftTouched();
+        setDraft((prev) => updateTeamDivisionNameDraft(prev, teamId, divisionNum, divisionName));
+    };
+    const addDivisionAfterNurse = (nurseId: string, orderedNurseIds?: string[]) => {
+        markDraftTouched();
+
+        const targetNurse = draft.nurses.find((nurse) => nurse.id === nurseId);
+
+        if (!targetNurse) {
+            return;
+        }
+
+        setDraft((prev) => addDivisionAfterNurseDraft(prev, targetNurse.teamId, nurseId, orderedNurseIds));
+    };
+    const deleteDivision = (teamId: string, divisionNum: number, orderedNurseIds?: string[]) => {
+        markDraftTouched();
+        setDraft((prev) => deleteDivisionDraft(prev, teamId, divisionNum, orderedNurseIds));
+    };
     const updateScheduleInput = (teamId: string, schedule: TOnboardingTeamScheduleDraft) => {
         markDraftTouched();
         setDraft((prev) => applyScheduleInputDraft(prev, teamId, schedule));
+    };
+    const addScheduleDivisionAfterRow = (teamId: string, schedule: TOnboardingTeamScheduleDraft, rowId: string) => {
+        markDraftTouched();
+        setDraft((prev) => addScheduleDivisionAfterRowDraft(prev, teamId, schedule, rowId));
+    };
+    const deleteScheduleDivision = (teamId: string, schedule: TOnboardingTeamScheduleDraft, divisionNum: number) => {
+        markDraftTouched();
+        setDraft((prev) => deleteScheduleDivisionDraft(prev, teamId, schedule, divisionNum));
     };
     const toggleConstraintCandidate = (constraintId: string, selected: boolean) => {
         markDraftTouched();
@@ -1265,11 +1346,19 @@ function useOnboardingWardWizard() {
             return;
         }
 
-        if (source.droppableId !== destination.droppableId || source.index === destination.index) {
+        if (source.droppableId === destination.droppableId && source.index === destination.index) {
             return;
         }
 
-        const teamId = source.droppableId;
+        const sourceDrop = parseDivisionDroppableId(source.droppableId);
+        const destinationDrop = parseDivisionDroppableId(destination.droppableId);
+        const destinationDivisionNum = destinationDrop.divisionNum;
+
+        if (!sourceDrop.teamId || sourceDrop.teamId !== destinationDrop.teamId || destinationDivisionNum == null) {
+            return;
+        }
+
+        const teamId = sourceDrop.teamId;
 
         setDraft((prev) => {
             const teamNurses = prev.nurses.filter((nurse) => nurse.teamId === teamId);
@@ -1279,7 +1368,9 @@ function useOnboardingWardWizard() {
             }
 
             const displayedTeamNurses = sortNursesByMode(teamNurses, sortMode);
-            const sourceNurse = displayedTeamNurses[source.index];
+            const sourceDivisionNurses = displayedTeamNurses.filter((nurse) => (nurse.divisionNum ?? 1) === (sourceDrop.divisionNum ?? 1));
+            const destinationDivisionNurses = displayedTeamNurses.filter((nurse) => (nurse.divisionNum ?? 1) === destinationDivisionNum);
+            const sourceNurse = sourceDivisionNurses[source.index];
 
             if (!sourceNurse) {
                 return prev;
@@ -1287,25 +1378,42 @@ function useOnboardingWardWizard() {
 
             const onCount = displayedTeamNurses.filter((nurse) => nurse.isWorker).length;
             const lastIndex = displayedTeamNurses.length - 1;
-            const destinationIndex = Math.max(0, Math.min(destination.index, lastIndex));
+            const globalSourceIndex = displayedTeamNurses.findIndex((nurse) => nurse.id === sourceNurse.id);
+            const destinationReferenceNurse = destinationDivisionNurses[destination.index];
+            const destinationFallbackIndex =
+                destinationDivisionNurses.length > 0
+                    ? displayedTeamNurses.findIndex(
+                          (nurse) => nurse.id === destinationDivisionNurses[destinationDivisionNurses.length - 1]?.id,
+                      ) + 1
+                    : displayedTeamNurses.findIndex((nurse) => (nurse.divisionNum ?? 1) > destinationDivisionNum);
+            const globalDestinationIndex = destinationReferenceNurse
+                ? displayedTeamNurses.findIndex((nurse) => nurse.id === destinationReferenceNurse.id)
+                : destinationFallbackIndex === -1
+                  ? displayedTeamNurses.length
+                  : destinationFallbackIndex;
+            const destinationIndex = Math.max(0, Math.min(globalDestinationIndex, lastIndex));
 
             if (sortMode === 'manual') {
-                const crossesWorkerBoundary = sourceNurse.isWorker ? destinationIndex >= onCount : destinationIndex < onCount;
+                const crossesWorkerBoundary = sourceNurse.isWorker ? globalDestinationIndex >= onCount : globalDestinationIndex < onCount;
 
                 if (crossesWorkerBoundary) {
                     return prev;
                 }
             }
 
-            if (destinationIndex === source.index) {
+            if (destinationIndex === globalSourceIndex && sourceDrop.divisionNum === destinationDrop.divisionNum) {
                 return prev;
             }
 
-            const reorderedTeamNurses = reorderByIndex(displayedTeamNurses, source.index, destinationIndex);
+            const movedWithDivision = {...sourceNurse, divisionNum: destinationDivisionNum};
+            const withoutMovedNurses = displayedTeamNurses.filter((nurse) => nurse.id !== sourceNurse.id);
+            const adjustedDestinationIndex =
+                globalSourceIndex >= 0 && globalSourceIndex < globalDestinationIndex
+                    ? Math.max(0, globalDestinationIndex - 1)
+                    : globalDestinationIndex;
+            const reorderedTeamNurses = [...withoutMovedNurses];
 
-            if (reorderedTeamNurses === displayedTeamNurses) {
-                return prev;
-            }
+            reorderedTeamNurses.splice(Math.max(0, Math.min(adjustedDestinationIndex, reorderedTeamNurses.length)), 0, movedWithDivision);
 
             return replaceTeamNurses(
                 prev,
@@ -1515,7 +1623,12 @@ function useOnboardingWardWizard() {
         deleteNurse,
         updateNurse,
         updateTeamName,
+        updateTeamDivisionName,
+        addDivisionAfterNurse,
+        deleteDivision,
         updateScheduleInput,
+        addScheduleDivisionAfterRow,
+        deleteScheduleDivision,
         toggleConstraintCandidate,
         updateConstraintCandidateSeverity,
         updateConstraintCandidateCount,

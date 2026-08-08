@@ -94,6 +94,32 @@ function filterOpAgainstLocks(op: TOperation, doc: TDutyDoc): TOperation {
     return {...op, cells: filteredCells};
 }
 
+function getUnlockedFilledCellClearOps(doc: TDutyDoc): TSetCellsOp['cells'] {
+    const changed: TSetCellsOp['cells'] = [];
+
+    for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
+        const row = doc.rows[rowIdx];
+
+        if (!row) continue;
+
+        for (let col = 0; col < doc.columns.length; col += 1) {
+            const key = `${row.workerId}|${doc.columns[col]}`;
+
+            if (doc.fixedCells[key] === true) continue;
+
+            if (doc.requestCells[key] === true) continue;
+
+            const prev = row.cells[col] ?? null;
+
+            if (prev === null) continue;
+
+            changed.push({row: rowIdx, col, prev, next: null});
+        }
+    }
+
+    return changed;
+}
+
 /**
  * UI는 상태를 store에서 읽고, 변경은 이 command 훅에서만 수행하는 것을 권장.
  * (store 메서드를 직접 호출하지 않고 이 훅으로만 접근하는 “약한 규칙”)
@@ -253,6 +279,28 @@ export function useShiftEditorCommands() {
 
         return cmdSetCellsFixed(getCellsInSelection(selection), fixed, source ?? 'user');
     };
+    const cmdClearUnlockedCells = (source: TTxSource = 'user'): number => {
+        const {doc, history, selection} = getState();
+        const changed = getUnlockedFilledCellClearOps(doc);
+
+        if (changed.length === 0) return 0;
+
+        const tx: TTransaction<TOperation> = {
+            ops: [{kind: 'setCells', cells: changed}],
+            source,
+            timestamp: Date.now(),
+        };
+        const inverseOps = invertOps(tx.ops);
+        const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
+        const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
+        const nextHistory = pushHistory(history, entry);
+
+        setDoc(nextDoc);
+        setHistory(nextHistory);
+        persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
+
+        return changed.length;
+    };
 
     return {
         init: (doc: TDutyDoc, opts?: {maxHistoryDepth?: number}) => {
@@ -385,46 +433,9 @@ export function useShiftEditorCommands() {
         setCellsFixed: cmdSetCellsFixed,
         setSelectionFixed: cmdSetSelectionFixed,
         clearSelectionCells: (source?: TTxSource) => cmdSetSelectionValue(null, source),
+        clearUnlockedCells: cmdClearUnlockedCells,
         resetAutofilled: (source: TTxSource = 'user') => {
-            const {doc, history, selection} = getState();
-            const changed: TSetCellsOp['cells'] = [];
-
-            for (let rowIdx = 0; rowIdx < doc.rows.length; rowIdx += 1) {
-                const row = doc.rows[rowIdx];
-
-                if (!row) continue;
-
-                for (let col = 0; col < doc.columns.length; col += 1) {
-                    const key = `${row.workerId}|${doc.columns[col]}`;
-
-                    if (doc.fixedCells[key] === true) continue;
-
-                    if (doc.requestCells[key] === true) continue;
-
-                    const prev = row.cells[col] ?? null;
-
-                    if (prev === null) continue;
-
-                    changed.push({row: rowIdx, col, prev, next: null});
-                }
-            }
-
-            if (changed.length === 0) return;
-
-            const tx: TTransaction<TOperation> = {
-                ops: [{kind: 'setCells', cells: changed}],
-                source,
-                timestamp: Date.now(),
-            };
-            const inverseOps = invertOps(tx.ops);
-            const nextDoc = tx.ops.reduce((d, op) => applyOperation(d, op), doc);
-            const entry: THistoryEntry = {tx, inverseOps, selectionBefore: selection, selectionAfter: selection};
-            const nextHistory = pushHistory(history, entry);
-
-            setDoc(nextDoc);
-            setHistory(nextHistory);
-
-            persistDoc(nextDoc, nextHistory, scheduleViolationsFromState(getState()));
+            cmdClearUnlockedCells(source);
         },
         applyChangedCells: (changedCells: TSnapshotCellDTO[], originalShift: TShift, source: TTxSource = 'ai') => {
             const {doc, history, selection} = getState();

@@ -121,6 +121,7 @@ const toCreateWardShiftTeamRequest = (shiftTeam: TCreateWardDTO['shiftTeams'][nu
     compactRequest({
         name: shiftTeam.name,
         nurseNames: shiftTeam.nurseNames,
+        divisions: shiftTeam.divisions,
         nurses: shiftTeam.nurses,
         constraintRules: shiftTeam.constraintRules,
     }) as TCreateWardRequest['shiftTeams'][number];

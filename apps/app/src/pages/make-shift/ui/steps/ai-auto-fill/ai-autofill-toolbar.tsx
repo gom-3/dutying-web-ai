@@ -1,6 +1,6 @@
 import {cn} from '@dutying/utils/style';
 import type {AnimationItem} from 'lottie-web';
-import {AlertTriangle, Check, Eye, History, Pin, PinOff, Redo2, Save, Undo2} from 'lucide-react';
+import {AlertTriangle, Check, Eraser, Eye, History, Pin, PinOff, Redo2, Save, Undo2} from 'lucide-react';
 import type {ReactNode} from 'react';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {BouncingDotsSlot} from '@/components/loading-ui/bouncing-dots';
@@ -24,6 +24,8 @@ type TAiAutofillToolbarProps = {
     canUnfixSelection: boolean;
     onFixSelection: () => void;
     onUnfixSelection: () => void;
+    canClearUnlockedCells: boolean;
+    onRequestClearUnlockedCells: () => void;
     showFaults: boolean;
     onToggleFaults: () => void;
     canUndo: boolean;
@@ -59,6 +61,8 @@ export function AiAutofillToolbar({
     canUnfixSelection,
     onFixSelection,
     onUnfixSelection,
+    canClearUnlockedCells,
+    onRequestClearUnlockedCells,
     showFaults,
     onToggleFaults,
     canUndo,
@@ -138,6 +142,16 @@ export function AiAutofillToolbar({
                             title={t('page.makeShift.aiRefill.unfixSelection')}
                         >
                             <PinOff className="size-3.5" aria-hidden />
+                        </IconButton>
+                        <span aria-hidden="true" className="mx-1 h-5 w-px rounded-full bg-gray-5" />
+                        <IconButton
+                            className="ai-autofill-toolbar__fixed-action ai-autofill-toolbar__fixed-action--clear-unlocked hover:text-[#D14343]"
+                            onClick={onRequestClearUnlockedCells}
+                            disabled={!canClearUnlockedCells || isAiGenerating}
+                            ariaLabel={t('page.makeShift.aiRefill.clearUnlockedCells')}
+                            title={t('page.makeShift.aiRefill.clearUnlockedCells')}
+                        >
+                            <Eraser className="size-3.5" aria-hidden />
                         </IconButton>
                     </div>
 

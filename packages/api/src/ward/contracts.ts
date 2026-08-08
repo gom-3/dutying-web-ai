@@ -706,6 +706,7 @@ export type TCreateWardSeedNurseDTO = {
     phoneNum?: string | null;
     memo?: string;
     isWorker?: boolean;
+    divisionNum?: number;
     employmentDate?: string;
     isPreceptor?: boolean;
     isPreceptee?: boolean;
@@ -723,6 +724,10 @@ export type TCreateWardConstraintRuleDTO = {
 export type TCreateWardShiftTeamDTO = {
     name?: string;
     nurseNames: string[];
+    divisions?: {
+        divisionNum: number;
+        name?: string | null;
+    }[];
     nurses?: TCreateWardSeedNurseDTO[];
     constraintRules?: TCreateWardConstraintRuleDTO[];
 };

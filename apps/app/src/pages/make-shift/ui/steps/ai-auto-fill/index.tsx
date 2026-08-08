@@ -286,6 +286,7 @@ export function AiAutofill() {
     const [snapshotLoadTarget, setSnapshotLoadTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotDeleteTarget, setSnapshotDeleteTarget] = useState<TSnapshotSummaryDto | null>(null);
     const [snapshotLimitContext, setSnapshotLimitContext] = useState<TSnapshotLimitContext | null>(null);
+    const [clearUnlockedCellsConfirmOpen, setClearUnlockedCellsConfirmOpen] = useState(false);
     const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
     const [lastShiftBlankWarningIntent, setLastShiftBlankWarningIntent] = useState<TLastShiftBlankWarningIntent | null>(null);
     const [lastShiftBlankWarningAcknowledgedKey, setLastShiftBlankWarningAcknowledgedKey] = useState<string | null>(null);
@@ -415,6 +416,7 @@ export function AiAutofill() {
         setSnapshotLoadTarget(null);
         setSnapshotDeleteTarget(null);
         setSnapshotLimitContext(null);
+        setClearUnlockedCellsConfirmOpen(false);
         setPublishConfirmOpen(false);
         setLastShiftBlankWarningIntent(null);
         setLastShiftBlankWarningAcknowledgedKey(null);
@@ -487,6 +489,7 @@ export function AiAutofill() {
     const selectedCells = useMemo(() => (selection ? getCellsInSelection(selection) : []), [selection]);
     const selectionFixedStats = useMemo(() => getSelectionFixedStats(editorDoc, selectedCells), [editorDoc, selectedCells]);
     const unprotectedFilledCells = useMemo(() => getUnprotectedFilledCells(editorDoc), [editorDoc]);
+    const clearableUnlockedCellCount = unprotectedFilledCells.length;
     const editedFilledCellsSinceLastAi = useMemo(
         () => getEditedFilledCellsSinceBaseline(editorDoc, lastAiGeneratedDocRef.current),
         [editorDoc, lastAiGeneratedDocVersion],
@@ -1029,6 +1032,35 @@ export function AiAutofill() {
             toast.success(t('page.makeShift.aiRefill.unfixSelectionSuccess', {count: changedCount}));
         }
     };
+    const canClearUnlockedCells =
+        clearableUnlockedCellCount > 0 &&
+        !isWorking &&
+        !isSavingSnapshot &&
+        !isAiGenerating &&
+        !isAiLoadingOverlayFinishing &&
+        !isReorderingRows &&
+        !dutyQuery.isLoading &&
+        !isHydratingEditor &&
+        !dutyQuery.isError &&
+        Boolean(orderedShift);
+    const handleRequestClearUnlockedCells = () => {
+        if (!canClearUnlockedCells) return;
+
+        setClearUnlockedCellsConfirmOpen(true);
+    };
+    const handleConfirmClearUnlockedCells = () => {
+        const changedCount = commands.clearUnlockedCells('user');
+
+        setClearUnlockedCellsConfirmOpen(false);
+
+        if (changedCount === 0) return;
+
+        setIsAiBlankPreviewVisible(false);
+        markLastAiGeneratedDoc(null);
+        setHasCompletedAiFill(false);
+        resetAiStatus();
+        toast.success(t('page.makeShift.aiRefill.clearUnlockedCellsSuccess', {count: changedCount}));
+    };
     const openAiFillDecision = (context: TAiFillDecisionContext) => {
         aiFillDecisionFixedCellsRef.current = {...useShiftEditorStore.getState().doc.fixedCells};
         setAiFillDecisionContext(context);
@@ -1256,6 +1288,8 @@ export function AiAutofill() {
                     canUnfixSelection={selectionFixedStats.fixedCount > 0}
                     onFixSelection={handleFixSelection}
                     onUnfixSelection={handleUnfixSelection}
+                    canClearUnlockedCells={canClearUnlockedCells}
+                    onRequestClearUnlockedCells={handleRequestClearUnlockedCells}
                     showFaults={showFaults}
                     onToggleFaults={() => setShowFaults((prev) => !prev)}
                     canUndo={history.past.length > 0}
@@ -1355,6 +1389,18 @@ export function AiAutofill() {
                         ? t('page.makeShift.aiRefill.regenerateDecision.cancel')
                         : t('page.makeShift.aiRefill.prefillDecision.confirm')
                 }
+            />
+            <ConfirmActionDialog
+                open={clearUnlockedCellsConfirmOpen}
+                title={t('page.makeShift.aiRefill.clearUnlockedCellsDialog.title')}
+                description={t('page.makeShift.aiRefill.clearUnlockedCellsDialog.description', {
+                    count: clearableUnlockedCellCount,
+                })}
+                confirmLabel={t('page.makeShift.aiRefill.clearUnlockedCellsDialog.confirm')}
+                cancelLabel={t('page.makeShift.aiRefill.clearUnlockedCellsDialog.cancel')}
+                tone="danger"
+                onClose={() => setClearUnlockedCellsConfirmOpen(false)}
+                onConfirm={handleConfirmClearUnlockedCells}
             />
             <ConfirmActionDialog
                 open={publishConfirmOpen}

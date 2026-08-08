@@ -3,7 +3,7 @@ import {MemoryRouter} from 'react-router';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import type {TShift, TShiftTeam} from '@/entities';
 import {getNextCalendarYearMonth} from '@/shared/lib/shift-calendar-month-policy';
-import {renderHook, waitFor} from '@/shared/util/test-utils';
+import {act, renderHook, waitFor} from '@/shared/util/test-utils';
 import {saveDraftStep, saveMaxReachedStep} from '../make-shift-progress-storage';
 import {useMakeShiftStore} from '../make-shift-store';
 import {useMakeShiftBootstrap} from '../use-bootstrap';
@@ -194,6 +194,70 @@ describe('useMakeShiftBootstrap', () => {
                 shiftExists: true,
                 shiftFullyAssigned: true,
                 restoreDraftModalOpen: false,
+            });
+        });
+    });
+
+    it('does not flash the first step while a confirmed month is being revalidated after month change', async () => {
+        let resolveNextShift: (value: TShift) => void = () => undefined;
+
+        const nextShiftPromise = new Promise<TShift>((resolve) => {
+            resolveNextShift = resolve;
+        });
+
+        wardApiMocks.getShift
+            .mockResolvedValueOnce({
+                ...makeEmptyShift(),
+                workflowStatus: 'CONFIRMED',
+                workflowStep: 5,
+            })
+            .mockReturnValueOnce(nextShiftPromise);
+
+        renderHook(() => useMakeShiftBootstrap(1), {
+            wrapper: createWrapper('/make?year=2026&month=6&shiftTeamId=10'),
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentStep: 5,
+                shiftStatus: 'success',
+                shiftExists: true,
+                shiftFullyAssigned: true,
+            });
+        });
+
+        act(() => {
+            useMakeShiftStore.getState().goNextMonth();
+        });
+
+        await waitFor(() => {
+            expect(wardApiMocks.getShift).toHaveBeenCalledWith(1, 10, 2026, 7);
+        });
+        expect(useMakeShiftStore.getState()).toMatchObject({
+            phase: 'overview',
+            currentStep: 1,
+            shiftStatus: 'pending',
+            shiftExists: false,
+            shiftFullyAssigned: false,
+        });
+
+        await act(async () => {
+            resolveNextShift({
+                ...makeEmptyShift(),
+                workflowStatus: 'CONFIRMED',
+                workflowStep: 5,
+            });
+        });
+
+        await waitFor(() => {
+            expect(useMakeShiftStore.getState()).toMatchObject({
+                phase: 'stepping',
+                currentStep: 5,
+                maxReachedStep: 5,
+                shiftStatus: 'success',
+                shiftExists: true,
+                shiftFullyAssigned: true,
             });
         });
     });

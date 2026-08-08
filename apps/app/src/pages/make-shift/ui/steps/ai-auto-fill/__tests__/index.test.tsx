@@ -168,10 +168,21 @@ vi.mock('../../shared/make-shift-calendar', () => ({
 }));
 
 vi.mock('../ai-autofill-toolbar', () => ({
-    AiAutofillToolbar: ({onAiFill, onConfirm}: {onAiFill: () => void; onConfirm: () => void}) => (
+    AiAutofillToolbar: ({
+        onAiFill,
+        onConfirm,
+        onRequestClearUnlockedCells,
+    }: {
+        onAiFill: () => void;
+        onConfirm: () => void;
+        onRequestClearUnlockedCells: () => void;
+    }) => (
         <>
             <button type="button" onClick={onAiFill}>
                 auto fill
+            </button>
+            <button type="button" onClick={onRequestClearUnlockedCells}>
+                clear unlocked
             </button>
             <button type="button" onClick={onConfirm}>
                 confirm
@@ -232,6 +243,25 @@ describe('AiAutofill blank preview', () => {
         render(<AiAutofill />);
 
         expect(mocks.calendarProps[mocks.calendarProps.length - 1]?.fixCellOnContextMenu).toBe(true);
+    });
+
+    it('clears every filled editor cell except fixed and requested shifts after confirmation', async () => {
+        const user = userEvent.setup();
+
+        render(<AiAutofill />);
+
+        await user.click(screen.getByRole('button', {name: 'clear unlocked'}));
+
+        expect(await screen.findByRole('dialog', {name: 'page.makeShift.aiRefill.clearUnlockedCellsDialog.title'})).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', {name: 'page.makeShift.aiRefill.clearUnlockedCellsDialog.confirm'}));
+
+        await waitFor(() =>
+            expect(screen.queryByRole('dialog', {name: 'page.makeShift.aiRefill.clearUnlockedCellsDialog.title'})).not.toBeInTheDocument(),
+        );
+        expect(useShiftEditorStore.getState().doc.rows[0]?.cells).toEqual(['D', 'E', null]);
+        expect(useShiftEditorStore.getState().doc.fixedCells).toEqual({'10|2026-07-01': true});
+        expect(useShiftEditorStore.getState().doc.requestCells).toEqual({'10|2026-07-02': true});
     });
 
     it('confirms immediately without a publish confirmation when no nurses are connected', async () => {

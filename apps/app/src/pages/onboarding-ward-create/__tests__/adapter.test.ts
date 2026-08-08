@@ -13,6 +13,7 @@ import {
 const createNurseDraft = (teamId: string, overrides: Partial<TOnboardingNurseDraft> = {}): TOnboardingNurseDraft => ({
     id: overrides.id ?? `nurse-${overrides.name ?? 'seed'}`,
     teamId,
+    divisionNum: overrides.divisionNum ?? 1,
     name: overrides.name ?? '홍길동',
     memo: overrides.memo ?? '',
     isPreceptor: overrides.isPreceptor ?? false,
