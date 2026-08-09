@@ -773,6 +773,15 @@ export const en: TLocale = {
                     allDays: 'All days',
                     allPeople: 'Everyone',
                     dayLabel: 'Day {{day}}',
+                    monthlyDayLabel: 'Day {{day}} each month',
+                    everyday: 'Every day',
+                    weekday: 'Weekdays',
+                    weekendOrHoliday: 'Weekends/holidays',
+                    staffCountOperator: {
+                        min: 'At least',
+                        max: 'At most',
+                        exact: 'Exactly',
+                    },
                 },
                 important: {
                     label: 'Important',
@@ -851,6 +860,10 @@ export const en: TLocale = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: 'Default Important constraint',
                         sentence: '{target} cannot work N on the day before a requested OFF',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: 'Staffing constraint',
+                        sentence: '{dateScope} {shift} shifts must have {operator} {count} staff',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'Staffing constraint',
@@ -1130,6 +1143,8 @@ export const en: TLocale = {
                 error: 'Failed to load the duty schedule',
                 empty: 'Could not load schedule data',
                 saveFailed: 'Failed to save. Please try again shortly.',
+                undo: 'Undo',
+                redo: 'Redo',
                 saveSnapshot: 'Save draft',
                 savingSnapshot: 'Saving draft…',
                 saveSnapshotSuccess: 'Draft saved.',

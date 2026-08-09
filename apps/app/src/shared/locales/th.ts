@@ -84,6 +84,18 @@ export const th = {
             },
             constraints: {
                 ...generatedTh.page.makeShift.constraints,
+                option: {
+                    ...generatedTh.page.makeShift.constraints.option,
+                    monthlyDayLabel: 'วันที่ {{day}} ของทุกเดือน',
+                    everyday: 'ทุกวัน',
+                    weekday: 'วันธรรมดา',
+                    weekendOrHoliday: 'วันหยุดสุดสัปดาห์/วันหยุด',
+                    staffCountOperator: {
+                        min: 'อย่างน้อย',
+                        max: 'สูงสุด',
+                        exact: 'พอดี',
+                    },
+                },
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
@@ -104,6 +116,10 @@ export const th = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: 'เงื่อนไขพื้นฐานสำคัญ',
                         sentence: '{target}ห้ามทำเวร N ในวันก่อน OFF ที่ขอไว้',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: 'เงื่อนไขจำนวนคน',
+                        sentence: '{dateScope} เวร{shift}ต้องมี{operator}{count}คน',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'เงื่อนไขจำนวนคน',

@@ -84,6 +84,18 @@ export const zh = {
             },
             constraints: {
                 ...generatedZh.page.makeShift.constraints,
+                option: {
+                    ...generatedZh.page.makeShift.constraints.option,
+                    monthlyDayLabel: '每月{{day}}日',
+                    everyday: '每天',
+                    weekday: '工作日',
+                    weekendOrHoliday: '周末/节假日',
+                    staffCountOperator: {
+                        min: '至少',
+                        max: '最多',
+                        exact: '正好',
+                    },
+                },
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: '重要基础条件',
@@ -104,6 +116,10 @@ export const zh = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '重要基础条件',
                         sentence: '{target}在申请OFF的前一天不能安排N班',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: '人数条件',
+                        sentence: '{dateScope}的{shift}班人数必须{operator}{count}人',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '人数条件',

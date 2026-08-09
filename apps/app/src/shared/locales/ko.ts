@@ -770,6 +770,15 @@ export const ko = {
                     allDays: '모든날',
                     allPeople: '모든사람',
                     dayLabel: '{{day}}일',
+                    monthlyDayLabel: '매월 {{day}}일',
+                    everyday: '매일',
+                    weekday: '평일',
+                    weekendOrHoliday: '주말/공휴일',
+                    staffCountOperator: {
+                        min: '최소',
+                        max: '최대',
+                        exact: '정확히',
+                    },
                 },
                 important: {
                     label: '중요',
@@ -848,6 +857,10 @@ export const ko = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '중요 기본 조건',
                         sentence: '{target}는 신청한 OFF 전날에는 N 근무를 하면 안 돼요',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: '인원 조건',
+                        sentence: '{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '인원 조건',
@@ -1126,6 +1139,8 @@ export const ko = {
                 error: '근무표를 불러오지 못했어요',
                 empty: '근무표 데이터를 불러오지 못했어요',
                 saveFailed: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+                undo: '실행 취소',
+                redo: '다시 실행',
                 saveSnapshot: '임시 저장',
                 savingSnapshot: '임시 저장 중…',
                 saveSnapshotSuccess: '임시 저장했어요.',

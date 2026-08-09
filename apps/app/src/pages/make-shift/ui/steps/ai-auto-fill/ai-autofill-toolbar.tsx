@@ -176,8 +176,9 @@ export function AiAutofillToolbar({
                             ariaLabel={t(
                                 showFaults ? 'page.makeShift.aiRefill.violationsShown' : 'page.makeShift.aiRefill.violationsHidden',
                             )}
+                            tooltip={t(showFaults ? 'page.makeShift.aiRefill.violationsShown' : 'page.makeShift.aiRefill.violationsHidden')}
                             activeClassName="bg-white text-[#B86E00] shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
-                            inactiveClassName="text-gray-3 hover:bg-white hover:text-[#B86E00]"
+                            inactiveClassName="text-gray-3"
                         >
                             <AlertTriangle className="size-3.5" aria-hidden />
                         </IconToolButton>
@@ -193,6 +194,7 @@ export function AiAutofillToolbar({
                                 onClick={onUndo}
                                 disabled={!canUndo}
                                 ariaLabel={t('page.makeShift.aiRefill.undo')}
+                                title={t('page.makeShift.aiRefill.undo')}
                             >
                                 <Undo2 className="size-3.5" aria-hidden />
                             </IconButton>
@@ -201,6 +203,7 @@ export function AiAutofillToolbar({
                                 onClick={onRedo}
                                 disabled={!canRedo}
                                 ariaLabel={t('page.makeShift.aiRefill.redo')}
+                                title={t('page.makeShift.aiRefill.redo')}
                             >
                                 <Redo2 className="size-3.5" aria-hidden />
                             </IconButton>
@@ -218,6 +221,9 @@ export function AiAutofillToolbar({
                                 ariaLabel={t(
                                     isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
                                 )}
+                                title={t(
+                                    isSavingSnapshot ? 'page.makeShift.aiRefill.savingSnapshot' : 'page.makeShift.aiRefill.saveSnapshot',
+                                )}
                             >
                                 <BouncingDotsSlot active={isSavingSnapshot} className="w-5 shrink-0 text-main-1" />
                                 <Save className={cn('size-3.5', isSavingSnapshot && 'hidden')} strokeWidth={2.2} aria-hidden />
@@ -226,6 +232,7 @@ export function AiAutofillToolbar({
                                 className="ai-autofill-toolbar__history-snapshots"
                                 onClick={onOpenSnapshotHistory}
                                 ariaLabel={t('page.makeShift.aiRefill.snapshotSidebar.title')}
+                                title={t('page.makeShift.aiRefill.snapshotSidebar.title')}
                             >
                                 <History className="size-3.5" aria-hidden />
                             </IconButton>
@@ -393,17 +400,9 @@ function StatusHighlightMenu({
             </button>
 
             {!open && (
-                <span
-                    role="tooltip"
-                    className={cn(
-                        'pointer-events-none absolute top-[calc(100%+7px)] left-1/2 z-50 -translate-x-1/2 -translate-y-1',
-                        'rounded-full bg-[#111827] px-2.5 py-1.5 font-apple text-[11px] leading-none font-semibold whitespace-nowrap text-white',
-                        'opacity-0 shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-[opacity,transform] duration-150 ease-out',
-                        'peer-hover:translate-y-0 peer-hover:opacity-100 peer-focus-visible:translate-y-0 peer-focus-visible:opacity-100',
-                    )}
-                >
+                <ToolbarTooltip revealClassName="peer-hover:translate-y-0 peer-hover:opacity-100 peer-focus-visible:translate-y-0 peer-focus-visible:opacity-100">
                     {t('page.makeShift.aiRefill.statusHighlightTools')}
-                </span>
+                </ToolbarTooltip>
             )}
 
             {open && (
@@ -440,6 +439,23 @@ function StatusHighlightMenu({
                     </IconToolButton>
                 </span>
             )}
+        </span>
+    );
+}
+
+function ToolbarTooltip({children, revealClassName}: {children: ReactNode; revealClassName?: string}) {
+    return (
+        <span
+            role="tooltip"
+            className={cn(
+                'pointer-events-none absolute top-[calc(100%+7px)] left-1/2 z-50 -translate-x-1/2 -translate-y-1',
+                'rounded-full bg-[#111827] px-2.5 py-1.5 font-apple text-[11px] leading-none font-semibold whitespace-nowrap text-white',
+                'opacity-0 shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-[opacity,transform] duration-150 ease-out',
+                revealClassName ??
+                    'group-focus-within:translate-y-0 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:opacity-100',
+            )}
+        >
+            {children}
         </span>
     );
 }
@@ -542,19 +558,7 @@ function IconToolButton({
             >
                 {children}
             </button>
-            {tooltip && (
-                <span
-                    role="tooltip"
-                    className={cn(
-                        'pointer-events-none absolute top-[calc(100%+7px)] left-1/2 z-50 -translate-x-1/2 -translate-y-1',
-                        'rounded-full bg-[#111827] px-2.5 py-1.5 font-apple text-[11px] leading-none font-semibold whitespace-nowrap text-white',
-                        'opacity-0 shadow-[0_6px_18px_rgba(15,23,42,0.18)] transition-[opacity,transform] duration-150 ease-out',
-                        'group-hover:translate-y-0 group-hover:opacity-100',
-                    )}
-                >
-                    {tooltip}
-                </span>
-            )}
+            {tooltip && <ToolbarTooltip>{tooltip}</ToolbarTooltip>}
         </span>
     );
 }
@@ -579,22 +583,24 @@ function IconButton({
     children: ReactNode;
 }) {
     return (
-        <button
-            id={id}
-            type="button"
-            onClick={onClick}
-            disabled={disabled}
-            aria-label={ariaLabel}
-            aria-busy={ariaBusy}
-            title={title}
-            className={cn(
-                'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] text-gray-3 transition-colors duration-150',
-                'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
-                'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-3',
-                className,
-            )}
-        >
-            {children}
-        </button>
+        <span className="group relative inline-grid size-9 shrink-0 place-items-center">
+            <button
+                id={id}
+                type="button"
+                onClick={onClick}
+                disabled={disabled}
+                aria-label={ariaLabel}
+                aria-busy={ariaBusy}
+                className={cn(
+                    'grid size-9 shrink-0 cursor-pointer place-items-center rounded-[10px] text-gray-3 transition-colors duration-150',
+                    'hover:bg-white hover:text-sub-1 focus-visible:ring-2 focus-visible:ring-main-2 focus-visible:ring-offset-2 focus-visible:outline-none',
+                    'disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-3',
+                    className,
+                )}
+            >
+                {children}
+            </button>
+            {title && <ToolbarTooltip>{title}</ToolbarTooltip>}
+        </span>
     );
 }

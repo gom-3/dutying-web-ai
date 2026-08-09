@@ -11,7 +11,10 @@ vi.mock('@/shared/hook/use-typed-translation', () => ({
                 'page.makeShift.aiRefill.firstFill': 'Autofill',
                 'page.makeShift.aiRefill.generating': 'Filling',
                 'page.makeShift.aiRefill.retry': 'Retry',
+                'page.makeShift.aiRefill.undo': 'Undo',
+                'page.makeShift.aiRefill.redo': 'Redo',
                 'page.makeShift.aiRefill.saveSnapshot': 'Save draft',
+                'page.makeShift.aiRefill.savingSnapshot': 'Saving draft',
                 'page.makeShift.aiRefill.fixedDisplay': 'Fixed shifts',
                 'page.makeShift.aiRefill.fixedDisplayHidden': 'Fixed shifts hidden',
                 'page.makeShift.aiRefill.fixedDisplayShown': 'Fixed shifts shown',
@@ -107,6 +110,14 @@ describe('AiAutofillToolbar', () => {
         expect(screen.getByRole('button', {name: 'Fix selected shifts'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Unfix selected shifts'})).toBeEnabled();
         expect(screen.getByRole('button', {name: 'Clear all except fixed shifts'})).toBeEnabled();
+        expect(screen.getByRole('tooltip', {name: 'Fix selected shifts'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Unfix selected shifts'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Clear all except fixed shifts'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Constraint violations shown'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Undo'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Redo'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'Save draft'})).toBeInTheDocument();
+        expect(screen.getByRole('tooltip', {name: 'History'})).toBeInTheDocument();
         expect(
             screen
                 .getAllByRole('button')
@@ -206,6 +217,9 @@ describe('AiAutofillToolbar', () => {
 
         expect(violationsButton).toHaveAttribute('aria-pressed', 'false');
         expect(violationsButton).toHaveTextContent('');
+        expect(violationsButton).toHaveClass('text-gray-3');
+        expect(violationsButton).not.toHaveClass('hover:bg-white');
+        expect(screen.getByRole('tooltip', {name: 'Constraint violations hidden'})).toBeInTheDocument();
 
         await user.click(violationsButton);
 

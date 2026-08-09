@@ -763,6 +763,8 @@ describe('MakeShiftCalendar', () => {
         const listbox = await screen.findByRole('listbox', {name: '근무유형 선택'});
 
         expect(listbox).toBeInTheDocument();
+        expect(listbox).toHaveClass('make-shift-calendar__shift-type-dropdown', 'overflow-y-scroll');
+        expect(within(listbox).getByText('Day')).toBeInTheDocument();
         expect(within(listbox).queryByText('고정하기')).not.toBeInTheDocument();
         expect(within(listbox).queryByText('비우기')).not.toBeInTheDocument();
         expect(trigger).not.toHaveClass('bg-main-4/70');
@@ -771,7 +773,7 @@ describe('MakeShiftCalendar', () => {
         expect(trigger!.querySelector('.outline-2')).not.toBeInTheDocument();
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D Day$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.cells[0]).toBe('D');
@@ -903,7 +905,7 @@ describe('MakeShiftCalendar', () => {
         expect(trigger!.querySelector('.make-shift-calendar__row-last-shift-badge')).toHaveClass('ring-2', 'ring-inset', 'ring-main-1');
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D Day$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells?.[0]).toBe('D');
@@ -931,7 +933,7 @@ describe('MakeShiftCalendar', () => {
         expect(await screen.findByRole('listbox')).toBeInTheDocument();
 
         act(() => {
-            fireEvent.click(screen.getByRole('option', {name: /^D D$/}));
+            fireEvent.click(screen.getByRole('option', {name: /^D Day$/}));
         });
 
         expect(useShiftEditorStore.getState().doc.rows[0]?.lastCells?.[0]).toBe('D');

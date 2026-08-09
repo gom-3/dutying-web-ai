@@ -1315,6 +1315,8 @@ export const ja: TLocale = {
             aiRefill: {
                 ...en.page.makeShift.aiRefill,
                 requestFailed: 'AI自動入力を完了できませんでした。',
+                undo: '元に戻す',
+                redo: 'やり直す',
                 snapshotSidebar: {
                     ...en.page.makeShift.aiRefill.snapshotSidebar,
                     todayAt: '今日 {{time}}',
@@ -1348,6 +1350,15 @@ export const ja: TLocale = {
                     allDays: '全日',
                     allPeople: '全員',
                     dayLabel: '{{day}}日',
+                    monthlyDayLabel: '毎月{{day}}日',
+                    everyday: '毎日',
+                    weekday: '平日',
+                    weekendOrHoliday: '週末・祝日',
+                    staffCountOperator: {
+                        min: '最低',
+                        max: '最大',
+                        exact: 'ちょうど',
+                    },
                 },
                 important: {
                     label: '重要',
@@ -1426,6 +1437,10 @@ export const ja: TLocale = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: '重要な基本条件',
                         sentence: '{target}は申請したOFFの前日にN勤務をしてはいけません',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: '人数条件',
+                        sentence: '{dateScope}の{shift}勤務人数は{operator}{count}名にします',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: '人数条件',

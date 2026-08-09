@@ -84,6 +84,18 @@ export const vi = {
             },
             constraints: {
                 ...generatedVi.page.makeShift.constraints,
+                option: {
+                    ...generatedVi.page.makeShift.constraints.option,
+                    monthlyDayLabel: 'Ngày {{day}} hằng tháng',
+                    everyday: 'Mỗi ngày',
+                    weekday: 'Ngày thường',
+                    weekendOrHoliday: 'Cuối tuần/ngày lễ',
+                    staffCountOperator: {
+                        min: 'Tối thiểu',
+                        max: 'Tối đa',
+                        exact: 'Chính xác',
+                    },
+                },
                 templates: {
                     CORE_MAX_CONTINUOUS_WORK: {
                         label: 'Điều kiện cơ bản quan trọng',
@@ -104,6 +116,10 @@ export const vi = {
                     CORE_EXCLUDE_NIGHT_BEFORE_REQ_OFF: {
                         label: 'Điều kiện cơ bản quan trọng',
                         sentence: '{target} không được làm ca N vào ngày trước OFF đã đăng ký',
+                    },
+                    STAFF_COUNT_BY_SHIFT: {
+                        label: 'Điều kiện nhân sự',
+                        sentence: '{dateScope}, ca {shift} phải có {operator} {count} người',
                     },
                     MIN_STAFF_BY_SHIFT: {
                         label: 'Điều kiện nhân sự',

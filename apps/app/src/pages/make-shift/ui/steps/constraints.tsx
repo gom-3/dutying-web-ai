@@ -274,6 +274,10 @@ const HIDDEN_RECOMMENDED_RULE_IDS = new Set<string>([
     'MAX_CONSECUTIVE_WORK_DAYS',
     'MAX_CONSECUTIVE_N',
     'MIN_OFF_AFTER_N',
+    'MIN_STAFF_BY_SHIFT',
+    'MAX_STAFF_BY_SHIFT',
+    'MIN_STAFF_BY_DATE_SHIFT',
+    'MIN_STAFF_BY_DAY_TYPE_SHIFT',
     'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
     'NEW_NURSE_NOT_ALONE_N',
     'PRECEPTEE_NOT_ALONE_N',
@@ -311,6 +315,28 @@ const KO_PARTICLES = {
 };
 const LEGACY_ALL_LABELS = new Set(['\uBAA8\uB4E0', '\uBAA8\uB4E0\uB0A0']);
 const LEGACY_OFF_NAME = '\uC624\uD504';
+const STAFFING_COUNT_TEMPLATE_CODES = new Set([
+    'STAFF_COUNT_BY_SHIFT',
+    'MIN_STAFF_BY_SHIFT',
+    'MAX_STAFF_BY_SHIFT',
+    'MIN_STAFF_BY_DATE_SHIFT',
+    'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+    'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
+    'SOFT_MIN_STAFF_BY_DUTY',
+    'SOFT_MAX_STAFF_BY_DUTY',
+    'SOFT_MIN_STAFF_BY_DATE_DUTY',
+    'SOFT_MIN_STAFF_WEEKEND_HOLIDAY',
+]);
+const MIN_STAFFING_COUNT_TEMPLATE_CODES = new Set([
+    'MIN_STAFF_BY_SHIFT',
+    'MIN_STAFF_BY_DATE_SHIFT',
+    'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+    'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT',
+    'SOFT_MIN_STAFF_BY_DUTY',
+    'SOFT_MIN_STAFF_BY_DATE_DUTY',
+    'SOFT_MIN_STAFF_WEEKEND_HOLIDAY',
+]);
+const MAX_STAFFING_COUNT_TEMPLATE_CODES = new Set(['MAX_STAFF_BY_SHIFT', 'SOFT_MAX_STAFF_BY_DUTY']);
 
 function getTemplateTranslationKey(templateId: string, property: 'label' | 'sentence') {
     return `page.makeShift.constraints.templates.${templateId}.${property}` as TI18nKey;
@@ -616,6 +642,7 @@ const DEFAULT_PARAMS_BY_TEMPLATE_CODE: Record<string, Record<string, unknown>> =
     FORBID_N_THEN_E: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_E_THEN_D: {target: ALL_CONSTRAINT_TARGET_OPTION},
     FORBID_E_THEN_N: {target: ALL_CONSTRAINT_TARGET_OPTION},
+    STAFF_COUNT_BY_SHIFT: {dateScope: {type: 'EVERYDAY'}, operator: {type: 'EXACT'}, count: 2},
     MIN_STAFF_BY_SHIFT: {count: '1'},
     MAX_STAFF_BY_SHIFT: {count: '1'},
     MIN_STAFF_BY_DATE_SHIFT: {count: '1'},
@@ -657,8 +684,20 @@ const OPTION_GROUP_TO_OPTION_MAP_KEY: Record<string, string> = {
     DAY_TYPE: 'dayType',
     DAY_TYPES: 'dayType',
     DAYTYPES: 'dayType',
+    dateScope: 'dateScope',
+    dateScopes: 'dateScope',
+    DATE_SCOPE: 'dateScope',
+    DATE_SCOPES: 'dateScope',
+    DATESCOPE: 'dateScope',
+    DATESCOPES: 'dateScope',
+    operator: 'staffCountOperator',
+    operators: 'staffCountOperator',
+    staffCountOperator: 'staffCountOperator',
+    staffCountOperators: 'staffCountOperator',
+    STAFF_COUNT_OPERATOR: 'staffCountOperator',
+    STAFF_COUNT_OPERATORS: 'staffCountOperator',
     shift: 'duty',
-    shifts: 'duty',
+    shifts: 'dutyStrict',
     shiftsWithAll: 'duty',
     dutyStrict: 'dutyStrict',
     DUTY_STRICT: 'dutyStrict',
@@ -1063,7 +1102,6 @@ function normalizeDuplicateParamValue(value: unknown): unknown {
             wardShiftTypeId: value.wardShiftTypeId,
             day: value.day,
             code: value.code,
-            label: value.label ?? value.name,
         };
     }
 
@@ -1078,7 +1116,105 @@ function stringifyDuplicateParams(params: Record<string, unknown>) {
     return JSON.stringify(normalizeDuplicateParamValue(params));
 }
 
+function getConstraintOptionType(value: unknown) {
+    if (isConstraintOption(value) && typeof value.type === 'string') return value.type.trim().toUpperCase();
+
+    if (typeof value === 'string') return value.trim().toUpperCase();
+
+    return null;
+}
+
+function getConstraintOptionDay(value: unknown) {
+    if (isConstraintOption(value) && typeof value.day === 'number') return value.day;
+
+    if (typeof value === 'number' && Number.isInteger(value)) return value;
+
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) return Number(value);
+
+    return null;
+}
+
+function getDuplicateDateScopeKey(value: unknown) {
+    const day = getConstraintOptionDay(value);
+    const type = getConstraintOptionType(value) ?? (day != null ? 'DAY_OF_MONTH' : null);
+
+    if (!type) return stringifyDuplicateParams({value});
+
+    if (type === 'DAY_OF_MONTH') return day != null ? `DAY_OF_MONTH:${day}` : 'DAY_OF_MONTH';
+
+    return type;
+}
+
+function getStaffingDuplicateDateScope(rule: TShiftConstraintRuleDraft) {
+    if (rule.templateCode === 'STAFF_COUNT_BY_SHIFT') return getDuplicateDateScopeKey(rule.params.dateScope);
+
+    if (rule.templateCode === 'MIN_STAFF_BY_DATE_SHIFT' || rule.templateCode === 'SOFT_MIN_STAFF_BY_DATE_DUTY') {
+        return getDuplicateDateScopeKey(rule.params.date);
+    }
+
+    if (rule.templateCode === 'MIN_STAFF_BY_DAY_TYPE_SHIFT') return getDuplicateDateScopeKey(rule.params.date ?? rule.params.dayType);
+
+    if (rule.templateCode === 'MIN_STAFF_WEEKEND_HOLIDAY_SHIFT' || rule.templateCode === 'SOFT_MIN_STAFF_WEEKEND_HOLIDAY') {
+        return 'WEEKEND_OR_HOLIDAY';
+    }
+
+    return 'EVERYDAY';
+}
+
+function getStaffingDuplicateOperator(rule: TShiftConstraintRuleDraft) {
+    if (rule.templateCode === 'STAFF_COUNT_BY_SHIFT') return getConstraintOptionType(rule.params.operator);
+
+    if (MIN_STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return 'MIN';
+
+    if (MAX_STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return 'MAX';
+
+    return null;
+}
+
+function getStaffingDuplicateShift(rule: TShiftConstraintRuleDraft) {
+    const value = rule.params.shift ?? rule.params.duty;
+
+    if (isConstraintOption(value)) {
+        if (value.wardShiftTypeId != null) return `SHIFT_ID:${value.wardShiftTypeId}`;
+
+        if (value.code) return `SHIFT_CODE:${String(value.code).trim().toUpperCase()}`;
+
+        if (value.type) return `SHIFT_TYPE:${String(value.type).trim().toUpperCase()}`;
+    }
+
+    if (typeof value === 'number' || typeof value === 'string') return String(value).trim().toUpperCase();
+
+    return stringifyDuplicateParams({value});
+}
+
+function getStaffingDuplicateCount(rule: TShiftConstraintRuleDraft) {
+    const value = rule.params.count;
+
+    if (value == null || value === '') return null;
+
+    const numericValue = Number(value);
+
+    return Number.isFinite(numericValue) ? String(numericValue) : String(value);
+}
+
+function getStaffingDuplicateKey(rule: TShiftConstraintRuleDraft) {
+    if (!STAFFING_COUNT_TEMPLATE_CODES.has(rule.templateCode)) return null;
+
+    const dateScope = getStaffingDuplicateDateScope(rule);
+    const shift = getStaffingDuplicateShift(rule);
+    const operator = getStaffingDuplicateOperator(rule);
+    const count = getStaffingDuplicateCount(rule);
+
+    if (!dateScope || !shift || !operator || count == null) return null;
+
+    return ['STAFF_COUNT_BY_SHIFT', dateScope, shift, operator, count].join('|');
+}
+
 function getConstraintDuplicateKey(rule: TShiftConstraintRuleDraft) {
+    const staffingDuplicateKey = getStaffingDuplicateKey(rule);
+
+    if (staffingDuplicateKey) return staffingDuplicateKey;
+
     return [rule.templateCode, stringifyDuplicateParams(rule.params)].join('|');
 }
 
@@ -1208,6 +1344,8 @@ function getCandidateOptionValue(option: TShiftConstraintOption) {
 
     if (option.code) return option.code;
 
+    if (option.type) return option.type;
+
     return option.label ?? option.name ?? option.type;
 }
 
@@ -1237,6 +1375,10 @@ function getCandidateOptionLabel(t: TTypedT, option: TShiftConstraintOption, opt
     if (isAllCandidateOption(option)) return getLocalizedAllOptionLabel(t, optionMapKey);
 
     if (optionMapKey === 'date' && option.day != null) return t('page.makeShift.constraints.option.dayLabel', {day: option.day});
+
+    if (optionMapKey === 'dateScope' && option.day != null) {
+        return t('page.makeShift.constraints.option.monthlyDayLabel', {day: option.day});
+    }
 
     if (option.label) return option.label;
 
@@ -1332,12 +1474,31 @@ function mergeCandidateOptionMap(
             t,
         ),
     );
+    const dateScope = withoutAllSelectOptions(
+        getCandidateOptions(
+            candidates,
+            'dateScope',
+            ['dateScopes', 'dateScope', 'DATESCOPES', 'DATE_SCOPES', 'DATE_SCOPE'],
+            fallback.dateScope ?? [],
+            shiftTypes,
+            t,
+        ),
+    );
 
     return {
         target,
         duty,
         date: date.length ? date : fallback.date,
         dayType,
+        dateScope: dateScope.length ? dateScope : (fallback.dateScope ?? []),
+        staffCountOperator: getCandidateOptions(
+            candidates,
+            'staffCountOperator',
+            ['staffCountOperators', 'staffCountOperator', 'STAFF_COUNT_OPERATORS', 'STAFF_COUNT_OPERATOR'],
+            fallback.staffCountOperator ?? [],
+            shiftTypes,
+            t,
+        ),
         nurse,
         preceptor: getCandidateOptions(candidates, 'preceptor', ['preceptors', 'PRECEPTORS'], fallback.preceptor, shiftTypes, t),
         preceptee: getCandidateOptions(candidates, 'preceptee', ['preceptees', 'PRECEPTEES'], fallback.preceptee, shiftTypes, t),
@@ -1727,7 +1888,7 @@ function SoftSentence({template, params, optionMap, onParamChange}: TSoftSentenc
                         value={selected}
                         options={options}
                         minWidth={
-                            control.optionsKey === 'date' || control.optionsKey === 'dayType'
+                            control.optionsKey === 'date' || control.optionsKey === 'dayType' || control.optionsKey === 'dateScope'
                                 ? 104
                                 : control.optionsKey === 'target'
                                   ? 104
@@ -2398,6 +2559,25 @@ export function Constraints({
             label: t('page.makeShift.constraints.option.dayLabel', {day: idx + 1}),
             raw: {type: 'DAY_OF_MONTH', day: idx + 1},
         }));
+        const dateScopeOptions = [
+            {value: 'EVERYDAY', label: t('page.makeShift.constraints.option.everyday'), raw: {type: 'EVERYDAY'}},
+            {value: 'WEEKDAY', label: t('page.makeShift.constraints.option.weekday'), raw: {type: 'WEEKDAY'}},
+            {
+                value: 'WEEKEND_OR_HOLIDAY',
+                label: t('page.makeShift.constraints.option.weekendOrHoliday'),
+                raw: {type: 'WEEKEND_OR_HOLIDAY'},
+            },
+            ...Array.from({length: daysInMonth(year, month)}, (_, idx) => ({
+                value: `DAY_OF_MONTH-${idx + 1}`,
+                label: t('page.makeShift.constraints.option.monthlyDayLabel', {day: idx + 1}),
+                raw: {type: 'DAY_OF_MONTH', day: idx + 1},
+            })),
+        ];
+        const staffCountOperatorOptions = [
+            {value: 'MIN', label: t('page.makeShift.constraints.option.staffCountOperator.min'), raw: {type: 'MIN'}},
+            {value: 'MAX', label: t('page.makeShift.constraints.option.staffCountOperator.max'), raw: {type: 'MAX'}},
+            {value: 'EXACT', label: t('page.makeShift.constraints.option.staffCountOperator.exact'), raw: {type: 'EXACT'}},
+        ];
         const toNurseOption = (nurse: TNurseLike): TSelectOption => ({
             value: String(nurse.nurseId),
             label: String(nurse.name),
@@ -2426,6 +2606,8 @@ export function Constraints({
             duty: dutyOptions,
             date: dateOptions,
             dayType: [],
+            dateScope: dateScopeOptions,
+            staffCountOperator: staffCountOperatorOptions,
             nurse: nurseOptions,
             preceptor: preceptorOptions,
             preceptee: precepteeOptions,

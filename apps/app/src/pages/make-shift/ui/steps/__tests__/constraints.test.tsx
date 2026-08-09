@@ -344,14 +344,76 @@ describe('Constraints', () => {
             rules: [
                 {
                     shiftConstraintRuleId: 1,
-                    templateCode: 'MIN_STAFF_BY_SHIFT',
-                    category: 'STAFFING_COUNT',
+                    templateCode: 'CORE_VISIBLE_SENTINEL',
+                    category: 'CORE',
                     severity: 'HARD',
                     sortOrder: 1,
-                    params: {shift: {type: 'ALL', label: '모든'}, count: 1},
+                    params: {},
                     selected: true,
                     isImportant: true,
-                    displayText: '모든 근무에 최소 1명이 필요해요',
+                    displayText: 'VISIBLE_RECOMMENDED_SENTINEL',
+                    isValid: true,
+                    invalidReason: null,
+                },
+            ],
+        });
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {},
+            templates: [
+                {
+                    templateCode: 'CORE_VISIBLE_SENTINEL',
+                    category: 'CORE',
+                    displayTemplate: 'VISIBLE_RECOMMENDED_SENTINEL',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+
+        const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+        await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+
+        await waitFor(() => {
+            expect(toast.success).toHaveBeenCalledWith('중복 제약조건은 삭제하고 기존 조건만 남겼어요.');
+        });
+        expect(wardApiMocks.updateShiftConstraintRules).not.toHaveBeenCalled();
+    });
+
+    it('treats legacy minimum staffing and unified minimum staffing as the same duplicate', async () => {
+        wardApiMocks.getShiftConstraintRules.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            rules: [
+                {
+                    shiftConstraintRuleId: 1,
+                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    severity: 'SOFT',
+                    sortOrder: 1,
+                    params: {shift: {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D'}, count: 2},
+                    selected: true,
+                    isImportant: false,
+                    displayText: 'D 근무에 최소 2명이 필요해요',
                     isValid: true,
                     invalidReason: null,
                 },
@@ -362,20 +424,27 @@ describe('Constraints', () => {
             wardId: 1,
             shiftTeamId: 10,
             options: {
-                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+                dateScopes: [{type: 'EVERYDAY', label: '매일'}],
+                shifts: [{type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D', name: '데이'}],
+                staffCountOperators: [
+                    {type: 'MIN', label: '최소'},
+                    {type: 'EXACT', label: '정확히'},
+                ],
             },
             templates: [
                 {
-                    templateCode: 'MIN_STAFF_BY_SHIFT',
+                    templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '{shift} 근무에 최소 {count}명이 필요해요',
+                    displayTemplate: '{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                        {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 5},
                     ],
                 },
             ],
@@ -392,6 +461,8 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '정확히'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '최소'}));
 
         const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
 
@@ -465,32 +536,39 @@ describe('Constraints', () => {
         expect(document.body.textContent).toContain('5일 이상 연속으로 근무');
     });
 
-    it('shows day-type staffing options above the add modal and saves the selected option', async () => {
+    it('shows date-scope staffing options above the add modal and saves the selected option', async () => {
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
             options: {
-                dayTypes: [
+                dateScopes: [
                     {type: 'ALL', label: '모든날'},
+                    {type: 'EVERYDAY', label: '매일'},
                     {type: 'WEEKDAY', label: '평일'},
                     {type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'},
                 ],
-                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+                shifts: [{type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D', name: '데이'}],
+                staffCountOperators: [
+                    {type: 'MIN', label: '최소'},
+                    {type: 'MAX', label: '최대'},
+                    {type: 'EXACT', label: '정확히'},
+                ],
             },
             templates: [
                 {
-                    templateCode: 'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+                    templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '{date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    displayTemplate: '{dateScope}에는 {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'dayTypes'},
-                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                        {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 5},
                     ],
                 },
             ],
@@ -507,12 +585,13 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
-        await userEvent.click(await screen.findByRole('button', {name: '평일'}));
+        await userEvent.click(await screen.findByRole('button', {name: '매일'}));
 
         const listbox = await screen.findByRole('listbox');
 
         expect(listbox).toHaveClass('z-[2147483647]');
         expect(within(listbox).queryByRole('option', {name: '모든날'})).not.toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '매일'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: '평일'})).toBeInTheDocument();
         expect(within(listbox).getByRole('option', {name: '주말/공휴일'})).toBeInTheDocument();
 
@@ -529,11 +608,12 @@ describe('Constraints', () => {
                 expect.objectContaining({
                     rules: expect.arrayContaining([
                         expect.objectContaining({
-                            templateCode: 'MIN_STAFF_BY_DAY_TYPE_SHIFT',
+                            templateCode: 'STAFF_COUNT_BY_SHIFT',
                             params: expect.objectContaining({
-                                date: expect.objectContaining({type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'}),
-                                shift: expect.objectContaining({type: 'ALL', label: '모든'}),
-                                count: 1,
+                                dateScope: expect.objectContaining({type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'}),
+                                shift: expect.objectContaining({type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11}),
+                                operator: expect.objectContaining({type: 'EXACT'}),
+                                count: 2,
                             }),
                         }),
                     ]),
@@ -542,32 +622,40 @@ describe('Constraints', () => {
         });
     });
 
-    it('removes the all-days option from date staffing dropdowns', async () => {
+    it('saves the unified staff-count-by-shift constraint with date scope and exact count defaults', async () => {
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
             options: {
-                dates: [
-                    {type: 'ALL', label: '모든날'},
-                    {type: 'DAY_OF_MONTH', day: 1, label: '1일'},
-                    {type: 'DAY_OF_MONTH', day: 2, label: '2일'},
+                dateScopes: [
+                    {type: 'EVERYDAY', label: '매일'},
+                    {type: 'WEEKEND_OR_HOLIDAY', label: '주말/공휴일'},
                 ],
-                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+                shifts: [
+                    {type: 'ALL', label: '모든'},
+                    {type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D', name: '데이'},
+                ],
+                staffCountOperators: [
+                    {type: 'MIN', label: '최소'},
+                    {type: 'MAX', label: '최대'},
+                    {type: 'EXACT', label: '정확히'},
+                ],
             },
             templates: [
                 {
-                    templateCode: 'MIN_STAFF_BY_DATE_SHIFT',
+                    templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '{date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    displayTemplate: '{dateScope} {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'DATES'},
-                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                        {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 5},
                     ],
                 },
             ],
@@ -584,40 +672,119 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
-        await userEvent.click(await screen.findByRole('button', {name: '1일'}));
+
+        expect(await screen.findByRole('button', {name: '매일'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'D데이'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '정확히'})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: '모든'})).not.toBeInTheDocument();
+
+        const modalAddButtons = screen.getAllByRole('button', {name: '제약 조건 추가'});
+
+        await userEvent.click(modalAddButtons[modalAddButtons.length - 1]!);
+
+        await waitFor(() => {
+            expect(wardApiMocks.updateShiftConstraintRules).toHaveBeenCalledWith(
+                1,
+                10,
+                expect.objectContaining({
+                    rules: expect.arrayContaining([
+                        expect.objectContaining({
+                            templateCode: 'STAFF_COUNT_BY_SHIFT',
+                            params: expect.objectContaining({
+                                dateScope: expect.objectContaining({type: 'EVERYDAY'}),
+                                shift: expect.objectContaining({type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11}),
+                                operator: expect.objectContaining({type: 'EXACT'}),
+                                count: 2,
+                            }),
+                        }),
+                    ]),
+                }),
+            );
+        });
+    });
+
+    it('removes the all-days option from date-scope staffing dropdowns', async () => {
+        wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
+            schemaVersion: 1,
+            wardId: 1,
+            shiftTeamId: 10,
+            options: {
+                dateScopes: [
+                    {type: 'ALL', label: '모든날'},
+                    {type: 'EVERYDAY', label: '매일'},
+                    {type: 'DAY_OF_MONTH', day: 1, label: '1일'},
+                    {type: 'DAY_OF_MONTH', day: 2, label: '2일'},
+                ],
+                shifts: [{type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D', name: '데이'}],
+                staffCountOperators: [{type: 'EXACT', label: '정확히'}],
+            },
+            templates: [
+                {
+                    templateCode: 'STAFF_COUNT_BY_SHIFT',
+                    category: 'STAFFING_COUNT',
+                    displayTemplate: '{dateScope}에는 {shift} 근무 인원이 {operator} {count}명이어야 해요',
+                    severity: 'SOFT',
+                    allowedSeverities: ['SOFT'],
+                    supportedInGenerator: true,
+                    supportedInValidator: true,
+                    slots: [
+                        {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 5},
+                    ],
+                },
+            ],
+        });
+
+        render(<Constraints wardId={1} shiftTeamId={10} shiftTeams={[]} year={2026} month={6} variant="settings" />);
+
+        const addButton = await waitFor(() => {
+            const button = document.getElementById('make_constraint_add_button');
+
+            expect(button).toBeInTheDocument();
+
+            return button as HTMLButtonElement;
+        });
+
+        await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '매일'}));
 
         const listbox = await screen.findByRole('listbox');
 
         expect(within(listbox).queryByRole('option', {name: '모든날'})).not.toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '1일'})).toBeInTheDocument();
-        expect(within(listbox).getByRole('option', {name: '2일'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '매일'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '매월 1일'})).toBeInTheDocument();
+        expect(within(listbox).getByRole('option', {name: '매월 2일'})).toBeInTheDocument();
     });
 
-    it('does not duplicate monthly wording in date staffing sentences', async () => {
+    it('does not duplicate monthly wording in date-scope staffing sentences', async () => {
         wardApiMocks.getShiftConstraintRuleCandidates.mockResolvedValueOnce({
             schemaVersion: 1,
             wardId: 1,
             shiftTeamId: 10,
             options: {
-                dates: [
-                    {type: 'ALL', label: '모든날'},
+                dateScopes: [
+                    {type: 'EVERYDAY', label: '매일'},
                     {type: 'DAY_OF_MONTH', day: 1, label: '매월 1일'},
                 ],
-                shiftsWithAll: [{type: 'ALL', label: '모든'}],
+                shifts: [{type: 'WARD_SHIFT_TYPE', wardShiftTypeId: 11, label: 'D 데이', code: 'D', name: '데이'}],
+                staffCountOperators: [{type: 'EXACT', label: '정확히'}],
             },
             templates: [
                 {
-                    templateCode: 'MIN_STAFF_BY_DATE_SHIFT',
+                    templateCode: 'STAFF_COUNT_BY_SHIFT',
                     category: 'STAFFING_COUNT',
-                    displayTemplate: '매월 {date}에는 {shift} 근무에 최소 {count}명이 필요해요',
+                    displayTemplate: '{dateScope}에는 {shift} 근무 인원이 {operator} {count}명이어야 해요',
                     severity: 'SOFT',
                     allowedSeverities: ['SOFT'],
                     supportedInGenerator: true,
                     supportedInValidator: true,
                     slots: [
-                        {key: 'date', label: 'Date', inputType: 'SELECT', optionGroup: 'DATES'},
-                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'SHIFTS_WITH_ALL'},
-                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 3},
+                        {key: 'dateScope', label: 'Date Scope', inputType: 'SELECT', optionGroup: 'dateScopes'},
+                        {key: 'shift', label: 'Shift', inputType: 'SELECT', optionGroup: 'shifts'},
+                        {key: 'operator', label: 'Operator', inputType: 'SELECT', optionGroup: 'staffCountOperators'},
+                        {key: 'count', label: 'Count', inputType: 'NUMBER', min: 1, max: 5},
                     ],
                 },
             ],
@@ -634,9 +801,10 @@ describe('Constraints', () => {
         });
 
         await userEvent.click(addButton);
+        await userEvent.click(await screen.findByRole('button', {name: '매일'}));
+        await userEvent.click(within(await screen.findByRole('listbox')).getByRole('option', {name: '매월 1일'}));
 
-        expect(screen.getByRole('button', {name: '1일'})).toBeInTheDocument();
-        expect(screen.queryByRole('button', {name: '매월 1일'})).not.toBeInTheDocument();
+        expect(screen.getByRole('button', {name: '매월 1일'})).toBeInTheDocument();
         expect(document.body.textContent).toContain('매월 1일에는');
         expect(document.body.textContent).not.toContain('매월 매월');
         expect(document.body.textContent).not.toContain('1일일에는');
